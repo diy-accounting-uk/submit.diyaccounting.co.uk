@@ -292,7 +292,7 @@ export async function verifyFilingAccepted(page, screenshotPath = defaultScreens
 
 export async function verifyFilingRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode} after polling to a terminal state`, async () => {
-    await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
+    await expect(page.locator("#filingResult")).toContainText(/\bwas rejected\b/, { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png`, readerView: true });
   });

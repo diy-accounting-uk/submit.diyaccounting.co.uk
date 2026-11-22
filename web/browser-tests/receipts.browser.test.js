@@ -257,7 +257,7 @@ test.describe("Receipts page - receipt details", () => {
   });
 
   test("lists the revised accounts and the amended Company Tax Return under the filing they amend, marked as amended", async ({ page }) => {
-    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT, { styled: true });
     const jointFilingId = "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10";
     await page.evaluate(async (id) => {
       localStorage.setItem("cognitoIdToken", "token");

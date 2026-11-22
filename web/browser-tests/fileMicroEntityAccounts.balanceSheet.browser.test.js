@@ -9,7 +9,10 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
+import { notesOf } from "../public/lib/accounts-revision.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -140,6 +143,58 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
       `The date approved, ${tomorrow}, is after today. Enter the date the directors approved the accounts.`,
     );
     expect(await page.evaluate(() => window.rendered.length)).toBe(0);
+  });
+
+  test("an original filing sends the advance to the director, and the accounts it builds carry the advance back", async ({ page }) => {
+    await serveSiteStyles(page);
+    await openFormView(page);
+    await fillForm(page, CONSISTENT_YEARS);
+    await page.fill("#directorsAdvanceTerms", "Interest free and repayable on demand");
+    await page.fill("#directorsAdvanceAtStart", "200");
+    await page.fill("#directorsAdvanceMade", "1,000");
+    await page.fill("#directorsAdvanceRepaid", "400");
+    await page.fill("#directorsAdvanceAtEnd", "800");
+    await page.evaluate(() => {
+      document.getElementById("formCompanyName").textContent = company.companyName;
+      document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+    });
+    await screenshotAtBothWidths(page, "micro-original-advance");
+    await page.click("#previewBtn");
+    await expect(page.locator("#previewView")).toBeVisible();
+
+    const [accounts] = await page.evaluate(() => window.rendered);
+    const advance = {
+      name: "Jo Director",
+      terms: "Interest free and repayable on demand",
+      balanceAtStart: 200,
+      advanced: 1000,
+      repaid: 400,
+      balanceAtEnd: 800,
+    };
+    expect(accounts.directorsAdvances).toEqual([advance]);
+    const errors = [];
+    const validated = extractAndValidateAccountsParameters(
+      {
+        body: JSON.stringify({
+          ...accounts,
+          companyNumber: "06846849",
+          companyAuthCode: "ABC123",
+          registeredOffice: { addressLine1: "14 Castle Street", cityOrTown: "Cardiff", postalCode: "CF10 1BS" },
+        }),
+      },
+      errors,
+    );
+    expect(errors).toEqual([]);
+    expect(notesOf(buildAccountsIxbrl(validated)).directorsAdvances).toEqual([advance]);
+  });
+
+  test("an original filing with the advance boxes left empty sends no advance", async ({ page }) => {
+    await openFormView(page);
+    await fillForm(page, CONSISTENT_YEARS);
+    await page.click("#previewBtn");
+    await expect(page.locator("#previewView")).toBeVisible();
+    const [accounts] = await page.evaluate(() => window.rendered);
+    expect(accounts.directorsAdvances).toBeUndefined();
   });
 
   test("renders accounts that add up", async ({ page }) => {

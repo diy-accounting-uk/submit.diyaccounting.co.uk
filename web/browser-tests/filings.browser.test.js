@@ -23,6 +23,7 @@ const CT_RECEIPT_NAME = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
 
 const accountsCase = accountsDocumentCases()[0];
 const smallCompanyCase = accountsDocumentCases().find((candidate) => candidate.name === "small-company-accounts");
+const revisedAccountsCase = accountsDocumentCases().find((candidate) => candidate.name === "micro-entity-accounts-revised");
 
 const ACCOUNTS_RECEIPT = {
   kind: "companies-house-accounts",
@@ -263,11 +264,17 @@ test.describe("Filings page - customer copy", () => {
       profitAndLoss: { ...SMALL_COMPANY_CASE_INPUT.profitAndLoss, prior: undefined },
       fixedAssetNote: undefined,
     });
-    await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, filedDocument: singleYear }, { revisionOffered: true });
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, companyNumber: SMALL_COMPANY_CASE_INPUT.companyNumber, filedDocument: singleYear },
+      { revisionOffered: true },
+    );
     await expect(page.locator("#amendFilingLink")).toBeHidden();
     await expect(page.locator("#filingNotice")).toHaveText(
       "These accounts were filed without the previous year's figures, so they cannot be amended here yet.",
     );
+    await expect(page.locator("#filingContent")).toContainText(`Company number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
     await screenshotAtBothWidths(page, "filing-no-comparatives");
   });
 
@@ -300,7 +307,7 @@ test.describe("Filings page - customer copy", () => {
       await openFiling(
         page,
         ACCOUNTS_RECEIPT_NAME,
-        { ...ACCOUNTS_RECEIPT, amended: true, revisesReceipt: originalName },
+        { ...ACCOUNTS_RECEIPT, amended: true, revisesReceipt: originalName, filedDocument: revisedAccountsCase.xhtml },
         { width, revisionOffered: true },
       );
 
@@ -310,6 +317,7 @@ test.describe("Filings page - customer copy", () => {
       await expect(page.locator("#amendFilingLink")).toBeHidden();
       const original = page.locator("#filingContent .customer-copy-links a", { hasText: "See the original accounts these revise" });
       await expect(original).toHaveAttribute("href", `filings.html?receipt=${encodeURIComponent(originalName)}`);
+      await expect(page.frameLocator("iframe.filed-document").locator("body")).toContainText("Revised accounts");
       const inset = await page.locator(".filed-document-download a").evaluate((link) => {
         const sheet = link.closest(".customer-copy-sheet").getBoundingClientRect();
         return link.getBoundingClientRect().left - sheet.left;

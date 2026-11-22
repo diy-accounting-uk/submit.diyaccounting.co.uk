@@ -13714,10 +13714,6 @@ cy = '''Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedau 
 hash = "69d9aacfdc24"
 cy = '''Methwyd â chreu’r rhagolwg o’r cyfrifon.'''
 
-[strings."ch.accounts.checking"]
-hash = "a5acf0e5cc4d"
-cy = '''Mae cyflwyniad {number} yn {status}. Wrthi’n gwirio eto...'''
-
 [strings."ch.accounts.enter-presenter-id"]
 hash = "b97c96b48d9b"
 cy = '''Rhowch eich ID cyflwynydd'''
@@ -13825,10 +13821,6 @@ cy = '''Rhaid i werth llyfr net nodiadau’r asedau sefydlog fod yn hafal i’r 
 [strings."ch.small.confirm-regime"]
 hash = "a86486606865"
 cy = '''Cadarnhewch fod y cyfrifon yn dilyn y drefn cwmnïau bach'''
-
-[strings."ch.small.outcome"]
-hash = "8b29ae1ed641"
-cy = '''Roedd cyflwyniad {number} yn {status}.'''
 
 [strings."ch.cs.fee-paid"]
 hash = "0fea1f92b0e8"
@@ -15062,10 +15054,6 @@ cy = '''Gwiriwch yr atebion y mae’r gwallau hyn yn eu henwi, newidiwch nhw yn 
 hash = "6b0143d03864"
 cy = '''Ffurflen '''
 
-[strings."ch.ct.is"]
-hash = "fa51fd49abf6"
-cy = ''' yw '''
-
 [strings."ch.ct.checking-again"]
 hash = "12ee0cd620a7"
 cy = '''. Yn gwirio eto...'''
@@ -15097,10 +15085,6 @@ cy = '''Gwrthododd CThEF Ffurflen Dreth y Cwmni'''
 [strings."ch.ct.not-settled"]
 hash = "f8f17129acb3"
 cy = '''Nid yw CThEF wedi setlo’r Ffurflen eto. Statws Ffurflen '''
-
-[strings."ch.ct.is-still"]
-hash = "2e89bd6ae037"
-cy = ''' yw '''
 
 [strings."ch.ct.full-stop"]
 hash = "cdb4ee2aea69"
@@ -17450,10 +17434,6 @@ cy = '''Beth oedd yn anghywir yn y cyfrifon gwreiddiol?'''
 hash = "ff3c9b4ea7bf"
 cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
 
-[strings."ch-micro-entity.the-date-approved-below-is-more-4f3c83"]
-hash = "4f3c83c09ef8"
-cy = '''Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
-
 [strings."ch.ct.amend-accounts-alone"]
 hash = "b3ffa6e907a7"
 cy = '''Agorwch y cyfrifon hyn, yna dewiswch Diwygio'''
@@ -17585,10 +17565,6 @@ cy = '''Beth oedd yn anghywir yn y cyfrifon gwreiddiol?'''
 [strings."ch-small-company.what-do-the-revised-accounts-change-ff3c9b"]
 hash = "ff3c9b4ea7bf"
 cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
-
-[strings."ch-small-company.the-date-approved-below-is-more-4f3c83"]
-hash = "4f3c83c09ef8"
-cy = '''Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
 
 
 [strings."ch.revision.not-small"]
@@ -18289,6 +18265,173 @@ cy = '''Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn
 hash = "e06571e008b2"
 cy = '''{kind}, {number} yn cael eu dal'''
 
+# == The look pass of the revised accounts forms: refusals with their next step, Companies House outcomes in words, and the Welsh form fields ==
+
+[strings."ch.accounts.not-applicable"]
+hash = "5237c96ac1a2"
+cy = '''Ddim yn berthnasol'''
+
+[strings."ch-micro-entity.the-date-approved-is-more-than-15ec2a"]
+hash = "15ec2a57a1cc"
+cy = '''Mae’r dyddiad cymeradwyo fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
+
+[strings."ch-small-company.the-date-approved-is-more-than-15ec2a"]
+hash = "15ec2a57a1cc"
+cy = '''Mae’r dyddiad cymeradwyo fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
+
+[strings."widget.books-ixbrl-profit-and-loss"]
+hash = "6546971de9e9"
+cy = '''Mae’r ddogfen hefyd yn cynnwys y cyfrif elw a cholled, nad oes gan y ffurflen hon faes ar ei gyfer.'''
+
+[strings."widget.books-ixbrl-unplaced-one"]
+hash = "dae1b5a8d609"
+cy = '''Mae’r ddogfen hefyd yn cynnwys 1 ffaith nad oes gan y ffurflen hon faes ar ei chyfer.'''
+
+[strings."widget.books-ixbrl-unplaced"]
+hash = "9d0f792bd999"
+cy = '''Mae’r ddogfen hefyd yn cynnwys {count} o ffeithiau nad oes gan y ffurflen hon faes ar eu cyfer.'''
+
+[strings."widget.books-ixbrl-unplaced-names"]
+hash = "f7e69aa7b10c"
+cy = '''Y ffeithiau nad oes gan y ffurflen hon faes ar eu cyfer'''
+
+# == The advances to directors and share capital notes on the accounts forms ==
+
+[strings."ch-micro-entity.advances-to-the-director-d10ef7"]
+hash = "d10ef70572f9"
+cy = '''Blaensymiau i’r cyfarwyddwr'''
+
+[strings."ch-micro-entity.fill-this-in-when-the-director-aa153b"]
+hash = "aa153b71b97d"
+cy = '''Llenwch hwn pan oedd y cyfarwyddwr mewn dyled i’r cwmni yn ystod y flwyddyn. Mae adran 413 o Ddeddf Cwmnïau 2006 yn gofyn am y nodyn. Mae’n enwi’r cyfarwyddwr sy’n cymeradwyo’r cyfrifon.'''
+
+[strings."ch-micro-entity.interest-rate-and-main-conditions-of-edab6a"]
+hash = "edab6a0d831e"
+cy = '''Cyfradd llog a phrif amodau’r blaenswm'''
+
+[strings."ch-micro-entity.whole-pounds-for-example-600-or-94af4a"]
+hash = "94af4ae4de7d"
+cy = '''Punnoedd cyfan. Er enghraifft, £600 neu £1,200.'''
+
+[strings."ch-micro-entity.amount-2d7841"]
+hash = "2d7841b4ecc5"
+cy = '''Swm (£)'''
+
+[strings."ch-micro-entity.owed-by-the-director-at-the-ff394e"]
+hash = "ff394e8f5cca"
+cy = '''Yn ddyledus gan y cyfarwyddwr ar ddechrau’r flwyddyn'''
+
+[strings."ch-micro-entity.advanced-to-the-director-in-the-db47e6"]
+hash = "db47e67ee401"
+cy = '''Wedi’i roi ymlaen llaw i’r cyfarwyddwr yn y flwyddyn'''
+
+[strings."ch-micro-entity.repaid-by-the-director-in-the-657100"]
+hash = "657100ab1dbb"
+cy = '''Wedi’i ad-dalu gan y cyfarwyddwr yn y flwyddyn'''
+
+[strings."ch-micro-entity.owed-by-the-director-at-the-70403f"]
+hash = "70403f6fa430"
+cy = '''Yn ddyledus gan y cyfarwyddwr ar ddiwedd y flwyddyn'''
+
+[strings."ch-small-company.add-a-note-on-the-shares-1e206f"]
+hash = "1e206fc9cda8"
+cy = '''Ychwanegu nodyn ar y cyfrannau a ddyrannwyd'''
+
+[strings."ch-small-company.the-note-states-the-number-of-d83211"]
+hash = "d83211fc2137"
+cy = '''Mae’r nodyn yn nodi nifer y cyfrannau, eu dosbarth a’u gwerth nominal. Y nifer yw’r cyfalaf cyfrannau wedi’i alw wedi’i rannu â’r gwerth nominal.'''
+
+[strings."ch-small-company.share-class-acf5ea"]
+hash = "acf5eaf66e10"
+cy = '''Dosbarth cyfrannau'''
+
+[strings."ch-small-company.ordinary-f46f36"]
+hash = "f46f36f72dc6"
+cy = '''Cyffredin'''
+
+[strings."ch-small-company.preference-a0dc19"]
+hash = "a0dc191bc1d4"
+cy = '''Blaengyfrannau'''
+
+[strings."ch-small-company.deferred-1fc4d2"]
+hash = "1fc4d2e60ca8"
+cy = '''Gohiriedig'''
+
+[strings."ch-small-company.other-f97e9d"]
+hash = "f97e9da0e3b8"
+cy = '''Arall'''
+
+[strings."ch-small-company.nominal-value-of-each-share-in-06c00d"]
+hash = "06c00d6c3009"
+cy = '''Gwerth nominal pob cyfran, mewn punnoedd'''
+
+[strings."ch-small-company.for-example-1-or-0-01-6a38c7"]
+hash = "6a38c7de1669"
+cy = '''Er enghraifft, 1 neu 0.01.'''
+
+[strings."ch-small-company.owed-by-that-director-at-the-8b5171"]
+hash = "8b5171e6ff59"
+cy = '''Yn ddyledus gan y cyfarwyddwr hwnnw ar ddiwedd y flwyddyn'''
+
+[strings."ch-small-company.the-amounts-owed-at-the-end-d8bbd9"]
+hash = "d8bbd94aacf3"
+cy = '''Mae’r symiau sy’n ddyledus ar ddiwedd y flwyddyn yn adio i’r symiau sy’n ddyledus gan gyfarwyddwyr ar y fantolen.'''
+
+[strings."ch-small-company.add-another-director-s-advance-96f1ee"]
+hash = "96f1ee7e911f"
+cy = '''Ychwanegu blaenswm cyfarwyddwr arall'''
+
+[strings."ch.small.remove-advance"]
+hash = "ae390e21b5c2"
+cy = '''Tynnu’r blaenswm hwn'''
+
+[strings."ch.revision.refused-title"]
+hash = "71a19bfe604e"
+cy = '''Ni ellir diwygio’r cyfrifon hyn yma'''
+
+[strings."ch.revision.next-receipts"]
+hash = "e762cb65672c"
+cy = '''Yn ôl i’ch derbynebau'''
+
+[strings."ch.revision.next-record"]
+hash = "015cbdc2be97"
+cy = '''Gweld y ffeilio'''
+
+[strings."ch.revision.next-small"]
+hash = "d5260ac01b7a"
+cy = '''Eu diwygio ar dudalen cyfrifon cwmni bach'''
+
+[strings."ch.revision.next-micro"]
+hash = "c87e46cde010"
+cy = '''Eu diwygio ar dudalen cyfrifon micro-endid'''
+
+[strings."ch.revision.refuse-unread-heading"]
+hash = "ebadaa8100f0"
+cy = '''Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.'''
+
+[strings."ch.gateway.status-accept"]
+hash = "070c160a6299"
+cy = '''wedi’i dderbyn'''
+
+[strings."ch.gateway.status-reject"]
+hash = "20cd938a2ea6"
+cy = '''wedi’i wrthod'''
+
+[strings."ch.gateway.status-parked"]
+hash = "a384d0faaa6f"
+cy = '''wedi’i ddal i’w wirio â llaw'''
+
+[strings."ch.gateway.status-pending"]
+hash = "dbc1b19ca3b9"
+cy = '''yn aros i gael ei wirio'''
+
+[strings."ch.accounts.checking"]
+hash = "a5acf0e5cc4d"
+cy = '''Statws cyflwyniad {number}: {status}. Wrthi’n gwirio eto...'''
+
+[strings."ch.small.outcome"]
+hash = "8b29ae1ed641"
+cy = '''Statws cyflwyniad {number}: {status}.'''
 # == Revised accounts: the refusal of a receipt whose accounts state no period, the books card's refusal of another period, the copy sentence and warning for a filleted copy revised as a full copy, and the route's refusals of a revision with no receipt and of an advance to someone who is not a director ==
 
 [strings."ch.revision.refuse-no-period"]
@@ -18306,3 +18449,29 @@ cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gall
 [strings."ch.revision.prior-profit-and-loss-empty"]
 hash = "0d8f32fc2a79"
 cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.'''
+
+# == The merge of the revised accounts work: an advance to someone who is not a director, and HMRC's status of a Company Tax Return in words ==
+
+[strings."ch.small.advance-not-director"]
+hash = "15a12d25adfc"
+cy = '''Mae {name} wedi’i enwi ar gyfer blaenswm, ond nid yw ymhlith y cyfarwyddwyr a restrir. Ychwanegwch nhw at y cyfarwyddwyr, neu cywirwch yr enw.'''
+
+[strings."ch.ct.status-accept"]
+hash = "070c160a6299"
+cy = '''wedi’i derbyn'''
+
+[strings."ch.ct.status-reject"]
+hash = "20cd938a2ea6"
+cy = '''wedi’i gwrthod'''
+
+[strings."ch.ct.status-pending"]
+hash = "dbc1b19ca3b9"
+cy = '''yn aros i gael ei gwirio'''
+
+[strings."ch.ct.is"]
+hash = "fa51fd49abf6"
+cy = ''': '''
+
+[strings."ch.ct.is-still"]
+hash = "2e89bd6ae037"
+cy = ''': '''

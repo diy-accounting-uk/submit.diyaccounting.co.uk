@@ -259,6 +259,27 @@ test.describe("File Company Tax Return entry form", () => {
     }
   }
 
+  test("states HMRC's status of a return it has not settled in words, never as its code", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: "CORRPEND", irmark: "IRMARK", pollIntervalSeconds: 0 },
+      pollBody: { statusCode: "PENDING", correlationId: "CORRPEND", pollIntervalSeconds: 0 },
+    };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    const result = page.locator("#returnResult");
+    await expect(result).toContainText("Return CORRPEND is waiting to be checked. Checking again...", { timeout: 30_000 });
+    await expect(result).not.toContainText("PENDING");
+  });
+
   test("the pasted book export, its file input and the accounts-in-the-book radio are gone", async ({ page }) => {
     await openForm(page);
     await expect(page.locator("#bookExport")).toHaveCount(0);

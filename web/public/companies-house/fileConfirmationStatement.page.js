@@ -1016,7 +1016,7 @@ async function handlePscVerificationSubmit(index, matches) {
       buildParagraph(
         valueParts(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
           number: outcome.submissionNumber,
-          status: outcome.statusCode,
+          status: window.companiesHouseGatewayPoll.statusWord(outcome.statusCode),
         }),
       ),
       ...(outcome.rejections || []).map((rejection) => buildParagraph([window.companiesHouseRejections.rejectionText(rejection)])),
@@ -1049,7 +1049,7 @@ function pollUntilSettled(submission, extraHeaders) {
     onPending: (result) =>
       showSubmissionProgress(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
         number: submissionNumber,
-        status: result.statusCode,
+        status: window.companiesHouseGatewayPoll.statusWord(result.statusCode),
       }),
   });
 }
@@ -1080,7 +1080,7 @@ async function checkOutcome(submission, headers, payload) {
   } else {
     showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
       number: outcome.submissionNumber,
-      status: outcome.statusCode,
+      status: window.companiesHouseGatewayPoll.statusWord(outcome.statusCode),
     });
   }
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
