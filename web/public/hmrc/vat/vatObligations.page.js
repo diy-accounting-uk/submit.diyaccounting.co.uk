@@ -14,7 +14,6 @@ function cancelRequest() {
   sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   // Show form and hide results
@@ -25,8 +24,8 @@ function cancelRequest() {
 }
 
 // Check if we're in synthetic/test mode to show developer options
-function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+async function initializePage() {
+  const hmrcAccount = await window.readHmrcAccount();
 
   // The status line says sandbox when this page's HMRC calls go to HMRC's test service
   window.showHmrcStatusForService(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
@@ -118,7 +117,7 @@ async function continueObligationsRetrieval() {
     };
 
     // Add hmrcAccount header if present in sessionStorage
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) {
       requestHeaders["hmrcAccount"] = hmrcAccount;
     }
@@ -171,7 +170,6 @@ async function continueObligationsRetrieval() {
     sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Obligations retrieval failed, cleared session storage to prevent retry loop");
   } finally {
@@ -217,7 +215,7 @@ async function handleFormSubmission(event) {
         runFraudPreventionHeaderValidation,
       };
 
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const currentActivity = `${location.pathname}`;
 
       sessionStorage.setItem("oauth_state", state);
@@ -274,7 +272,7 @@ async function handleFormSubmission(event) {
       };
 
       // Add hmrcAccount header if present
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       if (hmrcAccount) {
         requestHeaders["hmrcAccount"] = hmrcAccount;
       }

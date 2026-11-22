@@ -53,6 +53,7 @@ window.hideLoading = window.hideLoading || function(){};
 window.generateRandomState = window.generateRandomState || function(){ return "test-state"; };
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 window.authorizedFetch = window.authorizedFetch || function(url, options){ return fetch(url, options); };
+window.readHmrcAccount = window.readHmrcAccount || function(){ return Promise.resolve(sessionStorage.getItem("hmrcAccount")); };
 </script>`,
     );
 }

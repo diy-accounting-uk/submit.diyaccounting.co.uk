@@ -13,7 +13,7 @@ async function initializePage() {
   const vrn = urlParams.get("vrn");
   const periodStart = urlParams.get("periodStart");
   const periodEnd = urlParams.get("periodEnd");
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
 
   // If URL params provide complete period data, clear any stale pendingReturnRequest
   // This handles navigation from obligations page where URL params should take precedence
@@ -106,7 +106,6 @@ function cancelRequest() {
   sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   // Show form and hide results
@@ -175,7 +174,7 @@ async function continueReturnRetrieval() {
     };
 
     // Add hmrcAccount header if present in sessionStorage
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) {
       requestHeaders["hmrcAccount"] = hmrcAccount;
     }
@@ -230,7 +229,6 @@ async function continueReturnRetrieval() {
     sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Return retrieval failed, cleared session storage to prevent retry loop");
   } finally {
@@ -256,7 +254,7 @@ async function handleFormSubmission(event) {
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   // Check hmrcAccount for synthetic mode (set by bundle qualifiers via sessionStorage)
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   const allowSyntheticObligations = hmrcAccount === "synthetic";
 
   if (!scopeSufficient) {

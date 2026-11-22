@@ -355,7 +355,7 @@ async function handleFormSubmission(event) {
     allowSyntheticObligations,
   };
 
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   const requestData = JSON.stringify(submissionData);
 
   sessionStorage.setItem("submission_data", requestData);
@@ -447,7 +447,6 @@ function cancelRequest() {
   sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   // Show form and clear status
@@ -521,7 +520,6 @@ async function continueVatSubmission() {
     sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Submission failed, cleared session storage to prevent retry loop");
   } finally {
@@ -723,7 +721,7 @@ async function loadOpenObligations() {
       ...(await getGovClientHeaders()),
       "x-wait-time-ms": "0",
     };
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) requestHeaders["hmrcAccount"] = hmrcAccount;
 
     const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
@@ -780,7 +778,7 @@ async function resumeHmrcAssistCheck() {
 
 async function connectHmrc() {
   try {
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     const state = generateRandomState();
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem("currentActivity", location.pathname);
@@ -806,7 +804,7 @@ async function initializePage() {
   const periodStart = urlParams.get("periodStart");
   const periodEnd = urlParams.get("periodEnd");
   window.CarriedIdentifiers.bind("vrn", document.getElementById("vatNumber"));
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
 
   // If URL params provide complete period data, clear any stale submission_data
   // This handles navigation from obligations page where URL params should take precedence
@@ -854,10 +852,10 @@ async function initializePage() {
   const syntheticObligationsOption = document.getElementById("syntheticObligationsOption");
   // hmrcAccount was already declared above from urlParams
 
-  function updateDeveloperSectionVisibility() {
+  async function updateDeveloperSectionVisibility() {
     const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
-    // Re-read hmrcAccount from sessionStorage each time (may have been set by async bundle loading)
-    const currentHmrcAccount = sessionStorage.getItem("hmrcAccount");
+    // The account the bundle read has decided, read again each time as a second decision may change it
+    const currentHmrcAccount = await window.readHmrcAccount();
     if (devSection) {
       devSection.style.display = developerModeEnabled ? "block" : "none";
     }

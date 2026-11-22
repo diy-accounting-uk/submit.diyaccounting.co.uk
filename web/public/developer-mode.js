@@ -18,6 +18,10 @@
   const isEnabled = () => sessionStorage.getItem(KEY) === "true";
 
   // Check if user has a synthetic bundle (granted via test pass)
+  // A bundle read that has not answered in this time is a failed read, so a page waiting on the
+  // HMRC account it chooses goes on with the account a failed read gives.
+  const BUNDLE_READ_TIMEOUT_MS = 8000;
+
   async function userHasSyntheticBundle() {
     try {
       const idToken = localStorage.getItem("cognitoIdToken");
@@ -25,6 +29,7 @@
 
       const response = await fetch("/api/v1/bundle", {
         headers: { Authorization: `Bearer ${idToken}` },
+        signal: AbortSignal.timeout(BUNDLE_READ_TIMEOUT_MS),
       });
       if (!response.ok) return false;
 
@@ -191,23 +196,38 @@
     window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled } }));
   }
 
-  // Inject toggle icon into header-left (only if user has a synthetic bundle)
-  async function injectToggle() {
-    const headerLeft = document.querySelector(".header-left");
-    if (!headerLeft) return;
+  // The HMRC account the signed-in user's bundles choose, set in sessionStorage from the bundle read.
+  // Until that read answers, sessionStorage may hold another tab's or an earlier session's account,
+  // so the pages read the account through readHmrcAccount, which waits for it.
+  let settleHmrcAccount;
+  const hmrcAccountSettled = new Promise((resolve) => {
+    settleHmrcAccount = resolve;
+  });
 
-    // Don't inject twice
-    if (headerLeft.querySelector(".developer-mode-toggle")) return;
-
-    // Only show icon if user has a synthetic bundle
+  async function chooseHmrcAccount() {
     const hasSyntheticBundle = await userHasSyntheticBundle();
-
     // Set sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
     if (hasSyntheticBundle) {
       sessionStorage.setItem("hmrcAccount", "synthetic");
     } else {
       sessionStorage.removeItem("hmrcAccount");
     }
+    return hasSyntheticBundle;
+  }
+
+  /** The HMRC account this page's calls use, once the bundle read has chosen it: "synthetic" or null. */
+  window.readHmrcAccount = async function readHmrcAccount() {
+    await hmrcAccountSettled;
+    return sessionStorage.getItem("hmrcAccount");
+  };
+
+  // Inject toggle icon into header-left (only if user has a synthetic bundle)
+  async function injectToggle(hasSyntheticBundle) {
+    const headerLeft = document.querySelector(".header-left");
+    if (!headerLeft) return;
+
+    // Don't inject twice
+    if (headerLeft.querySelector(".developer-mode-toggle")) return;
 
     if (!hasSyntheticBundle) return;
 
@@ -509,22 +529,18 @@
 
   // Re-check synthetic bundle and inject/remove icon as needed
   async function refreshToggleVisibility() {
+    // The bundles decide the HMRC account again on every page, as at load, and the page redraws for it
+    const hasSyntheticBundle = await chooseHmrcAccount();
+    window.dispatchEvent(new CustomEvent("hmrc-account-decided"));
+
     const headerLeft = document.querySelector(".header-left");
     if (!headerLeft) return;
 
     const existingToggle = headerLeft.querySelector(".developer-mode-toggle");
-    const hasSyntheticBundle = await userHasSyntheticBundle();
-
-    // Update sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
-    if (hasSyntheticBundle) {
-      sessionStorage.setItem("hmrcAccount", "synthetic");
-    } else {
-      sessionStorage.removeItem("hmrcAccount");
-    }
 
     if (hasSyntheticBundle && !existingToggle) {
       // User now has synthetic bundle, inject the icon
-      await injectToggle();
+      await injectToggle(true);
     } else if (!hasSyntheticBundle && existingToggle) {
       // User no longer has synthetic bundle, remove the icon
       existingToggle.remove();
@@ -535,9 +551,11 @@
   }
 
   // Run on DOMContentLoaded or immediately if already loaded
-  function init() {
+  async function init() {
     injectStyles();
-    injectToggle();
+    const hasSyntheticBundle = await chooseHmrcAccount();
+    settleHmrcAccount();
+    await injectToggle(hasSyntheticBundle);
   }
 
   if (document.readyState === "loading") {

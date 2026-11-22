@@ -53,20 +53,51 @@ async function serveRealSite(page) {
 async function serveSubmitEnv(page, hmrcBaseUri) {
   const committed = fs.readFileSync(path.join(PUBLIC_ROOT, "submit.env"), "utf-8");
   const body = committed.replace(/^HMRC_BASE_URI=.*$/m, `HMRC_BASE_URI=${hmrcBaseUri}`);
-  await page.route("**/submit.env", (route) => route.fulfill({ status: 200, contentType: "text/plain", body }));
+  await page.route("**/submit.env", async (route) => {
+    await answerLate();
+    await route.fulfill({ status: 200, contentType: "text/plain", body });
+  });
 }
 
-async function openVatPage(page, pageName, { synthetic, hmrcBaseUri = LIVE_API, welsh = false }) {
+// The environment and the bundle read answer after the page's own scripts have run, as on a
+// deployed site, so a page that decides before those answers is seen deciding.
+const answerLate = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// storedAccount is what sessionStorage holds when the page opens: by default the account the bundles
+// choose, as after a page that has read them; null for a new tab. A bundleAnswerMs of null is a bundle
+// read that never answers. bundlesSynthetic says, at each bundle read, whether the bundles are synthetic.
+async function openVatPage(
+  page,
+  pageName,
+  {
+    synthetic,
+    hmrcBaseUri = LIVE_API,
+    welsh = false,
+    storedAccount = synthetic ? "synthetic" : null,
+    bundleAnswerMs = 300,
+    bundlesSynthetic = () => synthetic,
+  },
+) {
   await serveRealSite(page);
   await serveSubmitEnv(page, hmrcBaseUri);
   await page.route("**/api/v1/bundle", async (route) => {
-    const bundles = synthetic ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }] : [];
+    if (bundleAnswerMs === null) return;
+    await answerLate(bundleAnswerMs);
+    const bundles = bundlesSynthetic() ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }] : [];
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles }) });
   });
-  await page.addInitScript((isSynthetic) => {
+  await page.addInitScript((account) => {
     localStorage.setItem("cognitoIdToken", "test-id-token");
-    if (isSynthetic) sessionStorage.setItem("hmrcAccount", "synthetic");
-  }, synthetic);
+    if (account) sessionStorage.setItem("hmrcAccount", account);
+    // Every status the reader can see, frame by frame.
+    window.__shownStatuses = new Set();
+    const watch = () => {
+      const banner = document.querySelector("p.hint[data-feature-status]");
+      if (banner && !banner.hidden) window.__shownStatuses.add(banner.getAttribute("data-feature-status"));
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+  }, storedAccount);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`http://localhost:3000/${welsh ? "cy/" : ""}hmrc/vat/${pageName}`, { waitUntil: "domcontentloaded" });
 }
@@ -90,6 +121,56 @@ test.describe("Submit VAT status", () => {
   });
 });
 
+test.describe("The status waits for the bundle read that chooses the HMRC account", () => {
+  for (const pageName of ["submitVat.html", "vatObligations.html"]) {
+    test(`cancelling a request on ${pageName} keeps the HMRC account the bundles chose`, async ({ page }) => {
+      await openVatPage(page, pageName, { synthetic: true });
+      await expect(page.locator("p.hint[data-feature-status]").first()).toBeVisible();
+      await page.evaluate(() => cancelRequest());
+      expect(await page.evaluate(() => sessionStorage.getItem("hmrcAccount"))).toBe("synthetic");
+    });
+  }
+
+  test("a synthetic account opening the submit page in a new tab sees only the sandbox status, with the synthetic indicator", async ({
+    page,
+  }) => {
+    await openVatPage(page, "submitVat.html", { synthetic: true, storedAccount: null, bundleAnswerMs: 2000 });
+    const banner = page.locator("p.hint[data-feature-status]").first();
+    await expect(banner).toBeVisible();
+    await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
+    await expect(page.locator("#syntheticIndicator")).toBeVisible();
+    expect(await page.evaluate(() => [...window.__shownStatuses])).toEqual(["sandbox"]);
+  });
+
+  for (const pageName of [
+    "submitVat.html",
+    "vatObligations.html",
+    "viewVatReturn.html",
+    "vatLiabilities.html",
+    "vatPayments.html",
+    "vatPenalties.html",
+  ]) {
+    test(`${pageName} shows its status and uses the live account when the bundle read never answers`, async ({ page }) => {
+      await openVatPage(page, pageName, { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: null });
+      const banner = page.locator("p.hint[data-feature-status]").first();
+      await expect(banner).toBeVisible({ timeout: 20_000 });
+      await expect(banner).toHaveAttribute("data-feature-status", "production");
+      expect(await page.evaluate(() => window.readHmrcAccount())).toBeNull();
+    });
+  }
+
+  test("a live account whose tab still holds a synthetic account from before sees only the production status on the obligations page", async ({
+    page,
+  }) => {
+    await openVatPage(page, "vatObligations.html", { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: 2000 });
+    const banner = page.locator("p.hint[data-feature-status]").first();
+    await expect(banner).toBeVisible();
+    await expect(banner).toHaveAttribute("data-feature-status", "production");
+    await expect(page.locator("#syntheticIndicator")).toBeHidden();
+    expect(await page.evaluate(() => [...window.__shownStatuses])).toEqual(["production"]);
+  });
+});
+
 const VAT_PAGES = [
   "submitVat.html",
   "vatObligations.html",
@@ -102,6 +183,7 @@ const VAT_PAGES = [
 async function statusOf(page, pageName, synthetic) {
   await openVatPage(page, pageName, { synthetic });
   const banner = page.locator("p.hint[data-feature-status]").first();
+  await expect(banner).toBeVisible();
   await expect(banner).toContainText("Status: ");
   return banner.getAttribute("data-feature-status");
 }
@@ -124,6 +206,76 @@ test.describe("VAT pages agree on the status", () => {
       expect(obligationsStatus).toBe(submitStatus);
       expect(obligationsStatus).toBe(synthetic ? "sandbox" : "production");
     });
+  }
+});
+
+test.describe("The synthetic obligations option follows the decided account", () => {
+  test("a live account whose tab still holds a synthetic account never sees the synthetic obligations option", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("showDeveloperOptions", "true");
+      window.__optionShown = false;
+      const watch = () => {
+        const option = document.getElementById("syntheticObligationsOption");
+        if (option && option.style.display === "flex") window.__optionShown = true;
+        requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
+    });
+    await openVatPage(page, "submitVat.html", { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: 2000 });
+    await expect(page.locator("p.hint[data-feature-status]").first()).toBeVisible();
+    await expect(page.locator("#syntheticObligationsOption")).toBeHidden();
+    expect(await page.evaluate(() => window.__optionShown)).toBe(false);
+  });
+
+  test("a synthetic account with developer options on sees the synthetic obligations option once the account is decided", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => sessionStorage.setItem("showDeveloperOptions", "true"));
+    await openVatPage(page, "submitVat.html", { synthetic: true, storedAccount: null, bundleAnswerMs: 2000 });
+    await expect(page.locator("#syntheticObligationsOption")).toBeVisible();
+  });
+});
+
+test.describe("A second decision of the HMRC account draws the status line again", () => {
+  for (const pageName of ["submitVat.html", "vatObligations.html"]) {
+    test(`${pageName} shows sandbox once the bundles change to a synthetic account, and production once they change back`, async ({
+      page,
+    }) => {
+      let bundlesAreSynthetic = false;
+      await openVatPage(page, pageName, { synthetic: false, bundlesSynthetic: () => bundlesAreSynthetic });
+      const banner = page.locator("p.hint[data-feature-status]").first();
+      await expect(banner).toHaveAttribute("data-feature-status", "production");
+      const productionText = await banner.textContent();
+
+      bundlesAreSynthetic = true;
+      await page.evaluate(() => window.dispatchEvent(new CustomEvent("bundle-changed")));
+      await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
+      await expect(banner).toContainText("Status: sandbox.");
+
+      bundlesAreSynthetic = false;
+      await page.evaluate(() => window.dispatchEvent(new CustomEvent("bundle-changed")));
+      await expect(banner).toHaveAttribute("data-feature-status", "production");
+      expect(await banner.textContent()).toBe(productionText);
+    });
+  }
+});
+
+test.describe("The status line is announced when it appears", () => {
+  for (const welsh of [false, true]) {
+    for (const pageName of VAT_PAGES) {
+      test(`${welsh ? "the Welsh " : ""}${pageName} gives its status line the status role, before and after the sandbox swap`, async ({
+        page,
+      }) => {
+        await openVatPage(page, pageName, { synthetic: true, welsh });
+        const banner = page
+          .getByRole("status")
+          .filter({ has: page.locator("strong") })
+          .first();
+        await expect(banner).toBeVisible();
+        await expect(page.locator("p.hint[data-feature-status]").first()).toHaveAttribute("role", "status");
+        await expect(page.locator("p.hint[data-feature-status]").first()).toHaveAttribute("data-feature-status", "sandbox");
+      });
+    }
   }
 });
 
