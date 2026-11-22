@@ -546,6 +546,31 @@ async function readJointFilingOffered() {
 
 const jointFilingOffered = readJointFilingOffered();
 
+// A revision of the accounts has its own catalogue activity. The amend panel offers to amend the
+// accounts only when that activity is shown to this person in this environment. A catalogue or
+// environment that cannot be read leaves the offer off.
+async function readRevisedAccountsOffered() {
+  try {
+    const service = await import("/lib/services/catalog-service.js");
+    const viewerSettings = await import("/lib/services/viewer-settings.js");
+    const [text, environmentName, viewer] = await Promise.all([
+      service.fetchCatalogText(),
+      service.fetchCurrentEnvironmentName(),
+      viewerSettings.fetchViewer(),
+    ]);
+    return service.isRevisedAccountsOffered(service.parseCatalogueText(text), environmentName, viewer);
+  } catch (error) {
+    console.warn("Amending the accounts is off because the catalogue could not be read:", error);
+    return false;
+  }
+}
+
+let revisedAccountsOffered = false;
+readRevisedAccountsOffered().then((offered) => {
+  revisedAccountsOffered = offered;
+  if (offered && element("amendPanel").style.display === "block") showAmendPanel();
+});
+
 async function applyJointFilingOffer() {
   const offered = await jointFilingOffered;
   const both = element("sendToBoth");
@@ -2703,7 +2728,7 @@ function chooseAmendedReturns(preview) {
 function showAmendPanel() {
   const accepted = sending.taxReturnAccepted && (sending.mode === "hmrc" || companiesHouseAccepted());
   element("amendPanel").style.display = accepted ? "block" : "none";
-  element("amendAccountsBtn").style.display = accepted && sending.mode === "both" ? "inline-block" : "none";
+  element("amendAccountsBtn").style.display = accepted && sending.mode === "both" && revisedAccountsOffered ? "inline-block" : "none";
   const firstReturnChanged =
     Boolean(sending.longPeriod) &&
     !sending.amendment &&

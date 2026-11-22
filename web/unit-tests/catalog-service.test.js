@@ -11,6 +11,7 @@ import {
   isActivityListedInEnvironment,
   isActivityShown,
   isJointFilingOffered,
+  isRevisedAccountsOffered,
   isBundleShown,
   activityPagePath,
   activityArea,
@@ -271,6 +272,31 @@ describe("isJointFilingOffered", () => {
     expect(isJointFilingOffered(real, "ci", viewer)).toBe(true);
     expect(isJointFilingOffered(real, "simulator", viewer)).toBe(true);
     expect(isJointFilingOffered(real, "prod", viewer)).toBe(false);
+  });
+});
+
+describe("isRevisedAccountsOffered", () => {
+  const viewer = { preview: false, operatorFeatures: true, account: { passGeneration: true } };
+  const catalog = { activities: [{ id: "file-revised-accounts", bundles: ["resident-ltd"], environments: ["ci"] }] };
+
+  it("offers a revision where its activity is listed", () => {
+    expect(isRevisedAccountsOffered(catalog, "ci", viewer)).toBe(true);
+  });
+
+  it("withholds it where the activity is not listed, until preview features are on", () => {
+    expect(isRevisedAccountsOffered(catalog, "prod", viewer)).toBe(false);
+    expect(isRevisedAccountsOffered(catalog, "prod", { ...viewer, preview: true })).toBe(true);
+  });
+
+  it("withholds it when the catalogue has no revised accounts activity", () => {
+    expect(isRevisedAccountsOffered({ activities: [] }, "ci", viewer)).toBe(false);
+  });
+
+  it("is offered in ci and not in prod by the real catalogue", () => {
+    const real = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf8"));
+    expect(isRevisedAccountsOffered(real, "ci", viewer)).toBe(true);
+    expect(isRevisedAccountsOffered(real, "simulator", viewer)).toBe(true);
+    expect(isRevisedAccountsOffered(real, "prod", viewer)).toBe(false);
   });
 });
 

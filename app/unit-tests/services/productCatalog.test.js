@@ -244,6 +244,19 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).not.toContain("prod");
   });
 
+  it("file-revised-accounts has no page or route, is granted like the joint filing and is not listed on prod", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "file-revised-accounts");
+    expect(bundlesForActivity(catalog, "file-revised-accounts")).toEqual(
+      bundlesForActivity(catalog, "file-company-tax-return-with-accounts"),
+    );
+    expect(activity.paths).toBeUndefined();
+    expect(activity.display).toBe("never");
+    expect(activity.tokenCost).toBe(0);
+    expect(activity.metered).toBe(false);
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+  });
+
   it("file-confirmation-statement activity should be granted by resident-ltd and the bundles that include it, listed in ci and prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");

@@ -367,6 +367,31 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
     expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
   });
 
+  describe("revised accounts", () => {
+    const REVISION = { originalDateOfApproval: "2026-01-10", differences: "Creditors are restated." };
+
+    test("refuses to render a revision on prod, where revised accounts are not offered", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+      expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
+    });
+
+    test("renders an original on prod", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent());
+      expect(response.statusCode).toBe(200);
+    });
+
+    test("renders a revision on ci", async () => {
+      process.env.ENVIRONMENT_NAME = "ci";
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(200);
+      expect(mockBuildMicroEntityAccounts).toHaveBeenCalledWith(expect.objectContaining({ revision: REVISION }));
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

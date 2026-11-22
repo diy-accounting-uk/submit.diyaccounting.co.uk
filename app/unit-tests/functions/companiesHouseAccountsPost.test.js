@@ -643,6 +643,27 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(await pendingData()).not.toHaveProperty("amended");
     });
 
+    test("refuses a revision on prod, where revised accounts are not offered, and sends nothing", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files an original on prod", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("files a revision on ci", async () => {
+      process.env.ENVIRONMENT_NAME = "ci";
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToGateway).toHaveBeenCalled();
+    });
+
     test("refuses a revision without a description and sends nothing", async () => {
       const response = await companiesHouseAccountsPostHandler(
         buildEvent({ body: buildAccountsBody({ revision: { originalDateOfApproval: "2026-01-10", differences: "" } }) }),

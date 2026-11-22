@@ -7,7 +7,8 @@
 // unless the catalogue's `practice` activity is listed in the environment. A return that carries a
 // joint filing id is half of an accounts and tax return pair, and is refused unless the catalogue's
 // `file-company-tax-return-with-accounts` activity is enabled in the environment and the caller's
-// bundles include one of its bundles.
+// bundles include one of its bundles. An accounts request that carries a revision is refused unless
+// the catalogue's `file-revised-accounts` activity is enabled in the environment.
 
 import { enforceBundles } from "./bundleManagement.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCatalog.js";
@@ -17,6 +18,7 @@ import { http403ForbiddenFromBundleEnforcement } from "./companiesHouseApi.js";
 
 const PRACTICE_ACTIVITY_ID = "practice";
 const JOINT_FILING_ACTIVITY_ID = "file-company-tax-return-with-accounts";
+const REVISED_ACCOUNTS_ACTIVITY_ID = "file-revised-accounts";
 
 function practiceListedInEnvironment() {
   const activity = loadCatalogFromRoot().activities?.find((candidate) => candidate.id === PRACTICE_ACTIVITY_ID);
@@ -83,6 +85,28 @@ export function refuseJointFilingWhenNotEnabled(event, request, carriesJointFili
     });
   }
   return undefined;
+}
+
+/**
+ * Refuse an accounts request that carries a revision when the revised accounts activity is not
+ * enabled in this environment. A request without a revision is not refused here.
+ *
+ * @param {object} event - the Lambda event
+ * @param {object} request - the parsed request, for the response
+ * @param {boolean} carriesRevision - the request body carries a revision
+ * @returns {object|undefined} the 403 response, or undefined when the request may go on
+ */
+export function refuseRevisionWhenNotEnabled(event, request, carriesRevision) {
+  if (!carriesRevision) return undefined;
+  const activity = loadCatalogFromRoot().activities?.find((candidate) => candidate.id === REVISED_ACCOUNTS_ACTIVITY_ID);
+  const environmentName = process.env.ENVIRONMENT_NAME;
+  const enabled = isActivityListedInEnvironment(activity, environmentName) || previewRunsAgainstSandbox(event, request?.pathname);
+  if (activity && enabled) return undefined;
+  return http403ForbiddenResponse({
+    request,
+    message: "Forbidden: filing revised accounts is not available in this environment",
+    error: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: REVISED_ACCOUNTS_ACTIVITY_ID, environmentName },
+  });
 }
 
 /**

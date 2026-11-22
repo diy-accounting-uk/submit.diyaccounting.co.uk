@@ -74,6 +74,7 @@ import {
   formRequestFields,
 } from "../../services/jointFiling.js";
 import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
+import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -454,6 +455,9 @@ export async function ingestHandler(event) {
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
+
+  const revisionRefusal = refuseRevisionWhenNotEnabled(event, request, parseRequestBody(event)?.revision != null);
+  if (revisionRefusal) return revisionRefusal;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({

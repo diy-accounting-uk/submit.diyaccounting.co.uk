@@ -17,10 +17,11 @@
 // never needs the company authentication code.
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
+import { extractRequest, parseRequestBody, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "./companiesHouseAccountsPost.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -49,6 +50,9 @@ export async function ingestHandler(event) {
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
+
+  const revisionRefusal = refuseRevisionWhenNotEnabled(event, request, parseRequestBody(event)?.revision != null);
+  if (revisionRefusal) return revisionRefusal;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
