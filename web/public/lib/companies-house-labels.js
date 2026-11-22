@@ -183,8 +183,17 @@
     return (codes || []).map(formatSicCode).join("; ");
   }
 
+  // Today's date where Companies House keeps its register, as YYYY-MM-DD: a form's date of an event
+  // that has happened is not after it.
+  function todayInTheUnitedKingdom() {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(
+      new Date(),
+    );
+  }
+
   window.companiesHouseLabels = {
     formatCompanyDate,
+    todayInTheUnitedKingdom,
     companyStatusLabel: (value) => labelFrom(companyStatuses(), value),
     companyTypeLabel: (value) => labelFrom(companyTypes(), value),
     jurisdictionLabel: (value) => labelFrom(jurisdictions(), value),

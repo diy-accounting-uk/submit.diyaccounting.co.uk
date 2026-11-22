@@ -312,3 +312,72 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The person named does not match the register.");
 });
+
+// Two current PSCs of one name, told apart only by the month and year of birth the register gives.
+const NAMESAKES = [
+  {
+    name: "Jo Smith",
+    nameElements: { forename: "Jo", surname: "Smith" },
+    kind: "individual-person-with-significant-control",
+    naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+    notifiedOn: "2016-04-06",
+    ceasedOn: null,
+    dateOfBirth: { month: 6, year: 1985 },
+  },
+  {
+    name: "Jo Smith",
+    nameElements: { forename: "Jo", surname: "Smith" },
+    kind: "individual-person-with-significant-control",
+    naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+    notifiedOn: "2019-09-01",
+    ceasedOn: null,
+    dateOfBirth: { month: 2, year: 1990 },
+  },
+];
+
+async function changeShares(page) {
+  await page.getByLabel("How they control the company").check();
+  await page.locator("#controlSection").getByRole("group", { name: "Ownership of shares" }).getByLabel("75% or more").check();
+}
+
+test("two PSCs of one name are told apart by month and year of birth, and a link naming that name chooses neither", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings, pscs: NAMESAKES });
+  await page.goto(`${SITE}/companies-house/changePscDetails.html?companyNumber=00000001&pscName=Jo%20Smith`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: LOOK_UP }).click();
+  await expect(page.locator("#pscChoices label")).toHaveText([
+    "Jo Smith, born June 1985 (Individual)",
+    "Jo Smith, born February 1990 (Individual)",
+  ]);
+  await expect(page.locator('#pscChoices input[name="psc"]:checked')).toHaveCount(0);
+  await page.getByLabel("Jo Smith, born June 1985 (Individual)").check();
+  await changeShares(page);
+  await page.locator("#dateOfChange").fill("2026-11-01");
+  await page.locator("#confirmationDate").fill("2026-11-03");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("Jo Smith, born June 1985 (Individual)");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0]).toMatchObject({ surname: "Smith", dobMonth: 6, dobYear: 1985 });
+});
+
+test("a date of change, or a date of confirmation, after today is refused before anything is sent", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/changePscDetails.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: LOOK_UP }).click();
+  await page.getByLabel("Eleanor Bramwell (Individual)").check();
+  await changeShares(page);
+  await page.locator("#dateOfChange").fill("2099-01-01");
+  await page.locator("#confirmationDate").fill("2099-01-02");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("The date of change cannot be after today.");
+  await page.locator("#dateOfChange").fill("2026-11-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("The date of confirmation cannot be after today.");
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
+});

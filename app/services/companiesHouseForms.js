@@ -409,8 +409,10 @@ function extractPscStatement(body, errorMessages, statements) {
   return isLinkedStatement(statement) ? { statement, ...extractPscParticulars(body, errorMessages) } : { statement };
 }
 
+// A statement's relevant date or its withdrawal date: the date something happened, so not ahead of today.
 function validDate(body, field, errorMessages) {
   if (!body[field] || !isValidIsoDate(body[field])) errorMessages.push(`Invalid or missing ${field} - must be YYYY-MM-DD`);
+  else if (body[field] > todayInUk()) errorMessages.push(`Invalid ${field} - must not be in the future`);
   return body[field];
 }
 

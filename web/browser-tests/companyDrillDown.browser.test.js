@@ -774,6 +774,28 @@ test.describe("Company lookup drill-down PSC cessation links", () => {
     await expect(page.locator('#drillView .file-this[data-activity="change-psc-details"]')).toHaveCount(0);
   });
 
+  test("an account holding the PSC statements form gets its control, with the authority PSC08 and PSC09 state", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    const control = page.locator('#drillView .file-this[data-activity="psc-statements"]');
+    await expect(control.locator("a.btn")).toHaveText("Give or withdraw a PSC statement", { timeout: 15000 });
+    const authority = control.locator(".file-this-authority");
+    await expect(authority).toContainText(
+      "“The company must take reasonable steps to find out if there is anyone who is a registrable person or a registrable relevant legal entity (RLE), and if so, to identify them.”",
+    );
+    await expect(authority).toContainText("“You may use this form to tell us about an update to a PSC statement.”");
+    const sources = await authority.locator("a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/69131f505dec0071ce496357/PSC08_v3.0-FINAL.pdf");
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6915e83a9d50fc2fe816178d/PSC09_v3.0-FINAL.pdf");
+  });
+
+  test("on prod, where the PSC statements form is not offered, the PSC view carries no statements control", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Eleanor Bramwell", { timeout: 15000 });
+    await expect(page.locator('#drillView .file-this[data-activity="psc-statements"]')).toHaveCount(0);
+  });
+
   test("on prod, where the cessation form is not offered, the PSC view carries no cessation link", async ({ page }) => {
     await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });

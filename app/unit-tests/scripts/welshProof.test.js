@@ -96,9 +96,11 @@ describe("welsh-proof English-sentence rule", () => {
     const welsh = Object.values(entries)
       .flatMap((section) => Object.values(section))
       .map((entry) => entry.cy)
-      // The text outside the markup tags, with the {name} placeholders a page fills in left out.
+      // The text outside the markup tags, with the {name} placeholders a page fills in left out, and,
+      // as the proof reads a page, no text an element marks as English.
       .map((text) =>
         text
+          .replace(/<([a-z]+)\b[^>]*\slang="en[^"]*"[^>]*>[\s\S]*?<\/\1\s*>/g, " ")
           .split(/[<>]/)
           .filter((_part, index) => index % 2 === 0)
           .join(" ")

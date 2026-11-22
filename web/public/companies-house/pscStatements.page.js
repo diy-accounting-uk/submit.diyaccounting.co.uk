@@ -16,6 +16,7 @@ window.siteText =
 const KINDS = { notify: "psc-statement-notification", withdraw: "psc-statement-withdrawal" };
 const LINKED = "PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS";
 const RESTRICTIONS = "RESTRICTIONS_NOTICE_ISSUED_TO_PSC";
+const NO_PSC = "NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL";
 // The register's kinds of PSC a linked statement names, as the PSC route answers them.
 const INDIVIDUAL = "individual-person-with-significant-control";
 const NAMEABLE_KINDS = [INDIVIDUAL, "corporate-entity-person-with-significant-control", "legal-person-person-with-significant-control"];
@@ -52,6 +53,22 @@ function kindText(kind) {
     : window.siteText("ch.psc-statements.kind-entity", "Legal entity or other registrable person");
 }
 
+// A PSC as the page names it: with its month and year of birth when another current PSC has its name,
+// so two people of one name are told apart.
+function pscLabel(psc) {
+  const namesake = pscs.filter(nameable).some((other) => other !== psc && other.name === psc.name);
+  const born = psc.dateOfBirth;
+  if (!namesake || psc.kind !== INDIVIDUAL || !born?.month || !born?.year) return `${psc.name} (${kindText(psc.kind)})`;
+  const monthAndYear = window.companiesHouseLabels
+    .formatCompanyDate(`${born.year}-${String(born.month).padStart(2, "0")}-01`)
+    .replace(/^1 /, "");
+  return window.siteText("ch.psc-statements.psc-born", "{name}, born {born} ({kind})", {
+    name: psc.name,
+    born: monthAndYear,
+    kind: kindText(psc.kind),
+  });
+}
+
 function renderPscChoices() {
   const holder = document.getElementById("pscChoices");
   holder.replaceChildren();
@@ -68,7 +85,7 @@ function renderPscChoices() {
     input.checked = current.length === 1;
     const label = document.createElement("label");
     label.htmlFor = input.id;
-    label.textContent = `${psc.name} (${kindText(psc.kind)})`;
+    label.textContent = pscLabel(psc);
     choice.append(input, label);
     holder.appendChild(choice);
   });
@@ -137,6 +154,16 @@ function formProblem(action, statement) {
   if (!action)
     return window.siteText("ch.psc-statements.choose-action", "Choose whether you are giving a statement or saying one is no longer true.");
   if (!statement) return window.siteText("ch.psc-statements.choose-statement", "Choose the statement.");
+  // A company that states it has no PSC has none on the register: one who has not ceased is told to
+  // Companies House as ceased first.
+  const current = pscs.filter((psc) => !psc.ceasedOn);
+  if (action === "notify" && statement === NO_PSC && current.length > 0) {
+    return window.siteText(
+      "ch.psc-statements.no-psc-but-current",
+      "The register shows a person with significant control who has not ceased: {names}. Tell Companies House they have ceased before you state that the company has none.",
+      { names: current.map((psc) => psc.name).join("; ") },
+    );
+  }
   if (statement === LINKED && !chosenPsc()) {
     return window.siteText("ch.psc-statements.choose-psc", "Choose the person with significant control the notice was given to.");
   }
@@ -157,6 +184,10 @@ function handleStatementSubmit(event) {
   }
   if (!window.formErrors.requireFields(["relevantDate", "companyAuthCode"])) return;
   const date = document.getElementById("relevantDate").value;
+  if (date > window.companiesHouseLabels.todayInTheUnitedKingdom()) {
+    showError(window.siteText("ch.psc-statements.date-after-today", "The relevant date cannot be after today."));
+    return;
+  }
   const psc = statement === LINKED ? chosenPsc() : null;
   filing = {
     action,
@@ -192,8 +223,7 @@ function renderReview() {
       checkedLabel(action === "notify" ? "notifyStatement" : "withdrawStatement").replace(/\s+/g, " "),
     ],
   ];
-  if (psc)
-    rows.push([window.siteText("ch.psc-statements.review-psc", "Person with significant control"), `${psc.name} (${kindText(psc.kind)})`]);
+  if (psc) rows.push([window.siteText("ch.psc-statements.review-psc", "Person with significant control"), pscLabel(psc)]);
   if (form.restrictionsWithdrawalReason) {
     rows.push([
       window.siteText("ch.psc-statements.review-reason", "How the restrictions ended"),

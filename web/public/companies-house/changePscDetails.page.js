@@ -108,12 +108,28 @@ function showChosenPsc() {
   showSections();
 }
 
+// A PSC as the page names it: with its month and year of birth when another current PSC has its name,
+// so two people of one name are told apart.
+function pscLabel(psc) {
+  const namesake = pscs.filter(nameable).some((other) => other !== psc && other.name === psc.name);
+  const born = psc.dateOfBirth;
+  if (!namesake || psc.kind !== INDIVIDUAL || !born?.month || !born?.year) return `${psc.name} (${kindText(psc.kind)})`;
+  const monthAndYear = window.companiesHouseLabels
+    .formatCompanyDate(`${born.year}-${String(born.month).padStart(2, "0")}-01`)
+    .replace(/^1 /, "");
+  return window.siteText("ch.change-psc.psc-born", "{name}, born {born} ({kind})", {
+    name: psc.name,
+    born: monthAndYear,
+    kind: kindText(psc.kind),
+  });
+}
+
 function renderPscChoices(chosenName) {
   const holder = document.getElementById("pscChoices");
   holder.replaceChildren();
   const current = pscs.filter(nameable);
-  // A name the link gives chooses its PSC only when no other current PSC has that name.
-  const named = current.filter((psc) => psc.name === chosenName);
+  // A link names the PSC by name; a name two current PSCs share chooses neither, and the reader chooses.
+  const named = chosenName ? current.filter((psc) => psc.name === chosenName) : [];
   document.getElementById("noPscs").style.display = current.length === 0 ? "block" : "none";
   document.getElementById("continueBtn").disabled = current.length === 0;
   current.forEach((psc, index) => {
@@ -128,7 +144,7 @@ function renderPscChoices(chosenName) {
     input.addEventListener("change", showChosenPsc);
     const label = document.createElement("label");
     label.htmlFor = input.id;
-    label.textContent = `${psc.name} (${kindText(psc.kind)})`;
+    label.textContent = pscLabel(psc);
     choice.append(input, label);
     holder.appendChild(choice);
   });
@@ -355,6 +371,15 @@ function handleChangeSubmit(event) {
   if (!window.formErrors.requireFields(["dateOfChange", "confirmationDate", "companyAuthCode"])) return;
   const dateOfChange = document.getElementById("dateOfChange").value;
   const confirmationDate = document.getElementById("confirmationDate").value;
+  const today = window.companiesHouseLabels.todayInTheUnitedKingdom();
+  if (dateOfChange > today) {
+    showError(window.siteText("ch.change-psc.change-after-today", "The date of change cannot be after today."));
+    return;
+  }
+  if (confirmationDate > today) {
+    showError(window.siteText("ch.change-psc.confirmation-after-today", "The date of confirmation cannot be after today."));
+    return;
+  }
   if (confirmationDate < dateOfChange) {
     showError(window.siteText("ch.change-psc.confirmation-before", "The date of confirmation cannot be before the date of change."));
     return;
@@ -419,7 +444,7 @@ function renderReview() {
   const { form } = filing;
   const rows = [
     [window.siteText("ch.change-psc.review-company", "Company"), `${company.companyName} (${company.companyNumber})`],
-    [window.siteText("ch.change-psc.review-psc", "Person with significant control"), `${filing.psc.name} (${kindText(filing.psc.kind)})`],
+    [window.siteText("ch.change-psc.review-psc", "Person with significant control"), pscLabel(filing.psc)],
   ];
   if (form.naturesOfControl) {
     rows.push([window.siteText("ch.change-psc.review-control", "How they control the company"), form.naturesOfControl.map(controlText)]);

@@ -188,6 +188,23 @@ describe("companiesHousePscStatementNotificationPost ingestHandler", () => {
     expect(parseResponseBody(response).message).toBe("Companies House rejected the PSC statement submission envelope");
   });
 
+  test("answers 400 in JSON, sending nothing, for a relevantDate after today in the United Kingdom, and takes today", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      // 23:30 UTC on 30 June is 00:30 on 1 July in the United Kingdom.
+      vi.setSystemTime(new Date("2026-06-30T23:30:00Z"));
+      const tomorrow = await ingestHandler(buildEvent({ body: notification({ relevantDate: "2026-07-02", dateSigned: "2026-07-01" }) }));
+      expect(tomorrow.statusCode).toBe(400);
+      expect(tomorrow.headers["Content-Type"]).toBe("application/json");
+      expect(JSON.stringify(parseResponseBody(tomorrow))).toContain("Invalid relevantDate - must not be in the future");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+      const today = await ingestHandler(buildEvent({ body: notification({ relevantDate: "2026-07-01", dateSigned: "2026-07-01" }) }));
+      expect(today.statusCode).toBe(201);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("refuses the form on prod, where it is not listed, and sends nothing", async () => {
     process.env.ENVIRONMENT_NAME = "prod";
     delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;

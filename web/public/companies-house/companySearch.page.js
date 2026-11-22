@@ -411,7 +411,7 @@ const AUTHORITY_SOURCES = {
     title: "PSC08 Notification of PSC statements",
   },
   pscStatementUpdateForm: {
-    url: "https://assets.publishing.service.gov.uk/media/5eac148286650c436060bbe9/PSC09_v2.0.pdf",
+    url: "https://assets.publishing.service.gov.uk/media/6915e83a9d50fc2fe816178d/PSC09_v3.0-FINAL.pdf",
     title: "PSC09 Update to PSC statements",
   },
   pscNotificationForm: {

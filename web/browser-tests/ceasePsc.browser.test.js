@@ -346,3 +346,46 @@ test("a refusal the page has no words for shows the route's message", async ({ p
 
   await expect(page.locator("#filingResult")).toHaveText("Missing companyName");
 });
+
+// Two current PSCs of one name, told apart only by the month and year of birth the register gives.
+const NAMESAKES = [
+  {
+    name: "Jo Smith",
+    nameElements: { forename: "Jo", surname: "Smith" },
+    kind: "individual-person-with-significant-control",
+    naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+    notifiedOn: "2016-04-06",
+    ceasedOn: null,
+    dateOfBirth: { month: 6, year: 1985 },
+  },
+  {
+    name: "Jo Smith",
+    nameElements: { forename: "Jo", surname: "Smith" },
+    kind: "individual-person-with-significant-control",
+    naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+    notifiedOn: "2019-09-01",
+    ceasedOn: null,
+    dateOfBirth: { month: 2, year: 1990 },
+  },
+];
+
+test("two PSCs of one name are told apart by month and year of birth, and a link naming that name chooses neither", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings, pscs: NAMESAKES });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Jo%20Smith`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
+  await expect(page.locator("#pscChoices label")).toHaveText([
+    "Jo Smith, born June 1985 (Individual)",
+    "Jo Smith, born February 1990 (Individual)",
+  ]);
+  await expect(page.locator('#pscChoices input[name="psc"]:checked')).toHaveCount(0);
+  await page.getByLabel("Jo Smith, born February 1990 (Individual)").check();
+  await page.locator("#cessationDate").fill("2026-11-01");
+  await page.locator("#confirmationDate").fill("2026-11-03");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("Jo Smith, born February 1990 (Individual)");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0]).toMatchObject({ surname: "Smith", dobMonth: 2, dobYear: 1990 });
+});

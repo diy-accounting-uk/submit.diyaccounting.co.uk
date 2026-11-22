@@ -44,6 +44,22 @@ function kindText(kind) {
     : window.siteText("ch.cease.kind-entity", "Legal entity or other registrable person");
 }
 
+// A PSC as the page names it: with its month and year of birth when another current PSC has its name,
+// so two people of one name are told apart.
+function pscLabel(psc) {
+  const namesake = pscs.filter(nameable).some((other) => other !== psc && other.name === psc.name);
+  const born = psc.dateOfBirth;
+  if (!namesake || psc.kind !== INDIVIDUAL || !born?.month || !born?.year) return `${psc.name} (${kindText(psc.kind)})`;
+  const monthAndYear = window.companiesHouseLabels
+    .formatCompanyDate(`${born.year}-${String(born.month).padStart(2, "0")}-01`)
+    .replace(/^1 /, "");
+  return window.siteText("ch.cease.psc-born", "{name}, born {born} ({kind})", {
+    name: psc.name,
+    born: monthAndYear,
+    kind: kindText(psc.kind),
+  });
+}
+
 function renderPscChoices(chosenId) {
   const holder = document.getElementById("pscChoices");
   holder.replaceChildren();
@@ -61,7 +77,7 @@ function renderPscChoices(chosenId) {
     input.checked = chosenId ? psc.pscId === chosenId : current.length === 1;
     const label = document.createElement("label");
     label.htmlFor = input.id;
-    label.textContent = `${psc.name} (${kindText(psc.kind)})`;
+    label.textContent = pscLabel(psc);
     choice.append(input, label);
     holder.appendChild(choice);
   });
@@ -166,7 +182,7 @@ function renderReview() {
   const formatDate = (iso) => window.companiesHouseLabels.formatCompanyDate(iso);
   [
     [window.siteText("ch.cease.review-company", "Company"), `${company.companyName} (${company.companyNumber})`],
-    [window.siteText("ch.cease.review-psc", "Person with significant control"), `${filing.psc.name} (${kindText(filing.psc.kind)})`],
+    [window.siteText("ch.cease.review-psc", "Person with significant control"), pscLabel(filing.psc)],
     [window.siteText("ch.cease.review-ceased", "Date ceased to be a PSC"), formatDate(filing.form.cessationDate)],
     [window.siteText("ch.cease.review-confirmed", "Date of confirmation"), formatDate(filing.form.confirmationDate)],
   ].forEach(([label, value]) => {

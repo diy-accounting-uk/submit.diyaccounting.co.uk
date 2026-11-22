@@ -60,7 +60,7 @@ const PSCS = [
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
-async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
+async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, pscs = PSCS } = {}) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -77,7 +77,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
     if (pathname === "/api/v1/companies-house/company/00000001")
       return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
-    if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs: PSCS });
+    if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs });
     const filed = pathname.match(/^\/api\/v1\/companies-house\/(psc-statement-notification|psc-statement-withdrawal)$/);
     if (filed && request.method() === "POST") {
       filings.push({ kind: filed[1], ...JSON.parse(request.postData()) });
@@ -122,7 +122,7 @@ for (const width of [1280, 390]) {
   test(`a statement that the company has no PSC is given in English at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const filings = [];
-    await serveSite(page, { filings });
+    await serveSite(page, { filings, pscs: PSCS.filter((psc) => psc.ceasedOn) });
     await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
 
     await expect(page.locator("h1")).toHaveText("Give or withdraw a PSC statement");
@@ -205,7 +205,9 @@ for (const [id, statement] of [
 ]) {
   test(`the statement ${statement} is sent as given, naming no PSC`, async ({ page }) => {
     const filings = [];
-    await serveSite(page, { filings });
+    // A company with no PSC has none on the register that has not ceased.
+    const pscs = statement === "NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL" ? PSCS.filter((psc) => psc.ceasedOn) : PSCS;
+    await serveSite(page, { filings, pscs });
     await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
     await lookUp(page);
     await page.getByLabel("Give a statement").check();
@@ -253,6 +255,35 @@ test("a statement that a PSC failed to comply with a section 790E notice names t
   });
 });
 
+test("two PSCs of one name are told apart by their month and year of birth, and the one chosen is named", async ({ page }) => {
+  const filings = [];
+  const namesake = (month, year) => ({
+    name: "Jo Smith",
+    nameElements: { forename: "Jo", surname: "Smith" },
+    kind: "individual-person-with-significant-control",
+    naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+    notifiedOn: "2016-04-06",
+    ceasedOn: null,
+    dateOfBirth: { month, year },
+  });
+  await serveSite(page, { filings, pscs: [namesake(1, 1970), namesake(6, 1985)] });
+  await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByLabel("Give a statement").check();
+  await page.locator("#notify-790e").check();
+  await expect(page.locator("#pscChoices label")).toHaveText([
+    "Jo Smith, born January 1970 (Individual)",
+    "Jo Smith, born June 1985 (Individual)",
+  ]);
+  await page.getByLabel("Jo Smith, born June 1985 (Individual)").check();
+  await dateAndCode(page, "2026-11-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("Jo Smith, born June 1985 (Individual)");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 15000 });
+  expect(filings[0]).toMatchObject({ surname: "Smith", dobMonth: 6, dobYear: 1985 });
+});
+
 test("a withdrawal of a statement given before the present rules is sent with its date", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings });
@@ -274,6 +305,22 @@ test("a withdrawal of a statement given before the present rules is sent with it
     }),
   );
   expect(filings[0]).not.toHaveProperty("restrictionsWithdrawalReason");
+});
+
+test("a statement that the company has no PSC is refused while the register shows a PSC who has not ceased", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByLabel("Give a statement").check();
+  await page.locator("#notify-none").check();
+  await dateAndCode(page, "2026-11-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "The register shows a person with significant control who has not ceased: Eleanor Bramwell; SIMULATOR HOLDINGS LIMITED.",
+  );
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
 });
 
 test("no choice, or a restrictions withdrawal without how it ended, is refused before anything is sent", async ({ page }) => {
@@ -298,6 +345,7 @@ test("no choice, or a restrictions withdrawal without how it ended, is refused b
 test("a rejection shows Companies House's reason", async ({ page }) => {
   await serveSite(page, {
     outcome: { statusCode: "REJECT", rejections: [{ rejectCode: "9998", description: "The statement does not match the register." }] },
+    pscs: PSCS.filter((psc) => psc.ceasedOn),
   });
   await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
   await lookUp(page);
@@ -309,4 +357,27 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   const result = page.locator("#filingResult");
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The statement does not match the register.");
+});
+
+test("a relevant date after today is refused before anything is sent, for a statement given and one withdrawn", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings, pscs: PSCS.filter((psc) => psc.ceasedOn) });
+  await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByLabel("Give a statement").check();
+  await page.locator("#notify-none").check();
+  await dateAndCode(page, "2099-01-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("The relevant date cannot be after today.");
+  await expect(page.locator("#formView")).toBeVisible();
+
+  await page.reload({ waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByLabel("A statement on the register is no longer true").check();
+  await page.locator("#withdraw-steps").check();
+  await dateAndCode(page, "2099-01-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("The relevant date cannot be after today.");
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
 });
