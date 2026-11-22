@@ -183,7 +183,7 @@ company file (no LLPs) on the 2026 taxonomy, then the 2025 taxonomy, that matche
 | Micro-entity | `Micro-entities`, `FilletedAccounts`, not dormant |
 | Dormant micro-entity | `Micro-entities`, dormant true |
 | Small full | `SmallEntities`, `FullAccounts`, a tagged `ProfitLoss` |
-| Small filleted | `SmallEntities`, `FilletedAccounts`, the section 444(5A) statement, `TotalInventories` |
+| Small filleted | `SmallEntities`, `FilletedAccounts`, the section 444(5A) statement by its section number or in words, `TotalInventories` |
 | Each revised case | what its original's example carries, and `ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse` true |
 
 An original case's example is never a revised document.

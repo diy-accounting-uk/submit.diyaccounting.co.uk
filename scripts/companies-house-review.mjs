@@ -170,13 +170,44 @@ const NOT_CARRIED = new Map(
   Object.entries(NOT_CARRIED_REASONS).flatMap(([reason, concepts]) => concepts.map((concept) => [concept, reason])),
 );
 
+// Facts an example carries that ours leaves out on purpose for some kinds of accounts only: each
+// reason holds for the kinds it names, and the same fact missing from any other kind is a fail.
+const SMALL_KINDS = ["small-full", "small-full-revised", "small-filleted", "small-filleted-revised"];
+const NOT_CARRIED_FOR_KINDS = [
+  {
+    reason:
+      "a disclosure dormant accounts do not need: the accounts specification's unaudited dormant accounts section asks for neither, and FRS 105 asks a micro-entity for neither",
+    kinds: ["dormant", "dormant-revised"],
+    concepts: ["FinancialStatementsArePreparedOnGoing-concernBasisTruefalse", "ControllingPartyUltimateControllingPartyTruefalse"],
+  },
+  {
+    reason: "a flag the example's software writes as false; the company has no such commitment, plan or investment entity status",
+    kinds: SMALL_KINDS,
+    concepts: [
+      "CompanyHasPublishedCommitmentToUKEffectiveStewardshipCodeTruefalse",
+      "DefinedBenefitPlanMulti-employerPlanTruefalse",
+      "InvestmentEntityRequiredToApplyExceptionFromConsolidationTruefalse",
+    ],
+  },
+  {
+    reason: "the example company's own accounting policy; the company has no deferred tax",
+    kinds: SMALL_KINDS,
+    concepts: ["DeferredTaxPolicy"],
+  },
+  {
+    reason: "the prior year is stated by the comparative contexts and the prior year's column",
+    kinds: Object.keys(KINDS),
+    concepts: ["StartDateForPriorPeriod", "EndDateForPriorPeriod"],
+  },
+];
+
 // Section 444(5): the balance sheet of a small company that does not deliver its profit and loss
 // account or directors' report says the accounts were delivered under the small companies regime.
 // Section 444(5A): it also discloses that the profit and loss account is not delivered. Section
 // 444(5C) lifts 444(5A) for accounts prepared under the micro-entity provisions.
 const SECTION_444_5 = /delivered in accordance with the provisions applicable to companies subject to the small companies regime/i;
 const SECTION_444_5A =
-  /444\s*\(5A\)|profit and loss account (has|have) not been delivered|not to deliver (a copy of )?the (company's )?profit and loss account/i;
+  /444\s*\(5A\)|profit and loss account (has|have) not been delivered|not to deliver (to the registrar )?(a copy of )?the (company's )?profit and loss account/i;
 const APPROVAL_LINE = /approved by the (board|directors)/i;
 
 // The same sentences in a Welsh document, as the builder writes them from the TIS's Welsh phrases.
@@ -210,7 +241,7 @@ const EXAMPLE_RULES = {
   "small-filleted": [
     /AccountingStandardsDimension[^>]*>\s*[\w-]*:?SmallEntities/,
     /AccountsTypeDimension[^>]*>\s*[\w-]*:?FilletedAccounts/,
-    /444\s*\(5A\)/,
+    SECTION_444_5A,
     /:TotalInventories"/,
   ],
 };
@@ -571,6 +602,9 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
 // Why an example fact is not carried: a standing judgement, or a part of the company the input does not have.
 // A revised case carries the revision's facts, so their absence is a fail there.
 export function notCarriedReason(concept, input) {
+  const kind = kindOf(input);
+  const forKind = NOT_CARRIED_FOR_KINDS.find((entry) => entry.kinds.includes(kind) && entry.concepts.includes(concept));
+  if (forKind) return forKind.reason;
   const reason = NOT_CARRIED.get(concept);
   if (reason === AMENDED_FILING && input.revision) return notCarriedFromInput(concept, input);
   return reason ?? notCarriedFromInput(concept, input);

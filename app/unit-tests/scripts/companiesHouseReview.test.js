@@ -271,6 +271,62 @@ describe("revised cases", () => {
     expect(exampleMatches("micro", micro("true"))).toBe(false);
   });
 
+  it("judges the dormant example's going concern and controlling party facts not carried for dormant cases only", () => {
+    const dormant = caseNamed("micro-entity-accounts-dormant-revised").input;
+    const smallFull = caseNamed("small-company-accounts-full-revised").input;
+    for (const concept of [
+      "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse",
+      "ControllingPartyUltimateControllingPartyTruefalse",
+    ]) {
+      expect(notCarriedReason(concept, dormant), concept).toMatch(/dormant accounts do not need/);
+      expect(notCarriedReason(concept, caseNamed("micro-entity-accounts-dormant").input), concept).toMatch(/dormant accounts do not need/);
+      expect(notCarriedReason(concept, smallFull), concept).toBeFalsy();
+    }
+  });
+
+  it("judges the software's false flags and the deferred tax policy not carried for small company cases only", () => {
+    const smallFull = caseNamed("small-company-accounts-full-revised").input;
+    const smallFilleted = caseNamed("small-company-accounts-filleted").input;
+    const micro = caseNamed("micro-entity-accounts-revised").input;
+    for (const concept of [
+      "CompanyHasPublishedCommitmentToUKEffectiveStewardshipCodeTruefalse",
+      "DefinedBenefitPlanMulti-employerPlanTruefalse",
+      "InvestmentEntityRequiredToApplyExceptionFromConsolidationTruefalse",
+      "DeferredTaxPolicy",
+    ]) {
+      expect(notCarriedReason(concept, smallFull), concept).toBeTruthy();
+      expect(notCarriedReason(concept, smallFilleted), concept).toBeTruthy();
+      expect(notCarriedReason(concept, micro), concept).toBeFalsy();
+    }
+  });
+
+  it("judges the prior period's dates not carried for every case, and a fact outside the reasons still missing", () => {
+    for (const c of cases) {
+      expect(notCarriedReason("StartDateForPriorPeriod", c.input), c.name).toMatch(/comparative contexts/);
+      expect(notCarriedReason("EndDateForPriorPeriod", c.input), c.name).toMatch(/comparative contexts/);
+      expect(notCarriedReason("DescriptionOfSomethingOnlyTheExampleHas", c.input), c.name).toBeFalsy();
+    }
+  });
+
+  it("takes a small filleted example that makes the section 444(5A) statement in words", () => {
+    const filleted = (statement) =>
+      `<ix:nonNumeric name="bus:AccountingStandardsDimension">bus:SmallEntities</ix:nonNumeric>` +
+      `<ix:nonNumeric name="bus:AccountsTypeDimension">bus:FilletedAccounts</ix:nonNumeric>` +
+      `<ix:nonFraction name="core:TotalInventories" contextRef="c">0</ix:nonFraction>` +
+      `<ix:nonNumeric name="bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" contextRef="c">true</ix:nonNumeric>` +
+      `<p>${statement}</p>`;
+    expect(
+      exampleMatches(
+        "small-filleted-revised",
+        filleted("The directors have elected not to deliver to the registrar a copy of the company's Profit and Loss Account."),
+      ),
+    ).toBe(true);
+    expect(exampleMatches("small-filleted-revised", filleted("Delivered in accordance with section 444(5A)."))).toBe(true);
+    expect(exampleMatches("small-filleted-revised", filleted("A balance sheet with no statement about the profit and loss account."))).toBe(
+      false,
+    );
+  });
+
   it("judges the example's revision facts not carried for an original case and missing for a revised one", () => {
     const original = caseNamed("micro-entity-accounts").input;
     const revised = caseNamed("micro-entity-accounts-revised").input;
