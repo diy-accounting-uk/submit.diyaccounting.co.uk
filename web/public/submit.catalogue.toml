@@ -760,6 +760,17 @@ paths = ["companies-house/recordsLocation.html", "^/api/v1/companies-house/sail-
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "change-company-name"
+name = "Change the company name (Companies House, sandbox)"
+nameCy = "Newid enw'r cwmni (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the ChangeOfName form type for this presenter, and the fee has no payment path.
+paths = ["companies-house/changeCompanyName.html", "^/api/v1/companies-house/change-of-name.*", "^/api/v1/companies-house/forms/change-of-name/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

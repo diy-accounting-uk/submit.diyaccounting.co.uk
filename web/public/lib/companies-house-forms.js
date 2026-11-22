@@ -5,8 +5,8 @@
 // kind its filing state and receipt carry, the route segment it files under, the words its receipt
 // and its events use, and, for a form whose filing route is the shared one in
 // app/services/companiesHouseFormFiling.js, its gateway form identifier, its schema in
-// fixtures/companies-house-xmlgw and its catalogue activity. A plain ES module, so the browser and
-// app/ both read it.
+// fixtures/companies-house-xmlgw, its catalogue activity and, where Companies House charges one, its
+// fee. A plain ES module, so the browser and app/ both read it.
 
 export const COMPANIES_HOUSE_FORMS = {
   "accounts": {
@@ -105,6 +105,20 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "change-records-location",
     label: "location of company records",
     sharedPoll: true,
+  },
+  "change-of-name": {
+    routeSegment: "change-of-name",
+    receiptTitle: "Change of company name",
+    receiptTitleCy: "Newid enw’r cwmni",
+    acceptedEvent: "companies-house-change-of-name-accepted",
+    acceptedSummary: "Companies House change of company name accepted",
+    formIdentifier: "ChangeOfName",
+    schema: "ChangeOfName-v2-6.xsd",
+    activityId: "change-company-name",
+    label: "change of company name",
+    sharedPoll: true,
+    // Companies House's fee for the form filed by software, in pounds: the standard service and the same-day service.
+    fee: { standard: 20, sameDay: 85 },
   },
 };
 

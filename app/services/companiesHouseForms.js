@@ -21,6 +21,13 @@ import {
 import { buildOfficerResignationBody, OFFICER_RESIGNATION_ROLES } from "./companiesHouseOfficerResignationXml.js";
 import { buildSailAddressBody, SAIL_ADDRESS_COUNTRIES, SAIL_ADDRESS_PARTS } from "./companiesHouseSailAddressXml.js";
 import { buildRecordChangeOfLocationBody, RECORD_DESTINATIONS, RECORD_TYPES } from "./companiesHouseRecordLocationXml.js";
+import {
+  buildChangeOfNameBody,
+  supportingDocumentFor,
+  isValidProposedCompanyName,
+  NAME_CHANGE_METHODS,
+  NAME_SUPPORTING_DOCUMENTS,
+} from "./companiesHouseChangeOfNameXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -235,7 +242,73 @@ function extractRecordLocation(body, errorMessages) {
   return { destination, records: Array.isArray(records) ? records : [], removeSailAddress: removing };
 }
 
-/** Each form's request check and body builder, by the kind its filing state carries. */
+// A supporting letter is a PDF of at most this many bytes: the request reaches a Lambda, whose
+// payload holds 6 MB, and the letter travels in it as base64.
+const MAX_SUPPORTING_DOCUMENT_BYTES = 3_000_000;
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
+function readSupportingDocument(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  const kind = trimmed(value.kind);
+  const contentBase64 = typeof value.contentBase64 === "string" ? value.contentBase64.replace(/\s+/g, "") : "";
+  if (!NAME_SUPPORTING_DOCUMENTS[kind]) {
+    errorMessages.push(`Invalid supportingDocument.kind - must be one of ${Object.keys(NAME_SUPPORTING_DOCUMENTS).join(", ")}`);
+    return undefined;
+  }
+  if (!contentBase64 || contentBase64.length % 4 !== 0 || !BASE64.test(contentBase64)) {
+    errorMessages.push("Invalid supportingDocument.contentBase64 - must be the PDF as base64");
+    return undefined;
+  }
+  const bytes = Buffer.from(contentBase64, "base64");
+  if (bytes.length > MAX_SUPPORTING_DOCUMENT_BYTES) {
+    errorMessages.push(`Invalid supportingDocument.contentBase64 - the PDF must be at most ${MAX_SUPPORTING_DOCUMENT_BYTES} bytes`);
+    return undefined;
+  }
+  if (bytes.subarray(0, 5).toString("latin1") !== "%PDF-") {
+    errorMessages.push("Invalid supportingDocument.contentBase64 - must be a PDF");
+    return undefined;
+  }
+  return { kind, contentBase64 };
+}
+
+function extractChangeOfName(body, errorMessages) {
+  const { method, meetingDate, sameDay, noticeGiven, dateSigned } = body;
+  const proposedName = trimmed(body.proposedName).toUpperCase();
+  if (!NAME_CHANGE_METHODS[method]) {
+    errorMessages.push(`Invalid method - must be one of ${Object.keys(NAME_CHANGE_METHODS).join(", ")}`);
+  }
+  if (!isValidProposedCompanyName(proposedName)) {
+    errorMessages.push("Invalid proposedName - must be 3 to 160 characters that Companies House allows in a company name");
+  } else if (proposedName === trimmed(body.companyName).toUpperCase()) {
+    errorMessages.push("Invalid proposedName - must differ from the company's present name");
+  }
+  const meetingDateGiven = meetingDate !== undefined && meetingDate !== null && meetingDate !== "";
+  if (method === "resolution" && !meetingDateGiven) {
+    errorMessages.push("Missing meetingDate - a change by resolution needs the date the resolution was passed");
+  } else if (meetingDateGiven && !isValidIsoDate(meetingDate)) {
+    errorMessages.push("Invalid meetingDate - must be YYYY-MM-DD");
+  } else if (meetingDateGiven && dateSigned && isValidIsoDate(dateSigned) && meetingDate > dateSigned) {
+    errorMessages.push("Invalid meetingDate - must not be after dateSigned");
+  }
+  if (sameDay !== undefined && typeof sameDay !== "boolean") {
+    errorMessages.push("Invalid sameDay - must be true or false");
+  }
+  if (noticeGiven !== true) {
+    errorMessages.push("Missing noticeGiven - must be true: notice of the change of name has been given");
+  }
+  return {
+    method,
+    proposedName,
+    meetingDate: meetingDateGiven ? meetingDate : undefined,
+    sameDay: sameDay === true,
+    supportingDocument: readSupportingDocument(body.supportingDocument, errorMessages),
+  };
+}
+
+/**
+ * Each form's request check and body builder, by the kind its filing state carries. A form whose
+ * filing carries a document in the envelope has buildDocument as well.
+ */
 export const GATEWAY_FORM_BUILDERS = {
   "psc-verification-statement": {
     extractAndValidate: extractPscVerificationStatement,
@@ -273,5 +346,11 @@ export const GATEWAY_FORM_BUILDERS = {
   "record-location": {
     extractAndValidate: extractRecordLocation,
     buildFormXml: (form) => buildRecordChangeOfLocationBody(form),
+  },
+  "change-of-name": {
+    extractAndValidate: extractChangeOfName,
+    buildFormXml: (form) => buildChangeOfNameBody(form),
+    buildDocument: (form) =>
+      form.supportingDocument ? supportingDocumentFor({ ...form.supportingDocument, date: form.dateSigned }) : undefined,
   },
 };

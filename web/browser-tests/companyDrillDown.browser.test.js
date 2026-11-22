@@ -353,7 +353,7 @@ test.describe("Company lookup drill-down", () => {
   test("an account holding the forms' activities gets a file button for each, opening the form with the company", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(8, { timeout: 15000 });
+    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(9, { timeout: 15000 });
     const hrefs = await page
       .locator("#drillOverview .file-this a.btn")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
@@ -367,6 +367,7 @@ test.describe("Company lookup drill-down", () => {
         "/companies-house/fileCompanyTaxReturn.html?companyNumber=00000001",
         "/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2099-04-30",
         "/companies-house/recordsLocation.html?companyNumber=00000001",
+        "/companies-house/changeCompanyName.html?companyNumber=00000001",
       ].sort(),
     );
   });
@@ -575,7 +576,7 @@ test.describe("Company lookup drill-down edit links", () => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page, { bundles: ["resident-ltd"] });
       await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(8, { timeout: 15000 });
+      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(9, { timeout: 15000 });
       for (const { section, quotes, sources } of AUTHORITY) {
         await expect(page.locator(`${section} .file-this-authority`).first()).toBeAttached();
         const text = await page.locator(`${section} .file-this-authority`).allInnerTexts();
@@ -906,5 +907,36 @@ test.describe("Company lookup drill-down records location", () => {
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
     await expect(page.locator("#recordsSection dl")).toContainText("Inspection location (SAIL)", { timeout: 15000 });
     await expect(page.locator('#recordsSection .file-this[data-activity="change-records-location"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Company lookup drill-down change of company name link", () => {
+  const CONTROL = '#nameSection .file-this[data-activity="change-company-name"]';
+
+  test("an account holding the form gets a link under the company's name, and the authority NM01 states", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+
+    const control = page.locator(CONTROL);
+    await expect(control.locator("a.btn")).toHaveText("Change the company name", { timeout: 15000 });
+    expect(await control.locator("a.btn").getAttribute("href")).toBe("/companies-house/changeCompanyName.html?companyNumber=00000001");
+    await expect(page.locator("#nameSection")).toContainText("Company name");
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“Your company name will not officially change until Companies House registers it.”",
+    );
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“You may use this form to give notice of an unconditional change of name by the company members.”",
+    );
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6912090f663088df8f54f4b7/NM01_v7.0-FINAL.pdf");
+    expect(sources).toContain("https://www.gov.uk/make-changes-to-your-limited-company/company-name");
+    await shoot(page, "change-company-name-link");
+  });
+
+  test("on prod, where the form is not offered, the name section carries no link to it", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#nameSection")).toContainText("Company name", { timeout: 15000 });
+    await expect(page.locator(CONTROL)).toHaveCount(0);
   });
 });

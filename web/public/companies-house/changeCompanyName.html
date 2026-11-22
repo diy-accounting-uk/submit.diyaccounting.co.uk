@@ -1,0 +1,260 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Change the company name - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/changeCompanyName.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changeCompanyName.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeCompanyName.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changeCompanyName.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Change the company name</h1>
+      <p class="subtitle">Give Companies House notice of a change of company name</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="change-company-name">Look up the company</button>
+        </form>
+      </div>
+
+      <!-- Change form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>What is the new name?</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <blockquote class="source-quote">
+          <p>Your new name must follow all the rules for company names.</p>
+          <p>Your company name will not officially change until Companies House registers it.</p>
+          <footer>
+            Source:
+            <a href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+              >GOV.UK, Make changes to your private limited company: Company name</a
+            >
+            (checked 22 November 2026)
+          </footer>
+        </blockquote>
+        <form id="changeForm" novalidate>
+          <div class="form-group">
+            <label for="proposedName">New company name</label>
+            <p id="proposedName-hint" class="hint">
+              3 to 160 characters, ending as the company's name must, for example LIMITED or LTD. Companies House records names in capital
+              letters.
+            </p>
+            <input
+              type="text"
+              id="proposedName"
+              name="proposedName"
+              required
+              minlength="3"
+              maxlength="160"
+              autocomplete="off"
+              aria-describedby="proposedName-hint"
+              spellcheck="false"
+            />
+          </div>
+          <fieldset class="form-group">
+            <legend>How the company changed its name</legend>
+            <div class="choice">
+              <input type="radio" id="method-resolution" name="method" value="resolution" checked />
+              <label for="method-resolution">By a special resolution</label>
+            </div>
+            <div class="choice">
+              <input type="radio" id="method-articles" name="method" value="articles" />
+              <label for="method-articles">By permission given in the company's articles of association</label>
+            </div>
+          </fieldset>
+          <div class="form-group" id="meetingDateGroup">
+            <label for="meetingDate">Date the resolution was passed</label>
+            <input type="date" id="meetingDate" name="meetingDate" />
+          </div>
+          <blockquote class="source-quote">
+            <p>It costs £20 to file a change of name online, or £85 for the same-day service.</p>
+            <footer>
+              Source:
+              <a href="https://www.gov.uk/government/publications/change-a-company-name-nm01" rel="noopener"
+                >GOV.UK, Change a company name (NM01)</a
+              >
+              (checked 22 November 2026)
+            </footer>
+          </blockquote>
+          <p id="fee-hint" class="hint">
+            Companies House charges the same for a change of name filed by software. In this sandbox nothing is registered and no fee is
+            charged. This site does not file a real change of name until it can take the fee.
+          </p>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="sameDay" name="sameDay" aria-describedby="fee-hint" />
+              <label for="sameDay">Ask for the same-day service (£85 in place of £20)</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="needsLetter" name="needsLetter" />
+              <label for="needsLetter">The name needs a supporting letter</label>
+            </div>
+          </div>
+          <div id="letterGroup" style="display: none">
+            <blockquote class="source-quote">
+              <p>
+                Your name also cannot contain a ‘sensitive’ word or expression, or suggest a connection with government or local
+                authorities, unless you get permission.
+              </p>
+              <footer>
+                Source:
+                <a href="https://www.gov.uk/limited-company-formation/choose-company-name" rel="noopener"
+                  >GOV.UK, Set up a private limited company: Choose a name</a
+                >
+                (checked 22 November 2026)
+              </footer>
+            </blockquote>
+            <div class="form-group">
+              <label for="letterKind">What the letter gives</label>
+              <select id="letterKind" name="letterKind">
+                <option value="sensitive-word-permission">Permission to use a sensitive word or expression</option>
+                <option value="same-as-no-objection">No objection from the company or LLP that has the same name</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="letterFile">The letter, as a PDF</label>
+              <p id="letterFile-hint" class="hint">At most 3 MB. It goes to Companies House with the form and is not kept on this site.</p>
+              <input type="file" id="letterFile" name="letterFile" accept="application/pdf,.pdf" aria-describedby="letterFile-hint" />
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="noticeGiven" name="noticeGiven" />
+              <label for="noticeGiven">Notice of the change of name has been given</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <blockquote class="source-quote">
+          <p>Your company name will not officially change until Companies House registers it.</p>
+          <footer>
+            Source:
+            <a href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+              >GOV.UK, Make changes to your private limited company: Company name</a
+            >
+            (checked 22 November 2026)
+          </footer>
+        </blockquote>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <p id="registerNow" class="hint" style="display: none"></p>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="changeCompanyName.page.js"></script>
+  </body>
+</html>

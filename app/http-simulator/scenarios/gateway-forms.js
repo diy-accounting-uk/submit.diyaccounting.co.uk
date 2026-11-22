@@ -15,6 +15,7 @@ import {
   accountingReferenceDateRejection,
   acceptAccountingReferenceDate,
 } from "./accounting-reference-date.js";
+import { readChangeOfNameForm, changeOfNameRejection, acceptChangeOfName } from "./change-of-name.js";
 
 // A form whose own content changes the answer, by form identifier: read gives the form's fields from
 // the parsed envelope, rejection the reason Companies House refuses them or null, and accepted what
@@ -24,6 +25,11 @@ const FORM_ANSWERS = {
     read: readAccountingReferenceDateForm,
     rejection: accountingReferenceDateRejection,
     accepted: acceptAccountingReferenceDate,
+  },
+  ChangeOfName: {
+    read: readChangeOfNameForm,
+    rejection: changeOfNameRejection,
+    accepted: acceptChangeOfName,
   },
 };
 

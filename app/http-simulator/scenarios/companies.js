@@ -219,14 +219,32 @@ const companies = {
 
 const RATE_LIMITED_COMPANY_NUMBER = "42942942";
 
-// Each company's accounts as the fixtures give them, to put back between test runs.
+// Each company's name and accounts as the fixtures give them, to put back between test runs.
+const fixtureNames = Object.fromEntries(Object.entries(companies).map(([number, company]) => [number, company.company_name]));
 const fixtureAccounts = structuredClone(
   Object.fromEntries(Object.entries(companies).map(([number, company]) => [number, company.accounts])),
 );
 
-/** Put every company's accounting period back to its fixture. */
-export function resetCompanyAccounts() {
-  for (const [number, accounts] of Object.entries(fixtureAccounts)) companies[number].accounts = structuredClone(accounts);
+/** Put every company's name and accounting period back to its fixture. */
+export function resetCompanyFixtures() {
+  for (const [number, company] of Object.entries(companies)) {
+    company.company_name = fixtureNames[number];
+    company.accounts = structuredClone(fixtureAccounts[number]);
+  }
+}
+
+/** Every company's number and present name. */
+export function companyNames() {
+  return Object.values(companies).map((company) => ({ number: company.company_number, name: company.company_name }));
+}
+
+/**
+ * Give a company a new name, as an accepted change of name does.
+ * @param {string} companyNumber
+ * @param {string} name
+ */
+export function setCompanyName(companyNumber, name) {
+  if (companies[companyNumber]) companies[companyNumber].company_name = name;
 }
 
 /**

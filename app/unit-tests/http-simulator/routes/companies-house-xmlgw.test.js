@@ -20,7 +20,8 @@ import { buildFormSubmission } from "@app/services/companiesHouseXmlGateway.js";
 import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
 import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChangeDetailsXml.js";
 import { buildAccountingReferenceDateBody } from "@app/services/companiesHouseAccountingReferenceDateXml.js";
-import { getCompany, resetCompanyAccounts } from "@app/http-simulator/scenarios/companies.js";
+import { buildChangeOfNameBody, supportingDocumentFor } from "@app/services/companiesHouseChangeOfNameXml.js";
+import { getCompany, resetCompanyFixtures } from "@app/http-simulator/scenarios/companies.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
@@ -1106,7 +1107,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
 
     const nextAccounts = () => getCompany("00000001").accounts.next_accounts;
 
-    beforeEach(() => resetCompanyAccounts());
+    beforeEach(() => resetCompanyFixtures());
 
     test("a shortened period is accepted, and the register then shows the period ending on the new date", async () => {
       const final = await settled("ARD001", { newPeriodEnd: "2099-03-31" });
@@ -1168,6 +1169,73 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
 
       expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
       expect(nextAccounts().period_end_on).toBe("2099-04-30");
+    });
+  });
+
+  describe("a change of name for company 00000001", () => {
+    const PDF_BASE64 = Buffer.from("%PDF-1.4\n%%EOF\n").toString("base64");
+
+    function nameEnvelope(submissionNumber, proposedName, letter) {
+      return buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: "00000001",
+        companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        formIdentifier: "ChangeOfName",
+        submissionNumber,
+        dateSigned: "2026-11-22",
+        formXml: buildChangeOfNameBody({ method: "resolution", proposedName, meetingDate: "2026-11-20" }),
+        document: letter ? supportingDocumentFor({ kind: letter, contentBase64: PDF_BASE64, date: "2026-11-22" }) : undefined,
+        gatewayTest: true,
+      });
+    }
+
+    async function settled(submissionNumber, proposedName, letter) {
+      const acknowledgement = parseXmlDocument((await post(nameEnvelope(submissionNumber, proposedName, letter))).text);
+      expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      return parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text);
+    }
+
+    const registeredName = () => getCompany("00000001").company_name;
+
+    beforeEach(() => resetCompanyFixtures());
+
+    test("a change by resolution is accepted, and the register then shows the new name", async () => {
+      await post(nameEnvelope("NAM001", "BRAMWELL TENNANT TRADING LIMITED"));
+      expect(await statusOf("NAM001")).toBe("PENDING");
+      expect(registeredName()).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
+
+      expect(await statusOf("NAM001")).toBe("ACCEPT");
+      expect(registeredName()).toBe("BRAMWELL TENNANT TRADING LIMITED");
+    });
+
+    test("a name with a sensitive word and no letter is rejected with the reason, and the name does not change", async () => {
+      const final = await settled("NAM002", "BRAMWELL ACCREDITED TRAINING LIMITED");
+
+      expect(firstElementText(final, "StatusCode")).toBe("REJECT");
+      expect(firstElementText(final, "RejectCode")).toBe("9994");
+      expect(firstElementText(final, "Description")).toContain("sensitive word");
+      expect(registeredName()).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
+    });
+
+    test("a name with a sensitive word and its permission letter is accepted", async () => {
+      const final = await settled("NAM003", "BRAMWELL ACCREDITED TRAINING LIMITED", "sensitive-word-permission");
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(registeredName()).toBe("BRAMWELL ACCREDITED TRAINING LIMITED");
+    });
+
+    test("another company's name is rejected, and accepted with a letter of no objection", async () => {
+      const taken = getCompany("SC000000").company_name;
+
+      const refused = await settled("NAM004", taken);
+      expect(firstElementText(refused, "RejectCode")).toBe("9995");
+
+      const allowed = await settled("NAM005", taken, "same-as-no-objection");
+      expect(firstElementText(allowed, "StatusCode")).toBe("ACCEPT");
     });
   });
 });

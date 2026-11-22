@@ -225,6 +225,10 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseRecordLocationPostLambda;
     public ILogGroup companiesHouseRecordLocationPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHouseChangeOfNamePostLambdaProps;
+    public Function companiesHouseChangeOfNamePostLambda;
+    public ILogGroup companiesHouseChangeOfNamePostLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -2595,6 +2599,63 @@ public class CompaniesHouseStack extends Stack {
         // Seals the filer's sub into the filing state the presenter poll reads.
         codesSealKeySecret.grantRead(this.companiesHouseRecordLocationPostLambda);
 
+        var companiesHouseChangeOfNamePostLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseChangeOfNamePostLambdaEnv, props);
+        withFilerSealKeyEnv(companiesHouseChangeOfNamePostLambdaEnv, codesSealKeySecret);
+        if (xmlGatewayPackageReference(props) != null) {
+            companiesHouseChangeOfNamePostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
+        }
+        var companiesHouseChangeOfNamePostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseChangeOfNamePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseChangeOfNamePostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseChangeOfNamePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostLambdaCustomAuthorizer)
+                        .environment(companiesHouseChangeOfNamePostLambdaEnv)
+                        .build());
+        this.companiesHouseChangeOfNamePostLambdaProps = companiesHouseChangeOfNamePostLambdaUrlOrigin.apiProps;
+        this.companiesHouseChangeOfNamePostLambda = companiesHouseChangeOfNamePostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseChangeOfNamePostLambdaLogGroup = companiesHouseChangeOfNamePostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseChangeOfNamePostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House change of company name submit with ingestHandler %s",
+                this.companiesHouseChangeOfNamePostLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHouseChangeOfNamePostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseChangeOfNamePostLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseChangeOfNamePostLambda, props);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseChangeOfNamePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Seals the filer's sub into the filing state the presenter poll reads.
+        codesSealKeySecret.grantRead(this.companiesHouseChangeOfNamePostLambda);
+
         // The scheduled presenter poll: asks the XML Gateway for every submission of our presenter
         // that Companies House has accepted or rejected, records each against its filing as the page
         // poll does, then acknowledges the poll (GetSubmissionStatus option 2, then GetStatusAck).
@@ -2750,7 +2811,8 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountingReferenceDatePostLambdaUrlOrigin,
                         companiesHouseOfficerResignationPostLambdaUrlOrigin,
                         companiesHouseSailAddressPostLambdaUrlOrigin,
-                        companiesHouseRecordLocationPostLambdaUrlOrigin));
+                        companiesHouseRecordLocationPostLambdaUrlOrigin,
+                        companiesHouseChangeOfNamePostLambdaUrlOrigin));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseCompanyGetLambdaArn", this.companiesHouseCompanyGetLambda.getFunctionArn());
@@ -2844,6 +2906,10 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "CompaniesHouseRecordLocationPostLambdaArn",
                 this.companiesHouseRecordLocationPostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHouseChangeOfNamePostLambdaArn",
+                this.companiesHouseChangeOfNamePostLambda.getFunctionArn());
 
         infof(
                 "CompaniesHouseStack %s created successfully for %s",

@@ -24159,3 +24159,253 @@ cy = '''Cyfeiriad SAIL'''
 [strings."receipts.kind-record-location"]
 hash = "b1a381ad869d"
 cy = '''Lleoliad cofnodion y cwmni'''
+
+# == The change of company name page and the drill-down's link to it: ids ch-change-name.*, ch.name.*, ch.drill.company-name, ch.drill.change-name ==
+
+[strings."ch-change-name.title"]
+hash = "21a3601c7904"
+cy = '''Newid enw’r cwmni - DIY Accounting Submit'''
+
+[strings."ch-change-name.change-the-company-name-7e2b5c"]
+hash = "7e2b5c3ecb20"
+cy = '''Newid enw’r cwmni'''
+
+[strings."ch-change-name.give-companies-house-notice-of-a-89fee6"]
+hash = "89fee61df2d2"
+cy = '''Rhoi hysbysiad i Dŷ’r Cwmnïau o newid enw cwmni'''
+
+[strings."ch-change-name.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-change-name.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-change-name.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-change-name.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-change-name.look-up-the-company-570ac0"]
+hash = "570ac0974205"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-change-name.what-is-the-new-name-41caeb"]
+hash = "41caeb383cf7"
+cy = '''Beth yw’r enw newydd?'''
+
+[strings."ch-change-name.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-change-name.new-company-name-8145ac"]
+hash = "8145ac2cba63"
+cy = '''Enw newydd y cwmni'''
+
+[strings."ch-change-name.3-to-160-characters-ending-as-97d472"]
+hash = "97d472d68916"
+cy = '''3 i 160 nod, yn gorffen fel y mae’n rhaid i enw’r cwmni, er enghraifft LIMITED neu LTD. Mae Tŷ’r Cwmnïau yn cofnodi enwau mewn priflythrennau.'''
+
+[strings."ch-change-name.how-the-company-changed-its-name-b74e10"]
+hash = "b74e104f9918"
+cy = '''Sut y newidiodd y cwmni ei enw'''
+
+[strings."ch-change-name.by-a-special-resolution-915f7a"]
+hash = "915f7a28848e"
+cy = '''Drwy benderfyniad arbennig'''
+
+[strings."ch-change-name.by-permission-given-in-the-company-f0ee6a"]
+hash = "f0ee6a104391"
+cy = '''Drwy ganiatâd a roddir yn erthyglau cymdeithasu’r cwmni'''
+
+[strings."ch-change-name.date-the-resolution-was-passed-7d94ca"]
+hash = "7d94ca2e1676"
+cy = '''Dyddiad pasio’r penderfyniad'''
+
+[strings."ch-change-name.companies-house-charges-the-same-for-da1980"]
+hash = "da19803bd9ea"
+cy = '''Mae Tŷ’r Cwmnïau yn codi’r un ffi am newid enw a ffeilir drwy feddalwedd. Yn yr amgylchedd prawf hwn nid oes dim yn cael ei gofrestru ac ni chodir ffi. Nid yw’r wefan hon yn ffeilio newid enw go iawn nes y gall gymryd y ffi.'''
+
+[strings."ch-change-name.ask-for-the-same-day-service-3fea5a"]
+hash = "3fea5a5d3712"
+cy = '''Gofyn am y gwasanaeth yr un diwrnod (£85 yn lle £20)'''
+
+[strings."ch-change-name.the-name-needs-a-supporting-letter-0eec51"]
+hash = "0eec51147574"
+cy = '''Mae angen llythyr ategol ar yr enw'''
+
+[strings."ch-change-name.what-the-letter-gives-f07710"]
+hash = "f07710459aa5"
+cy = '''Yr hyn y mae’r llythyr yn ei roi'''
+
+[strings."ch-change-name.permission-to-use-a-sensitive-word-915c4f"]
+hash = "915c4f1177b0"
+cy = '''Caniatâd i ddefnyddio gair neu ymadrodd sensitif'''
+
+[strings."ch-change-name.no-objection-from-the-company-or-502fbb"]
+hash = "502fbb93aa61"
+cy = '''Dim gwrthwynebiad gan y cwmni neu’r PAC sydd â’r un enw'''
+
+[strings."ch-change-name.the-letter-as-a-pdf-a9c88e"]
+hash = "a9c88e76e1ea"
+cy = '''Y llythyr, fel PDF'''
+
+[strings."ch-change-name.at-most-3-mb-it-goes-5c8b8c"]
+hash = "5c8b8cfff5f1"
+cy = '''3 MB ar y mwyaf. Mae’n mynd i Dŷ’r Cwmnïau gyda’r ffurflen ac nid yw’n cael ei gadw ar y wefan hon.'''
+
+[strings."ch-change-name.notice-of-the-change-of-name-b5bcc4"]
+hash = "b5bcc4beb750"
+cy = '''Mae hysbysiad o’r newid enw wedi’i roi'''
+
+[strings."ch-change-name.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-change-name.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-change-name.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-change-name.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-change-name.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-change-name.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-name.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-change-name.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-change-name.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-change-name.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-name.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.name.lookup-failed"]
+hash = "85798bd4b10f"
+cy = '''Methu darllen y cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.name.name-length"]
+hash = "bc6ee0368cc8"
+cy = '''Rhaid i’r enw newydd fod rhwng 3 a 160 nod.'''
+
+[strings."ch.name.same-name"]
+hash = "3499feb56176"
+cy = '''Yr enw newydd yw’r enw sydd gan y cwmni eisoes.'''
+
+[strings."ch.name.meeting-date-missing"]
+hash = "060f59081efc"
+cy = '''Rhowch y dyddiad y pasiwyd y penderfyniad.'''
+
+[strings."ch.name.meeting-date-future"]
+hash = "b3da5ac07430"
+cy = '''Ni all dyddiad pasio’r penderfyniad fod yn y dyfodol.'''
+
+[strings."ch.name.letter-missing"]
+hash = "53e5b6e8de30"
+cy = '''Dewiswch y llythyr, fel PDF.'''
+
+[strings."ch.name.letter-too-large"]
+hash = "bda84f96acd9"
+cy = '''Mae’r llythyr yn fwy na 3 MB.'''
+
+[strings."ch.name.letter-not-pdf"]
+hash = "8c83ca235c8d"
+cy = '''Nid PDF yw’r llythyr.'''
+
+[strings."ch.name.notice-missing"]
+hash = "cb5188f239b9"
+cy = '''Cadarnhewch fod hysbysiad o’r newid enw wedi’i roi.'''
+
+[strings."ch.name.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.name.review-new-name"]
+hash = "8145ac2cba63"
+cy = '''Enw newydd y cwmni'''
+
+[strings."ch.name.review-method"]
+hash = "b74e104f9918"
+cy = '''Sut y newidiodd y cwmni ei enw'''
+
+[strings."ch.name.review-meeting-date"]
+hash = "7d94ca2e1676"
+cy = '''Dyddiad pasio’r penderfyniad'''
+
+[strings."ch.name.review-service"]
+hash = "de06c21426db"
+cy = '''Y gwasanaeth a ffi Tŷ’r Cwmnïau'''
+
+[strings."ch.name.service-same-day"]
+hash = "15f3f2620269"
+cy = '''Gwasanaeth yr un diwrnod, £{fee}'''
+
+[strings."ch.name.service-standard"]
+hash = "0ee4367bfd94"
+cy = '''Gwasanaeth safonol, £{fee}'''
+
+[strings."ch.name.review-letter"]
+hash = "ab8d99383fb9"
+cy = '''Llythyr ategol'''
+
+[strings."ch.name.letter-summary"]
+hash = "a38e1b5abcc2"
+cy = '''{kind}: {file}'''
+
+[strings."ch.name.no-letter"]
+hash = "dc937b598926"
+cy = '''Dim'''
+
+[strings."ch.name.see-company"]
+hash = "f7f91faf549c"
+cy = '''Gweld y cwmni ar y gofrestr'''
+
+[strings."ch.name.register-now"]
+hash = "e51b935b9c65"
+cy = '''Mae’r gofrestr bellach yn dangos y cwmni fel {name}.'''
+
+[strings."ch.name.register-not-yet"]
+hash = "2fe62dede573"
+cy = '''Mae’r gofrestr yn dal i ddangos y cwmni fel {name}. Mae’r enw’n newid pan fydd Tŷ’r Cwmnïau yn ei gofrestru, felly edrychwch ar y cwmni eto yn nes ymlaen.'''
+
+[strings."ch.name.register-unread"]
+hash = "f886dad29992"
+cy = '''Methu darllen y gofrestr eto i ddangos yr enw newydd.'''
+
+[strings."ch.drill.company-name"]
+hash = "6dfada13d2f4"
+cy = '''Enw’r cwmni'''
+
+[strings."ch.drill.change-name"]
+hash = "7e2b5c3ecb20"
+cy = '''Newid enw’r cwmni'''
+
+[strings."receipts.kind-change-of-name"]
+hash = "d4dfec486b34"
+cy = '''Newid enw’r cwmni'''

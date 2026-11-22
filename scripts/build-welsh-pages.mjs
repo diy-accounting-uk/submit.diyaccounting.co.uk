@@ -211,6 +211,14 @@ export const WELSH_PAGES = [
     markAttributes: CH_MARK_ATTRIBUTES,
   },
   {
+    id: "ch-change-name",
+    en: "companies-house/changeCompanyName.html",
+    cy: "cy/companies-house/changeCompanyName.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeCompanyName.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
     id: "ch-mcp-codes",
     en: "companies-house/mcpCodes.html",
     cy: "cy/companies-house/mcpCodes.html",

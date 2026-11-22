@@ -397,6 +397,13 @@
         } ]
       }
     },
+    "/companies-house/change-of-name" : {
+      "post" : {
+        "summary" : "Submit a change of company name",
+        "description" : "Builds the ChangeOfName body, the notice of a change of company name, with any supporting letter, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseChangeOfName"
+      }
+    },
     "/companies-house/company/{companyNumber}" : {
       "get" : {
         "summary" : "Get a Companies House company profile",

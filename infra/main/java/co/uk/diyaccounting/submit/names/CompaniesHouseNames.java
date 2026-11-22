@@ -356,6 +356,15 @@ public class CompaniesHouseNames {
     public boolean companiesHouseRecordLocationPostLambdaJwtAuthorizer;
     public boolean companiesHouseRecordLocationPostLambdaCustomAuthorizer;
 
+    public String companiesHouseChangeOfNamePostIngestLambdaHandler;
+    public String companiesHouseChangeOfNamePostIngestLambdaFunctionName;
+    public String companiesHouseChangeOfNamePostIngestLambdaArn;
+    public String companiesHouseChangeOfNamePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseChangeOfNamePostLambdaHttpMethod;
+    public String companiesHouseChangeOfNamePostLambdaUrlPath;
+    public boolean companiesHouseChangeOfNamePostLambdaJwtAuthorizer;
+    public boolean companiesHouseChangeOfNamePostLambdaCustomAuthorizer;
+
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
         this.companiesHouseSearchGetLambdaHttpMethod = HttpMethod.GET;
@@ -1348,5 +1357,27 @@ public class CompaniesHouseNames {
                 "Submit a location of company records filing",
                 "Builds the RecordChangeOfLocation body, the notice that company records have moved to the single alternative inspection location (SAIL) or back to the registered office, and submits it through the Companies House XML Gateway",
                 "postCompaniesHouseRecordLocation"));
+
+        this.companiesHouseChangeOfNamePostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseChangeOfNamePostLambdaUrlPath = "/api/v1/companies-house/change-of-name";
+        this.companiesHouseChangeOfNamePostLambdaJwtAuthorizer = true;
+        this.companiesHouseChangeOfNamePostLambdaCustomAuthorizer = false;
+        var companiesHouseChangeOfNamePostLambdaHandlerName = "companiesHouseChangeOfNamePost.ingestHandler";
+        var companiesHouseChangeOfNamePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseChangeOfNamePostLambdaHandlerName);
+        this.companiesHouseChangeOfNamePostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseChangeOfNamePostLambdaHandlerDashed);
+        this.companiesHouseChangeOfNamePostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseChangeOfNamePostLambdaHandlerName);
+        this.companiesHouseChangeOfNamePostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseChangeOfNamePostLambdaHandlerDashed);
+        this.companiesHouseChangeOfNamePostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseChangeOfNamePostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseChangeOfNamePostLambdaHttpMethod,
+                this.companiesHouseChangeOfNamePostLambdaUrlPath,
+                "Submit a change of company name",
+                "Builds the ChangeOfName body, the notice of a change of company name, with any supporting letter, and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseChangeOfName"));
     }
 }

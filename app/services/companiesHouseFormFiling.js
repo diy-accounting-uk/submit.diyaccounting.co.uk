@@ -4,8 +4,9 @@
 // app/services/companiesHouseFormFiling.js
 // The filing route every Companies House form in companiesHouseForms.js shares: the bundle check,
 // the request check (the company and its authentication code here, the form's own fields in its
-// row), the form body from the row's builder, a submission number, the filing state, the GovTalk
-// envelope, the send to the gateway, and a JSON answer for every outcome. The company
+// row), the refusal of a form with a fee this site cannot take, the form body from the row's builder
+// with any document the row attaches, a submission number, the filing state, the GovTalk envelope,
+// the send to the gateway, and a JSON answer for every outcome. The company
 // authentication code goes into the envelope only, is never logged, and is dropped once the call
 // returns.
 
@@ -17,6 +18,7 @@ import {
   http200OkResponse,
   http201CreatedResponse,
   http400BadRequestResponse,
+  http402PaymentRequiredResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../lib/httpResponseHelper.js";
@@ -105,8 +107,8 @@ async function recordSubmissionFailure({ kind, failure, summary, userSub, detail
  * @param {string} kind - a kind of GATEWAY_FORM_BUILDERS and of COMPANIES_HOUSE_FORMS
  */
 export async function fileCompaniesHouseForm(event, kind) {
-  const { label, formIdentifier } = COMPANIES_HOUSE_FORMS[kind];
-  const { buildFormXml } = GATEWAY_FORM_BUILDERS[kind];
+  const { label, formIdentifier, fee } = COMPANIES_HOUSE_FORMS[kind];
+  const { buildFormXml, buildDocument } = GATEWAY_FORM_BUILDERS[kind];
   await initializeSalt();
   validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME", "COMPANIES_HOUSE_PACKAGE_REFERENCE"]);
 
@@ -135,6 +137,18 @@ export async function fileCompaniesHouseForm(event, kind) {
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  // Companies House charges a form's fee to the credit account behind the presenter. This site has
+  // no way yet to take that fee from the filer, so a form with a fee is sent only where the fee is
+  // not ours to recover: under the filer's own presenter, or as a test submission, which registers
+  // nothing.
+  if (fee && !ownPresenter && !gatewayTest) {
+    return http402PaymentRequiredResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: `Companies House charges a fee for a ${label}, and this site cannot take that fee yet, so it has not filed it`,
+      error: { code: "fee-path-not-wired", fee },
+    });
+  }
   const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.
@@ -160,6 +174,7 @@ export async function fileCompaniesHouseForm(event, kind) {
       submissionNumber,
       dateSigned: form.dateSigned,
       formXml,
+      document: buildDocument ? buildDocument(form) : undefined,
       gatewayTest,
     });
 

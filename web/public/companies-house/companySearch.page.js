@@ -382,6 +382,14 @@ const AUTHORITY_SOURCES = {
     url: "https://assets.publishing.service.gov.uk/media/69120af9ece74c08fbaa6456/AD04_v8.0-FINAL.pdf",
     title: "AD04 Change of location of the company records to the registered office",
   },
+  changeOfNameForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6912090f663088df8f54f4b7/NM01_v7.0-FINAL.pdf",
+    title: "NM01 Notice of change of name by resolution",
+  },
+  changeOfNameGuide: {
+    url: "https://www.gov.uk/make-changes-to-your-limited-company/company-name",
+    title: "Make changes to your private limited company: Company name",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -485,6 +493,15 @@ function authorityNotes(activityId) {
         "recordsToOfficeForm",
         "You may use this form to tell us which company records are returning to the registered office.",
       ),
+      codeOnline,
+    ],
+    "change-company-name": [
+      inEnglishOnly(
+        "changeOfNameForm",
+        "Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager.",
+      ),
+      inEnglishOnly("changeOfNameForm", "You may use this form to give notice of an unconditional change of name by the company members."),
+      inEnglishOnly("changeOfNameGuide", "Your company name will not officially change until Companies House registers it."),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -845,6 +862,21 @@ async function renderConfirmationSection(profile) {
     activityId: "file-confirmation-statement",
     page: "fileConfirmationStatement.html",
     label: window.siteText("ch.drill.file-confirmation-statement", "File a confirmation statement"),
+    companyNumber: profile.companyNumber,
+  });
+}
+
+async function renderNameSection(profile) {
+  const section = document.getElementById("nameSection");
+  section.innerHTML = "";
+  sectionHeading(section, window.siteText("ch.drill.company-name", "Company name"));
+  const name = document.createElement("p");
+  name.textContent = profile.companyName;
+  section.appendChild(name);
+  await appendFileThis(section, {
+    activityId: "change-company-name",
+    page: "changeCompanyName.html",
+    label: window.siteText("ch.drill.change-name", "Change the company name"),
     companyNumber: profile.companyNumber,
   });
 }
@@ -1415,6 +1447,7 @@ async function showView(state) {
         renderAccountsSection(profile),
         renderConfirmationSection(profile),
         renderOfficeSection(profile),
+        renderNameSection(profile),
         renderEmailSection(profile),
         renderRecordsSection(profile),
       ]);

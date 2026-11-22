@@ -103,6 +103,15 @@ const FORM_FIELDS = {
     address: { premise: "Unit 4, Harbour House", street: "12 Quay Street", postTown: "Bristol", country: "GB-ENG", postcode: "BS1 4DJ" },
   },
   "record-location": { destination: "sail", records: ["MEMBER", "DIRCONTRACT"] },
+  // A form with a fee is filed here only under the filer's own presenter, whose account Companies House charges.
+  "change-of-name": {
+    method: "resolution",
+    proposedName: "Bramwell Tennant Trading Limited",
+    meetingDate: "2026-11-20",
+    sameDay: false,
+    noticeGiven: true,
+    ownPresenter: { id: "66666666000", code: "OWNCODE1" },
+  },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);
