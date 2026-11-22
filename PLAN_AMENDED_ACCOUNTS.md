@@ -247,7 +247,7 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 | Q5 | A `CompanyDataRequest` takes a `MadeUpDate`. Are the shareholdings and the statement of capital in the answer the register as at that date, or as at the last confirmation statement? What does the answer hold when the `MadeUpDate` is before the last confirmation statement, or after today? Does it state shareholdings for every private company limited by shares? | AA31 copy (section 11.4, point 5) |
 | Q6 | In revised accounts by replacement, does `core:DateAuthorisationFinancialStatementsForIssue` hold the date the directors approved the revised accounts (as `bus:DateApprovalRevisionReport` does), or the date they approved the original accounts? Four revised documents on the 2026 taxonomy in the Accounts Data Product daily file of 2026-11-21 hold the revision date there, equal to `bus:DateApprovalRevisionReport`. One revised small company document on the 2025 taxonomy in the daily file of 2026-11-20 holds the original approval date there and dates the revision later. Until the answer, Submit follows the 2026 taxonomy examples and puts the revision date there | AA1 |
 
-One point is settled from examples before any question. AA1 reads amended examples in the Accounts Data Product to see which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. It becomes a question only when the examples disagree.
+The examples in the Accounts Data Product disagree on which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision, so that point is Q6.
 
 Until Q2 has an answer, Submit offers a revision only for accounts that it filed. AA23 and AA24 read the sets that the register holds, so that a revision can start from accounts filed another way when Q2 allows it. A customer whose accounts went another way reads the paper route on the GOV.UK page.
 
@@ -512,7 +512,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Goal.** One short email that asks Q1 to Q6 of section 2.3.
 - **How.** Use the `email-draft` skill on Opus. It reads the thread and the operator's sent mail from corpus-loom. The email is a reply on the XML team's accounts testing thread, which `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` names.
 - **Facts the draft may state.** Submit files micro-entity, small company and dormant accounts under its live package. It builds revised accounts by replacement with the six facts of the accounts specification's "Revised Accounts" section. GOV.UK says software can file an amendment "if you used it to file your annual accounts".
-- **Rules.** Four questions, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines. The operator sent the listing request of board row OOS22 under a subject of its own; the draft's header offers one for this email too.
+- **Rules.** The questions of section 2.3, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines. The operator sent the listing request of board row OOS22 under a subject of its own; the draft's header offers one for this email too.
 - **Output.** `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_REVISED_ACCOUNTS.md`, committed in the private repository.
 - **Waits on**: nothing. AA1's date question joins the draft when it arises before the send. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
 
@@ -526,7 +526,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 - **Goal.** The reply to OAA1 is on record, and section 2.3 of this plan holds each answer.
 - **How.** Find the reply in the mail mirror with the `corpus-loom` `search` tool (source `mail-antony`, the subject of OAA1's email). Write it beside the sent email as `EMAIL_XMLGW_REVISED_ACCOUNTS_REPLY.md` in `../private.diyaccounting.co.uk/companies-house/correspondence/`, in the form of `EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` there. Write each answer into section 2.3 in one sentence, with no name and no quoted text.
-- **What the answers start.** The answer to Q1 decides OAA2: test submissions and a review, or neither. The answers to Q2 and Q3 start AA15. The answer to Q4 gives AA4's copy its time limit, or removes the sentence.
+- **What the answers start.** The answer to Q1 decides OAA2: test submissions and a review, or neither. The answers to Q2 and Q3 start AA15. The answer to Q4 gives AA4's copy its time limit, or removes the sentence. The answer to Q5 settles the date that the builder states for the members (section 11.4, point 5). The answer to Q6 confirms the date that AA1's document puts in `core:DateAuthorisationFinancialStatementsForIssue`, or changes it.
 - **Waits on**: the reply to OAA1. **Class**: machine-only. **Repository**: private, submit. **Model**: Sonnet. **Size**: 2 files.
 
 #### AA10. Revised cases for the review
