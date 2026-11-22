@@ -17,16 +17,30 @@ function companiesHouseFilingIsSandbox() {
   return base.includes("sandbox");
 }
 
+function companiesHouseGatewayIsTestService() {
+  return process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+}
+
+// The Companies House routes that file, or read and render, through the XML gateway. Every other
+// Companies House route goes through the REST filing API or its public data lookups.
+const XML_GATEWAY_PATH_PATTERN =
+  /^\/api\/v1\/companies-house\/(accounts|confirmation-statement|psc-verification-statement|company\/[^/]+\/filing-data)(\/|$)/;
+
 /**
- * Whether a request for an activity unlisted in this environment may run: it asks for preview
- * features and its HMRC account is synthetic, or it is a Companies House request on a deployment
- * that files to the Companies House test service.
+ * Whether a request for an activity unlisted in this environment may run. It asks for preview
+ * features, and the service it reaches is a test service: for a Companies House path, the XML
+ * gateway's test service (accounts, confirmation statement, PSC verification statement, filing
+ * data) or the sandbox filing API (every other Companies House path), whatever the HMRC account;
+ * for any other path, the synthetic HMRC account.
  * @param {object} event - The Lambda event
  * @param {string} requestPath - The request path
  * @returns {boolean} True when the request may run against the sandbox
  */
 export function previewRunsAgainstSandbox(event, requestPath) {
   if (String(getHeader(event?.headers, PREVIEW_FEATURES_HEADER) || "").toLowerCase() !== "on") return false;
-  if (String(getHeader(event?.headers, "hmrcAccount") || "").toLowerCase() === "synthetic") return true;
-  return String(requestPath || "").startsWith(COMPANIES_HOUSE_PATH_PREFIX) && companiesHouseFilingIsSandbox();
+  const path = String(requestPath || "");
+  if (path.startsWith(COMPANIES_HOUSE_PATH_PREFIX)) {
+    return XML_GATEWAY_PATH_PATTERN.test(path) ? companiesHouseGatewayIsTestService() : companiesHouseFilingIsSandbox();
+  }
+  return String(getHeader(event?.headers, "hmrcAccount") || "").toLowerCase() === "synthetic";
 }

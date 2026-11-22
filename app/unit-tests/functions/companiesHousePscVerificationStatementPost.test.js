@@ -304,6 +304,31 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("refuses a synthetic preview request on prod, where the statement is unlisted and the gateway is live, and sends nothing", async () => {
+    process.env.ENVIRONMENT_NAME = "prod";
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+    process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
+    const response = await companiesHousePscVerificationStatementPostHandler(
+      buildEvent({ headers: { "x-preview-features": "on", "hmrcAccount": "synthetic" } }),
+    );
+    expect(response.statusCode).toBe(403);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(parseResponseBody(response)).toMatchObject({
+      code: "ACTIVITY_ENVIRONMENT_RESTRICTED",
+      activityId: "file-psc-verification-statement",
+    });
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("lets a preview request file the statement on prod where the gateway is the test service", async () => {
+    process.env.ENVIRONMENT_NAME = "prod";
+    process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+    process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
+    const response = await companiesHousePscVerificationStatementPostHandler(buildEvent({ headers: { "x-preview-features": "on" } }));
+    expect(response.statusCode).not.toBe(403);
+    expect(mockPostToGateway).toHaveBeenCalled();
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await companiesHousePscVerificationStatementPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

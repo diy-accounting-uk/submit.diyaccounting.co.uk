@@ -100,10 +100,7 @@ export function refuseRevisionWhenNotEnabled(event, request, carriesRevision) {
   if (!carriesRevision) return undefined;
   const activity = loadCatalogFromRoot().activities?.find((candidate) => candidate.id === REVISED_ACCOUNTS_ACTIVITY_ID);
   const environmentName = process.env.ENVIRONMENT_NAME;
-  // Revised accounts go to the XML gateway, so a preview request may file one only where that
-  // gateway is the Companies House test service; a synthetic HMRC account says nothing about it.
-  const previewOnTestGateway = previewRunsAgainstSandbox(event, request?.pathname) && process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
-  const enabled = isActivityListedInEnvironment(activity, environmentName) || previewOnTestGateway;
+  const enabled = isActivityListedInEnvironment(activity, environmentName) || previewRunsAgainstSandbox(event, request?.pathname);
   if (activity && enabled) return undefined;
   return http403ForbiddenResponse({
     request,
