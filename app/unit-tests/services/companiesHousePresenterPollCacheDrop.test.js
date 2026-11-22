@@ -49,9 +49,11 @@ vi.mock("@app/lib/activityAlert.js", () => ({
 
 const mockListCacheKeys = vi.fn();
 const mockDeleteCacheEntry = vi.fn();
+const mockPutCacheEntry = vi.fn();
 vi.mock("@app/data/dynamoDbCompaniesHouseCacheRepository.js", () => ({
   listCacheKeys: (...args) => mockListCacheKeys(...args),
   deleteCacheEntry: (...args) => mockDeleteCacheEntry(...args),
+  putCacheEntry: (...args) => mockPutCacheEntry(...args),
 }));
 
 const { pollPresenterSubmissions } = await import("@app/services/companiesHousePresenterPoll.js");
@@ -106,6 +108,7 @@ describe("the scheduled presenter poll and the company cache", () => {
     process.env.COMPANIES_HOUSE_GATEWAY_TEST = "false";
     mockListCacheKeys.mockResolvedValue(CACHED_KEYS);
     mockDeleteCacheEntry.mockResolvedValue(undefined);
+    mockPutCacheEntry.mockResolvedValue(undefined);
   });
 
   test("an acceptance it records drops the company's register answers and keeps the figures", async () => {
@@ -116,6 +119,17 @@ describe("the scheduled presenter poll and the company cache", () => {
     expect(result).toMatchObject({ polled: true, acknowledged: true, outcomes: [expect.objectContaining({ outcome: "recorded" })] });
     expect(mockListCacheKeys).toHaveBeenCalledWith("04549236");
     expect(mockDeleteCacheEntry.mock.calls).toEqual(CACHED_KEYS.slice(0, 2).map((sk) => ["04549236", sk]));
+    expect(storedStatuses()).toEqual(["completed"]);
+    expect(mockPutCacheEntry.mock.calls.map(([companyNumber, sk]) => [companyNumber, sk])).toEqual([["04549236", "accepted-filing"]]);
+  });
+
+  test("a marker write that fails still records the acceptance and acknowledges the poll", async () => {
+    gatewayAnswers({ statusCode: "ACCEPT", companyNumber: "04549236" });
+    mockPutCacheEntry.mockRejectedValue(new Error("AccessDeniedException"));
+
+    const result = await pollPresenterSubmissions();
+
+    expect(result).toMatchObject({ polled: true, acknowledged: true, outcomes: [expect.objectContaining({ outcome: "recorded" })] });
     expect(storedStatuses()).toEqual(["completed"]);
   });
 
@@ -135,6 +149,7 @@ describe("the scheduled presenter poll and the company cache", () => {
     expect(result).toMatchObject({ polled: true, acknowledged: true });
     expect(mockListCacheKeys).not.toHaveBeenCalled();
     expect(mockDeleteCacheEntry).not.toHaveBeenCalled();
+    expect(mockPutCacheEntry).not.toHaveBeenCalled();
     expect(storedStatuses()).toEqual(["failed"]);
   });
 

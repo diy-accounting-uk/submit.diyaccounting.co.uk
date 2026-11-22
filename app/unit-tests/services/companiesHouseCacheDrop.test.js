@@ -6,12 +6,15 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 
 const mockListCacheKeys = vi.fn();
 const mockDeleteCacheEntry = vi.fn();
+const mockPutCacheEntry = vi.fn();
 vi.mock("@app/data/dynamoDbCompaniesHouseCacheRepository.js", () => ({
   listCacheKeys: (...args) => mockListCacheKeys(...args),
   deleteCacheEntry: (...args) => mockDeleteCacheEntry(...args),
+  putCacheEntry: (...args) => mockPutCacheEntry(...args),
 }));
 
 import { invalidateCompany, dropCompanyCacheAfterAcceptedFiling } from "@app/services/companiesHouseCacheDrop.js";
+import { ACCEPTED_FILING_SK, ACCEPTED_FILING_MARKER_SECONDS } from "@app/services/companiesHouseAcceptedFiling.js";
 
 const CACHED_KEYS = [
   "/company/00000001",
@@ -20,6 +23,7 @@ const CACHED_KEYS = [
   "/company/00000001/persons-with-significant-control?items_per_page=100&start_index=0",
   "figures#MzQ1Njc4OTAxMg",
   "figures-bulk#2098-04-30",
+  "accepted-filing",
 ];
 
 describe("dropping a company's cached register answers", () => {
@@ -27,9 +31,10 @@ describe("dropping a company's cached register answers", () => {
     vi.clearAllMocks();
     mockListCacheKeys.mockResolvedValue(CACHED_KEYS);
     mockDeleteCacheEntry.mockResolvedValue(undefined);
+    mockPutCacheEntry.mockResolvedValue(undefined);
   });
 
-  test("deletes the profile, filing history, officers and PSC answers, and keeps the figures of filed sets", async () => {
+  test("deletes the profile, filing history, officers and PSC answers, and keeps the figures of filed sets and the marker", async () => {
     expect(await invalidateCompany("00000001")).toBe(4);
     expect(mockListCacheKeys).toHaveBeenCalledWith("00000001");
     expect(mockDeleteCacheEntry.mock.calls.map(([, sk]) => sk)).toEqual(CACHED_KEYS.slice(0, 4));
@@ -56,8 +61,24 @@ describe("dropping a company's cached register answers", () => {
     await expect(dropCompanyCacheAfterAcceptedFiling("00000001")).resolves.toBeNull();
   });
 
-  test("an accepted filing that names no company drops nothing", async () => {
+  test("an accepted filing that names no company drops nothing and marks nothing", async () => {
     expect(await dropCompanyCacheAfterAcceptedFiling(undefined)).toBeNull();
     expect(mockListCacheKeys).not.toHaveBeenCalled();
+    expect(mockPutCacheEntry).not.toHaveBeenCalled();
+  });
+
+  test("an accepted filing writes one marker for the company, holding the acceptance time, for the marker's life", async () => {
+    const before = new Date().toISOString();
+    await dropCompanyCacheAfterAcceptedFiling("00000001");
+    expect(mockPutCacheEntry).toHaveBeenCalledTimes(1);
+    const [companyNumber, sk, value, readAt, ttlSeconds] = mockPutCacheEntry.mock.calls[0];
+    expect([companyNumber, sk, ttlSeconds]).toEqual(["00000001", ACCEPTED_FILING_SK, ACCEPTED_FILING_MARKER_SECONDS]);
+    expect(value.acceptedAt >= before).toBe(true);
+    expect(readAt).toBe(value.acceptedAt);
+  });
+
+  test("a marker write that fails still drops the answers and throws nothing", async () => {
+    mockPutCacheEntry.mockRejectedValue(new Error("AccessDeniedException"));
+    await expect(dropCompanyCacheAfterAcceptedFiling("00000001")).resolves.toBe(4);
   });
 });

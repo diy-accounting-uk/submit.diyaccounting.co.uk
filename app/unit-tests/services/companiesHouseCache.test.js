@@ -507,3 +507,93 @@ describe("services/companiesHouseCache", () => {
     expect(insolvency.cases[0].practitioners).toEqual([{ name: "A PRACTITIONER", role: "practitioner" }]);
   });
 });
+
+const { markAcceptedFiling, ACCEPTED_FILING_SK, ACCEPTED_FILING_MARKER_SECONDS, AFTER_ACCEPTED_FILING_SECONDS } =
+  await import("@app/services/companiesHouseAcceptedFiling.js");
+
+describe("the cache after an accepted filing", () => {
+  const PROFILE = "/company/00000001";
+  const readProfile = () => cachedCompaniesHouseGet("00000001", PROFILE, {}, { kind: "profile" });
+  const later = (seconds) => new Date(Date.now() + seconds * 1000).toISOString();
+
+  beforeEach(() => {
+    table.clear();
+    answers = [];
+    calls.length = 0;
+    stopUntil = 0;
+  });
+
+  test("the marker lives at least as long as the longest-lived register answer", () => {
+    const registerLifetimes = Object.entries(KINDS)
+      .filter(([name]) => name !== "figures")
+      .map(([, kind]) => kind.seconds);
+    expect(ACCEPTED_FILING_MARKER_SECONDS).toBeGreaterThanOrEqual(Math.max(NOT_FOUND_SECONDS, ...registerLifetimes));
+    expect(AFTER_ACCEPTED_FILING_SECONDS).toBe(120);
+  });
+
+  test("the marker is one entry holding the acceptance time, kept for the marker's life", async () => {
+    const acceptedAt = later(0);
+    expect(await markAcceptedFiling("00000001", acceptedAt)).toBe(true);
+    expect([...table.values()]).toEqual([
+      expect.objectContaining({ sk: ACCEPTED_FILING_SK, value: { acceptedAt }, ttlSeconds: ACCEPTED_FILING_MARKER_SECONDS }),
+    ]);
+  });
+
+  test("an answer read before the acceptance is read from Companies House again", async () => {
+    answers = [{ ok: true, status: 200, data: { company_name: "OLD NAME LIMITED" } }];
+    await readProfile();
+    await markAcceptedFiling("00000001", later(1));
+    answers = [{ ok: true, status: 200, data: { company_name: "NEW NAME LIMITED" } }];
+
+    const answer = await readProfile();
+
+    expect(calls).toHaveLength(2);
+    expect(answer).toMatchObject({ fromCache: false, data: { company_name: "NEW NAME LIMITED" } });
+  });
+
+  test("an answer read after the acceptance is kept for at most the short lifetime, then served from the cache", async () => {
+    await markAcceptedFiling("00000001", later(-1));
+    answers = [{ ok: true, status: 200, data: { company_name: "NEW NAME LIMITED" } }];
+    await readProfile();
+    expect(table.get(key("00000001", cacheSk(PROFILE))).ttlSeconds).toBe(AFTER_ACCEPTED_FILING_SECONDS);
+
+    const answer = await readProfile();
+
+    expect(calls).toHaveLength(1);
+    expect(answer.fromCache).toBe(true);
+  });
+
+  test("a 404 read while the marker stands is kept for at most the short lifetime", async () => {
+    await markAcceptedFiling("00000001", later(-1));
+    answers = [{ ok: false, status: 404 }];
+    await readProfile();
+    expect(table.get(key("00000001", cacheSk(PROFILE))).ttlSeconds).toBe(AFTER_ACCEPTED_FILING_SECONDS);
+  });
+
+  test("a company with no marker keeps its answers for their kind's lifetime", async () => {
+    await markAcceptedFiling("00000002", later(-1));
+    answers = [{ ok: true, status: 200, data: { company_name: "OTHER LIMITED" } }];
+    await readProfile();
+    expect(table.get(key("00000001", cacheSk(PROFILE))).ttlSeconds).toBe(KINDS.profile.seconds);
+  });
+
+  test("the figures of a filed set keep their lifetime and are served while the marker stands", async () => {
+    const endpoint = "/document/MzQ1/figures";
+    answers = [{ ok: true, status: 200, data: { transactionId: "MzQ1" } }];
+    await cachedCompaniesHouseGet("00000001", endpoint, {}, { kind: "figures" });
+    await markAcceptedFiling("00000001", later(1));
+
+    const answer = await cachedCompaniesHouseGet("00000001", endpoint, {}, { kind: "figures" });
+
+    expect(answer.fromCache).toBe(true);
+    expect(table.get(key("00000001", cacheSk(endpoint))).ttlSeconds).toBe(KINDS.figures.seconds);
+  });
+
+  test("the drop of a company's answers keeps its marker", async () => {
+    await markAcceptedFiling("00000001", later(-1));
+    answers = [{ ok: true, status: 200, data: {} }];
+    await readProfile();
+    await invalidateCompany("00000001");
+    expect([...table.values()].map((item) => item.sk)).toEqual([ACCEPTED_FILING_SK]);
+  });
+});

@@ -1610,7 +1610,8 @@ public class CompaniesHouseStack extends Stack {
                 props.sharedNames().companiesHouse.companiesHouseCompanyReportGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseCompanyReportGetLambda, bundlesTable, region, account, props, activityBusArn, true);
-        // The cache's reads and writes; the polls that record an accepted filing drop a company's entries.
+        // The cache's reads (GetItem: an answer and the accepted filing marker) and writes (PutItem); the
+        // polls that record an accepted filing drop a company's entries and write the marker.
         companiesHouseCacheTable.grant(
                 this.companiesHouseCompanyReportGetLambda, "dynamodb:GetItem", "dynamodb:PutItem");
 
@@ -3212,8 +3213,9 @@ public class CompaniesHouseStack extends Stack {
                 "Created Lambda %s for the Companies House presenter poll with an office-hours schedule",
                 this.companiesHouseSubmissionStatusPollLambda.getNode().getId());
 
-        // A poll that records an accepted filing drops the company's cached register answers
-        // (companiesHouseCacheDrop.js): one Query of the company's entries and a delete of each.
+        // A poll that records an accepted filing drops the company's cached register answers and marks
+        // the acceptance (companiesHouseCacheDrop.js): dynamodb:Query for listCacheKeys,
+        // dynamodb:DeleteItem for deleteCacheEntry, dynamodb:PutItem for markAcceptedFiling's marker.
         for (Function recordsAcceptedFiling : List.of(
                 this.companiesHouseAccountsGetLambda,
                 this.companiesHouseConfirmationStatementGetLambda,
@@ -3222,7 +3224,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseSubmissionStatusPollLambda)) {
             recordsAcceptedFiling.addEnvironment(
                     "COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME", companiesHouseCacheTable.getTableName());
-            companiesHouseCacheTable.grant(recordsAcceptedFiling, "dynamodb:Query", "dynamodb:DeleteItem");
+            companiesHouseCacheTable.grant(
+                    recordsAcceptedFiling, "dynamodb:Query", "dynamodb:DeleteItem", "dynamodb:PutItem");
         }
 
         // Each signed-in lookup on the shared Companies House API key charges the account's counter in

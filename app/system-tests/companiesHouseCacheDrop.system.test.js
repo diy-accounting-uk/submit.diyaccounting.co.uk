@@ -4,9 +4,10 @@
 // app/system-tests/companiesHouseCacheDrop.system.test.js
 // A company's cached register answers, against local Dynalite tables and the HTTP simulator: an
 // accepted filing drops them, so the next read goes to Companies House, and a rejected filing
-// leaves them.
+// leaves them. An answer read after an acceptance, while Companies House's public register may not
+// show the filing yet, is kept only briefly.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
+import { describe, test, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { startSimulator } from "../http-simulator/index.js";
 
@@ -74,6 +75,10 @@ beforeAll(async () => {
   ({ putAsyncRequest } = await import("../data/dynamoDbAsyncRequestRepository.js"));
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 afterAll(async () => {
   if (simulator) await simulator.stop();
   stopDynalite?.();
@@ -98,5 +103,19 @@ describe("a company's cached register answers after a filing, against DynamoDB",
     expect(afterAcceptance.fromCache).toBe(false);
     expect(afterAcceptance.data.company_number).toBe(COMPANY);
     expect((await readProfile()).fromCache).toBe(true);
+  });
+
+  test("a profile read a minute after an acceptance is read from Companies House again within its normal lifetime", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const acceptedAt = Date.now();
+    await recordOutcome("00SYS3", "ACCEPT");
+
+    vi.setSystemTime(acceptedAt + 60 * 1000);
+    expect((await readProfile()).fromCache).toBe(false);
+    expect((await readProfile()).fromCache).toBe(true);
+
+    // Four minutes after the acceptance: inside the profile's ten minutes, past the short lifetime.
+    vi.setSystemTime(acceptedAt + 4 * 60 * 1000);
+    expect((await readProfile()).fromCache).toBe(false);
   });
 });

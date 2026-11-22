@@ -325,6 +325,30 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void theLambdasThatRecordAnAcceptedFilingMayOnlyListDeleteAndMarkTheCompanyCache() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+        String cacheTable = SubmitSharedNames.forDocs().data.companiesHouseCacheTableName;
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(),
+                pollFunctionName())) {
+            assertEquals(
+                    java.util.Set.of("dynamodb:DeleteItem", "dynamodb:PutItem", "dynamodb:Query"),
+                    actionsOnTable(template, functionName, cacheTable),
+                    functionName + " lists, drops and marks the company's cache entries, and nothing else");
+            assertHasEnvironmentVariable(template, functionName, "COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME");
+        }
+        assertEquals(
+                java.util.Set.of("dynamodb:GetItem", "dynamodb:PutItem"),
+                actionsOnTable(
+                        template, stack.companiesHouseCompanyReportGetLambdaProps.ingestFunctionName(), cacheTable),
+                "the company reports Lambda reads answers and the marker, and writes answers");
+    }
+
+    @Test
     void thePagePollLambdasCanChargeTheFilingsToken() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
@@ -1614,6 +1638,27 @@ class CompaniesHouseStackTest {
                 .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
                 .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
                 .filter(statement -> String.valueOf(statement.get("Resource")).contains(fragment))
+                .forEach(statement -> {
+                    Object action = statement.get("Action");
+                    if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));
+                    else actions.add(String.valueOf(action));
+                });
+        return actions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> actionsOnTable(Template template, String functionName, String tableName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        var actions = new java.util.TreeSet<String>();
+        template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("table/" + tableName))
                 .forEach(statement -> {
                     Object action = statement.get("Action");
                     if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));

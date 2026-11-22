@@ -13,6 +13,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { companiesHouseHttpGet } from "./companiesHouseApi.js";
 import { companiesHouseStopSecondsLeft, stopCompaniesHouseLookups } from "./companiesHouseLookupLimit.js";
 import { getCacheEntry, putCacheEntry } from "../data/dynamoDbCompaniesHouseCacheRepository.js";
+import { acceptedFilingAt, AFTER_ACCEPTED_FILING_SECONDS } from "./companiesHouseAcceptedFiling.js";
 import { emitMetric } from "../lib/emfMetrics.js";
 import { createLogger } from "../lib/logger.js";
 import { loggedOutboundPathOf } from "../lib/loggedPath.js";
@@ -261,7 +262,9 @@ export function withCompaniesHouseCallLimit(limit, view) {
 /**
  * One Companies House answer through the cache. A hit makes no call. A miss calls Companies House
  * once, trims the answer by its kind and stores it for the kind's lifetime; a 404 is stored for ten
- * minutes and any other failure is not stored. During the stop a 429 sets, it reads the cache only.
+ * minutes and any other failure is not stored. While the company's accepted filing marker stands, a
+ * register answer read before the acceptance is a miss, and a register answer is stored for at most
+ * AFTER_ACCEPTED_FILING_SECONDS. During the stop a 429 sets, it reads the cache only.
  * An answer too large to store is answered once and then, for its kind's lifetime, as status 413
  * with tooLarge, with no further call.
  * @param {string} companyNumber
@@ -275,8 +278,13 @@ export function withCompaniesHouseCallLimit(limit, view) {
 export async function cachedCompaniesHouseGet(companyNumber, endpoint, queryParams, { kind }) {
   const { trim, seconds } = kindOf(kind);
   const sk = cacheSk(endpoint, queryParams);
+  // After an accepted filing the public register may still show the old answer for a while, so a
+  // register answer read before the acceptance is not used and a new one is kept only briefly. The
+  // figures of a filed set do not change with a filing.
+  const acceptedAt = kind === "figures" ? null : await acceptedFilingAt(companyNumber);
+  const keptFor = (lifetime) => (acceptedAt ? Math.min(lifetime, AFTER_ACCEPTED_FILING_SECONDS) : lifetime);
   const cached = await readCache(companyNumber, sk);
-  if (cached) return fromEntry(cached);
+  if (cached && !(acceptedAt && cached.readAt < acceptedAt)) return fromEntry(cached);
 
   const stoppedSeconds = await companiesHouseStopSecondsLeft();
   if (stoppedSeconds) return { ok: false, status: 429, retryAfterSeconds: stoppedSeconds };
@@ -290,11 +298,11 @@ export async function cachedCompaniesHouseGet(companyNumber, endpoint, queryPara
   const readAt = new Date().toISOString();
   if (response.ok) {
     const data = trim(response.data);
-    await writeCache(companyNumber, sk, data, readAt, seconds, kind);
+    await writeCache(companyNumber, sk, data, readAt, keptFor(seconds), kind);
     return { ok: true, data, readAt, fromCache: false };
   }
   if (response.status === 404) {
-    await writeCache(companyNumber, sk, { notFound: true }, readAt, NOT_FOUND_SECONDS, kind);
+    await writeCache(companyNumber, sk, { notFound: true }, readAt, keptFor(NOT_FOUND_SECONDS), kind);
     return { ok: false, status: 404, readAt, fromCache: false };
   }
   if (response.status === 429) {

@@ -7,23 +7,26 @@
 // register: the profile's dates, the filing history, the officers, the PSCs. The figures of a filed
 // set are kept, because a filed document does not change and a new filing has a new id.
 //
-// This file reads the cache table only, so a Lambda that records an accepted filing needs the
-// table's name and dynamodb:Query and dynamodb:DeleteItem on it, and nothing else of the cache.
+// It also writes the accepted filing's marker (companiesHouseAcceptedFiling.js), which keeps answers
+// read while the public register has not caught up from lasting. A Lambda that records an accepted
+// filing needs the table's name and, on it, dynamodb:Query (listCacheKeys), dynamodb:DeleteItem
+// (deleteCacheEntry) and dynamodb:PutItem (the marker), and nothing else of the cache.
 
 import { listCacheKeys, deleteCacheEntry } from "../data/dynamoDbCompaniesHouseCacheRepository.js";
+import { ACCEPTED_FILING_SK, markAcceptedFiling } from "./companiesHouseAcceptedFiling.js";
 import { createLogger } from "../lib/logger.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseCacheDrop.js" });
 
-const isFigures = (sk) => sk.startsWith("figures");
+const kept = (sk) => sk.startsWith("figures") || sk === ACCEPTED_FILING_SK;
 
 /**
- * Deletes a company's cached answers, keeping the figures of its filings.
+ * Deletes a company's cached answers, keeping the figures of its filings and its accepted filing marker.
  * @param {string} companyNumber
  * @returns {Promise<number>} The entries deleted
  */
 export async function invalidateCompany(companyNumber) {
-  const keys = (await listCacheKeys(companyNumber)).filter((sk) => !isFigures(sk));
+  const keys = (await listCacheKeys(companyNumber)).filter((sk) => !kept(sk));
   for (const sk of keys) {
     await deleteCacheEntry(companyNumber, sk);
   }
@@ -31,9 +34,9 @@ export async function invalidateCompany(companyNumber) {
 }
 
 /**
- * Drops the cached answers of the company an accepted filing was made for. The filing is already
- * accepted when this runs, so a drop that fails is logged and the caller carries on: the entries
- * then last to the end of their own lifetime, an hour at most.
+ * Marks the company's accepted filing and drops the cached answers of the company. The filing is
+ * already accepted when this runs, so a mark or a drop that fails is logged and the caller carries
+ * on: the entries then last to the end of their own lifetime, an hour at most.
  * @param {string|undefined} companyNumber - as Companies House's status names it
  * @returns {Promise<number|null>} The entries deleted, or null when nothing could be dropped
  */
@@ -42,6 +45,7 @@ export async function dropCompanyCacheAfterAcceptedFiling(companyNumber) {
     logger.warn({ message: "An accepted Companies House filing names no company, so no cached answers are dropped" });
     return null;
   }
+  await markAcceptedFiling(companyNumber);
   try {
     const dropped = await invalidateCompany(companyNumber);
     logger.info({ message: "Dropped a company's cached Companies House answers after an accepted filing", companyNumber, dropped });
