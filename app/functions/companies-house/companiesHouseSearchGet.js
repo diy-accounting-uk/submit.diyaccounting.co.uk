@@ -18,6 +18,7 @@ import { extractRequest, http200OkResponse, buildValidationError } from "../../l
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { LOOKUP_CALLS, lookupLimitReached, lookupLimitResponse } from "../../services/companiesHouseLookupLimit.js";
 import {
   companiesHouseHttpGet,
   httpResponseFromCompaniesHouseResponse,
@@ -93,6 +94,8 @@ export async function ingestHandler(event) {
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
+
+  if (await lookupLimitReached(userSub, LOOKUP_CALLS.search)) return lookupLimitResponse(request, responseHeaders);
 
   const { chResponse, results } = await searchCompanies(q, { itemsPerPage, startIndex });
 

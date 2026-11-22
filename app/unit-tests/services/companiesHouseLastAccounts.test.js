@@ -11,10 +11,32 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
-const mockFetchLastFiledAccounts = vi.fn();
+const mockNewestAccountsFiling = vi.fn();
+const mockDocumentOfItem = vi.fn();
 vi.mock("@app/services/companiesHouseFiledAccounts.js", () => ({
-  fetchLastFiledAccounts: (...args) => mockFetchLastFiledAccounts(...args),
+  newestAccountsFiling: (...args) => mockNewestAccountsFiling(...args),
+  documentOfItem: (...args) => mockDocumentOfItem(...args),
 }));
+
+const cache = new Map();
+const mockGetCachedValue = vi.fn(async (key) => cache.get(key) ?? null);
+const mockPutCachedValue = vi.fn(async (key, value) => cache.set(key, value));
+vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
+  getCachedValue: (...args) => mockGetCachedValue(...args),
+  putCachedValue: (...args) => mockPutCachedValue(...args),
+}));
+
+// The newest accounts filing answers this transaction id; each test sets what its document read gives.
+const mockFetchLastFiledAccounts = {
+  mockResolvedValue(read) {
+    if (read.chResponse) mockNewestAccountsFiling.mockResolvedValue({ chResponse: read.chResponse });
+    else if (read.problem === "no-accounts") mockNewestAccountsFiling.mockResolvedValue({ problem: "no-accounts" });
+    else {
+      mockNewestAccountsFiling.mockResolvedValue({ item: { transaction_id: "TX1" } });
+      mockDocumentOfItem.mockResolvedValue(read);
+    }
+  },
+};
 
 const { mapLastAccounts, readLastAccounts } = await import("@app/services/companiesHouseLastAccounts.js");
 
@@ -60,7 +82,12 @@ describe("mapLastAccounts over the filed documents", () => {
 describe("readLastAccounts", () => {
   const SET = { transactionId: "TX1", madeUpDate: "2026-06-30", filedOn: "2026-09-20", paperFiled: false };
 
-  beforeEach(() => mockFetchLastFiledAccounts.mockReset());
+  beforeEach(() => {
+    mockNewestAccountsFiling.mockReset();
+    mockDocumentOfItem.mockReset();
+    cache.clear();
+    delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+  });
 
   test("answers the mapped figures of an iXBRL set", async () => {
     mockFetchLastFiledAccounts.mockResolvedValue({
@@ -122,6 +149,38 @@ describe("readLastAccounts", () => {
     expect(answer.outcome).toBe("unreadable");
     expect(answer.reason.length).toBeLessThanOrEqual(301);
     expect(answer.reason.endsWith("…")).toBe(true);
+  });
+
+  test("answers a repeat for the same filing from its cache, reading no document", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockFetchLastFiledAccounts.mockResolvedValue({
+      set: SET,
+      document: readFileSync(join(FIXTURES, "builder-micro-entity-both-years.xhtml"), "utf8"),
+    });
+    const first = await readLastAccounts("09876543");
+    const second = await readLastAccounts("09876543");
+    expect(second).toEqual(first);
+    expect(mockDocumentOfItem).toHaveBeenCalledTimes(1);
+    expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#09876543#TX1", first, 7 * 24 * 60 * 60);
+  });
+
+  test("reads the document when the cache cannot be read or written", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockGetCachedValue.mockRejectedValueOnce(new Error("no such table"));
+    mockPutCachedValue.mockRejectedValueOnce(new Error("no such table"));
+    mockFetchLastFiledAccounts.mockResolvedValue({
+      set: SET,
+      document: readFileSync(join(FIXTURES, "builder-micro-entity-both-years.xhtml"), "utf8"),
+    });
+    expect((await readLastAccounts("09876543")).outcome).toBe("mapped");
+  });
+
+  test("does not cache a failed read from Companies House", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockNewestAccountsFiling.mockResolvedValue({ item: { transaction_id: "TX9" } });
+    mockDocumentOfItem.mockResolvedValue({ chResponse: { ok: false, status: 429 } });
+    await readLastAccounts("09876543");
+    expect(cache.has("lastaccounts#09876543#TX9")).toBe(false);
   });
 
   test("passes on a failed read from Companies House", async () => {

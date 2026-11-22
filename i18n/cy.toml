@@ -17881,3 +17881,17 @@ cy = '''Mae {count} ffigur ar gyfer y flwyddyn flaenorol wedi’u llenwi o gyfri
 [strings."ch.prior.left-empty"]
 hash = "e783616427e8"
 cy = '''Wedi’u gadael yn wag, heb ffigur yn y cyfrifon hynny: {lines}.'''
+
+# == The prior year from the last accounts only when they end the day before this period: ids ch.prior.year-gap, ch.prior.no-next-period, ch.prior.filing-history ==
+
+[strings."ch.prior.year-gap"]
+hash = "a5363003a39a"
+cy = '''Lluniwyd y cyfrifon diwethaf a ffeiliwyd hyd at {made}, ac mae’r cyfnod hwn yn dechrau ar {start}, felly nid yw’r flwyddyn rhyngddynt ar y gofrestr ac mae’r flwyddyn flaenorol yn wag. Gweler'''
+
+[strings."ch.prior.no-next-period"]
+hash = "995e0f61c98e"
+cy = '''Nid yw Tŷ’r Cwmnïau yn nodi cyfnod cyfrifyddu nesaf ar gyfer y cwmni hwn, felly ni ellir paru blwyddyn y ffurflen hon â’r cyfrifon diwethaf ac mae’r flwyddyn flaenorol yn wag.'''
+
+[strings."ch.prior.filing-history"]
+hash = "2ecd6e3f7e86"
+cy = '''hanes ffeilio’r cwmni'''

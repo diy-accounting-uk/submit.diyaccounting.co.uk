@@ -7,7 +7,11 @@
 
 import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
 import { IxbrlError } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-reader.js";
-import { fetchLastFiledAccounts } from "./companiesHouseFiledAccounts.js";
+import { documentOfItem, newestAccountsFiling } from "./companiesHouseFiledAccounts.js";
+import { getCachedValue, putCachedValue } from "../data/dynamoDbSecurityStateRepository.js";
+import { createLogger } from "../lib/logger.js";
+
+const logger = createLogger({ source: "app/services/companiesHouseLastAccounts.js" });
 import { isValidCompanyNumber } from "./companiesHouseApi.js";
 
 // The most characters of a reason the answer and the log carry: a reader's message can quote text
@@ -41,20 +45,45 @@ export function mapLastAccounts(document) {
   };
 }
 
+// A filed set's document never changes, and a newer filing has a new transaction id, so the answer
+// for one set is kept a week. It holds only figures from the public register.
+const CACHE_SECONDS = 7 * 24 * 60 * 60;
+
 /**
  * The company's last filed accounts as the next accounts' prior year. outcome says what the form can
  * do with them: "mapped" (the figures are in accounts), "none" (no accounts on the register),
  * "paper" (filed on paper, a scanned document only), "no-ixbrl" (filed electronically, with no
  * iXBRL document), "too-large" (the document is over the size limit) or "unreadable" (the document
- * does not read as accounts; reason says why).
+ * does not read as accounts; reason says why). The answer for a filed set is cached by the company
+ * number and the set's transaction id, so a repeat for the same set reads no document.
  * @param {string} companyNumber
  * @returns {Promise<{chResponse: object}|{outcome: string, set?: object, accounts?: object, reason?: string}>}
  *   chResponse alone when a read from Companies House failed
  */
 export async function readLastAccounts(companyNumber) {
-  const { chResponse, problem, set, document } = await fetchLastFiledAccounts(companyNumber);
+  const newest = await newestAccountsFiling(companyNumber);
+  if (newest.chResponse) return { chResponse: newest.chResponse };
+  if (newest.problem === "no-accounts") return { outcome: "none" };
+  const cacheKey = `lastaccounts#${companyNumber}#${newest.item.transaction_id}`;
+  const caching = Boolean(process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME);
+  if (caching) {
+    const cached = await getCachedValue(cacheKey).catch((error) => cacheProblem("read", error));
+    if (cached) return cached;
+  }
+  const answer = await answerOfFiling(newest.item, companyNumber);
+  if (caching && !answer.chResponse) await putCachedValue(cacheKey, answer, CACHE_SECONDS).catch((error) => cacheProblem("written", error));
+  return answer;
+}
+
+// A cache that cannot be read or written is a miss: the answer is read from Companies House.
+function cacheProblem(step, error) {
+  logger.warn({ message: `The last accounts cache could not be ${step}`, error: error.message });
+  return null;
+}
+
+async function answerOfFiling(item, companyNumber) {
+  const { chResponse, problem, set, document } = await documentOfItem(item);
   if (chResponse) return { chResponse };
-  if (problem === "no-accounts") return { outcome: "none" };
   if (problem === "no-ixbrl") return { outcome: set.paperFiled ? "paper" : "no-ixbrl", set };
   if (problem === "too-large") return { outcome: "too-large", set };
   try {

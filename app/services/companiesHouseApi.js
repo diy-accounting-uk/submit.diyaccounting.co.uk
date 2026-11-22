@@ -15,6 +15,7 @@ import {
   http429TooManyRequestsResponse,
   http500ServerErrorResponse,
   http502BadGatewayResponse,
+  http504GatewayTimeoutResponse,
 } from "../lib/httpResponseHelper.js";
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
 
@@ -195,6 +196,14 @@ export function httpResponseFromCompaniesHouseResponse(request, chResponse, resp
       headers: { ...responseHeaders },
       message: "Companies House is rate limiting our lookups",
       retryAfterSeconds,
+    });
+  }
+  if (status === 504) {
+    return http504GatewayTimeoutResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Companies House did not answer in time",
+      error: { companiesHouseResponseCode: status },
     });
   }
   if (status === 502) {

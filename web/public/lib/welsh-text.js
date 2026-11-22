@@ -1117,12 +1117,15 @@ window.WELSH_TEXT = {
   "ch.office.confirm-statement": "Cadarnhewch y datganiad cyfeiriad priodol o dan adran 86(2)",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",
+  "ch.prior.filing-history": "hanes ffeilio’r cwmni",
   "ch.prior.last-were-micro": "Cyfrifon micro-endid oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",
   "ch.prior.last-were-small": "Cyfrifon cwmni bach oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",
   "ch.prior.left-empty": "Wedi’u gadael yn wag, heb ffigur yn y cyfrifon hynny: {lines}.",
   "ch.prior.micro-form": "y ffurflen cyfrifon micro-endid",
   "ch.prior.no-ixbrl":
     "Mae Tŷ’r Cwmnïau yn cadw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, heb ddogfen iXBRL, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
+  "ch.prior.no-next-period":
+    "Nid yw Tŷ’r Cwmnïau yn nodi cyfnod cyfrifyddu nesaf ar gyfer y cwmni hwn, felly ni ellir paru blwyddyn y ffurflen hon â’r cyfrifon diwethaf ac mae’r flwyddyn flaenorol yn wag.",
   "ch.prior.none": "Nid oes gan Dŷ’r Cwmnïau unrhyw gyfrifon ar gyfer y cwmni hwn, felly mae’r flwyddyn flaenorol yn wag.",
   "ch.prior.paper":
     "Cafodd cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, eu ffeilio ar bapur. Mae Tŷ’r Cwmnïau yn eu cadw fel dogfen wedi’i sganio yn unig, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
@@ -1138,6 +1141,8 @@ window.WELSH_TEXT = {
     "Mae cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn rhy fawr i’w darllen yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
   "ch.prior.unreadable":
     "Nid yw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn darllen fel cyfrifon yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
+  "ch.prior.year-gap":
+    "Lluniwyd y cyfrifon diwethaf a ffeiliwyd hyd at {made}, ac mae’r cyfnod hwn yn dechrau ar {start}, felly nid yw’r flwyddyn rhyngddynt ar y gofrestr ac mae’r flwyddyn flaenorol yn wag. Gweler",
   "ch.profile.accounts-due": "Cyfrifon nesaf yn ddyledus",
   "ch.profile.confirmation-due": "Datganiad cadarnhau nesaf yn ddyledus",
   "ch.profile.incorporated": "Corfforwyd",

@@ -315,6 +315,14 @@ public class CompaniesHouseStack extends Stack {
         // Lookup existing DynamoDB MCP sessions table and the key that seals the codes held in it:
         // the three Lambdas that read the codes a user typed on the codes page take their entry
         // from this table, once, and open it with this key.
+        // Lookup existing DynamoDB security state table - each signed-in lookup that calls Companies
+        // House on the shared API key charges the account's counter there, and the last accounts
+        // Lambda keeps its answer for a filed set there.
+        ITable securityStateTable = Table.fromTableName(
+                this,
+                "ImportedSecurityStateTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.securityStateTableName);
+
         ITable mcpSessionsTable = Table.fromTableName(
                 this,
                 "ImportedMcpSessionsTable-%s".formatted(props.deploymentName()),
@@ -338,6 +346,7 @@ public class CompaniesHouseStack extends Stack {
         // Companies House search
         var companiesHouseSearchGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -388,6 +397,7 @@ public class CompaniesHouseStack extends Stack {
         // Companies House company profile
         var companiesHouseCompanyGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -768,6 +778,7 @@ public class CompaniesHouseStack extends Stack {
                 : props.companiesHouseApiKeyArn();
         var companiesHouseRegisteredOfficeAddressGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", officeReadBaseUri)
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -1313,6 +1324,7 @@ public class CompaniesHouseStack extends Stack {
         // space serves every form.
         var companiesHouseOfficersGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -1360,6 +1372,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHousePscGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -1410,6 +1423,7 @@ public class CompaniesHouseStack extends Stack {
         // client; the two accounts routes also read the Document API.
         var companiesHouseFilingHistoryGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -1464,6 +1478,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHouseFiledAccountsGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
@@ -1519,6 +1534,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHouseFiledDocumentGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
@@ -1574,6 +1590,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHouseLastAccountsGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
@@ -2118,6 +2135,25 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for the Companies House presenter poll with an office-hours schedule",
                 this.companiesHouseSubmissionStatusPollLambda.getNode().getId());
+
+        // Each signed-in lookup on the shared Companies House API key charges the account's counter in
+        // one update; the last accounts Lambda also reads and stores its answer for a filed set.
+        for (Function lookup : List.of(
+                this.companiesHouseSearchGetLambda,
+                this.companiesHouseCompanyGetLambda,
+                this.companiesHouseRegisteredOfficeAddressGetLambda,
+                this.companiesHouseOfficersGetLambda,
+                this.companiesHousePscGetLambda,
+                this.companiesHouseFilingHistoryGetLambda,
+                this.companiesHouseFiledAccountsGetLambda,
+                this.companiesHouseFiledDocumentGetLambda)) {
+            securityStateTable.grant(lookup, "dynamodb:UpdateItem");
+        }
+        securityStateTable.grant(
+                this.companiesHouseLastAccountsGetLambda,
+                "dynamodb:UpdateItem",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem");
 
         FphCheckAccess.wireSenders(this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of());
 

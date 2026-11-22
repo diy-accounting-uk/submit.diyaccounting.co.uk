@@ -166,6 +166,33 @@ function emptyReason(answer, welsh) {
   }
 }
 
+/** The ISO date of the day after an ISO date. */
+export function dayAfter(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+// Why the prior year is left empty when the last accounts filed do not end the day before this
+// period starts: the register holds no accounts for the year between.
+function yearGapNote(madeUpDate, nextPeriodStart, companyNumber, welsh, doc) {
+  const fragment = doc.createDocumentFragment();
+  const link = doc.createElement("a");
+  link.href = `${welsh ? "/cy" : ""}/companies-house/company/${encodeURIComponent(companyNumber)}/filing-history`;
+  link.textContent = siteText("ch.prior.filing-history", "the company's filing history");
+  fragment.append(
+    siteText(
+      "ch.prior.year-gap",
+      "The last accounts filed were made up to {made}, and this period starts on {start}, so the year between is not on the register and the prior year is left empty. See",
+      { made: formatDate(madeUpDate, welsh), start: formatDate(nextPeriodStart, welsh) },
+    ),
+    " ",
+    link,
+    ".",
+  );
+  return fragment;
+}
+
 // The balance sheet rule the micro-entity form applies: capital and reserves equal called up share
 // capital plus the profit and loss account. Another software's reserve lines can break it here.
 async function capitalAndReservesNote(doc) {
@@ -188,11 +215,14 @@ async function capitalAndReservesNote(doc) {
 }
 
 /**
- * Fill the open form's prior year from the company's last filed accounts and say what was done.
+ * Fill the open form's prior year from the company's last filed accounts and say what was done. The
+ * figures are placed only when those accounts were made up to the day before the company's next
+ * accounting period starts, as Companies House states it, so that they are this form's prior year.
  * @param {{companyNumber: string, form: "micro"|"small", note: HTMLElement, doc: Document, search: string, welsh: boolean,
- *   fetchLastAccounts: (companyNumber: string) => Promise<Response>}} options
+ *   fetchLastAccounts: (companyNumber: string) => Promise<Response>,
+ *   readProfile: (companyNumber: string) => Promise<{accountsNextPeriodStart?: string}>}} options
  */
-export async function fillPriorYear({ companyNumber, form, note, doc, search, welsh, fetchLastAccounts }) {
+export async function fillPriorYear({ companyNumber, form, note, doc, search, welsh, fetchLastAccounts, readProfile }) {
   note.hidden = true;
   note.replaceChildren();
   if (isRevision(search)) return;
@@ -213,35 +243,28 @@ export async function fillPriorYear({ companyNumber, form, note, doc, search, we
     } else {
       const { accounts, set } = answer;
       if (accounts.regime !== form) paragraphs.push(otherFormNote(accounts.regime, companyNumber, welsh, doc));
-      if (form === "small" && accounts.regime === "small") showSmallCompanyPriorYear(accounts, doc);
-      const placed = placeFigures(accounts, doc);
-      const empty = emptyLines(doc, placed);
-      const values = {
-        count: placed.length,
-        date: formatDate(set.madeUpDate, welsh),
-        approved: formatDate(accounts.approvalDate, welsh),
-      };
-      paragraphs.push(
-        accounts.approvalDate
-          ? siteText(
-              "ch.prior.placed-approved",
-              "{count} prior-year figures are filled in from the company's last accounts, made up to {date} and approved on {approved}. Check them against those accounts.",
-              values,
-            )
-          : siteText(
-              "ch.prior.placed",
-              "{count} prior-year figures are filled in from the company's last accounts, made up to {date}. Check them against those accounts.",
-              values,
-            ),
+      const nextPeriodStart = await readProfile(companyNumber).then(
+        (profile) => profile.accountsNextPeriodStart ?? null,
+        () => undefined,
       );
-      if (empty.length > 0) {
+      if (nextPeriodStart === undefined) {
         paragraphs.push(
-          siteText("ch.prior.left-empty", "Left empty, with no figure in those accounts: {lines}.", { lines: empty.join(", ") }),
+          siteText(
+            "ch.prior.read-failed",
+            "The company's last accounts could not be read from Companies House, so the prior year is left empty.",
+          ),
         );
-      }
-      if (form === "micro") {
-        const reserves = await capitalAndReservesNote(doc);
-        if (reserves) paragraphs.push(reserves);
+      } else if (!nextPeriodStart) {
+        paragraphs.push(
+          siteText(
+            "ch.prior.no-next-period",
+            "Companies House states no next accounting period for this company, so this form's year cannot be matched to the last accounts and the prior year is left empty.",
+          ),
+        );
+      } else if (dayAfter(set.madeUpDate) !== nextPeriodStart) {
+        paragraphs.push(yearGapNote(set.madeUpDate, nextPeriodStart, companyNumber, welsh, doc));
+      } else {
+        paragraphs.push(...(await placedNotes(accounts, set, form, welsh, doc)));
       }
     }
   }
@@ -251,6 +274,39 @@ export async function fillPriorYear({ companyNumber, form, note, doc, search, we
     note.appendChild(paragraph);
   });
   note.hidden = false;
+}
+
+// Places the figures and answers the paragraphs that say what was placed and what was left empty.
+async function placedNotes(accounts, set, form, welsh, doc) {
+  if (form === "small" && accounts.regime === "small") showSmallCompanyPriorYear(accounts, doc);
+  const placed = placeFigures(accounts, doc);
+  const empty = emptyLines(doc, placed);
+  const values = {
+    count: placed.length,
+    date: formatDate(set.madeUpDate, welsh),
+    approved: formatDate(accounts.approvalDate, welsh),
+  };
+  const paragraphs = [
+    accounts.approvalDate
+      ? siteText(
+          "ch.prior.placed-approved",
+          "{count} prior-year figures are filled in from the company's last accounts, made up to {date} and approved on {approved}. Check them against those accounts.",
+          values,
+        )
+      : siteText(
+          "ch.prior.placed",
+          "{count} prior-year figures are filled in from the company's last accounts, made up to {date}. Check them against those accounts.",
+          values,
+        ),
+  ];
+  if (empty.length > 0) {
+    paragraphs.push(siteText("ch.prior.left-empty", "Left empty, with no figure in those accounts: {lines}.", { lines: empty.join(", ") }));
+  }
+  if (form === "micro") {
+    const reserves = await capitalAndReservesNote(doc);
+    if (reserves) paragraphs.push(reserves);
+  }
+  return paragraphs;
 }
 
 if (typeof window !== "undefined") {
@@ -265,6 +321,7 @@ if (typeof window !== "undefined") {
         welsh: document.documentElement.lang === "cy",
         fetchLastAccounts: (number) =>
           window.fetchWithIdToken(`/api/v1/companies-house/company/${encodeURIComponent(number)}/last-accounts`, {}),
+        readProfile: (number) => window.getCompanyProfile(number),
       }).catch((error) => console.error("Failed to fill the prior year from the last accounts:", error)),
   };
 }

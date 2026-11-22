@@ -82,21 +82,9 @@ let mockFetch;
 let routes;
 let metadata;
 
-function headers(map) {
-  return {
-    get: (name) => map[name.toLowerCase()] || null,
-    forEach: (callback) => Object.entries(map).forEach(([key, value]) => callback(value, key)),
-  };
-}
-
-function answer({ status = 200, json, text, headers: map = {} }) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => (json === undefined ? Promise.reject(new Error("not JSON")) : Promise.resolve(json)),
-    text: () => Promise.resolve(text ?? JSON.stringify(json ?? {})),
-    headers: headers(map),
-  };
+// An answer as fetch gives it: a Response with a body stream and real headers.
+function answer({ status = 200, json, text, headers = {} }) {
+  return new Response(text ?? (json === undefined ? "" : JSON.stringify(json)), { status, headers });
 }
 
 const SIGNED_S3_FILE = "https://s3.eu-west-2.amazonaws.com/document-api-images/docs/DOCIXBRL/a.xhtml?X-Amz-Signature=SIGNATUREEXAMPLE";

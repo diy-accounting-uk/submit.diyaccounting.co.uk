@@ -5,7 +5,7 @@
 // The one send path to Companies House. Each request to the REST API, the filing API, the identity
 // service and the XML Gateway leaves through here, and each attempt writes one outbound call record.
 
-import { fetchWithTimeout, normalizeHeaders } from "../lib/httpFetch.js";
+import { fetchTextWithTimeout, fetchWithTimeout, normalizeHeaders } from "../lib/httpFetch.js";
 import { callActorClass, integrationApi, integrationApiForGovTalk, recordedFetch } from "../lib/integrationCalls.js";
 
 const GATEWAY_TEST_FLAG = /<GatewayTest>\s*1\s*<\/GatewayTest>/;
@@ -30,14 +30,17 @@ export function companiesHouseCallTarget(url, { xml } = {}) {
   return isSandboxHost(url) ? "test" : "live";
 }
 
-async function sendRecorded(url, init, timeoutMs, { api, target }) {
+// The send that waits for the headers only; the caller reads the body.
+const sendWithin = (timeoutMs) => async (sendUrl, sendInit) => (await fetchWithTimeout(sendUrl, sendInit, timeoutMs)).response;
+
+async function sendRecorded(url, init, send, { api, target }) {
   const startedAt = Date.now();
   const response = await recordedFetch(url, init, {
     org: "companies-house",
     target,
     api,
     actor: callActorClass(),
-    fetchImplementation: async (sendUrl, sendInit) => (await fetchWithTimeout(sendUrl, sendInit, timeoutMs)).response,
+    fetchImplementation: send,
   });
   return { response, duration: Date.now() - startedAt };
 }
@@ -51,7 +54,7 @@ async function sendRecorded(url, init, timeoutMs, { api, target }) {
  * @param {string} [options.api] - The template of the call, when the URL path would not template well
  */
 export async function sendJsonToCompaniesHouse(url, init, timeoutMs, { api } = {}) {
-  const { response, duration } = await sendRecorded(url, init, timeoutMs, {
+  const { response, duration } = await sendRecorded(url, init, sendWithin(timeoutMs), {
     api: api ?? integrationApi(init.method || "GET", url),
     target: companiesHouseCallTarget(url),
   });
@@ -61,20 +64,31 @@ export async function sendJsonToCompaniesHouse(url, init, timeoutMs, { api } = {
 
 /**
  * Send a request to Companies House and read the body as text into `data`, for a document rather
- * than a JSON answer.
+ * than a JSON answer. The timeout covers the whole body, and the read stops once the body passes
+ * maxBytes: tooLarge is then true and data empty. The record of the call reads the body as read here.
  * @param {string} url
  * @param {Object} init - fetch options
- * @param {number} timeoutMs
- * @param {Object} [options]
+ * @param {number} timeoutMs - the time allowed for the headers and the whole body
+ * @param {Object} options
+ * @param {number} options.maxBytes - the most bytes of body read
  * @param {string} [options.api] - The template of the call, when the URL path would not template well
+ * @throws {HttpTimeoutError} If the headers or the body do not arrive in time
  */
-export async function sendTextToCompaniesHouse(url, init, timeoutMs, { api } = {}) {
-  const { response, duration } = await sendRecorded(url, init, timeoutMs, {
+export async function sendTextToCompaniesHouse(url, init, timeoutMs, { api, maxBytes }) {
+  let tooLarge = false;
+  // The body is read here, within the timeout and the limit, and the record reads the body as read.
+  const sendReadingBody = async (sendUrl, sendInit) => {
+    const read = await fetchTextWithTimeout(sendUrl, sendInit, timeoutMs, { maxBytes });
+    tooLarge = read.tooLarge;
+    const { status, statusText, headers } = read.response;
+    return new Response(read.text || null, { status, statusText, headers });
+  };
+  const { response, duration } = await sendRecorded(url, init, sendReadingBody, {
     api: api ?? integrationApi(init.method || "GET", url),
     target: companiesHouseCallTarget(url),
   });
   const data = await response.text();
-  return { ok: response.ok, status: response.status, data, headers: normalizeHeaders(response.headers), duration, response };
+  return { ok: response.ok, status: response.status, data, tooLarge, headers: normalizeHeaders(response.headers), duration, response };
 }
 
 /**
@@ -85,7 +99,7 @@ export async function sendTextToCompaniesHouse(url, init, timeoutMs, { api } = {
  * @param {number} timeoutMs
  */
 export async function sendXmlToCompaniesHouse(url, init, timeoutMs) {
-  const { response, duration } = await sendRecorded(url, init, timeoutMs, {
+  const { response, duration } = await sendRecorded(url, init, sendWithin(timeoutMs), {
     api: integrationApiForGovTalk("XMLGW", init.body),
     target: companiesHouseCallTarget(url, { xml: init.body }),
   });

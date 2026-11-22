@@ -21,7 +21,7 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => {
   return { ...actual, createLogger: () => fakeLogger };
 });
 
-const { fetchRetryingNetworkErrors, fetchWithTimeout, HttpTimeoutError } = await import("../../lib/httpFetch.js");
+const { fetchRetryingNetworkErrors, fetchWithTimeout, fetchTextWithTimeout, HttpTimeoutError } = await import("../../lib/httpFetch.js");
 
 // A fetch that answers only when its signal aborts, as a request that never returns does.
 function hangingFetch() {
@@ -150,5 +150,74 @@ describe("fetchRetryingNetworkErrors", () => {
     await expect(fetchRetryingNetworkErrors("https://example.test/a", {}, { sleep: async () => {} })).resolves.toBe(response);
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("fetchTextWithTimeout against a server", () => {
+  let server;
+  let baseUrl;
+  let handler;
+
+  beforeEach(async () => {
+    loggedLines.length = 0;
+    vi.unstubAllGlobals();
+    const { createServer } = await import("node:http");
+    server = createServer((request, response) => handler(request, response));
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    baseUrl = `http://127.0.0.1:${server.address().port}`;
+  });
+  afterEach(async () => {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  test("reads a body within the limit", async () => {
+    handler = (request, response) => response.end("<html>accounts</html>");
+    const read = await fetchTextWithTimeout(`${baseUrl}/doc`, {}, 2000, { maxBytes: 1000 });
+    expect(read).toEqual(expect.objectContaining({ text: "<html>accounts</html>", tooLarge: false }));
+  });
+
+  test("stops at the limit for a body larger than its stated length, and reads no further", async () => {
+    let written = 0;
+    handler = (request, response) => {
+      response.writeHead(200, { "Content-Type": "text/html" });
+      const chunk = "x".repeat(64 * 1024);
+      const timer = setInterval(() => {
+        if (response.destroyed || written > 50 * 1024 * 1024) return clearInterval(timer);
+        written += chunk.length;
+        response.write(chunk);
+      }, 1);
+      response.on("close", () => clearInterval(timer));
+    };
+    const read = await fetchTextWithTimeout(`${baseUrl}/doc`, {}, 5000, { maxBytes: 256 * 1024 });
+    expect(read).toEqual(expect.objectContaining({ text: null, tooLarge: true }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(written).toBeLessThan(5 * 1024 * 1024);
+  });
+
+  test("counts the bytes after decompression, so a small compressed body that expands past the limit stops", async () => {
+    const { gzipSync } = await import("node:zlib");
+    const compressed = gzipSync(Buffer.alloc(2 * 1024 * 1024, 0x61));
+    expect(compressed.length).toBeLessThan(64 * 1024);
+    handler = (request, response) => {
+      response.writeHead(200, { "Content-Type": "text/html", "Content-Encoding": "gzip", "Content-Length": compressed.length });
+      response.end(compressed);
+    };
+    const read = await fetchTextWithTimeout(`${baseUrl}/doc`, {}, 5000, { maxBytes: 1024 * 1024 });
+    expect(read.tooLarge).toBe(true);
+  });
+
+  test("times out on a body that stalls after its headers", async () => {
+    handler = (request, response) => {
+      response.writeHead(200, { "Content-Type": "text/html" });
+      response.write("<html>");
+    };
+    const started = Date.now();
+    const error = await fetchTextWithTimeout(`${baseUrl}/doc?X-Amz-Signature=SECRET`, {}, 300, { maxBytes: 1000 }).catch(
+      (thrown) => thrown,
+    );
+    expect(error).toBeInstanceOf(HttpTimeoutError);
+    expect(Date.now() - started).toBeLessThan(3000);
+    expect(error.url).toBe(`${baseUrl}/doc`);
   });
 });

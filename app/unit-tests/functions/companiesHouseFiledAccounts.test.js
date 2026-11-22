@@ -56,6 +56,12 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const mockLookupLimitReached = vi.fn().mockResolvedValue(false);
+vi.mock("@app/services/companiesHouseLookupLimit.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, lookupLimitReached: (...args) => mockLookupLimitReached(...args) };
+});
+
 import { ingestHandler as filingHistoryHandler } from "@app/functions/companies-house/companiesHouseFilingHistoryGet.js";
 import { ingestHandler as filedAccountsHandler } from "@app/functions/companies-house/companiesHouseFiledAccountsGet.js";
 import { ingestHandler as filedDocumentHandler } from "@app/functions/companies-house/companiesHouseFiledDocumentGet.js";
@@ -68,23 +74,9 @@ const DOCUMENT_API = "https://document-api.company-information.service.gov.uk";
 const IXBRL =
   '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body><ix:nonNumeric name="bus:EntityCurrentLegalOrRegisteredName">EXAMPLE LTD</ix:nonNumeric></body></html>';
 
-function fakeHeaders(headers) {
-  return {
-    get: (name) => headers[name.toLowerCase()] || null,
-    forEach: (callback) => {
-      Object.entries(headers).forEach(([key, value]) => callback(value, key));
-    },
-  };
-}
-
-function answer({ status = 200, json, text, headers = {} }) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => (json === undefined ? Promise.reject(new Error("not JSON")) : Promise.resolve(json)),
-    text: () => Promise.resolve(text ?? JSON.stringify(json ?? {})),
-    headers: fakeHeaders(headers),
-  };
+// An answer as fetch gives it: a Response with a body stream and real headers.
+function answer({ status = 200, json, text, stream, headers = {} }) {
+  return new Response(stream ?? text ?? (json === undefined ? "" : JSON.stringify(json)), { status, headers });
 }
 
 function accountsItem({ transactionId, type = "AA", description, madeUpDate, date, documentId, paperFiled = false }) {
@@ -229,6 +221,15 @@ describe("companiesHouseFilingHistoryGet ingestHandler", () => {
     expect(body.filings).toHaveLength(500);
     expect(body.filings[0].transactionId).toBe("TX0000");
     expect(body.filings[499].transactionId).toBe("TX0499");
+  });
+
+  test("answers a JSON 429, calling no Companies House route, when the account has used its share of the API key", async () => {
+    mockLookupLimitReached.mockResolvedValueOnce(true);
+    const response = await filingHistoryHandler(event({ companyNumber: "00000001" }));
+    expect(response.statusCode).toBe(429);
+    expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups from this account. Try again in a few minutes.");
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockLookupLimitReached).toHaveBeenLastCalledWith(expect.any(String), 5);
   });
 
   test("answers Companies House's 404 for an unknown company as JSON", async () => {
@@ -461,6 +462,53 @@ describe("companiesHouseFiledDocumentGet ingestHandler", () => {
     expect(body).toEqual(
       expect.objectContaining({ transactionId: "TXSOFTWARE", contentType: "application/xhtml+xml", document: IXBRL, ixbrl: true }),
     );
+  });
+
+  test("answers a JSON 413 for a document larger than its metadata states, reading no more than the limit", async () => {
+    filing(SOFTWARE_SET);
+    contentRedirectsTo(SIGNED_S3_FILE);
+    let enqueued = 0;
+    routes.unshift([
+      (url) => url === SIGNED_S3_FILE,
+      () => ({
+        stream: new ReadableStream({
+          pull(controller) {
+            enqueued += 1024 * 1024;
+            controller.enqueue(new Uint8Array(1024 * 1024));
+          },
+        }),
+      }),
+    ]);
+    const response = await filedDocumentHandler(event({ companyNumber: "00000001", transactionId: "TXSOFTWARE" }));
+    expect(response.statusCode).toBe(413);
+    expect(parseResponseBody(response).code).toBe("DOCUMENT_TOO_LARGE");
+    expect(enqueued).toBeLessThan(MAX_DOCUMENT_RESPONSE_BYTES + 3 * 1024 * 1024);
+  });
+
+  test("answers a JSON 504 when the document's body stalls after its headers", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      filing(SOFTWARE_SET);
+      contentRedirectsTo(SIGNED_S3_FILE);
+      routes.unshift([
+        (url) => url === SIGNED_S3_FILE,
+        (url, init) => ({
+          stream: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode("<html>"));
+              init.signal.addEventListener("abort", () => controller.error(new DOMException("The operation was aborted.", "AbortError")));
+            },
+          }),
+        }),
+      ]);
+      const pending = filedDocumentHandler(event({ companyNumber: "00000001", transactionId: "TXSOFTWARE" }));
+      await vi.advanceTimersByTimeAsync(25_000);
+      const response = await pending;
+      expect(response.statusCode).toBe(504);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("answers a JSON 404 for a paper-filed set that has no iXBRL document", async () => {

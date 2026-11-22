@@ -55,7 +55,14 @@ const SET = { transactionId: "TX1", madeUpDate: "2098-04-30", filedOn: "2098-11-
 
 const answer = (body, status = 200) => ({ ok: status === 200, status, json: () => Promise.resolve(body) });
 
-async function fill(form, body, { status = 200, search = "?companyNumber=00000001", form: formKind = "micro", typed = {} } = {}) {
+// The profile of a company whose next accounting period starts the day after SET's made-up date.
+const NEXT_PERIOD_PROFILE = { companyNumber: "00000001", accountsNextPeriodStart: "2098-05-01" };
+
+async function fill(
+  form,
+  body,
+  { status = 200, search = "?companyNumber=00000001", form: formKind = "micro", typed = {}, profile = NEXT_PERIOD_PROFILE } = {},
+) {
   document.body.innerHTML = form;
   Object.entries(typed).forEach(([id, text]) => {
     document.getElementById(id).value = text;
@@ -65,6 +72,7 @@ async function fill(form, body, { status = 200, search = "?companyNumber=0000000
     document.getElementById("comparativeFields").style.display = event.target.checked ? "block" : "none";
   });
   const fetchLastAccounts = vi.fn().mockResolvedValue(answer(body, status));
+  const readProfile = profile instanceof Error ? vi.fn().mockRejectedValue(profile) : vi.fn().mockResolvedValue(profile);
   await fillPriorYear({
     companyNumber: "00000001",
     form: formKind,
@@ -73,6 +81,7 @@ async function fill(form, body, { status = 200, search = "?companyNumber=0000000
     search,
     welsh: false,
     fetchLastAccounts,
+    readProfile,
   });
   return { fetchLastAccounts, note: document.getElementById("priorYearNote") };
 }
@@ -96,6 +105,35 @@ describe("prior-year fill", () => {
       "6 prior-year figures are filled in from the company's last accounts, made up to 30 April 2098 and approved on 20 October 2098.",
     );
     expect(note.textContent).toContain("Left empty, with no figure in those accounts: Provisions for liabilities.");
+  });
+
+  it("fills nothing and names both dates, with the filing history, when the last accounts do not end the day before this period", async () => {
+    const { note } = await fill(
+      MICRO_FORM,
+      { outcome: "mapped", set: SET, accounts: MICRO_ACCOUNTS },
+      { profile: { companyNumber: "00000001", accountsNextPeriodStart: "2099-05-01" } },
+    );
+    expect(value("priorFixedAssets")).toBe("");
+    expect(note.textContent).toContain(
+      "The last accounts filed were made up to 30 April 2098, and this period starts on 1 May 2099, so the year between is not on the register and the prior year is left empty. See the company's filing history.",
+    );
+    expect(note.querySelector("a").getAttribute("href")).toBe("/companies-house/company/00000001/filing-history");
+  });
+
+  it("fills nothing when Companies House states no next accounting period", async () => {
+    const { note } = await fill(
+      MICRO_FORM,
+      { outcome: "mapped", set: SET, accounts: MICRO_ACCOUNTS },
+      { profile: { companyNumber: "00000001" } },
+    );
+    expect(value("priorFixedAssets")).toBe("");
+    expect(note.textContent).toContain("Companies House states no next accounting period for this company");
+  });
+
+  it("says the last accounts could not be read when the profile cannot be read", async () => {
+    const { note } = await fill(MICRO_FORM, { outcome: "mapped", set: SET, accounts: MICRO_ACCOUNTS }, { profile: new Error("offline") });
+    expect(value("priorFixedAssets")).toBe("");
+    expect(note.textContent).toContain("could not be read from Companies House");
   });
 
   it("keeps a prior-year figure already entered", async () => {

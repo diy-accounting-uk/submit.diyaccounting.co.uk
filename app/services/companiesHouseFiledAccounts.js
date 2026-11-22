@@ -106,15 +106,30 @@ export async function fetchFiledAccountsDocument(companyNumber, transactionId) {
  *   chResponse alone when a read failed
  */
 export async function fetchLastFiledAccounts(companyNumber) {
+  const newest = await newestAccountsFiling(companyNumber);
+  if (!newest.item) return newest;
+  return documentOfItem(newest.item);
+}
+
+/**
+ * The newest accounts filing on a company's register, from one page of its accounts history.
+ * @param {string} companyNumber
+ * @returns {Promise<{chResponse: object}|{problem: "no-accounts"}|{item: object}>}
+ */
+export async function newestAccountsFiling(companyNumber) {
   const history = await companiesHouseFilingHistory(companyNumber, { category: "accounts", maxPages: 1 });
   if (!history.ok) return { chResponse: history };
   const item = history.data.items.find(isAccountsFiling);
   if (!item) return { problem: "no-accounts" };
-  return documentOfItem(item);
+  return { item };
 }
 
-// One accounts filing's iXBRL document, or why there is none to give.
-async function documentOfItem(item) {
+/**
+ * One accounts filing's iXBRL document, or why there is none to give.
+ * @param {object} item - the filing history item
+ * @returns {Promise<{chResponse?: object, problem?: "no-ixbrl"|"too-large", set?: object, document?: string}>}
+ */
+export async function documentOfItem(item) {
   const { documentId, metadata, failed } = await metadataOf(item);
   if (failed) return { chResponse: failed };
   const set = filedSet(item, metadata);
@@ -123,8 +138,9 @@ async function documentOfItem(item) {
     return { problem: "too-large", set };
   }
 
-  const content = await companiesHouseDocumentContent(documentId, IXBRL_CONTENT_TYPE);
+  const content = await companiesHouseDocumentContent(documentId, IXBRL_CONTENT_TYPE, { maxBytes: MAX_DOCUMENT_RESPONSE_BYTES });
   if (content.status === 406) return { problem: "no-ixbrl", set };
+  if (content.tooLarge) return { problem: "too-large", set };
   if (!content.ok) return { chResponse: content };
   if (Buffer.byteLength(JSON.stringify(content.data)) > MAX_DOCUMENT_RESPONSE_BYTES) return { problem: "too-large", set };
   return { set, document: content.data };

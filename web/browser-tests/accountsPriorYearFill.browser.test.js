@@ -28,10 +28,13 @@ const CONTENT_TYPES = {
   ".woff2": "font/woff2",
 };
 
-function profile(companyNumber, companyName) {
+// accountsNextPeriodStart is the day after the last accounts' made-up date, as the register states it,
+// unless a test gives the company a gap.
+function profile(companyNumber, companyName, accountsNextPeriodStart) {
   return {
     companyNumber,
     companyName,
+    ...(accountsNextPeriodStart ? { accountsNextPeriodStart } : {}),
     companyStatus: "active",
     companyType: "ltd",
     jurisdiction: "england-wales",
@@ -94,11 +97,11 @@ const RESERVES_ACCOUNTS = {
 
 const COMPANIES = {
   "00000001": {
-    profile: profile("00000001", "SIMULATOR EXAMPLE COMPANY LIMITED"),
+    profile: profile("00000001", "SIMULATOR EXAMPLE COMPANY LIMITED", "2098-05-01"),
     lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: "2098-04-30" },
   },
   "SC000000": {
-    profile: profile("SC000000", "SIMULATOR TEST COMPANY (SCOTLAND) LIMITED"),
+    profile: profile("SC000000", "SIMULATOR TEST COMPANY (SCOTLAND) LIMITED", "2098-10-01"),
     lastAccounts: { outcome: "mapped", accounts: SMALL_ACCOUNTS, madeUpDate: "2098-09-30" },
   },
   "00000003": {
@@ -107,8 +110,12 @@ const COMPANIES = {
   },
   "12345678": { profile: profile("12345678", "PRECISION CODE LTD"), lastAccounts: { outcome: "none" } },
   "00000006": {
-    profile: profile("00000006", "RESERVES EXAMPLE LIMITED"),
+    profile: profile("00000006", "RESERVES EXAMPLE LIMITED", "2098-05-01"),
     lastAccounts: { outcome: "mapped", accounts: RESERVES_ACCOUNTS, madeUpDate: "2098-04-30" },
+  },
+  "00000007": {
+    profile: profile("00000007", "MISSED YEAR LIMITED", "2099-05-01"),
+    lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: "2098-04-30" },
   },
 };
 
@@ -249,6 +256,18 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
       "Companies House holds no accounts for this company, so the prior year is left empty.",
     );
     await expect(page.locator("#includeComparatives")).not.toBeChecked();
+  });
+
+  test("a company whose last accounts end a year before this period opens the form empty, naming both dates and the filing history", async ({
+    page,
+  }) => {
+    await serveSite(page);
+    await lookUp(page, "fileMicroEntityAccounts", "00000007");
+    await expect(page.locator("#priorYearNote")).toContainText(
+      "The last accounts filed were made up to 30 April 2098, and this period starts on 1 May 2099, so the year between is not on the register and the prior year is left empty. See the company's filing history.",
+    );
+    await expect(page.locator("#priorYearNote a")).toHaveAttribute("href", "/companies-house/company/00000007/filing-history");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("");
   });
 
   test("a prior year with reserves the micro-entity form lacks names the line to correct, and the balance rule refuses it", async ({

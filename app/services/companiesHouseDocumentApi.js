@@ -6,7 +6,7 @@
 // item links to, with the API key the public data client uses.
 
 import { createLogger } from "../lib/logger.js";
-import { DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { DEFAULT_TIMEOUTS, HttpTimeoutError } from "../lib/httpFetch.js";
 import { sendTextToCompaniesHouse } from "./companiesHouseSend.js";
 import { buildCompaniesHouseHeaders, companiesHouseGetJson, sendWithApiKey } from "./companiesHouseApi.js";
 
@@ -80,18 +80,31 @@ function badGateway(headers) {
  * A filed document's content in one content type. The Document API answers 302 to the file, which
  * is fetched without the API key and only from the hosts isDocumentFileLocation allows, or 406 when
  * it holds no document of that type. A redirect anywhere else, or a further redirect from the file's
- * host, answers 502 and fetches nothing more.
+ * host, answers 502 and fetches nothing more. A body over maxBytes stops the read and answers
+ * tooLarge; a request or body that does not arrive in time answers 504.
  * @param {string} documentId
  * @param {string} contentType - for example application/xhtml+xml
- * @returns {Promise<{ok: boolean, status: number, data: string, headers: object}>}
+ * @param {{maxBytes: number}} limits - the most bytes of a document read
+ * @returns {Promise<{ok: boolean, status: number, data: string, headers: object, tooLarge?: boolean}>}
  */
-export async function companiesHouseDocumentContent(documentId, contentType) {
+export async function companiesHouseDocumentContent(documentId, contentType, { maxBytes }) {
+  try {
+    return await readDocumentContent(documentId, contentType, maxBytes);
+  } catch (error) {
+    if (!(error instanceof HttpTimeoutError)) throw error;
+    logger.warn({ message: "The Document API did not answer in time", timeoutMs: error.timeoutMs });
+    return { ok: false, status: 504, data: "", headers: {} };
+  }
+}
+
+async function readDocumentContent(documentId, contentType, maxBytes) {
   const requestUrl = `${getCompaniesHouseDocumentBaseUrl()}/document/${documentId}/content`;
   const answer = await sendWithApiKey((key) => {
     const headers = { ...buildCompaniesHouseHeaders(key), Accept: contentType };
     logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, accept: contentType });
-    return sendTextToCompaniesHouse(requestUrl, { method: "GET", headers, redirect: "manual" }, DEFAULT_TIMEOUTS.SHORT);
+    return sendTextToCompaniesHouse(requestUrl, { method: "GET", headers, redirect: "manual" }, DEFAULT_TIMEOUTS.SHORT, { maxBytes });
   });
+  if (answer.tooLarge) return { ok: false, status: 413, data: "", headers: answer.headers, tooLarge: true };
   logger.info({ message: `Response from GET ${requestUrl}`, url: requestUrl, status: answer.status });
   if (!REDIRECT_STATUSES.has(answer.status)) {
     return { ok: answer.ok, status: answer.status, data: answer.ok ? answer.data : "", headers: answer.headers };
@@ -114,7 +127,7 @@ export async function companiesHouseDocumentContent(documentId, contentType) {
       fileUrl.toString(),
       { method: "GET", headers: { Accept: contentType }, redirect: "error" },
       DEFAULT_TIMEOUTS.SHORT,
-      { api: "GET /document/{documentId}/file" },
+      { api: "GET /document/{documentId}/file", maxBytes },
     );
   } catch (error) {
     if (error?.name !== "TypeError") throw error;
@@ -122,5 +135,6 @@ export async function companiesHouseDocumentContent(documentId, contentType) {
     return badGateway({});
   }
   logger.info({ message: "Response from the Document API's file", status: file.status });
+  if (file.tooLarge) return { ok: false, status: 413, data: "", headers: file.headers, tooLarge: true };
   return { ok: file.ok, status: file.status, data: file.ok ? file.data : "", headers: file.headers };
 }

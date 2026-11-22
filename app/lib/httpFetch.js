@@ -99,6 +99,55 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
 }
 
 /**
+ * Perform an HTTP fetch and read its body as text, with one timeout over the headers and the whole
+ * body, and a limit on the body's bytes as the response stream gives them (after any content
+ * decoding, so a small compressed body that expands past the limit stops too). The read stops at the
+ * limit and the request is aborted, so no more of the body is read.
+ *
+ * @param {string} url
+ * @param {Object} options - fetch options
+ * @param {number} timeoutMs - the time allowed for the headers and the body together
+ * @param {{maxBytes: number}} limits - the most bytes of body read
+ * @returns {Promise<{response: Response, text: string|null, tooLarge: boolean, duration: number}>} text is
+ *   null when the body passed maxBytes
+ * @throws {HttpTimeoutError} If the headers or the body do not arrive in time
+ */
+export async function fetchTextWithTimeout(url, options, timeoutMs, { maxBytes }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const chunks = [];
+    let total = 0;
+    if (response.body) {
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+          controller.abort();
+          return { response, text: null, tooLarge: true, duration: Date.now() - startTime };
+        }
+        chunks.push(value);
+      }
+    }
+    const text = new TextDecoder().decode(Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))));
+    return { response, text, tooLarge: false, duration: Date.now() - startTime };
+  } catch (error) {
+    if (error.name === "AbortError") {
+      const loggedUrl = urlWithoutQuery(url);
+      logger.warn({ message: "HTTP request timed out", url: loggedUrl, timeoutMs, duration: Date.now() - startTime });
+      throw new HttpTimeoutError(`Request to ${loggedUrl} timed out after ${timeoutMs}ms`, loggedUrl, timeoutMs);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
  * Perform an HTTP fetch, retrying when the network layer fails. Node's fetch throws a TypeError
  * for a connection failure; a returned Response of any status is never retried, and any other
  * error type is rethrown at once. The last failure is rethrown unchanged.
