@@ -237,6 +237,13 @@ test.describe("Revising small company accounts without a change", () => {
     const { original, revised } = await refileUnchanged(page, { ...SMALL_COMPANY_NOTES_CASE_INPUT, registeredOffice });
     await expect(page.locator("#officeAddressLine1")).toHaveValue("5 Old Street");
     expect(registeredOfficeOf(revised)).toEqual(registeredOfficeOf(original));
+    await expect(page.locator("#officeDiffersHint")).toContainText("register gives the registered office today as 22 While Road");
+  });
+
+  test("gives no office hint when the filed office is the register's office today", async ({ page }) => {
+    const registeredOffice = { addressLine1: "22 While Road", cityOrTown: "Sutton Coldfield", postalCode: "b72 1nd" };
+    await refileUnchanged(page, { ...SMALL_COMPANY_NOTES_CASE_INPUT, registeredOffice });
+    await expect(page.locator("#officeDiffersHint")).toBeHidden();
   });
 
   for (const [label, typePriorYear, warned] of [
@@ -276,6 +283,12 @@ test.describe("Revising small company accounts without a change", () => {
       });
       if (warned) await expect(warning).toBeVisible();
       else await expect(warning).toHaveCount(0);
+      if (warned) {
+        await page.click("#backToFormBtn");
+        const [line, amount] = Object.entries(input.profitAndLoss.prior).find(([name]) => name !== "tax");
+        await page.fill(`#prior${line[0].toUpperCase()}${line.slice(1)}`, String(amount));
+        await expect(warning).toHaveCount(0);
+      }
     });
   }
 

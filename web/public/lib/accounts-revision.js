@@ -163,9 +163,10 @@ export function registeredOfficeOf(document) {
     )?.[1];
     if (text) office[field] = unescapeXmlText(text);
   }
-  const country = /<\/ix:nonNumeric>, ([^<]+?), <ix:nonNumeric name="bus:PostalCodeZip" contextRef="[^"]*-registered-office">/.exec(
-    document,
-  )?.[1];
+  const country =
+    /-registered-office">[^<]*<\/ix:nonNumeric>, ([^<]+?)(?:, <ix:nonNumeric name="bus:PostalCodeZip" contextRef="[^"]*-registered-office">|\.<\/p>)/.exec(
+      document,
+    )?.[1];
   if (country) office.country = unescapeXmlText(country);
   return office.addressLine1 ? office : null;
 }
@@ -515,7 +516,7 @@ export function notesOf(document) {
 export function refusalNextStep(step, receiptName) {
   const receipt = encodeURIComponent(receiptName);
   return {
-    receipts: { label: siteText("ch.revision.next-receipts", "Back to your receipts"), href: "/hmrc/receipt/receipts.html" },
+    receipts: { label: siteText("ch.revision.next-receipts", "Back to your receipts"), href: "../hmrc/receipt/receipts.html" },
     record: { label: siteText("ch.revision.next-record", "See the filing"), href: `filings.html?receipt=${receipt}` },
     small: {
       label: siteText("ch.revision.next-small", "Revise them on the small company accounts page"),
@@ -790,7 +791,10 @@ export function showRevisionProblems(elements, dateApproved) {
     amendments: elements.amendments,
     dateApproved,
   };
-  window.formErrors.showFormErrors(problems.map(({ field, message }) => ({ input: inputs[field], message })));
+  // Each line goes once its field meets the rule it names.
+  const passes = (field) => () =>
+    !checkRevision({ ...revisionPayload(elements), dateApproved: dateApproved.value }).some((problem) => problem.field === field);
+  window.formErrors.showFormErrors(problems.map(({ field, message }) => ({ input: inputs[field], message, passes: passes(field) })));
   return true;
 }
 

@@ -477,6 +477,36 @@ test.describe("File Confirmation Statement page", () => {
     expect(filingDataCalls).toHaveLength(0);
   });
 
+  test("the authentication code line stays while the code is short and goes at six characters", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await page.fill("#companyAuthCode", "AB1");
+    await page.click("#authSubmitBtn");
+    const line = page.locator('#form-error-summary a[href="#companyAuthCode"]');
+    await expect(line).toHaveCount(1);
+    await page.fill("#companyAuthCode", "AB123");
+    await expect(line).toHaveCount(1);
+    await page.fill("#companyAuthCode", "AB1234");
+    await expect(line).toHaveCount(0);
+    await expect(page.locator("#form-error-summary")).toHaveCount(0);
+  });
+
+  test("the presenter code line goes once the code is typed", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await page.check("#useOwnPresenter");
+    await page.fill("#ownPresenterId", "OWN-PRES-7731");
+    await enterAuthCode(page);
+    const line = page.locator('#form-error-summary a[href="#ownPresenterCode"]');
+    await expect(line).toHaveCount(1);
+    await page.fill("#ownPresenterCode", "x");
+    await expect(line).toHaveCount(0);
+  });
+
   test("files under the own presenter: no Submit fee, own presenter on the submit, nothing in storage", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false } });
@@ -613,6 +643,18 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 10_000 });
     await expect(page.locator("#checkAgainBtn")).toBeHidden();
     await expect(page.locator("#pscFollowUp")).toBeVisible();
+  });
+
+  test("a status code with no word shows as its own sentence with the code while the page checks again", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await submitWithGateway(page, { pollInterval: 1, statuses: ["INTERNAL_FAILURE", "ACCEPT"] });
+
+    await expect(page.locator("#filingResult")).toContainText("Companies House answered INTERNAL_FAILURE for submission ABC123.", {
+      timeout: 10_000,
+    });
+    await expect(page.locator("#filingResult")).not.toContainText("waiting to be checked");
+    await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 10_000 });
   });
 
   test("polls no more when the gateway's PollInterval is 0", async ({ page }) => {

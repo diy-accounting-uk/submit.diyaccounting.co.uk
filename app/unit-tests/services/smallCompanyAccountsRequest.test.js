@@ -261,6 +261,17 @@ describe("services/smallCompanyAccountsRequest advances to more than one directo
     expect(result.directorsAdvances).toEqual(ADVANCES);
   });
 
+  test("refuses a second row for a director, whose two advances would state two values for one fact", () => {
+    const split = [
+      { ...ADVANCES[0], advanced: 100, balanceAtEnd: 200 },
+      { ...ADVANCES[0], terms: "Car loan at 2% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+      ADVANCES[1],
+    ];
+    expect(validate(section(split)).errors).toEqual([
+      "smallCompany.directorsAdvances[1].name names Alex Jones again: give each director one row, with the amounts of all their advances added together",
+    ]);
+  });
+
   test("refuses advances whose amounts owed at the end do not add up to the amounts owed by directors", () => {
     expect(validate(section([ADVANCES[0]])).errors).toEqual([
       "smallCompany.directorsAdvances balanceAtEnd (500) must equal balanceSheet.currentYear.amountsOwedByDirectors",

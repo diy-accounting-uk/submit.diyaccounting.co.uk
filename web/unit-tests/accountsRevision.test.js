@@ -12,6 +12,7 @@ import {
   checkRevision,
   filedPeriodOf,
   notesOf,
+  refusalNextStep,
   revisionSourceOf,
   balanceSheetLinesOf,
   registeredOfficeOf,
@@ -159,6 +160,16 @@ describe("the registered office a filed document states", () => {
       buildMicroEntityAccounts({ ...microInputFromTestServiceCase(MICRO_CASE), registeredOffice: office }),
     );
     expect(registeredOfficeOf(welsh)).toEqual(office);
+  });
+
+  test("keeps the country of an office that states no postcode", () => {
+    const office = { addressLine1: "1 Rue Exemple", cityOrTown: "Paris", country: "France" };
+    for (const language of ["en", "cy"]) {
+      const document = inAccountsLanguage(language, () =>
+        buildMicroEntityAccounts({ ...microInputFromTestServiceCase(MICRO_CASE), registeredOffice: office }),
+      );
+      expect(registeredOfficeOf(document)).toEqual(office);
+    }
   });
 
   test("is null for a document that states no office", () => {
@@ -408,5 +419,14 @@ describe("the balance sheet of a filed document comes back whole in its revision
     expect(lines.current).toEqual({ ...headings, creditorsAfterOneYear: 0 });
     expect(lines.prior).toEqual({ ...headings, creditorsAfterOneYear: 0 });
     expect(lines.unreadable).toBe(false);
+  });
+});
+
+describe("the next step of a refusal", () => {
+  test("leads back to the receipts in the page's own language", () => {
+    const { href } = refusalNextStep("receipts", "2026-10-24T10:15:00.000Z-00001A.json");
+    const from = (page) => new URL(href, `https://submit.diyaccounting.co.uk${page}`).pathname;
+    expect(from("/companies-house/fileMicroEntityAccounts.html")).toBe("/hmrc/receipt/receipts.html");
+    expect(from("/cy/companies-house/fileSmallCompanyAccounts.html")).toBe("/cy/hmrc/receipt/receipts.html");
   });
 });

@@ -364,6 +364,40 @@ test.describe("File small company accounts page", () => {
     expect(await page.evaluate(() => buildAccountsPayload().smallCompany.directorsAdvances)).toEqual([advances[0]]);
   });
 
+  test("the advances and the share capital note are checked on the page by the rules the route applies, each in a sentence", async ({
+    page,
+  }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#directors", "Alan James Morgan\nAlex Jones");
+    await page.fill("#currentTradeDebtors", "0");
+    const row = (index) => page.locator(".directors-advance-row").nth(index);
+    const fillRow = async (index, advance) => {
+      for (const [field, value] of Object.entries(advance)) await row(index).locator(`[data-advance-field="${field}"]`).fill(String(value));
+    };
+    await fillRow(0, { name: "Alex Jones", terms: "Interest free", balanceAtStart: 300, advanced: 400, repaid: 200, balanceAtEnd: 600 });
+    expect(await page.evaluate(() => notesProblem())).toBe(
+      "The advance to Alex Jones does not add up: owed at the start, plus advanced, less repaid is £500, so owed at the end is £500.",
+    );
+    await fillRow(0, { balanceAtEnd: 500 });
+    await page.click("#addDirectorsAdvance");
+    await fillRow(1, { name: "Alex Jones", terms: "Interest at 2%", balanceAtStart: 0, advanced: 100, repaid: 0, balanceAtEnd: 100 });
+    expect(await page.evaluate(() => notesProblem())).toBe(
+      "Alex Jones has two advance rows. Give each director one row, with the amounts of all their advances added together.",
+    );
+    await fillRow(1, { name: "Alan James Morgan" });
+    expect(await page.evaluate(() => notesProblem())).toMatch(
+      /^The amounts owed at the end of the advances add up to £600, but the balance sheet shows £\d+ owed by directors\.$/,
+    );
+    await page.click(".directors-advance-row >> nth=1 >> text=Remove this advance");
+    await fillRow(0, { name: "", terms: "", balanceAtStart: "", advanced: "", repaid: "", balanceAtEnd: "" });
+    await page.check("#includeShareCapitalNote");
+    await page.fill("#shareCapitalNominalValue", "0.3");
+    expect(await page.evaluate(() => notesProblem())).toMatch(
+      /^The nominal value of each share must divide the called up share capital of £\d+ into whole shares\.$/,
+    );
+  });
+
   test("an advance to someone who is not among the directors is refused on the page, in a sentence", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);
@@ -371,11 +405,11 @@ test.describe("File small company accounts page", () => {
     const row = page.locator(".directors-advance-row").first();
     await row.locator('[data-advance-field="name"]').fill("Pat Other");
     await row.locator('[data-advance-field="terms"]').fill("Interest free");
-    expect(await page.evaluate(() => formProblem())).toBe(
+    expect(await page.evaluate(() => notesProblem())).toBe(
       "Pat Other is named for an advance, but is not among the directors listed. Add them to the directors, or correct the name.",
     );
     await row.locator('[data-advance-field="name"]').fill("Alex Jones");
-    expect(await page.evaluate(() => formProblem())).toBeNull();
+    expect(await page.evaluate(() => notesProblem())).toBeNull();
   });
 
   test("the policy boxes sit under a closed disclosure and only the filled ones reach the request", async ({ page }) => {
@@ -855,14 +889,31 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#statusMessagesContainer .status-message-cause")).toHaveText(
       "We could not open those accounts to revise. Open the filing again from your receipts.",
     );
-    await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute("href", "/hmrc/receipt/receipts.html");
+    await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute("href", "../hmrc/receipt/receipts.html");
     await expect(page.locator("#formView")).toBeHidden();
     await screenshotAtBothWidths(page, "small-amend-refusal-cannot-open");
+  });
+
+  test("the status line ships hidden, so an amend address never paints the page's own status", () => {
+    for (const language of ["", "cy/"]) {
+      const html = fs.readFileSync(
+        path.join(process.cwd(), `web/public/${language}companies-house/fileSmallCompanyAccounts.html`),
+        "utf-8",
+      );
+      expect(html).toMatch(/<p[^>]*\sdata-feature-status="production"[^>]*\shidden\s*>/);
+    }
+  });
+
+  test("an original filing shows the page's own status line", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("[data-feature-status]")).toBeVisible();
+    await expect(page.locator("[data-feature-status]")).toContainText("Status: production.");
   });
 
   test("states the revised accounts activity's status on a refusal too", async ({ page }) => {
     await openAmend(page, accountsReceipt(fullCase.xhtml, { statusCode: "REJECT" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("did not accept those accounts");
+    await expect(page.locator("[data-feature-status]")).toBeVisible();
     await expect(page.locator("[data-feature-status]")).toHaveText(
       "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
     );
@@ -884,6 +935,8 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#revisionSection")).toBeVisible();
     await page.fill("#directorDateApproved", "2026-11-20");
     expect(await page.evaluate(() => reportRevisionProblems())).toBe(true);
+    await expect(page.locator(".error-summary")).toContainText("Say what was wrong with the original accounts");
+    await page.fill("#revisionNonCompliance", "   ");
     await expect(page.locator(".error-summary")).toContainText("Say what was wrong with the original accounts");
     await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
     await expect(page.locator(".error-summary")).not.toContainText("Say what was wrong with the original accounts");

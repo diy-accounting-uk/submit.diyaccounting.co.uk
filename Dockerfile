@@ -52,6 +52,7 @@ COPY app/services app/services
 COPY web/public/lib/balance-sheet-check.js web/public/lib/balance-sheet-check.js
 COPY web/public/lib/approval-date-check.js web/public/lib/approval-date-check.js
 COPY web/public/lib/accounts-revision.js web/public/lib/accounts-revision.js
+COPY web/public/lib/accounts-notes-check.js web/public/lib/accounts-notes-check.js
 COPY mcp/package.json mcp/package.json
 COPY mcp/lib mcp/lib
 COPY mcp/bin mcp/bin

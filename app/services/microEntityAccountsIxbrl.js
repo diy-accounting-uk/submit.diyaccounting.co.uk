@@ -47,6 +47,7 @@ import {
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 import { accountsText } from "./accountsLanguage.js";
+import { sharesIssuedFor } from "../../web/public/lib/accounts-notes-check.js";
 
 // The FRS 105 micro-entity profit and loss account (Format 2) a Company Tax Return carries.
 export const MICRO_PROFIT_AND_LOSS_LINES = [
@@ -148,7 +149,6 @@ const DORMANT_NEVER_TRADED_SENTENCE =
   "The company has not traded during the year or the preceding financial period. During this time the company received no income and incurred no expenditure and therefore no profit and loss account is presented.";
 
 export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
-export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
 
 export const SHARE_CLASS_LABEL = {
   ordinaryShares: "ordinary",
@@ -156,19 +156,6 @@ export const SHARE_CLASS_LABEL = {
   deferredShares: "deferred",
   otherShares: "other",
 };
-
-/**
- * The number of shares a fully paid share capital figure represents at a nominal value, or null
- * when the capital is not a whole number of shares.
- * @param {number} calledUpShareCapital
- * @param {number} nominalValue
- * @returns {number|null}
- */
-export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
-  if (!Number.isFinite(nominalValue) || nominalValue <= 0 || !Number.isFinite(calledUpShareCapital)) return null;
-  const shares = Math.round((calledUpShareCapital / nominalValue) * 1e6) / 1e6;
-  return Number.isInteger(shares) ? shares : null;
-}
 
 // A heading shows in every year once any year carries a figure for it, so both columns agree;
 // a heading no year carries is left out.
