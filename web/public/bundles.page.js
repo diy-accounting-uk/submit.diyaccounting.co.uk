@@ -1131,13 +1131,25 @@ function renderGeneratedPassesEmptyText() {
   emptyMsg.style.display = "block";
 }
 
-// A pass just generated lands here: show it, scroll to it and put focus on it.
-function focusNewlyGeneratedPass() {
+// A pass just generated lands here with ?newPass=<code>. The code leaves the address as the page
+// starts, so a reload or the language switch does not show its status again, and the first list of
+// generated passes shows it once.
+let newlyGeneratedPassCode = takeNewPassFromAddress();
+
+function takeNewPassFromAddress() {
   const url = new URL(window.location.href);
-  const newCode = url.searchParams.get("newPass");
-  if (!newCode) return;
+  const code = url.searchParams.get("newPass");
+  if (!code) return null;
   url.searchParams.delete("newPass");
   window.history.replaceState(null, "", url);
+  return code;
+}
+
+// The pass just generated: show it, scroll to it and put focus on it.
+function focusNewlyGeneratedPass() {
+  const newCode = newlyGeneratedPassCode;
+  if (!newCode) return;
+  newlyGeneratedPassCode = null;
   const card = Array.from(document.querySelectorAll("#generatedPassesList [data-pass-code]")).find(
     (el) => el.getAttribute("data-pass-code") === newCode,
   );

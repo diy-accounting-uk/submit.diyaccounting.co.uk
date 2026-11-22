@@ -42,7 +42,7 @@ const json = (route, body, status = 200) => route.fulfill({ status, contentType:
 
 // The real site from disk, signed in, with the API answered here. Each purchase lookup the GA4
 // purchase event makes is recorded.
-async function serveSite(page, { purchaseLookups = [], language = null } = {}) {
+async function serveSite(page, { purchaseLookups = [], language = null, generatedPasses = [PASS_CODE] } = {}) {
   await page.addInitScript((chosen) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -65,7 +65,7 @@ async function serveSite(page, { purchaseLookups = [], language = null } = {}) {
       if (pathname === "/api/v1/pass" && request.method() === "GET") return json(route, { valid: true, bundleId: "resident-pro" });
       if (pathname === "/api/v1/bundle") return json(route, { bundles: [], tokensRemaining: 0 });
       if (pathname === "/api/v1/pass/my-passes") {
-        return json(route, { passes: [{ code: PASS_CODE, passTypeId: "digital-pass", maxUses: 20, useCount: 0 }] });
+        return json(route, { passes: generatedPasses.map((code) => ({ code, passTypeId: "digital-pass", maxUses: 20, useCount: 0 })) });
       }
       if (pathname === "/api/v1/companies-house/search") {
         return json(route, {
@@ -126,6 +126,21 @@ test("after the pass-generated status the switch leaves newPass behind", async (
   await page.locator(".language-switch").getByRole("link", { name: "Cymraeg" }).click();
   await expect(page).toHaveURL(`${SITE}/cy/bundles.html`);
   await page.waitForLoadState("networkidle");
+  await expect(page.locator("#statusMessagesContainer")).not.toContainText(PASS_CODE);
+});
+
+test("newPass leaves the address as bundles.html starts, even when the generated passes list does not show the pass", async ({ page }) => {
+  await serveSite(page, { generatedPasses: [] });
+  await page.goto(`${SITE}/bundles.html?newPass=${PASS_CODE}`, { waitUntil: "networkidle" });
+  await expect(page).toHaveURL(`${SITE}/bundles.html`);
+  expect(await switchAddressOnFocus(page, "Cymraeg")).toBe("cy/bundles.html");
+});
+
+test("a reload after the pass-generated status does not show it again", async ({ page }) => {
+  await serveSite(page);
+  await page.goto(`${SITE}/bundles.html?newPass=${PASS_CODE}`, { waitUntil: "networkidle" });
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Track what this link earns under My generated passes");
+  await page.reload({ waitUntil: "networkidle" });
   await expect(page.locator("#statusMessagesContainer")).not.toContainText(PASS_CODE);
 });
 
