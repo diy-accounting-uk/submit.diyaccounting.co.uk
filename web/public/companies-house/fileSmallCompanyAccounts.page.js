@@ -261,10 +261,10 @@ function renderTotals() {
       grossProfitText +
       window.siteText(
         "ch.small.profit-totals",
-        "Operating profit: {operating}. Profit before tax: {beforeTax}. Profit for the year: {profit}.",
+        "Operating profit: {operating}. Profit before tax: {pretax}. Profit for the year: {profit}.",
         {
           operating: profitAndLoss.operatingProfit,
-          beforeTax: profitAndLoss.profitBeforeTax,
+          pretax: profitAndLoss.profitBeforeTax,
           profit: profitAndLoss.profit,
         },
       );

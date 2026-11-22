@@ -17,6 +17,7 @@ import {
 import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { readSubmitCss } from "./submitCss.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -541,6 +542,7 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
     await screenshot(page, "small-amend-filleted-note", 1280);
+    await screenshotAtBothWidths(page, "small-amend-copy-filleted");
   });
 
   for (const width of [1280, 390]) {
@@ -596,6 +598,7 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#accountantsName")).toHaveValue(ACCOUNTANTS_REPORT.accountantsName);
     await expect(page.locator("#accountantsStatement")).toHaveValue(ACCOUNTANTS_REPORT.statement);
     await expect(page.locator("#revisionAccountantsNote")).toBeHidden();
+    await screenshotAtBothWidths(page, "small-amend-accountants-report");
   });
 
   for (const filleted of [false, true]) {
@@ -624,6 +627,7 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("#revisionNotesNote")).toHaveText(
         "The filed accounts carry these notes, which you must enter again: called up share capital.",
       );
+      await screenshotAtBothWidths(page, `small-amend-notes-${copy}`);
 
       if (filleted) {
         for (const [line, value] of Object.entries(notesCase.profitAndLoss.current)) {
@@ -715,12 +719,14 @@ test.describe("File small company accounts page - revising accounts from a recei
       "We could not open those accounts to revise. Open the filing again from your receipts.",
     );
     await expect(page.locator("#formView")).toBeHidden();
+    await screenshotAtBothWidths(page, "small-amend-refusal-cannot-open");
   });
 
   test("refuses accounts filed with a Company Tax Return", async ({ page }) => {
     await openAmend(page, accountsReceipt(fullCase.xhtml, { jointFilingId: "joint-1" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("revise them on the Company Tax Return page");
     await expect(page.locator("#revisionBanner")).toBeHidden();
+    await screenshotAtBothWidths(page, "small-amend-refusal-joint-filing");
   });
 
   test("asks for both revision texts before the preview", async ({ page }) => {

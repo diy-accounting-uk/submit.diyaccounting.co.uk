@@ -440,6 +440,8 @@ export async function readRevisionSource(receiptName, { fetchReceipt, loadBundle
 
 const originalDateNeeded = () =>
   siteText("ch.revision.need-original-date", "Enter the date the original accounts were approved, as the filed accounts show it");
+const nonComplianceNeeded = () => siteText("ch.revision.need-non-compliance", "Say what was wrong with the original accounts");
+const amendmentsNeeded = () => siteText("ch.revision.need-amendments", "Say what the revised accounts change");
 
 /**
  * The problems with a revision: each revision text is required, and the revised accounts are
@@ -450,15 +452,8 @@ const originalDateNeeded = () =>
 export function checkRevision({ originalDateOfApproval, nonCompliance, amendments, dateApproved }) {
   const problems = [];
   if (!String(originalDateOfApproval ?? "").trim()) problems.push({ field: "originalDateOfApproval", message: originalDateNeeded() });
-  if (!String(nonCompliance ?? "").trim()) {
-    problems.push({
-      field: "nonCompliance",
-      message: siteText("ch.revision.need-non-compliance", "Say what was wrong with the original accounts"),
-    });
-  }
-  if (!String(amendments ?? "").trim()) {
-    problems.push({ field: "amendments", message: siteText("ch.revision.need-amendments", "Say what the revised accounts change") });
-  }
+  if (!String(nonCompliance ?? "").trim()) problems.push({ field: "nonCompliance", message: nonComplianceNeeded() });
+  if (!String(amendments ?? "").trim()) problems.push({ field: "amendments", message: amendmentsNeeded() });
   if (dateApproved && originalDateOfApproval && dateApproved < originalDateOfApproval) {
     problems.push({
       field: "dateApproved",
@@ -498,7 +493,9 @@ export function showRevisionSection({ section, originalDate, nonCompliance, amen
   originalDate.required = !source.approvalDate;
   originalDate.dataset.requiredMessage = originalDateNeeded();
   nonCompliance.required = true;
+  nonCompliance.dataset.requiredMessage = nonComplianceNeeded();
   amendments.required = true;
+  amendments.dataset.requiredMessage = amendmentsNeeded();
   section.hidden = false;
 }
 

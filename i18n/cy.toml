@@ -13729,10 +13729,6 @@ cy = '''gwall anhysbys'''
 hash = "76741f5822b0"
 cy = '''Elw gros: {amount}. '''
 
-[strings."ch.small.profit-totals"]
-hash = "43c3a0c4b9f0"
-cy = '''Elw gweithredol: {operating}. Elw cyn treth: {beforeTax}. Elw am y flwyddyn: {profit}.'''
-
 [strings."ch.small.matches-capital"]
 hash = "2de562166fa8"
 cy = '''Yn cyfateb i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled.'''
@@ -14016,10 +14012,6 @@ cy = '''Wedi newid o’r gofrestr'''
 [strings."ch.cs.summary-shareholders"]
 hash = "da31087015c2"
 cy = '''Cyfranddeiliaid'''
-
-[strings."ch.cs.holding-summary"]
-hash = "ec203c3653a4"
-cy = '''{shareClass}, {number} yn cael eu dal'''
 
 [strings."ch.cs.transfer-label"]
 hash = "23fd3046d616"
@@ -17833,3 +17825,13 @@ cy = '''atebolrwydd cronedig ac incwm gohiriedig'''
 [strings."ch.revision.line-unreadable"]
 hash = "d7620a4522b1"
 cy = '''llinellau’r fantolen'''
+
+# == The look pass of the revised accounts forms: placeholders the site text fills ==
+
+[strings."ch.small.profit-totals"]
+hash = "03703edf3b77"
+cy = '''Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.'''
+
+[strings."ch.cs.holding-summary"]
+hash = "e06571e008b2"
+cy = '''{kind}, {number} yn cael eu dal'''

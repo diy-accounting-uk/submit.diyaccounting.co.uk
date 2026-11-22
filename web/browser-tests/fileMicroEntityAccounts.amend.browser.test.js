@@ -12,8 +12,10 @@ import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { accountsDocumentCases, microInputFromTestServiceCase } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -71,6 +73,7 @@ async function openAmend(
     jurisdiction = "england-wales",
     profileFails = false,
     revisedStatus = "preview",
+    welsh = false,
   } = {},
 ) {
   await page.setViewportSize({ width, height: 900 });
@@ -149,9 +152,14 @@ async function openAmend(
   await page.route("**/lib/services/viewer-settings.js", (route) =>
     route.fulfill({ status: 200, contentType: "application/javascript", body: "export const fetchViewer = async () => ({});" }),
   );
-  const html = fs.readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8");
-  const url = `http://localhost:3000/${PAGE_PATH}?amend=${encodeURIComponent(RECEIPT_NAME)}`;
-  await page.route(`http://localhost:3000/${PAGE_PATH}**`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+  if (welsh) {
+    await serveFile(page, "**/lib/welsh-text.js", "lib/welsh-text.js");
+    await serveFile(page, "**/widgets/page-chrome.js", "widgets/page-chrome.js");
+  }
+  const pagePath = welsh ? `cy/${PAGE_PATH}` : PAGE_PATH;
+  const html = fs.readFileSync(path.join(PUBLIC_DIR, pagePath), "utf-8");
+  const url = `http://localhost:3000/${pagePath}?amend=${encodeURIComponent(RECEIPT_NAME)}`;
+  await page.route(`http://localhost:3000/${pagePath}**`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
   await page.goto(url, { waitUntil: "domcontentloaded" });
 }
 
@@ -212,8 +220,9 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
 
       const summary = page.locator(".error-summary");
       await expect(summary).toBeVisible();
-      await expect(summary).toContainText("What was wrong with the original accounts?");
-      await expect(summary).toContainText("What do the revised accounts change?");
+      await expect(summary).toContainText("Say what was wrong with the original accounts");
+      await expect(summary).toContainText("Say what the revised accounts change");
+      await expect(summary).not.toContainText("Enter What");
       await screenshot(page, "amend-refusal-texts-required", width);
     });
   }
@@ -282,6 +291,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#accountantsName")).toHaveValue(ACCOUNTANTS_REPORT.accountantsName);
     await expect(page.locator("#accountantsStatement")).toHaveValue(ACCOUNTANTS_REPORT.statement);
     await expect(page.locator("#revisionAccountantsNote")).toBeHidden();
+    await screenshotAtBothWidths(page, "micro-amend-accountants-report");
   });
 
   test("leaves the accountants' report unticked when the accounts were filed without one", async ({ page }) => {
@@ -307,6 +317,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("#revisionNotesNote")).toHaveText(
         "The filed accounts carry these notes, which you must enter again: advances and credits to directors.",
       );
+      await screenshotAtBothWidths(page, `micro-amend-notes-to-enter-${language}`);
     });
   }
 
@@ -346,6 +357,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#revisionSection")).toBeVisible();
     await expect(page.locator("#revisionNotesNote")).toBeHidden();
+    await screenshotAtBothWidths(page, "micro-amend-no-notes-to-enter");
     await openAmend(page, accountsReceipt(dormantCase.xhtml, { companyNumber: "09991482" }));
     await expect(page.locator("#dormant")).toBeChecked();
     await expect(page.locator("#revisionNotesNote")).toBeHidden();
@@ -384,6 +396,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("#formView")).toBeHidden();
       await expect(page.locator("#revisionBanner")).toBeHidden();
       await screenshot(page, `amend-refusal-${name.replace(/[^a-z]+/gi, "-").toLowerCase()}`, WIDTHS.desktop);
+      await screenshotAtBothWidths(page, `micro-amend-refusal-${name.replace(/[^a-z]+/gi, "-").toLowerCase()}`);
     });
   }
 
@@ -391,6 +404,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await openAmend(page, accountsReceipt(smallCase.xhtml, { companyNumber: "04549236" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("small company accounts page");
     await expect(page.locator("#formView")).toBeHidden();
+    await screenshotAtBothWidths(page, "micro-amend-refusal-small-company-accounts");
   });
 
   const statuses = [
@@ -415,6 +429,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     const status = page.locator("#statusMessagesContainer .status-error");
     await expect(status).toHaveText("We could not open those accounts to revise. Open the filing again from your receipts.");
     await expect(page.locator("#formView")).toBeHidden();
+    await screenshotAtBothWidths(page, "micro-amend-refusal-cannot-open");
   });
 
   test("says revised accounts cannot be filed here where they are not offered", async ({ page }) => {
@@ -422,6 +437,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Revised accounts cannot be filed here yet");
     await expect(page.locator("#revisionSection")).toBeHidden();
     await screenshot(page, "amend-refusal-not-offered", WIDTHS.desktop);
+    await screenshotAtBothWidths(page, "micro-amend-refusal-not-offered");
   });
 
   for (const [label, width] of Object.entries(WIDTHS)) {
@@ -448,6 +464,44 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     });
   }
 
+  test("previews the revised accounts with the statement of the revision", async ({ page }) => {
+    await page.exposeFunction("buildPreviewIxbrl", (accounts) => {
+      const errors = [];
+      const validated = extractAndValidateAccountsParameters({ body: JSON.stringify({ companyAuthCode: "ABC123", ...accounts }) }, errors);
+      if (errors.length) throw new Error(errors.join("; "));
+      return buildAccountsIxbrl(validated);
+    });
+    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await serveFile(page, "**/lib/approval-date-check.js", "lib/approval-date-check.js");
+    await serveFile(page, "**/lib/balance-sheet-check.js", "lib/balance-sheet-check.js");
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    for (const statement of await page.locator('input[type="checkbox"][id^="statement"]').all()) await statement.check();
+    await page.evaluate(() => {
+      window.renderMicroEntityAccounts = async (accounts) => ({ ixbrl: await window.buildPreviewIxbrl(accounts) });
+    });
+    await fillRevisionTexts(page);
+    await page.fill("#directorDateApproved", "2026-11-20");
+    await page.click("#previewBtn");
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.frameLocator("#previewRendered").locator("body")).toContainText("Revised accounts");
+    await expect(page.frameLocator("#previewRendered").locator("body")).toContainText(
+      "The original balance sheet left out the creditors due within one year.",
+    );
+    await screenshotAtBothWidths(page, "micro-amend-preview");
+  });
+
+  test("shows the banner, the revision section and a refusal in Welsh on the Welsh page", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microCase.xhtml), { welsh: true });
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionBanner")).not.toContainText("revised accounts");
+    await screenshotAtBothWidths(page, "micro-amend-welsh-revision-section");
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    const welshPage = await page.context().newPage();
+    await openAmend(welshPage, accountsReceipt(microCase.xhtml, { jointFilingId: "joint-1" }), { welsh: true });
+    await expect(welshPage.locator("#statusMessagesContainer")).not.toBeEmpty();
+    await screenshotAtBothWidths(welshPage, "micro-amend-welsh-refusal-joint-filing");
+  });
+
   test("names the revised accounts when Companies House rejects them", async ({ page }) => {
     await openAmend(page, accountsReceipt(microCase.xhtml), { outcome: "REJECT" });
     await expect(page.locator("#revisionSection")).toBeVisible();
@@ -458,6 +512,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       return handleSubmitFiling();
     });
     await expect(page.locator("#filingResult")).toContainText("Companies House rejected the revised accounts.");
+    await screenshotAtBothWidths(page, "micro-amend-result-rejected");
   });
 
   test("a new filing after the revision files original accounts", async ({ page }) => {

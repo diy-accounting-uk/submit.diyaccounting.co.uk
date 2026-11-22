@@ -752,8 +752,8 @@ function renderPreviewSummary(payload) {
       const holdersSuffix = holders ? ": " + holders : "";
       rows.push([
         window.siteText("ch.cs.shareholding-n", "Shareholding {n}", { n: index + 1 }),
-        window.siteText("ch.cs.holding-summary", "{shareClass}, {number} held", {
-          shareClass: holding.shareClass,
+        window.siteText("ch.cs.holding-summary", "{kind}, {number} held", {
+          kind: holding.shareClass,
           number: holding.numberHeld,
         }) + holdersSuffix,
       ]);

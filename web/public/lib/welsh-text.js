@@ -256,7 +256,7 @@ window.WELSH_TEXT = {
   "ch.cs.holder-street": "Stryd",
   "ch.cs.holder-surname": "Cyfenw’r cyfranddeiliad",
   "ch.cs.holder-thoroughfare": "Tramwyfa",
-  "ch.cs.holding-summary": "{shareClass}, {number} yn cael eu dal",
+  "ch.cs.holding-summary": "{kind}, {number} yn cael eu dal",
   "ch.cs.identity-not-verified": "Hunaniaeth heb ei gwirio",
   "ch.cs.identity-verified": "Hunaniaeth wedi’i gwirio",
   "ch.cs.joint-hint": "Mae daliad a ddelir ar y cyd yn cynnwys pob cyd-ddeiliad isod, hyd at {max}.",
@@ -1244,7 +1244,7 @@ window.WELSH_TEXT = {
   "ch.small.notes-must-equal":
     "Rhaid i werth llyfr net nodiadau’r asedion sefydlog fod yn hafal i’r asedion sefydlog cyn gweld y rhagolwg.",
   "ch.small.outcome": "Roedd cyflwyniad {number} yn {status}.",
-  "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {beforeTax}. Elw am y flwyddyn: {profit}.",
+  "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.",
   "ch.status.active": "Gweithredol",
   "ch.status.administration": "Mewn gweinyddiad",
   "ch.status.closed": "Ar gau",
