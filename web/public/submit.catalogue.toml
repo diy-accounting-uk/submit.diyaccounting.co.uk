@@ -842,6 +842,17 @@ bundles = ["operator"]
 metered = false
 paths = ["operator/campaign-passes.html", "^/api/v1/pass/campaign$"]
 
+[[activities]]
+id = "remove-officer"
+name = "Remove a director or secretary (Companies House, sandbox)"
+nameCy = "Tynnu cyfarwyddwr neu ysgrifennydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the OfficerResignation form type for this presenter.
+paths = ["companies-house/removeOfficer.html", "^/api/v1/companies-house/officer-resignation.*", "^/api/v1/companies-house/forms/officer-resignation/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
 # Passes:
 # Example invite pass record in DynamoDB:
 # Do I need a pass admin screen?

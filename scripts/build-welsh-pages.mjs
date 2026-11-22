@@ -218,6 +218,14 @@ export const WELSH_PAGES = [
     marks: "build",
     markAttributes: CH_MARK_ATTRIBUTES,
   },
+  {
+    id: "ch-remove-officer",
+    en: "companies-house/removeOfficer.html",
+    cy: "cy/companies-house/removeOfficer.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/removeOfficer.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
 ];
 
 export function welshUrl(page) {

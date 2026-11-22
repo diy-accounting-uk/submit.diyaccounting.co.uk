@@ -161,7 +161,12 @@ function readOnce(companyNumber, key, start) {
   return reads.get(key);
 }
 
-const officerOf = (officer) => ({ name: officer.name, role: officer.officerRole, appointedOn: officer.appointedOn });
+const officerOf = (officer) => ({
+  name: officer.name,
+  role: officer.officerRole,
+  appointedOn: officer.appointedOn,
+  resignedOn: officer.resignedOn,
+});
 const pscOf = (psc) => ({
   name: psc.name,
   kind: psc.kind,
@@ -357,6 +362,14 @@ const AUTHORITY_SOURCES = {
     url: "https://assets.publishing.service.gov.uk/media/69f9dd2e097169e6a7a76ff4/AA01_V7.0-final.pdf",
     title: "AA01 Change of accounting reference date",
   },
+  officerTerminationDirectorForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6911ece9e9348ac8fb54f483/TM01_v7.0-FINAL.pdf",
+    title: "TM01 Termination of appointment of director",
+  },
+  officerTerminationSecretaryForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6911eb9b663088df8f54f482/TM02_v6.0-FINAL.pdf",
+    title: "TM02 Termination of appointment of secretary",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -435,6 +448,15 @@ function authorityNotes(activityId) {
       ),
       inEnglishOnly("accountingReferenceDateForm", "You cannot change a period for which the accounts are overdue."),
       inEnglishOnly("accountingReferenceDateForm", "You cannot extend a period beyond 18 months unless the company is in administration."),
+      codeOnline,
+    ],
+    "remove-officer": [
+      inEnglishOnly(
+        "officerTerminationDirectorForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity Commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly("officerTerminationDirectorForm", "Only one director appointment can be terminated per form."),
+      inEnglishOnly("officerTerminationSecretaryForm", "Only one secretary appointment can be terminated per form."),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -883,6 +905,55 @@ async function renderOfficers(container, companyNumber) {
       officers.map((officer) => [officer.name, slugText(officer.role), labels().formatCompanyDate(officer.appointedOn)]),
     ),
   );
+  await appendRemoveOfficerLinks(container, companyNumber, officers);
+  await appendFileThis(container, {
+    activityId: "remove-officer",
+    page: "removeOfficer.html",
+    label: window.siteText("ch.drill.remove-officer", "Remove a director or secretary"),
+    companyNumber,
+  });
+}
+
+// The register's officer roles the officer resignation form ends: directors and secretaries, each
+// a person or a company, nominee or not.
+const REMOVABLE_OFFICER_ROLES = [
+  "director",
+  "nominee-director",
+  "corporate-director",
+  "corporate-nominee-director",
+  "secretary",
+  "nominee-secretary",
+  "corporate-secretary",
+  "corporate-nominee-secretary",
+];
+
+// For an account that holds the officer resignation form, a link for each current director or
+// secretary, which opens the form with that officer chosen.
+async function appendRemoveOfficerLinks(container, companyNumber, officers) {
+  const current = officers.filter((officer) => !officer.resignedOn && REMOVABLE_OFFICER_ROLES.includes(officer.role));
+  if (current.length === 0 || !localStorage.getItem("cognitoIdToken")) return;
+  let access;
+  try {
+    access = activityAccess(await loadEntitlement(), "remove-officer");
+  } catch (error) {
+    console.warn("Could not read the catalogue for the officer links:", error);
+    return;
+  }
+  if (!access.shown || !access.held) return;
+  const list = document.createElement("ul");
+  list.className = "remove-officer-links";
+  current.forEach((officer) => {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = `${pagePrefix()}/companies-house/removeOfficer.html?${new URLSearchParams({ companyNumber, officerName: officer.name })}`;
+    link.textContent = window.siteText("ch.drill.remove-this-officer", "Remove {name} ({role})", {
+      name: officer.name,
+      role: slugText(officer.role),
+    });
+    item.appendChild(link);
+    list.appendChild(item);
+  });
+  container.appendChild(list);
 }
 
 async function renderPscs(container, companyNumber) {

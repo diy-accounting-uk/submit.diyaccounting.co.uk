@@ -659,6 +659,13 @@
         } ]
       }
     },
+    "/companies-house/officer-resignation" : {
+      "post" : {
+        "summary" : "Submit an officer resignation filing",
+        "description" : "Builds the OfficerResignation body, the notice that a director or a secretary no longer holds the appointment (TM01 or TM02), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseOfficerResignation"
+      }
+    },
     "/companies-house/psc-cessation" : {
       "post" : {
         "summary" : "Submit a PSC cessation filing",

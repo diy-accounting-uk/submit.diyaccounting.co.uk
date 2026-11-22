@@ -92,6 +92,13 @@ const FORM_FIELDS = {
     confirmationDate: "2026-11-03",
   },
   "accounting-reference-date": { currentPeriodEnd: "2026-03-31", newPeriodEnd: "2026-01-31" },
+  "officer-resignation": {
+    officerRole: "director",
+    corporate: false,
+    surname: "BRAMWELL",
+    dateOfBirth: "1975-02-14",
+    resignationDate: "2026-11-01",
+  },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);

@@ -23558,3 +23558,246 @@ cy = '''Newid y dyddiad cyfeirnod cyfrifyddu'''
 [strings."receipts.kind-accounting-reference-date"]
 hash = "ff856d21c5cd"
 cy = '''Newid dyddiad cyfeirnod cyfrifyddu'''
+
+# == The officer resignation page and the drill-down's officer links: ids ch-remove-officer.*, ch.remove-officer.*, ch.drill.remove-*, receipts.kind-officer-resignation ==
+
+[strings."ch-remove-officer.title"]
+hash = "3321216517a0"
+cy = '''Tynnu cyfarwyddwr neu ysgrifennydd - DIY Accounting Submit'''
+
+[strings."ch-remove-officer.remove-a-director-or-secretary-13cd48"]
+hash = "13cd4889ecc9"
+cy = '''Tynnu cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch-remove-officer.tell-companies-house-that-a-director-42c01e"]
+hash = "42c01eb41810"
+cy = '''Dweud wrth Dŷ’r Cwmnïau nad yw cyfarwyddwr neu ysgrifennydd yn dal y penodiad mwyach'''
+
+[strings."ch-remove-officer.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-remove-officer.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-remove-officer.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-remove-officer.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-remove-officer.look-up-the-directors-and-secretaries-3688b8"]
+hash = "3688b80b0557"
+cy = '''Chwilio am y cyfarwyddwyr a’r ysgrifenyddion'''
+
+[strings."ch-remove-officer.who-is-leaving-c05865"]
+hash = "c05865085b6e"
+cy = '''Pwy sy’n gadael?'''
+
+[strings."ch-remove-officer.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-remove-officer.director-or-secretary-7944ee"]
+hash = "7944ee1c380d"
+cy = '''Cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch-remove-officer.the-directors-and-secretaries-on-the-67901a"]
+hash = "67901a0a41f8"
+cy = '''Y cyfarwyddwyr a’r ysgrifenyddion sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.'''
+
+[strings."ch-remove-officer.the-register-lists-no-current-director-a1de3d"]
+hash = "a1de3d552679"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw gyfarwyddwr neu ysgrifennydd presennol y gall y ffurflen hon ei enwi.'''
+
+[strings."ch-remove-officer.their-name-as-the-register-holds-0c86dc"]
+hash = "0c86dc8b16f9"
+cy = '''Eu henw fel y mae’r gofrestr yn ei gadw'''
+
+[strings."ch-remove-officer.split-from-the-register-s-name-619879"]
+hash = "61987987bd8a"
+cy = '''Wedi’i rannu o’r enw ar y gofrestr. Gwiriwch bob rhan: mae Tŷ’r Cwmnïau yn cymharu’r enw â’r gofrestr.'''
+
+[strings."ch-remove-officer.title-optional-8280fb"]
+hash = "8280fbd6bcff"
+cy = '''Teitl (dewisol)'''
+
+[strings."ch-remove-officer.first-forename-optional-91a29b"]
+hash = "91a29bef87cc"
+cy = '''Enw cyntaf (dewisol)'''
+
+[strings."ch-remove-officer.other-forenames-optional-824237"]
+hash = "82423728b6ba"
+cy = '''Enwau cyntaf eraill (dewisol)'''
+
+[strings."ch-remove-officer.surname-f762da"]
+hash = "f762da05f4d4"
+cy = '''Cyfenw'''
+
+[strings."ch-remove-officer.corporate-name-b5bead"]
+hash = "b5bead73a439"
+cy = '''Enw corfforaethol'''
+
+[strings."ch-remove-officer.as-the-register-holds-it-companies-3e6aca"]
+hash = "3e6aca1bcdef"
+cy = '''Fel y mae’r gofrestr yn ei gadw. Mae Tŷ’r Cwmnïau yn cymharu’r enw â’r gofrestr.'''
+
+[strings."ch-remove-officer.date-of-birth-eb4c4e"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch-remove-officer.companies-house-s-online-form-needs-8532b8"]
+hash = "8532b88ee95c"
+cy = '''Mae ffurflen ar-lein Tŷ’r Cwmnïau angen dyddiad geni llawn cyfarwyddwr. Dim ond y mis a’r flwyddyn y mae’r gofrestr yn eu dangos, ac maent wedi’u llenwi lle mae’n eu rhoi: ychwanegwch y diwrnod.'''
+
+[strings."ch-remove-officer.day-8f2364"]
+hash = "8f2364e11b8b"
+cy = '''Diwrnod'''
+
+[strings."ch-remove-officer.month-310ca5"]
+hash = "310ca503ef36"
+cy = '''Mis'''
+
+[strings."ch-remove-officer.year-89f683"]
+hash = "89f6832560de"
+cy = '''Blwyddyn'''
+
+[strings."ch-remove-officer.date-the-appointment-ended-f8399c"]
+hash = "f8399c4a9c2e"
+cy = '''Dyddiad y daeth y penodiad i ben'''
+
+[strings."ch-remove-officer.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-remove-officer.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-remove-officer.companies-house-all-information-on-this-3cd0ef"]
+hash = "3cd0ef8e7a32"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud y bydd yr holl wybodaeth ar y ffurflen hon yn ymddangos ar y cofnod cyhoeddus.
+            <a href="https://assets.publishing.service.gov.uk/media/6911ece9e9348ac8fb54f483/TM01_v7.0-FINAL.pdf" lang="en">TM01 Termination of appointment of director</a> <span class="lang-mark">(yn Saesneg)</span> Mae GOV.UK yn cyhoeddi hwn yn Saesneg yn unig.'''
+
+[strings."ch-remove-officer.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-remove-officer.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-remove-officer.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-remove-officer.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-remove-officer.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-remove-officer.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-remove-officer.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-remove-officer.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-remove-officer.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.drill.remove-officer"]
+hash = "13cd4889ecc9"
+cy = '''Tynnu cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch.drill.remove-this-officer"]
+hash = "4f0b2c3374bd"
+cy = '''Tynnu {name} ({role})'''
+
+[strings."ch.remove-officer.role-corporate-director"]
+hash = "02f51cc20ace"
+cy = '''Cyfarwyddwr corfforaethol'''
+
+[strings."ch.remove-officer.role-director"]
+hash = "c149bc14e45c"
+cy = '''Cyfarwyddwr'''
+
+[strings."ch.remove-officer.role-corporate-secretary"]
+hash = "cff971c99e33"
+cy = '''Ysgrifennydd corfforaethol'''
+
+[strings."ch.remove-officer.role-secretary"]
+hash = "1395996a1068"
+cy = '''Ysgrifennydd'''
+
+[strings."ch.remove-officer.lookup-failed"]
+hash = "95e641995c70"
+cy = '''Methu darllen cyfarwyddwyr ac ysgrifenyddion y cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.remove-officer.dob-invalid"]
+hash = "c52ea3dd18a9"
+cy = '''Rhowch ddyddiad geni’r cyfarwyddwr fel diwrnod, mis a blwyddyn.'''
+
+[strings."ch.remove-officer.dob-after"]
+hash = "b2d1fda81c68"
+cy = '''Rhaid i’r dyddiad geni fod cyn y dyddiad y daeth y penodiad i ben.'''
+
+[strings."ch.remove-officer.choose"]
+hash = "7555d2399567"
+cy = '''Dewiswch y cyfarwyddwr neu’r ysgrifennydd sy’n gadael.'''
+
+[strings."ch.remove-officer.ended-before-appointed"]
+hash = "f692ed8db8c7"
+cy = '''Ni all y penodiad ddod i ben cyn y dyddiad y dechreuodd, {date}.'''
+
+[strings."ch.remove-officer.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.remove-officer.review-appointment"]
+hash = "8a4f957e08cb"
+cy = '''Penodiad'''
+
+[strings."ch.remove-officer.review-corporate-name"]
+hash = "b5bead73a439"
+cy = '''Enw corfforaethol'''
+
+[strings."ch.remove-officer.review-title"]
+hash = "7e8cd2056da7"
+cy = '''Teitl'''
+
+[strings."ch.remove-officer.review-forename"]
+hash = "2c347af15e30"
+cy = '''Enw cyntaf'''
+
+[strings."ch.remove-officer.review-other-forenames"]
+hash = "72707ba8593a"
+cy = '''Enwau cyntaf eraill'''
+
+[strings."ch.remove-officer.review-surname"]
+hash = "f762da05f4d4"
+cy = '''Cyfenw'''
+
+[strings."ch.remove-officer.review-dob"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch.remove-officer.review-ended"]
+hash = "f8399c4a9c2e"
+cy = '''Dyddiad y daeth y penodiad i ben'''
+
+[strings."receipts.kind-officer-resignation"]
+hash = "004ea9128ab9"
+cy = '''Cyfarwyddwr neu ysgrifennydd wedi’i dynnu'''

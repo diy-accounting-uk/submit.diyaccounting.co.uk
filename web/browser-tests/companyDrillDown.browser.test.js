@@ -770,3 +770,38 @@ test.describe("Company lookup drill-down change of accounting reference date lin
     await expect(page.locator(CONTROL)).toHaveCount(0);
   });
 });
+
+test.describe("Company lookup drill-down officer resignation links", () => {
+  test("an account holding the officer resignation form gets a link for each current director or secretary, and the authority TM01 and TM02 state", async ({
+    page,
+  }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+
+    const link = page.locator("#drillView .remove-officer-links a");
+    await expect(link).toHaveText("Remove BRAMWELL, Eleanor (Director)", { timeout: 15000 });
+    expect(await link.getAttribute("href")).toBe(
+      "/companies-house/removeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C+Eleanor",
+    );
+    const control = page.locator('#drillView .file-this[data-activity="remove-officer"]');
+    await expect(control.locator("a.btn")).toHaveText("Remove a director or secretary");
+    const authority = control.locator(".file-this-authority");
+    await expect(authority).toContainText(
+      "“This form may be authenticated by: Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity Commission receiver and manager, CIC manager, Judicial factor.”",
+    );
+    await expect(authority).toContainText("“Only one director appointment can be terminated per form.”");
+    await expect(authority).toContainText("“Only one secretary appointment can be terminated per form.”");
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6911ece9e9348ac8fb54f483/TM01_v7.0-FINAL.pdf");
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6911eb9b663088df8f54f482/TM02_v6.0-FINAL.pdf");
+    await shoot(page, "officer-remove-links");
+  });
+
+  test("on prod, where the officer resignation form is not offered, the officers view carries no removal link", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("BRAMWELL, Eleanor", { timeout: 15000 });
+    await expect(page.locator("#drillView .remove-officer-links")).toHaveCount(0);
+    await expect(page.locator('#drillView .file-this[data-activity="remove-officer"]')).toHaveCount(0);
+  });
+});

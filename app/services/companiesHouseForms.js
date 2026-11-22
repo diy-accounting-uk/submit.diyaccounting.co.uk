@@ -18,6 +18,7 @@ import {
   changeToPeriod,
   FIVE_YEAR_EXTENSION_REASONS,
 } from "./companiesHouseAccountingReferenceDateXml.js";
+import { buildOfficerResignationBody, OFFICER_RESIGNATION_ROLES } from "./companiesHouseOfficerResignationXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -146,6 +147,41 @@ function extractAccountingReferenceDate(body, errorMessages) {
   return { currentPeriodEnd, newPeriodEnd, fiveYearExtensionReason, extensionAuthorisedCode };
 }
 
+function extractOfficerResignation(body, errorMessages) {
+  const { officerRole, corporate, corporateName, title, forename, otherForenames, surname, dateOfBirth, resignationDate } = body;
+  if (!OFFICER_RESIGNATION_ROLES[officerRole]) {
+    errorMessages.push(`Invalid officerRole - must be one of ${Object.keys(OFFICER_RESIGNATION_ROLES).join(", ")}`);
+  }
+  if (typeof corporate !== "boolean") {
+    errorMessages.push("Invalid corporate - must be true or false");
+  } else if (corporate && !trimmed(corporateName)) {
+    errorMessages.push("Missing corporateName");
+  } else if (!corporate && !trimmed(surname)) {
+    errorMessages.push("Missing surname");
+  }
+  const directorPerson = officerRole === "director" && corporate === false;
+  if (!resignationDate || !isValidIsoDate(resignationDate)) {
+    errorMessages.push("Invalid or missing resignationDate - must be YYYY-MM-DD");
+  }
+  if (directorPerson && (!dateOfBirth || !isValidIsoDate(dateOfBirth))) {
+    errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");
+  } else if (directorPerson && resignationDate && isValidIsoDate(resignationDate) && dateOfBirth >= resignationDate) {
+    errorMessages.push("Invalid dateOfBirth - must be before resignationDate");
+  }
+  const person = corporate === false;
+  return {
+    role: officerRole,
+    corporate,
+    corporateName: person ? undefined : trimmed(corporateName),
+    title: person ? trimmed(title) || undefined : undefined,
+    forename: person ? trimmed(forename) || undefined : undefined,
+    otherForenames: person ? trimmed(otherForenames) || undefined : undefined,
+    surname: person ? trimmed(surname) : undefined,
+    dateOfBirth: directorPerson ? dateOfBirth : undefined,
+    resignationDate,
+  };
+}
+
 /** Each form's request check and body builder, by the kind its filing state carries. */
 export const GATEWAY_FORM_BUILDERS = {
   "psc-verification-statement": {
@@ -172,5 +208,9 @@ export const GATEWAY_FORM_BUILDERS = {
   "accounting-reference-date": {
     extractAndValidate: extractAccountingReferenceDate,
     buildFormXml: (form) => buildAccountingReferenceDateBody(form),
+  },
+  "officer-resignation": {
+    extractAndValidate: extractOfficerResignation,
+    buildFormXml: (form) => buildOfficerResignationBody(form),
   },
 };

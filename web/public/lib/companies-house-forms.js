@@ -70,6 +70,18 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "change of accounting reference date",
     sharedPoll: true,
   },
+  "officer-resignation": {
+    routeSegment: "officer-resignation",
+    receiptTitle: "Director or secretary removed",
+    receiptTitleCy: "Cyfarwyddwr neu ysgrifennydd wedi’i dynnu",
+    acceptedEvent: "companies-house-officer-resignation-accepted",
+    acceptedSummary: "Companies House officer resignation accepted",
+    formIdentifier: "OfficerResignation",
+    schema: "OfficerResignation-v2-6.xsd",
+    activityId: "remove-officer",
+    label: "officer resignation",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

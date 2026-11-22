@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.6" id="OfficerResignation">
+	<xs:include schemaLocation="../baseTypes-v2-10.xsd"/>
+	<xs:complexType name="MemberResignationType">
+		<xs:choice>
+			<xs:element ref="CorporateName"/>
+			<xs:element name="Person">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="PersonChangeType">
+							<xs:sequence>
+								<xs:element ref="DOB"/>
+							</xs:sequence>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="DirectorResignationType">
+		<xs:choice>
+			<xs:element ref="CorporateName"/>
+			<xs:element name="Person">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="PersonChangeType">
+							<xs:sequence>
+								<xs:element ref="DOB"/>
+							</xs:sequence>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="SecretaryResignationType">
+		<xs:choice>
+			<xs:element ref="CorporateName"/>
+			<xs:element name="Person" type="PersonChangeType"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="OfficerResignationType">
+		<xs:sequence>
+			<xs:element ref="ResignationDate"/>
+			<xs:choice>
+				<xs:element name="Director" type="DirectorResignationType"/>
+				<xs:element name="Secretary" type="SecretaryResignationType"/>
+				<xs:element name="Member" type="MemberResignationType"/>
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="OfficerResignation" type="OfficerResignationType"/>
+</xs:schema>

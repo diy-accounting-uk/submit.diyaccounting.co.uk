@@ -330,6 +330,14 @@ public class CompaniesHouseNames {
     public String companiesHouseAccountingReferenceDatePostLambdaUrlPath;
     public boolean companiesHouseAccountingReferenceDatePostLambdaJwtAuthorizer;
     public boolean companiesHouseAccountingReferenceDatePostLambdaCustomAuthorizer;
+    public String companiesHouseOfficerResignationPostIngestLambdaHandler;
+    public String companiesHouseOfficerResignationPostIngestLambdaFunctionName;
+    public String companiesHouseOfficerResignationPostIngestLambdaArn;
+    public String companiesHouseOfficerResignationPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseOfficerResignationPostLambdaHttpMethod;
+    public String companiesHouseOfficerResignationPostLambdaUrlPath;
+    public boolean companiesHouseOfficerResignationPostLambdaJwtAuthorizer;
+    public boolean companiesHouseOfficerResignationPostLambdaCustomAuthorizer;
 
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
@@ -1255,5 +1263,29 @@ public class CompaniesHouseNames {
                 "Submit a change of accounting reference date",
                 "Builds the ChangeAccountingReferenceDate body, the change of a company's accounting reference date, and submits it through the Companies House XML Gateway",
                 "postCompaniesHouseAccountingReferenceDate"));
+
+        this.companiesHouseOfficerResignationPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseOfficerResignationPostLambdaUrlPath = "/api/v1/companies-house/officer-resignation";
+        this.companiesHouseOfficerResignationPostLambdaJwtAuthorizer = true;
+        this.companiesHouseOfficerResignationPostLambdaCustomAuthorizer = false;
+        var companiesHouseOfficerResignationPostLambdaHandlerName =
+                "companiesHouseOfficerResignationPost.ingestHandler";
+        var companiesHouseOfficerResignationPostLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(
+                companiesHouseOfficerResignationPostLambdaHandlerName);
+        this.companiesHouseOfficerResignationPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseOfficerResignationPostLambdaHandlerDashed);
+        this.companiesHouseOfficerResignationPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseOfficerResignationPostLambdaHandlerName);
+        this.companiesHouseOfficerResignationPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseOfficerResignationPostLambdaHandlerDashed);
+        this.companiesHouseOfficerResignationPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseOfficerResignationPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseOfficerResignationPostLambdaHttpMethod,
+                this.companiesHouseOfficerResignationPostLambdaUrlPath,
+                "Submit an officer resignation filing",
+                "Builds the OfficerResignation body, the notice that a director or a secretary no longer holds the appointment (TM01 or TM02), and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseOfficerResignation"));
     }
 }
