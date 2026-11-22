@@ -50,9 +50,27 @@ export function setOperatorFeaturesOn(on) {
   writeSession(OPERATOR_FEATURES_KEY, on ? null : "off");
 }
 
+// A bundle read that has not answered in this time is a failed read, the time developer-mode.js
+// gives its own bundle read, so a page waiting on it goes on.
+export const BUNDLE_READ_TIMEOUT_MS = 8000;
+
+// The read's answer, or a rejection once the time limit passes without one.
+async function withinBundleReadTimeLimit(read) {
+  let timer;
+  const limit = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`The bundle read gave no answer in ${BUNDLE_READ_TIMEOUT_MS} ms`)), BUNDLE_READ_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([read, limit]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * The bundle response: the person's bundles, token balance and account settings.
- * @returns {Promise<{bundles: object[], settings: object}|null>} Null when the person is signed out or the read fails
+ * @returns {Promise<{bundles: object[], settings: object}|null>} Null when the person is signed out, or the read
+ *   fails or gives no answer in BUNDLE_READ_TIMEOUT_MS
  */
 export async function fetchBundleResponse() {
   let idToken;
@@ -65,10 +83,13 @@ export async function fetchBundleResponse() {
   try {
     const requestCache = window.requestCache;
     if (requestCache && typeof requestCache.getJSON === "function") {
-      return await requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } });
+      return await withinBundleReadTimeLimit(
+        requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } }),
+      );
     }
-    const response = await window.fetchWithIdToken("/api/v1/bundle", {});
-    return response.ok ? await response.json() : null;
+    return await withinBundleReadTimeLimit(
+      window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => (response.ok ? response.json() : null)),
+    );
   } catch (err) {
     console.warn("viewer-settings: could not read the account settings", err);
     return null;

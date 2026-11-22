@@ -88,7 +88,7 @@
       ...govClientHeaders,
       "x-wait-time-ms": "0",
     };
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) headers.hmrcAccount = hmrcAccount;
     return headers;
   }
