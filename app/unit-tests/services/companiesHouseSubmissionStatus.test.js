@@ -287,6 +287,35 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
+  test("a rejected filing made for a practice client keeps the client on its stored item", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) {
+        return {
+          Item: {
+            requestId: "00001A",
+            status: "pending",
+            createdAt: new Date().toISOString(),
+            data: { kind: "accounts", clientId: "client-1" },
+          },
+        };
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [{ rejectCode: "1" }] }],
+    });
+
+    await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
+
+    const failedWrites = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"] === "failed");
+    expect(failedWrites).toHaveLength(1);
+    expect(failedWrites[0].input.ExpressionAttributeValues[":data"]).toMatchObject({ statusCode: "REJECT", clientId: "client-1" });
+  });
+
   test("answers pending, records nothing and sends no email while the presenter poll is still recording the final status", async () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     mockSend.mockImplementation(async (cmd) => {

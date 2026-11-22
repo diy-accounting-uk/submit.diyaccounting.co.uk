@@ -283,7 +283,7 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
       userSub,
       submissionNumber,
       "failed",
-      { ...status, kind, ...jointFiling, ...pendingRequest },
+      { ...status, kind, ...jointFiling, ...(requestData.clientId ? { clientId: requestData.clientId } : {}), ...pendingRequest },
       asyncRequestsTableName,
       FILING_STATE_RETENTION,
     );
