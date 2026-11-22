@@ -76,6 +76,7 @@ const EXAMPLE_PSC_RESPONSE = {
       date_of_birth: { month: 1, year: 1970 },
       nationality: "British",
       identity_verification_details: { appointment_verification_end_on: "9999-12-31" },
+      links: { self: "/company/00000001/persons-with-significant-control/individual/abcDEF123-xyz" },
     },
   ],
 };
@@ -140,6 +141,7 @@ describe("companiesHousePscGet ingestHandler", () => {
       notifiedOn: "2016-04-06",
     });
     expect(body.pscs[0].nameElements).toEqual({ title: "Ms", forename: "Alice", middleName: "Jane", surname: "Example" });
+    expect(body.pscs[0].pscId).toBe("abcDEF123-xyz");
   });
 
   test("requests the persons-with-significant-control path for the given company number", async () => {

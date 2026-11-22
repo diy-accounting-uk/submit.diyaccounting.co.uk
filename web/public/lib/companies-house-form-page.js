@@ -6,7 +6,8 @@
 // it sends the form (window.submitCompaniesHouseForm, from submit.js), says the gateway took it,
 // polls the outcome through companies-house-gateway-poll.js (window.pollCompaniesHouseForm), and
 // writes the outcome, Companies House's reasons for a rejection, or the error into the page's
-// result element. A form page gathers its fields and calls fileAndShowOutcome.
+// result element. A form page gathers its fields and calls fileAndShowOutcome; it registers the
+// refusals it words itself with registerMessages.
 
 (function () {
   "use strict";
@@ -23,8 +24,37 @@
     return p;
   }
 
-  // The words an error answers: the route's message, which joins its validation messages.
+  // A link to an accepted filing's receipt, on the receipts page in the page's language.
+  function receiptLink(receiptId) {
+    const p = document.createElement("p");
+    const link = document.createElement("a");
+    const query = new URLSearchParams({ receipt: receiptId + ".json" });
+    link.href = `../hmrc/receipt/receipts.html?${query}`;
+    link.textContent = siteText("ch.form.receipt-link", "See the receipt for this filing");
+    p.appendChild(link);
+    return p;
+  }
+
+  // The refusals a form's page words itself, by the id the route names them by in messageIds.
+  const pageMessages = new Map();
+
+  /**
+   * Register the refusals a form's page words in the reader's language. Each value is a function
+   * that returns window.siteText("<id>", "<English>") with literal arguments, so the Welsh build
+   * finds the string; the route pushes { text, id } with the same id (companiesHouseForms.js).
+   * @param {Object<string, function(): string>} messages
+   */
+  function registerMessages(messages) {
+    Object.entries(messages).forEach(([id, text]) => pageMessages.set(id, text));
+  }
+
+  // The words an error answers: the page's own words for each refusal the route names by id, when
+  // the page has all of them, else the route's message, which joins its validation messages.
   function errorText(error) {
+    const ids = error?.body?.messageIds;
+    if (Array.isArray(ids) && ids.length > 0 && ids.every((id) => pageMessages.has(id))) {
+      return ids.map((id) => pageMessages.get(id)()).join(" ");
+    }
     return error?.body?.message || error?.message;
   }
 
@@ -80,9 +110,10 @@
       ),
       ...(outcome.rejections || []).map((rejection) => paragraph(window.companiesHouseRejections.rejectionText(rejection))),
     ];
+    if (accepted && outcome.receiptId) lines.push(receiptLink(outcome.receiptId));
     result.replaceChildren(...lines);
     return outcome;
   }
 
-  window.companiesHouseFormPage = { fileAndShowOutcome, errorText };
+  window.companiesHouseFormPage = { fileAndShowOutcome, errorText, registerMessages };
 })();

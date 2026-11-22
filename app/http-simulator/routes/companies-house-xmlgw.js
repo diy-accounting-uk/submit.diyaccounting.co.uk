@@ -34,12 +34,13 @@ import {
 } from "../scenarios/psc-verification-statement.js";
 import { submitGatewayForm, pollGatewayForm, completedGatewayFormStatuses } from "../scenarios/gateway-forms.js";
 import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
+import { gatewayFormSchemaErrors, formElementXml } from "../gatewayFormSchema.js";
 
-// The form identifiers of the forms filed through the shared filing route, each answered by gateway-forms.js.
-const GATEWAY_FORM_IDENTIFIERS = new Set(
+// The schema of each form filed through the shared filing route, by its form identifier; each is answered by gateway-forms.js.
+const GATEWAY_FORM_SCHEMAS = new Map(
   Object.values(COMPANIES_HOUSE_FORMS)
     .filter((form) => form.sharedPoll)
-    .map((form) => form.formIdentifier),
+    .map((form) => [form.formIdentifier, form.schema]),
 );
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
@@ -427,8 +428,8 @@ function handlePscVerificationStatement(document, { senderIdHash, authValueHash,
 }
 
 // A form filed through the shared filing route: its FormHeader, and a Form that holds the form's
-// own root element, named as its form identifier.
-function handleGatewayForm(document, formIdentifier, { senderIdHash, authValueHash, scenario }) {
+// own root element, named as its form identifier and valid against the form's schema.
+async function handleGatewayForm(document, envelopeXml, formIdentifier, { senderIdHash, authValueHash, scenario }) {
   const formHeader = firstElement(document, "FormHeader");
   if (!formHeader) return schemaFailureFor("Body/FormSubmission/FormHeader");
   const companyNumber = firstElementText(formHeader, "CompanyNumber");
@@ -438,7 +439,13 @@ function handleGatewayForm(document, formIdentifier, { senderIdHash, authValueHa
   if (firstElementText(formHeader, "FormIdentifier") !== formIdentifier)
     return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
   if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
-  if (!firstElement(document, formIdentifier)) return schemaFailureFor("Body/FormSubmission/Form");
+  const formXml = firstElement(document, formIdentifier) && formElementXml(envelopeXml, formIdentifier);
+  if (!formXml) return schemaFailureFor("Body/FormSubmission/Form");
+  const schemaErrors = await gatewayFormSchemaErrors(formXml, GATEWAY_FORM_SCHEMAS.get(formIdentifier));
+  if (schemaErrors.length) {
+    console.log(`[http-simulator:companies-house-xmlgw] ${formIdentifier} refused by its schema: ${schemaErrors[0]}`);
+    return schemaFailureFor(`Body/FormSubmission/Form/${formIdentifier}`);
+  }
   const outcome = submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario, document });
   if (outcome.errors) return { errors: outcome.errors };
   return { qualifier: "acknowledgement", gatewayTimestamp: outcome.gatewayTimestamp, pollInterval: outcome.pollInterval, bodyXml: "" };
@@ -484,7 +491,7 @@ export function apiEndpoint(app) {
   // The real gateway expects Content-Type: text/xml. express.json()/urlencoded() (registered
   // globally in server.js) skip bodies whose content type they don't recognise, so this route
   // parses its own raw body regardless of what Content-Type arrives with.
-  app.post(GATEWAY_PATH, express.text({ type: () => true }), (req, res) => {
+  app.post(GATEWAY_PATH, express.text({ type: () => true }), async (req, res) => {
     const govTestScenario = req.headers["gov-test-scenario"];
 
     console.log(`[http-simulator:companies-house-xmlgw] POST ${GATEWAY_PATH}`);
@@ -522,8 +529,8 @@ export function apiEndpoint(app) {
       outcome = handleConfirmationStatement(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PSCVerificationStatement") {
       outcome = handlePscVerificationStatement(document, { ...credentials, scenario: govTestScenario });
-    } else if (GATEWAY_FORM_IDENTIFIERS.has(requestClass)) {
-      outcome = handleGatewayForm(document, requestClass, { ...credentials, scenario: govTestScenario });
+    } else if (GATEWAY_FORM_SCHEMAS.has(requestClass)) {
+      outcome = await handleGatewayForm(document, req.body, requestClass, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "CompanyDataRequest") {
       outcome = handleCompanyDataRequest(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PaymentPeriodsRequest") {

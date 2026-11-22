@@ -6,6 +6,7 @@
 // outcome with companies-house-gateway-poll.js.
 
 import { fetchWithIdToken } from "./api-client.js";
+import { readJsonAnswer } from "./json-answer.js";
 import { companiesHouseFormPath, companiesHouseFormPollPath } from "../companies-house-forms.js";
 
 function formErrorFromResponse(response, body) {
@@ -16,7 +17,7 @@ function formErrorFromResponse(response, body) {
 }
 
 async function answered(response) {
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) throw formErrorFromResponse(response, body);
   return body;
 }

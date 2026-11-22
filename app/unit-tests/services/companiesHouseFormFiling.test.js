@@ -193,6 +193,14 @@ function everythingKept(response) {
   });
 }
 
+// The data of each request item the route stored as failed.
+function failedItems() {
+  return mockSend.mock.calls
+    .map(([command]) => command.input.ExpressionAttributeValues)
+    .filter((values) => values?.[":status"] === "failed")
+    .map((values) => values[":data"]);
+}
+
 describe("the filing route every Companies House form shares", () => {
   beforeEach(() => {
     Object.assign(
@@ -267,6 +275,25 @@ describe("the filing route every Companies House form shares", () => {
       mockPostToGateway.mockRejectedValue(new Error("socket hang up"));
       await fileCompaniesHouseForm(buildEvent(kind), kind);
       expect(pendingData().some((data) => data.outcomeUnknown === true && data.companyNumber === "06846849")).toBe(true);
+    });
+
+    test("stores the filing as failed under its own kind when the gateway rejects the envelope", async () => {
+      mockParseGatewayResponse.mockReturnValue({ errors: [{ number: "604", text: "Invalid Request" }], statuses: [] });
+
+      await fileCompaniesHouseForm(buildEvent(kind), kind);
+
+      expect(failedItems()).toEqual([expect.objectContaining({ kind, errors: [{ number: "604", text: "Invalid Request" }] })]);
+    });
+
+    test("stores the filing as failed under its own kind when the envelope cannot be sent", async () => {
+      mockBuildFormSubmission.mockImplementation(() => {
+        throw new Error("no package reference");
+      });
+
+      const response = await fileCompaniesHouseForm(buildEvent(kind), kind);
+
+      expect(response.statusCode).toBe(500);
+      expect(failedItems()).toEqual([{ message: "no package reference", kind }]);
     });
 
     test("keeps the code nowhere when the request is refused", async () => {

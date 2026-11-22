@@ -6,6 +6,7 @@
 // companies-house-service.js, which stays the API-key client for the read-only lookup.
 
 import { fetchWithIdToken, authorizedFetch } from "./api-client.js";
+import { readJsonAnswer } from "./json-answer.js";
 
 const JSON_CONTENT_TYPE_HEADERS = { "Content-Type": "application/json" };
 
@@ -88,7 +89,7 @@ export async function getRegisteredOfficeAddress(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${companyNumber}/registered-office-address`, {
     method: "GET",
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -105,7 +106,7 @@ export async function getRegisteredEmailEligibility(companyNumber) {
     method: "GET",
     headers: grantHeaders(),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -124,7 +125,7 @@ export async function openTransaction(companyNumber, description) {
     headers: grantHeaders(),
     body: JSON.stringify({ companyNumber, description }),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -144,7 +145,7 @@ export async function putRegisteredOfficeAddress(transactionId, address) {
     headers: grantHeaders(),
     body: JSON.stringify(address),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -163,7 +164,7 @@ export async function putRegisteredEmailAddress(transactionId, email) {
     headers: grantHeaders(),
     body: JSON.stringify(email),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -181,7 +182,7 @@ export async function closeTransaction(transactionId) {
     headers: grantHeaders(),
     body: JSON.stringify({ status: "closed" }),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -198,7 +199,7 @@ export async function getTransaction(transactionId) {
     method: "GET",
     headers: grantHeaders(),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -217,7 +218,7 @@ export async function renderMicroEntityAccounts(accounts) {
     headers: JSON_CONTENT_TYPE_HEADERS,
     body: JSON.stringify(accounts),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -236,7 +237,7 @@ export async function submitMicroEntityAccounts(accounts, extraHeaders = {}) {
     headers: { ...JSON_CONTENT_TYPE_HEADERS, ...extraHeaders },
     body: JSON.stringify(accounts),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }
@@ -255,7 +256,7 @@ export async function pollMicroEntityAccounts(submissionNumber, extraHeaders = {
     method: "GET",
     headers: extraHeaders,
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw filingErrorFromResponse(response, body);
   }

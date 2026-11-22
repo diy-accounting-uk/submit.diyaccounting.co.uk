@@ -45,6 +45,8 @@ const moduleFiles = [
   "lib/services/api-client.js",
   "lib/services/hmrc-service.js",
   "lib/services/catalog-service.js",
+  // The reader of an API answer the Companies House services share
+  "lib/services/json-answer.js",
   "lib/services/companies-house-service.js",
   "lib/services/companies-house-filing-service.js",
   "lib/services/companies-house-confirmation-service.js",

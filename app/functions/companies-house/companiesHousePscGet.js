@@ -41,8 +41,16 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { companyNumber: normalised };
 }
 
+// The register's own id for a PSC: the last segment of its self link
+// (/company/{number}/persons-with-significant-control/{kind}/{id}).
+function registerPscId(item) {
+  const self = typeof item.links?.self === "string" ? item.links.self : "";
+  return self.split("/").filter(Boolean).pop() || undefined;
+}
+
 function mapPsc(item) {
   return {
+    pscId: registerPscId(item),
     name: item.name,
     // An individual's name in the parts a filing about the person names them by.
     nameElements: item.name_elements

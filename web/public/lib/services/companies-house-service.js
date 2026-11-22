@@ -5,6 +5,7 @@
 // Holds no HMRC concepts; small on purpose.
 
 import { fetchWithIdToken } from "./api-client.js";
+import { readJsonAnswer } from "./json-answer.js";
 
 /**
  * Uppercase and left-pad a numeric company number to eight digits, matching the server's
@@ -50,7 +51,7 @@ async function errorFromResponse(response, body) {
 export async function searchCompanies(query, { itemsPerPage = 20, startIndex = 0 } = {}) {
   const params = new URLSearchParams({ q: query, itemsPerPage: String(itemsPerPage), startIndex: String(startIndex) });
   const response = await fetchWithIdToken(`/api/v1/companies-house/search?${params}`, { method: "GET" });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -64,7 +65,7 @@ export async function searchCompanies(query, { itemsPerPage = 20, startIndex = 0
  */
 export async function getCompanyProfile(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}`, { method: "GET" });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -82,7 +83,7 @@ export async function getOfficers(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/officers`, {
     method: "GET",
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -99,7 +100,7 @@ export async function getPscs(companyNumber) {
     `/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/persons-with-significant-control`,
     { method: "GET" },
   );
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -115,7 +116,7 @@ export async function getFilingHistory(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filing-history`, {
     method: "GET",
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -132,7 +133,7 @@ export async function getFiledAccounts(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filed-accounts`, {
     method: "GET",
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }

@@ -26950,3 +26950,21 @@ cy = '''Gwiriwch y ffigurau, ychwanegwch y polisïau cyfrifyddu, y dyddiad cymer
 [strings."ch.small.advance-number"]
 hash = "63c4618c281e"
 cy = '''Blaenswm {number}'''
+
+# == The Companies House forms' shared modules: an answer that is not JSON, a filing's receipt link, refusals by message id and the date rules ==
+
+[strings."widget.answer-not-json"]
+hash = "de223fb9dd60"
+cy = '''Ni roddodd y gwasanaeth ateb y gall y dudalen hon ei ddarllen (statws {status}). Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.form.receipt-link"]
+hash = "a73841a7f764"
+cy = '''Gweld y dderbynneb ar gyfer y ffeilio hwn'''
+
+[strings."ch.cease.future-cessation"]
+hash = "251db69d67d6"
+cy = '''Ni all y dyddiad peidio â bod yn PRhA fod ar ôl heddiw.'''
+
+[strings."ch.cease.future-confirmation"]
+hash = "24e74cfc4d09"
+cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''

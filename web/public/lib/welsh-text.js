@@ -376,6 +376,8 @@ window.WELSH_TEXT = {
   "ch.callback.title": "Galwad yn ôl Tŷ’r Cwmnïau - DIY Accounting Submit",
   "ch.cease.choose-psc": "Dewiswch y person â rheolaeth arwyddocaol sydd wedi peidio â bod yn un.",
   "ch.cease.confirmation-before": "Ni all y dyddiad cadarnhau fod cyn y dyddiad y peidiodd y person â bod yn PRhA.",
+  "ch.cease.future-cessation": "Ni all y dyddiad peidio â bod yn PRhA fod ar ôl heddiw.",
+  "ch.cease.future-confirmation": "Ni all y dyddiad cadarnhau fod ar ôl heddiw.",
   "ch.cease.kind-entity": "Endid cyfreithiol neu berson cofrestradwy arall",
   "ch.cease.kind-individual": "Unigolyn",
   "ch.cease.lookup-failed": "Methu darllen personau â rheolaeth arwyddocaol y cwmni hwn gan Dŷ’r Cwmnïau.",
@@ -1350,6 +1352,7 @@ window.WELSH_TEXT = {
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
+  "ch.form.receipt-link": "Gweld y dderbynneb ar gyfer y ffeilio hwn",
   "ch.form.sent": "Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...",
   "ch.gateway.pending":
     "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa.",
@@ -2910,6 +2913,8 @@ window.WELSH_TEXT = {
   "vat.vrn": "Rhif cofrestru TAW",
   "widget.access-forbidden": "Dim mynediad. Efallai y bydd angen i chi ychwanegu Bundle i ddefnyddio’r nodwedd hon.",
   "widget.add-a-bundle": "Ychwanegu Bundle",
+  "widget.answer-not-json":
+    "Ni roddodd y gwasanaeth ateb y gall y dudalen hon ei ddarllen (statws {status}). Rhowch gynnig arall arni ymhen ychydig funudau.",
   "widget.assist-asking": "Yn gofyn i HMRC Assist am adborth. Mae hyn yn cymryd ychydig eiliadau.",
   "widget.assist-check": "Gwirio’r Ffurflen hon gyda HMRC Assist",
   "widget.assist-feedback-heading": "Adborth CThEF",

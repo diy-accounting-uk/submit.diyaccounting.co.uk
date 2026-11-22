@@ -14,7 +14,6 @@ import { createLogger } from "../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
-  buildValidationError,
   http200OkResponse,
   http201CreatedResponse,
   http400BadRequestResponse,
@@ -90,6 +89,18 @@ export function extractFormRequest(event, kind, errorMessages) {
   return { ...extractCompanyFields(body, errorMessages), ...GATEWAY_FORM_BUILDERS[kind].extractAndValidate(body, errorMessages) };
 }
 
+// A 400 whose message joins every refusal's English, with messageIds naming the refusals a form's
+// page words itself, so the page shows them in the reader's language.
+function validationRefusal(request, errorMessages, responseHeaders) {
+  const messageIds = errorMessages.filter((refusal) => typeof refusal === "object").map((refusal) => refusal.id);
+  return http400BadRequestResponse({
+    request,
+    headers: { ...responseHeaders },
+    message: errorMessages.map((refusal) => (typeof refusal === "object" ? refusal.text : refusal)).join(", "),
+    error: messageIds.length > 0 ? { messageIds } : undefined,
+  });
+}
+
 async function recordSubmissionFailure({ kind, failure, summary, userSub, detail = {} }) {
   await publishActivityFailureEvent({
     event: `companies-house-${kind}-failed`,
@@ -132,7 +143,7 @@ export async function fileCompaniesHouseForm(event, kind) {
   const ownPresenter = readOwnPresenterFromBody(parseRequestBody(event), errorMessages);
 
   if (errorMessages.length > 0) {
-    return buildValidationError(request, errorMessages, responseHeaders);
+    return validationRefusal(request, errorMessages, responseHeaders);
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
@@ -191,7 +202,7 @@ export async function fileCompaniesHouseForm(event, kind) {
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
-      await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);
+      await putAsyncRequest(userSub, submissionNumber, "failed", { ...parsed, kind }, asyncRequestsTableName);
       await recordSubmissionFailure({
         kind,
         failure: "gateway-rejected-envelope",
@@ -242,7 +253,7 @@ export async function fileCompaniesHouseForm(event, kind) {
       return http201CreatedResponse({ request, headers: { ...responseHeaders }, data: { submissionNumber } });
     }
     if (submissionNumber) {
-      await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
+      await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message, kind }, asyncRequestsTableName);
     }
     await recordSubmissionFailure({
       kind,

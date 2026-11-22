@@ -198,6 +198,10 @@ describe("companiesHousePscCessationPost ingestHandler", () => {
         expect(JSON.stringify(parseResponseBody(response))).toContain(message);
       }
       expect(mockPostToGateway).not.toHaveBeenCalled();
+      const both = await ingestHandler(
+        buildEvent({ body: buildCessationBody({ cessationDate: "2026-11-21", confirmationDate: "2026-11-22" }) }),
+      );
+      expect(parseResponseBody(both).messageIds).toEqual(["ch.cease.future-cessation", "ch.cease.future-confirmation"]);
 
       const today = await ingestHandler(
         buildEvent({ body: buildCessationBody({ cessationDate: "2026-11-20", confirmationDate: "2026-11-20" }) }),

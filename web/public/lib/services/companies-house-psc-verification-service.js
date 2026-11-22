@@ -7,6 +7,7 @@
 // companies-house-confirmation-service.js in shape.
 
 import { fetchWithIdToken } from "./api-client.js";
+import { readJsonAnswer } from "./json-answer.js";
 
 const PSC_VERIFICATION_STATEMENT_JSON_HEADERS = { "Content-Type": "application/json" };
 
@@ -32,7 +33,7 @@ export async function submitPscVerificationStatement(statement, extraHeaders = {
     headers: { ...PSC_VERIFICATION_STATEMENT_JSON_HEADERS, ...extraHeaders },
     body: JSON.stringify(statement),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw pscVerificationStatementErrorFromResponse(response, body);
   }
@@ -51,7 +52,7 @@ export async function pollPscVerificationStatement(submissionNumber, extraHeader
     method: "GET",
     headers: extraHeaders,
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw pscVerificationStatementErrorFromResponse(response, body);
   }

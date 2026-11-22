@@ -70,6 +70,7 @@ const PSCS = {
   ceasedCount: 0,
   pscs: [
     {
+      pscId: "psc-eleanor-1970",
       name: "Eleanor Bramwell",
       kind: "individual-person-with-significant-control",
       naturesOfControl: ["ownership-of-shares-50-to-75-percent"],
@@ -731,7 +732,7 @@ test.describe("Company lookup drill-down PSC cessation links", () => {
 
     const link = page.locator("#drillView .cease-psc-links a");
     await expect(link).toHaveText("Tell Companies House Eleanor Bramwell has ceased to be a PSC", { timeout: 15000 });
-    expect(await link.getAttribute("href")).toBe("/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Eleanor+Bramwell");
+    expect(await link.getAttribute("href")).toBe("/companies-house/ceasePsc.html?companyNumber=00000001&pscId=psc-eleanor-1970");
     const control = page.locator('#drillView .file-this[data-activity="cease-psc"]');
     await expect(control.locator("a.btn")).toHaveText("Tell Companies House a PSC has ceased");
     await expect(control.locator(".file-this-authority")).toContainText(

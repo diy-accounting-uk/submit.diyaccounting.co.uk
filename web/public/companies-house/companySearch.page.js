@@ -168,6 +168,7 @@ const officerOf = (officer) => ({
   resignedOn: officer.resignedOn,
 });
 const pscOf = (psc) => ({
+  pscId: psc.pscId,
   name: psc.name,
   kind: psc.kind,
   naturesOfControl: psc.naturesOfControl || [],
@@ -1313,6 +1314,8 @@ async function renderPscs(container, companyNumber) {
     activityId: "cease-psc",
     page: "ceasePsc.html",
     className: "cease-psc-links",
+    // The cessation page chooses the PSC by the register's own id for it.
+    chooser: (psc) => (psc.pscId ? { pscId: psc.pscId } : {}),
     linkText: (name) => window.siteText("ch.drill.cease-this-psc", "Tell Companies House {name} has ceased to be a PSC", { name }),
   });
   await appendFileThis(container, {
@@ -1325,6 +1328,7 @@ async function renderPscs(container, companyNumber) {
     activityId: "change-psc-details",
     page: "changePscDetails.html",
     className: "change-psc-details-links",
+    chooser: (psc) => ({ pscName: psc.name }),
     linkText: (name) => window.siteText("ch.drill.change-this-psc", "Tell Companies House {name}'s details have changed", { name }),
   });
   await appendFileThis(container, {
@@ -1361,7 +1365,7 @@ const NAMEABLE_PSC_KINDS = [
 
 // For an account that holds a PSC form's activity, a link for each current PSC the form can name,
 // which opens the form with that PSC chosen.
-async function appendPscLinks(container, companyNumber, pscs, { activityId, page, className, linkText }) {
+async function appendPscLinks(container, companyNumber, pscs, { activityId, page, className, linkText, chooser }) {
   const current = pscs.filter((psc) => !psc.ceasedOn && NAMEABLE_PSC_KINDS.includes(psc.kind));
   if (current.length === 0 || !localStorage.getItem("cognitoIdToken")) return;
   let access;
@@ -1377,7 +1381,8 @@ async function appendPscLinks(container, companyNumber, pscs, { activityId, page
   current.forEach((psc) => {
     const item = document.createElement("li");
     const link = document.createElement("a");
-    link.href = `${pagePrefix()}/companies-house/${page}?${new URLSearchParams({ companyNumber, pscName: psc.name })}`;
+    const query = new URLSearchParams({ companyNumber, ...chooser(psc) });
+    link.href = `${pagePrefix()}/companies-house/${page}?${query}`;
     link.textContent = linkText(psc.name);
     item.appendChild(link);
     list.appendChild(item);

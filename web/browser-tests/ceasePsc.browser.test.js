@@ -55,7 +55,15 @@ const PSCS = [
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
-async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, pscs = PSCS } = {}) {
+async function serveSite(
+  page,
+  {
+    pscs = PSCS,
+    filings = [],
+    outcome = { statusCode: "ACCEPT", rejections: [] },
+    filingAnswer = { status: 201, body: { submissionNumber: "000123", pollInterval: 1 } },
+  } = {},
+) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -75,9 +83,11 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs });
     if (pathname === "/api/v1/companies-house/psc-cessation" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
-      return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
+      return json(filingAnswer.body, filingAnswer.status);
     }
     if (pathname === "/api/v1/companies-house/forms/psc-cessation/000123") return json({ submissionNumber: "000123", ...outcome });
+    if (pathname === "/api/v1/hmrc/receipt/2026-11-20T10:00:00.000Z-000123.json")
+      return json({ submissionNumber: "000123", statusCode: "ACCEPT", companyNumber: "00000001" });
     if (pathname.startsWith("/api/")) return json({});
     const filePath = path.join(PUBLIC_ROOT, pathname === "/" ? "index.html" : pathname);
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
@@ -188,14 +198,27 @@ for (const width of [1280, 390]) {
   });
 }
 
-test("a link from the company lookup chooses its PSC", async ({ page }) => {
-  await serveSite(page);
-  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscName=SIMULATOR%20HOLDINGS%20LIMITED`, {
-    waitUntil: "networkidle",
+test("a link from the company lookup chooses its PSC by the register's id, apart from another of the same name", async ({ page }) => {
+  await serveSite(page, {
+    pscs: [
+      { ...PSCS[0], pscId: "psc-eleanor-1970" },
+      { ...PSCS[0], pscId: "psc-eleanor-1994", dateOfBirth: { month: 5, year: 1994 } },
+      { ...PSCS[1], pscId: "psc-holdings" },
+    ],
   });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscId=psc-eleanor-1994`, { waitUntil: "networkidle" });
   await expect(page.locator("#companyNumber")).toHaveValue("00000001");
   await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
-  await expect(page.getByLabel("SIMULATOR HOLDINGS LIMITED (Legal entity or other registrable person)")).toBeChecked();
+  const choices = page.locator('#pscChoices input[name="psc"]');
+  await expect(choices).toHaveCount(3);
+  await expect(choices.nth(0)).not.toBeChecked();
+  await expect(choices.nth(1)).toBeChecked();
+  await page.locator("#cessationDate").fill("2026-11-01");
+  await page.locator("#confirmationDate").fill("2026-11-03");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
 });
 
 test("a link naming a PSC whose name two current PSCs share chooses neither, so the reader chooses", async ({ page }) => {
@@ -247,4 +270,79 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   const result = page.locator("#filingResult");
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The person named does not match the register.");
+});
+
+test("an accepted filing links to its receipt, which the receipts page opens", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await serveSite(page, { outcome: { statusCode: "ACCEPT", rejections: [], receiptId: "2026-11-20T10:00:00.000Z-000123" } });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
+  await fillAndReview(page, {
+    psc: "Eleanor Bramwell (Individual)",
+    lookUp: "Look up the persons with significant control",
+    cont: "Continue",
+  });
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+
+  const link = page.getByRole("link", { name: "See the receipt for this filing" });
+  await expect(link).toHaveAttribute("href", "../hmrc/receipt/receipts.html?receipt=2026-11-20T10%3A00%3A00.000Z-000123.json");
+  await link.click();
+
+  await expect(page).toHaveURL(/\/hmrc\/receipt\/receipts\.html\?receipt=/);
+  await expect(page.locator("#receiptDisplay")).toBeVisible();
+  await expect(page.locator("#receiptContent")).toContainText("000123");
+});
+
+for (const [language, prefix, lookUp, cont, refusal] of [
+  ["English", "", "Look up the persons with significant control", "Continue", "The date of confirmation cannot be after today."],
+  ["Welsh", "/cy", "Chwilio am y personau â rheolaeth arwyddocaol", "Parhau", "Ni all y dyddiad cadarnhau fod ar ôl heddiw."],
+]) {
+  test(`a date after today is refused in ${language} before anything is sent`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-11-20T12:00:00Z"));
+    const filings = [];
+    await serveSite(page, { filings });
+    await page.goto(`${SITE}${prefix}/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
+    await expect(page.locator("#confirmationDate")).toHaveAttribute("max", "2026-11-20");
+    await page.locator("#companyNumber").fill("00000001");
+    await page.getByRole("button", { name: lookUp }).click();
+    await page.locator("#pscChoices input").first().check();
+    await page.locator("#cessationDate").fill("2026-11-20");
+    await page.locator("#confirmationDate").fill("2026-11-21");
+    await page.locator("#companyAuthCode").fill("SIMCS01");
+    await page.getByRole("button", { name: cont }).click();
+
+    await expect(page.locator("#statusMessagesContainer")).toContainText(refusal);
+    await expect(page.locator("#formView")).toBeVisible();
+    expect(filings).toHaveLength(0);
+  });
+}
+
+test("a refusal the route names by id shows in the page's language", async ({ page }) => {
+  await serveSite(page, {
+    filingAnswer: {
+      status: 400,
+      body: { message: "Invalid confirmationDate - must not be in the future", messageIds: ["ch.cease.future-confirmation"] },
+    },
+  });
+  await page.goto(`${SITE}/cy/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
+  await fillAndReview(page, {
+    psc: "SIMULATOR HOLDINGS LIMITED (Endid cyfreithiol neu berson cofrestradwy arall)",
+    lookUp: "Chwilio am y personau â rheolaeth arwyddocaol",
+    cont: "Parhau",
+  });
+  await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
+
+  await expect(page.locator("#filingResult")).toHaveText("Ni all y dyddiad cadarnhau fod ar ôl heddiw.");
+});
+
+test("a refusal the page has no words for shows the route's message", async ({ page }) => {
+  await serveSite(page, { filingAnswer: { status: 400, body: { message: "Missing companyName", messageIds: ["ch.other.unknown"] } } });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
+  await fillAndReview(page, {
+    psc: "Eleanor Bramwell (Individual)",
+    lookUp: "Look up the persons with significant control",
+    cont: "Continue",
+  });
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+
+  await expect(page.locator("#filingResult")).toHaveText("Missing companyName");
 });

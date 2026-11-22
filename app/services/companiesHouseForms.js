@@ -108,21 +108,26 @@ function refuseFutureDate(field, date, errorMessages) {
 // A date the event happened on, and the date the company had confirmation of it, which cannot be
 // earlier. The form gives notice of an event that has happened and been confirmed, so neither date
 // is ahead of today.
-function extractEventAndConfirmationDates(body, eventField, errorMessages) {
+// A refusal as a string, or as { text, id } when the form's page has it in the reader's words.
+const refusal = (text, id) => (id ? { text, id } : text);
+
+// messageIds names the page's siteText id for each of the date refusals the page words itself:
+// futureEvent, confirmationBefore and futureConfirmation.
+function extractEventAndConfirmationDates(body, eventField, errorMessages, messageIds = {}) {
   const eventDate = body[eventField];
   const { confirmationDate } = body;
   const today = todayInUk();
   if (!eventDate || !isValidIsoDate(eventDate)) {
     errorMessages.push(`Invalid or missing ${eventField} - must be YYYY-MM-DD`);
   } else if (eventDate > today) {
-    errorMessages.push(`Invalid ${eventField} - must not be in the future`);
+    errorMessages.push(refusal(`Invalid ${eventField} - must not be in the future`, messageIds.futureEvent));
   }
   if (!confirmationDate || !isValidIsoDate(confirmationDate)) {
     errorMessages.push("Invalid or missing confirmationDate - must be YYYY-MM-DD");
   } else if (eventDate && isValidIsoDate(eventDate) && confirmationDate < eventDate) {
-    errorMessages.push(`Invalid confirmationDate - must not be before ${eventField}`);
+    errorMessages.push(refusal(`Invalid confirmationDate - must not be before ${eventField}`, messageIds.confirmationBefore));
   } else if (confirmationDate > today) {
-    errorMessages.push("Invalid confirmationDate - must not be in the future");
+    errorMessages.push(refusal("Invalid confirmationDate - must not be in the future", messageIds.futureConfirmation));
   }
   return { [eventField]: eventDate, confirmationDate };
 }
@@ -130,7 +135,11 @@ function extractEventAndConfirmationDates(body, eventField, errorMessages) {
 function extractPscCessation(body, errorMessages) {
   return {
     ...extractPscParticulars(body, errorMessages),
-    ...extractEventAndConfirmationDates(body, "cessationDate", errorMessages),
+    ...extractEventAndConfirmationDates(body, "cessationDate", errorMessages, {
+      futureEvent: "ch.cease.future-cessation",
+      confirmationBefore: "ch.cease.confirmation-before",
+      futureConfirmation: "ch.cease.future-confirmation",
+    }),
   };
 }
 
@@ -890,8 +899,13 @@ function extractAllotmentOfShares(body, errorMessages) {
 }
 
 /**
- * Each form's request check and body builder, by the kind its filing state carries. A form whose
- * filing carries a document in the envelope has buildDocument as well.
+ * Each form's request check and body builder, by the kind its filing state carries.
+ *
+ * A check pushes each refusal into errorMessages as a string, or as { text, id } when the form's
+ * page has the refusal in the reader's words: id is the page's siteText id, which the page
+ * registers with window.companiesHouseFormPage.registerMessages, and text is the route's English.
+ *
+ * A form whose filing carries a document in the envelope has buildDocument as well.
  */
 export const GATEWAY_FORM_BUILDERS = {
   "psc-verification-statement": {

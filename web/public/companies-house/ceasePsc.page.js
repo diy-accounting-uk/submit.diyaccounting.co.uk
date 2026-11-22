@@ -10,7 +10,7 @@ window.siteText =
 // Tell Companies House a PSC has ceased: companyView -> formView -> reviewView -> resultView. The
 // form names one of the company's current persons with significant control as the register shows
 // them, so the page reads the register's list and the reader chooses; a link from the company
-// lookup's PSC view names the PSC in ?pscName= and the page chooses it.
+// lookup's PSC view names the PSC by the register's own id for it in ?pscId= and the page chooses it.
 
 const FORM_KIND = "psc-cessation";
 // The register's kinds of PSC this form names, as the PSC route answers them.
@@ -44,12 +44,10 @@ function kindText(kind) {
     : window.siteText("ch.cease.kind-entity", "Legal entity or other registrable person");
 }
 
-function renderPscChoices(chosenName) {
+function renderPscChoices(chosenId) {
   const holder = document.getElementById("pscChoices");
   holder.replaceChildren();
   const current = pscs.filter(nameable);
-  // A name the link gives chooses its PSC only when no other current PSC has that name.
-  const named = current.filter((psc) => psc.name === chosenName);
   document.getElementById("noPscs").style.display = current.length === 0 ? "block" : "none";
   document.getElementById("continueBtn").disabled = current.length === 0;
   current.forEach((psc, index) => {
@@ -60,7 +58,7 @@ function renderPscChoices(chosenName) {
     input.name = "psc";
     input.id = `psc-${index}`;
     input.value = String(pscs.indexOf(psc));
-    input.checked = chosenName ? named.length === 1 && named[0] === psc : current.length === 1;
+    input.checked = chosenId ? psc.pscId === chosenId : current.length === 1;
     const label = document.createElement("label");
     label.htmlFor = input.id;
     label.textContent = `${psc.name} (${kindText(psc.kind)})`;
@@ -81,7 +79,7 @@ async function handleCompanySubmit(event) {
     pscs = answer.pscs || [];
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
-    renderPscChoices(new URLSearchParams(window.location.search).get("pscName"));
+    renderPscChoices(new URLSearchParams(window.location.search).get("pscId"));
     showView("formView");
   } catch (error) {
     console.error("Could not read the company's persons with significant control:", error);
@@ -113,6 +111,27 @@ function pscFields(psc) {
   };
 }
 
+// The refusals of the dates, in the reader's words; the route names them by these ids.
+const DATE_MESSAGES = {
+  "ch.cease.future-cessation": () => window.siteText("ch.cease.future-cessation", "The date ceased to be a PSC cannot be after today."),
+  "ch.cease.future-confirmation": () => window.siteText("ch.cease.future-confirmation", "The date of confirmation cannot be after today."),
+  "ch.cease.confirmation-before": () =>
+    window.siteText("ch.cease.confirmation-before", "The date of confirmation cannot be before the date the person ceased to be a PSC."),
+};
+window.companiesHouseFormPage.registerMessages(DATE_MESSAGES);
+
+// Today in the United Kingdom, as YYYY-MM-DD, the latest date either field may hold.
+const todayInUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+
+// The first refusal of the two dates, by its id, or null.
+function dateRefusal(cessationDate, confirmationDate) {
+  const today = todayInUk();
+  if (cessationDate > today) return "ch.cease.future-cessation";
+  if (confirmationDate < cessationDate) return "ch.cease.confirmation-before";
+  if (confirmationDate > today) return "ch.cease.future-confirmation";
+  return null;
+}
+
 function handleCessationSubmit(event) {
   event.preventDefault();
   const psc = chosenPsc();
@@ -123,10 +142,9 @@ function handleCessationSubmit(event) {
   if (!window.formErrors.requireFields(["cessationDate", "confirmationDate", "companyAuthCode"])) return;
   const cessationDate = document.getElementById("cessationDate").value;
   const confirmationDate = document.getElementById("confirmationDate").value;
-  if (confirmationDate < cessationDate) {
-    showError(
-      window.siteText("ch.cease.confirmation-before", "The date of confirmation cannot be before the date the person ceased to be a PSC."),
-    );
+  const refusal = dateRefusal(cessationDate, confirmationDate);
+  if (refusal) {
+    showError(DATE_MESSAGES[refusal]());
     return;
   }
   filing = {
@@ -199,5 +217,6 @@ document.getElementById("cessationForm").addEventListener("submit", handleCessat
 document.getElementById("submitFilingBtn").addEventListener("click", handleFile);
 document.getElementById("changeBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);
+["cessationDate", "confirmationDate"].forEach((id) => document.getElementById(id).setAttribute("max", todayInUk()));
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);

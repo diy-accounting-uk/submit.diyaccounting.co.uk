@@ -1108,6 +1108,19 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     }
   });
 
+  test("refuses a PSCCessation body its schema refuses, and records no submission", async () => {
+    const outOfOrder = cessationEnvelope("CES005").replace(
+      /(<CessationDate>.*?<\/CessationDate>)(<ConfirmationDate>.*?<\/ConfirmationDate>)/,
+      "$2$1",
+    );
+    const response = parseXmlDocument((await post(outOfOrder)).text);
+    expect(firstElementText(response, "Qualifier")).toBe("error");
+    expect(firstElementText(response, "Location")).toBe("Body/FormSubmission/Form/PSCCessation");
+
+    const retried = parseXmlDocument((await post(cessationEnvelope("CES005"))).text);
+    expect(firstElementText(retried, "Qualifier")).toBe("acknowledgement");
+  });
+
   test("refuses a submission number already used", async () => {
     await post(cessationEnvelope("CES004"));
     const response = await post(cessationEnvelope("CES004"));

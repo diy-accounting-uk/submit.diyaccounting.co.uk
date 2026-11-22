@@ -433,3 +433,4 @@ CONSOLE_CAPTURE_EXTERNAL_ID  app/functions/analytics/consoleCapturePublish.js  c
 # --- trusted event function: variables only its prod reads set ---
 COMPANIES_HOUSE_BASE_URI   app/functions/ops/trustedEventToGithubIssue.js  read only by the Companies House deadline read and its source check, which run in prod; ci leaves it unset
 TRUSTED_EVENT_ROOT_READ_ROLE_ARN   app/functions/ops/trustedEventToGithubIssue.js  read only by the management-account reads (domains, budgets, anomalies), which run in prod; ci leaves it unset
+ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME  app/functions/companies-house/companiesHouseFormStatusGet.js  app/data/dynamoDbActivityChargeRepository.js via companiesHouseSubmissionStatus.js markChargeUsed(), called only for a filing whose request data holds a feeCharge, which the shared filing route (companiesHouseFormFiling.js) never stores

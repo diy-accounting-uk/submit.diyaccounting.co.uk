@@ -156,4 +156,14 @@ describe("companiesHousePscVerificationStatementGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response)).toEqual({});
   });
+
+  test("answers 500 in JSON when the poll cannot be made", async () => {
+    mockPollSubmission.mockRejectedValue(new Error("socket hang up"));
+
+    const response = await companiesHousePscVerificationStatementGetHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(parseResponseBody(response).message).toBe("The status of this submission could not be read from Companies House");
+  });
 });

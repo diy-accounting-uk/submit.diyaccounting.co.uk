@@ -351,6 +351,39 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void theSharedFormLambdasHoldOnlyWhatTheFilingRouteAndItsPollCall() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        String fileName = stack.companiesHousePscCessationPostLambdaProps.ingestFunctionName();
+        var fileActions = actionsOnRole(template, fileName);
+        assertTrue(
+                fileActions.contains("dynamodb:UpdateItem"),
+                "the filing route allocates the number and writes the filing");
+        assertTrue(!fileActions.contains("dynamodb:GetItem"), "the filing route reads no item back");
+        assertTrue(
+                !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, fileName),
+                "the filing route charges no token");
+        assertHasEnvironmentVariable(template, fileName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
+
+        String pollName = stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName();
+        var pollActions = actionsOnRole(template, pollName);
+        assertTrue(pollActions.contains("dynamodb:GetItem"), "the poll reads the filer's request");
+        assertTrue(pollActions.contains("dynamodb:PutItem"), "the poll writes the receipt");
+        assertTrue(
+                !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, pollName),
+                "a shared-route filing stores no token charge, so its poll charges none");
+        assertTrue(!roleCanUpdateActivityCharges(template, pollName), "a shared-route filing stores no fee");
+        var environment =
+                (Map<String, Object>) propertiesOfFunction(template, pollName).get("Environment");
+        assertTrue(
+                !((Map<String, Object>) environment.get("Variables"))
+                        .containsKey("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME"),
+                "the poll of a shared-route filing never reads the activity charges");
+    }
+
+    @Test
     void everySubmitLambdaCanSealTheFilerIntoTheFilingState() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);

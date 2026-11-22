@@ -550,11 +550,17 @@ window.addEventListener("focus", () => {
 
 // Initialize page - wait for submit.js module to be ready
 document.getElementById("receiptsClient").addEventListener("change", () => fetchReceipts());
+// A receipt a filing page links to opens as the page loads: ?receipt=<receipt id>.json.
+function openLinkedReceipt() {
+  const name = new URLSearchParams(window.location.search).get("receipt");
+  if (name && /^[\w:.-]+\.json$/.test(name)) viewReceipt(name);
+}
 
 function initPage() {
   checkAuthStatus();
   fetchReceipts();
   if (getIdToken()) showClientChoice();
+  openLinkedReceipt();
 }
 
 if (window.__submitReady__) {
