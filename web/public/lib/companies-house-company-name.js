@@ -132,32 +132,43 @@ const READ_AS = [
 ];
 // The punctuation, signs and symbols section 6.4 disregards.
 const DISREGARDED_PUNCTUATION = /[‘’'",()[\]{}<>!«»“”?./\\]/g;
+// The signs section 6.4 disregards when they are one of a name's first three characters.
+const DISREGARDED_AT_THE_START = /[*=#%+]/g;
+
+function readAsTheSame(text) {
+  let read = text;
+  for (const [sign, word] of READ_AS) read = read.replace(sign, word);
+  return read.replace(DISREGARDED_PUNCTUATION, " ").replace(/\s+/g, " ").trim();
+}
+
+// The endings as the key reads them by then (RIGHT TOO MANAGE, A R CWMNI), so section 6.5's reading
+// of TO and the disregarded apostrophe leave them disregarded.
+const READ_ENDINGS = [...DISREGARDED_ENDINGS, ...DISREGARDED_AFTER_A_SPACE].map(readAsTheSame);
 
 /**
  * A key under which two names that Companies House counts as the "same as" each other are equal:
- * the first 60 characters, letters without accents, the words, signs and digits read as the same, the start's
+ * the first 60 characters, the signs disregarded among the first three, letters without accents, the words,
+ * signs and digits read as the same, the start's
  * THE and WWW, the endings and the words after a blank space that it disregards, a final S, the
  * listed punctuation and the spaces between characters left out.
  * @param {string} name
  * @returns {string}
  */
 export function sameAsKey(name) {
-  let key = String(name || "")
-    .slice(0, 60)
+  const first60 = String(name || "").slice(0, 60);
+  let key = (first60.slice(0, 3).replace(DISREGARDED_AT_THE_START, "") + first60.slice(3))
     .toUpperCase()
     .replace(/[ÆǼ]/g, "AE")
     .replace(/Œ/g, "OE")
     .normalize("NFD")
     .replace(/\p{M}/gu, "");
   for (const [letter, plain] of READ_AS_LETTERS) key = key.replace(letter, plain);
-  for (const [sign, word] of READ_AS) key = key.replace(sign, word);
-  key = key.replace(DISREGARDED_PUNCTUATION, " ").replace(/\s+/g, " ").trim();
+  key = readAsTheSame(key);
   key = key.replace(/^(THE|WWW) /, "");
-  const ends = [...DISREGARDED_ENDINGS, ...DISREGARDED_AFTER_A_SPACE];
   let shortened = true;
   while (shortened) {
     shortened = false;
-    for (const ending of ends) {
+    for (const ending of READ_ENDINGS) {
       if (key.endsWith(` ${ending}`)) {
         key = key.slice(0, -ending.length - 1).trim();
         shortened = true;

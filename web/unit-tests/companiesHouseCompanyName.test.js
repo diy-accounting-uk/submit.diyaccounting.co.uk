@@ -55,7 +55,7 @@ describe("a name the same as another, as Companies House counts it", () => {
     ["%", "PER CENT", "PERCENT", "PER CENTUM", "PERCENTUM"],
     ["@", "AT"],
   ])("reads %s and the rest of section 6.5's row as the same", (...row) => {
-    for (const other of row.slice(1)) same(`${row[0]} TREES LIMITED`, `${other} TREES LIMITED`);
+    for (const other of row.slice(1)) same(`OAK ${row[0]} TREES LIMITED`, `OAK ${other} TREES LIMITED`);
   });
 
   it.each([
@@ -89,6 +89,27 @@ describe("a name the same as another, as Companies House counts it", () => {
     same("4 SEASONS LTD", "FOUR SEASONS LIMITED");
     same("ZERO WASTE LIMITED", "0 WASTE LIMITED");
     same("365 DAYS LIMITED", "THREESIXFIVE DAYS LIMITED");
+  });
+
+  it("leaves a word alone that only contains a number word", () => {
+    expect(sameAsKey("TOOTH LIMITED")).toBe("TOOTH");
+    expect(sameAsKey("ONEROUS LIMITED")).toBe("ONEROU");
+    expect(sameAsKey("FORTRESS LIMITED")).toBe("FORTRES");
+    different("TOOTH LIMITED", "TOO TH LIMITED X");
+  });
+
+  it("disregards the endings that hold TO or an apostrophe though section 6.5 reads TO as TOO", () => {
+    same("ACME RIGHT TO MANAGE COMPANY LIMITED", "ACME LIMITED");
+    same("ACME RIGHT TO ENFRANCHISEMENT LIMITED", "ACME LIMITED");
+    same("CWMNI ACME A’R CWMNI", "CWMNI ACME");
+  });
+
+  it("disregards *, =, #, % and + among a name's first three characters, and reads them after", () => {
+    same("%AGE LIMITED", "AGE LIMITED");
+    same("*STAR LIMITED", "STAR LIMITED");
+    same("A#B TRADING LIMITED", "AB TRADING LIMITED");
+    same("ABC+ LIMITED", "ABC PLUS LIMITED");
+    different("ABC% LIMITED", "ABC LIMITED");
   });
 
   it("keeps names apart that differ in a word that counts", () => {
