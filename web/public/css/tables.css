@@ -52,6 +52,26 @@ caption {
   padding-right: var(--space-2);
 }
 
+/* A cell of text from outside the site, such as a company name or address on the register: a long
+   word breaks where it must, so the table never grows wider than its container. A short value that
+   reads as one unit, such as a company number or a date, stays on one line. */
+.data-table .cell-wrap {
+  overflow-wrap: anywhere;
+}
+
+.data-table .cell-nowrap {
+  white-space: nowrap;
+}
+
+/* The company search results: the name and the address take most of the width. */
+.data-table .search-column-name {
+  width: 32%;
+}
+
+.data-table .search-column-address {
+  width: 24%;
+}
+
 .data-table .receipt-nowrap {
   white-space: nowrap;
 }

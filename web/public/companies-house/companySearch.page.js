@@ -17,7 +17,7 @@ function renderSearchResults(results) {
   }
 
   const table = document.createElement("table");
-  table.className = "data-table";
+  table.className = "data-table data-table--compact";
   const headings = [
     window.siteText("ch.search.column-company", "Company"),
     window.siteText("ch.search.column-number", "Number"),
@@ -27,9 +27,12 @@ function renderSearchResults(results) {
     window.siteText("ch.search.column-watch-list", "Watch list"),
   ];
   const thead = table.createTHead().insertRow();
-  headings.forEach((heading) => {
+  // The name and the address carry the most text, so they take the room the short columns leave.
+  const columnClasses = ["search-column-name", "", "", "", "search-column-address", ""];
+  headings.forEach((heading, index) => {
     const th = document.createElement("th");
     th.textContent = heading;
+    if (columnClasses[index]) th.className = columnClasses[index];
     thead.appendChild(th);
   });
   const tbody = document.createElement("tbody");
@@ -44,9 +47,11 @@ function renderSearchResults(results) {
     nameButton.textContent = item.title;
     nameButton.addEventListener("click", () => navigate({ companyNumber: item.companyNumber, view: "overview" }));
     nameCell.appendChild(nameButton);
+    nameCell.className = "cell-wrap";
 
     const numberCell = document.createElement("td");
     numberCell.textContent = item.companyNumber;
+    numberCell.className = "cell-nowrap";
 
     const statusCell = document.createElement("td");
     statusCell.textContent = window.companiesHouseLabels.companyStatusLabel(item.companyStatus);
@@ -56,6 +61,7 @@ function renderSearchResults(results) {
 
     const addressCell = document.createElement("td");
     addressCell.textContent = item.addressSnippet || "";
+    addressCell.className = "cell-wrap";
 
     row.appendChild(nameCell);
     row.appendChild(numberCell);
