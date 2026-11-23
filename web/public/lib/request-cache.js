@@ -91,9 +91,16 @@
     // A read whose caller aborted it answers nobody else: the next caller reads again.
     const entry = cached && cached.promise && cached.init && cached.init.signal && cached.init.signal.aborted ? undefined : cached;
 
-    // Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh
+    // Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh. When
+    // the caller that started the read aborts it after this caller joined, this caller reads again on
+    // its own, unless its own signal is aborted too.
     if (entry && entry.promise && !force && (entry.ttlMs === 0 || now - entry.ts < entry.ttlMs)) {
-      return entry.promise;
+      const ownerSignal = entry.init && entry.init.signal;
+      return entry.promise.catch((error) => {
+        const ownerAborted = error && error.name === "AbortError" && ownerSignal && ownerSignal.aborted;
+        if (!ownerAborted || (init && init.signal && init.signal.aborted)) throw error;
+        return getJSON(url, { ttlMs, force, init });
+      });
     }
 
     // Serve fresh cached data directly when available

@@ -106,6 +106,9 @@
     const showList = () =>
       current()
         .then((list) => {
+          // A list read again after a failed read tells every other button on the page, which said
+          // the list could not be read.
+          if (element.dataset.unread) document.dispatchEvent(new CustomEvent("watchlistchange", { detail: list }));
           delete element.dataset.unread;
           return show(element, companyNumber, list);
         })
@@ -130,7 +133,9 @@
       }
     });
     document.addEventListener("watchlistchange", (event) => {
-      if (element.isConnected) show(element, companyNumber, event.detail);
+      if (!element.isConnected) return;
+      delete element.dataset.unread;
+      show(element, companyNumber, event.detail);
     });
     showList();
     return element;

@@ -112,4 +112,63 @@ describe("the page's request cache", () => {
     await expect(cache.getJSON("/api/v1/bundle", { ttlMs: 5000 })).resolves.toEqual({ bundles: ["x"] });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+
+  it("answers a caller that joined a read from its own request when the caller that started the read aborts it", async () => {
+    const cache = loadRequestCache(
+      (url, init) =>
+        new Promise((resolve, reject) => {
+          const signal = init && init.signal;
+          if (signal) signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+          setTimeout(() => resolve(answer(200, { bundles: ["x"] })), 10);
+        }),
+    );
+    const owner = new AbortController();
+    const ownerRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { signal: owner.signal } });
+    const waiterRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000 });
+    owner.abort();
+
+    await expect(ownerRead).rejects.toMatchObject({ name: "AbortError" });
+    await expect(waiterRead).resolves.toEqual({ bundles: ["x"] });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("answers two callers that joined an aborted read from one request between them", async () => {
+    const cache = loadRequestCache(
+      (url, init) =>
+        new Promise((resolve, reject) => {
+          const signal = init && init.signal;
+          if (signal) signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+          setTimeout(() => resolve(answer(200, { bundles: ["x"] })), 10);
+        }),
+    );
+    const owner = new AbortController();
+    const ownerRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { signal: owner.signal } });
+    const waiters = [cache.getJSON("/api/v1/bundle", { ttlMs: 5000 }), cache.getJSON("/api/v1/bundle", { ttlMs: 5000 })];
+    owner.abort();
+
+    await expect(ownerRead).rejects.toMatchObject({ name: "AbortError" });
+    await expect(Promise.all(waiters)).resolves.toEqual([{ bundles: ["x"] }, { bundles: ["x"] }]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("passes the abort on to a caller that joined a read and aborted its own signal as well", async () => {
+    const cache = loadRequestCache(
+      (url, init) =>
+        new Promise((resolve, reject) => {
+          const signal = init && init.signal;
+          if (signal) signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+          setTimeout(() => resolve(answer(200, { bundles: ["x"] })), 10);
+        }),
+    );
+    const owner = new AbortController();
+    const waiter = new AbortController();
+    const ownerRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { signal: owner.signal } });
+    const waiterRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { signal: waiter.signal } });
+    waiter.abort();
+    owner.abort();
+
+    await expect(ownerRead).rejects.toMatchObject({ name: "AbortError" });
+    await expect(waiterRead).rejects.toMatchObject({ name: "AbortError" });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });

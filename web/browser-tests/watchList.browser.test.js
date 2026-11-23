@@ -36,8 +36,11 @@ const COMPANIES = {
   "00000002": { name: "SIMULATOR DISSOLVED COMPANY LIMITED", status: "dissolved", accounts: "2099-01-31", confirmation: "2099-04-30" },
 };
 
-function profileOf(companyNumber) {
-  const company = COMPANIES[companyNumber];
+// The register's companies, with any a test adds for its own account alone.
+const companiesOf = (account) => ({ ...COMPANIES, ...account.companies });
+
+function profileOf(companies, companyNumber) {
+  const company = companies[companyNumber];
   return {
     companyNumber,
     companyName: company.name,
@@ -122,8 +125,9 @@ async function serveSite(page, account) {
       if (account.rateLimitAfter !== undefined && account.profileReads.length > account.rateLimitAfter) {
         return json(route, 429, { message: "Companies House is rate limiting our lookups" }, { "Retry-After": "300" });
       }
-      if (!COMPANIES[company[1]]) return json(route, 404, { message: "Not found for the specified query" });
-      return json(route, 200, profileOf(company[1]));
+      const companies = companiesOf(account);
+      if (!companies[company[1]]) return json(route, 404, { message: "Not found for the specified query" });
+      return json(route, 200, profileOf(companies, company[1]));
     }
     if (pathname.startsWith("/api/")) return json(route, 200, {});
     if (pathname === "/submit.environment-name.txt") return route.fulfill({ status: 200, contentType: "text/plain", body: "ci" });
@@ -262,6 +266,26 @@ test.describe("Company watch list", () => {
     await expect(firstAdd).toBeEnabled();
   });
 
+  test("on the lookup's search results, a list read again from one button sets every other button that could not read it", async ({
+    page,
+  }) => {
+    const account = { watchedCompanies: [], bundleStatus: 500 };
+    await serveSite(page, account);
+    await page.goto(`${BASE}/companies-house/companySearch.html`, { waitUntil: "networkidle" });
+    await page.fill("#companyQuery", "Simulator");
+    await page.click("#searchBtn");
+    const buttons = page.locator("#searchResults .watch-list-add");
+    await expect(buttons.first()).toHaveText("Your watch list could not be read. Try again", { timeout: 15000 });
+    const count = await buttons.count();
+    expect(count).toBeGreaterThan(1);
+    await expect(buttons.nth(1)).toHaveText("Your watch list could not be read. Try again");
+
+    delete account.bundleStatus;
+    await buttons.first().click();
+
+    for (let index = 0; index < count; index += 1) await expect(buttons.nth(index)).toHaveText("Add to watch list");
+  });
+
   test("adds from its own search, removes, and opens a company at its drill-down address", async ({ page }) => {
     const account = { watchedCompanies: [] };
     await serveSite(page, account);
@@ -370,11 +394,12 @@ test.describe("Company watch list", () => {
   });
 });
 
-// The full list's fifty companies all answer with a profile.
+// The full list's fifty companies all answer with a profile, for this account alone.
 function profilesForEveryWatchedCompany(account) {
+  account.companies = {};
   for (const companyNumber of account.watchedCompanies) {
     if (!COMPANIES[companyNumber])
-      COMPANIES[companyNumber] = {
+      account.companies[companyNumber] = {
         name: `WATCHED COMPANY ${companyNumber} LIMITED`,
         status: "active",
         accounts: "2099-01-31",
