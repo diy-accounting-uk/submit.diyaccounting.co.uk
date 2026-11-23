@@ -41,9 +41,9 @@ vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
 }));
 
 const { initializeSalt } = await import("@app/services/subHasher.js");
-const { echoedValuesOf, withoutEchoedValues, statusWithoutEchoedValues, ECHO_REMOVED } =
-  await import("@app/services/companiesHouseEchoedValues.js");
+const { echoedValuesOf, withoutEchoedValues, statusWithoutEchoedValues } = await import("@app/services/companiesHouseEchoedValues.js");
 const { pollPresenterSubmissions } = await import("@app/services/companiesHousePresenterPoll.js");
+const { REMOVED_VALUE } = await import("@app/services/companiesHouseErrorText.js");
 const { pollSubmission } = await import("@app/services/companiesHouseSubmissionStatus.js");
 
 // A PSC cessation as the shared form route reads it.
@@ -67,7 +67,7 @@ const REJECTION = {
   description: "The person named, Eleanor Mary BRAMWELL, does not match the register of Bramwell Engineering Limited.",
   instanceNumber: "1",
 };
-const WITHOUT_ECHO = `The person named, ${ECHO_REMOVED}, does not match the register of ${ECHO_REMOVED} Limited.`;
+const WITHOUT_ECHO = `The person named, ${REMOVED_VALUE}, does not match the register of ${REMOVED_VALUE} Limited.`;
 
 beforeAll(async () => {
   await initializeSalt();
@@ -98,7 +98,7 @@ describe("the keyed hashes of what a filing sent", () => {
     const echoed = echoedValuesOf(accounts, "user-1");
     const text = withoutEchoedValues("Alan Morgan of Sutton Coldfield, While Road, under FRS 102 for ACME LTD", echoed, "user-1");
     // The words of one place read as one removal, so Sutton Coldfield, While Road is one.
-    expect(text).toBe(`${ECHO_REMOVED} of ${ECHO_REMOVED}, under FRS 102 for ${ECHO_REMOVED} LTD`);
+    expect(text).toBe(`${REMOVED_VALUE} of ${REMOVED_VALUE}, under FRS 102 for ${REMOVED_VALUE} LTD`);
   });
 
   test("are none for a request with no name or address", () => {
@@ -118,6 +118,33 @@ describe("a rejection's reason without what the filing sent", () => {
     expect(statusWithoutEchoedValues({ statusCode: "REJECT", rejections: [REJECTION] }, undefined, "user-1").rejections).toEqual([
       REJECTION,
     ]);
+  });
+});
+
+describe("the words that stand for a removed value", () => {
+  test("read as the submit-time error texts read for a value of the request", () => {
+    expect(REMOVED_VALUE).toBe("[a value of the request]");
+    expect(withoutEchoedValues("The person named, Eleanor BRAMWELL, does not match.", echoedValuesOf(CESSATION, "user-1"), "user-1")).toBe(
+      "The person named, [a value of the request], does not match.",
+    );
+  });
+});
+
+describe("a rejection whose filing's salt version a rotation has since retired", () => {
+  test("keeps each reason as one removal, and the status's other fields, so the poll can record it", () => {
+    const echoed = { ...echoedValuesOf(CESSATION, "user-1"), saltVersion: "a-retired-version" };
+
+    const status = statusWithoutEchoedValues(
+      { statusCode: "REJECT", submissionNumber: "000123", rejections: [REJECTION] },
+      echoed,
+      "user-1",
+    );
+
+    expect(status).toEqual({
+      statusCode: "REJECT",
+      submissionNumber: "000123",
+      rejections: [{ rejectCode: "9998", instanceNumber: "1", description: REMOVED_VALUE }],
+    });
   });
 });
 

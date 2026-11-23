@@ -8,7 +8,13 @@
 // values, never the words, and the poll takes out of the reason each word whose hash it holds,
 // before the reason is stored, logged or shown.
 
-import { getSaltVersion, hashSubWithVersion } from "./subHasher.js";
+import { getPreviousVersions, getSaltVersion, hashSubWithVersion } from "./subHasher.js";
+import { createLogger } from "../lib/logger.js";
+// Each run of words taken out of a reason reads as the submit-time error texts put a request's value,
+// so a reader meets one wording whichever answer named the value.
+import { REMOVED_VALUE } from "./companiesHouseErrorText.js";
+
+const logger = createLogger({ source: "app/services/companiesHouseEchoedValues.js" });
 
 // The fields of a request whose values a rejection's reason could repeat: names, addresses and the
 // company's name. Every string below a field of these names is read, so a list of directors or an
@@ -22,9 +28,6 @@ const HAS_LETTER = /\p{L}/u;
 
 // Words of a company's name or an address that Companies House's own sentences use as well.
 const KEPT_WORDS = new Set(["THE", "AND", "OF", "LIMITED", "LTD", "PLC", "LLP", "CIC", "COMPANY", "CO"]);
-
-// Each word taken out of a reason reads as this.
-export const ECHO_REMOVED = "[removed]";
 
 const HASH_LENGTH = 24;
 
@@ -71,7 +74,7 @@ export function echoedValuesOf(sent, userSub) {
 }
 
 /**
- * A text with each word whose keyed hash the echoed values hold replaced by ECHO_REMOVED.
+ * A text with each word whose keyed hash the echoed values hold replaced by REMOVED_VALUE.
  * @param {string} text
  * @param {{saltVersion: string, hashes: string[]}|undefined} echoedValues
  * @param {string} userSub
@@ -92,7 +95,7 @@ export function withoutEchoedValues(text, echoedValues, userSub) {
     } else if (lastRemovedEnd === from && /^[ ,]*$/.test(gap)) {
       // The words of one name, or of one address, read as one removal.
     } else {
-      result += gap + ECHO_REMOVED;
+      result += gap + REMOVED_VALUE;
     }
     from = match.index + match[0].length;
     if (isEchoed) lastRemovedEnd = from;
@@ -109,6 +112,12 @@ export function withoutEchoedValues(text, echoedValues, userSub) {
  */
 export function statusWithoutEchoedValues(status, echoedValues, userSub) {
   if (!status?.rejections?.length || !echoedValues?.hashes?.length) return status;
+  // A salt rotation that has since retired the filing's salt version leaves its hashes unreadable:
+  // no word can be told apart, so each reason is kept as one removal, and the poll records it.
+  if (echoedValues.saltVersion !== getSaltVersion() && !getPreviousVersions().includes(echoedValues.saltVersion)) {
+    logger.warn({ message: "A rejection's reasons were removed whole: the filing's salt version is no longer held" });
+    return { ...status, rejections: status.rejections.map((rejection) => ({ ...rejection, description: REMOVED_VALUE })) };
+  }
   return {
     ...status,
     rejections: status.rejections.map((rejection) => ({
