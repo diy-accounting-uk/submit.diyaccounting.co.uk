@@ -545,6 +545,15 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await screenshotAtBothWidths(page, "micro-amend-refusal-cannot-open");
   });
 
+  test("keeps the page's own status line where revised accounts are not offered", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microDocument()), { offered: false });
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Revised accounts cannot be filed here yet");
+    const statusLine = page.locator("[data-feature-status]");
+    await expect(statusLine).toBeVisible();
+    await expect(statusLine).toHaveAttribute("data-feature-status", "production");
+    await expect(statusLine).toHaveText("Status: production. Accounts you file here reach the live Companies House register.");
+  });
+
   test("says revised accounts cannot be filed here where they are not offered", async ({ page }) => {
     await openAmend(page, accountsReceipt(microDocument()), { offered: false });
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Revised accounts cannot be filed here yet");

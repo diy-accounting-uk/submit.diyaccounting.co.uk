@@ -612,7 +612,7 @@ function smallDocument({ language = "en", accountantsReport } = {}) {
 async function openAmend(
   page,
   receipt,
-  { width = 1280, outcome = "ACCEPT", jurisdiction = "england-wales", profileFails = false, welsh = false } = {},
+  { width = 1280, outcome = "ACCEPT", jurisdiction = "england-wales", profileFails = false, welsh = false, offered = true } = {},
 ) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
@@ -686,7 +686,7 @@ async function openAmend(
         export const fetchCurrentEnvironmentName = async () => "ci";
         export const parseCatalogueText = () => ({ activities: [{ id: "file-revised-accounts", name: "File Revised Accounts (Companies House, preview)" }] });
         export const activityStatus = (activity) => (activity?.id === "file-revised-accounts" ? "preview" : null);
-        export const isRevisedAccountsOffered = () => true;`,
+        export const isRevisedAccountsOffered = () => ${offered};`,
     }),
   );
   await page.route("**/lib/services/viewer-settings.js", (route) =>
@@ -760,6 +760,15 @@ test.describe("File small company accounts page - revising accounts from a recei
     await page.locator("#currentTurnover").dispatchEvent("input");
     await screenshot(page, "small-amend-filleted-note", 1280);
     await screenshotAtBothWidths(page, "small-amend-copy-filleted");
+  });
+
+  test("keeps the page's own status line where revised accounts are not offered", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml), { offered: false });
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Revised accounts cannot be filed here yet");
+    const statusLine = page.locator("[data-feature-status]");
+    await expect(statusLine).toBeVisible();
+    await expect(statusLine).toHaveAttribute("data-feature-status", "production");
+    await expect(statusLine).toHaveText("Status: production. Accounts you file here reach the live Companies House register.");
   });
 
   for (const width of [1280, 390]) {
