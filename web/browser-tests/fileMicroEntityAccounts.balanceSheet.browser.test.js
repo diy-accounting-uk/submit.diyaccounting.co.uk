@@ -195,7 +195,7 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
       {
         body: JSON.stringify({
           ...accounts,
-          companyNumber: "06846849",
+          companyNumber: "00000003",
           companyAuthCode: "ABC123",
           registeredOffice: { addressLine1: "14 Castle Street", cityOrTown: "Cardiff", postalCode: "CF10 1BS" },
         }),

@@ -9,7 +9,7 @@ import { describeEventWithoutBody } from "@app/lib/httpResponseHelper.js";
 describe("readOwnPresenterFromBody", () => {
   test("returns undefined and no error when the body names no own presenter", () => {
     const errors = [];
-    expect(readOwnPresenterFromBody({ companyNumber: "06846849" }, errors)).toBeUndefined();
+    expect(readOwnPresenterFromBody({ companyNumber: "00000004" }, errors)).toBeUndefined();
     expect(errors).toEqual([]);
   });
 

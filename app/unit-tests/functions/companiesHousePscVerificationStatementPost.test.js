@@ -80,7 +80,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildStatementBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-09-24",
@@ -146,7 +146,7 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     expect(submissionArgs).toMatchObject({
       presenterId: "presenter-id",
       presenterCode: "presenter-code",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
       companyAuthenticationCode: "SIMCS01",
       packageReference: "0012",

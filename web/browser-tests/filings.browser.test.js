@@ -29,7 +29,7 @@ const ACCOUNTS_RECEIPT = {
   kind: "companies-house-accounts",
   statusCode: "ACCEPT",
   submissionNumber: "00001A",
-  companyNumber: "06846849",
+  companyNumber: "00000003",
   rejections: [],
   filedDocument: accountsCase.xhtml,
 };
@@ -45,7 +45,7 @@ const CT_RECEIPT = {
   filed: {
     boxes: {
       1: "Example Trading Limited",
-      2: "06846849",
+      2: "00000003",
       3: "8596148860",
       30: "2025-04-01",
       35: "2026-03-31",
@@ -139,7 +139,7 @@ test.describe("Filings page - customer copy", () => {
     const frame = page.frameLocator("iframe.filed-document");
     await expect(frame.locator("body")).toContainText("Balance sheet");
     await expect(copy.locator(".submission-record .entity").first()).toHaveText("Companies House receipt");
-    await expect(copy.locator("tr", { hasText: "Company number" }).locator("td.text-value")).toHaveText("06846849");
+    await expect(copy.locator("tr", { hasText: "Company number" }).locator("td.text-value")).toHaveText("00000003");
     await expect(copy.locator(".customer-copy-links a")).toHaveText([
       "File accounts again with corrected figures",
       "Look up another company",
@@ -191,7 +191,7 @@ test.describe("Filings page - customer copy", () => {
   });
 
   test("links an accepted Company Tax Return that kept its answers to the page that amends it", async ({ page }) => {
-    const formRequest = { company: { companyNumber: "06846849", companyName: "Example Trading Limited" }, values: { turnover: "1000" } };
+    const formRequest = { company: { companyNumber: "00000003", companyName: "Example Trading Limited" }, values: { turnover: "1000" } };
     await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, formRequest });
     const link = page.locator("#amendFilingLink");
     await expect(link).toBeVisible();

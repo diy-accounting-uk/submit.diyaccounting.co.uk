@@ -111,7 +111,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildStatementBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-09-24",
@@ -185,7 +185,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(submissionArgs).toMatchObject({
       presenterId: "presenter-id",
       presenterCode: "presenter-code",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
       companyAuthenticationCode: "SIMCS01",
       packageReference: "0012",
@@ -234,7 +234,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
       .map(([cmd]) => cmd)
       .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
       .map((cmd) => cmd.input.ExpressionAttributeValues);
-    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "06846849:2025-09-21" };
+    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "00000004:2025-09-21" };
     expect(writes.map((values) => values[":data"].feeCharge)).toEqual([feeCharge, feeCharge]);
   });
 
@@ -503,7 +503,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(response.statusCode).toBe(402);
     const body = parseResponseBody(response);
     expect(body.code).toBe("fee-due");
-    expect(mockHasPaidCharge).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "06846849:2025-09-21");
+    expect(mockHasPaidCharge).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "00000004:2025-09-21");
     expect(mockBuildConfirmationStatementSubmission).not.toHaveBeenCalled();
   });
 
@@ -512,7 +512,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     mockHasPaidCharge.mockResolvedValue(true);
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);
-    expect(mockMarkChargeUsed).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "06846849:2025-09-21");
+    expect(mockMarkChargeUsed).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "00000004:2025-09-21");
   });
 
   test("does not mark a charge used when the payment period was already paid through Companies House", async () => {
@@ -524,7 +524,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   });
 
   test("skips the fee gate entirely when the company number is in COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS", async () => {
-    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "06846849";
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "00000004";
     mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);
@@ -534,7 +534,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   });
 
   test("skips the fee gate when the company number is one of several in the comma-separated list, with whitespace tolerated", async () => {
-    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 06846849 ,07654321";
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 00000004 ,07654321";
     mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);

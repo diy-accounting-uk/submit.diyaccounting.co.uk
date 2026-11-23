@@ -751,7 +751,7 @@ test.describe("File small company accounts page - revising accounts from a recei
 
   for (const width of [1280, 390]) {
     test(`refuses micro-entity accounts, which revise on the micro-entity page (${width})`, async ({ page }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml, { companyNumber: "06846849" }), { width });
+      await openAmend(page, accountsReceipt(microCase.xhtml, { companyNumber: "00000003" }), { width });
       await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("micro-entity accounts page");
       await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute(
         "href",

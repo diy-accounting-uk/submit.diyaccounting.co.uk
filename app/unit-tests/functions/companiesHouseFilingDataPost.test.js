@@ -81,7 +81,7 @@ function buildBody(overrides = {}) {
   return { companyAuthCode: "SIMCS01", madeUpDate: "2025-09-21", ...overrides };
 }
 
-function buildEvent({ companyNumber = "06846849", body = buildBody(), headers = {}, authorizer, method = "POST" } = {}) {
+function buildEvent({ companyNumber = "00000004", body = buildBody(), headers = {}, authorizer, method = "POST" } = {}) {
   const options = {
     method,
     path: `/api/v1/companies-house/company/${companyNumber}/filing-data`,
@@ -123,7 +123,7 @@ describe("companiesHouseFilingDataPost ingestHandler", () => {
     });
     mockParseGatewayResponse.mockReturnValue({ errors: [] });
     mockParseCompanyDataResponse.mockReturnValue({
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
       madeUpDate: "2025-09-21",
       nextDueDate: "2026-10-05",
@@ -137,7 +137,7 @@ describe("companiesHouseFilingDataPost ingestHandler", () => {
     const response = await companiesHouseFilingDataPostHandler(buildEvent());
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.companyNumber).toBe("06846849");
+    expect(body.companyNumber).toBe("00000004");
     expect(body.officers).toHaveLength(1);
     expect(body.paymentPeriods).toEqual([{ startDate: "2025-09-22", endDate: "2026-09-21", periodPaid: false }]);
     expect(body.paymentPeriodPaid).toBe(false);
@@ -146,13 +146,13 @@ describe("companiesHouseFilingDataPost ingestHandler", () => {
       expect.objectContaining({
         presenterId: "presenter-id",
         presenterCode: "presenter-code",
-        companyNumber: "06846849",
+        companyNumber: "00000004",
         companyAuthenticationCode: "SIMCS01",
         madeUpDate: "2025-09-21",
       }),
     );
     expect(mockBuildPaymentPeriodsRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ companyNumber: "06846849", companyAuthenticationCode: "SIMCS01" }),
+      expect.objectContaining({ companyNumber: "00000004", companyAuthenticationCode: "SIMCS01" }),
     );
   });
 

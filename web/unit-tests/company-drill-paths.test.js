@@ -95,7 +95,7 @@ describe("company number from a form's address", () => {
   it("leaves out a value that is not a company number, and keeps a number already typed", async () => {
     expect(await prefill("?companyNumber=%3Cscript%3E")).toBe("");
     expect(await prefill("?companyNumber=123456789")).toBe("");
-    expect(await prefill("?companyNumber=00000001", "06846849")).toBe("06846849");
+    expect(await prefill("?companyNumber=00000001", "00000004")).toBe("00000004");
     expect(await prefill("")).toBe("");
   });
 });

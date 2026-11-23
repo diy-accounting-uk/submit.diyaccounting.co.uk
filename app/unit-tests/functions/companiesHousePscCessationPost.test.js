@@ -76,7 +76,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildCessationBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE PSC LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-11-20",
@@ -138,7 +138,7 @@ describe("companiesHousePscCessationPost ingestHandler", () => {
     const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
       formIdentifier: "PSCCessation",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyAuthenticationCode: "SIMCS01",
       submissionNumber: "00001A",
       dateSigned: "2026-11-20",

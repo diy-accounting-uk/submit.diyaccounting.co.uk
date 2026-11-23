@@ -121,7 +121,7 @@ const CAPITAL = { currency: "GBP", totalAmountUnpaid: "0", shares: [ORDINARY] };
 
 function buildFormBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE SHARES LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-11-20",
@@ -191,7 +191,7 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
     expect(submissionArgs).toMatchObject({
       gatewayClass: "ReturnOfAllotmentShares",
       formIdentifier: "ReturnofAllotmentShares",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyAuthenticationCode: "SIMCS01",
       submissionNumber: "00001A",
       dateSigned: "2026-11-20",
@@ -338,7 +338,7 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
     test("reads the register's capital with the company authentication code, dated the day the return is signed", async () => {
       await ingestHandler(buildEvent());
       const read = mockPostToGateway.mock.calls.map(([xml]) => xml).find((xml) => xml.includes("CompanyDataRequest"));
-      expect(read).toContain("<CompanyNumber>06846849</CompanyNumber>");
+      expect(read).toContain("<CompanyNumber>00000004</CompanyNumber>");
       expect(read).toContain("<CompanyAuthenticationCode>SIMCS01</CompanyAuthenticationCode>");
       expect(read).toContain("<MadeUpDate>2026-11-20</MadeUpDate>");
     });

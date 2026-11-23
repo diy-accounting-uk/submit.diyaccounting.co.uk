@@ -77,13 +77,13 @@ vi.mock("@app/services/companiesHouseCache.js", () => ({
 
 import { ingestHandler } from "@app/functions/companies-house/companiesHouseSailAddressPost.js";
 
-const profileIn = (jurisdiction) => ({ ok: true, data: { company_number: "06846849", jurisdiction }, fromCache: true });
+const profileIn = (jurisdiction) => ({ ok: true, data: { company_number: "00000004", jurisdiction }, fromCache: true });
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildFormBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE RECORDS LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-11-20",
@@ -161,7 +161,7 @@ describe("companiesHouseSailAddressPost ingestHandler", () => {
         );
         expect(mockPostToGateway).not.toHaveBeenCalled();
       }
-      expect(mockCachedCompaniesHouseGet).toHaveBeenCalledWith("06846849", "/company/06846849", {}, { kind: "profile" });
+      expect(mockCachedCompaniesHouseGet).toHaveBeenCalledWith("00000004", "/company/00000004", {}, { kind: "profile" });
     });
 
     test("a company the profile gives no part of the UK is refused, naming its jurisdiction", async () => {
@@ -206,7 +206,7 @@ describe("companiesHouseSailAddressPost ingestHandler", () => {
     const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
       formIdentifier: "SailAddress",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyAuthenticationCode: "SIMCS01",
       submissionNumber: "00001A",
       dateSigned: "2026-11-20",

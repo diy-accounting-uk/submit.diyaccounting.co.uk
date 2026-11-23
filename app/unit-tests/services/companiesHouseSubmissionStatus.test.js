@@ -118,7 +118,7 @@ describe("pollSubmission", () => {
   test("polls the gateway and returns the current status while unresolved", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({
@@ -164,7 +164,7 @@ describe("pollSubmission", () => {
   test("forwards a Gov-Test-Scenario to the gateway call", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await pollSubmission({
@@ -182,7 +182,7 @@ describe("pollSubmission", () => {
   test("polls under the customer's own presenter, without resolving ours or recording it", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await pollSubmission({
@@ -204,7 +204,7 @@ describe("pollSubmission", () => {
   test("writes a receipt and an async request kind on ACCEPT, and publishes the form's accepted event", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({
@@ -298,7 +298,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({
@@ -327,7 +327,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await pollSubmission({
@@ -355,7 +355,7 @@ describe("pollSubmission", () => {
         {
           statusCode: "REJECT",
           submissionNumber: "00001A",
-          companyNumber: "06846849",
+          companyNumber: "00000004",
           rejections: [{ rejectCode: "11686", description: "shareholders required", instanceNumber: "1" }],
         },
       ],
@@ -385,7 +385,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [{ rejectCode: "1" }] }],
+      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [{ rejectCode: "1" }] }],
     });
 
     await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
@@ -412,7 +412,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
@@ -449,7 +449,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
@@ -528,7 +528,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await expect(pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" })).rejects.toThrow(

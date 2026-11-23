@@ -76,7 +76,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildFormBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE RECORDS LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-11-20",
@@ -132,7 +132,7 @@ describe("companiesHouseRecordLocationPost ingestHandler", () => {
     const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
       formIdentifier: "RecordChangeOfLocation",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyAuthenticationCode: "SIMCS01",
       submissionNumber: "00001A",
       dateSigned: "2026-11-20",

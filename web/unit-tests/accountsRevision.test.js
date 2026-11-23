@@ -60,7 +60,7 @@ function accountsReceipt(overrides = {}) {
     kind: "companies-house-accounts",
     statusCode: "ACCEPT",
     submissionNumber: "00001A",
-    companyNumber: "06846849",
+    companyNumber: "00000003",
     filedDocument: "<html/>",
     ...overrides,
   };
@@ -74,7 +74,7 @@ describe("which accounts receipts can be revised", () => {
   test("accounts whose document states no period are refused with their own sentence", () => {
     const sentence = "The accounts on that receipt do not state their period, so this site cannot revise them here.";
     expect(refusalOf(accountsReceipt())).toBe(sentence);
-    expect(refusalOf(accountsReceipt(), "06846849", { periodStart: "2025-04-01", periodEnd: "2026-03-31" })).toBe(sentence);
+    expect(refusalOf(accountsReceipt(), "00000003", { periodStart: "2025-04-01", periodEnd: "2026-03-31" })).toBe(sentence);
   });
 
   test("accounts that are already revised accounts are refused, with one sentence", () => {

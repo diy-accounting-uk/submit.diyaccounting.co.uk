@@ -31,7 +31,7 @@ const ACCOUNTS_RECEIPT = {
   kind: "companies-house-accounts",
   statusCode: "ACCEPT",
   submissionNumber: "00001A",
-  companyNumber: "06846849",
+  companyNumber: "00000003",
   rejections: [],
   filedDocument: accountsDocumentCases()[0].xhtml,
 };
@@ -48,7 +48,7 @@ const CT_RECEIPT = {
   filed: {
     boxes: {
       1: "Example Trading Limited",
-      2: "06846849",
+      2: "00000003",
       3: "8596148860",
       30: "2025-04-01",
       35: "2026-03-31",

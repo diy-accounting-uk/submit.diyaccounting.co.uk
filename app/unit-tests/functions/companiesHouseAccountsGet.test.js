@@ -224,7 +224,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
     await companiesHouseAccountsGetHandler(buildEvent());
     expect(mockBuildStatusRequest).toHaveBeenCalledWith({

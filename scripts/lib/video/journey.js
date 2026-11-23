@@ -122,7 +122,7 @@ export async function resolveHmrcTestUser(env, hmrcServices = ["mtd-vat"]) {
   };
 }
 
-// The company number the simulator lane keeps typing; the simulator serves any number.
+// The company number the simulator lane keeps typing: the simulator's confirmation statement test company.
 const SIMULATOR_COMPANY_NUMBER = "00000004";
 
 // A script with companiesHouseTestCompany set gets a Companies House sandbox test company for
