@@ -14,6 +14,8 @@ import {
   isEnglishSentence,
   englishSentences,
   findingsOf,
+  paceWaitMs,
+  REQUEST_BUDGET,
 } from "../../../scripts/welsh-proof.mjs";
 
 describe("welsh-proof arguments", () => {
@@ -32,11 +34,51 @@ describe("welsh-proof arguments", () => {
     expect(() => parseArguments(["--base"])).toThrow("--base needs a value");
   });
 
+  test("paces requests unless --no-pace is given", () => {
+    expect(parseArguments(["--base", "https://submit.diyaccounting.co.uk"]).pace).toBe(true);
+    expect(parseArguments(["--base", "http://localhost:3000/", "--no-pace", "--only", "ch"])).toMatchObject({ pace: false, only: "ch" });
+  });
+
   test("treats http on localhost or 127.0.0.1 as a local simulator, and any other site as deployed", () => {
     expect(isLocalSimulator("http://localhost:3000/")).toBe(true);
     expect(isLocalSimulator("http://127.0.0.1:41234/")).toBe(true);
     expect(isLocalSimulator("https://local.submit.diyaccounting.co.uk:3443/")).toBe(false);
     expect(isLocalSimulator("https://submit.diyaccounting.co.uk")).toBe(false);
+  });
+});
+
+describe("welsh-proof pacing", () => {
+  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+  const NOW_MS = 10 * FIVE_MINUTES_MS;
+
+  test("the budget leaves room for a page's requests under the firewall's 2,000 in 5 minutes", () => {
+    expect(REQUEST_BUDGET).toBeLessThanOrEqual(1500);
+  });
+
+  test("does not wait while fewer requests than the budget went out in the last five minutes", () => {
+    const requestTimes = Array.from({ length: REQUEST_BUDGET - 1 }, (unused, index) => NOW_MS - 1000 - index);
+    expect(paceWaitMs(requestTimes.reverse(), NOW_MS)).toBe(0);
+  });
+
+  test("does not count requests older than five minutes", () => {
+    const old = Array.from({ length: REQUEST_BUDGET }, () => NOW_MS - FIVE_MINUTES_MS - 1);
+    expect(paceWaitMs([...old, NOW_MS - 10], NOW_MS)).toBe(0);
+  });
+
+  test("at the budget, waits until the oldest request that keeps it there is five minutes old", () => {
+    const oldest = NOW_MS - 60 * 1000;
+    const requestTimes = [oldest, ...Array.from({ length: REQUEST_BUDGET - 1 }, () => NOW_MS - 1000)];
+    expect(paceWaitMs(requestTimes, NOW_MS)).toBe(FIVE_MINUTES_MS - 60 * 1000);
+  });
+
+  test("over the budget, waits until enough requests leave the window to bring it back under", () => {
+    const requestTimes = [
+      NOW_MS - 120 * 1000,
+      NOW_MS - 90 * 1000,
+      NOW_MS - 60 * 1000,
+      ...Array.from({ length: REQUEST_BUDGET - 1 }, () => NOW_MS - 1000),
+    ];
+    expect(paceWaitMs(requestTimes, NOW_MS)).toBe(FIVE_MINUTES_MS - 60 * 1000);
   });
 });
 

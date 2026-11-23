@@ -5,7 +5,7 @@
 // @capability SITE-35 Prove the Welsh pages read in Welsh on a running site
 // - **Use when:** a change to i18n/cy.toml, a Welsh page or a page script has deployed, and every Welsh page must be shown to read in Welsh, signed in.
 // - **Does:** welsh-proof.mjs signs in (the Cognito test user from cognito-native-test-credentials.json, or the mock identity provider on a local simulator), chooses Welsh with the site's own language switch, then opens every page under web/public/cy/ that --only selects. It reads each page for lang="cy" on the html element and for English sentences left in the Welsh text. It prints one line per finding and a summary line, and exits 1 on any finding.
-// - **Run:** `HMRC_ACCOUNT=synthetic node scripts/welsh-proof.mjs --base https://submit.diyaccounting.co.uk --only both`, between `npm run test:enableCognitoNative -- prod` and `npm run test:disableCognitoNative`; on the simulator, `node scripts/welsh-proof.mjs --base http://localhost:3000/ --only both` beside `TEST_SERVER_HTTP_PORT=3000 npm run start:simulator`
+// - **Run:** `HMRC_ACCOUNT=synthetic node scripts/welsh-proof.mjs --base https://submit.diyaccounting.co.uk --only both`, between `npm run test:enableCognitoNative -- prod` and `npm run test:disableCognitoNative`; on the simulator, `node scripts/welsh-proof.mjs --base http://localhost:3000/ --only both --no-pace` beside `TEST_SERVER_HTTP_PORT=3000 npm run start:simulator`
 // - **Entry:** `scripts/welsh-proof.mjs:main`; `scripts/welsh-proof.mjs:englishSentences`
 // - **Files:** scripts/welsh-proof.mjs, app/unit-tests/scripts/welshProof.test.js
 // - **Keywords:** welsh, cymraeg, welsh proof, lang cy, english left in welsh, language switch, cy pages, signed-in welsh
@@ -38,8 +38,18 @@
 // a reference or a code holds at most one such word, so it does not fire the rule. A sentence of one
 // or two words ("Sign out") is too short to fire it.
 //
+// Reading a page: the script waits for the page's own content, its main landmark and the
+// data-chrome-language attribute page-chrome.js sets on the html element once the site's text is
+// in the chosen language. It then waits up to NETWORK_IDLE_WAIT_MS for the network to go quiet,
+// and reads the page either way; a page that stays busy is named with the requests still open.
+//
+// Pacing: a deployed site's firewall answers 403 to an address that sends more than 2,000 requests
+// in 5 minutes. Before each page the script counts the browser's requests in the last 5 minutes and
+// waits while that count is at REQUEST_BUDGET, which leaves room for the next page's requests.
+// --no-pace turns the wait off, for the local simulator.
+//
 // Usage:
-//   node scripts/welsh-proof.mjs --base <site> [--only vat|ch|both] [--credentials <file>]
+//   node scripts/welsh-proof.mjs --base <site> [--only vat|ch|both] [--credentials <file>] [--no-pace]
 
 /* global document, window, NodeFilter, getComputedStyle -- the functions passed to page.evaluate run in the browser */
 
@@ -173,13 +183,22 @@ export const ENGLISH_FUNCTION_WORDS = new Set(
   ].map((word) => word.toLowerCase()),
 );
 
+const CONTENT_WAIT_MS = 30000;
+const NETWORK_IDLE_WAIT_MS = 10000;
+const RATE_WINDOW_MS = 5 * 60 * 1000;
+export const REQUEST_BUDGET = 1500;
+
 const MINIMUM_FUNCTION_WORDS = 2;
 const MINIMUM_FUNCTION_WORD_SHARE = 0.2;
 
 export function parseArguments(argv) {
-  const options = { base: null, only: "both", credentialsFile: DEFAULT_CREDENTIALS_FILE };
+  const options = { base: null, only: "both", credentialsFile: DEFAULT_CREDENTIALS_FILE, pace: true };
   const valueFlags = { "--base": "base", "--only": "only", "--credentials": "credentialsFile" };
   for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] === "--no-pace") {
+      options.pace = false;
+      continue;
+    }
     const key = valueFlags[argv[index]];
     if (!key) throw new Error(`Unknown argument ${argv[index]}`);
     const value = argv[index + 1];
@@ -190,6 +209,20 @@ export function parseArguments(argv) {
   if (!options.base) throw new Error("--base <site> is required");
   if (!ONLY_CHOICES.includes(options.only)) throw new Error(`--only must be one of ${ONLY_CHOICES.join(", ")}`);
   return options;
+}
+
+/**
+ * How long to wait before the next page so the browser stays under the firewall's rate rule: zero
+ * while fewer than REQUEST_BUDGET requests went out in the last five minutes, otherwise until
+ * enough of them are older than five minutes.
+ * @param {number[]} requestTimes - when each request went out, epoch milliseconds, oldest first
+ * @param {number} nowMs
+ * @returns {number}
+ */
+export function paceWaitMs(requestTimes, nowMs) {
+  const recent = requestTimes.filter((time) => nowMs - time < RATE_WINDOW_MS);
+  if (recent.length < REQUEST_BUDGET) return 0;
+  return recent[recent.length - REQUEST_BUDGET] + RATE_WINDOW_MS - nowMs;
 }
 
 /** True when the base is a local simulator: http on localhost or 127.0.0.1. */
@@ -326,11 +359,23 @@ async function chooseWelsh(page, base) {
   await page.waitForFunction(() => window.localStorage.getItem("siteLanguage") === "cy", null, { timeout: 15000 });
 }
 
-async function readPage(page, base, pagePath) {
-  const response = await page.goto(new URL(pagePath, base).toString(), { waitUntil: "load" });
+// The page's own content is present: its main landmark, and the site's text in the chosen language.
+async function waitForContent(page) {
+  await page.locator("main").first().waitFor({ state: "attached", timeout: CONTENT_WAIT_MS });
+  await page.waitForFunction(() => document.documentElement.hasAttribute("data-chrome-language"), null, { timeout: CONTENT_WAIT_MS });
+}
+
+async function readPage(page, base, pagePath, openRequests) {
+  const response = await page.goto(new URL(pagePath, base).toString(), { waitUntil: "domcontentloaded" });
   if (!response || !response.ok()) return { path: pagePath, error: `answered ${response ? response.status() : "nothing"}` };
-  await page.waitForLoadState("networkidle", { timeout: 30000 });
-  return { path: pagePath, ...(await page.evaluate(readPageInBrowser)) };
+  await waitForContent(page);
+  let busy = null;
+  try {
+    await page.waitForLoadState("networkidle", { timeout: NETWORK_IDLE_WAIT_MS });
+  } catch {
+    busy = [...openRequests].map((request) => `${request.method()} ${request.url()}`);
+  }
+  return { path: pagePath, busy, ...(await page.evaluate(readPageInBrowser)) };
 }
 
 export async function main(argv = process.argv.slice(2)) {
@@ -343,15 +388,32 @@ export async function main(argv = process.argv.slice(2)) {
 
   const browser = await chromium.launch({ headless: true });
   const findings = [];
+  const requestTimes = [];
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     if (hmrcAccount) await context.addInitScript((account) => window.sessionStorage.setItem("hmrcAccount", account), hmrcAccount);
+    const openRequests = new Set();
+    context.on("request", (request) => {
+      requestTimes.push(Date.now());
+      openRequests.add(request);
+    });
+    context.on("requestfinished", (request) => openRequests.delete(request));
+    context.on("requestfailed", (request) => openRequests.delete(request));
     const page = await context.newPage();
     if (local) await signInOnSimulator(page, base);
     else await signInWithCognito(page, base, credentials);
     await chooseWelsh(page, base);
     for (const pagePath of pages) {
-      const read = await readPage(page, base, pagePath);
+      const waitMs = options.pace ? paceWaitMs(requestTimes, Date.now()) : 0;
+      if (waitMs > 0) {
+        console.log(`Pausing ${Math.ceil(waitMs / 1000)} s to stay under ${REQUEST_BUDGET} requests in 5 minutes`);
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
+      const read = await readPage(page, base, pagePath, openRequests);
+      if (read.busy)
+        console.log(
+          `${pagePath}: network still busy after ${NETWORK_IDLE_WAIT_MS / 1000} s, read anyway; open: ${read.busy.join(", ") || "none"}`,
+        );
       if (read.error) findings.push(`${pagePath}: ${read.error}`);
       else findings.push(...findingsOf(read));
     }
@@ -360,7 +422,9 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   for (const finding of findings) console.log(finding);
-  console.log(`Welsh proof at ${base} (--only ${options.only}): ${pages.length} pages read, ${findings.length} findings`);
+  console.log(
+    `Welsh proof at ${base} (--only ${options.only}): ${pages.length} pages read, ${findings.length} findings, ${requestTimes.length} requests`,
+  );
   return findings.length === 0 ? 0 : 1;
 }
 
