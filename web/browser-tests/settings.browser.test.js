@@ -25,17 +25,21 @@ const CONTENT_TYPES = {
 
 // Serves the real site from disk with a signed-in user. The bundles route answers from `account`,
 // which the account settings route changes, so a setting kept on the server survives a navigation.
-async function serveSite(page, { environmentName = "prod", operator = false } = {}) {
+async function serveSite(page, { environmentName = "prod", operator = false, signedIn = true, bundleStatus = 200 } = {}) {
   const account = { passGeneration: true };
   const settingsWrites = [];
-  await page.addInitScript(() => {
+  await page.addInitScript((withSignIn) => {
+    if (!withSignIn) return;
     localStorage.setItem("cognitoIdToken", "id-token");
     localStorage.setItem("userInfo", JSON.stringify({ email: "person@test.diyaccounting.co.uk", sub: "person-sub" }));
-  });
+  }, signedIn);
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     if (url.pathname === "/api/v1/bundle") {
+      if (bundleStatus !== 200) {
+        return route.fulfill({ status: bundleStatus, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) });
+      }
       const bundles = [{ bundleId: "resident-vat", allocated: true }];
       if (operator) bundles.push({ bundleId: "operator", allocated: true });
       return route.fulfill({
@@ -74,6 +78,20 @@ async function shoot(page, name) {
 }
 
 test.describe("Settings page", () => {
+  test("a signed-in person whose bundles cannot be read is told the account settings could not be read", async ({ page }) => {
+    await serveSite(page, { bundleStatus: 500 });
+    await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Your account settings could not be read");
+    await expect(page.locator("#passGenerationSwitch")).toBeDisabled();
+  });
+
+  test("a visitor who is not signed in is not told the account settings could not be read", async ({ page }) => {
+    await serveSite(page, { signedIn: false });
+    await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+    await expect(page.locator("#previewFeaturesSwitch")).toBeAttached();
+    await expect(page.locator("#statusMessagesContainer")).not.toContainText("could not be read");
+  });
+
   test("the cog sits between the token refresh button and Sign out and opens the settings page", async ({ page }) => {
     await serveSite(page);
     await page.goto("http://localhost:3000/bundles.html", { waitUntil: "networkidle" });

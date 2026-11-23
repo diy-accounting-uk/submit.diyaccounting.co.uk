@@ -158,6 +158,7 @@ async function serveSite(
   {
     environmentName = "ci",
     bundles = [],
+    bundleStatus = 200,
     apiRequests = [],
     filings = FILINGS,
     filedAccounts = FILED_ACCOUNTS,
@@ -181,6 +182,7 @@ async function serveSite(
       apiRequests.push(pathname + url.search);
       const company = pathname.match(/^\/api\/v1\/companies-house\/company\/([^/]+)(\/.*)?$/);
       if (pathname === "/api/v1/bundle") {
+        if (bundleStatus !== 200) return json(route, bundleStatus, { message: "The bundles could not be read" });
         return json(route, 200, { bundles: bundles.map((bundleId) => ({ bundleId, allocated: true })), tokensRemaining: 10 });
       }
       if (pathname === "/api/v1/public/company-deadlines") return json(route, 200, { companyNumber: "00000001", accountsOverdue: false });
@@ -411,6 +413,14 @@ test.describe("Company lookup drill-down", () => {
     await page.goto(`${BASE}/companies-house/company/00000001/accounts/2098-04-30/SIMTX00000001AA2098`, { waitUntil: "networkidle" });
     await expect(page.locator("#drillView")).toContainText("Held by Companies House", { timeout: 15000 });
     expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(true);
+  });
+
+  test("when the bundles cannot be read, the accounts list comes from the filing history", async ({ page }) => {
+    const apiRequests = [];
+    await serveSite(page, { bundles: ["resident-ltd"], bundleStatus: 500, apiRequests });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Micro entity", { timeout: 15000 });
+    expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(false);
   });
 
   test("on prod, where the revision activity is not offered, the accounts come from the filing history", async ({ page }) => {

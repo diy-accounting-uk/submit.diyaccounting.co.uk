@@ -67,4 +67,28 @@ describe("the page's request cache", () => {
     const cache = loadRequestCache(async () => answer(403, { message: "Forbidden" }));
     await expect(cache.getJSON("/api/v1/thing", { init: { method: "POST" } })).rejects.toMatchObject({ status: 403 });
   });
+
+  it("answers the cached body when a read past its time is answered 304 for its ETag", async () => {
+    const withEtag = (status, body) => ({
+      ...answer(status, body),
+      ok: status >= 200 && status < 300,
+      headers: new Headers({ ETag: '"v1"' }),
+    });
+    let calls = 0;
+    const cache = loadRequestCache(async (url, init) => {
+      calls += 1;
+      if (calls === 1) return withEtag(200, { bundles: ["x"] });
+      expect(new Headers(init.headers).get("If-None-Match")).toBe('"v1"');
+      return withEtag(304, null);
+    });
+    vi.useFakeTimers();
+    try {
+      await expect(cache.getJSON("/api/v1/bundle", { ttlMs: 1000 })).resolves.toEqual({ bundles: ["x"] });
+      vi.advanceTimersByTime(1500);
+      await expect(cache.getJSON("/api/v1/bundle", { ttlMs: 1000 })).resolves.toEqual({ bundles: ["x"] });
+      expect(calls).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

@@ -38,7 +38,14 @@ async function init() {
   passSwitch.checked = ACCOUNT_SETTING_DEFAULTS.passGeneration;
   passSwitch.disabled = true;
   const response = await fetchBundleResponse();
-  if (!response && window.showStatus) {
+  // fetchBundleResponse answers null for a visitor who is not signed in too, who sees the sign-in panel.
+  let signedIn;
+  try {
+    signedIn = Boolean(localStorage.getItem("cognitoIdToken"));
+  } catch {
+    signedIn = false;
+  }
+  if (!response && signedIn && window.showStatus) {
     window.showStatus(
       window.siteText(
         "settings.read-failed",

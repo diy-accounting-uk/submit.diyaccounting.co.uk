@@ -222,8 +222,15 @@ const isConfirmationStatement = (filing) => filing.category === "confirmation-st
 // iXBRL document, where the account holds its activity; otherwise the accounts items of the filing
 // history. truncated says the company has filings older than those read.
 async function readAccountSetsAnswer(companyNumber) {
-  const entitlement = await loadEntitlement();
-  if (activityAccess(entitlement, "file-revised-accounts").held) {
+  // The register's own list needs no entitlement, so an account whose bundles cannot be read gets it.
+  const holdsRevision = await loadEntitlement().then(
+    (entitlement) => activityAccess(entitlement, "file-revised-accounts").held,
+    (error) => {
+      console.warn("Could not read the bundles for the accounts list:", error);
+      return false;
+    },
+  );
+  if (holdsRevision) {
     return readOnce(companyNumber, "filedAccounts", async () => {
       const answer = await window.getFiledAccounts(companyNumber);
       return { sets: answer.filedAccounts || [], truncated: answer.truncated === true };
