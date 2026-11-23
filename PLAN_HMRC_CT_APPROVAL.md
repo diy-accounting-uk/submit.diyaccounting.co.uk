@@ -18,17 +18,15 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
-| OCT5 | The operator sends SDST the reply to its conditions of 2026-11-23: the request came too soon, the three conditions in order, no ask | 0 | none | — |
-| OCT6 | The operator decides whether the CT600 opens on prod before recognition or after it | 0 | none | — |
 | CT35 | One record of the specifications and the customers' obligations at `main`'s head, with no requirement open (condition 1) | 1, and 2 in private | Opus | — |
 | CT34 | Every kind of return that the product files goes through ETS, from the script and from the page, with the rejections and a DATA_REQUEST; `ETS_RECORD.md` (condition 2) | ~6 | Sonnet | — |
 | CT36 | The site says which Company Tax Returns Submit files and which it does not (conditions 1 and 3) | ~8 | Sonnet | — |
 | CT37 | One record of our own tests and of ETS on the release commit; `RELEASE_RECORD_<date>.md` (conditions 2 and 3) | 0, and 1 in private | Sonnet | CT34, CT35, CT36 |
-| OCT7 | The operator confirms to SDST that the product is ready and asks for the pack; every sentence has its evidence | 0 | Opus (email draft) | CT37, OCT6 |
+| OCT7 | The operator confirms to SDST that the product is ready and asks for the pack; every sentence has its evidence | 0 | Opus (email draft) | CT37 |
 | UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | UH7 |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's pack, which follows OCT7 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
-| UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71); the operator approved the unhide on 2026-11-22 |
+| UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71); the operator approved the unhide on 2026-11-22 and decided on 2026-11-23 that it follows recognition |
 
 ### The approval path
 
@@ -41,7 +39,7 @@ SDST answered the request for the new applicant's pack on 2026-11-23. Recognitio
 | 1 | The specifications and the customers' obligations fully researched; the product meets them | `SPEC_READING_EVIDENCE.md` (2026-11-03) and the checklist (2026-11-11), both older than CT33 and CT29; no public page lists the product's scope | CT35, CT36 |
 | 2 | Extensive use of HMRC's test services, ETS included | ETS: four submissions on 2026-11-11 (runs 43031071769 and 43072995143). TPVS accepted nine kinds of return from 2026-10-23 to 2026-11-12 | CT34 |
 | 2 | Our own thorough product testing | 435 unit tests pass at `ce4482b9f`; no one record of every suite on one commit | CT37 |
-| 3 | The commercial product fully matured and ready for release | The CT600 activity is not listed for prod; the site says "preview" and "You cannot file Company Tax Return (CT600) with Submit yet" | CT36, CT37, OCT6 |
+| 3 | The commercial product fully matured and ready for release | The CT600 activity is not listed for prod; the site says "preview" and "You cannot file Company Tax Return (CT600) with Submit yet" | CT36, CT37 |
 
 The reply to SDST, the evidence for each of its sentences and the review of both are in `../private.diyaccounting.co.uk/hmrc/ct/DRAFT_SDST_CT_RECOGNITION_READINESS_2026-11-23.md`. The release commit is the commit of `main` on which CT34, CT35 and CT36 are merged and no row that changes the Corporation Tax code is open.
 
@@ -49,13 +47,12 @@ The Required checks still open, in order:
 
 | Order | Checks | What | Row |
 |---|---|---|---|
-| 1 | — | The reply to SDST's conditions | OCT5 |
-| 2 | — | The evidence for the three conditions | CT34, CT35, CT36, CT37 |
-| 3 | C68 | The readiness confirmation and the request for the pack | OCT7 |
-| 4 | C69 | Pass the pack's scenarios on the test service each names | CT25 |
-| 5 | C70 | Send SDST the scenario XML | CT26 |
-| 6 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
-| 7 | C86, C88 | Terms describe CT600 filing as live; no recognition claim before step 6 (Developer Hub terms of use) | UH7 |
+| 1 | — | The evidence for the three conditions | CT34, CT35, CT36, CT37 |
+| 2 | C68 | The readiness confirmation and the request for the pack | OCT7 |
+| 3 | C69 | Pass the pack's scenarios on the test service each names | CT25 |
+| 4 | C70 | Send SDST the scenario XML | CT26 |
+| 5 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
+| 6 | C86, C88 | Terms describe CT600 filing as live; no recognition claim before step 6 (Developer Hub terms of use) | UH7 |
 
 RIM V1.994 is live and C1 to C8 are done. The other Required checks pass or are fixed on `main`.
 
@@ -73,17 +70,13 @@ The briefs are on `NEXT.md`; each row's evidence target is below.
 
 ### Human-driven
 
-- [ ] **OCT5. Send SDST the reply to its conditions of 2026-11-23.** Email 1 of the draft. The operator deletes the bracketed evidence notes and sends it once on the thread, from the operator's address. **Owner**: Operator (send). **Model**: none.
-
-- [ ] **OCT6. Decide whether the CT600 opens on prod before recognition or after it.** SDST says that recognition is optional; the direction §5 says that a compulsory return goes through "commercial products that have been successfully tested by HMRC". (a) After recognition: UH7 stays as it is, and OCT7 says that the filing is finished and opens on recognition. (b) Before: UH7 waits on CT37 only, and OCT7 says that it is on sale. Recommended: (a). **Owner**: Operator. **Model**: none.
-
 - [ ] **CT26. Send SDST the recognition scenario XML.** The operator replies to SDST with the XML of each scenario CT25 passed, and the supplier-list answers: "Produce and submit CT600" Yes, "Submit iXBRL documents" Yes, "Suitable for self-filers" Yes. SDST aims to decide within 2 weeks; the listing on the commercial software suppliers page is the recognition (C71). Claude drafts with the `email-draft` skill. Checklist C70, C71. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code (draft), Operator (send). **Model**: Opus. **Size**: 0 files. Blocked on CT25.
 
 ### Blocked
 
 - [ ] **CT37. One record of our own tests and of ETS on the release commit.** Evidence target: `../private.diyaccounting.co.uk/hmrc/ct/RELEASE_RECORD_<date>.md` with the commit and, for each suite (unit, system, browser, behaviour on the simulator and on ci, `compliance.yml`, CT34's matrix), the command or run id, the counts and the result. Blocked on CT34, CT35 and CT36. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **OCT7. Confirm to SDST that the product is ready, and ask for the pack.** Email 2 of the draft, brought up to date from CT34 to CT37 and OCT6; no sentence stays without its evidence. Blocked on CT37 and OCT6. **Owner**: Claude Code (draft), Operator (send). **Model**: Opus.
+- [ ] **OCT7. Confirm to SDST that the product is ready, and ask for the pack.** Email 2 of the draft, brought up to date from CT34 to CT37 and the operator's choice of 2026-11-23 that the CT600 opens on prod after recognition; no sentence stays without its evidence. The operator chose on 2026-11-23 to send no reply to SDST until Email 2 is true. Blocked on CT37. **Owner**: Claude Code (draft), Operator (send). **Model**: Opus.
 
 - [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's pack, which follows OCT7.
 
@@ -95,12 +88,10 @@ The briefs are on `NEXT.md`; each row's evidence target is below.
 
 ```mermaid
 flowchart LR
-    OCT5["OCT5: the reply to SDST's conditions"]
     CT34 --> CT37
     CT35 --> CT37
     CT36 --> CT37
     CT37 --> OCT7
-    OCT6 --> OCT7
     OCT7 --> SDST["SDST's new applicant's pack"]
     SDST --> CT25
     CT25 --> CT26
@@ -111,9 +102,9 @@ flowchart LR
 ```
 
 - UH8: blocked by UH7
-- OCT5, OCT6, CT34, CT35, CT36: nothing blocks them
+- CT34, CT35, CT36: nothing blocks them
 - CT37: blocked by CT34, CT35 and CT36 (the release commit)
-- OCT7: blocked by CT37 and OCT6
+- OCT7: blocked by CT37
 - CT25: blocked by SDST's pack, which follows OCT7; CT26 by CT25
 - UH7: blocked by HMRC's Corporation Tax recognition (CT26)
 
