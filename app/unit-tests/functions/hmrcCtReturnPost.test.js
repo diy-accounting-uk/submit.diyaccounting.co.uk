@@ -493,11 +493,12 @@ describe("hmrcCtReturnPost ingestHandler", () => {
       expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
     });
 
-    test("lets the joint filing through under preview features against a synthetic HMRC account", async () => {
+    test("answers 403 for a joint filing under preview features against a synthetic HMRC account when the activity is not listed", async () => {
       jointActivityOverride = { environments: ["prod"] };
       const headers = { "x-preview-features": "on", "hmrcAccount": "synthetic" };
       const response = await hmrcCtReturnPostHandler(buildEvent({ body: jointBody(), headers }));
-      expect(response.statusCode).toBe(201);
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
     });
 
     test("answers 403 and sends nothing when the caller holds none of the joint filing bundles", async () => {
