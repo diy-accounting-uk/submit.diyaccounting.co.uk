@@ -812,8 +812,8 @@ test.describe("Company lookup drill-down links for two PSCs of one name", () => 
         "Tell Companies House Eleanor Bramwell (born August 1996) has ceased to be a PSC",
       ],
       [
-        "Tell Companies House Eleanor Bramwell (born January 1970)'s details have changed",
-        "Tell Companies House Eleanor Bramwell (born August 1996)'s details have changed",
+        "Tell Companies House the details of Eleanor Bramwell (born January 1970) have changed",
+        "Tell Companies House the details of Eleanor Bramwell (born August 1996) have changed",
       ],
     ],
     ["Welsh", "/cy", [/\(ganwyd Ionawr 1970\)/, /\(ganwyd Awst 1996\)/], [/\(ganwyd Ionawr 1970\)/, /\(ganwyd Awst 1996\)/]],
@@ -852,7 +852,7 @@ test.describe("Company lookup drill-down PSC cessation links", () => {
     await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
 
     const link = page.locator("#drillView .change-psc-details-links a");
-    await expect(link).toHaveText("Tell Companies House Eleanor Bramwell's details have changed", { timeout: 15000 });
+    await expect(link).toHaveText("Tell Companies House the details of Eleanor Bramwell have changed", { timeout: 15000 });
     expect(await link.getAttribute("href")).toBe("/companies-house/changePscDetails.html?companyNumber=00000001&pscName=Eleanor+Bramwell");
     const control = page.locator('#drillView .file-this[data-activity="change-psc-details"]');
     await expect(control.locator("a.btn")).toHaveText("Tell Companies House a PSC's details have changed");

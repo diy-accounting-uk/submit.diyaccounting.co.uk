@@ -23292,7 +23292,7 @@ hash = "e98c6d770c70"
 cy = '''Dyddiad cadarnhau'''
 
 [strings."ch.drill.change-this-psc"]
-hash = "def401da390c"
+hash = "08690a382fbf"
 cy = '''Dweud wrth Dŷ’r Cwmnïau fod manylion {name} wedi newid'''
 
 [strings."ch.drill.change-psc"]

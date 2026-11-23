@@ -1413,7 +1413,7 @@ async function renderPscs(container, companyNumber) {
     page: "changePscDetails.html",
     className: "change-psc-details-links",
     chooser: (psc) => ({ pscName: psc.name }),
-    linkText: (name) => window.siteText("ch.drill.change-this-psc", "Tell Companies House {name}'s details have changed", { name }),
+    linkText: (name) => window.siteText("ch.drill.change-this-psc", "Tell Companies House the details of {name} have changed", { name }),
   });
   await appendFileThis(container, {
     activityId: "change-psc-details",

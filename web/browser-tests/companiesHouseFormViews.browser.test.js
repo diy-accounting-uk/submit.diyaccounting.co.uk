@@ -36,3 +36,19 @@ for (const form of FORMS) {
     await expect(messages).not.toContainText("Enter the date the change took effect.");
   });
 }
+
+for (const form of FORMS) {
+  test(`${form}: a second refusal replaces the first`, async ({ page }) => {
+    await serveRealSite(page, { signedIn: true });
+    await page.goto(`${SITE_ORIGIN}/companies-house/${form}.html`, { waitUntil: "networkidle" });
+    await expect(page.locator("#companyView")).toBeVisible();
+    const messages = page.locator("#statusMessagesContainer");
+
+    await page.evaluate(() => window.showError("The first answer is refused."));
+    await expect(messages).toContainText("The first answer is refused.");
+    await page.evaluate(() => window.showError("The second answer is refused."));
+
+    await expect(messages).toContainText("The second answer is refused.");
+    await expect(messages).not.toContainText("The first answer is refused.");
+  });
+}
