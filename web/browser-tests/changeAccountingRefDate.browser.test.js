@@ -178,7 +178,9 @@ for (const width of [1280, 390]) {
     await expect(page.locator("h1")).toHaveText("Newid y dyddiad cyfeirnod cyfrifyddu");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Statws: amgylchedd prawf (sandbox).");
     await lookUpAndFill(page, { lookUp: "Chwilio am y cyfnodau cyfrifyddu", newPeriodEnd: `${YEAR}-09-30` });
-    await expect(page.locator("#periodChoices label").first()).toHaveText(`1 Mai ${PREVIOUS_YEAR} i 30 Ebrill ${YEAR} (y cyfnod presennol)`);
+    await expect(page.locator("#periodChoices label").first()).toHaveText(
+      `1 Mai ${PREVIOUS_YEAR} i 30 Ebrill ${YEAR} (y cyfnod presennol)`,
+    );
     await expect(page.locator("#formView blockquote p").first()).toHaveAttribute("lang", "en-GB");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "form-cy");

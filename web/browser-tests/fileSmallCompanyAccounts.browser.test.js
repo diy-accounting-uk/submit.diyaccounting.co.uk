@@ -730,9 +730,7 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("[data-feature-status]")).toHaveText(
         "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
       );
-      expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe(
-        `Company ${REVISED_COMPANY.name} (04549236).`,
-      );
+      expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe(`Company ${REVISED_COMPANY.name} (04549236).`);
       await expect(page.locator("#revisionDownloads")).toBeEmpty();
       await screenshot(page, "small-amend-banner-and-revision-section", width);
     });
@@ -1077,17 +1075,20 @@ test.describe("File small company accounts page - revising accounts from a recei
       await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
       await page.fill("#revisionAmendments", "Stocks are now shown, and the profit and loss reserve rises by the same amount.");
       await page.fill("#directorDateApproved", "2026-11-20");
-      await page.evaluate(({ refusalReason, notHeldCompanyNumber }) => {
-        window.submitMicroEntityAccounts = async () => {
-          const error = new Error("the route's English sentence");
-          error.status = 400;
-          error.reason = refusalReason;
-          error.body = { reason: error.reason, companyNumber: notHeldCompanyNumber, periodEnd: "2026-03-31" };
-          throw error;
-        };
-        document.getElementById("companyAuthCode").value = "ABC123";
-        return handleSubmitFiling();
-      }, { refusalReason: reason, notHeldCompanyNumber: NOT_HELD_COMPANY_NUMBER });
+      await page.evaluate(
+        ({ refusalReason, notHeldCompanyNumber }) => {
+          window.submitMicroEntityAccounts = async () => {
+            const error = new Error("the route's English sentence");
+            error.status = 400;
+            error.reason = refusalReason;
+            error.body = { reason: error.reason, companyNumber: notHeldCompanyNumber, periodEnd: "2026-03-31" };
+            throw error;
+          };
+          document.getElementById("companyAuthCode").value = "ABC123";
+          return handleSubmitFiling();
+        },
+        { refusalReason: reason, notHeldCompanyNumber: NOT_HELD_COMPANY_NUMBER },
+      );
       await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(sentence);
     });
   }

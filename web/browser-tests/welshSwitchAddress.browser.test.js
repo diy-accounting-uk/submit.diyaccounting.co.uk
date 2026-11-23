@@ -53,15 +53,18 @@ const json = (route, body, status = 200) => route.fulfill({ status, contentType:
 // The real site from disk, signed in, with the API answered here. Each purchase lookup the GA4
 // purchase event makes is recorded.
 async function serveSite(page, { purchaseLookups = [], language = null, generatedPasses = [PASS_CODE] } = {}) {
-  await page.addInitScript(({ chosen, email }) => {
-    try {
-      localStorage.setItem("consent.analytics", "declined");
-      localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
-      if (chosen) localStorage.setItem("siteLanguage", chosen);
-    } catch {}
-    window.gtag = function () {};
-  }, { chosen: language, email: SIGNED_IN_EMAIL });
+  await page.addInitScript(
+    ({ chosen, email }) => {
+      try {
+        localStorage.setItem("consent.analytics", "declined");
+        localStorage.setItem("cognitoIdToken", "mock-id-token");
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
+        if (chosen) localStorage.setItem("siteLanguage", chosen);
+      } catch {}
+      window.gtag = function () {};
+    },
+    { chosen: language, email: SIGNED_IN_EMAIL },
+  );
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -79,7 +82,9 @@ async function serveSite(page, { purchaseLookups = [], language = null, generate
       }
       if (pathname === "/api/v1/companies-house/search") {
         return json(route, {
-          items: [{ title: SECOND.name, companyNumber: SECOND.number, companyStatus: SECOND.status, dateOfCreation: SECOND.incorporatedOn }],
+          items: [
+            { title: SECOND.name, companyNumber: SECOND.number, companyStatus: SECOND.status, dateOfCreation: SECOND.incorporatedOn },
+          ],
           totalResults: 1,
         });
       }

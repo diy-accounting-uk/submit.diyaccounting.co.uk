@@ -48,31 +48,34 @@ async function serveRealSiteWithSlowData(
     const session = await page.context().newCDPSession(page);
     await session.send("Emulation.setCPUThrottlingRate", { rate: cpuSlowdown });
   }
-  await page.addInitScript(({ extraStorage, email }) => {
-    try {
-      for (const [key, value] of Object.entries(extraStorage)) localStorage.setItem(key, value);
-      localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
-    } catch {}
-    window.__cumulativeLayoutShift = 0;
-    window.__shiftEntries = [];
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (!entry.hadRecentInput) window.__cumulativeLayoutShift += entry.value;
-        window.__shiftEntries.push({
-          at: Math.round(entry.startTime),
-          value: Number(entry.value.toFixed(4)),
-          moved: entry.sources.map((source) => ({
-            node: source.node
-              ? `${source.node.nodeName.toLowerCase()}${source.node.id ? "#" + source.node.id : ""}.${source.node.className}`
-              : "removed",
-            from: [source.previousRect.x, source.previousRect.y, source.previousRect.width, source.previousRect.height].map(Math.round),
-            to: [source.currentRect.x, source.currentRect.y, source.currentRect.width, source.currentRect.height].map(Math.round),
-          })),
-        });
-      }
-    }).observe({ type: "layout-shift", buffered: true });
-  }, { extraStorage: storage, email: USER_EMAIL });
+  await page.addInitScript(
+    ({ extraStorage, email }) => {
+      try {
+        for (const [key, value] of Object.entries(extraStorage)) localStorage.setItem(key, value);
+        localStorage.setItem("cognitoIdToken", "mock-id-token");
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
+      } catch {}
+      window.__cumulativeLayoutShift = 0;
+      window.__shiftEntries = [];
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) window.__cumulativeLayoutShift += entry.value;
+          window.__shiftEntries.push({
+            at: Math.round(entry.startTime),
+            value: Number(entry.value.toFixed(4)),
+            moved: entry.sources.map((source) => ({
+              node: source.node
+                ? `${source.node.nodeName.toLowerCase()}${source.node.id ? "#" + source.node.id : ""}.${source.node.className}`
+                : "removed",
+              from: [source.previousRect.x, source.previousRect.y, source.previousRect.width, source.previousRect.height].map(Math.round),
+              to: [source.currentRect.x, source.currentRect.y, source.currentRect.width, source.currentRect.height].map(Math.round),
+            })),
+          });
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+    },
+    { extraStorage: storage, email: USER_EMAIL },
+  );
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());

@@ -50,7 +50,12 @@ const PROFILE = {
   companyType: "ltd",
   dateOfCreation: "2009-04-16",
   jurisdiction: "england-wales",
-  registeredOfficeAddress: { address_line_1: OFFICE_LINE1, locality: OFFICE.locality, postal_code: OFFICE.postalCode, country: OFFICE.country },
+  registeredOfficeAddress: {
+    address_line_1: OFFICE_LINE1,
+    locality: OFFICE.locality,
+    postal_code: OFFICE.postalCode,
+    country: OFFICE.country,
+  },
   registeredOffice: { addressLine1: OFFICE_LINE1, cityOrTown: OFFICE.locality, postalCode: OFFICE.postalCode, country: OFFICE.country },
   sicCodes: ["62012"],
   accountsNextDue: `${YEAR}-01-31`,
@@ -255,7 +260,12 @@ const VIEWS = [
     text: `Confirmation statement made on 16 April ${PREVIOUS_YEAR} with no updates`,
   },
   { name: "accounts", address: "/companies-house/company/00000001/accounts", shows: "#drillView", text: "Total exemption full" },
-  { name: "accounts-period", address: `/companies-house/company/00000001/accounts/${PREVIOUS_YEAR}-04-30`, shows: "#drillView", text: `30 April ${PREVIOUS_YEAR}` },
+  {
+    name: "accounts-period",
+    address: `/companies-house/company/00000001/accounts/${PREVIOUS_YEAR}-04-30`,
+    shows: "#drillView",
+    text: `30 April ${PREVIOUS_YEAR}`,
+  },
   {
     name: "accounts-set",
     address: `/companies-house/company/00000001/accounts/${PREVIOUS_YEAR}-04-30/SIMTX00000001AA2098`,
@@ -325,7 +335,9 @@ test.describe("Company lookup drill-down", () => {
     await serveSite(page);
     await page.goto(`${BASE}/companies-house/company/${NOT_HELD_COMPANY_NUMBER}`, { waitUntil: "networkidle" });
     await expect(page.locator("#drillNotFound")).toBeVisible({ timeout: 15000 });
-    await expect(page.locator("#drillNotFoundText")).toHaveText(`No company with the number ${NOT_HELD_COMPANY_NUMBER} is on the register.`);
+    await expect(page.locator("#drillNotFoundText")).toHaveText(
+      `No company with the number ${NOT_HELD_COMPANY_NUMBER} is on the register.`,
+    );
     await expect(page.locator("#profileView")).toBeHidden();
     await shoot(page, "not-found-company");
   });
@@ -426,7 +438,9 @@ test.describe("Company lookup drill-down", () => {
   }) => {
     const apiRequests = [];
     await serveSite(page, { bundles: ["resident-ltd"], apiRequests });
-    await page.goto(`${BASE}/companies-house/company/00000001/accounts/${PREVIOUS_YEAR}-04-30/SIMTX00000001AA2098`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts/${PREVIOUS_YEAR}-04-30/SIMTX00000001AA2098`, {
+      waitUntil: "networkidle",
+    });
     await expect(page.locator("#drillView")).toContainText("Held by Companies House", { timeout: 15000 });
     expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(true);
   });
@@ -588,7 +602,9 @@ test.describe("Company lookup drill-down past the newest filings", () => {
 
   test("a set among the newest ten without an iXBRL document says Companies House does not hold one", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"], filedAccounts: TRUNCATED_FILED_ACCOUNTS });
-    await page.goto(`${BASE}/companies-house/company/00000001/accounts/${EARLIER_YEAR}-04-30/SIMTX00000001AA2097`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts/${EARLIER_YEAR}-04-30/SIMTX00000001AA2097`, {
+      waitUntil: "networkidle",
+    });
     await expect(page.locator("#drillView")).toContainText("Not held", { timeout: 15000 });
   });
 
@@ -779,9 +795,12 @@ test.describe("Company lookup drill-down edit links", () => {
   test("the accounts links open the forms with the next accounting period filled in", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     for (const form of ["fileMicroEntityAccounts", "fileSmallCompanyAccounts"]) {
-      await page.goto(`${BASE}/companies-house/${form}.html?companyNumber=00000001&periodStart=${PREVIOUS_YEAR}-05-01&periodEnd=${YEAR}-04-30`, {
-        waitUntil: "networkidle",
-      });
+      await page.goto(
+        `${BASE}/companies-house/${form}.html?companyNumber=00000001&periodStart=${PREVIOUS_YEAR}-05-01&periodEnd=${YEAR}-04-30`,
+        {
+          waitUntil: "networkidle",
+        },
+      );
       await expect(page.locator("#companyNumber")).toHaveValue("00000001", { timeout: 15000 });
       await expect(page.locator("#periodStart")).toHaveValue(`${PREVIOUS_YEAR}-05-01`);
       await expect(page.locator("#periodEnd")).toHaveValue(`${YEAR}-04-30`);
@@ -1229,7 +1248,9 @@ test.describe("Company lookup drill-down records location", () => {
     const section = page.locator("#recordsSection");
     await expect(section.locator("h4")).toHaveText("Where the company keeps its records", { timeout: 15000 });
     await expect(section.locator("dl")).toContainText("Inspection location (SAIL)");
-    await expect(section.locator("dl")).toContainText(`Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ, filed 20 November ${PREVIOUS_YEAR}`);
+    await expect(section.locator("dl")).toContainText(
+      `Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ, filed 20 November ${PREVIOUS_YEAR}`,
+    );
     await expect(section.locator("dl")).toContainText("Records last moved to the inspection location");
     await expect(section.locator("dl")).toContainText("Records last moved to the registered office");
     await expect(section.locator("dl")).toContainText(`1 February ${YEAR}`);

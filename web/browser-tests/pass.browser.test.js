@@ -49,15 +49,18 @@ async function serveRealSite(
   } = {},
 ) {
   const calls = { check: 0, redeem: 0, bundle: 0 };
-  await page.addInitScript(({ isSignedIn, email }) => {
-    try {
-      localStorage.setItem("consent.analytics", "declined");
-      if (isSignedIn) {
-        localStorage.setItem("cognitoIdToken", "mock-id-token");
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
-      }
-    } catch {}
-  }, { isSignedIn: signedIn, email: SIGNED_IN_EMAIL });
+  await page.addInitScript(
+    ({ isSignedIn, email }) => {
+      try {
+        localStorage.setItem("consent.analytics", "declined");
+        if (isSignedIn) {
+          localStorage.setItem("cognitoIdToken", "mock-id-token");
+          localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
+        }
+      } catch {}
+    },
+    { isSignedIn: signedIn, email: SIGNED_IN_EMAIL },
+  );
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -372,7 +375,9 @@ for (const width of WIDTHS) {
       await serveRealSite(page, { redeem: { redeemed: false, reason: "wrong_email" } });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
-      await expect(page.getByRole("alert")).toHaveText(`This pass is for a different email address. You are signed in as ${SIGNED_IN_EMAIL}.`);
+      await expect(page.getByRole("alert")).toHaveText(
+        `This pass is for a different email address. You are signed in as ${SIGNED_IN_EMAIL}.`,
+      );
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).not.toHaveAttribute("data-activity-start");
       await shot(page, "error-wrong-email", width);

@@ -31,7 +31,8 @@ const CONTENT_TYPES = {
 
 const DATES = registerDates();
 
-const longDate = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const longDate = (iso) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 // accountsNextPeriodStart is the day after the last accounts' made-up date, as the register states it,
 // unless a test gives the company a gap.
@@ -114,7 +115,7 @@ const COMPANIES = {
     profile: profile("00000001", DATES.next.start),
     lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: DATES.filed.end, filedOn: DATES.filed.filedOn },
   },
-  SC000001: {
+  "SC000001": {
     profile: profile("SC000001", DATES.next.start),
     lastAccounts: { outcome: "mapped", accounts: SMALL_ACCOUNTS, madeUpDate: DATES.filed.end, filedOn: DATES.filed.filedOn },
   },

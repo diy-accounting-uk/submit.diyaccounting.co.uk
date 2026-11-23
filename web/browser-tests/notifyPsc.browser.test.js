@@ -47,8 +47,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const pathname = decodeURIComponent(url.pathname);
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
-    if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: COMPANY.name });
+    if (pathname === "/api/v1/companies-house/company/00000001") return json({ companyNumber: "00000001", companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/psc-notification" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);

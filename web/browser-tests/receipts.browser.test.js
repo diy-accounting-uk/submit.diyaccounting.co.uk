@@ -603,7 +603,11 @@ test.describe("Receipts page - a practice's clients", () => {
     const choice = page.locator("#receiptsClient");
     await expect(page.locator("#receiptsClientChoice")).toBeVisible();
     await expect(page.getByLabel("Show the receipts of")).toBeVisible();
-    await expect(choice.locator("option")).toHaveText(["My own filings", `${BAKERY.name} (${BAKERY.number})`, `${PROPERTIES.name} (${PROPERTIES.number})`]);
+    await expect(choice.locator("option")).toHaveText([
+      "My own filings",
+      `${BAKERY.name} (${BAKERY.number})`,
+      `${PROPERTIES.name} (${PROPERTIES.number})`,
+    ]);
     await expect(page.locator("#filingsInProgress")).toContainText("00003A");
     await expect(page.locator("#filingsInProgress")).not.toContainText("00003B");
 
