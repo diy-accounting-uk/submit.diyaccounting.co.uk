@@ -211,7 +211,15 @@
     );
   }
 
+  // A person's name as the register writes it: the title as given, then every forename and the
+  // surname in capitals.
+  function personName({ title, forename, otherForenames, surname }) {
+    const names = [forename, otherForenames, surname].filter(Boolean).join(" ").toUpperCase();
+    return [title, names].filter(Boolean).join(" ");
+  }
+
   window.companiesHouseLabels = {
+    personName,
     formatCompanyDate,
     todayInTheUnitedKingdom,
     formatMonthYear,

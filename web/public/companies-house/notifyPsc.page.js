@@ -309,10 +309,7 @@ function renderReview() {
   ];
   if (filing.pscKind === INDIVIDUAL) {
     rows.push(
-      [
-        window.siteText("ch.notify-psc.review-name", "Name"),
-        [filing.title, filing.forename, filing.otherForenames, filing.surname].filter(Boolean).join(" "),
-      ],
+      [window.siteText("ch.notify-psc.review-name", "Name"), window.companiesHouseLabels.personName(filing)],
       [window.siteText("ch.notify-psc.review-born", "Date of birth"), formatDate(filing.dateOfBirth)],
       [window.siteText("ch.notify-psc.review-nationality", "Nationality"), filing.nationality],
       [window.siteText("ch.notify-psc.review-residence", "Country or state of residence"), filing.countryOfResidence],

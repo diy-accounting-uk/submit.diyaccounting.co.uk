@@ -137,7 +137,7 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Continue" }).click();
 
     const review = page.locator("#reviewList");
-    await expect(review).toContainText("Dr Gwenllian Pryce");
+    await expect(review).toContainText("Dr GWENLLIAN PRYCE");
     await expect(review).toContainText("14 March 1978");
     await expect(review).toContainText("The company's registered office");
     await expect(review).toContainText("14, Heol y Bont, Aberystwyth, SY23 1PZ, Wales");

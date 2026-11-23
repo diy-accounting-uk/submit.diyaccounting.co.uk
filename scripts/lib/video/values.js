@@ -58,8 +58,8 @@ export const REGISTER_FIELDS = {
   periodStart: (company) => company.accounts.next.start,
   periodEnd: (company) => company.accounts.next.end,
   accountsDue: (company) => company.accounts.next.due,
-  lastPeriodStart: (company) => company.accounts.last.start,
-  lastPeriodEnd: (company) => company.accounts.last.end,
+  lastPeriodStart: (company) => company.accounts.last?.start,
+  lastPeriodEnd: (company) => company.accounts.last?.end,
   confirmationStatementMadeUpTo: (company) => company.confirmationStatementDates.madeUpTo,
   confirmationStatementDue: (company) => company.confirmationStatementDates.due,
 };

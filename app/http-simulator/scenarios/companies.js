@@ -38,12 +38,16 @@ function profileOf(company) {
         period_start_on: company.accounts.next.start,
         period_end_on: company.accounts.next.end,
       },
-      last_accounts: {
-        made_up_to: company.accounts.last.end,
-        period_start_on: company.accounts.last.start,
-        period_end_on: company.accounts.last.end,
-        type: company.accounts.last.type,
-      },
+      ...(company.accounts.last
+        ? {
+            last_accounts: {
+              made_up_to: company.accounts.last.end,
+              period_start_on: company.accounts.last.start,
+              period_end_on: company.accounts.last.end,
+              type: company.accounts.last.type,
+            },
+          }
+        : {}),
     },
     confirmation_statement: {
       next_due: company.confirmationStatementDates.due,

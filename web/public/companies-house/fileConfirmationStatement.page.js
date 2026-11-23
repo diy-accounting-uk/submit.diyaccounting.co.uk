@@ -768,7 +768,7 @@ function renderPreviewSummary(payload) {
     [window.siteText("ch.cs.summary-confirmation", "Statement of confirmation"), window.siteText("ch.cs.accepted", "Accepted")],
     [
       window.siteText("ch.cs.summary-directors", "Directors verifying their identity"),
-      payload.directors.map((d) => [d.forename, d.otherForenames, d.surname].filter(Boolean).join(" ")).join(", "),
+      payload.directors.map((d) => window.companiesHouseLabels.personName(d)).join(", "),
     ],
   ];
   if (payload.sicCodes) rows.push([window.siteText("ch.cs.summary-sic", "Nature of business (SIC codes)"), payload.sicCodes.join(", ")]);

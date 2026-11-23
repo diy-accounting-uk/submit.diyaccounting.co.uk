@@ -6,7 +6,8 @@
 // Companies House does not issue (00000001 to 00000010, SC000001, NI000001; 00000011 is the number
 // the register does not hold). Each has its officers, its persons with significant control, an
 // address in a real town on a plain street, an email at test.diyaccounting.co.uk and a statement of
-// capital. The dates are computed from the day: a 31 March year end, accounts due nine months after
+// capital. A company with a lastAccountsType has filed the accounts of the year before the next;
+// one without has filed none. The dates are computed from the day: a 31 March year end, accounts due nine months after
 // it, and a confirmation statement made up to the anniversary of incorporation, due 14 days later.
 // The module uses no Node API, so the simulator, the tests and the scene scripts read one register.
 
@@ -187,7 +188,7 @@ const COMPANIES = [
     pscs: [individualPsc(PEOPLE.eleanorBramwell, MAJORITY, "2016-04-06"), individualPsc(PEOPLE.marcusTennant, MINORITY, "2016-04-06")],
     capital: {
       ...ordinary(100),
-      shares: [{ shareClass: "ORDINARY", prescribedParticulars: "ORDINARY SHARES", numShares: "100", aggregateNominalValue: "100" }],
+      shares: [{ shareClass: "ORDINARY", prescribedParticulars: ONE_VOTE_A_SHARE, numShares: "100", aggregateNominalValue: "100" }],
     },
     shareholdings: [
       { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "BRAMWELL", forename: "ELEANOR" }] },
@@ -244,7 +245,7 @@ const COMPANIES = [
       countryCode: "GB-ENG",
     },
     sicCodes: ["62020"],
-    lastAccountsType: "total-exemption-full",
+    lastAccountsType: null,
     email: email("sam", "patel"),
     officers: [director(PEOPLE.samPatel, "2020-02-01")],
     pscs: [],
@@ -300,7 +301,7 @@ const COMPANIES = [
     incorporatedOn: "2017-11-08",
     address: { premises: "5", street: "Mill Lane", locality: "Ludlow", postalCode: "SY8 1BB", country: "England", countryCode: "GB-ENG" },
     sicCodes: ["47190"],
-    lastAccountsType: "micro-entity",
+    lastAccountsType: null,
     email: email("marcus", "tennant"),
     officers: [director(PEOPLE.eleanorBramwell, "2017-11-08"), director(PEOPLE.marcusTennant, "2017-11-08")],
     pscs: [individualPsc(PEOPLE.eleanorBramwell, MINORITY, "2017-11-08"), individualPsc(PEOPLE.marcusTennant, MINORITY, "2017-11-08")],
@@ -424,7 +425,7 @@ export function registerCompanies(today = new Date()) {
     accounts: {
       accountingReferenceDate: { day: "31", month: "03" },
       next: dates.next,
-      last: { start: dates.filed.start, end: dates.filed.end, type: company.lastAccountsType },
+      last: company.lastAccountsType ? { start: dates.filed.start, end: dates.filed.end, type: company.lastAccountsType } : null,
     },
     confirmationStatementDates: confirmationStatementDates(company.incorporatedOn, company.confirmationStatement ?? NEXT, today),
   }));

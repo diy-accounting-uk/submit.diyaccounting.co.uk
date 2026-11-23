@@ -80,7 +80,7 @@ export function confirmationStatementCopyHtml({ company, payload, shareholdingsC
     [siteText("ch.cs.summary-shareholders", "Shareholders"), changedOrConfirmed(shareholdingsChanged)],
   ];
   const directors = payload.directors.map((director) =>
-    [director.forename, director.otherForenames, director.surname].filter(Boolean).join(" "),
+    [director.forename, director.otherForenames, director.surname].filter(Boolean).join(" ").toUpperCase(),
   );
   const confirmation = page(
     `${heading}${textTable([

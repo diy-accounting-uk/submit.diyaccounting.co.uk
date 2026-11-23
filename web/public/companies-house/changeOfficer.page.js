@@ -451,7 +451,7 @@ function addressText(address) {
   return [address.premise, address.street, address.postTown, address.county, address.postcode, country].filter(Boolean).join(", ");
 }
 
-const personName = (name) => [name.title, name.forename, name.otherForenames, name.surname].filter(Boolean).join(" ");
+const personName = (name) => window.companiesHouseLabels.personName(name);
 
 function corporateReviewRows(form) {
   const rows = [[window.siteText("ch.change-officer.review-corporate-name", "Name on the register"), form.corporateName]];

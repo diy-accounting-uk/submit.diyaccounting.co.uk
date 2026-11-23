@@ -6,7 +6,8 @@
 import { describe, test, expect } from "vitest";
 import { getFilingHistory, getFiling, getDocumentMetadata, getDocumentContent } from "@app/http-simulator/scenarios/filing-history.js";
 import { documentIdFromMetadataLink } from "@app/services/companiesHouseDocumentApi.js";
-import { registerDates } from "@app/http-simulator/fixtures/register.js";
+import { registerDates, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+import { getCompany } from "@app/http-simulator/scenarios/companies.js";
 
 const DATES = registerDates();
 const FILED = `SIMTX00000001AA${DATES.filed.end.slice(0, 4)}`;
@@ -86,7 +87,7 @@ describe("simulator filing history", () => {
   });
 
   test("another known company holds its incorporation, and an unknown one has no history", () => {
-    expect(getFilingHistory("00000002").items.map((item) => item.type)).toEqual(["NEWINC"]);
+    expect(getFilingHistory("00000010").items.map((item) => item.type)).toEqual(["NEWINC"]);
     expect(getFilingHistory("99999999")).toBeNull();
     expect(getFilingHistory("42942942")).toBeNull();
   });
@@ -122,5 +123,17 @@ describe("simulator Document API", () => {
     expect(getDocumentContent(paperId, "application/xhtml+xml")).toEqual({ notAcceptable: true });
     expect(getDocumentContent("SIMDOC-NONE", "application/pdf")).toBeNull();
     expect(getDocumentMetadata("SIMDOC-NONE", "http://simulator")).toBeNull();
+  });
+
+  test.each(REGISTER_COMPANY_NUMBERS)("%s's profile and filing history agree on its last accounts", (companyNumber) => {
+    const last = getCompany(companyNumber).accounts.last_accounts;
+    const sets = getFilingHistory(companyNumber, { category: "accounts" }).items;
+    if (!last) {
+      expect(sets).toEqual([]);
+      return;
+    }
+    expect(sets[0].description_values.made_up_date).toBe(last.made_up_to);
+    const documentId = sets[0].links.document_metadata.split("/document/")[1];
+    expect(getDocumentMetadata(documentId, "https://document-api.company-information.service.gov.uk")).not.toBeNull();
   });
 });

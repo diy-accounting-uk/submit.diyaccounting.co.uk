@@ -141,7 +141,7 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Continue" }).click();
     const review = page.locator("#reviewList");
     await expect(review).toContainText("Director");
-    await expect(review).toContainText("Mrs Carys Mair Llewelyn");
+    await expect(review).toContainText("Mrs CARYS MAIR LLEWELYN");
     await expect(review).toContainText("23 June 1981");
     await expect(review).toContainText("3 November 2025");
     await expect(review).toContainText("CWMPS832223");

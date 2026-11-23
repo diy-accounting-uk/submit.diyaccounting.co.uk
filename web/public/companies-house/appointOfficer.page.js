@@ -310,10 +310,10 @@ function renderReview() {
         rows.push([window.siteText("ch.appoint-officer.review-register-number", "Number in that register"), nonUk.registrationNumber]);
     }
   } else {
-    const name = [form.title, form.forename, form.otherForenames, form.surname].filter(Boolean).join(" ");
+    const name = window.companiesHouseLabels.personName(form);
     rows.push([window.siteText("ch.appoint-officer.review-name", "Name"), name]);
     if (form.previousNames.length > 0) {
-      const former = form.previousNames.map((previous) => [previous.forename, previous.surname].filter(Boolean).join(" ")).join("; ");
+      const former = form.previousNames.map((previous) => window.companiesHouseLabels.personName(previous)).join("; ");
       rows.push([window.siteText("ch.appoint-officer.review-former-name", "Former name"), former]);
     }
     rows.push([

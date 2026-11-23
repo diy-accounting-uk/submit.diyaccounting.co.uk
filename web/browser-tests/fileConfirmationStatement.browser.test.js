@@ -814,7 +814,7 @@ test.describe("File Confirmation Statement page", () => {
       "Confirmed as on the register",
     );
     await expect(statement.locator("tr", { hasText: "Shareholders" }).locator("td.text-value")).toHaveText("Confirmed as on the register");
-    await expect(statement.locator("tr", { hasText: "Directors verifying" }).locator("td.text-value")).toContainText("Jane ELIZABETH Doe");
+    await expect(statement.locator("tr", { hasText: "Directors verifying" }).locator("td.text-value")).toContainText("JANE ELIZABETH DOE");
 
     const officers = copy.locator(".submission-record").nth(1);
     await expect(officers.locator("tr", { hasText: "Jane Doe" }).locator("td.text-value")).toHaveText("Director. Identity verified");

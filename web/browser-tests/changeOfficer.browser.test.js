@@ -156,10 +156,10 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Continue" }).click();
     const review = page.locator("#reviewList");
     await expect(review).toContainText("Director");
-    await expect(review).toContainText("Marcus John TENNANT");
+    await expect(review).toContainText("MARCUS JOHN TENNANT");
     await expect(review).toContainText("14 February 1975");
     await expect(review).toContainText("2 November 2026");
-    await expect(review).toContainText("Dr Marcus John TENNANT-HUGHES");
+    await expect(review).toContainText("Dr MARCUS JOHN TENNANT-HUGHES");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "en-review");
 

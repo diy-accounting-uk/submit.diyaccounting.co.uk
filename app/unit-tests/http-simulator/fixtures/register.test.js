@@ -88,4 +88,12 @@ describe("simulator register", () => {
       lastMadeUpTo: "2025-09-21",
     });
   });
+
+  test("every company's share classes state the rights attached to them, not only the class's name", () => {
+    for (const company of registerCompanies()) {
+      for (const share of company.capital?.shares ?? []) {
+        expect(share.prescribedParticulars, company.number).toMatch(/vote/i);
+      }
+    }
+  });
 });

@@ -440,8 +440,7 @@ function renderReview() {
   if (form.address) rows.push([document.getElementById("addressLegend").textContent, addressText(form.address)]);
   if (form.newName !== undefined) {
     const name = form.newName;
-    const nameText =
-      typeof name === "string" ? name : [name.title, name.forename, name.otherForenames, name.surname].filter(Boolean).join(" ");
+    const nameText = typeof name === "string" ? name : window.companiesHouseLabels.personName(name);
     rows.push([legendText("nameSection"), nameText]);
   }
   if (form.residentialAddress) {

@@ -154,7 +154,7 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Continue" }).click();
 
     const review = page.locator("#reviewList");
-    await expect(review).toContainText("Dr Eleanor Hale");
+    await expect(review).toContainText("Dr ELEANOR HALE");
     await expect(review).toContainText("7, Orchard Close, Bristol, BS1 4AA, England");
     await expect(review).toContainText("Irish");
     await expect(review).toContainText("Ireland");
