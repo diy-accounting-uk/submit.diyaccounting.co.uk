@@ -62,6 +62,45 @@ describe("failure message", () => {
     expect(messages[0].querySelector("a.status-message-next").getAttribute("href")).not.toBe("");
   });
 
+  it("words a refusal from an HMRC route as HMRC's and links back to the page to connect again", async () => {
+    const { showFailure, requestError } = await import("../public/lib/utils/dom-utils.js");
+    showFailure(
+      requestError(
+        { status: 403, url: "https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/obligation?vrn=1" },
+        { message: "Forbidden" },
+        "x",
+      ),
+      "Could not retrieve VAT obligations",
+    );
+    expect(document.querySelector(".status-message-cause").textContent).toBe("HMRC did not allow access to these records.");
+    expect(document.querySelector("a.status-message-next").textContent).toBe("Connect to HMRC again");
+  });
+
+  it("words a refusal from any other route without HMRC and links to activities", async () => {
+    const { showFailure, requestError } = await import("../public/lib/utils/dom-utils.js");
+    showFailure(
+      requestError({ status: 403, url: "https://submit.diyaccounting.co.uk/api/v1/pass/campaign" }, { message: "Forbidden" }, "x"),
+      "You cannot use this yet",
+    );
+    expect(document.querySelector(".status-message-cause").textContent).toBe("You do not have access to this page.");
+    expect(document.querySelector("a.status-message-next").getAttribute("href")).toBe("/");
+    expect(document.querySelector(".status-message").textContent).not.toContain("HMRC");
+  });
+
+  it("words a missing record, a server failure and an expired session from any other route without HMRC", async () => {
+    const { showFailure, requestError } = await import("../public/lib/utils/dom-utils.js");
+    const causes = [404, 500, 401].map((status) => {
+      showFailure(requestError({ status, url: "/api/v1/account/settings" }, {}, ""), "Could not save your settings");
+      return document.querySelector(".status-message-cause").textContent;
+    });
+    expect(causes).toEqual([
+      "There is nothing here for these details.",
+      "The request could not be completed.",
+      "Your sign-in has expired.",
+    ]);
+    expect(document.querySelector("a.status-message-next").getAttribute("href")).toBe("/auth/login.html");
+  });
+
   it("links a missing bundle to the bundles page", async () => {
     const { showFailure } = await import("../public/lib/utils/dom-utils.js");
     showFailure({ status: 403, code: "BUNDLE_ENTITLEMENT_REQUIRED", message: "Forbidden" }, "Could not retrieve VAT obligations");

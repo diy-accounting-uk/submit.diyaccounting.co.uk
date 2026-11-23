@@ -179,7 +179,7 @@ async function continueObligationsRetrieval() {
     console.error("Error retrieving obligations:", error);
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showFailure({ status: 401 }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
+      showFailure({ status: 401, service: "hmrc" }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
     } else {
       showFailure(error, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
     }
@@ -267,7 +267,7 @@ async function handleFormSubmission(event) {
       console.error("Error retrieving obligations:", error);
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showFailure({ status: 401 }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
       } else {
         showFailure(error, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
       }

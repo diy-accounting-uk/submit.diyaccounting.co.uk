@@ -5,6 +5,7 @@
 
 import { fetchWithId } from "../utils/correlation-utils.js";
 import { ensureSession, sendToSignIn } from "./auth-service.js";
+import { serviceOfUrl } from "../utils/dom-utils.js";
 
 // page-chrome.js gives the text in the chosen language; without it the English stands.
 function siteText(id, english, values) {
@@ -26,7 +27,7 @@ export async function handle403Error(response) {
     // One message: what failed, the cause, and a link to the bundles page
     if (typeof window !== "undefined" && window.showFailure) {
       window.showFailure(
-        { status: 403, code: errorBody.code || errorBody.reason, message },
+        { status: 403, code: errorBody.code || errorBody.reason, message, service: serviceOfUrl(response.url) },
         siteText("widget.cannot-use-yet", "You cannot use this yet"),
       );
     }

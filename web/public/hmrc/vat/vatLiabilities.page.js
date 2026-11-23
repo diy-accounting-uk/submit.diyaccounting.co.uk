@@ -126,7 +126,7 @@ async function continueLiabilitiesRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
         window.SearchForm.showCriteria("liabilitiesForm"); // Show form on error
         return;
       }
@@ -276,7 +276,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
+          showFailure(
+            { status: 401, service: "hmrc" },
+            siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"),
+          );
           return;
         }
         throw requestError(response, result, "Failed to retrieve liabilities");

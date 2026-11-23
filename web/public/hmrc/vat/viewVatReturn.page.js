@@ -185,7 +185,7 @@ async function continueReturnRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
         return;
       }
       throw requestError(response, result, "Failed to retrieve VAT return");
@@ -339,7 +339,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
+          showFailure(
+            { status: 401, service: "hmrc" },
+            siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"),
+          );
           return;
         }
         throw requestError(response, result, "Failed to retrieve VAT return");

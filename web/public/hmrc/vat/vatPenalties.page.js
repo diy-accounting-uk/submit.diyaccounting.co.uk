@@ -122,7 +122,7 @@ async function continuePenaltiesRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
         window.SearchForm.showCriteria("penaltiesForm"); // Show form on error
         return;
       }
@@ -266,7 +266,7 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
+          showFailure({ status: 401, service: "hmrc" }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
           return;
         }
         throw requestError(response, result, "Failed to retrieve penalties");

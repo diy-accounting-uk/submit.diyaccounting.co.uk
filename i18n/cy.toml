@@ -27512,3 +27512,29 @@ cy = '''toriad llinell'''
 [strings."ch.cs.as-register"]
 hash = "70a8e81f96c8"
 cy = '''Fel ar y gofrestr'''
+
+# == A failed request names HMRC only when it went to HMRC; any other route's failure reads plainly ==
+
+[strings."widget.failure-sign-in-expired"]
+hash = "e3b3e2479448"
+cy = '''Mae eich mewngofnod wedi dod i ben.'''
+
+[strings."widget.sign-in-again"]
+hash = "51fbe1dc8a73"
+cy = '''Mewngofnodi eto'''
+
+[strings."widget.failure-forbidden"]
+hash = "aade821c5b78"
+cy = '''Nid oes gennych fynediad at y dudalen hon.'''
+
+[strings."widget.failure-not-found"]
+hash = "453592ae2bb7"
+cy = '''Nid oes dim yma ar gyfer y manylion hyn.'''
+
+[strings."widget.failure-server"]
+hash = "4c9681ac326d"
+cy = '''Nid oedd modd cwblhau’r cais.'''
+
+[strings."widget.failure-refused"]
+hash = "ade9ebdb9506"
+cy = '''Gwrthodwyd y cais.'''

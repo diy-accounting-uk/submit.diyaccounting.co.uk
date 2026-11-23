@@ -188,6 +188,20 @@ test.describe("the operator's campaign pass page", () => {
     await shotAtWidths(page, "campaign-passes-list", "#cpList");
   });
 
+  test("a signed-in reader who is not an operator is told they have no access, without HMRC", async ({ page }) => {
+    await serveRealSite(page, { origin: SITE_ORIGIN, signedIn: true });
+    await page.route(`${SITE_ORIGIN}/api/v1/pass/campaign*`, (route) =>
+      route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ message: "Forbidden" }) }),
+    );
+    await page.addInitScript(() => localStorage.setItem("consent.analytics", "declined"));
+    await page.goto(`${SITE_ORIGIN}/operator/campaign-passes.html`, { waitUntil: "domcontentloaded" });
+
+    const failure = page.locator(".status-message.status-error[role=alert]");
+    await expect(failure.locator(".status-message-cause")).toHaveText("You do not have access to this page.");
+    await expect(failure.locator("a.status-message-next")).toHaveAttribute("href", "/");
+    await expect(page.locator("#statusMessagesContainer")).not.toContainText("HMRC");
+  });
+
   test("offers no bundle sold by subscription, the automatic one or the operator's own", async ({ page }) => {
     await openPage(page, { passes: () => [], onCreate: () => ({}) });
     // The list fills once the catalogue has loaded.

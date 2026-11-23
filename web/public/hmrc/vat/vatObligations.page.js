@@ -128,7 +128,7 @@ async function continueObligationsRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
         window.SearchForm.showCriteria("obligationsForm"); // Show form on error
         // Could trigger re-auth here if desired
         return;
@@ -283,7 +283,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
+          showFailure(
+            { status: 401, service: "hmrc" },
+            siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"),
+          );
           return;
         }
         throw requestError(response, result, "Failed to retrieve obligations");
