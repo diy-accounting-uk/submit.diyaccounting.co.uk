@@ -393,7 +393,7 @@
         {
           "action": "fill",
           "target": "#directors",
-          "value": "Alex Example"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
@@ -403,17 +403,17 @@
         {
           "action": "fill",
           "target": "#directorName",
-          "value": "Alex Example"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
           "target": "#directorDateApproved",
-          "value": "2026-06-30"
+          "value": "{{daysAgo:7}}"
         },
         {
           "action": "fill",
           "target": "#declarantName",
-          "value": "Alex Example"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
@@ -501,7 +501,7 @@
         {
           "action": "fill",
           "target": "#loanName1Ap2",
-          "value": "Alex Example"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",

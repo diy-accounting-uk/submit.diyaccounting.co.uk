@@ -13,25 +13,27 @@ import { isCompaniesHouseSimulatorLane } from "./behaviour-companies-house-filin
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
 import { buildChargeKey, deleteActivityCharge } from "@app/data/dynamoDbActivityChargeRepository.js";
 import { verifyFilingAccepted as verifyGatewayFilingOutcome } from "./behaviour-companies-house-accounts-steps.js";
-import { registerCompany, COMPANY_AUTHENTICATION_CODE } from "@app/http-simulator/fixtures/register.js";
+import { registerCompanies, COMPANY_AUTHENTICATION_CODE } from "@app/http-simulator/fixtures/register.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-confirmation-steps";
 
-// The http-simulator's confirmation statement company, from its register (app/http-simulator/fixtures/register.js),
-// which its public register lookup and its XML Gateway company data answer under the same number.
-const SIMULATOR_COMPANY_NUMBER = "00000004";
-const SIMULATOR_COMPANY_NAME = registerCompany(SIMULATOR_COMPANY_NUMBER).name;
+// The http-simulator's confirmation statement company: the register's company whose statement is due
+// now (app/http-simulator/fixtures/register.js), which its public register lookup and its XML Gateway
+// company data answer under the same number.
+const SIMULATOR_COMPANY = registerCompanies().find((company) => company.confirmationStatement === "due");
+const SIMULATOR_COMPANY_NUMBER = SIMULATOR_COMPANY.number;
+const SIMULATOR_COMPANY_NAME = SIMULATOR_COMPANY.name;
 const SIMULATOR_COMPANY_AUTH_CODE = COMPANY_AUTHENTICATION_CODE;
 
 /** An 11-character personal code in the letters-and-digits format the review form checks for. */
 export const TEST_DIRECTOR_PERSONAL_CODE = "CWMPS832223";
 
 /** The other forenames value the review form requires per director row before it will preview. */
-export const TEST_DIRECTOR_OTHER_FORENAMES = "MIDDLENAME";
+export const TEST_DIRECTOR_OTHER_FORENAMES = "ANNE";
 
 /**
  * The company the confirmation statement journey looks up. The simulator answers for its register's
- * company under the test number 00000004; every other lane reads the live public data API, where
+ * company whose statement is due now; every other lane reads the live public data API, where
  * the record looked up is DIY Accounting Limited's own.
  */
 export function confirmationStatementCompanyFixture(envFilePath) {

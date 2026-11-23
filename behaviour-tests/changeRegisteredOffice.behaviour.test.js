@@ -15,6 +15,7 @@ import {
   runLocalOAuth2Server,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
+import { REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -56,9 +57,9 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
-// The simulator's canned company fixture (see app/http-simulator/scenarios/filings.js). Outside
+// The first company of the simulator's register (app/http-simulator/fixtures/register.js). Outside
 // the simulator lane, beforeAll below replaces this with a freshly created sandbox company.
-let existingCompanyNumber = "00000001";
+let existingCompanyNumber = REGISTER_COMPANY_NUMBERS[0];
 const validationErrorCompanyNumber = "00000422";
 
 const newAddress = {

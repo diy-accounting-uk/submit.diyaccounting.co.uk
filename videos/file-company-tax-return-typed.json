@@ -387,7 +387,7 @@
         {
           "action": "fill",
           "target": "#directors",
-          "value": "Carol Smith"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
@@ -397,17 +397,17 @@
         {
           "action": "fill",
           "target": "#directorName",
-          "value": "Carol Smith"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
           "target": "#directorDateApproved",
-          "value": "2026-06-01"
+          "value": "{{daysAgo:7}}"
         },
         {
           "action": "fill",
           "target": "#declarantName",
-          "value": "Carol Smith"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "hold",

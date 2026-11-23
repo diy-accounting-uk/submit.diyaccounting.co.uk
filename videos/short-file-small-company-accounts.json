@@ -285,12 +285,12 @@
         {
           "action": "type",
           "target": "#directors",
-          "text": "Joanna Hale"
+          "text": "Sam Patel"
         },
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Joanna Hale"
+          "text": "Sam Patel"
         },
         {
           "action": "fill",
@@ -368,7 +368,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true,
           "caption": "Enter the auth code. Filing costs one token.",

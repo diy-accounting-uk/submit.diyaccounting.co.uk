@@ -221,7 +221,7 @@
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Joanna Hale",
+          "text": "Eleanor Bramwell",
           "scrollTo": { "role": "heading", "name": "Employees and director" }
         },
         {
@@ -285,7 +285,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Companies House authentication code.",

@@ -234,7 +234,7 @@
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Joanna Hale",
+          "text": "Sam Patel",
           "scrollTo": {
             "role": "heading",
             "name": "Employees and director"
@@ -309,7 +309,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true
         },

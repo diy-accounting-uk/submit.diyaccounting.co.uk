@@ -438,7 +438,7 @@
         {
           "action": "type",
           "target": "#directors",
-          "text": "Joanna Hale",
+          "text": "Eleanor Bramwell",
           "caption": "Name the directors.",
           "instruction": "Enter the directors who held office during the period, one name on each line.",
           "headline": "Name the directors",
@@ -447,7 +447,7 @@
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Joanna Hale",
+          "text": "Eleanor Bramwell",
           "caption": "Name the director approving the accounts.",
           "instruction": "Enter the name of the director approving the accounts and the date of approval.",
           "headline": "Name the approving director",
@@ -525,7 +525,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Companies House authentication code.",
