@@ -1970,6 +1970,7 @@ window.WELSH_TEXT = {
   "ch.watch.remove": "Tynnu",
   "ch.watch.remove-company": "Tynnu {number} o’r rhestr wylio",
   "ch.watch.sign-in-to-add": "Mewngofnodwch i’w ychwanegu at eich rhestr wylio",
+  "ch.watch.unread-try-again": "Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni",
   "chrome.about": "Amdanom ni",
   "chrome.activity-granted": "Gweithgaredd: mynediad wedi’i roi",
   "chrome.activity-requires": "Gweithgaredd: angen {activities}",

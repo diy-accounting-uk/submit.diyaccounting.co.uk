@@ -87,7 +87,9 @@
     }
 
     const now = Date.now();
-    const entry = L1.get(k);
+    const cached = L1.get(k);
+    // A read whose caller aborted it answers nobody else: the next caller reads again.
+    const entry = cached && cached.promise && cached.init && cached.init.signal && cached.init.signal.aborted ? undefined : cached;
 
     // Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh
     if (entry && entry.promise && !force && (entry.ttlMs === 0 || now - entry.ts < entry.ttlMs)) {
@@ -103,7 +105,7 @@
       try {
         if (entry && entry.etag && entry.ttlMs > 0 && now - entry.ts >= entry.ttlMs) {
           // TTL expired; try ETag revalidation
-          const r = await fetchWithETag(url, entry.init || init, entry.etag);
+          const r = await fetchWithETag(url, init || entry.init, entry.etag);
           if (r.status === 304) {
             if (L1.get(k) === record) {
               entry.ts = Date.now();

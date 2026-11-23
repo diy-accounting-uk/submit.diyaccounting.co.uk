@@ -91,4 +91,25 @@ describe("the page's request cache", () => {
       vi.useRealTimers();
     }
   });
+
+  it("answers a read made after an aborted one from its own request, as a page that aborts its earlier read needs", async () => {
+    const cache = loadRequestCache(
+      (url, init) =>
+        new Promise((resolve, reject) => {
+          const signal = init && init.signal;
+          if (signal) signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+          setTimeout(() => resolve(answer(200, { bundles: ["x"] })), 10);
+        }),
+    );
+    const first = new AbortController();
+    const firstRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { signal: first.signal } });
+    first.abort();
+    const second = new AbortController();
+    const secondRead = cache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { signal: second.signal } });
+
+    await expect(firstRead).rejects.toMatchObject({ name: "AbortError" });
+    await expect(secondRead).resolves.toEqual({ bundles: ["x"] });
+    await expect(cache.getJSON("/api/v1/bundle", { ttlMs: 5000 })).resolves.toEqual({ bundles: ["x"] });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });

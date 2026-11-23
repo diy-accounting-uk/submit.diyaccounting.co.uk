@@ -27397,3 +27397,9 @@ cy = '''Person awdurdodedig i gynrychioli'''
 [strings."ch.drill.role-authorised-to-represent-and-accept"]
 hash = "be7cadc1b1dd"
 cy = '''Person awdurdodedig i gynrychioli ac i dderbyn'''
+
+# == The watch list button when the watch list cannot be read ==
+
+[strings."ch.watch.unread-try-again"]
+hash = "5649fb3a3003"
+cy = '''Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni'''

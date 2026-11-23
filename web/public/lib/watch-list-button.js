@@ -102,8 +102,25 @@
     element.dataset.companyNumber = companyNumber;
     element.textContent = siteText("ch.watch.add", "Add to watch list");
     element.disabled = true;
+    // A list that could not be read says so on the button, which reads it again when pressed.
+    const showList = () =>
+      current()
+        .then((list) => {
+          delete element.dataset.unread;
+          return show(element, companyNumber, list);
+        })
+        .catch((error) => {
+          console.warn("Could not read the watch list:", error);
+          element.dataset.unread = "true";
+          element.textContent = siteText("ch.watch.unread-try-again", "Your watch list could not be read. Try again");
+          element.disabled = false;
+        });
     element.addEventListener("click", async () => {
       element.disabled = true;
+      if (element.dataset.unread) {
+        await showList();
+        return;
+      }
       try {
         await add(companyNumber);
       } catch (error) {
@@ -115,9 +132,7 @@
     document.addEventListener("watchlistchange", (event) => {
       if (element.isConnected) show(element, companyNumber, event.detail);
     });
-    current()
-      .then((list) => show(element, companyNumber, list))
-      .catch((error) => console.warn("Could not read the watch list:", error));
+    showList();
     return element;
   }
 

@@ -247,6 +247,21 @@ test.describe("Company watch list", () => {
     });
   }
 
+  test("on the lookup's search results, a list that could not be read says so and reads again when pressed", async ({ page }) => {
+    const account = { watchedCompanies: [], bundleStatus: 500 };
+    await serveSite(page, account);
+    await page.goto(`${BASE}/companies-house/companySearch.html`, { waitUntil: "networkidle" });
+    await page.fill("#companyQuery", "Simulator");
+    await page.click("#searchBtn");
+    const firstAdd = page.locator("#searchResults .watch-list-add").first();
+    await expect(firstAdd).toHaveText("Your watch list could not be read. Try again", { timeout: 15000 });
+    await expect(firstAdd).toBeEnabled();
+    delete account.bundleStatus;
+    await firstAdd.click();
+    await expect(firstAdd).toHaveText("Add to watch list");
+    await expect(firstAdd).toBeEnabled();
+  });
+
   test("adds from its own search, removes, and opens a company at its drill-down address", async ({ page }) => {
     const account = { watchedCompanies: [] };
     await serveSite(page, account);
