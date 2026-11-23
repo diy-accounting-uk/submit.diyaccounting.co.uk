@@ -9,6 +9,7 @@
 // The form, the review and the help read this one table, so a box has one label everywhere.
 
 import { accountingPeriodDates } from "./long-period.js";
+import { dateOfIncorporationFor } from "./first-accounts.js";
 
 // page-chrome.js gives the text in the chosen language; without it (under Node, or a test that stubs
 // the chrome) the English stands.
@@ -1441,10 +1442,12 @@ export function depreciationChargeOf(note) {
 }
 
 /**
- * The accounts the form holds, in the request's shape.
+ * The accounts the form holds, in the request's shape. First accounts give the date of
+ * incorporation and carry no prior-year balance sheet.
  * @param {Record<string, string|boolean>} values - the form's values by element id
+ * @param {string} [dateOfIncorporation] - ISO date, given only for the company's first accounts
  */
-export function accountsFromValues(values) {
+export function accountsFromValues(values, dateOfIncorporation) {
   const includePrior = values.includeComparatives === true;
   if (regimeOf(values) === "micro") {
     return {
@@ -1452,7 +1455,11 @@ export function accountsFromValues(values) {
       periodEnd: values.periodEnd,
       averageEmployees: Number(values.averageEmployees),
       director: { name: String(values.directorName ?? "").trim(), dateApproved: values.directorDateApproved },
-      balanceSheet: { currentYear: microBalanceSheetOf(values, "current"), priorYear: microBalanceSheetOf(values, "prior") },
+      ...(dateOfIncorporation ? { dateOfIncorporation } : {}),
+      balanceSheet: {
+        currentYear: microBalanceSheetOf(values, "current"),
+        ...(dateOfIncorporation ? {} : { priorYear: microBalanceSheetOf(values, "prior") }),
+      },
       profitAndLoss: {
         currentYear: microProfitAndLossOf(values, "current"),
         ...(includePrior && hasMicroPriorProfitAndLoss(values) ? { priorYear: microProfitAndLossOf(values, "prior") } : {}),
@@ -1469,6 +1476,7 @@ export function accountsFromValues(values) {
     director: { name: String(values.directorName ?? "").trim(), dateApproved: values.directorDateApproved },
     smallCompany: {
       filleted: false,
+      ...(dateOfIncorporation ? { dateOfIncorporation } : {}),
       principalActivity: String(values.principalActivity ?? "").trim(),
       accountingPolicies: String(values.accountingPolicies ?? "").trim(),
       directors: String(values.directors ?? "")
@@ -1584,9 +1592,10 @@ export function requestFigures(figures) {
 }
 
 /**
- * The preview and submit request body for the form's values.
+ * The preview and submit request body for the form's values. The company's profile facts say
+ * whether the accounts are its first, which give the date of incorporation.
  * @param {Record<string, string|boolean>} values
- * @param {{companyName: string, companyNumber: string}} company
+ * @param {{companyName: string, companyNumber: string, dateOfCreation?: string, accountsLastPeriodStart?: string}} company
  * @param {object} [workingSheet]
  */
 export function ct600RequestFromValues(values, company, workingSheet) {
@@ -1595,7 +1604,7 @@ export function ct600RequestFromValues(values, company, workingSheet) {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
     registeredOffice: company.registeredOffice,
-    ...accountsFromValues(values),
+    ...accountsFromValues(values, dateOfIncorporationFor(company, values.periodStart)),
     statementsAccepted: {
       section477Exemption: values.statementSection477Exemption,
       membersNotRequiredAudit: values.statementMembersNotRequiredAudit,
@@ -1810,7 +1819,7 @@ function isMicroBalanceSheetId(id) {
   return MICRO_BALANCE_SHEET_IDS.has(id);
 }
 
-// A micro-entity's accounts always show last year's balance sheet beside this year's.
+// A micro-entity's accounts show last year's balance sheet beside this year's unless they are its first, which leave it blank.
 function microBalanceSheetProblems(values, problem) {
   for (const year of ["current", "prior"]) {
     const sheet = microBalanceSheetOf(values, year);

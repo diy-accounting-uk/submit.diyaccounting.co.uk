@@ -11,6 +11,7 @@ import path from "path";
 import JSZip from "jszip";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
+import { extractAndValidateCtReturnParameters } from "@app/services/hmrcCtReturnRequest.js";
 import {
   ACCOUNTS_TEXT_FIELDS,
   CT600_FORM_FIELDS,
@@ -50,6 +51,16 @@ const ACCEPTED_RETURN = {
   irmarkReceipt: "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
   receiptId: "2026-10-24T11:30:00.000Z-ABCDEF0123456789",
 };
+
+// The company profiles the lookup answers: by default a company with accounts on the register, and
+// one whose first accounts start on the precision-code-ltd book's period start.
+const ESTABLISHED_PROFILE = {
+  companyNumber: "00000007",
+  companyName: "Precision Code Ltd",
+  dateOfCreation: "2019-04-01",
+  accountsLastPeriodEnd: "2025-03-31",
+};
+const FIRST_ACCOUNTS_PROFILE = { companyNumber: "00000007", companyName: "Precision Code Ltd", dateOfCreation: "2025-04-01" };
 
 const OPTIONAL_CREDITOR_LINES = ["BankLoansOverdrafts", "TaxationSocialSecurity", "BankLoansAfterOneYear"];
 
@@ -161,7 +172,7 @@ test.describe("File Company Tax Return entry form", () => {
         return;
       }
       if (url.pathname === "/api/v1/companies-house/company/00000007") {
-        const body = { companyNumber: "00000007", companyName: "Precision Code Ltd" };
+        const body = submission.profile ?? ESTABLISHED_PROFILE;
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
         return;
       }
@@ -485,6 +496,89 @@ test.describe("File Company Tax Return entry form", () => {
     });
     expect(previewRequests[0].figures.workingSheet).toBeDefined();
     expect(previewRequests[0].smallCompany.filleted).toBe(false);
+  });
+
+  // The route's own reading of a preview request: the problems it finds with the years the accounts state.
+  function comparativesProblems(request) {
+    const errors = [];
+    extractAndValidateCtReturnParameters({ body: JSON.stringify(request) }, errors, {
+      requireGatewayCredentials: false,
+      requireReviewedBoxes: false,
+      requireLongPeriod: false,
+    });
+    return errors.filter((message) => /priorYear|dateOfIncorporation/.test(message));
+  }
+
+  test("an established company's accounts show last year's figures: the box is ticked and locked, and the line says why", async ({
+    page,
+  }) => {
+    const previewRequests = [];
+    await openForm(page, previewRequests, { requests: [], profile: ESTABLISHED_PROFILE });
+    await dropBook(page);
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    await expect(page.locator("#includeComparatives")).toBeDisabled();
+    await expect(page.locator("#firstAccountsLine")).toHaveText(
+      "These are not the company's first accounts, so they show the prior year's figures beside this year's. Only first accounts, which start on the day the company was incorporated, leave them out.",
+    );
+    await expect(page.locator("#priorTurnover")).toBeVisible();
+    await completeTheAnswersTheBookLeaves(page);
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    const sent = previewRequests[0];
+    expect(sent.smallCompany.dateOfIncorporation).toBeUndefined();
+    expect(sent.smallCompany.balanceSheet.priorYear).toBeDefined();
+    expect(comparativesProblems(sent)).toEqual([]);
+  });
+
+  test("a company's first accounts leave out last year's figures and send the date of incorporation", async ({ page }) => {
+    const previewRequests = [];
+    await openForm(page, previewRequests, { requests: [], profile: FIRST_ACCOUNTS_PROFILE });
+    await dropBook(page);
+    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    await expect(page.locator("#includeComparatives")).toBeDisabled();
+    await expect(page.locator("#firstAccountsLine")).toHaveText(
+      "These are the company's first accounts: the period starts on the day it was incorporated, 1 April 2025, so there is no prior year.",
+    );
+    await expect(page.locator("#priorTurnover")).toBeHidden();
+    await completeTheAnswersTheBookLeaves(page);
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    const sent = previewRequests[0];
+    expect(sent.smallCompany.dateOfIncorporation).toBe("2025-04-01");
+    expect(sent.smallCompany.balanceSheet.priorYear).toBeUndefined();
+    expect(sent.smallCompany.profitAndLoss.priorYear).toBeUndefined();
+    expect(comparativesProblems(sent)).toEqual([]);
+  });
+
+  test("a period that does not start on the day of incorporation is not the company's first, and the box follows the period", async ({
+    page,
+  }) => {
+    await openForm(page, [], { requests: [], profile: FIRST_ACCOUNTS_PROFILE });
+    await page.locator("#periodStart").fill("2025-05-01");
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    await expect(page.locator("#firstAccountsLine")).toContainText("These are not the company's first accounts");
+    await page.locator("#periodStart").fill("2025-04-01");
+    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    await expect(page.locator("#firstAccountsLine")).toContainText("These are the company's first accounts");
+  });
+
+  test("a micro-entity's first accounts leave out last year's balance sheet and send the date of incorporation", async ({ page }) => {
+    const previewRequests = [];
+    await openForm(page, previewRequests, { requests: [], profile: FIRST_ACCOUNTS_PROFILE });
+    await dropBook(page, { regime: "micro" });
+    await expect(page.locator("#microCurrentFixedAssets")).toBeVisible();
+    await expect(page.locator("#microPriorFixedAssets")).toBeHidden();
+    await completeTheAnswersTheBookLeaves(page, { regime: "micro" });
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    const sent = previewRequests[0];
+    expect(sent.dateOfIncorporation).toBe("2025-04-01");
+    expect(sent.balanceSheet.priorYear).toBeUndefined();
+    expect(sent.profitAndLoss.priorYear).toBeUndefined();
+    expect(comparativesProblems(sent)).toEqual([]);
   });
 
   test("the submit carries the reviewed boxes, and a 409 returns the customer to the review with the message", async ({ page }) => {
@@ -1697,7 +1791,9 @@ test.describe("File Company Tax Return entry form", () => {
 
   test("an iXBRL document for another company fills nothing", async ({ page }) => {
     await openForm(page);
-    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: OTHER_COMPANY_NUMBER }));
+    await page
+      .locator("#booksImportFile")
+      .setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: OTHER_COMPANY_NUMBER }));
     await expect(page.locator("#booksImportStatus")).toContainText(OTHER_COMPANY_NUMBER, { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
     await expect(page.locator("#currentTurnover")).toHaveValue("");

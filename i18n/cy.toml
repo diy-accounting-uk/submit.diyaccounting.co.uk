@@ -14514,8 +14514,8 @@ hash = "324855689eed"
 cy = '''Mae’r elw cyn treth a’r elw am y flwyddyn yn cael eu cyfrifo o’r llinellau hyn.'''
 
 [strings."ch.ct.micro-balance-hint"]
-hash = "5a64b780cba5"
-cy = '''Mae cyfrifon micro-endid bob amser yn dangos mantolen y llynedd wrth ochr mantolen eleni.'''
+hash = "6843d401579b"
+cy = '''Mae cyfrifon micro-endid yn dangos mantolen y llynedd wrth ochr mantolen eleni, oni bai mai cyfrifon cyntaf y cwmni ydynt.'''
 
 [strings."ch.ct.about-accounts"]
 hash = "65d339b3c2b3"
@@ -23819,17 +23819,17 @@ cy = '''
 hash = "1f969e3529d7"
 cy = '''<strong><code>attribution.landing.posted</code></strong >: Caiff ei osod ar ôl i chi fewngofnodi, unwaith y bydd tagiau’r ymgyrch a’r cod atgyfeirio uchod wedi’u cofnodi yn erbyn eich cyfrif, fel eu bod yn cael eu cofnodi unwaith'''
 
-# == First accounts: the small company form leaves out the prior year only for the company's first accounts ==
+# == First accounts: the accounts forms and the Company Tax Return leave out the prior year only for the company's first accounts ==
 
 [strings."ch-small-company.accounts-show-the-prior-year-s-2b78bf"]
 hash = "2b78bf57fdca"
 cy = '''Mae cyfrifon yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni, oni bai mai cyfrifon cyntaf y cwmni ydynt.'''
 
-[strings."ch.small.first-accounts"]
+[strings."ch.first-accounts.first"]
 hash = "6f1d078e1d3f"
 cy = '''Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.'''
 
-[strings."ch.small.not-first-accounts"]
+[strings."ch.first-accounts.prior-year-shown"]
 hash = "cf6d0bca4819"
 cy = '''Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.'''
 
@@ -26399,10 +26399,6 @@ cy = '''Manylion cyfarwyddwr neu ysgrifennydd wedi newid'''
 [strings."ch-micro-entity.whole-pounds-for-example-600-or-a4c6e0"]
 hash = "a4c6e087ef2c"
 cy = '''Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd, oni bai mai cyfrifon cyntaf y cwmni yw’r rhain.'''
-
-[strings."ch.micro.first-accounts"]
-hash = "6f1d078e1d3f"
-cy = '''Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.'''
 
 [strings."ch.micro.not-first-accounts"]
 hash = "83f10e581c14"

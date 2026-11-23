@@ -93,37 +93,23 @@ import("../lib/first-accounts.js").then((module) => {
 });
 
 function isFirstAccounts() {
-  return Boolean(firstAccountsRule?.isFirstAccountsPeriod?.(company ?? {}, document.getElementById("periodStart").value));
+  return Boolean(firstAccountsRule?.dateOfIncorporationFor(company, document.getElementById("periodStart").value));
 }
 
 function applyFirstAccountsRule() {
-  if (!firstAccountsRule?.isFirstAccountsPeriod) return;
+  if (!firstAccountsRule) return;
   const first = isFirstAccounts();
   document.getElementById("balanceSheetLedger").classList.toggle("ledger--one-year", first);
   document.querySelectorAll("#balanceSheetLedger .ledger__prior input").forEach((input) => {
     input.disabled = first;
   });
   document.getElementById("firstAccountsLine").textContent = first
-    ? window.siteText(
-        "ch.micro.first-accounts",
-        "These are the company's first accounts: the period starts on the day it was incorporated, {date}, so there is no prior year.",
-        { date: window.HmrcDisplayFormat.dateText(new Date(`${company.dateOfCreation}T00:00:00Z`), { utc: true }) },
-      )
+    ? firstAccountsRule.firstAccountsLine(company.dateOfCreation)
     : window.siteText(
         "ch.micro.not-first-accounts",
         "These are not the company's first accounts, so the balance sheet shows the prior year beside this year.",
       );
   refreshYearTotals();
-}
-
-// The company, with the facts of its profile that say whether a period is its first.
-function companyFromProfile(profile) {
-  return {
-    companyNumber: profile.companyNumber,
-    companyName: profile.companyName,
-    dateOfCreation: profile.dateOfCreation,
-    accountsLastPeriodEnd: profile.accountsLastPeriodEnd,
-  };
 }
 
 async function renderOneYearTotals(current) {
@@ -198,6 +184,7 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
+    const { companyFromProfile } = await import("../lib/first-accounts.js");
     company = companyFromProfile(profile);
     applyFirstAccountsRule();
     window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
@@ -710,6 +697,7 @@ async function startRevision(receiptName) {
       return;
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
+    const { companyFromProfile } = await import("../lib/first-accounts.js");
     company = companyFromProfile(profile);
     window.accountsFormSections.fillFiledRegisteredOffice(read.source.registeredOffice, profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;

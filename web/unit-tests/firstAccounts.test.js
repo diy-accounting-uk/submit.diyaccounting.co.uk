@@ -5,10 +5,14 @@
 
 import { describe, test, expect } from "vitest";
 import {
-  isFirstAccountsPeriod,
+  applyComparativesRule,
+  companyFromProfile,
   comparativesFinding,
-  marksFirstAccounts,
+  dateOfIncorporationFor,
   endsWithinFirstFinancialYear,
+  firstAccountsLine,
+  isFirstAccountsPeriod,
+  marksFirstAccounts,
 } from "../public/lib/first-accounts.js";
 
 describe("when small company accounts may leave out the prior year", () => {
@@ -64,5 +68,52 @@ describe("when small company accounts may leave out the prior year", () => {
     expect(endsWithinFirstFinancialYear("2025-01-01", "2026-07-07")).toBe(true);
     expect(endsWithinFirstFinancialYear("2025-01-01", "2026-07-08")).toBe(false);
     expect(endsWithinFirstFinancialYear("2019-06-01", "2025-12-31")).toBe(false);
+  });
+
+  test("the company a form holds keeps the profile facts that say whether a period is its first", () => {
+    const profile = {
+      companyNumber: "00000001",
+      companyName: "TEST SMALL LTD",
+      dateOfCreation: "2019-04-01",
+      accountsLastPeriodEnd: "2025-03-31",
+      registeredOffice: { postalCode: "AB1 2CD" },
+    };
+    expect(companyFromProfile(profile)).toEqual({
+      companyNumber: "00000001",
+      companyName: "TEST SMALL LTD",
+      dateOfCreation: "2019-04-01",
+      accountsLastPeriodEnd: "2025-03-31",
+    });
+  });
+
+  test("first accounts send the date of incorporation, and other accounts and an unknown company send none", () => {
+    expect(dateOfIncorporationFor({ dateOfCreation: "2025-04-01" }, "2025-04-01")).toBe("2025-04-01");
+    expect(dateOfIncorporationFor({ dateOfCreation: "2019-04-01", accountsLastPeriodStart: "2024-04-01" }, "2025-04-01")).toBeUndefined();
+    expect(dateOfIncorporationFor({ dateOfCreation: "2025-04-01" }, "2025-05-01")).toBeUndefined();
+    expect(dateOfIncorporationFor(null, "2025-04-01")).toBeUndefined();
+  });
+
+  test("the first accounts line gives the date of incorporation in words", () => {
+    expect(firstAccountsLine("2025-04-01")).toBe(
+      "These are the company's first accounts: the period starts on the day it was incorporated, 1 April 2025, so there is no prior year.",
+    );
+  });
+
+  test("the prior-year box is ticked and locked unless the period is the company's first, and the line says which", () => {
+    const established = { box: { checked: false, disabled: false }, line: { textContent: "" } };
+    expect(
+      applyComparativesRule({
+        ...established,
+        company: { dateOfCreation: "2019-04-01", accountsLastPeriodStart: "2024-04-01" },
+        periodStart: "2025-04-01",
+      }),
+    ).toBe(false);
+    expect(established.box).toEqual({ checked: true, disabled: true });
+    expect(established.line.textContent).toMatch(/^These are not the company's first accounts, so they show the prior year's figures/);
+
+    const first = { box: { checked: true, disabled: false }, line: { textContent: "" } };
+    expect(applyComparativesRule({ ...first, company: { dateOfCreation: "2025-04-01" }, periodStart: "2025-04-01" })).toBe(true);
+    expect(first.box).toEqual({ checked: false, disabled: true });
+    expect(first.line.textContent).toBe(firstAccountsLine("2025-04-01"));
   });
 });

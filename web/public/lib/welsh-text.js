@@ -787,7 +787,8 @@ window.WELSH_TEXT = {
   "ch.ct.main-pool-hybrid":
     " Mae’r cyfnod yn croesi newid yng nghyfradd y brif gronfa ({rates}), felly mae’r gyfradd yn gymysgedd o {rate}.",
   "ch.ct.main-pool-rate": " Cyfradd y brif gronfa ar gyfer y cyfnod hwn yw {rate}.",
-  "ch.ct.micro-balance-hint": "Mae cyfrifon micro-endid bob amser yn dangos mantolen y llynedd wrth ochr mantolen eleni.",
+  "ch.ct.micro-balance-hint":
+    "Mae cyfrifon micro-endid yn dangos mantolen y llynedd wrth ochr mantolen eleni, oni bai mai cyfrifon cyntaf y cwmni ydynt.",
   "ch.ct.micro-note": "Mae Tŷ’r Cwmnïau yn cael mantolen a nodiadau’r micro-endid. Mae’r cyfrif elw a cholled yn mynd i CThEF yn unig.",
   "ch.ct.micro-profit-hint": "Mae’r elw cyn treth a’r elw am y flwyddyn yn cael eu cyfrifo o’r llinellau hyn.",
   "ch.ct.no": "Na",
@@ -1432,6 +1433,10 @@ window.WELSH_TEXT = {
   "ch.filing.no-comparatives-why":
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
+  "ch.first-accounts.first":
+    "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
+  "ch.first-accounts.prior-year-shown":
+    "Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.",
   "ch.form.gateway-text": "Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}",
   "ch.form.line-break": "toriad llinell",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
@@ -1467,8 +1472,6 @@ window.WELSH_TEXT = {
   "ch.micro.capital-and-reserves-mismatch":
     "Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau wedi’i alw ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.",
   "ch.micro.confirm-provisions": "Cadarnhewch fod y cyfrifon yn dilyn y darpariaethau micro-endid",
-  "ch.micro.first-accounts":
-    "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
   "ch.micro.matches": "Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.",
   "ch.micro.mismatch": "Nid yw’n cyfateb i’r cyfalaf a’r cronfeydd wrth gefn ar gyfer {years} - cywirwch hyn cyn gweld y rhagolwg.",
   "ch.micro.mismatch-last-year": "y llynedd (cyfalaf a chronfeydd wrth gefn {amount})",
@@ -1906,8 +1909,6 @@ window.WELSH_TEXT = {
   "ch.small.confirm-regime": "Cadarnhewch fod y cyfrifon yn dilyn y drefn cwmnïau bach",
   "ch.small.debtors-split":
     "Rhaid i ddyledwyr masnach, dyledwyr eraill, symiau dyledus gan gyfarwyddwyr a rhagdaliadau adio i’r dyledwyr ar gyfer pob blwyddyn cyn gweld y rhagolwg.",
-  "ch.small.first-accounts":
-    "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
   "ch.small.gross-profit": "Elw gros: {amount}.",
   "ch.small.matches-capital": "Yn cyfateb i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled.",
   "ch.small.matches-fixed": "Yn cyfateb i’r asedau sefydlog.",
@@ -1921,8 +1922,6 @@ window.WELSH_TEXT = {
   "ch.small.net-assets-must-equal":
     "Rhaid i’r asedau net fod yn hafal i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled ar gyfer pob blwyddyn cyn gweld y rhagolwg.",
   "ch.small.net-book-value": "Gwerth llyfr net: {amount}. {verdict}",
-  "ch.small.not-first-accounts":
-    "Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.",
   "ch.small.notes-must-equal": "Rhaid i werth llyfr net nodiadau’r asedau sefydlog fod yn hafal i’r asedau sefydlog cyn gweld y rhagolwg.",
   "ch.small.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.",

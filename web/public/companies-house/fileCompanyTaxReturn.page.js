@@ -58,6 +58,7 @@ import {
   reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
+import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import {
   DEFAULT_AGENT_STATUS,
@@ -699,6 +700,7 @@ function accountsSection() {
     companiesHouseCopyGroup(),
     companiesHouseMicroNote(),
     checkboxGroup("includeComparatives", siteText("ch.ct.include-comparatives", "Include last year's figures")),
+    create("p", { "id": "firstAccountsLine", "class": "hint", "aria-live": "polite" }),
     forRegime(
       "small",
       create("h4", {}, siteText("ch.ct.profit-and-loss", "Profit and loss account")),
@@ -726,9 +728,12 @@ function accountsSection() {
       create(
         "p",
         { class: "hint" },
-        siteText("ch.ct.micro-balance-hint", "Micro-entity accounts always show last year's balance sheet beside this year's."),
+        siteText(
+          "ch.ct.micro-balance-hint",
+          "Micro-entity accounts show last year's balance sheet beside this year's, unless they are the company's first accounts.",
+        ),
       ),
-      microLedger(MICRO_BALANCE_SHEET_FIELDS),
+      microLedger(MICRO_BALANCE_SHEET_FIELDS, "ledger--micro-balance-sheet"),
     ),
     create("h4", {}, siteText("ch.ct.about-accounts", "About the accounts")),
     ...ACCOUNTS_TEXT_FIELDS.map((field) => (field.smallOnly ? forRegime("small", accountsTextGroup(field)) : accountsTextGroup(field))),
@@ -1120,7 +1125,21 @@ function copyOf(values) {
   return values.companiesHouseCopy === "filleted" && regimeOf(values) === "small" ? "filleted" : "full";
 }
 
+// Accounts show last year's figures unless they are the company's first, which the company's
+// profile and the period start show. The box follows that rule, the line under it says which, and
+// the micro-entity balance sheet leaves out last year's column for first accounts.
+function applyFirstAccountsRule() {
+  const first = applyComparativesRule({
+    box: element("includeComparatives"),
+    line: element("firstAccountsLine"),
+    company,
+    periodStart: element("periodStart").value,
+  });
+  element("formSections").querySelector(".ledger--micro-balance-sheet").classList.toggle("ledger--one-year", first);
+}
+
 function toggleSections() {
+  applyFirstAccountsRule();
   const oneYear = !element("includeComparatives").checked;
   for (const table of element("formSections").querySelectorAll(".ledger--years")) table.classList.toggle("ledger--one-year", oneYear);
   element("fixedAssetNoteFields").style.display = element("includeFixedAssetNote").checked ? "block" : "none";
@@ -1799,6 +1818,7 @@ function handleFormInput(event) {
   const control = event.target;
   if (control.id) state.edited.add(control.id);
   if (control.id?.startsWith("loanName")) syncRepaymentNames();
+  if (control.id === "periodStart") toggleSections();
   setDefaults();
   refresh();
 }
@@ -1959,9 +1979,10 @@ async function handleCompanySubmit(event) {
   window.hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
+    company = { ...companyFromProfile(profile), registeredOffice: profile.registeredOffice };
     element("formCompanyName").textContent = company.companyName;
     element("formCompanyNumber").textContent = company.companyNumber;
+    toggleSections();
     showView("formView");
     await ensureBundle();
     applyClientToForm();
@@ -2684,6 +2705,7 @@ function lockPeriodDates() {
 
 function unlockAccounts() {
   for (const control of accountsControls()) control.disabled = false;
+  applyFirstAccountsRule();
   element("accountsLockNote")?.remove();
   element("section-accounts")
     .querySelector("h3")
@@ -3364,6 +3386,7 @@ function lockFirstReturn() {
 
 function unlockFirstReturn() {
   for (const control of firstColumnControls()) control.disabled = false;
+  applyFirstAccountsRule();
   element("firstReturnLockNote")?.remove();
 }
 
@@ -3621,7 +3644,10 @@ async function loadAmendment(receiptName) {
       return;
     }
     if (receipt.longPeriod && !(await loadFiledLongReturns(receipt))) return;
-    company = receipt.formRequest.company;
+    // The register says whether the filed accounts were the company's first; the receipt does not.
+    const profile = await window.getCompanyProfile(receipt.formRequest.company.companyNumber);
+    const { dateOfCreation, accountsLastPeriodStart } = companyFromProfile(profile);
+    company = { ...receipt.formRequest.company, dateOfCreation, accountsLastPeriodStart };
     element("formCompanyName").textContent = company.companyName;
     element("formCompanyNumber").textContent = company.companyNumber;
     fillValues(receipt.formRequest.values);

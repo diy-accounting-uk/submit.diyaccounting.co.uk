@@ -54,6 +54,8 @@ COPY web/public/lib/approval-date-check.js web/public/lib/approval-date-check.js
 COPY web/public/lib/accounts-revision.js web/public/lib/accounts-revision.js
 COPY web/public/lib/accounts-notes-check.js web/public/lib/accounts-notes-check.js
 COPY web/public/lib/first-accounts.js web/public/lib/first-accounts.js
+# The long date the first accounts line prints, which first-accounts.js imports.
+COPY web/public/lib/long-period.js web/public/lib/long-period.js
 # The Companies House forms table: the filing route, the status poll, the presenter poll and the receipt emails read it.
 COPY web/public/lib/companies-house-forms.js web/public/lib/companies-house-forms.js
 # The gateway's character rule the form routes and the confirmation statement route share with the pages.

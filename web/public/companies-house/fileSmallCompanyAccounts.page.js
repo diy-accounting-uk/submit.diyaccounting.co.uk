@@ -338,26 +338,18 @@ import("../lib/first-accounts.js").then((module) => {
   toggleSections();
 });
 
-function isFirstAccounts() {
-  return Boolean(firstAccountsRule?.isFirstAccountsPeriod?.(company ?? {}, document.getElementById("periodStart").value));
+function firstAccountsDate() {
+  return firstAccountsRule?.dateOfIncorporationFor(company, document.getElementById("periodStart").value);
 }
 
 function applyFirstAccountsRule() {
-  if (!firstAccountsRule?.isFirstAccountsPeriod) return;
-  const first = isFirstAccounts();
-  const box = document.getElementById("includeComparatives");
-  box.checked = !first;
-  box.disabled = true;
-  document.getElementById("firstAccountsLine").textContent = first
-    ? window.siteText(
-        "ch.small.first-accounts",
-        "These are the company's first accounts: the period starts on the day it was incorporated, {date}, so there is no prior year.",
-        { date: window.HmrcDisplayFormat.dateText(new Date(`${company.dateOfCreation}T00:00:00Z`), { utc: true }) },
-      )
-    : window.siteText(
-        "ch.small.not-first-accounts",
-        "These are not the company's first accounts, so they show the prior year's figures beside this year's. Only first accounts, which start on the day the company was incorporated, leave them out.",
-      );
+  if (!firstAccountsRule) return;
+  firstAccountsRule.applyComparativesRule({
+    box: document.getElementById("includeComparatives"),
+    line: document.getElementById("firstAccountsLine"),
+    company,
+    periodStart: document.getElementById("periodStart").value,
+  });
 }
 
 async function renderTotals() {
@@ -460,16 +452,6 @@ function toggleSections() {
   renderTotals();
 }
 
-// The company, with the facts of its profile that say whether a period is its first.
-function companyFromProfile(profile) {
-  return {
-    companyNumber: profile.companyNumber,
-    companyName: profile.companyName,
-    dateOfCreation: profile.dateOfCreation,
-    accountsLastPeriodEnd: profile.accountsLastPeriodEnd,
-  };
-}
-
 async function handleCompanySubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFields(["companyNumber"])) return;
@@ -479,6 +461,7 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
+    const { companyFromProfile } = await import("../lib/first-accounts.js");
     company = companyFromProfile(profile);
     window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
@@ -517,6 +500,7 @@ function documentLanguagePayload() {
 
 function buildAccountsPayload() {
   const includeComparatives = comparativesIncluded();
+  const dateOfIncorporation = firstAccountsDate();
   const fixedAssetNote = readFixedAssetNote();
   const intangibleAssetNote = readIntangibleAssetNote();
   const registeredOffice = window.accountsFormSections.readRegisteredOffice();
@@ -545,7 +529,7 @@ function buildAccountsPayload() {
     },
     smallCompany: {
       filleted: document.getElementById("copyFilleted").checked,
-      ...(isFirstAccounts() ? { dateOfIncorporation: company.dateOfCreation } : {}),
+      ...(dateOfIncorporation ? { dateOfIncorporation } : {}),
       principalActivity: document.getElementById("principalActivity").value.trim(),
       accountingPolicies: document.getElementById("accountingPolicies").value.trim(),
       directors: document
@@ -1009,6 +993,7 @@ async function startRevision(receiptName) {
       return;
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
+    const { companyFromProfile } = await import("../lib/first-accounts.js");
     company = companyFromProfile(profile);
     window.accountsFormSections.fillFiledRegisteredOffice(read.source.registeredOffice, profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;

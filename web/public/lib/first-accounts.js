@@ -6,7 +6,29 @@
 // financial year's figures beside each item (FRS 102 paragraphs 1A.10 and 3.14), and a company's
 // first financial year begins on the day it was incorporated (Companies Act 2006 sections 390 and
 // 391), so only the first accounts have no preceding year. The accounts form and the accounts route
-// both take the rule from here.
+// both take the rule from here, and the forms take the line that says which applies.
+
+import { longDateText } from "./long-period.js";
+
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
+/**
+ * The company an accounts form holds, from its Companies House profile: its number and name, and
+ * the facts that say whether a period is its first.
+ * @param {{companyNumber: string, companyName: string, dateOfCreation?: string, accountsLastPeriodEnd?: string}} profile
+ */
+export function companyFromProfile(profile) {
+  return {
+    companyNumber: profile.companyNumber,
+    companyName: profile.companyName,
+    dateOfCreation: profile.dateOfCreation,
+    accountsLastPeriodEnd: profile.accountsLastPeriodEnd,
+  };
+}
 
 /**
  * Whether a period is the company's first, from its Companies House profile: the period starts on
@@ -44,6 +66,48 @@ export function endsWithinFirstFinancialYear(periodStart, periodEnd) {
     Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + FIRST_PERIOD_MONTHS, start.getUTCDate() - 1 + FINANCIAL_YEAR_LEEWAY_DAYS),
   );
   return periodEnd <= latest.toISOString().slice(0, 10);
+}
+
+/**
+ * The date of incorporation accounts send: the company's, when the period is its first; otherwise
+ * undefined, and the accounts show the prior year.
+ * @param {{dateOfCreation?: string, accountsLastPeriodStart?: string}|null} company
+ * @param {string} periodStart - ISO date
+ * @returns {string|undefined}
+ */
+export function dateOfIncorporationFor(company, periodStart) {
+  return isFirstAccountsPeriod(company ?? {}, periodStart) ? company.dateOfCreation : undefined;
+}
+
+/**
+ * The line that says a period is the company's first, so its accounts have no prior year.
+ * @param {string} dateOfCreation - ISO date
+ */
+export function firstAccountsLine(dateOfCreation) {
+  return siteText(
+    "ch.first-accounts.first",
+    "These are the company's first accounts: the period starts on the day it was incorporated, {date}, so there is no prior year.",
+    { date: longDateText(dateOfCreation) },
+  );
+}
+
+/**
+ * Tick and lock a form's prior-year box by the rule: ticked unless the period is the company's
+ * first, and never the reader's to change. The line under the box says which applies.
+ * @param {{box: HTMLInputElement, line: HTMLElement, company: object|null, periodStart: string}} form
+ * @returns {boolean} whether the period is the company's first
+ */
+export function applyComparativesRule({ box, line, company, periodStart }) {
+  const dateOfIncorporation = dateOfIncorporationFor(company, periodStart);
+  box.checked = !dateOfIncorporation;
+  box.disabled = true;
+  line.textContent = dateOfIncorporation
+    ? firstAccountsLine(dateOfIncorporation)
+    : siteText(
+        "ch.first-accounts.prior-year-shown",
+        "These are not the company's first accounts, so they show the prior year's figures beside this year's. Only first accounts, which start on the day the company was incorporated, leave them out.",
+      );
+  return Boolean(dateOfIncorporation);
 }
 
 /**
