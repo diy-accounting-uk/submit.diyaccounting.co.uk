@@ -9,7 +9,7 @@
 // after it the notice of an inspection location (SAIL) and of records moved to it.
 // SC000000 holds one set of small company accounts filed by software, with both years and a profit
 // and loss account, built by the small company accounts builder.
-// 12345678 holds more filings than a lookup reads (620 changes of registered office after its
+// 00000007 holds more filings than a lookup reads (620 changes of registered office after its
 // incorporation, no accounts). Each other company holds its incorporation alone. A filing history item links its document as the
 // live register does, on the Document API's host.
 
@@ -156,7 +156,7 @@ function incorporationOnly(company) {
   ];
 }
 
-const LONG_HISTORY_COMPANY_NUMBER = "12345678";
+const LONG_HISTORY_COMPANY_NUMBER = "00000007";
 const LONG_HISTORY_ADDRESS_CHANGES = 620;
 
 // Newest first: one change of registered office a day, back from the last day of 2098, then the

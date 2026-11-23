@@ -54,7 +54,7 @@ describe("practiceClientsPost", () => {
 
     await ingestHandler(
       buildAuthenticatedEvent({
-        body: { displayName: "Acme Ltd", vrn: "123456789", nino: "AB123456C", utr: "1234567890", companyNumber: "12345678" },
+        body: { displayName: "Acme Ltd", vrn: "123456789", nino: "AB123456C", utr: "1234567890", companyNumber: "00000007" },
       }),
     );
 
@@ -63,7 +63,7 @@ describe("practiceClientsPost", () => {
       vrn: "123456789",
       nino: "AB123456C",
       utr: "1234567890",
-      companyNumber: "12345678",
+      companyNumber: "00000007",
     });
   });
 

@@ -96,7 +96,7 @@ describe("billingActivityCheckoutPost", () => {
   function buildBody(overrides = {}) {
     return {
       activityId: "file-confirmation-statement",
-      subjectKey: "12345678#2026-01-01",
+      subjectKey: "00000007#2026-01-01",
       ...overrides,
     };
   }
@@ -120,7 +120,7 @@ describe("billingActivityCheckoutPost", () => {
     expect(params.mode).toBe("payment");
     expect(params.customer_email).toBe("user@example.com");
     expect(params.metadata.activityId).toBe("file-confirmation-statement");
-    expect(params.metadata.subjectKey).toBe("12345678#2026-01-01");
+    expect(params.metadata.subjectKey).toBe("00000007#2026-01-01");
     expect(params.metadata.hashedSub).toBeDefined();
     expect(params.metadata.hashedSub.length).toBe(64);
     expect(params.line_items).toEqual([{ price: "price_fcs_live_123", quantity: 1 }]);

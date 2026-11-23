@@ -179,7 +179,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "12345678",
+          "text": "00000007",
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",

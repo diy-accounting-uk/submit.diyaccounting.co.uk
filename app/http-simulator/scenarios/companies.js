@@ -10,7 +10,7 @@
 // register lookup (this file) and its XML Gateway fixture (confirmation-statement.js's
 // FIXTURE_COMPANY) answer for the same company number. No company here has a live company's number.
 // 00000003 is a trading company for the simulator's accounts filing demos, named as a plain
-// example so a recording of a filed accounts document reads as one. 12345678 is the company of the
+// example so a recording of a filed accounts document reads as one. 00000007 is the company of the
 // Precision Code Ltd book (mcp/test/fixtures/precision-code-ltd-full/book.toml), with the book's
 // address as its registered office, so the MCP harness files that book's accounts for it.
 
@@ -176,9 +176,9 @@ const companies = {
       next_made_up_to: "2099-03-12",
     },
   },
-  "12345678": {
+  "00000007": {
     company_name: "PRECISION CODE LTD",
-    company_number: "12345678",
+    company_number: "00000007",
     company_status: "active",
     type: "ltd",
     date_of_creation: "2020-01-01",

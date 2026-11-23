@@ -55,7 +55,7 @@ const builderSource = readFileSync(join(process.cwd(), "app/services/ct600Xml.js
 const BOOK_DIRECTORY = join(process.cwd(), "fixtures", "diya-gl", "precision-code-ltd");
 const COMPANY = {
   companyName: "Precision Code Ltd",
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
 };
 
@@ -375,7 +375,7 @@ describe("the form's own checks", () => {
     });
 
     test("a form that answers no sends no loans and one that answers yes sends them", () => {
-      const company = { companyName: "Precision Code Ltd", companyNumber: "12345678" };
+      const company = { companyName: "Precision Code Ltd", companyNumber: "00000007" };
       expect(figuresFromValues(complete(), company).loansToParticipators).toBeUndefined();
       expect(figuresFromValues(repaying(), company).loansToParticipators.loans).toHaveLength(1);
       const request = ct600RequestFromValues(repaying(), company);

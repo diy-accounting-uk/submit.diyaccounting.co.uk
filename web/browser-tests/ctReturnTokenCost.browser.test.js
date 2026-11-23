@@ -193,8 +193,8 @@ async function serveSite(page, server) {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "ci" });
     } else if (url.pathname === "/api/v1/bundle") {
       await json(route, 200, server.balance);
-    } else if (url.pathname === "/api/v1/companies-house/company/12345678") {
-      await json(route, 200, { companyNumber: "12345678", companyName: "Precision Code Ltd" });
+    } else if (url.pathname === "/api/v1/companies-house/company/00000007") {
+      await json(route, 200, { companyNumber: "00000007", companyName: "Precision Code Ltd" });
     } else if (url.pathname === "/api/v1/hmrc/ct/return/preview") {
       await json(route, 200, server.previewBody ?? DEFAULT_PREVIEW);
     } else if (url.pathname === "/api/v1/hmrc/ct/return" && method === "POST") {
@@ -243,7 +243,7 @@ async function openForm(page, server, viewport = { width: 1280, height: 900 }) {
   await page.setViewportSize(viewport);
   await serveSite(page, server);
   await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
-  await page.locator("#companyNumber").fill("12345678");
+  await page.locator("#companyNumber").fill("00000007");
   await page.locator("#companyLookupBtn").click();
   await expect(page.locator("#formView")).toBeVisible();
 }

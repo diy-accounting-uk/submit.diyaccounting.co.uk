@@ -35,7 +35,7 @@ const LINES = {
 
 const INPUT = {
   companyName: "Precision Code Ltd",
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   utr: "8596148860",
   periodStart: "2025-04-01",
   periodEnd: "2026-03-31",
@@ -117,7 +117,7 @@ describe("buildCtComputations", () => {
     expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "123,897", contextRef: "tradePeriod" });
 
     const company = contextXml(xml, "companyInstant");
-    expect(company).toContain('<xbrli:identifier scheme="http://www.companieshouse.gov.uk/">12345678</xbrli:identifier>');
+    expect(company).toContain('<xbrli:identifier scheme="http://www.companieshouse.gov.uk/">00000007</xbrli:identifier>');
     expect(company).toContain('<xbrldi:explicitMember dimension="ct-comp:BusinessTypeDimension">ct-comp:Company</xbrldi:explicitMember>');
     expect(company).toContain("<xbrli:instant>2026-03-31</xbrli:instant>");
     const trade = contextXml(xml, "tradePeriod");

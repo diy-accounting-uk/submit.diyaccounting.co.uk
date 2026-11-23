@@ -550,12 +550,12 @@ describe("projectors of the customer tables new to the lake", () => {
   test("an activity charge key and an MCP session id leave the table only as hashes", () => {
     const charge = projectFields(
       "activity_charges",
-      { hashedSub: "h1", chargeKey: "ct-return#12345678", activityId: "ct-return", status: "paid", createdAt: "t" },
+      { hashedSub: "h1", chargeKey: "ct-return#00000007", activityId: "ct-return", status: "paid", createdAt: "t" },
       null,
       "INSERT",
     );
-    expect(charge.charge_hash).toBe(hashSub("ct-return#12345678"));
-    expect(Object.values(charge)).not.toContain("ct-return#12345678");
+    expect(charge.charge_hash).toBe(hashSub("ct-return#00000007"));
+    expect(Object.values(charge)).not.toContain("ct-return#00000007");
     const session = projectFields(
       "mcp_sessions",
       null,

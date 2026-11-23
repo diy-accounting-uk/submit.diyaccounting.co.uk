@@ -155,8 +155,8 @@ test.describe("File Company Tax Return entry form", () => {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ zipBase64: practice.zipBase64 }) });
         return;
       }
-      if (url.pathname === "/api/v1/companies-house/company/12345678") {
-        const body = { companyNumber: "12345678", companyName: "Precision Code Ltd" };
+      if (url.pathname === "/api/v1/companies-house/company/00000007") {
+        const body = { companyNumber: "00000007", companyName: "Precision Code Ltd" };
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
         return;
       }
@@ -228,7 +228,7 @@ test.describe("File Company Tax Return entry form", () => {
   async function openForm(page, previewRequests, submission) {
     await serveRealSite(page, previewRequests, submission);
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
-    await page.locator("#companyNumber").fill("12345678");
+    await page.locator("#companyNumber").fill("00000007");
     await page.locator("#companyLookupBtn").click();
     await expect(page.locator("#formView")).toBeVisible();
   }
@@ -297,7 +297,7 @@ test.describe("File Company Tax Return entry form", () => {
       });
       if (prefix) await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
       await page.goto(PAGE_URL.replace("/companies-house/", `${prefix}/companies-house/`), { waitUntil: "domcontentloaded" });
-      await page.locator("#companyNumber").fill("12345678");
+      await page.locator("#companyNumber").fill("00000007");
       await page.locator("#companyLookupBtn").click();
       await expect(page.locator("#formView")).toBeVisible();
       await page.locator("#booksImportFile").setInputFiles({
@@ -320,7 +320,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
     await serveRealSite(page, [], submission);
     await page.goto(PAGE_URL.replace("/companies-house/", "/cy/companies-house/"), { waitUntil: "domcontentloaded" });
-    await page.locator("#companyNumber").fill("12345678");
+    await page.locator("#companyNumber").fill("00000007");
     await page.locator("#companyLookupBtn").click();
     await expect(page.locator("#formView")).toBeVisible();
     await page.locator("#booksImportFile").setInputFiles({
@@ -474,7 +474,7 @@ test.describe("File Company Tax Return entry form", () => {
     expect(previewRequests).toHaveLength(1);
     expect(previewRequests[0]).toMatchObject({
       utr: "8596148860",
-      companyNumber: "12345678",
+      companyNumber: "00000007",
       declarant: { status: "Director" },
       figures: { periodStart: "2025-04-01", periodEnd: "2026-03-31" },
     });
@@ -612,7 +612,7 @@ test.describe("File Company Tax Return entry form", () => {
     const receipt = {
       kind: "company-tax-return",
       statusCode: "ACCEPT",
-      formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values },
+      formRequest: { company: { companyNumber: "00000007", companyName: "Precision Code Ltd" }, values },
     };
     const submission = await openAmendment(page, receipt);
 
@@ -642,7 +642,7 @@ test.describe("File Company Tax Return entry form", () => {
       kind: "company-tax-return",
       statusCode: "ACCEPT",
       jointFilingId: ORIGINAL_JOINT_FILING_ID,
-      formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values },
+      formRequest: { company: { companyNumber: "00000007", companyName: "Precision Code Ltd" }, values },
     };
     await openAmendment(page, receipt);
 
@@ -665,7 +665,7 @@ test.describe("File Company Tax Return entry form", () => {
       kind: "company-tax-return",
       statusCode: "ACCEPT",
       jointFilingId: ORIGINAL_JOINT_FILING_ID,
-      formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values },
+      formRequest: { company: { companyNumber: "00000007", companyName: "Precision Code Ltd" }, values },
     };
     const accountsRequests = [];
     page.on("request", (request) => {
@@ -1083,7 +1083,7 @@ test.describe("File Company Tax Return entry form", () => {
     await openForm(page, [], submission);
     await typeLongForm(page);
     const values = await formValuesOnThePage(page);
-    const company = { companyNumber: "12345678", companyName: "Precision Code Ltd" };
+    const company = { companyNumber: "00000007", companyName: "Precision Code Ltd" };
     const base = { kind: "company-tax-return", statusCode: "ACCEPT", formRequest: { company, values } };
     const changedSecond = { ...SECOND_RETURN_BOXES, 705: 300, 440: 5000 };
     const amendment = longSubmission();
@@ -1124,7 +1124,7 @@ test.describe("File Company Tax Return entry form", () => {
         statusCode: "ACCEPT",
         longPeriod: { filingId, part: 1, parts: 2 },
         filed: { boxes: FIRST_RETURN_BOXES },
-        formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values: {} },
+        formRequest: { company: { companyNumber: "00000007", companyName: "Precision Code Ltd" }, values: {} },
       },
     };
     await serveRealSite(page, [], submission);
@@ -1658,7 +1658,7 @@ test.describe("File Company Tax Return entry form", () => {
     const { name, type, govTestScenario, expectedOutcome, ...requestBody } = cases.find((testCase) => testCase.name === caseName);
     const errors = [];
     const accounts = extractAndValidateAccountsParameters(
-      { body: JSON.stringify({ ...requestBody, companyNumber: "12345678", companyName: "Precision Code Ltd", ...overrides }) },
+      { body: JSON.stringify({ ...requestBody, companyNumber: "00000007", companyName: "Precision Code Ltd", ...overrides }) },
       errors,
     );
     expect(errors).toEqual([]);
@@ -1717,7 +1717,7 @@ test.describe("File Company Tax Return entry form", () => {
       .replace(/(id = "file-company-tax-return-with-accounts"[\s\S]*?environments = )\[[^\]]*\]/, '$1["prod"]');
     await page.route("**/submit.catalogue.toml", (route) => route.fulfill({ status: 200, contentType: "text/x-toml", body: catalogue }));
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
-    await page.locator("#companyNumber").fill("12345678");
+    await page.locator("#companyNumber").fill("00000007");
     await page.locator("#companyLookupBtn").click();
     await expect(page.locator("#formView")).toBeVisible();
     await expect(page.locator("#sendToHmrc")).toBeChecked();
@@ -1773,7 +1773,7 @@ test.describe("File Company Tax Return entry form", () => {
   const CLIENT = {
     clientId: "client-1",
     displayName: "Precision Code Ltd",
-    identifiers: { utr: "1234567890", companyNumber: "12345678" },
+    identifiers: { utr: "1234567890", companyNumber: "00000007" },
     archivedAt: null,
   };
 
@@ -1794,14 +1794,14 @@ test.describe("File Company Tax Return entry form", () => {
       clients: [CLIENT, { ...CLIENT, clientId: "client-2", displayName: "Archived Ltd", archivedAt: "2026-01-01" }],
     });
     await expect(page.getByText("Who is this return for?")).toBeVisible();
-    await expect(page.locator("#clientChoiceOptions label")).toHaveText(["My own company", "Precision Code Ltd (12345678)"]);
+    await expect(page.locator("#clientChoiceOptions label")).toHaveText(["My own company", "Precision Code Ltd (00000007)"]);
   });
 
   test("a client fills the company number and the UTR and files as the agent", async ({ page }) => {
     const previewRequests = [];
     await openPracticePage(page, { previewRequests });
     await page.locator("#clientChoice-client-1").check();
-    await expect(page.locator("#companyNumber")).toHaveValue("12345678");
+    await expect(page.locator("#companyNumber")).toHaveValue("00000007");
     await expect(page.locator("#companyNumber")).toHaveJSProperty("readOnly", true);
     await expect(page.locator("#practiceNameGroup")).toBeVisible();
     await page.locator("#practiceName").fill("Example Practice LLP");
@@ -1841,7 +1841,7 @@ test.describe("File Company Tax Return entry form", () => {
   });
 
   test("stops a client with no UTR and links to Practice clients", async ({ page }) => {
-    await openPracticePage(page, { clients: [{ ...CLIENT, identifiers: { utr: null, companyNumber: "12345678" } }] });
+    await openPracticePage(page, { clients: [{ ...CLIENT, identifiers: { utr: null, companyNumber: "00000007" } }] });
     await page.locator("#clientChoice-client-1").check();
     await expect(page.locator("#clientStop")).toContainText("Add the company's UTR to Precision Code Ltd on Practice clients");
     await expect(page.locator("#clientStop a")).toHaveAttribute("href", "../practice.html");

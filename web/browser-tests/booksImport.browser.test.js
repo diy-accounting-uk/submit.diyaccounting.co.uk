@@ -911,7 +911,7 @@ async function openAccountsPage(page, url, companyNumber, profile = {}) {
 
 test.describe("books import on the micro-entity accounts page", () => {
   test("fills the period, both balance sheets, the employees and the director from a dropped zip", async ({ page }) => {
-    await openAccountsPage(page, MICRO_URL, "12345678");
+    await openAccountsPage(page, MICRO_URL, "00000007");
     await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
 
     await expect(page.locator("#booksImportStatus")).toContainText(
@@ -943,7 +943,7 @@ test.describe("books import on the micro-entity accounts page", () => {
     await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
 
     await expect(page.locator("#booksImportStatus")).toContainText(
-      "precision-code.diya-gl.zip is for company 12345678; this form is for company 99999999. Nothing filled.",
+      "precision-code.diya-gl.zip is for company 00000007; this form is for company 99999999. Nothing filled.",
       { timeout: 60_000 },
     );
     await expect(page.locator("#currentFixedAssets")).toHaveValue("");
@@ -965,7 +965,7 @@ test.describe("books import on the micro-entity accounts page", () => {
 
 test.describe("books import on the small company accounts page", () => {
   test("fills the profit and loss account, the balance sheet, the fixed asset note, the employees and the directors", async ({ page }) => {
-    await openAccountsPage(page, SMALL_URL, "12345678");
+    await openAccountsPage(page, SMALL_URL, "00000007");
     await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
 
     await expect(page.locator("#booksImportStatus")).toContainText(
@@ -1007,7 +1007,7 @@ test.describe("books import of the small company prior year", () => {
       page,
     }) => {
       await page.setViewportSize({ width, height: 900 });
-      await openAccountsPage(page, SMALL_URL, "12345678", ESTABLISHED);
+      await openAccountsPage(page, SMALL_URL, "00000007", ESTABLISHED);
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
       const status = page.locator("#booksImportStatus");
       await expect(status).toContainText("The prior year's balance sheet is filled from the book's opening balances.", { timeout: 60_000 });
@@ -1026,7 +1026,7 @@ test.describe("books import of the small company prior year", () => {
 
     test(`the Welsh card says the prior year balance sheet is filled and names the fields to type, at ${width} px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await openAccountsPage(page, SMALL_URL_CY, "12345678", ESTABLISHED);
+      await openAccountsPage(page, SMALL_URL_CY, "00000007", ESTABLISHED);
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
       const status = page.locator("#booksImportStatus");
       await expect(status).toContainText("Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.", {
@@ -1043,7 +1043,7 @@ test.describe("books import of the small company prior year", () => {
   test("a figure an earlier fill left in a prior-year field the book gives nothing for is cleared, and the card names it", async ({
     page,
   }) => {
-    await openAccountsPage(page, SMALL_URL, "12345678", ESTABLISHED);
+    await openAccountsPage(page, SMALL_URL, "00000007", ESTABLISHED);
     await page.fill("#priorAccruals", "999");
     await page.fill("#priorTurnover", "123456");
     await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
@@ -1055,7 +1055,7 @@ test.describe("books import of the small company prior year", () => {
   });
 
   test("a company's first accounts fill no prior year, and the card says why", async ({ page }) => {
-    await openAccountsPage(page, SMALL_URL, "12345678", { dateOfCreation: "2025-04-01" });
+    await openAccountsPage(page, SMALL_URL, "00000007", { dateOfCreation: "2025-04-01" });
     await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
     const status = page.locator("#booksImportStatus");
     await expect(status).toContainText("These are the company's first accounts, so there is no prior year to fill.", { timeout: 60_000 });
@@ -1398,7 +1398,7 @@ async function expectRevisionKept(page, { originalDate, companyNumber }) {
 
 test.describe("books import of a Company book's package on the accounts forms", () => {
   test("a package zip fills the micro-entity form", async ({ page }) => {
-    await openAccountsPage(page, MICRO_URL, "12345678");
+    await openAccountsPage(page, MICRO_URL, "00000007");
     const { buffer, filename } = await packageZipOfFixtureBook("precision-code-ltd");
     await chooseFile(page, filename, buffer);
 
@@ -1408,7 +1408,7 @@ test.describe("books import of a Company book's package on the accounts forms", 
   });
 
   test("a package zip fills the small company form", async ({ page }) => {
-    await openAccountsPage(page, SMALL_URL, "12345678");
+    await openAccountsPage(page, SMALL_URL, "00000007");
     const { buffer, filename } = await packageZipOfFixtureBook("precision-code-ltd");
     await chooseFile(page, filename, buffer);
 
@@ -1422,7 +1422,7 @@ test.describe("books import of a Company book's package on the accounts forms", 
     ["small company", SMALL_URL],
   ]) {
     test(`one workbook of a Company book's package asks for the package zip on the ${form} form and fills nothing`, async ({ page }) => {
-      await openAccountsPage(page, url, "12345678");
+      await openAccountsPage(page, url, "00000007");
       const { buffer, filename } = await hubWorkbookOfFixtureBook("precision-code-ltd");
       await chooseFile(page, filename, buffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
@@ -1433,38 +1433,38 @@ test.describe("books import of a Company book's package on the accounts forms", 
 });
 
 test.describe("books import on an accounts form that revises filed accounts", () => {
-  const microFiled = () => builtAccountsDocument("micro-entity-accounts", { companyNumber: "12345678" }).toString("utf8");
-  const smallFiled = () => builtAccountsDocument("small-company-accounts-full", { companyNumber: "12345678" }).toString("utf8");
+  const microFiled = () => builtAccountsDocument("micro-entity-accounts", { companyNumber: "00000007" }).toString("utf8");
+  const smallFiled = () => builtAccountsDocument("small-company-accounts-full", { companyNumber: "00000007" }).toString("utf8");
 
   for (const [form, url, filed] of [
     ["micro-entity", MICRO_URL, microFiled],
     ["small company", SMALL_URL, smallFiled],
   ]) {
     test(`a corrected book replaces the figures and keeps the revision on the ${form} form`, async ({ page }) => {
-      await openAmendPage(page, url, filed(), "12345678");
+      await openAmendPage(page, url, filed(), "00000007");
       const originalDate = await page.locator("#revisionOriginalDate").inputValue();
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
 
       await expect(page.locator("#booksImportStatus")).toContainText("from precision-code.diya-gl.zip", { timeout: 60_000 });
       await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
-      await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
       await screenshotAtBothWidths(page, `books-amend-book-dropped-${form.replace(" ", "-")}`);
     });
 
     test(`a corrected package zip replaces the figures and keeps the revision on the ${form} form`, async ({ page }) => {
-      await openAmendPage(page, url, filed(), "12345678");
+      await openAmendPage(page, url, filed(), "00000007");
       const originalDate = await page.locator("#revisionOriginalDate").inputValue();
       const { buffer, filename } = await packageZipOfFixtureBook("precision-code-ltd");
       await chooseFile(page, filename, buffer);
 
       await expect(page.locator("#booksImportStatus")).toContainText("for the period 2025-04-01 to 2026-03-31.", { timeout: 120_000 });
       await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
-      await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
       await screenshotAtBothWidths(page, `books-amend-package-zip-${form.replace(" ", "-")}`);
     });
 
     test(`one workbook of a Company book's package fills nothing and keeps the revision on the ${form} form`, async ({ page }) => {
-      await openAmendPage(page, url, filed(), "12345678");
+      await openAmendPage(page, url, filed(), "00000007");
       const originalDate = await page.locator("#revisionOriginalDate").inputValue();
       const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();
       const { buffer, filename } = await hubWorkbookOfFixtureBook("precision-code-ltd");
@@ -1472,7 +1472,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
 
       await expect(page.locator("#booksImportStatus")).toContainText("upload the package zip", { timeout: 120_000 });
       await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
-      await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
       await screenshotAtBothWidths(page, `books-amend-one-workbook-${form.replace(" ", "-")}`);
     });
   }
@@ -1481,16 +1481,16 @@ test.describe("books import on an accounts form that revises filed accounts", ()
     ["micro-entity", MICRO_URL, "micro-entity-accounts"],
     ["small company", SMALL_URL, "small-company-accounts-full"],
   ]) {
-    const earlierYear = { companyNumber: "12345678", periodStart: "2024-04-01", periodEnd: "2025-03-31" };
+    const earlierYear = { companyNumber: "00000007", periodStart: "2024-04-01", periodEnd: "2025-03-31" };
 
     test(`keeps the period of the accounts being revised on the ${form} form`, async ({ page }) => {
-      await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"), "12345678");
+      await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "00000007" }).toString("utf8"), "00000007");
       await expect(page.locator("#periodStart")).toHaveJSProperty("readOnly", true);
       await expect(page.locator("#periodEnd")).toHaveJSProperty("readOnly", true);
     });
 
     test(`a book for another year fills nothing and keeps the revision on the ${form} form`, async ({ page }) => {
-      await openAmendPage(page, url, builtAccountsDocument(caseName, earlierYear).toString("utf8"), "12345678");
+      await openAmendPage(page, url, builtAccountsDocument(caseName, earlierYear).toString("utf8"), "00000007");
       const originalDate = await page.locator("#revisionOriginalDate").inputValue();
       const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
@@ -1501,7 +1501,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       );
       await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
       await expect(page.locator("#periodEnd")).toHaveValue("2025-03-31");
-      await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
       await screenshotAtBothWidths(page, `books-amend-another-period-${form.replace(" ", "-")}`);
     });
 
@@ -1509,8 +1509,8 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await openAmendPage(
         page,
         url.replace("/companies-house/", "/cy/companies-house/"),
-        builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"),
-        "12345678",
+        builtAccountsDocument(caseName, { companyNumber: "00000007" }).toString("utf8"),
+        "00000007",
       );
       await chooseFile(page, "earlier.xhtml", builtAccountsDocument(caseName, earlierYear), "application/xhtml+xml");
 
@@ -1521,7 +1521,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
     });
 
     test(`an iXBRL document for another year fills nothing on the ${form} form`, async ({ page }) => {
-      await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"), "12345678");
+      await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "00000007" }).toString("utf8"), "00000007");
       const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();
       await chooseFile(page, "earlier.xhtml", builtAccountsDocument(caseName, earlierYear), "application/xhtml+xml");
 
@@ -1534,27 +1534,27 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   }
 
   test("a corrected iXBRL document replaces the figures and keeps the revision on the micro-entity form", async ({ page }) => {
-    await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
+    await openAmendPage(page, MICRO_URL, microFiled(), "00000007");
     const originalDate = await page.locator("#revisionOriginalDate").inputValue();
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("4732");
-    const corrected = builtAccountsDocument("micro-entity-accounts-revised", { companyNumber: "12345678", revision: undefined });
+    const corrected = builtAccountsDocument("micro-entity-accounts-revised", { companyNumber: "00000007", revision: undefined });
     await chooseFile(page, "corrected.xhtml", corrected, "application/xhtml+xml");
 
     await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("4538");
-    await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
     await screenshotAtBothWidths(page, "books-amend-ixbrl-micro-entity");
   });
 
   test("a corrected iXBRL document replaces the figures and keeps the revision on the small company form", async ({ page }) => {
-    await openAmendPage(page, SMALL_URL, smallFiled(), "12345678");
+    await openAmendPage(page, SMALL_URL, smallFiled(), "00000007");
     const originalDate = await page.locator("#revisionOriginalDate").inputValue();
-    const corrected = builtAccountsDocument("small-company-accounts-full-revised", { companyNumber: "12345678", revision: undefined });
+    const corrected = builtAccountsDocument("small-company-accounts-full-revised", { companyNumber: "00000007", revision: undefined });
     await chooseFile(page, "corrected.xhtml", corrected, "application/xhtml+xml");
 
     await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("4538");
-    await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
     await screenshotAtBothWidths(page, "books-amend-ixbrl-small-company");
   });
 
@@ -1564,8 +1564,8 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   ]) {
     test(`the status of a corrected iXBRL document stays within a phone screen on the ${form} form`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 900 });
-      await openAmendPage(page, url, filed(), "12345678");
-      const corrected = builtAccountsDocument(correctedCase, { companyNumber: "12345678", revision: undefined });
+      await openAmendPage(page, url, filed(), "00000007");
+      const corrected = builtAccountsDocument(correctedCase, { companyNumber: "00000007", revision: undefined });
       await chooseFile(page, "corrected.xhtml", corrected, "application/xhtml+xml");
       await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
       expect(await pageScrollsSideways(page)).toBe(false);
@@ -1575,8 +1575,8 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   test("a dropped iXBRL document leaves out the statements the form makes and counts the other facts in a closed list", async ({
     page,
   }) => {
-    await openAmendPage(page, SMALL_URL, smallFiled(), "12345678");
-    const document = buildSmallCompanyAccounts({ ...SMALL_COMPANY_NOTES_CASE_INPUT, companyNumber: "12345678" });
+    await openAmendPage(page, SMALL_URL, smallFiled(), "00000007");
+    const document = buildSmallCompanyAccounts({ ...SMALL_COMPANY_NOTES_CASE_INPUT, companyNumber: "00000007" });
     await chooseFile(page, "notes.xhtml", Buffer.from(document, "utf8"), "application/xhtml+xml");
 
     const status = page.locator("#booksImportStatus");
@@ -1593,8 +1593,8 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   });
 
   test("a dropped iXBRL document whose other facts the form all places shows no list", async ({ page }) => {
-    await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
-    const corrected = builtAccountsDocument("micro-entity-accounts-revised", { companyNumber: "12345678", revision: undefined });
+    await openAmendPage(page, MICRO_URL, microFiled(), "00000007");
+    const corrected = builtAccountsDocument("micro-entity-accounts-revised", { companyNumber: "00000007", revision: undefined });
     await chooseFile(page, "corrected.xhtml", corrected, "application/xhtml+xml");
     await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).not.toContainText("has no field for");
@@ -1602,24 +1602,24 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   });
 
   test("a book for another company fills nothing and keeps the revision", async ({ page }) => {
-    await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
+    await openAmendPage(page, MICRO_URL, microFiled(), "00000007");
     const originalDate = await page.locator("#revisionOriginalDate").inputValue();
     const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();
     await chooseFile(page, "dormant.diya-gl.zip", await zippedFixtureBook("dormant-ltd"));
 
-    await expect(page.locator("#booksImportStatus")).toContainText("this form is for company 12345678. Nothing filled.", {
+    await expect(page.locator("#booksImportStatus")).toContainText("this form is for company 00000007. Nothing filled.", {
       timeout: 60_000,
     });
     await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
-    await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    await expectRevisionKept(page, { originalDate, companyNumber: "00000007" });
     await screenshotAtBothWidths(page, "books-amend-another-company-micro-entity");
   });
 
   test("a summary book read from the filed document fills the filed figures", async ({ page }) => {
-    const filed = builtAccountsDocument("micro-entity-accounts-dormant", { companyNumber: "12345678" }).toString("utf8");
+    const filed = builtAccountsDocument("micro-entity-accounts-dormant", { companyNumber: "00000007" }).toString("utf8");
     const summary = await readBookSource(Buffer.from(filed, "utf8"), "accounts.xhtml");
     const summaryZip = await writeDiyaGlZip({ book: summary.book, lines: summary.lines });
-    await openAmendPage(page, MICRO_URL, filed, "12345678");
+    await openAmendPage(page, MICRO_URL, filed, "00000007");
     const filedFigures = await page.evaluate(() =>
       ["currentCurrentAssets", "currentCalledUpShareCapital", "currentProfitAndLossAccount", "currentCapitalAndReserves"].map(
         (id) => document.getElementById(id).value,
@@ -1650,7 +1650,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   for (const width of [1280, 390]) {
     test(`shows the books card above the revision section (${width})`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
+      await openAmendPage(page, MICRO_URL, microFiled(), "00000007");
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
       await expect(page.locator("#booksImportStatus")).toContainText("from precision-code.diya-gl.zip", { timeout: 60_000 });
       const directory = path.join(process.cwd(), "target/browser-test-results/revised-accounts");

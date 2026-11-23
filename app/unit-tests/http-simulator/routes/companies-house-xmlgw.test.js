@@ -726,7 +726,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       (await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(companyDataRequestEnvelope({ companyNumber }))).text;
 
     test("answers each test company's statement of capital, one capital for each currency", async () => {
-      for (const companyNumber of ["00000001", "SC000000", "12345678", FIXTURE_COMPANY_NUMBER]) {
+      for (const companyNumber of ["00000001", "SC000000", "00000007", FIXTURE_COMPANY_NUMBER]) {
         const capitals = parseCompanyDataResponse(await companyData(companyNumber)).statementsOfCapital;
         expect(
           capitals.map((capital) => capital.shareCurrency),

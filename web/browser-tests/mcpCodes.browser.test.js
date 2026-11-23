@@ -47,7 +47,7 @@ async function setupRoutes(page, { entry, putStatus = 200, putBody = { state: "f
 
 test.describe("Companies House codes page", () => {
   test("is a page of the site, with the site header and footer", async ({ page }) => {
-    await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [] } });
+    await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("header nav")).toBeVisible();
@@ -57,7 +57,7 @@ test.describe("Companies House codes page", () => {
 
   test("a single company reads as one filing and shows when the link ends", async ({ page }) => {
     await setupRoutes(page, {
-      entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [], expiresAt: "2026-10-28T14:35:00.000Z" },
+      entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [], expiresAt: "2026-10-28T14:35:00.000Z" },
     });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
@@ -67,10 +67,10 @@ test.describe("Companies House codes page", () => {
   });
 
   test("asks for the company code only, then tells the user to go back to the chat", async ({ page }) => {
-    const puts = await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [] } });
+    const puts = await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("#codesIntro")).toContainText("12345678");
+    await expect(page.locator("#codesIntro")).toContainText("00000007");
     await expect(page.locator("#personalCodeFields input")).toHaveCount(0);
     await expect(page.locator("#companyAuthCode")).toHaveAttribute("type", "password");
     await page.screenshot({ path: "target/mcp-codes-screenshots/mcp-codes-accounts.png" });
@@ -85,7 +85,7 @@ test.describe("Companies House codes page", () => {
 
   test("asks for one personal code for each director, in order", async ({ page }) => {
     const puts = await setupRoutes(page, {
-      entry: { state: "pending", kind: "confirmation-statement", companyNumber: "12345678", directors: DIRECTORS },
+      entry: { state: "pending", kind: "confirmation-statement", companyNumber: "00000007", directors: DIRECTORS },
     });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
@@ -145,7 +145,7 @@ test.describe("Companies House codes page", () => {
 
   test("shows the reason and lets the user try again when the codes are refused", async ({ page }) => {
     await setupRoutes(page, {
-      entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [] },
+      entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [] },
       putStatus: 400,
       putBody: { message: "Invalid companyAuthCode - must be 6 to 8 characters" },
     });
@@ -168,7 +168,7 @@ test.describe("Companies House codes page", () => {
   });
 
   test("shows the saved state, not the form, when the codes are already in", async ({ page }) => {
-    await setupRoutes(page, { entry: { state: "filled", kind: "accounts", companyNumber: "12345678", directors: [] } });
+    await setupRoutes(page, { entry: { state: "filled", kind: "accounts", companyNumber: "00000007", directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("#codesDoneView")).toBeVisible();

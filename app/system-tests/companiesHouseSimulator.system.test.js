@@ -135,7 +135,7 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("filing history answers five pages of a longer history and says it is truncated", async () => {
-    const response = await companiesHouseFilingHistoryGetHandler(companyEvent("12345678"));
+    const response = await companiesHouseFilingHistoryGetHandler(companyEvent("00000007"));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.totalCount).toBe(621);
@@ -218,8 +218,8 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("last accounts answers none for a company with no accounts on the register", async () => {
-    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("12345678")));
-    expect(body).toEqual({ companyNumber: "12345678", outcome: "none" });
+    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("00000007")));
+    expect(body).toEqual({ companyNumber: "00000007", outcome: "none" });
   });
 
   it("last accounts answers a JSON 404 for an unknown company", async () => {

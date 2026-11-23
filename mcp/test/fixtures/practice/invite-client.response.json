@@ -3,7 +3,7 @@
     "hashedSub": "3f9c2e1a7b4d6f80c5e2a9b1d4f7c3a08e5b6d9f2c1a4b7e0d3f6c9a2b5e8d1f",
     "clientId": "01J8X6QZ8VDYK4N7R2WYVEXAMP",
     "displayName": "Brickwork Pro Ltd",
-    "identifiers": { "vrn": "983238295", "nino": null, "utr": null, "companyNumber": "12345678" },
+    "identifiers": { "vrn": "983238295", "nino": null, "utr": null, "companyNumber": "00000007" },
     "authorisations": {
       "MTD-VAT": {
         "status": "pending",

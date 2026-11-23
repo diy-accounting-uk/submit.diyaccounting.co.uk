@@ -108,13 +108,13 @@ const COMPANIES = {
     profile: profile("00000003", "EXAMPLE TRADING LIMITED"),
     lastAccounts: { outcome: "paper", madeUpDate: "2098-03-31", paperFiled: true },
   },
-  "12345678": { profile: profile("12345678", "PRECISION CODE LTD"), lastAccounts: { outcome: "none" } },
+  "00000007": { profile: profile("00000007", "PRECISION CODE LTD"), lastAccounts: { outcome: "none" } },
   "00000006": {
     profile: profile("00000006", "RESERVES EXAMPLE LIMITED", "2098-05-01"),
     lastAccounts: { outcome: "mapped", accounts: RESERVES_ACCOUNTS, madeUpDate: "2098-04-30" },
   },
-  "00000007": {
-    profile: profile("00000007", "MISSED YEAR LIMITED", "2099-05-01"),
+  "00000005": {
+    profile: profile("00000005", "MISSED YEAR LIMITED", "2099-05-01"),
     lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: "2098-04-30" },
   },
 };
@@ -251,7 +251,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
 
   test("a company with no accounts opens the form empty with a note that says why", async ({ page }) => {
     await serveSite(page);
-    await lookUp(page, "fileSmallCompanyAccounts", "12345678");
+    await lookUp(page, "fileSmallCompanyAccounts", "00000007");
     await expect(page.locator("#priorYearNote")).toHaveText(
       "Companies House holds no accounts for this company, so the prior year is left empty.",
     );
@@ -262,11 +262,11 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     page,
   }) => {
     await serveSite(page);
-    await lookUp(page, "fileMicroEntityAccounts", "00000007");
+    await lookUp(page, "fileMicroEntityAccounts", "00000005");
     await expect(page.locator("#priorYearNote")).toContainText(
       "The last accounts filed were made up to 30 April 2098, and this period starts on 1 May 2099, so the year between is not on the register and the prior year is left empty. See the company's filing history.",
     );
-    await expect(page.locator("#priorYearNote a")).toHaveAttribute("href", "/companies-house/company/00000007/filing-history");
+    await expect(page.locator("#priorYearNote a")).toHaveAttribute("href", "/companies-house/company/00000005/filing-history");
     await expect(page.locator("#priorFixedAssets")).toHaveValue("");
   });
 

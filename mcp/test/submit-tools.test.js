@@ -99,7 +99,7 @@ const BALANCE_SHEET_YEAR = {
 };
 
 const ACCOUNTS_PARAMS = {
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   companyName: "Brickwork Pro Ltd",
   periodStart: "2025-01-01",
   periodEnd: "2025-12-31",
@@ -115,7 +115,7 @@ const ACCOUNTS_PARAMS = {
 };
 
 const CONFIRMATION_STATEMENT_PARAMS = {
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   companyName: "Brickwork Pro Ltd",
   dateSigned: "2026-03-01",
   reviewDate: "2026-03-01",
@@ -1220,7 +1220,7 @@ describe("submit-tools", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await getConfirmationStatementData(session, {
-        companyNumber: "12345678",
+        companyNumber: "00000007",
         codesEntryId: "entry-1",
         madeUpDate: "2026-03-01",
       });
@@ -1228,7 +1228,7 @@ describe("submit-tools", () => {
       expect(result).toEqual(CONFIRMATION_STATEMENT_DATA_RESPONSE);
       expect(result.paymentPeriodPaid).toBe(false);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/company/12345678/filing-data");
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/company/00000007/filing-data");
       expect(init.method).toBe("POST");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
       const body = JSON.parse(init.body);
@@ -1244,13 +1244,13 @@ describe("submit-tools", () => {
     });
 
     it("requires codesEntryId", async () => {
-      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", madeUpDate: "2026-03-01" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "00000007", madeUpDate: "2026-03-01" })).rejects.toThrow(
         "codesEntryId",
       );
     });
 
     it("requires madeUpDate", async () => {
-      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", codesEntryId: "entry-1" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "00000007", codesEntryId: "entry-1" })).rejects.toThrow(
         "madeUpDate",
       );
     });
@@ -1260,7 +1260,7 @@ describe("submit-tools", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       await getConfirmationStatementData(session, {
-        companyNumber: "12345678",
+        companyNumber: "00000007",
         codesEntryId: "entry-1",
         madeUpDate: "2026-03-01",
         companyType: "plc",
@@ -1408,7 +1408,7 @@ describe("submit-tools", () => {
 
   describe("small company accounts", () => {
     const SMALL_PARAMS = {
-      companyNumber: "12345678",
+      companyNumber: "00000007",
       companyName: "Brick Ltd",
       periodStart: "2025-04-01",
       periodEnd: "2026-03-31",
@@ -1498,14 +1498,14 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, answer));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await requestCompaniesHouseCodes(session, { kind: "accounts", companyNumber: "12345678" });
+      const result = await requestCompaniesHouseCodes(session, { kind: "accounts", companyNumber: "00000007" });
 
       expect(result).toEqual(answer);
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/mcp/codes-entries");
       expect(init.method).toBe("POST");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
-      expect(JSON.parse(init.body)).toEqual({ kind: "accounts", companyNumber: "12345678" });
+      expect(JSON.parse(init.body)).toEqual({ kind: "accounts", companyNumber: "00000007" });
     });
 
     it("sends the directors for a confirmation statement and requires them", async () => {
@@ -1513,10 +1513,10 @@ describe("submit-tools", () => {
       vi.stubGlobal("fetch", mockFetch);
       const directors = [{ forename: "Jo", surname: "Brick" }];
 
-      await requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "12345678", directors });
+      await requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "00000007", directors });
 
       expect(JSON.parse(mockFetch.mock.calls[0][1].body).directors).toEqual(directors);
-      await expect(requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "12345678" })).rejects.toThrow(
+      await expect(requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "00000007" })).rejects.toThrow(
         "directors",
       );
     });
@@ -1552,7 +1552,7 @@ describe("submit-tools", () => {
     });
 
     it("refuses a kind it does not know", async () => {
-      await expect(requestCompaniesHouseCodes(session, { kind: "vat", companyNumber: "12345678" })).rejects.toThrow("kind");
+      await expect(requestCompaniesHouseCodes(session, { kind: "vat", companyNumber: "00000007" })).rejects.toThrow("kind");
     });
   });
 

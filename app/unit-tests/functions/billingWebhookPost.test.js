@@ -198,7 +198,7 @@ function buildActivityChargeSessionPayload(overrides = {}) {
         metadata: {
           hashedSub: "hashed_sub_value",
           activityId: "file-confirmation-statement",
-          subjectKey: "12345678#2026-01-01",
+          subjectKey: "00000007#2026-01-01",
         },
         ...overrides,
       },
@@ -1988,7 +1988,7 @@ describe("billingWebhookPost", () => {
     expect(mockPutActivityChargeIfAbsent).toHaveBeenCalledTimes(1);
     const [hashedSub, chargeKey, charge] = mockPutActivityChargeIfAbsent.mock.calls[0];
     expect(hashedSub).toBe("hashed_sub_value");
-    expect(chargeKey).toBe("charge#file-confirmation-statement#12345678#2026-01-01");
+    expect(chargeKey).toBe("charge#file-confirmation-statement#00000007#2026-01-01");
     expect(charge.status).toBe("paid");
     expect(charge.stripeSessionId).toBe("cs_test_activity_charge");
     expect(charge.stripePaymentIntentId).toBe("pi_test_activity_charge");

@@ -191,8 +191,8 @@ export const TEST_COMPANY_DATA = {
       },
     ],
   }),
-  "12345678": testCompanyData({
-    companyNumber: "12345678",
+  "00000007": testCompanyData({
+    companyNumber: "00000007",
     companyName: "PRECISION CODE LTD",
     registeredOfficeAddress: { premise: "12", street: "Example Street", postTown: "Manchester", country: "GB-ENG", postcode: "M1 1AA" },
     registeredEmailAddress: "office@precision-code.example",
