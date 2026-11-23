@@ -807,7 +807,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
 
     test("files as the agent with the client's UTR and company number, not the body's", async () => {
-      const response = await hmrcCtReturnPostHandler(clientEvent({ utr: "9999999999", companyNumber: "11111111" }));
+      const response = await hmrcCtReturnPostHandler(clientEvent({ utr: "9999999999", companyNumber: "00000011" }));
       expect(response.statusCode).toBe(201);
       const [, xml] = mockPostToTransactionEngine.mock.calls[0];
       expect(xml).toContain(`<Key Type="UTR">${CLIENT_UTR}</Key>`);

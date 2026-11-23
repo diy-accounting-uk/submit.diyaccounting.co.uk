@@ -790,7 +790,7 @@ describe("submit-tools", () => {
           stored: {
             [OTHER_NAME]: {
               statusCode: "ACCEPT",
-              companyNumber: "09999999",
+              companyNumber: "00000009",
               kind: "companies-house-accounts",
               filedDocument: FILLETED_DOCUMENT,
             },
@@ -804,7 +804,7 @@ describe("submit-tools", () => {
 
       expect(own.receipts.map((receipt) => receipt.name)).toEqual([REVISED_NAME, DORMANT_NAME, SMALL_NAME, JOINT_NAME]);
       expect(other.receipts.map((receipt) => receipt.name)).toEqual([OTHER_NAME]);
-      expect(other.receipts[0].companyNumber).toBe("09999999");
+      expect(other.receipts[0].companyNumber).toBe("00000009");
       expect(other.rejectedFilings).toEqual([]);
       const ownNames = [REVISED_NAME, DORMANT_NAME, SMALL_NAME, JOINT_NAME].map(encodeURIComponent);
       for (const [url, init] of fetchMock.mock.calls) {

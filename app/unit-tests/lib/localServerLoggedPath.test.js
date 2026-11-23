@@ -59,7 +59,7 @@ describe("the path the local server logs", () => {
       const { app } = await import("@app/bin/server.js");
       await request(app).get("/api/v1/practice/clients/client-7q2m?vrn=176493528&from=2026-01-01");
       await request(app).get("/api/v1/nowhere/SC123456?q=Jane");
-      await request(app).get("/cy/companies-house/company/SC765432/officers/oFfIcEr9Id");
+      await request(app).get("/cy/companies-house/company/SC000001/officers/oFfIcEr9Id");
       await request(app).get("/receipts/NI765432C-2026A1.html");
     } finally {
       write.mockRestore();
@@ -73,7 +73,7 @@ describe("the path the local server logs", () => {
     expect(requestLines.join("\n")).toContain("HTTP GET /api/{unmatched}?q={q}");
     expect(requestLines.join("\n")).toContain("HTTP GET /cy/companies-house/company/{companyView} 200");
     expect(requestLines.join("\n")).toContain("HTTP GET /{unmatched} 404");
-    for (const value of ["client-7q2m", "176493528", "2026-01-01", "SC123456", "Jane", "SC765432", "oFfIcEr9Id", "NI765432C"])
+    for (const value of ["client-7q2m", "176493528", "2026-01-01", "SC123456", "Jane", "SC000001", "oFfIcEr9Id", "NI765432C"])
       expect(requestLines.join("\n")).not.toContain(value);
   }, 30000);
 });

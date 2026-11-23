@@ -109,8 +109,8 @@ const COMPANIES = {
     lastAccounts: { outcome: "paper", madeUpDate: "2098-03-31", paperFiled: true },
   },
   "00000007": { profile: profile("00000007", "PRECISION CODE LTD"), lastAccounts: { outcome: "none" } },
-  "00000006": {
-    profile: profile("00000006", "RESERVES EXAMPLE LIMITED", "2098-05-01"),
+  "00000008": {
+    profile: profile("00000008", "RESERVES EXAMPLE LIMITED", "2098-05-01"),
     lastAccounts: { outcome: "mapped", accounts: RESERVES_ACCOUNTS, madeUpDate: "2098-04-30" },
   },
   "00000005": {
@@ -274,7 +274,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     page,
   }) => {
     await serveSite(page);
-    await lookUp(page, "fileMicroEntityAccounts", "00000006");
+    await lookUp(page, "fileMicroEntityAccounts", "00000008");
     await expect(page.locator("#priorYearNote")).toContainText(
       "Those accounts hold capital and reserves of £10,000, but called up share capital and the profit and loss account add up to £8,000: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
     );

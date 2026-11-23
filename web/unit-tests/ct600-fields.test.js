@@ -653,7 +653,7 @@ describe("a micro-entity's accounts", () => {
 });
 
 describe("a period of account longer than 12 months", () => {
-  const company = { companyName: "Long Period Example Ltd", companyNumber: "09999993" };
+  const company = { companyName: "Long Period Example Ltd", companyNumber: "00000010" };
 
   // The worked example: 1 January 2025 to 31 March 2026, 455 days, with a loan in the second accounting period.
   function longValues(extra = {}) {

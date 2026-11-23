@@ -110,7 +110,7 @@ test.describe("Companies House codes page", () => {
         clients: [
           { clientId: "client-a", displayName: "Alpha Ltd", companyNumber: "01234567" },
           { clientId: "client-b", displayName: "Beta Ltd" },
-          { clientId: "client-c", displayName: "Gamma Ltd", companyNumber: "SC765432" },
+          { clientId: "client-c", displayName: "Gamma Ltd", companyNumber: "SC000001" },
         ],
       },
     });
@@ -122,7 +122,7 @@ test.describe("Companies House codes page", () => {
     await expect(page.locator("#clientCodeFields label")).toHaveText([
       "Company authentication code for Alpha Ltd (01234567)",
       "Company authentication code for Beta Ltd",
-      "Company authentication code for Gamma Ltd (SC765432)",
+      "Company authentication code for Gamma Ltd (SC000001)",
     ]);
     await page.screenshot({ path: "target/mcp-codes-screenshots/mcp-codes-batch.png" });
 

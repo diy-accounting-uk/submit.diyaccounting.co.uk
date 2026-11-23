@@ -99,7 +99,7 @@ describe("preview features against the environment gate", () => {
       "/api/v1/companies-house/accounts/render",
       "/api/v1/companies-house/confirmation-statement",
       "/api/v1/companies-house/psc-verification-statement",
-      "/api/v1/companies-house/company/00000006/filing-data",
+      "/api/v1/companies-house/company/00000008/filing-data",
     ]) {
       process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
       expect(previewRunsAgainstSandbox(event, path), path).toBe(true);
@@ -112,7 +112,7 @@ describe("preview features against the environment gate", () => {
     const event = practiceEvent({ "x-preview-features": "on" });
     process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
 
-    for (const path of ["/api/v1/companies-house/transaction", "/api/v1/companies-house/company/00000006/registered-office-address"]) {
+    for (const path of ["/api/v1/companies-house/transaction", "/api/v1/companies-house/company/00000008/registered-office-address"]) {
       process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api-sandbox.company-information.service.gov.uk";
       expect(previewRunsAgainstSandbox(event, path), path).toBe(true);
       process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";

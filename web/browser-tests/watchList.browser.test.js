@@ -189,7 +189,7 @@ test.describe("Company watch list", () => {
 
     test(`a company Companies House no longer finds says it is not on the register at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await serveSite(page, { watchedCompanies: ["00000001", "09999999"] });
+      await serveSite(page, { watchedCompanies: ["00000001", "00000009"] });
       await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
       await expect(page.locator("#watchListTable tbody tr").nth(1)).toContainText("Not on the register", { timeout: 15000 });
       await shoot(page, "not-on-register");

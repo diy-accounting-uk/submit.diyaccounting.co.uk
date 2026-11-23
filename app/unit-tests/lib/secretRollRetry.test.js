@@ -105,7 +105,7 @@ describe("a secret rolled while a container is warm", () => {
       mockSendJson.mockResolvedValueOnce({ ok: false, status: 401, data: {}, headers: {} });
       mockSendJson.mockResolvedValueOnce({ ok: true, status: 200, data: { a: 1 }, headers: {} });
 
-      const result = await companiesHouseHttpGet("/company/00000006");
+      const result = await companiesHouseHttpGet("/company/00000008");
 
       expect(result.status).toBe(200);
       expect(mockSendJson).toHaveBeenCalledTimes(2);
@@ -118,7 +118,7 @@ describe("a secret rolled while a container is warm", () => {
       roll("arn:ch-key", "same-key");
       mockSendJson.mockResolvedValue({ ok: false, status: 401, data: {}, headers: {} });
 
-      const result = await companiesHouseHttpGet("/company/00000006");
+      const result = await companiesHouseHttpGet("/company/00000008");
 
       expect(result.status).toBe(401);
       expect(mockSendJson).toHaveBeenCalledTimes(1);
@@ -128,7 +128,7 @@ describe("a secret rolled while a container is warm", () => {
       roll("arn:ch-key", "old-key", "new-key");
       mockSendJson.mockResolvedValue({ ok: false, status: 401, data: {}, headers: {} });
 
-      const result = await companiesHouseHttpGet("/company/00000006");
+      const result = await companiesHouseHttpGet("/company/00000008");
 
       expect(result.status).toBe(401);
       expect(mockSendJson).toHaveBeenCalledTimes(2);
@@ -279,7 +279,7 @@ describe("a secret rolled while a container is warm", () => {
       roll("arn:presenter-id", "id-old", "id-new");
       roll("arn:presenter-code", "code-old", "code-new");
       const credentials = await resolvePresenterCredentials();
-      const xml = buildCompanyDataRequest({ ...credentials, companyNumber: "00000006", transactionId: "1", gatewayTest: true });
+      const xml = buildCompanyDataRequest({ ...credentials, companyNumber: "00000008", transactionId: "1", gatewayTest: true });
       mockSendXml.mockResolvedValueOnce({ ok: true, status: 200, data: authorisationFailure });
       mockSendXml.mockResolvedValueOnce({ ok: true, status: 200, data: accepted });
 
@@ -300,7 +300,7 @@ describe("a secret rolled while a container is warm", () => {
       const xml = buildCompanyDataRequest({
         presenterId: "someone-elses-id",
         presenterCode: "someone-elses-code",
-        companyNumber: "00000006",
+        companyNumber: "00000008",
         transactionId: "1",
         gatewayTest: true,
       });
@@ -315,7 +315,7 @@ describe("a secret rolled while a container is warm", () => {
       roll("arn:presenter-id", "id-old");
       roll("arn:presenter-code", "code-old");
       const credentials = await resolvePresenterCredentials();
-      const xml = buildCompanyDataRequest({ ...credentials, companyNumber: "00000006", transactionId: "1", gatewayTest: true });
+      const xml = buildCompanyDataRequest({ ...credentials, companyNumber: "00000008", transactionId: "1", gatewayTest: true });
       mockSendXml.mockResolvedValue({ ok: true, status: 200, data: authorisationFailure });
 
       await postToGateway(xml);

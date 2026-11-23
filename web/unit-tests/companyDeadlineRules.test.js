@@ -49,7 +49,7 @@ describe("days left", () => {
 
 describe("the request", () => {
   test("a number of 8 characters, or fewer digits, is a number lookup", () => {
-    expect(isCompanyNumber("00000006")).toBe(true);
+    expect(isCompanyNumber("00000008")).toBe(true);
     expect(isCompanyNumber("SC123456")).toBe(true);
     expect(isCompanyNumber("6")).toBe(true);
     expect(lookupUrl(" SC123456 ")).toBe("/api/v1/public/company-deadlines?number=SC123456");
@@ -90,7 +90,7 @@ describe("each API error", () => {
   const answer = (status, body = {}) => vi.fn().mockResolvedValue({ ok: status < 400, status, json: () => Promise.resolve(body) });
 
   test("resolves to the body on 200", async () => {
-    await expect(fetchLookup("00000006", answer(200, { companyName: "X" }))).resolves.toEqual({ companyName: "X" });
+    await expect(fetchLookup("00000008", answer(200, { companyName: "X" }))).resolves.toEqual({ companyName: "X" });
   });
 
   test.each([
@@ -100,7 +100,7 @@ describe("each API error", () => {
     [502, "did not answer"],
     [500, "did not answer"],
   ])("rejects %s with its words", async (status, words) => {
-    const failure = await fetchLookup("00000006", answer(status)).catch((error) => error);
+    const failure = await fetchLookup("00000008", answer(status)).catch((error) => error);
     expect(failure).toBeInstanceOf(LookupError);
     expect(failure.status).toBe(status);
     expect(failure.message).toContain(words);
@@ -108,13 +108,13 @@ describe("each API error", () => {
   });
 
   test("rejects a network failure as status 0", async () => {
-    const failure = await fetchLookup("00000006", vi.fn().mockRejectedValue(new TypeError("offline"))).catch((error) => error);
+    const failure = await fetchLookup("00000008", vi.fn().mockRejectedValue(new TypeError("offline"))).catch((error) => error);
     expect(failure.status).toBe(0);
   });
 
   test("rejects an answer that is not JSON", async () => {
     const notJson = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.reject(new SyntaxError("<")) });
-    await expect(fetchLookup("00000006", notJson)).rejects.toMatchObject({ status: 502 });
+    await expect(fetchLookup("00000008", notJson)).rejects.toMatchObject({ status: 502 });
   });
 });
 

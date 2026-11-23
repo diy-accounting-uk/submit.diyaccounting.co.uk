@@ -55,7 +55,7 @@ describe("extractAndValidateCtReturnParameters", () => {
     const agent = { practiceName: "Example Practice LLP", authorisationConfirmed: true };
 
     test("takes the UTR and company number from the client row and builds the agent", () => {
-      const { request, errors } = extract({ utr: "9999999999", companyNumber: "11111111", agent }, { client });
+      const { request, errors } = extract({ utr: "9999999999", companyNumber: "00000011", agent }, { client });
       expect(errors).toEqual([]);
       expect(request.utr).toBe("1234567890");
       expect(request.accounts.companyNumber).toBe("00000099");

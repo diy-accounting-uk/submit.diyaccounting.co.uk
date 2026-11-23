@@ -281,7 +281,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "11111111",
+      companyNumber: "00000011",
       companyName: "EXAMPLE COMPANY",
       companyAuthenticationCode: "123456",
       packageReference: "0012",
@@ -300,7 +300,7 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "Qualifier")).toBe("request");
       expect(firstElement(document, "ConfirmationAndVerificationStatement")).toBeTruthy();
       expect(firstElement(exampleDocument, "ConfirmationAndVerificationStatement")).toBeTruthy();
-      expect(firstElementText(document, "CompanyNumber")).toBe("11111111");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000011");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
     });
 
@@ -328,7 +328,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "11111111",
+      companyNumber: "00000011",
       companyName: "EXAMPLE COMPANY",
       companyAuthenticationCode: "123456",
       packageReference: "0012",
@@ -347,7 +347,7 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "Class")).toBe("PSCVerificationStatement");
       expect(firstElementText(document, "FormIdentifier")).toBe("PSCVerificationStatement");
       expect(firstElement(document, "PSCVerificationStatement")).toBeTruthy();
-      expect(firstElementText(document, "CompanyNumber")).toBe("11111111");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000011");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
     });
 

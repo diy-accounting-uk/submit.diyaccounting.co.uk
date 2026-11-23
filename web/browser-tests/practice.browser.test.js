@@ -16,7 +16,7 @@ const CLIENT_A = {
   hashedSub: "practice-hash",
   clientId: "01ABCDEFGHJKMNPQRSTVWXYZ0",
   displayName: "Example Trading Ltd",
-  identifiers: { vrn: "193054661", nino: null, utr: null, companyNumber: "00000006" },
+  identifiers: { vrn: "193054661", nino: null, utr: null, companyNumber: "00000008" },
   authorisations: {},
   createdAt: "2026-01-01T00:00:00.000Z",
   archivedAt: null,

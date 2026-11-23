@@ -1034,13 +1034,13 @@ test.describe("File small company accounts page - revising accounts from a recei
       "the company",
       "English",
       "revision-company-not-on-register",
-      "Companies House holds no company with the number 09999999, so there are no accounts to revise.",
+      "Companies House holds no company with the number 00000009, so there are no accounts to revise.",
     ],
     [
       "the company",
       "Welsh",
       "revision-company-not-on-register",
-      "Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif 09999999, felly nid oes cyfrifon i’w diwygio.",
+      "Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif 00000009, felly nid oes cyfrifon i’w diwygio.",
     ],
     [
       "accounts for the period",
@@ -1068,7 +1068,7 @@ test.describe("File small company accounts page - revising accounts from a recei
           const error = new Error("the route's English sentence");
           error.status = 400;
           error.reason = refusalReason;
-          error.body = { reason: error.reason, companyNumber: "09999999", periodEnd: "2026-03-31" };
+          error.body = { reason: error.reason, companyNumber: "00000009", periodEnd: "2026-03-31" };
           throw error;
         };
         document.getElementById("companyAuthCode").value = "ABC123";

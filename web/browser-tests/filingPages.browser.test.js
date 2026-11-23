@@ -172,7 +172,7 @@ for (const [file, heading] of COMPARISON_PAGES) {
 const DEADLINES_PAGE = "http://localhost:3000/company-filing-deadlines.html";
 const LOOKUP_PATTERN = "**/api/v1/public/company-deadlines*";
 const ACTIVE_COMPANY = {
-  companyNumber: "00000006",
+  companyNumber: "00000008",
   companyName: "EXAMPLE LIMITED",
   companyStatus: "active",
   companyType: "ltd",
@@ -204,10 +204,10 @@ test("a company number shows both dates, the days left, the last accounts type a
   await serveRealSite(page);
   await stubLookup(page, 200, ACTIVE_COMPANY);
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
-  await page.locator("#companyQuery").fill("00000006");
+  await page.locator("#companyQuery").fill("00000008");
   await page.getByRole("button", { name: "Look up" }).click();
   const result = page.locator("#companyResult");
-  await expect(result).toContainText("EXAMPLE LIMITED (00000006)");
+  await expect(result).toContainText("EXAMPLE LIMITED (00000008)");
   await expect(result).toContainText("31 March 2099");
   await expect(result).toContainText("days left");
   await expect(result).toContainText("30 April 2020");
@@ -221,7 +221,7 @@ test("a dissolved company shows its status and no filing action", async ({ page 
   await serveRealSite(page);
   await stubLookup(page, 200, { ...ACTIVE_COMPANY, companyStatus: "dissolved" });
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
-  await page.locator("#companyQuery").fill("00000006");
+  await page.locator("#companyQuery").fill("00000008");
   await page.getByRole("button", { name: "Look up" }).click();
   await expect(page.locator("#companyResult")).toContainText("dissolved");
   await expect(page.locator("#companyResult a")).toHaveCount(0);
@@ -233,21 +233,21 @@ test("a name shows matches and choosing one looks the company up", async ({ page
     const isNumber = new URL(route.request().url()).searchParams.has("number");
     const body = isNumber
       ? ACTIVE_COMPANY
-      : { items: [{ companyNumber: "00000006", companyName: "EXAMPLE LIMITED", companyStatus: "active" }] };
+      : { items: [{ companyNumber: "00000008", companyName: "EXAMPLE LIMITED", companyStatus: "active" }] };
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
   await page.locator("#companyQuery").fill("example");
   await page.getByRole("button", { name: "Look up" }).click();
   await page.locator("#companyMatches button").first().click();
-  await expect(page.locator("#companyResult")).toContainText("EXAMPLE LIMITED (00000006)");
+  await expect(page.locator("#companyResult")).toContainText("EXAMPLE LIMITED (00000008)");
 });
 
 test("a 429 from the lookup tells the reader to try again in a few minutes", async ({ page }) => {
   await serveRealSite(page);
   await stubLookup(page, 429, { message: "busy" }, { "Retry-After": "120" });
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
-  await page.locator("#companyQuery").fill("00000006");
+  await page.locator("#companyQuery").fill("00000008");
   await page.getByRole("button", { name: "Look up" }).click();
   await expect(page.locator("#companyError")).toContainText("Try again in a few minutes");
 });

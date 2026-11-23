@@ -43,7 +43,7 @@ const IXBRL =
   '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body><ix:nonNumeric name="bus:EntityCurrentLegalOrRegisteredName">EXAMPLE LTD</ix:nonNumeric></body></html>';
 
 const PROFILE = {
-  company_number: "00000006",
+  company_number: "00000008",
   company_name: "EXAMPLE LIMITED",
   company_status: "active",
   type: "ltd",
@@ -106,7 +106,7 @@ function get(number) {
 
 function withHistory(items) {
   routes.unshift([
-    (url) => url.startsWith(`${API}/company/00000006/filing-history?`),
+    (url) => url.startsWith(`${API}/company/00000008/filing-history?`),
     () => ({ json: { total_count: items.length, items } }),
   ]);
 }
@@ -128,8 +128,8 @@ beforeEach(() => {
     DOCPDF: { resources: { "application/pdf": { content_length: 1200 } } },
   };
   routes = [
-    [(url) => url === `${API}/company/00000006`, () => ({ json: PROFILE })],
-    [(url) => url.startsWith(`${API}/company/00000006/officers`), () => ({ json: OFFICERS })],
+    [(url) => url === `${API}/company/00000008`, () => ({ json: PROFILE })],
+    [(url) => url.startsWith(`${API}/company/00000008/officers`), () => ({ json: OFFICERS })],
     [
       (url) => url === `${DOCUMENT_API}/document/DOCIXBRL/content`,
       () => ({ status: 302, json: {}, headers: { location: SIGNED_S3_FILE } }),
@@ -151,13 +151,13 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
       accountsItem({ transactionId: "TXOLD", documentId: "DOCPDF" }),
     ]);
 
-    const response = await get("6");
+    const response = await get("8");
 
     expect(response.statusCode).toBe(200);
     expect(response.headers["Cache-Control"]).toBe(`public, max-age=${FOUND_CACHE_SECONDS}`);
     expect(parseResponseBody(response)).toEqual({
       profile: {
-        companyNumber: "00000006",
+        companyNumber: "00000008",
         companyName: "EXAMPLE LIMITED",
         dateOfCreation: "2009-04-16",
         registeredOffice: { addressLine1: "1 Example Street", cityOrTown: "Exampletown", postalCode: "AB1 2CD" },
@@ -179,7 +179,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
       () => ({ status: 302, json: {}, headers: { location: "https://files.example/a.xhtml" } }),
     ]);
 
-    const response = await get("6");
+    const response = await get("8");
 
     expect(response.statusCode).toBe(502);
     expect(response.headers["Cache-Control"]).not.toMatch(/public/);
@@ -193,7 +193,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     ];
     const historyReads = [];
     routes.unshift([
-      (url) => url.startsWith(`${API}/company/00000006/filing-history?`),
+      (url) => url.startsWith(`${API}/company/00000008/filing-history?`),
       (url) => {
         const params = new URL(url).searchParams;
         const startIndex = Number(params.get("start_index"));
@@ -204,7 +204,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
       },
     ]);
 
-    const response = await get("6");
+    const response = await get("8");
 
     expect(response.statusCode).toBe(200);
     expect(historyReads).toEqual([0]);
@@ -216,7 +216,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
   test("marks a last set that has a PDF only, and fetches no document content", async () => {
     withHistory([accountsItem({ transactionId: "TXPDF", documentId: "DOCPDF", paperFiled: true })]);
 
-    const response = await get("00000006");
+    const response = await get("00000008");
 
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response).filedAccounts).toEqual({
@@ -231,7 +231,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
   test("marks a company with no accounts filed", async () => {
     withHistory([]);
 
-    const response = await get("00000006");
+    const response = await get("00000008");
 
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response).filedAccounts).toEqual({ status: "none" });
@@ -254,11 +254,11 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
   test("answers a JSON 429 with Retry-After when Companies House rate limits any of the reads", async () => {
     withHistory([]);
     routes.unshift([
-      (url) => url.startsWith(`${API}/company/00000006/officers`),
+      (url) => url.startsWith(`${API}/company/00000008/officers`),
       () => ({ status: 429, json: {}, headers: { "retry-after": "120" } }),
     ]);
 
-    const response = await get("00000006");
+    const response = await get("00000008");
 
     expect(response.statusCode).toBe(429);
     expect(response.headers["Retry-After"]).toBe("120");
@@ -270,7 +270,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     withHistory([accountsItem({ transactionId: "TXIXBRL", documentId: "DOCIXBRL" })]);
     metadata.DOCIXBRL.resources["application/xhtml+xml"].content_length = MAX_DOCUMENT_RESPONSE_BYTES + 1;
 
-    const response = await get("00000006");
+    const response = await get("00000008");
 
     expect(response.statusCode).toBe(413);
     expect(parseResponseBody(response)).toEqual(expect.objectContaining({ code: "DOCUMENT_TOO_LARGE", madeUpDate: "2025-06-30" }));
@@ -280,7 +280,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
   test("copies no personal field of an officer beyond the name, role and appointment date", async () => {
     withHistory([]);
 
-    const response = await get("00000006");
+    const response = await get("00000008");
     const text = response.body;
 
     expect(Object.keys(parseResponseBody(response).officers[0]).sort()).toEqual(["appointedOn", "name", "officerRole"]);
@@ -303,11 +303,11 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
   test("answers no officers when the register lists none for a company it holds", async () => {
     withHistory([]);
     routes.unshift([
-      (url) => url.startsWith(`${API}/company/00000006/officers`),
+      (url) => url.startsWith(`${API}/company/00000008/officers`),
       () => ({ status: 404, json: { errors: [{ error: "not-found" }] } }),
     ]);
 
-    const response = await get("00000006");
+    const response = await get("00000008");
 
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response).officers).toEqual([]);
@@ -323,7 +323,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
     mockIncrementRateCounter.mockResolvedValue(101);
     try {
-      const response = await get("00000006");
+      const response = await get("00000008");
       expect(response.statusCode).toBe(429);
       expect(response.headers["Cache-Control"]).toBe("no-store");
       expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
@@ -341,11 +341,11 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     mockIncrementRateCounter.mockResolvedValue(1);
     withHistory([]);
     routes.unshift([
-      (url) => url.startsWith(`${API}/company/00000006/officers`),
+      (url) => url.startsWith(`${API}/company/00000008/officers`),
       () => ({ status: 429, json: {}, headers: { "retry-after": "120" } }),
     ]);
     try {
-      const response = await get("00000006");
+      const response = await get("00000008");
       expect(response.statusCode).toBe(429);
       expect(mockPutCachedValue).toHaveBeenCalledWith("chlookup#stopped", { until: expect.any(Number) }, 120);
     } finally {
@@ -357,7 +357,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
     mockGetCachedValue.mockResolvedValue({ until: Date.now() + 75_000 });
     try {
-      const response = await get("00000006");
+      const response = await get("00000008");
       expect(response.statusCode).toBe(429);
       expect(response.headers["Retry-After"]).toBe("75");
       expect(response.headers["Cache-Control"]).toBe("no-store");
@@ -376,7 +376,7 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     mockFetch.mockImplementation((url, init) => new Promise((resolve) => setTimeout(() => resolve(answerAfter(url, init)), 9_000)));
     vi.useFakeTimers();
     try {
-      const pending = get("00000006");
+      const pending = get("00000008");
       await vi.advanceTimersByTimeAsync(REGISTER_DEADLINE_MS);
       const response = await pending;
       expect(response.statusCode).toBe(504);

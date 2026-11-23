@@ -32,9 +32,9 @@ describe("revised accounts that name no receipt, against the register", () => {
   });
 
   test("each reason has a sentence that names the company number or the period's end", () => {
-    const filing = { companyNumber: "09999999", periodEnd: "2025-12-31" };
+    const filing = { companyNumber: "00000009", periodEnd: "2025-12-31" };
     expect(registerRefusalText(COMPANY_NOT_ON_REGISTER, filing)).toBe(
-      "Companies House holds no company with the number 09999999, so there are no accounts to revise.",
+      "Companies House holds no company with the number 00000009, so there are no accounts to revise.",
     );
     expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, filing)).toBe(
       "Companies House holds no accounts for this company made up to 31 December 2025, so there are no accounts for revised accounts to replace.",

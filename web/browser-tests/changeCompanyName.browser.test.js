@@ -439,13 +439,13 @@ test("a name the same as another company's by Companies House's rules is caught,
   const filings = [];
   await serveSite(page, {
     filings,
-    searchItems: [{ companyNumber: "09999999", title: "THE BRAMWELL & TENNANT TRADING CO CYF", companyStatus: "active" }],
+    searchItems: [{ companyNumber: "00000009", title: "THE BRAMWELL & TENNANT TRADING CO CYF", companyStatus: "active" }],
   });
   await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
   await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "Bramwell and Tennant Trading Limited" });
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText(
-    "Companies House lists THE BRAMWELL & TENNANT TRADING CO CYF (09999999) with this name.",
+    "Companies House lists THE BRAMWELL & TENNANT TRADING CO CYF (00000009) with this name.",
   );
   await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
   expect(filings).toHaveLength(0);
@@ -458,7 +458,7 @@ test("a name another company holds is caught before sending, and asks for that c
     filings,
     searches,
     searchItems: [
-      { companyNumber: "09999999", title: "BRAMWELL TENNANT TRADING LTD", companyStatus: "active" },
+      { companyNumber: "00000009", title: "BRAMWELL TENNANT TRADING LTD", companyStatus: "active" },
       { companyNumber: "08888888", title: "BRAMWELL TENNANT TRADING HOLDINGS LIMITED", companyStatus: "active" },
     ],
   });
@@ -467,7 +467,7 @@ test("a name another company holds is caught before sending, and asks for that c
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.locator("#statusMessagesContainer")).toContainText(
-    "Companies House lists BRAMWELL TENNANT TRADING LTD (09999999) with this name.",
+    "Companies House lists BRAMWELL TENNANT TRADING LTD (00000009) with this name.",
   );
   await expect(page.locator("#letterGroup")).toBeVisible();
   await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");

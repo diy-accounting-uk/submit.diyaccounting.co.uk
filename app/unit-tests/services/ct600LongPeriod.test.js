@@ -20,7 +20,7 @@ const TODAY = "2026-11-11";
 function longFigures(overrides = {}) {
   return {
     companyName: "Long Period Example Ltd",
-    companyNumber: "09999993",
+    companyNumber: "00000010",
     utr: "8596148860",
     companyType: 0,
     declarantName: "Alex Example",
@@ -190,7 +190,7 @@ describe("deriveLongPeriodReturns, the 15-month period of account", () => {
   test("return 1: the first 12 months, box by box", () => {
     expect(first.boxes).toEqual({
       "1": "Long Period Example Ltd",
-      "2": "09999993",
+      "2": "00000010",
       "3": "8596148860",
       "4": 0,
       "30": "2025-01-01",
@@ -235,7 +235,7 @@ describe("deriveLongPeriodReturns, the 15-month period of account", () => {
   test("return 2: the last 90 days, box by box, with the loan's section 455 tax", () => {
     expect(second.boxes).toEqual({
       "1": "Long Period Example Ltd",
-      "2": "09999993",
+      "2": "00000010",
       "3": "8596148860",
       "4": 0,
       "30": "2026-01-01",
