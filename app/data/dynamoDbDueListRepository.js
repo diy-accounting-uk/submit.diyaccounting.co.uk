@@ -213,16 +213,17 @@ async function recount(userSub) {
  * @param {"businesses"|"rows"} counted
  * @param {number} change - More than 0
  * @param {number} cap
+ * @param {string} countHash - The hash whose count item the write reserves on, which its give-back uses too
  * @returns {Promise<boolean>} False when the items would pass the cap
  */
-async function reserve(userSub, counted, change, cap) {
+async function reserve(userSub, counted, change, cap, countHash) {
   for (let attempt = 0; attempt < WRITE_ATTEMPTS; attempt += 1) {
     try {
       await executeDynamoDbCommand(
         (module) =>
           new module.UpdateCommand({
             TableName: getResourceName(TABLE),
-            Key: { hashedSub: hashSub(userSub), sk: COUNT_SK },
+            Key: { hashedSub: countHash, sk: COUNT_SK },
             UpdateExpression: "ADD #counted :change SET countedAt = :now",
             ConditionExpression: "attribute_exists(#counted) AND #counted <= :room",
             ExpressionAttributeNames: { "#counted": counted },
@@ -245,15 +246,17 @@ async function reserve(userSub, counted, change, cap) {
  * @param {string} userSub
  * @param {"businesses"|"rows"} counted
  * @param {number} change
+ * @param {string} [countHash] - The count item's hash: the one a reservation was made on, so a write
+ *   that reserved before a salt rotation's cutover gives back to the count it reserved on
  */
-async function adjustCount(userSub, counted, change) {
+async function adjustCount(userSub, counted, change, countHash = hashSub(userSub)) {
   if (change === 0) return;
   try {
     await executeDynamoDbCommand(
       (module) =>
         new module.UpdateCommand({
           TableName: getResourceName(TABLE),
-          Key: { hashedSub: hashSub(userSub), sk: COUNT_SK },
+          Key: { hashedSub: countHash, sk: COUNT_SK },
           UpdateExpression: "ADD #counted :change SET countedAt = :now",
           ConditionExpression: "attribute_exists(#counted)",
           ExpressionAttributeNames: { "#counted": counted },
@@ -315,13 +318,14 @@ export async function putBusiness(userSub, business, cap = DUE_LIST_BUSINESS_CAP
       }
       continue;
     }
-    if (!(await reserve(userSub, "businesses", 1, cap))) throw new DueListFullError("businesses");
-    const item = withJobSub({ hashedSub: hashSub(userSub), sk, businessId: id, ...fields }, userSub);
+    const countHash = hashSub(userSub);
+    if (!(await reserve(userSub, "businesses", 1, cap, countHash))) throw new DueListFullError("businesses");
+    const item = withJobSub({ hashedSub: countHash, sk, businessId: id, ...fields }, userSub);
     if (await conditionalPut(item, "attribute_not_exists(sk)")) {
       logger.info({ message: "Due list business stored", kind: business.kind, created: true });
       return { item, created: true };
     }
-    await adjustCount(userSub, "businesses", -1);
+    await adjustCount(userSub, "businesses", -1, countHash);
   }
   throw new DueListBusyError();
 }
@@ -363,8 +367,7 @@ export async function listBusinessesAndRows(userSub) {
 
 // The writes of a rows write: a refresh of readAt for a row stored with the same due date and
 // source, and a put for every other row, marked new when no row of its key is stored.
-function rowWrites(userSub, rows, storedBySk) {
-  const hashedSub = hashSub(userSub);
+function rowWrites(userSub, rows, storedBySk, hashedSub) {
   const newSks = new Set();
   const refreshes = [];
   const puts = [];
@@ -445,17 +448,20 @@ async function updateBusiness(key, set) {
  * @throws {DueListBusinessMissingError} When forBusiness names a business the account does not hold
  */
 export async function putRows(userSub, rows, replace = () => false, { forBusiness, cap = DUE_LIST_ROW_CAP } = {}) {
+  // The write's count is the one it reserves on; every later move of it goes there too, even if a
+  // salt rotation's cutover lands while the write runs.
+  const countHash = hashSub(userSub);
   const items = await itemsOfAccount(userSub);
   const business = forBusiness && items.find((item) => item.sk === businessSk(forBusiness.id));
   if (forBusiness && !business) throw new DueListBusinessMissingError();
   const storedRows = items.filter(isRow);
-  const { newSks, refreshes, puts } = rowWrites(userSub, rows, new Map(storedRows.map((row) => [row.sk, row])));
+  const { newSks, refreshes, puts } = rowWrites(userSub, rows, new Map(storedRows.map((row) => [row.sk, row])), countHash);
   const removals = storedRows
     .filter((row) => !newSks.has(row.sk) && replace(row))
     .map((row) => ({ DeleteRequest: { Key: { hashedSub: row.hashedSub, sk: row.sk } } }));
 
   const reserved = Math.max(0, puts.filter((put) => put.isNew).length - removals.length);
-  if (reserved > 0 && !(await reserve(userSub, "rows", reserved, cap))) throw new DueListFullError("rows");
+  if (reserved > 0 && !(await reserve(userSub, "rows", reserved, cap, countHash))) throw new DueListFullError("rows");
 
   let refreshed = 0;
   for (const refresh of refreshes) if (await refreshReadAt(refresh)) refreshed += 1;
@@ -464,7 +470,7 @@ export async function putRows(userSub, rows, replace = () => false, { forBusines
   const writtenPuts = puts.filter((put) => !unwritten.includes(requestSk(put.request)));
   const removed = removals.filter((request) => !unwritten.includes(requestSk(request))).length;
   const added = writtenPuts.filter((put) => put.isNew).length;
-  await adjustCount(userSub, "rows", added - removed - reserved);
+  await adjustCount(userSub, "rows", added - removed - reserved, countHash);
 
   if (business && !(await updateBusiness({ hashedSub: business.hashedSub, sk: business.sk }, forBusiness.set))) {
     // Every row this write put goes back out. A row it added was counted here, so its removal moves
@@ -475,7 +481,7 @@ export async function putRows(userSub, rows, replace = () => false, { forBusines
       const removedNow = await removeItem({ hashedSub: put.request.PutRequest.Item.hashedSub, sk: put.request.PutRequest.Item.sk });
       if (removedNow && put.isNew) takenBack += 1;
     }
-    await adjustCount(userSub, "rows", -takenBack);
+    await adjustCount(userSub, "rows", -takenBack, countHash);
     throw new DueListBusinessMissingError();
   }
   logger.info({ message: "Due list rows stored", written: writtenPuts.length, refreshed, removed, unwritten: unwritten.length });

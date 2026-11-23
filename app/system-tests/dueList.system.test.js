@@ -323,4 +323,56 @@ describe("System: the due list's limits and removals under writes that overlap",
     expect(bodyOf(second)).toMatchObject({ reason: "due_list_rows_full" });
     expect((await list()).rows).toHaveLength(500);
   });
+
+  test("a write that reserves before a salt cutover gives its unwritten rows back to the count it reserved on", async () => {
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const subHasher = await import("../services/subHasher.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const table = process.env.DUE_LIST_DYNAMODB_TABLE_NAME;
+    await putBusiness("a");
+    expect((await postRows("a", vatRows(300, 0))).statusCode).toBe(200);
+    const { businesses } = await repository.listBusinessesAndRows(signedIn);
+    const earlierCountKey = { hashedSub: businesses[0].hashedSub, sk: "count" };
+    const countOf = async (key) => (await docClient.send(new module.GetCommand({ TableName: table, Key: key, ConsistentRead: true }))).Item;
+    const rows = vatRows(200, 300);
+    const leftUnprocessed = new Set(rows.slice(150).map((row) => row.periodEnd));
+    const saltBefore = process.env.USER_SUB_HASH_SALT;
+
+    const send = docClient.send;
+    let cutOver = false;
+    // Once the write has reserved its 200 rows, the salt's current version becomes v2, and DynamoDB
+    // leaves the last 50 of those rows unprocessed on every attempt.
+    docClient.send = async (command) => {
+      if (!(command instanceof module.BatchWriteCommand)) return send(command);
+      if (!cutOver) {
+        cutOver = true;
+        process.env.USER_SUB_HASH_SALT =
+          '{"current":"v2","versions":{"v1":"test-salt-for-system-tests","v2":"second-salt-for-system-tests"}}';
+        subHasher._clearSalt();
+        await subHasher.initializeSalt();
+      }
+      const requests = command.input.RequestItems[table];
+      const held = requests.filter((request) => leftUnprocessed.has(request.PutRequest?.Item?.periodEnd));
+      const sent = requests.filter((request) => !held.includes(request));
+      if (sent.length) await send(new module.BatchWriteCommand({ RequestItems: { [table]: sent } }));
+      return { UnprocessedItems: held.length ? { [table]: held } : {} };
+    };
+    let response;
+    try {
+      response = await postRows("a", rows);
+    } finally {
+      docClient.send = send;
+      process.env.USER_SUB_HASH_SALT = saltBefore;
+      subHasher._clearSalt();
+      await subHasher.initializeSalt();
+    }
+
+    expect(cutOver).toBe(true);
+    // The write replaces the business's 300 stored rows with 200, of which 50 stay unwritten: the
+    // count it reserved on holds the 150 stored.
+    expect(bodyOf(response)).toMatchObject({ written: 150, removed: 300 });
+    expect(bodyOf(response).unwritten).toHaveLength(50);
+    expect((await list()).rows).toHaveLength(150);
+    expect((await countOf(earlierCountKey)).rows).toBe(150);
+  }, 60000);
 });
