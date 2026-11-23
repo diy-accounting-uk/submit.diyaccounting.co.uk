@@ -855,15 +855,13 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
 
 // The request of a failed HMRC answer as a log line may print it: the route's pattern, with each path
 // parameter named, and its query's names with no values.
-// A message that holds digits, quotes or an @ can repeat what was submitted (a figure, a reference,
-// an address), so it stays out of a log line; HMRC's fixed messages hold none of them.
-const MAY_REPEAT_A_SUBMITTED_VALUE = /[\d"'@]/;
 
 /**
- * HMRC's error answer as a log line may hold it: its code, the code and field path of each error
- * under it, and its message only when the message cannot repeat a submitted value.
+ * HMRC's error answer as a log line may hold it: its code, and the code and field path of each error
+ * under it. HMRC's message stays out: it can repeat a submitted name or reference in letters alone,
+ * and the codes and paths already say which error it was.
  * @param {object} body - HMRC's answer, for example { code, message, paths, errors: [{ code, message, path }] }
- * @returns {{code?: string, paths: string[], errors: {code?: string, path?: string}[], message?: string, messageOmitted?: boolean}}
+ * @returns {{code?: string, paths: string[], errors: {code?: string, path?: string}[], messageOmitted?: boolean}}
  */
 export function loggedHmrcErrorOf(body) {
   if (!body || typeof body !== "object") return { paths: [], errors: [] };
@@ -876,8 +874,7 @@ export function loggedHmrcErrorOf(body) {
     ...errors.map((error) => error.path).filter(Boolean),
   ];
   const logged = { ...(typeof body.code === "string" ? { code: body.code } : {}), paths: [...new Set(paths)], errors };
-  if (typeof body.message !== "string") return logged;
-  return MAY_REPEAT_A_SUBMITTED_VALUE.test(body.message) ? { ...logged, messageOmitted: true } : { ...logged, message: body.message };
+  return typeof body.message === "string" ? { ...logged, messageOmitted: true } : logged;
 }
 
 function loggedRequestOf(request) {

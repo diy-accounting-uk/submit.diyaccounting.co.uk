@@ -574,7 +574,7 @@ describe("the HMRC error lines", () => {
     ],
   };
 
-  it("hold HMRC's code and the code and field path of each error, and a message only when it cannot repeat a submitted value", async () => {
+  it("hold HMRC's code and the code and field path of each error, and none of HMRC's message", async () => {
     const { loggedHmrcErrorOf } = await import("@app/services/hmrcApi.js");
 
     expect(loggedHmrcErrorOf(errorAnswer)).toEqual({
@@ -584,7 +584,7 @@ describe("the HMRC error lines", () => {
         { code: "FORMAT_VALUE", path: "/periodIncome/turnover" },
         { code: "FORMAT_NINO", path: "/nino" },
       ],
-      message: "An empty or non-matching body was submitted",
+      messageOmitted: true,
     });
     expect(loggedHmrcErrorOf({ code: "INVALID_REQUEST", message: "Reference 'X1234' was not found" })).toEqual({
       code: "INVALID_REQUEST",
@@ -593,6 +593,21 @@ describe("the HMRC error lines", () => {
       messageOmitted: true,
     });
     expect(loggedHmrcErrorOf(undefined)).toEqual({ paths: [], errors: [] });
+  });
+
+  it("leave out a message that repeats a submitted name in letters alone", async () => {
+    const { loggedHmrcErrorOf } = await import("@app/services/hmrcApi.js");
+    const answer = {
+      code: "RULE_BUSINESS_NAME_MISMATCH",
+      message: "The trading name Jane Smith Plumbing does not match the business",
+      errors: [{ code: "RULE_BUSINESS_NAME_MISMATCH", message: "Jane Smith Plumbing is not the registered name", path: "/tradingName" }],
+    };
+
+    const logged = JSON.stringify(loggedHmrcErrorOf(answer));
+
+    expect(logged).not.toContain("Jane Smith");
+    expect(logged).toContain("RULE_BUSINESS_NAME_MISMATCH");
+    expect(logged).toContain("/tradingName");
   });
 
   it.each([
