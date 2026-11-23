@@ -817,6 +817,28 @@ function slugText(slug) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+// The officer roles the register gives a company, in the reader's language. The English is the
+// register's role as slugText writes it; a role this list does not hold (an LLP's, a partnership's,
+// an overseas entity's) reads as the register's words.
+const COMPANY_OFFICER_ROLES = {
+  "director": () => window.siteText("ch.drill.role-director", "Director"),
+  "corporate-director": () => window.siteText("ch.drill.role-corporate-director", "Corporate director"),
+  "nominee-director": () => window.siteText("ch.drill.role-nominee-director", "Nominee director"),
+  "corporate-nominee-director": () => window.siteText("ch.drill.role-corporate-nominee-director", "Corporate nominee director"),
+  "secretary": () => window.siteText("ch.drill.role-secretary", "Secretary"),
+  "corporate-secretary": () => window.siteText("ch.drill.role-corporate-secretary", "Corporate secretary"),
+  "nominee-secretary": () => window.siteText("ch.drill.role-nominee-secretary", "Nominee secretary"),
+  "corporate-nominee-secretary": () => window.siteText("ch.drill.role-corporate-nominee-secretary", "Corporate nominee secretary"),
+  "cic-manager": () => window.siteText("ch.drill.role-cic-manager", "Cic manager"),
+  "judicial-factor": () => window.siteText("ch.drill.role-judicial-factor", "Judicial factor"),
+  "receiver-and-manager": () => window.siteText("ch.drill.role-receiver-and-manager", "Receiver and manager"),
+};
+
+// An officer's role in the reader's language.
+function roleText(role) {
+  return Object.hasOwn(COMPANY_OFFICER_ROLES, role) ? COMPANY_OFFICER_ROLES[role]() : slugText(role);
+}
+
 // A nature of control as the register's words give it, in the reader's language: the right, the
 // band of shares or votes, and whether it is held through a trust or a firm. A nature the register
 // has beyond these (an LLP's, an overseas entity's) reads as its words.
@@ -1273,7 +1295,7 @@ async function renderOfficers(container, companyNumber) {
         window.siteText("ch.drill.column-role", "Role"),
         window.siteText("ch.drill.column-appointed", "Appointed"),
       ],
-      officers.map((officer) => [officer.name, slugText(officer.role), labels().formatCompanyDate(officer.appointedOn)]),
+      officers.map((officer) => [officer.name, roleText(officer.role), labels().formatCompanyDate(officer.appointedOn)]),
     ),
   );
   await appendRemoveOfficerLinks(container, companyNumber, officers);
@@ -1349,7 +1371,7 @@ async function appendOfficerLinks(container, companyNumber, officers, { activity
 // An officer's role, then what tells them apart from a current officer of the same name: one bracket
 // in the link's words, "Director, born January 1970".
 function roleWithNote(officer, note) {
-  return note ? `${slugText(officer.role)}, ${note}` : slugText(officer.role);
+  return note ? `${roleText(officer.role)}, ${note}` : roleText(officer.role);
 }
 
 // The officer resignation form's link for each current director or secretary.

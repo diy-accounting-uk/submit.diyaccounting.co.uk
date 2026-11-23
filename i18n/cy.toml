@@ -27302,3 +27302,50 @@ cy = '''{nature} drwy ymddiriedolaeth'''
 [strings."ch.drill.nature-as-firm"]
 hash = "9bbca5be3dc0"
 cy = '''{nature} drwy ffyrm'''
+
+
+# == The drill-down's officer roles in Welsh ==
+
+[strings."ch.drill.role-director"]
+hash = "c149bc14e45c"
+cy = '''Cyfarwyddwr'''
+
+[strings."ch.drill.role-corporate-director"]
+hash = "02f51cc20ace"
+cy = '''Cyfarwyddwr corfforaethol'''
+
+[strings."ch.drill.role-nominee-director"]
+hash = "c8dd07aa6dcb"
+cy = '''Cyfarwyddwr enwebai'''
+
+[strings."ch.drill.role-corporate-nominee-director"]
+hash = "7d1e047a1cb6"
+cy = '''Cyfarwyddwr enwebai corfforaethol'''
+
+[strings."ch.drill.role-secretary"]
+hash = "1395996a1068"
+cy = '''Ysgrifennydd'''
+
+[strings."ch.drill.role-corporate-secretary"]
+hash = "cff971c99e33"
+cy = '''Ysgrifennydd corfforaethol'''
+
+[strings."ch.drill.role-nominee-secretary"]
+hash = "9a0c795da110"
+cy = '''Ysgrifennydd enwebai'''
+
+[strings."ch.drill.role-corporate-nominee-secretary"]
+hash = "ee2a089c9e10"
+cy = '''Ysgrifennydd enwebai corfforaethol'''
+
+[strings."ch.drill.role-cic-manager"]
+hash = "5942b329891e"
+cy = '''Rheolwr CBC'''
+
+[strings."ch.drill.role-judicial-factor"]
+hash = "3d389253cf38"
+cy = '''Ffactor barnwrol'''
+
+[strings."ch.drill.role-receiver-and-manager"]
+hash = "0d1771725599"
+cy = '''Derbynnydd a rheolwr'''

@@ -1051,6 +1051,47 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     );
   });
 
+  test("the Welsh officers table and removal links give each company officer's role in Welsh", async ({ page }) => {
+    const officers = {
+      ...OFFICERS,
+      activeCount: 3,
+      officers: [
+        { ...OFFICERS.officers[0] },
+        { name: "ACME SECRETARIES LIMITED", officerRole: "corporate-secretary", appointedOn: "2016-02-01" },
+        { name: "JONES, Bryn", officerRole: "llp-member", appointedOn: "2017-03-01" },
+      ],
+    };
+    await serveSite(page, { bundles: ["resident-ltd"], officers });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+
+    const table = page.locator("#drillView table");
+    await expect(table).toContainText("Cyfarwyddwr", { timeout: 15000 });
+    await expect(table).toContainText("Ysgrifennydd corfforaethol");
+    await expect(table).toContainText("Llp member");
+    await expect(table).not.toContainText("Director");
+    await expect(table).not.toContainText("Corporate secretary");
+    await expect(page.locator("#drillView .remove-officer-links a").first()).toHaveText("Tynnu BRAMWELL, Eleanor (Cyfarwyddwr)");
+    await shootAtWidths(page, "cy-officer-roles");
+  });
+
+  test("the English officers table keeps the register's role words", async ({ page }) => {
+    const officers = {
+      ...OFFICERS,
+      activeCount: 2,
+      officers: [
+        { ...OFFICERS.officers[0] },
+        { name: "ACME SECRETARIES LIMITED", officerRole: "corporate-secretary", appointedOn: "2016-02-01" },
+      ],
+    };
+    await serveSite(page, { bundles: ["resident-ltd"], officers });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+
+    const table = page.locator("#drillView table");
+    await expect(table).toContainText("Director", { timeout: 15000 });
+    await expect(table).toContainText("Corporate secretary");
+    await expect(page.locator("#drillView .remove-officer-links a").first()).toHaveText("Remove BRAMWELL, Eleanor (Director)");
+  });
+
   test("on prod, where the officer resignation form is not offered, the officers view carries no removal link", async ({ page }) => {
     await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
