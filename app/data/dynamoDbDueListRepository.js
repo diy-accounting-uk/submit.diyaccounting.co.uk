@@ -213,11 +213,13 @@ async function recount(userSub) {
  * @param {"businesses"|"rows"} counted
  * @param {number} change - More than 0
  * @param {number} cap
- * @param {string} countHash - The hash whose count item the write reserves on, which its give-back uses too
- * @returns {Promise<boolean>} False when the items would pass the cap
+ * @returns {Promise<string|null>} The hash whose count item holds the reservation, which the write's
+ *   give-back uses too; null when the items would pass the cap. Each attempt reserves under the current
+ *   hash, where the recount before it wrote the count.
  */
-async function reserve(userSub, counted, change, cap, countHash) {
+async function reserve(userSub, counted, change, cap) {
   for (let attempt = 0; attempt < WRITE_ATTEMPTS; attempt += 1) {
+    const countHash = hashSub(userSub);
     try {
       await executeDynamoDbCommand(
         (module) =>
@@ -230,10 +232,10 @@ async function reserve(userSub, counted, change, cap, countHash) {
             ExpressionAttributeValues: { ":change": change, ":room": cap - change, ":now": Date.now() },
           }),
       );
-      return true;
+      return countHash;
     } catch (error) {
       if (!isConditionFailure(error)) throw error;
-      if ((await recount(userSub))[counted] + change > cap) return false;
+      if ((await recount(userSub))[counted] + change > cap) return null;
     }
   }
   throw new DueListBusyError();
@@ -318,8 +320,8 @@ export async function putBusiness(userSub, business, cap = DUE_LIST_BUSINESS_CAP
       }
       continue;
     }
-    const countHash = hashSub(userSub);
-    if (!(await reserve(userSub, "businesses", 1, cap, countHash))) throw new DueListFullError("businesses");
+    const countHash = await reserve(userSub, "businesses", 1, cap);
+    if (!countHash) throw new DueListFullError("businesses");
     const item = withJobSub({ hashedSub: countHash, sk, businessId: id, ...fields }, userSub);
     if (await conditionalPut(item, "attribute_not_exists(sk)")) {
       logger.info({ message: "Due list business stored", kind: business.kind, created: true });
@@ -449,19 +451,21 @@ async function updateBusiness(key, set) {
  */
 export async function putRows(userSub, rows, replace = () => false, { forBusiness, cap = DUE_LIST_ROW_CAP } = {}) {
   // The write's count is the one it reserves on; every later move of it goes there too, even if a
-  // salt rotation's cutover lands while the write runs.
-  const countHash = hashSub(userSub);
+  // salt rotation's cutover lands while the write runs. Its new rows are keyed under the hash current
+  // when it began.
+  const rowHash = hashSub(userSub);
   const items = await itemsOfAccount(userSub);
   const business = forBusiness && items.find((item) => item.sk === businessSk(forBusiness.id));
   if (forBusiness && !business) throw new DueListBusinessMissingError();
   const storedRows = items.filter(isRow);
-  const { newSks, refreshes, puts } = rowWrites(userSub, rows, new Map(storedRows.map((row) => [row.sk, row])), countHash);
+  const { newSks, refreshes, puts } = rowWrites(userSub, rows, new Map(storedRows.map((row) => [row.sk, row])), rowHash);
   const removals = storedRows
     .filter((row) => !newSks.has(row.sk) && replace(row))
     .map((row) => ({ DeleteRequest: { Key: { hashedSub: row.hashedSub, sk: row.sk } } }));
 
   const reserved = Math.max(0, puts.filter((put) => put.isNew).length - removals.length);
-  if (reserved > 0 && !(await reserve(userSub, "rows", reserved, cap, countHash))) throw new DueListFullError("rows");
+  const countHash = reserved > 0 ? await reserve(userSub, "rows", reserved, cap) : rowHash;
+  if (!countHash) throw new DueListFullError("rows");
 
   let refreshed = 0;
   for (const refresh of refreshes) if (await refreshReadAt(refresh)) refreshed += 1;

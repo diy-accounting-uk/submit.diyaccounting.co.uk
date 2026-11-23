@@ -375,4 +375,46 @@ describe("System: the due list's limits and removals under writes that overlap",
     expect((await list()).rows).toHaveLength(150);
     expect((await countOf(earlierCountKey)).rows).toBe(150);
   }, 60000);
+
+  test("a business added while a salt cutover lands between its count's attempts is stored", async () => {
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const subHasher = await import("../services/subHasher.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const table = process.env.DUE_LIST_DYNAMODB_TABLE_NAME;
+    await putBusiness("a");
+    const { businesses } = await repository.listBusinessesAndRows(signedIn);
+    // The rotation has deleted the count under the earlier hash, so the first reservation is refused.
+    await docClient.send(new module.DeleteCommand({ TableName: table, Key: { hashedSub: businesses[0].hashedSub, sk: "count" } }));
+    const saltBefore = process.env.USER_SUB_HASH_SALT;
+
+    const send = docClient.send;
+    let cutOver = false;
+    // The salt's current version becomes v2 as the first reservation is sent, so the count the
+    // reservation's recount writes sits under the v2 hash.
+    docClient.send = async (command) => {
+      if (!cutOver && command instanceof module.UpdateCommand && command.input.Key?.sk === "count") {
+        cutOver = true;
+        process.env.USER_SUB_HASH_SALT =
+          '{"current":"v2","versions":{"v1":"test-salt-for-system-tests","v2":"second-salt-for-system-tests"}}';
+        subHasher._clearSalt();
+        await subHasher.initializeSalt();
+      }
+      return send(command);
+    };
+    let response;
+    let stored;
+    try {
+      response = await putBusiness("b");
+      stored = (await list()).businesses.map((business) => business.businessId).sort();
+    } finally {
+      docClient.send = send;
+      process.env.USER_SUB_HASH_SALT = saltBefore;
+      subHasher._clearSalt();
+      await subHasher.initializeSalt();
+    }
+
+    expect(cutOver).toBe(true);
+    expect(response.statusCode).toBe(200);
+    expect(stored).toEqual(["a", "b"]);
+  }, 60000);
 });
