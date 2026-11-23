@@ -143,16 +143,17 @@ const TYPED_ANSWERS = {
 };
 
 // The year before, which the accounts of a company past its first accounts show beside this year's:
-// a profit of 10,000 and a balance sheet whose net assets equal its capital and reserves.
+// a profit of 10,000 that cleared the losses of earlier years, so last year closed with no profit and loss
+// reserve and this year's reserve is this year's profit.
 const LAST_YEAR_ANSWERS = {
   priorTurnover: "60000",
   priorCostOfSales: "30000",
   priorAdministrativeExpenses: "20000",
   priorInterestReceivable: "0",
   priorTax: "0",
-  priorCashAtBank: "10100",
+  priorCashAtBank: "100",
   priorCalledUpShareCapital: "100",
-  priorProfitAndLossAccount: "10000",
+  priorProfitAndLossAccount: "0",
 };
 
 async function typeInLastYear(page) {
