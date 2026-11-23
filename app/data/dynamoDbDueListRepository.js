@@ -27,6 +27,7 @@ import { hashSub, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { dueListRowRetention } from "../lib/recordRetention.js";
 import { DUE_LIST_BUSINESS_CAP, DUE_LIST_ROW_CAP } from "../services/dueList.js";
+import { COUNT_SETTLE_MS, COUNT_SK } from "../lib/dueListCount.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbDueListRepository.js" });
 
@@ -38,12 +39,8 @@ const BATCH_SIZE = 25;
 export const BATCH_ATTEMPTS = 5;
 export const BATCH_FIRST_WAIT_MS = 50;
 const FEED_SK = "feed";
-const COUNT_SK = "count";
 // How often a write starts again after another write changed the same items first.
 const WRITE_ATTEMPTS = 4;
-// A count changed more recently than this may hold reservations for items still being written, so a
-// count of the items does not replace it. Longer than any write takes.
-export const COUNT_SETTLE_MS = 60_000;
 
 /** The account's due list holds as many businesses or rows as it may. */
 export class DueListFullError extends Error {
@@ -166,6 +163,21 @@ async function recount(userSub) {
   if (seen && Date.now() - (seen.countedAt ?? 0) < COUNT_SETTLE_MS) return { businesses: seen.businesses, rows: seen.rows };
   const items = await itemsOfAccount(userSub);
   const counts = { businesses: items.filter(isBusiness).length, rows: items.filter(isRow).length };
+  // A count under an earlier salt version that moved within the settle window may hold reservations
+  // for items a write that began before the rotation is still writing there: those are its count
+  // less the items it has, and they are counted too.
+  for (const { hashedSub } of subHashCandidates(userSub)) {
+    if (hashedSub === key.hashedSub) continue;
+    const earlier = (
+      await executeDynamoDbCommand(
+        (module) => new module.GetCommand({ TableName: tableName, Key: { hashedSub, sk: COUNT_SK }, ConsistentRead: true }),
+      )
+    ).Item;
+    if (!earlier || Date.now() - (earlier.countedAt ?? 0) >= COUNT_SETTLE_MS) continue;
+    const there = items.filter((item) => item.hashedSub === hashedSub);
+    counts.businesses += Math.max(0, (earlier.businesses ?? 0) - there.filter(isBusiness).length);
+    counts.rows += Math.max(0, (earlier.rows ?? 0) - there.filter(isRow).length);
+  }
   if (seen && seen.businesses === counts.businesses && seen.rows === counts.rows) return counts;
   try {
     await executeDynamoDbCommand(

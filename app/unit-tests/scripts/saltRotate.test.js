@@ -97,10 +97,14 @@ function createFakeDynamo() {
           }
           return { Attributes: table.get(key) };
         }
-        case "DeleteCommand":
+        case "DeleteCommand": {
           fake.countWrite();
+          const stored = tableOf(input.TableName).get(keyOf(input.TableName, input.Key));
+          const settled = input.ExpressionAttributeValues?.[":settled"];
+          if (settled !== undefined && stored?.countedAt !== undefined && stored.countedAt >= settled) throw conditionFailure();
           tableOf(input.TableName).delete(keyOf(input.TableName, input.Key));
           return {};
+        }
         case "TransactWriteCommand": {
           fake.countWrite();
           const [{ Put }, { Delete }] = input.TransactItems;
@@ -437,7 +441,7 @@ describe("salt-rotate runs", () => {
     });
   });
 
-  test("the due list's count item is not carried to the new hash, so the next write counts the account's items", async () => {
+  test("the due list's count item under the earlier hash is deleted, not carried onto the new hash, whose count stays", async () => {
     const DUE_LIST = "ci-env-due-list";
     state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
     state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-return#2026-09-30", type: "vat-return" });
@@ -463,51 +467,50 @@ describe("salt-rotate runs", () => {
         .filter((item) => item.hashedSub === newA)
         .map((item) => item.sk)
         .sort(),
-    ).toEqual(["business#shop-1", "business#shop-2", "row#shop-1#vat-return#2026-09-30"]);
-    expect(items.filter((item) => item.sk === "count")).toEqual([]);
+    ).toEqual(["business#shop-1", "business#shop-2", "count", "row#shop-1#vat-return#2026-09-30"]);
+    // The new hash's count was written by a write that counted every salt version's items.
+    expect(items.filter((item) => item.sk === "count")).toEqual([{ hashedSub: newA, sk: "count", businesses: 1, rows: 0 }]);
     expect(items.filter((item) => item.hashedSub === hashA)).toEqual([]);
     expect(report["due-list"]).toMatchObject({ moved: 2, recounted: 1 });
   });
 
-  test("a count item written under the new hash goes on a rerun after a crash before its delete", async () => {
+  test("an earlier hash's count moved within the settle window is deleted only after the rotation waits it out", async () => {
     const DUE_LIST = "ci-env-due-list";
     state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 1, rows: 3, countedAt: state.clock });
     const context = createContext(state);
-    const writeRegistry = context.writeRegistry;
-    let newA;
-    context.writeRegistry = async (registry) => {
-      await writeRegistry(registry);
-      if (registry.rotation?.state === "cutover" && !newA) {
-        newA = hashValue(registry.versions.v2, SUB_A);
-        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "business#shop-2", businessId: "shop-2", kind: "vat" });
-        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "count", businesses: 1, rows: 0 });
-      }
-    };
-    const send = state.dynamo.send.bind(state.dynamo);
-    let crashed = false;
-    state.dynamo.send = async (command) => {
-      const { Key } = command.input ?? {};
-      if (!crashed && command.constructor.name === "DeleteCommand" && Key?.sk === "count" && Key.hashedSub === newA) {
-        crashed = true;
-        throw new Error("the process stopped");
-      }
-      return send(command);
+    let deletedBeforeTheWait = false;
+    const sleep = context.sleep;
+    context.sleep = async (ms) => {
+      deletedBeforeTheWait ||= !state.dynamo.items(DUE_LIST).some((item) => item.sk === "count" && item.hashedSub === hashA);
+      await sleep(ms);
     };
 
-    await expect(runRotation(context, { mode: "rotate" })).rejects.toThrow("the process stopped");
-    await runRotation(context, { mode: "rotate" });
+    const { report } = await runRotation(context, { mode: "rotate" });
 
+    expect(deletedBeforeTheWait).toBe(false);
     expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([]);
-    expect(
-      state.dynamo
-        .items(DUE_LIST)
-        .filter((item) => item.hashedSub === newA)
-        .map((item) => item.sk)
-        .sort(),
-    ).toEqual(["business#shop-1", "business#shop-2"]);
+    expect(report["due-list"]).toMatchObject({ moved: 1, recounted: 1 });
   });
 
-  test("an account with no due list items has its count item counted again after a rotation", async () => {
+  test("an earlier hash's count still moving after the wait is left, and the rotation stops for a sweep to finish", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 0, rows: 2, countedAt: state.clock });
+    const context = createContext(state);
+    const sleep = context.sleep;
+    context.sleep = async (ms) => {
+      await sleep(ms);
+      const count = state.dynamo.items(DUE_LIST).find((item) => item.sk === "count");
+      if (count) state.dynamo.seed(DUE_LIST, { ...count, countedAt: state.clock });
+    };
+
+    await expect(runRotation(context, { mode: "rotate" })).rejects.toThrow("Items remain under an earlier version in: due-list");
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toHaveLength(1);
+    expect(state.logs.join("\n")).toContain("recount-left");
+  });
+
+  test("an account with no due list items keeps its count item through a rotation", async () => {
     const DUE_LIST = "ci-env-due-list";
     const context = createContext(state);
     const writeRegistry = context.writeRegistry;
@@ -520,7 +523,7 @@ describe("salt-rotate runs", () => {
 
     await runRotation(context, { mode: "rotate" });
 
-    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([]);
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toHaveLength(1);
   });
 
   test("a sweep refuses while a rotation is in flight", async () => {

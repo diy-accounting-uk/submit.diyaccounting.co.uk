@@ -6,6 +6,7 @@
 // close a row through a filed return, and delete the business with its rows.
 
 import { describe, test, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
+import { COUNT_SETTLE_MS } from "../lib/dueListCount.js";
 
 const USER = "due-list-system-user";
 let signedIn = USER;
@@ -247,7 +248,7 @@ describe("System: the due list's limits and removals under writes that overlap",
         TableName: process.env.DUE_LIST_DYNAMODB_TABLE_NAME,
         Key: { hashedSub: rows[0].hashedSub, sk: "count" },
         UpdateExpression: "SET countedAt = :then",
-        ExpressionAttributeValues: { ":then": Date.now() - repository.COUNT_SETTLE_MS - 1 },
+        ExpressionAttributeValues: { ":then": Date.now() - COUNT_SETTLE_MS - 1 },
       }),
     );
 
@@ -281,5 +282,45 @@ describe("System: the due list's limits and removals under writes that overlap",
     } finally {
       docClient.send = send;
     }
+  });
+
+  test("a salt rotation step during a rows write keeps the write's reservation, so a second write cannot pass 500", async () => {
+    await putBusiness("a");
+    await putBusiness("b");
+    expect((await postRows("a", vatRows(300, 0))).statusCode).toBe(200);
+    const { deleteSettledRecountedItem } = await import("../../scripts/salt-rotate.js");
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const { businesses } = await repository.listBusinessesAndRows(signedIn);
+    const countKey = { hashedSub: businesses[0].hashedSub, sk: "count" };
+    const send = docClient.send;
+    let second;
+    let stepRan = false;
+    // Once the first write has reserved its 200 rows and before it writes them, the rotation's step on
+    // the account's count runs, and a second write of 100 rows arrives.
+    docClient.send = async (command) => {
+      if (!stepRan && command instanceof module.BatchWriteCommand) {
+        stepRan = true;
+        await deleteSettledRecountedItem(
+          { doc: docClient, now: () => new Date().toISOString() },
+          process.env.DUE_LIST_DYNAMODB_TABLE_NAME,
+          countKey,
+        );
+        second = await postRows("b", vatRows(100, 1000));
+      }
+      return send(command);
+    };
+    let first;
+    try {
+      first = await postRows("a", vatRows(500, 0));
+    } finally {
+      docClient.send = send;
+    }
+
+    expect(stepRan).toBe(true);
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(409);
+    expect(bodyOf(second)).toMatchObject({ reason: "due_list_rows_full" });
+    expect((await list()).rows).toHaveLength(500);
   });
 });

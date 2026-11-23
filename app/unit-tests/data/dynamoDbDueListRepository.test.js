@@ -687,4 +687,36 @@ describe("data/dynamoDbDueListRepository limits", () => {
     expect(lines.length).toBeGreaterThanOrEqual(3);
     expect(lines.join("")).not.toContain(id);
   });
+
+  test("a recount adds the reservations an earlier salt version's count still holds for rows being written there", async () => {
+    mockSubHashCandidates.mockImplementation((sub) => [
+      { version: "v2", hashedSub: `new-${sub}` },
+      { version: "v1", hashedSub: `hashed-${sub}` },
+    ]);
+    const earlierRows = [1, 2].map((day) => ({ hashedSub: "hashed-user-1", sk: `row#b9#vat-return#2025-0${day}-01` }));
+    let reserved = false;
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") {
+        const hashedSub = command.params.ExpressionAttributeValues[":hashedSub"];
+        return { Items: hashedSub === "hashed-user-1" ? earlierRows : [] };
+      }
+      if (command.name === "Get") {
+        return command.params.Key.hashedSub === "hashed-user-1"
+          ? { Item: { hashedSub: "hashed-user-1", sk: "count", businesses: 0, rows: 5, countedAt: Date.now() } }
+          : {};
+      }
+      if (command.name === "Update" && command.params.ConditionExpression?.includes(":room") && !reserved) {
+        reserved = true;
+        throw new ConditionalCheckFailedException("no count");
+      }
+      return {};
+    });
+
+    await putRows("user-1", rowsOf(1));
+
+    const written = countUpdates().find((update) => update.ConditionExpression === "attribute_not_exists(sk)");
+    expect(written.Key).toEqual({ hashedSub: "new-user-1", sk: "count" });
+    // Two rows stored under the earlier hash, and three more its count still holds for a write there.
+    expect(written.ExpressionAttributeValues).toMatchObject({ ":rows": 5 });
+  });
 });
