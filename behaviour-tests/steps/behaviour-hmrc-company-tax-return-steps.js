@@ -142,11 +142,32 @@ const TYPED_ANSWERS = {
   declarantName: "Carol Smith",
 };
 
+// The year before, which the accounts of a company past its first accounts show beside this year's:
+// a profit of 10,000 and a balance sheet whose net assets equal its capital and reserves.
+const LAST_YEAR_ANSWERS = {
+  priorTurnover: "60000",
+  priorCostOfSales: "30000",
+  priorAdministrativeExpenses: "20000",
+  priorInterestReceivable: "0",
+  priorTax: "0",
+  priorCashAtBank: "10100",
+  priorCalledUpShareCapital: "100",
+  priorProfitAndLossAccount: "10000",
+};
+
+async function typeInLastYear(page) {
+  await page.check("#includeComparatives");
+  for (const [id, value] of Object.entries(LAST_YEAR_ANSWERS)) {
+    await loggedFill(page, `#${id}`, value, id);
+  }
+}
+
 export async function typeInCompanyTaxReturnForm(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user types every figure, the statements and the declaration into the form", async () => {
+  await test.step("The user types every figure of both years, the statements and the declaration into the form", async () => {
     for (const [id, value] of Object.entries(TYPED_ANSWERS)) {
       await loggedFill(page, `#${id}`, value, id);
     }
+    await typeInLastYear(page);
     await page.check("#statementSection477Exemption");
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
@@ -712,6 +733,7 @@ export async function typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath 
     for (const [id, value] of Object.entries(LONG_PERIOD_ANSWERS)) {
       await loggedFill(page, `#${id}`, value, id);
     }
+    await typeInLastYear(page);
     await expect(page.locator("#longPeriodPanel")).toContainText("This period of account files as two returns");
     await expect(page.locator("#longPeriodPanel")).toContainText("Return 2 of 2: 1 January 2026 to 31 March 2026 (90 days)");
     await page.check("#loansMadeAp2Yes");
