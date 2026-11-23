@@ -10,6 +10,11 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
+const SECRETARIES = registerCompany(REGISTER_COMPANY_NUMBERS[8]).name;
+const NEW_SECRETARIES_NAME = "OAKWAY SECRETARIAL SERVICES LIMITED";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -35,7 +40,7 @@ const OFFICERS = [
     dateOfBirth: { month: 2, year: 1975 },
   },
   {
-    name: "SIMULATOR SECRETARIES LIMITED",
+    name: SECRETARIES,
     officerRole: "corporate-secretary",
     appointedOn: "2018-03-01",
   },
@@ -56,13 +61,13 @@ const OFFICERS = [
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, officers = OFFICERS } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, PEOPLE.eleanorBramwell.email);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -70,9 +75,9 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const pathname = decodeURIComponent(url.pathname);
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
-    if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
-    if (pathname === "/api/v1/companies-house/company/00000001/officers") return json({ officers });
+    if (pathname === `/api/v1/companies-house/company/${JOINERY.number}`)
+      return json({ companyNumber: JOINERY.number, companyName: JOINERY.name });
+    if (pathname === `/api/v1/companies-house/company/${JOINERY.number}/officers`) return json({ officers });
     if (pathname === "/api/v1/companies-house/officer-change" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
@@ -99,7 +104,7 @@ async function shoot(page, name) {
 const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
 const CHANGED = "2026-11-02";
-const TENNANT = `${SITE}/companies-house/changeOfficer.html?companyNumber=00000001&officerName=TENNANT%2C%20Marcus%20John`;
+const TENNANT = `${SITE}/companies-house/changeOfficer.html?companyNumber=${JOINERY.number}&officerName=TENNANT%2C%20Marcus%20John`;
 
 async function fillAddress(page, prefix, { premise, street, postTown, country, postcode }) {
   await page.locator(`#${prefix}Premise`).fill(premise);
@@ -120,7 +125,7 @@ for (const width of [1280, 390]) {
 
     await expect(page.locator("h1")).toHaveText("Change a director's or secretary's details");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Status: sandbox.");
-    await expect(page.locator("#companyNumber")).toHaveValue("00000001");
+    await expect(page.locator("#companyNumber")).toHaveValue(JOINERY.number);
     await page.getByRole("button", { name: "Look up the company" }).click();
 
     await expect(page.getByLabel("TENNANT, Marcus John (Director)")).toBeChecked();
@@ -161,8 +166,8 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "File with Companies House" }).click();
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
     expect(filings[0]).toEqual({
-      companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyNumber: JOINERY.number,
+      companyName: JOINERY.name,
       companyAuthCode: "SIMCS01",
       dateSigned: expect.any(String),
       officerRole: "director",
@@ -182,9 +187,12 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     const filings = [];
     await serveSite(page, { filings });
-    await page.goto(`${SITE}/cy/companies-house/changeOfficer.html?companyNumber=00000001&officerName=TENNANT%2C%20Marcus%20John`, {
-      waitUntil: "networkidle",
-    });
+    await page.goto(
+      `${SITE}/cy/companies-house/changeOfficer.html?companyNumber=${JOINERY.number}&officerName=TENNANT%2C%20Marcus%20John`,
+      {
+        waitUntil: "networkidle",
+      },
+    );
 
     await expect(page.locator("html")).toHaveAttribute("lang", "cy");
     await expect(page.locator("h1")).toHaveText("Newid manylion cyfarwyddwr neu ysgrifennydd");
@@ -278,7 +286,7 @@ test("a director's service address change needs the home address confirmed uncha
 test("a secretary's service address change to the registered office is filed with no date of birth", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings });
-  await page.goto(`${SITE}/companies-house/changeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C%20Eleanor`, {
+  await page.goto(`${SITE}/companies-house/changeOfficer.html?companyNumber=${JOINERY.number}&officerName=BRAMWELL%2C%20Eleanor`, {
     waitUntil: "networkidle",
   });
   await page.getByRole("button", { name: "Look up the company" }).click();
@@ -310,24 +318,24 @@ test("a corporate secretary's new name is filed against the name the register ho
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/changeOfficer.html`, { waitUntil: "networkidle" });
-  await page.locator("#companyNumber").fill("00000001");
+  await page.locator("#companyNumber").fill(JOINERY.number);
   await page.getByRole("button", { name: "Look up the company" }).click();
-  await page.getByLabel("SIMULATOR SECRETARIES LIMITED (Corporate secretary)").check();
-  await expect(page.locator("#corporateName")).toHaveValue("SIMULATOR SECRETARIES LIMITED");
+  await page.getByLabel(`${SECRETARIES} (Corporate secretary)`).check();
+  await expect(page.locator("#corporateName")).toHaveValue(SECRETARIES);
   await expect(page.locator("#personChanges")).toBeHidden();
   await page.locator("#dateOfChange").fill(CHANGED);
   await page.getByLabel("Its name", { exact: true }).check();
-  await page.locator("#newCorporateName").fill("SIMULATOR COMPANY SECRETARIES LIMITED");
+  await page.locator("#newCorporateName").fill(NEW_SECRETARIES_NAME);
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#reviewList")).toContainText("SIMULATOR COMPANY SECRETARIES LIMITED");
+  await expect(page.locator("#reviewList")).toContainText(NEW_SECRETARIES_NAME);
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0]).toMatchObject({
     officerRole: "secretary",
     corporate: true,
-    corporateName: "SIMULATOR SECRETARIES LIMITED",
-    newCorporateName: "SIMULATOR COMPANY SECRETARIES LIMITED",
+    corporateName: SECRETARIES,
+    newCorporateName: NEW_SECRETARIES_NAME,
   });
   expect(filings[0]).not.toHaveProperty("address");
 });

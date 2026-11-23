@@ -8,11 +8,12 @@ import { servePageScripts, serveFilingResultRecord } from "./hmrcFieldTableAsset
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const BASE = "http://localhost:3000";
-const COMPANY_NUMBER = "00000001";
+const COMPANY_NUMBER = REGISTER_COMPANY_NUMBERS[0];
 const GRANT_ID = "3f2b8c1e-5d4a-4e7b-9c6d-1a2b3c4d5e6f";
 
 // The documented Companies House token response carries no scope field, so this is what the

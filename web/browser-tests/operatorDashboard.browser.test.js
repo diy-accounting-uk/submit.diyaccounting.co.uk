@@ -29,6 +29,7 @@ import {
   FIXTURE_CONSOLE_INDEX,
   FORBIDDEN_BODY,
 } from "./operatorDashboardFixtures.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -122,10 +123,10 @@ test.describe("Operator Dashboard", () => {
 
   async function loadDashboard(page, { loggedIn = false } = {}) {
     if (loggedIn) {
-      await page.addInitScript(() => {
-        window.localStorage.setItem("userInfo", JSON.stringify({ given_name: "Operator", email: "operator@example.com", sub: "op-sub" }));
+      await page.addInitScript((email) => {
+        window.localStorage.setItem("userInfo", JSON.stringify({ given_name: "Operator", email, sub: "op-sub" }));
         window.localStorage.setItem("cognitoIdToken", "test-id-token");
-      });
+      }, PEOPLE.priyaHaldane.email);
     }
     await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "domcontentloaded" });
     await delay(200);

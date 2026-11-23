@@ -10,6 +10,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -27,23 +28,28 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
 };
 
-const COMPANIES = {
-  "00000001": { companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED", jurisdiction: "england-wales" },
-  "SC000000": { companyNumber: "SC000000", companyName: "SIMULATOR SCOTTISH COMPANY LIMITED", jurisdiction: "scotland" },
-  "00000002": { companyNumber: "00000002", companyName: "CWMNI ENGHREIFFTIOL CYF", jurisdiction: "wales" },
-  "NI000000": { companyNumber: "NI000000", companyName: "SIMULATOR NORTHERN IRELAND COMPANY LIMITED", jurisdiction: "northern-ireland" },
-};
+// A company of the register in each jurisdiction: England and Wales, Scotland, Wales, Northern Ireland.
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
+const GLENMORE = registerCompany(REGISTER_COMPANY_NUMBERS[10]);
+const TEIFI = registerCompany(REGISTER_COMPANY_NUMBERS[5]);
+const LOUGH_ERNE = registerCompany(REGISTER_COMPANY_NUMBERS[11]);
+const COMPANIES = Object.fromEntries(
+  [JOINERY, GLENMORE, TEIFI, LOUGH_ERNE].map((company) => [
+    company.number,
+    { companyNumber: company.number, companyName: company.name, jurisdiction: company.jurisdiction },
+  ]),
+);
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request is recorded with the route it went to.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, PEOPLE.eleanorBramwell.email);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -81,7 +87,7 @@ async function shoot(page, name) {
 
 const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
-async function lookUp(page, { companyNumber = "00000001", button = "Look up the company" } = {}) {
+async function lookUp(page, { companyNumber = JOINERY.number, button = "Look up the company" } = {}) {
   await page.locator("#companyNumber").fill(companyNumber);
   await page.getByRole("button", { name: button }).click();
   await expect(page.locator("#formView")).toBeVisible();
@@ -97,7 +103,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("h1")).toHaveText("Tell Companies House where the company keeps its records");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Status: sandbox.");
     await lookUp(page);
-    await expect(page.locator("#formView")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#formView")).toContainText(JOINERY.name);
     await expect(page.locator("#formView")).toContainText("Companies House charges no fee for these filings.");
     await expect(page.locator("#change-sail")).toBeChecked();
     await expect(page.locator("#addressFields")).toBeVisible();
@@ -130,8 +136,8 @@ for (const width of [1280, 390]) {
     expect(filings).toHaveLength(1);
     expect(filings[0].route).toBe("sail-address");
     expect(filings[0].body).toMatchObject({
-      companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyNumber: JOINERY.number,
+      companyName: JOINERY.name,
       companyAuthCode: "SIMCS01",
       address: {
         premise: "Unit 4, Harbour House",
@@ -240,7 +246,7 @@ test("a company registered in Scotland is offered Scotland alone, and its charge
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/recordsLocation.html`, { waitUntil: "networkidle" });
-  await lookUp(page, { companyNumber: "SC000000" });
+  await lookUp(page, { companyNumber: GLENMORE.number });
   await expect(page.locator("#sailCountry option:not([hidden])")).toHaveText(["Scotland"]);
   await expect(page.locator("#sailCountry")).toHaveValue("GB-SCT");
   await page.getByLabel("Records are now kept at the inspection location (form AD03)").check();
@@ -253,8 +259,8 @@ test("a company registered in Scotland is offered Scotland alone, and its charge
 });
 
 for (const [companyNumber, countries] of [
-  ["00000002", ["England", "Wales"]],
-  ["NI000000", ["Northern Ireland"]],
+  [TEIFI.number, ["England", "Wales"]],
+  [LOUGH_ERNE.number, ["Northern Ireland"]],
 ]) {
   test(`company ${companyNumber} is offered the countries of the part of the United Kingdom it is registered in`, async ({ page }) => {
     await serveSite(page, { filings: [] });
@@ -285,8 +291,10 @@ test("the records are in the words and the order of form AD03", async ({ page })
 
 test("a link from the company lookup chooses its notice", async ({ page }) => {
   await serveSite(page);
-  await page.goto(`${SITE}/companies-house/recordsLocation.html?companyNumber=00000001&change=to-office`, { waitUntil: "networkidle" });
-  await expect(page.locator("#companyNumber")).toHaveValue("00000001");
+  await page.goto(`${SITE}/companies-house/recordsLocation.html?companyNumber=${JOINERY.number}&change=to-office`, {
+    waitUntil: "networkidle",
+  });
+  await expect(page.locator("#companyNumber")).toHaveValue(JOINERY.number);
   await page.getByRole("button", { name: "Look up the company" }).click();
   await expect(page.locator("#change-to-office")).toBeChecked();
   await expect(page.locator("#recordFields")).toBeVisible();

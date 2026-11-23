@@ -16,6 +16,7 @@ import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/f
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
+import { addressLine1, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -24,6 +25,9 @@ const PAGE_PATH = "companies-house/fileMicroEntityAccounts.html";
 const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/browser-test-results/revised-accounts");
 const WIDTHS = { desktop: 1280, phone: 390 };
+
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
+const JOINERY_OFFICE = `${addressLine1(JOINERY.address)}, ${JOINERY.address.locality}, ${JOINERY.address.postalCode}`;
 
 const cases = accountsDocumentCases();
 const microCase = cases.find((candidate) => candidate.name === "micro-entity-accounts");
@@ -35,7 +39,7 @@ function accountsReceipt(document, overrides = {}) {
     kind: "companies-house-accounts",
     statusCode: "ACCEPT",
     submissionNumber: "00001A",
-    companyNumber: "06846849",
+    companyNumber: MICRO_TEST_CASE.companyNumber,
     rejections: [],
     filedDocument: document,
     ...overrides,
@@ -78,7 +82,7 @@ async function openAmend(
 ) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
-    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails }) => {
+    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails, profile }) => {
       window.__submitReady__ = true;
       window.profileFails = lookupFails;
       localStorage.setItem("cognitoIdToken", "token");
@@ -98,9 +102,9 @@ async function openAmend(
         if (window.profileFails) throw new TypeError("Cannot read properties of undefined (reading 'companyNumber')");
         return {
           companyNumber,
-          companyName: "EXAMPLE TRADING LIMITED",
+          companyName: profile.companyName,
           jurisdiction: companyJurisdiction,
-          registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+          registeredOffice: profile.registeredOffice,
         };
       };
       window.submitMicroEntityAccounts = async (accounts) => {
@@ -114,7 +118,20 @@ async function openAmend(
         rejections: outcomeCode === "REJECT" ? [{ rejectCode: "1", description: "Random Test mode rejection" }] : [],
       });
     },
-    { receiptBody: receipt, outcomeCode: outcome, companyJurisdiction: jurisdiction, lookupFails: profileFails },
+    {
+      receiptBody: receipt,
+      outcomeCode: outcome,
+      companyJurisdiction: jurisdiction,
+      lookupFails: profileFails,
+      profile: {
+        companyName: JOINERY.name,
+        registeredOffice: {
+          addressLine1: addressLine1(JOINERY.address),
+          cityOrTown: JOINERY.address.locality,
+          postalCode: JOINERY.address.postalCode,
+        },
+      },
+    },
   );
   await page.route("**/*.js", async (route) => {
     if (route.request().resourceType() === "script") await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
@@ -189,7 +206,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#officeHint")).toHaveText("Filled in from the accounts you filed. Change a part to correct it.");
     await expect(page.locator("#officeDiffersHint")).toBeVisible();
     await expect(page.locator("#officeDiffersHint")).toHaveText(
-      "The Companies House register gives the registered office today as 1 Test Street, London, EC1A 1AA. The revised accounts keep the office the filed accounts state unless you change it.",
+      `The Companies House register gives the registered office today as ${JOINERY_OFFICE}. The revised accounts keep the office the filed accounts state unless you change it.`,
     );
     await expect(page.locator("#officeAddressLine1")).toHaveValue(MICRO_TEST_CASE.registeredOffice.addressLine1);
   });
@@ -197,7 +214,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   test("says in Welsh when the register's office today differs from the filed office", async ({ page }) => {
     await openAmend(page, accountsReceipt(microCase.xhtml), { welsh: true });
     await expect(page.locator("#officeDiffersHint")).toContainText(
-      "Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel 1 Test Street, London, EC1A 1AA.",
+      `Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel ${JOINERY_OFFICE}.`,
     );
   });
 
@@ -215,7 +232,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("#revisionOriginalDate")).toHaveValue("2026-09-15");
       await expect(page.locator("#revisionOriginalDate")).toHaveJSProperty("readOnly", true);
       await expect(page.locator("#revisionTexts-hint")).toContainText("Companies House prints both texts");
-      await expect(page.locator("#formCompanyNumber")).toHaveText("06846849");
+      await expect(page.locator("#formCompanyNumber")).toHaveText(MICRO_TEST_CASE.companyNumber);
       await expect(page.locator("#periodEnd")).not.toHaveValue("");
       await expect(page.locator("#currentCurrentAssets")).not.toHaveValue("");
       await expect(page.locator("#directorName")).not.toHaveValue("");
@@ -223,7 +240,9 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("[data-feature-status]")).toHaveText(
         "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
       );
-      expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe("Company EXAMPLE TRADING LIMITED (06846849).");
+      expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe(
+        `Company ${JOINERY.name} (${MICRO_TEST_CASE.companyNumber}).`,
+      );
       await expect(page.locator("#revisionDownloads")).toBeAttached();
       await expect(page.locator("#revisionDownloads")).toBeEmpty();
       await screenshot(page, "amend-banner-and-revision-section", width);
@@ -627,17 +646,17 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("#revisionSection")).toBeVisible();
       await fillRevisionTexts(page);
       await page.fill("#directorDateApproved", "2026-11-20");
-      await page.evaluate(() => {
+      await page.evaluate((companyNumber) => {
         window.submitMicroEntityAccounts = async () => {
           const error = new Error("the route's English sentence");
           error.status = 400;
           error.reason = "revision-period-not-on-register";
-          error.body = { reason: error.reason, companyNumber: "06846849", periodEnd: "2026-03-31" };
+          error.body = { reason: error.reason, companyNumber, periodEnd: "2026-03-31" };
           throw error;
         };
         document.getElementById("companyAuthCode").value = "ABC123";
         return handleSubmitFiling();
-      });
+      }, MICRO_TEST_CASE.companyNumber);
       await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(sentence);
       await expect(page.locator("#resultView")).toBeHidden();
       await screenshotAtBothWidths(page, `micro-amend-register-refusal-${language.toLowerCase()}`);
@@ -670,9 +689,12 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#periodEnd")).toHaveJSProperty("readOnly", false);
     await expect(page.locator("[data-feature-status]")).toContainText("Status: production.");
     await expect(page.locator("[data-feature-status]")).toHaveAttribute("data-feature-status", "production");
-    await page.evaluate(() => {
-      company = { companyNumber: "06846849", companyName: "EXAMPLE TRADING LIMITED" };
-    });
+    await page.evaluate(
+      ({ companyNumber, companyName }) => {
+        company = { companyNumber, companyName };
+      },
+      { companyNumber: MICRO_TEST_CASE.companyNumber, companyName: JOINERY.name },
+    );
     expect(await page.evaluate(() => buildAccountsPayload().revision)).toBeUndefined();
   });
 });

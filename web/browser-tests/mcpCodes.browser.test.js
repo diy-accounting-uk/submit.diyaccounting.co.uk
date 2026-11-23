@@ -8,6 +8,10 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { readSubmitCss } from "./submitCss.js";
+import { registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const PRECISION = registerCompany(REGISTER_COMPANY_NUMBERS[6]);
+const GLENMORE = registerCompany(REGISTER_COMPANY_NUMBERS[10]);
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const readPublic = (relativePath) => fs.readFileSync(path.join(PUBLIC_DIR, relativePath), "utf-8");
@@ -47,7 +51,7 @@ async function setupRoutes(page, { entry, putStatus = 200, putBody = { state: "f
 
 test.describe("Companies House codes page", () => {
   test("is a page of the site, with the site header and footer", async ({ page }) => {
-    await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [] } });
+    await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: PRECISION.number, directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("header nav")).toBeVisible();
@@ -57,7 +61,7 @@ test.describe("Companies House codes page", () => {
 
   test("a single company reads as one filing and shows when the link ends", async ({ page }) => {
     await setupRoutes(page, {
-      entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [], expiresAt: "2026-10-28T14:35:00.000Z" },
+      entry: { state: "pending", kind: "accounts", companyNumber: PRECISION.number, directors: [], expiresAt: "2026-10-28T14:35:00.000Z" },
     });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
@@ -67,10 +71,10 @@ test.describe("Companies House codes page", () => {
   });
 
   test("asks for the company code only, then tells the user to go back to the chat", async ({ page }) => {
-    const puts = await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [] } });
+    const puts = await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: PRECISION.number, directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("#codesIntro")).toContainText("00000007");
+    await expect(page.locator("#codesIntro")).toContainText(PRECISION.number);
     await expect(page.locator("#personalCodeFields input")).toHaveCount(0);
     await expect(page.locator("#companyAuthCode")).toHaveAttribute("type", "password");
     await page.screenshot({ path: "target/mcp-codes-screenshots/mcp-codes-accounts.png" });
@@ -85,7 +89,7 @@ test.describe("Companies House codes page", () => {
 
   test("asks for one personal code for each director, in order", async ({ page }) => {
     const puts = await setupRoutes(page, {
-      entry: { state: "pending", kind: "confirmation-statement", companyNumber: "00000007", directors: DIRECTORS },
+      entry: { state: "pending", kind: "confirmation-statement", companyNumber: PRECISION.number, directors: DIRECTORS },
     });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
@@ -110,7 +114,7 @@ test.describe("Companies House codes page", () => {
         clients: [
           { clientId: "client-a", displayName: "Alpha Ltd", companyNumber: "01234567" },
           { clientId: "client-b", displayName: "Beta Ltd" },
-          { clientId: "client-c", displayName: "Gamma Ltd", companyNumber: "SC000001" },
+          { clientId: "client-c", displayName: GLENMORE.name, companyNumber: GLENMORE.number },
         ],
       },
     });
@@ -122,7 +126,7 @@ test.describe("Companies House codes page", () => {
     await expect(page.locator("#clientCodeFields label")).toHaveText([
       "Company authentication code for Alpha Ltd (01234567)",
       "Company authentication code for Beta Ltd",
-      "Company authentication code for Gamma Ltd (SC000001)",
+      `Company authentication code for ${GLENMORE.name} (${GLENMORE.number})`,
     ]);
     await page.screenshot({ path: "target/mcp-codes-screenshots/mcp-codes-batch.png" });
 
@@ -145,7 +149,7 @@ test.describe("Companies House codes page", () => {
 
   test("shows the reason and lets the user try again when the codes are refused", async ({ page }) => {
     await setupRoutes(page, {
-      entry: { state: "pending", kind: "accounts", companyNumber: "00000007", directors: [] },
+      entry: { state: "pending", kind: "accounts", companyNumber: PRECISION.number, directors: [] },
       putStatus: 400,
       putBody: { message: "Invalid companyAuthCode - must be 6 to 8 characters" },
     });
@@ -168,7 +172,7 @@ test.describe("Companies House codes page", () => {
   });
 
   test("shows the saved state, not the form, when the codes are already in", async ({ page }) => {
-    await setupRoutes(page, { entry: { state: "filled", kind: "accounts", companyNumber: "00000007", directors: [] } });
+    await setupRoutes(page, { entry: { state: "filled", kind: "accounts", companyNumber: PRECISION.number, directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("#codesDoneView")).toBeVisible();

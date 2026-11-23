@@ -9,6 +9,9 @@ import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
 import { readSubmitCss } from "./submitCss.js";
+import { registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -30,10 +33,13 @@ async function openFormView(page) {
     await route.fulfill({ status: 200, contentType: "text/html", body: html });
   });
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => {
-    company = { companyNumber: "00000001", companyName: "TEST MICRO LTD" };
-    showView("formView");
-  });
+  await page.evaluate(
+    ({ companyNumber, companyName }) => {
+      company = { companyNumber, companyName };
+      showView("formView");
+    },
+    { companyNumber: JOINERY.number, companyName: JOINERY.name },
+  );
 }
 
 const REQUIRED = {

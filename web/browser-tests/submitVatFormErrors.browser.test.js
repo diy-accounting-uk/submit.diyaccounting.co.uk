@@ -58,7 +58,7 @@ test.describe("VAT return error summary", () => {
     await page.addInitScript(() => localStorage.setItem("siteLanguage", "en"));
     await openSubmitVat(page, "hmrc/vat/submitVat.html");
     await page.evaluate(() => {
-      document.getElementById("vatNumber").value = "12345678";
+      document.getElementById("vatNumber").value = "18402267";
       document.getElementById("totalValueSalesExVAT").value = "12.50";
     });
     await page.locator("#submitBtn").click();
