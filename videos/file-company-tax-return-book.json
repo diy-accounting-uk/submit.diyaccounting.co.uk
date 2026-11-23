@@ -395,7 +395,7 @@
         {
           "action": "type",
           "target": "#gatewayUserId",
-          "text": "dummy-gateway-user",
+          "text": "584203917461",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Government Gateway user ID.",

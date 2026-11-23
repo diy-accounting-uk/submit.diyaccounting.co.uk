@@ -14,7 +14,7 @@ import { parseXmlDocument, allElements } from "../../lib/xmlDom.js";
 export const SIMULATOR_PRESENTER_ID = "12345678901";
 export const SIMULATOR_PRESENTER_CODE = "SimTest1";
 // A second presenter, standing in for a customer's own presenter with its own credit account.
-export const SIMULATOR_CUSTOMER_PRESENTER_ID = "98765432109";
+export const SIMULATOR_CUSTOMER_PRESENTER_ID = "40418362715";
 export const SIMULATOR_CUSTOMER_PRESENTER_CODE = "CustSim1";
 
 function md5Lowercase(value) {

@@ -195,16 +195,21 @@
         },
         {
           "action": "click",
-          "target": "#authSubmitBtn",
-          "caption": "Read the company's register data.",
-          "headline": "Read the register",
-          "keyWord": "register",
-          "instruction": "Enter the Company authentication code, then choose Read register data."
+          "target": "#authSubmitBtn"
         },
         {
           "action": "await",
           "until": "#reviewView",
           "label": "Reading the register data"
+        },
+        {
+          "action": "scroll",
+          "to": "top",
+          "durationMs": 0,
+          "caption": "Read the company's register data.",
+          "headline": "Read the register",
+          "keyWord": "register",
+          "instruction": "Enter the Company authentication code, then choose Read register data."
         },
         {
           "action": "hold",
@@ -231,7 +236,7 @@
         {
           "action": "type",
           "target": "#directorOtherForenames-0",
-          "text": "Marie",
+          "text": "MARIE",
           "caption": "Each director gives other forenames and a personal code.",
           "headline": "Directors verify identity",
           "keyWord": "Directors"
@@ -245,7 +250,7 @@
         {
           "action": "type",
           "target": "#directorOtherForenames-1",
-          "text": "James"
+          "text": "JAMES"
         },
         {
           "action": "type",
@@ -333,7 +338,7 @@
         {
           "action": "type",
           "target": "#directorOtherForenames-0",
-          "text": "Marie"
+          "text": "MARIE"
         },
         {
           "action": "type",
@@ -344,7 +349,7 @@
         {
           "action": "type",
           "target": "#directorOtherForenames-1",
-          "text": "James"
+          "text": "JAMES"
         },
         {
           "action": "type",

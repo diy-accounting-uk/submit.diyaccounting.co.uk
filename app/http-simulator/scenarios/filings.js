@@ -7,7 +7,7 @@
 // answers. The registered offices come from fixtures/register.js, so the public register lookup and
 // the filing fixture agree on the same company.
 
-import { randomUUID } from "crypto";
+import { randomInt } from "crypto";
 import { registerCompany, addressLine1 } from "../fixtures/register.js";
 
 // Deliberately fails the transaction close with a 422 validation error naming the postcode, so
@@ -60,8 +60,13 @@ export function getEligibilityStatusCode(companyNumber) {
   return "COMPANY_VALID_FOR_SERVICE";
 }
 
+// A transaction or submission id in the shape Companies House gives one: three groups of six digits.
+function companiesHouseId() {
+  return Array.from({ length: 3 }, () => String(randomInt(0, 1000000)).padStart(6, "0")).join("-");
+}
+
 export function openTransaction({ companyNumber, description, reference }) {
-  const id = randomUUID().replace(/-/g, "");
+  const id = companiesHouseId();
   const transaction = {
     id,
     status: "open",
@@ -121,7 +126,7 @@ export function closeTransaction(transactionId) {
 
   transaction.status = "closed";
   transaction.closed_at = new Date().toISOString();
-  const submissionId = randomUUID().replace(/-/g, "");
+  const submissionId = companiesHouseId();
   transaction.filings = {
     [submissionId]: {
       type: Object.keys(transaction.resources)[0] || "unknown",

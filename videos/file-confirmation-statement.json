@@ -238,7 +238,7 @@
         {
           "action": "type",
           "target": "#ownPresenterId",
-          "text": "98765432109",
+          "text": "40418362715",
           "clear": true,
           "secret": true,
           "caption": "Type your presenter id.",

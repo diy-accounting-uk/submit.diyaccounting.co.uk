@@ -165,7 +165,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{yearsAgo:1}}",
+          "value": "{{register:00000003:periodStart}}",
           "caption": "Enter the period and the profit and loss.",
           "instruction": "Enter the first and last day of the accounting period, then this year's profit and loss figures, starting with turnover.",
           "headline": "Period and profit and loss",
@@ -174,7 +174,7 @@
         {
           "action": "fill",
           "target": "#periodEnd",
-          "value": "{{daysAgo:1}}"
+          "value": "{{register:00000003:periodEnd}}"
         },
         {
           "action": "fill",

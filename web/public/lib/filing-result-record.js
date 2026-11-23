@@ -51,13 +51,14 @@ function changedOrConfirmed(changed) {
  * @param {object} filed
  * @param {{companyName: string, companyNumber: string}} filed.company
  * @param {object} filed.payload - the statement the page sent
+ * @param {boolean} filed.shareholdingsChanged - whether the shareholdings sent differ from the register's
  * @param {{name: string, role: string, verification: string}[]} filed.officers - as confirmed
  * @param {{name: string, control: string, notifiedOn: string}[]} filed.pscs - as confirmed
  * @param {{submissionNumber: string, statusCode: string}} filed.outcome
  * @param {string} filed.dateText
  * @returns {string}
  */
-export function confirmationStatementCopyHtml({ company, payload, officers, pscs, outcome, dateText }) {
+export function confirmationStatementCopyHtml({ company, payload, shareholdingsChanged, officers, pscs, outcome, dateText }) {
   const heading = recordHeading({
     nameHtml: escapeRecordText(company.companyName),
     referenceHtml: [
@@ -76,7 +77,7 @@ export function confirmationStatementCopyHtml({ company, payload, officers, pscs
     ],
     [siteText("ch.cs.summary-email", "Registered email address"), payload.registeredEmailAddress ?? changedOrConfirmed(false)],
     [siteText("ch.cs.summary-capital", "Statement of capital"), changedOrConfirmed(Boolean(payload.statementOfCapital))],
-    [siteText("ch.cs.summary-shareholders", "Shareholders"), changedOrConfirmed(Boolean(payload.shareholdings))],
+    [siteText("ch.cs.summary-shareholders", "Shareholders"), changedOrConfirmed(shareholdingsChanged)],
   ];
   const directors = payload.directors.map((director) =>
     [director.forename, director.otherForenames, director.surname].filter(Boolean).join(" "),

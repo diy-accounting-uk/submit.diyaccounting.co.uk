@@ -221,7 +221,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{yearsAgo:1}}",
+          "value": "{{register:00000004:periodStart}}",
           "caption": "Set the accounting period.",
           "instruction": "Enter the first and last day of the accounting period as Period start and Period end.",
           "headline": "Set the accounting period",
@@ -230,7 +230,7 @@
         {
           "action": "fill",
           "target": "#periodEnd",
-          "value": "{{daysAgo:1}}"
+          "value": "{{register:00000004:periodEnd}}"
         },
         {
           "action": "fill",

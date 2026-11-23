@@ -293,6 +293,15 @@ test.describe("File Confirmation Statement page", () => {
     expect(filingDataCalls[0].companyNumber).toBe("00000001");
   });
 
+  test("names each director with the month and year of birth only, never the day", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await expect(page.locator('[data-director-row="0"] legend')).toHaveText("Jane Doe (January 1980)");
+  });
+
   test("blocks the preview when a director's personal code is left blank", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);
@@ -393,6 +402,33 @@ test.describe("File Confirmation Statement page", () => {
     await page.click("#previewBtn");
     await delay(200);
     await expect(page.locator("#previewView")).toBeVisible();
+  });
+
+  test("a statement whose capital and shareholders are as the register sends no statement of capital and says so", async ({ page }) => {
+    setupPage(page);
+    // The register answers its figures as strings, as Companies House's filing data does.
+    const registerCapital = {
+      totalAmountUnpaid: "0",
+      totalNumberOfIssuedShares: "100",
+      shareCurrency: "GBP",
+      totalAggregateNominalValue: "100",
+      shares: [{ shareClass: "ORDINARY", prescribedParticulars: "One vote a share.", numShares: "100", aggregateNominalValue: "100" }],
+    };
+    const registerHolding = { shareClass: "ORDINARY", numberHeld: "100", shareholders: [{ forename: "ELEANOR", surname: "BRAMWELL" }] };
+    await setupRoutes(page, { filingData: { ...FILING_DATA, statementOfCapital: registerCapital, shareholdings: [registerHolding] } });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    const previewCalls = await page.evaluate(() => window.__previewCalls);
+    expect(previewCalls[0]).not.toHaveProperty("statementOfCapital");
+    await expect(page.locator("#previewView")).toContainText("As on the register");
+    await expect(page.locator("#previewView")).not.toContainText("Changed from the register");
   });
 
   test("sends the register's shareholdings on a statement where nothing changed", async ({ page }) => {
@@ -777,6 +813,7 @@ test.describe("File Confirmation Statement page", () => {
     await expect(statement.locator("tr", { hasText: "Nature of business" }).locator("td.text-value")).toHaveText(
       "Confirmed as on the register",
     );
+    await expect(statement.locator("tr", { hasText: "Shareholders" }).locator("td.text-value")).toHaveText("Confirmed as on the register");
     await expect(statement.locator("tr", { hasText: "Directors verifying" }).locator("td.text-value")).toContainText("Jane ELIZABETH Doe");
 
     const officers = copy.locator(".submission-record").nth(1);

@@ -27506,3 +27506,9 @@ cy = '''Cafwyd y taliad am y newid enw hwn. Rhowch god dilysuâ€™r cwmni eto, aâ€
 [strings."ch.form.line-break"]
 hash = "6f8b6cb4c0b9"
 cy = '''toriad llinell'''
+
+# == The confirmation statement review when the shareholders are as the register holds them ==
+
+[strings."ch.cs.as-register"]
+hash = "70a8e81f96c8"
+cy = '''Fel ar y gofrestr'''

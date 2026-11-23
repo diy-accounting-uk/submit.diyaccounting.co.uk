@@ -11,7 +11,8 @@
 // accounts filed by software, with both years and a profit and loss account, built by the small
 // company accounts builder.
 // 00000007 holds more filings than a lookup reads (620 changes of registered office after its
-// incorporation, no accounts). Each other company holds its incorporation alone. A filing history item links its document as the
+// incorporation, no accounts). 00000004 holds the micro-entity accounts the register gives it, filed
+// electronically as a PDF only. Each other company holds its incorporation alone. A filing history item links its document as the
 // live register does, on the Document API's host.
 
 import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
@@ -39,6 +40,7 @@ const IXBRL_DOCUMENT_ID = `SIMDOC00000001AA${FILED_YEAR}`;
 const PAPER_DOCUMENT_ID = `SIMDOC00000001AA${EARLIER_YEAR}`;
 const CONFIRMATION_DOCUMENT_ID = `SIMDOC00000001CS${FILED_YEAR}`;
 const PDF_ONLY_DOCUMENT_ID = `SIMDOC00000003AA${FILED_YEAR}`;
+const KINGFISHER_DOCUMENT_ID = `SIMDOC00000004AA${FILED_YEAR}`;
 const SMALL_IXBRL_DOCUMENT_ID = `SIMDOCSC000001AA${FILED_YEAR}`;
 
 function filing({
@@ -139,6 +141,30 @@ const historyByCompanyNumber = {
       pages: 5,
       paperFiled: true,
       documentId: PDF_ONLY_DOCUMENT_ID,
+    }),
+  ],
+  // The accounts the register gives 00000004, filed electronically and held as a PDF only, so the
+  // accounts forms say the last accounts have no iXBRL document to read last year's figures from.
+  "00000004": [
+    filing({
+      companyNumber: "00000004",
+      transactionId: `SIMTX00000004AA${FILED_YEAR}`,
+      category: "accounts",
+      type: "AA",
+      description: "accounts-with-accounts-type-micro-entity",
+      madeUpDate: DATES.filed.end,
+      date: DATES.filed.filedOn,
+      pages: 4,
+      documentId: KINGFISHER_DOCUMENT_ID,
+    }),
+    filing({
+      companyNumber: "00000004",
+      transactionId: "SIMTX00000004NEWINC",
+      category: "incorporation",
+      type: "NEWINC",
+      description: "incorporation-company",
+      date: registerCompany("00000004").incorporatedOn,
+      pages: 12,
     }),
   ],
   "SC000001": [
@@ -349,6 +375,12 @@ const documents = {
     content: { "application/pdf": () => PDF_CONTENT, "application/xhtml+xml": smallIxbrlAccounts },
   },
   [PDF_ONLY_DOCUMENT_ID]: { companyNumber: "00000003", category: "accounts", pages: 5, content: { "application/pdf": () => PDF_CONTENT } },
+  [KINGFISHER_DOCUMENT_ID]: {
+    companyNumber: "00000004",
+    category: "accounts",
+    pages: 4,
+    content: { "application/pdf": () => PDF_CONTENT },
+  },
   [CONFIRMATION_DOCUMENT_ID]: {
     companyNumber: "00000001",
     category: "confirmation-statement",

@@ -183,7 +183,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{yearsAgo:1}}",
+          "value": "{{register:00000003:periodStart}}",
           "caption": "Set the period and enter the balance sheet.",
           "instruction": "Enter the period start and end, then each balance sheet line for this year and for last year.",
           "headline": "Period and balance sheet",
@@ -192,7 +192,7 @@
         {
           "action": "fill",
           "target": "#periodEnd",
-          "value": "{{daysAgo:1}}"
+          "value": "{{register:00000003:periodEnd}}"
         },
         {
           "action": "fill",

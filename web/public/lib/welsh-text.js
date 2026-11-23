@@ -513,6 +513,7 @@ window.WELSH_TEXT = {
   "ch.cs.add-joint-holder": "Ychwanegu cyd-ddeiliad",
   "ch.cs.add-transfer": "Ychwanegu trosglwyddiad",
   "ch.cs.aggregate-nominal-value": "Cyfanswm y gwerth nominal cyfanred",
+  "ch.cs.as-register": "Fel ar y gofrestr",
   "ch.cs.changed": "Wedi newid o’r gofrestr",
   "ch.cs.confirm-confirmation": "Cadarnhewch y datganiad cadarnhau",
   "ch.cs.confirm-lawful": "Cadarnhewch y datganiad pwrpas cyfreithiol",

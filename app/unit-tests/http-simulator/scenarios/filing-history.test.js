@@ -68,8 +68,25 @@ describe("simulator filing history", () => {
     expect(content).toContain("Profit and loss account");
   });
 
+  test("00000004 holds the micro-entity accounts the register gives it, as a PDF with no iXBRL document", () => {
+    const [set, incorporation] = getFilingHistory("00000004").items;
+    expect(set).toEqual(
+      expect.objectContaining({
+        category: "accounts",
+        type: "AA",
+        description: "accounts-with-accounts-type-micro-entity",
+        description_values: { made_up_date: DATES.filed.end },
+      }),
+    );
+    expect(set.paper_filed).toBeUndefined();
+    expect(incorporation.type).toBe("NEWINC");
+    const documentId = set.links.document_metadata.split("/document/")[1];
+    expect(getDocumentContent(documentId, "application/pdf").content).toContain("%PDF");
+    expect(getDocumentContent(documentId, "application/xhtml+xml")).toEqual({ notAcceptable: true });
+  });
+
   test("another known company holds its incorporation, and an unknown one has no history", () => {
-    expect(getFilingHistory("00000004").items.map((item) => item.type)).toEqual(["NEWINC"]);
+    expect(getFilingHistory("00000002").items.map((item) => item.type)).toEqual(["NEWINC"]);
     expect(getFilingHistory("99999999")).toBeNull();
     expect(getFilingHistory("42942942")).toBeNull();
   });

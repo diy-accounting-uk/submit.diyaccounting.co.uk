@@ -82,6 +82,10 @@ let filingData = null;
 let originalSicCodes = [];
 let originalStatementOfCapital = null;
 let originalShareholdings = [];
+// The register's statement of capital and shareholdings as the form reads them once filled from it,
+// so a review compares like with like: the form reads numbers where the register sends strings.
+let registerStatementOfCapital = null;
+let registerShareholdings = [];
 let originalRegisteredEmailAddress = "";
 let currentDirectors = [];
 let currentOfficers = [];
@@ -424,6 +428,12 @@ function addShareholdingRow(holding = {}) {
   });
 }
 
+// A director's month and year of birth, as the public register shows them: never the day.
+function monthOfBirth(dob) {
+  const [year, month] = String(dob || "").split("-");
+  return year && month ? window.companiesHouseLabels.formatMonthYear(month, year) : "";
+}
+
 function buildDirectorRow(index, director) {
   return element(
     "fieldset",
@@ -431,7 +441,7 @@ function buildDirectorRow(index, director) {
     element(
       "legend",
       {},
-      `${director.forename || ""} ${director.surname || ""} (${director.dob || window.siteText("ch.cs.no-dob", "no date of birth on record")})`,
+      `${director.forename || ""} ${director.surname || ""} (${monthOfBirth(director.dob) || window.siteText("ch.cs.no-dob", "no date of birth on record")})`,
     ),
     element("label", { for: `directorOtherForenames-${index}` }, window.siteText("ch.cs.other-forenames", "Other forenames")),
     element(
@@ -533,6 +543,8 @@ async function handleAuthSubmit(event) {
     renderShareClasses(originalStatementOfCapital?.shares || []);
     syncShareCurrencyPrefixes();
     renderShareholdings(originalShareholdings);
+    registerStatementOfCapital = readStatementOfCapital();
+    registerShareholdings = readShareholdings();
 
     const currentDirectorOfficers = (filingData.officers || []).filter(
       (officer) => officer.role === "director" && !officer.resignationDate,
@@ -671,7 +683,7 @@ function buildStatementPayload() {
   if (!deepEqual(sicCodes, originalSicCodes)) {
     payload.sicCodes = sicCodes;
   }
-  if (!deepEqual(statementOfCapital, originalStatementOfCapital)) {
+  if (!deepEqual(statementOfCapital, registerStatementOfCapital)) {
     payload.statementOfCapital = statementOfCapital;
   }
   if (registeredEmailAddress && registeredEmailAddress !== originalRegisteredEmailAddress) {
@@ -770,7 +782,9 @@ function renderPreviewSummary(payload) {
   if (payload.shareholdings) {
     rows.push([
       window.siteText("ch.cs.summary-shareholders", "Shareholders"),
-      window.siteText("ch.cs.changed", "Changed from the register"),
+      deepEqual(payload.shareholdings, registerShareholdings)
+        ? window.siteText("ch.cs.as-register", "As on the register")
+        : window.siteText("ch.cs.changed", "Changed from the register"),
     ]);
     payload.shareholdings.forEach((holding, index) => {
       const holders = (holding.shareholders || []).map(describeShareholder).join("; ");
@@ -1175,6 +1189,7 @@ async function renderFilingRecord(payload, outcome) {
   const html = confirmationStatementCopyHtml({
     company,
     payload,
+    shareholdingsChanged: !deepEqual(payload.shareholdings, registerShareholdings),
     officers: confirmedOfficers(),
     pscs: confirmedPscs(),
     outcome,
