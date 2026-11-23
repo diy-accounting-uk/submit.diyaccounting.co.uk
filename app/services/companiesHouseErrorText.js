@@ -22,8 +22,9 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * A gateway answer's errors with each value of the request taken out of their texts, longest value
- * first, ignoring case. Values shorter than three characters stay, since they match ordinary words
- * and numbers of the error's own text.
+ * first, ignoring case, where the value stands as whole words: a value inside a longer word of the
+ * error's own text (a surname "Field" in "missing fields") leaves that word as it is. Values shorter
+ * than three characters stay, since they match ordinary words and numbers of the error's own text.
  * @param {{errors?: object[]}} parsed - the parsed gateway answer
  * @param {object} request - every field the route sent, the company's and the form's
  * @returns {object} the answer with its errors' texts cleaned; every other field as it came
@@ -34,7 +35,11 @@ export function withoutRequestValues(parsed, request) {
     .filter((value) => value.length >= 3)
     .sort((a, b) => b.length - a.length);
   const cleaned = (text) =>
-    values.reduce((remaining, value) => remaining.replace(new RegExp(escapeRegExp(value), "gi"), REMOVED_VALUE), text);
+    values.reduce(
+      (remaining, value) =>
+        remaining.replace(new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(value)}(?![\\p{L}\\p{N}])`, "giu"), REMOVED_VALUE),
+      text,
+    );
   return {
     ...parsed,
     errors: parsed.errors.map((error) => (typeof error.text === "string" ? { ...error, text: cleaned(error.text) } : error)),

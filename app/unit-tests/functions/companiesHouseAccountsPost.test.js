@@ -489,6 +489,31 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(body.errors[0].number).toBe("502");
   });
 
+  test("keeps and answers a rejection with the request's values taken out of its texts", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [
+        {
+          raisedBy: "Gateway",
+          number: "604",
+          type: "fatal",
+          text: "Jo Director cannot approve SIMULATOR EXAMPLE COMPANY LIMITED",
+          location: "",
+        },
+      ],
+    });
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    const kept = JSON.stringify({
+      answer: parseResponseBody(response),
+      stored: mockSend.mock.calls.map(([command]) => command.input),
+      events: mockEventBridgeSend.mock.calls.map(([command]) => command.input),
+    });
+    expect(kept).toContain("[a value of the request] cannot approve [a value of the request]");
+    expect(kept).not.toContain("Jo Director cannot");
+  });
+
   async function asyncRequestWrites() {
     const lib = await import("@aws-sdk/lib-dynamodb");
     return mockSend.mock.calls

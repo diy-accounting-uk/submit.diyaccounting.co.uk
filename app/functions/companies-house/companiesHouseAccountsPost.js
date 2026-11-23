@@ -55,6 +55,7 @@ import {
   gatewayRequestNotDelivered,
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
+import { withoutRequestValues } from "../../services/companiesHouseErrorText.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
 import { echoedValuesOf } from "../../services/companiesHouseEchoedValues.js";
@@ -712,18 +713,20 @@ export async function ingestHandler(event) {
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
+      // What is kept and answered of a rejection: its texts with any value the request sent taken out.
+      const answered = withoutRequestValues(parsed, { ...accounts, ownPresenter });
       await putAsyncRequest(
         userSub,
         submissionNumber,
         "failed",
-        { ...parsed, ...jointFilingFields(jointFilingId), ...amendedFields(Boolean(accounts.revision)) },
+        { ...answered, ...jointFilingFields(jointFilingId), ...amendedFields(Boolean(accounts.revision)) },
         asyncRequestsTableName,
       );
       await recordSubmissionFailure({
         failure: "gateway-rejected-envelope",
         summary: "Companies House accounts submission rejected by the gateway",
         userSub,
-        detail: { errors: parsed.errors },
+        detail: { errors: answered.errors },
         clientId,
       });
       if (hasInvalidCompanyAuthenticationCodeError(parsed.errors)) {
@@ -731,14 +734,14 @@ export async function ingestHandler(event) {
           request,
           headers: { ...responseHeaders },
           message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
-          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: parsed.errors },
+          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: answered.errors },
         });
       }
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
         message: "Companies House rejected the accounts submission envelope",
-        error: { submissionNumber, errors: parsed.errors },
+        error: { submissionNumber, errors: answered.errors },
       });
     }
 

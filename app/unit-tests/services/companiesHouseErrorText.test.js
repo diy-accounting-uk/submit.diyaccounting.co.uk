@@ -39,6 +39,15 @@ describe("companiesHouseErrorText", () => {
     });
   });
 
+  test("leaves a value that sits inside a longer word of the error's own text", () => {
+    const parsed = {
+      errors: [{ number: "604", text: "Invalid Request - Request XML contains missing fields or invalid data for FIELD" }],
+    };
+    expect(withoutRequestValues(parsed, { surname: "Field", companyName: "VALID TRADING LIMITED", title: "Dat" }).errors[0].text).toBe(
+      `Invalid Request - Request XML contains missing fields or invalid data for ${REMOVED_VALUE}`,
+    );
+  });
+
   test("leaves an answer with no errors as it came", () => {
     const parsed = { errors: [], statuses: [{ statusCode: "ACCEPT" }] };
     expect(withoutRequestValues(parsed, { surname: "LLEWELYN" })).toBe(parsed);
