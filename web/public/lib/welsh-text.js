@@ -1482,6 +1482,7 @@ window.WELSH_TEXT = {
   "ch.namesake.appointed": "penodwyd {date}",
   "ch.namesake.born": "ganwyd {month}",
   "ch.namesake.named-with-note": "{name}, {note} ({described})",
+  "ch.namesake.notified": "hysbyswyd {date}",
   "ch.notes.advances-required":
     "Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.",
   "ch.notes.arithmetic":

@@ -389,3 +389,16 @@ test("two PSCs of one name are told apart by month and year of birth, and a link
   await expect.poll(() => filings.length).toBe(1);
   expect(filings[0]).toMatchObject({ surname: "Smith", dobMonth: 2, dobYear: 1990 });
 });
+
+test("three PSCs of one name, two born in the same month, are told apart by the date Companies House was notified", async ({ page }) => {
+  const [first, second] = NAMESAKES;
+  const sameMonth = { ...second, dateOfBirth: first.dateOfBirth, notifiedOn: "2021-03-15" };
+  await serveSite(page, { filings: [], pscs: [...NAMESAKES, sameMonth] });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
+  await expect(page.locator("#pscChoices label")).toHaveText([
+    "Jo Smith, born June 1985, notified 6 April 2016 (Individual)",
+    "Jo Smith, born February 1990 (Individual)",
+    "Jo Smith, born June 1985, notified 15 March 2021 (Individual)",
+  ]);
+});

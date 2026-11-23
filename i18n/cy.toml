@@ -27252,3 +27252,9 @@ cy = '''enwau cyntaf eraill'''
 [strings."ch.cs.psc-name-surname"]
 hash = "655c32fb8455"
 cy = '''cyfenw'''
+
+# == A namesake told apart by the date Companies House was notified of the PSC ==
+
+[strings."ch.namesake.notified"]
+hash = "8e39b3f52aa2"
+cy = '''hysbyswyd {date}'''

@@ -840,6 +840,21 @@ test.describe("Company lookup drill-down PSC cessation links", () => {
     await expect(page.locator('#drillView .file-this[data-activity="change-psc-details"]')).toHaveCount(0);
   });
 
+  test("two current PSCs of one name get links that tell them apart", async ({ page }) => {
+    const [eleanor] = PSCS.pscs;
+    const namesake = { ...eleanor, notifiedOn: "2021-03-15" };
+    await serveSite(page, { bundles: ["resident-ltd"], pscs: { ...PSCS, activeCount: 2, pscs: [eleanor, namesake] } });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+
+    await expect(page.locator("#drillView .cease-psc-links a")).toHaveText(
+      [
+        "Tell Companies House Eleanor Bramwell (born January 1970, notified 6 April 2016) has ceased to be a PSC",
+        "Tell Companies House Eleanor Bramwell (born January 1970, notified 15 March 2021) has ceased to be a PSC",
+      ],
+      { timeout: 15000 },
+    );
+  });
+
   test("an account holding the PSC statements form gets its control, with the authority PSC08 and PSC09 state", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });

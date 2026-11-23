@@ -4,8 +4,9 @@
 // web/public/lib/companies-house-namesakes.js
 // Tells apart two people on a company's register who share a name, wherever a page offers a choice
 // of them or names the one chosen: by the month and year of birth the register shows, or, where it
-// gives none or both share it, by the date of appointment. A person with a name no one else on the
-// list has needs nothing more. Reads window.companiesHouseLabels for the dates.
+// gives none or both share it, by the date of an officer's appointment or the date Companies House
+// was notified of a PSC. A person with a name no one else on the list has needs nothing more. Reads
+// window.companiesHouseLabels for the dates.
 
 (function () {
   "use strict";
@@ -25,7 +26,7 @@
 
   /**
    * The words that tell a person apart from others on the list with the same name, or "".
-   * @param {{name: string, dateOfBirth?: {month: number, year: number}, appointedOn?: string}} person
+   * @param {{name: string, dateOfBirth?: {month: number, year: number}, appointedOn?: string, notifiedOn?: string}} person
    * @param {object[]} people - everyone the choice offers, the person among them
    * @returns {string}
    */
@@ -40,9 +41,15 @@
         })
       : "";
     const birthTellsApart = Boolean(birth) && namesakes.every((other) => birthOf(other) !== birth);
-    if (birthTellsApart || !person.appointedOn) return born;
-    const appointed = siteText("ch.namesake.appointed", "appointed {date}", { date: labels.formatCompanyDate(person.appointedOn) });
-    return born ? `${born}, ${appointed}` : appointed;
+    if (birthTellsApart) return born;
+    let dated = "";
+    if (person.appointedOn) {
+      dated = siteText("ch.namesake.appointed", "appointed {date}", { date: labels.formatCompanyDate(person.appointedOn) });
+    } else if (person.notifiedOn) {
+      dated = siteText("ch.namesake.notified", "notified {date}", { date: labels.formatCompanyDate(person.notifiedOn) });
+    }
+    if (!dated) return born;
+    return born ? `${born}, ${dated}` : dated;
   }
 
   /**
