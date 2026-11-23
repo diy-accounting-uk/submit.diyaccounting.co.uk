@@ -208,7 +208,10 @@ describe("data/dynamoDbDueListRepository", () => {
 
     await putRows("user-1", [VAT_ROW, { ...VAT_ROW, periodEnd: "2026-12-31" }]);
 
-    expect(batchRequests().map((request) => request.PutRequest.Item.hashedSub)).toEqual(["hashed-user-1", "new-user-1"]);
+    expect(batchRequests().map((request) => request.PutRequest.Item.hashedSub)).toEqual(["hashed-user-1"]);
+    expect(sent("Put").map((command) => [command.params.Item.hashedSub, command.params.ConditionExpression])).toEqual([
+      ["new-user-1", "attribute_not_exists(sk)"],
+    ]);
   });
 
   test("a business added during a rotation hides none of the account's older items", async () => {
@@ -265,10 +268,14 @@ describe("data/dynamoDbDueListRepository", () => {
     ]);
   });
 
-  test("putRows writes more than 25 rows in batches and sends again what DynamoDB left unprocessed", async () => {
+  test("putRows writes more than 25 rows that replace stored ones in batches and sends again what DynamoDB left unprocessed", async () => {
     let first = true;
+    const stored = Array.from({ length: 30 }, (unused, index) => {
+      const row = { ...VAT_ROW, periodEnd: `2026-01-${String(index + 1).padStart(2, "0")}` };
+      return { ...row, hashedSub: "hashed-user-1", sk: rowSk(row), dueDate: "2026-01-01" };
+    });
     mockSend.mockImplementation(async (command) => {
-      if (command.name === "Query") return { Items: [] };
+      if (command.name === "Query") return { Items: stored };
       if (command.name === "BatchWrite" && first) {
         first = false;
         return { UnprocessedItems: { [TABLE]: command.params.RequestItems[TABLE].slice(0, 2) } };
@@ -302,8 +309,10 @@ describe("data/dynamoDbDueListRepository", () => {
     }
 
     test("putRows sends a batch at most five times, waits twice as long each time, and names the rows it could not write", async () => {
-      const sentAt = tableLeavesLastRowUnprocessed();
       const rows = [VAT_ROW, { ...VAT_ROW, periodEnd: "2026-12-31" }];
+      const sentAt = tableLeavesLastRowUnprocessed(
+        rows.map((row) => ({ ...row, hashedSub: "hashed-user-1", sk: rowSk(row), dueDate: "2026-01-01" })),
+      );
 
       const pending = putRows("user-1", rows);
       await vi.runAllTimersAsync();
@@ -537,10 +546,11 @@ describe("data/dynamoDbDueListRepository limits", () => {
     expect(countUpdates().filter((update) => update.UpdateExpression.startsWith("SET"))).toHaveLength(0);
   });
 
-  test("putRows gives back to the count the rows DynamoDB left unwritten", async () => {
+  test("putRows gives back to the count the new rows DynamoDB did not write", async () => {
+    let puts = 0;
     mockSend.mockImplementation(async (command) => {
       if (command.name === "Query") return { Items: [] };
-      if (command.name === "BatchWrite") return { UnprocessedItems: { [TABLE]: command.params.RequestItems[TABLE].slice(-1) } };
+      if (command.name === "Put" && (puts += 1) === 3) throw new Error("ProvisionedThroughputExceededException");
       return {};
     });
 
@@ -555,6 +565,20 @@ describe("data/dynamoDbDueListRepository limits", () => {
     }
 
     expect(result.unwritten).toHaveLength(1);
+    expect(countUpdates().map((update) => update.ExpressionAttributeValues[":change"])).toEqual([3, -1]);
+  });
+
+  test("putRows counts only the new rows its own puts created, not one another write created first", async () => {
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") return { Items: [] };
+      if (command.name === "Put" && command.params.Item.sk.endsWith("2026-01-02"))
+        throw new ConditionalCheckFailedException("created first");
+      return {};
+    });
+
+    const result = await putRows("user-1", rowsOf(3));
+
+    expect(result).toMatchObject({ written: 2, unwritten: [] });
     expect(countUpdates().map((update) => update.ExpressionAttributeValues[":change"])).toEqual([3, -1]);
   });
 

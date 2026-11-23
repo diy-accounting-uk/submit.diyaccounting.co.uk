@@ -211,6 +211,24 @@ describe("System: the due list's limits and removals under writes that overlap",
     expect((await list()).businesses).toHaveLength(50);
   });
 
+  test("two writes of one new row at once count it once", async () => {
+    await putBusiness("a");
+    const responses = await Promise.all([postRows("a", vatRows(1, 0)), postRows("a", vatRows(1, 0))]);
+    expect(responses.map(({ statusCode }) => statusCode)).toEqual([200, 200]);
+
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const { businesses } = await repository.listBusinessesAndRows(signedIn);
+    const { Item } = await docClient.send(
+      new module.GetCommand({
+        TableName: process.env.DUE_LIST_DYNAMODB_TABLE_NAME,
+        Key: { hashedSub: businesses[0].hashedSub, sk: "count" },
+      }),
+    );
+    expect((await list()).rows).toHaveLength(1);
+    expect(Item.rows).toBe(1);
+  });
+
   test("a write over the limit that would take several transactions changes nothing, removals included", async () => {
     await putBusiness("a");
     await putBusiness("b");
@@ -299,7 +317,8 @@ describe("System: the due list's limits and removals under writes that overlap",
     // Once the first write has reserved its 200 rows and before it writes them, the rotation's step on
     // the account's count runs, and a second write of 100 rows arrives.
     docClient.send = async (command) => {
-      if (!stepRan && command instanceof module.BatchWriteCommand) {
+      const writesRow = command instanceof module.BatchWriteCommand || command.input?.Item?.sk?.startsWith("row#");
+      if (!stepRan && writesRow) {
         stepRan = true;
         await deleteSettledRecountedItem(
           { doc: docClient, now: () => new Date().toISOString() },
@@ -341,15 +360,20 @@ describe("System: the due list's limits and removals under writes that overlap",
     const send = docClient.send;
     let cutOver = false;
     // Once the write has reserved its 200 rows, the salt's current version becomes v2, and DynamoDB
-    // leaves the last 50 of those rows unprocessed on every attempt.
+    // leaves the last 50 of those rows unwritten on every attempt.
     docClient.send = async (command) => {
-      if (!(command instanceof module.BatchWriteCommand)) return send(command);
+      const putsNewRow = command instanceof module.PutCommand && command.input.Item?.sk?.startsWith("row#");
+      if (!(command instanceof module.BatchWriteCommand) && !putsNewRow) return send(command);
       if (!cutOver) {
         cutOver = true;
         process.env.USER_SUB_HASH_SALT =
           '{"current":"v2","versions":{"v1":"test-salt-for-system-tests","v2":"second-salt-for-system-tests"}}';
         subHasher._clearSalt();
         await subHasher.initializeSalt();
+      }
+      if (putsNewRow) {
+        if (leftUnprocessed.has(command.input.Item.periodEnd)) throw new Error("Throughput exceeds the current capacity");
+        return send(command);
       }
       const requests = command.input.RequestItems[table];
       const held = requests.filter((request) => leftUnprocessed.has(request.PutRequest?.Item?.periodEnd));

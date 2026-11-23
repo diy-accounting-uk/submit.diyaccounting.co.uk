@@ -526,6 +526,44 @@ describe("salt-rotate runs", () => {
     expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toHaveLength(1);
   });
 
+  test.each([1, 2, 3, 4, 5, 8])("a due list rotation stopped after %i writes leaves no count item once resumed", async (writes) => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 1, rows: 2 });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-return#2026-09-30", type: "vat-return" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-payment#2026-11-07", type: "vat-payment" });
+
+    state.dynamo.writesBeforeFailure = writes;
+    await expect(runRotation(createContext(state), { mode: "rotate" })).rejects.toThrow("Stopped halfway");
+    state.dynamo.writesBeforeFailure = Infinity;
+    await runRotation(createContext(state), { mode: "rotate" });
+
+    const newA = hashValue(newSaltOf(state), SUB_A);
+    const items = state.dynamo.items(DUE_LIST);
+    expect(items.filter((item) => item.sk === "count")).toEqual([]);
+    expect(
+      items
+        .filter((item) => item.hashedSub === newA)
+        .map((item) => item.sk)
+        .sort(),
+    ).toEqual(["business#shop-1", "row#shop-1#vat-payment#2026-11-07", "row#shop-1#vat-return#2026-09-30"]);
+    expect(items.filter((item) => item.hashedSub === hashA)).toEqual([]);
+  });
+
+  test("a sweep with nothing to move keeps the count item a write keeps under the current hash", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    await runRotation(createContext(state), { mode: "rotate" });
+    const newA = hashValue(newSaltOf(state), SUB_A);
+    state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "count", businesses: 1, rows: 0 });
+
+    await runRotation(createContext(state), { mode: "sweep" });
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([
+      expect.objectContaining({ hashedSub: newA, businesses: 1, rows: 0 }),
+    ]);
+  });
+
   test("a sweep refuses while a rotation is in flight", async () => {
     state.secret = JSON.stringify(
       stageRegistry({ current: "v1", versions: { v1: OLD_SALT } }, "v2", "new-salt", "2026-11-04T10:00:00.000Z"),

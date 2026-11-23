@@ -76,4 +76,31 @@ describe("the path the local server logs", () => {
     for (const value of ["client-7q2m", "176493528", "2026-01-01", "SC123456", "Jane", "SC000001", "oFfIcEr9Id", "NI765432C"])
       expect(requestLines.join("\n")).not.toContain(value);
   }, 30000);
+
+  test("a page path logs as the page, a drill-down as its pattern, a path no file answers as {unmatched}", async () => {
+    vi.resetModules();
+    process.env.ENVIRONMENT_NAME = "test";
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const { app } = await import("@app/bin/server.js");
+      await request(app).get("/index.html");
+      await request(app).get("/companies-house/company/SC123456/officers");
+      await request(app).get("/cy/companies-house/company/SC123456");
+      await request(app).get("/people/QQ123456C/notes");
+    } finally {
+      write.mockRestore();
+    }
+    const requestLines = lines
+      .join("")
+      .split("\n")
+      .filter((line) => line.includes("HTTP GET"))
+      .join("\n");
+
+    expect(requestLines).toContain("HTTP GET /index.html 200");
+    expect(requestLines).toContain("HTTP GET /companies-house/company/{companyView} 200");
+    expect(requestLines).toContain("HTTP GET /cy/companies-house/company/{companyView} 200");
+    expect(requestLines).toContain("HTTP GET /{unmatched} 404");
+    for (const value of ["SC123456", "QQ123456C"]) expect(requestLines).not.toContain(value);
+  }, 30000);
 });

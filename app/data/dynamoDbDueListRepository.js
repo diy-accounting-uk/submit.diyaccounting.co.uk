@@ -137,6 +137,32 @@ async function batchWrite(requests) {
 
 const requestSk = (request) => (request.PutRequest ? request.PutRequest.Item.sk : request.DeleteRequest.Key.sk);
 
+// The most new rows written at once, each with its own conditional put.
+const NEW_ROW_CONCURRENCY = 10;
+
+// Writes each new row only where no row holds its key, so two writes of one new row create it once
+// and only the write that created it counts it. Answers the keys created, and the keys left
+// unwritten by an error other than the condition.
+async function createRows(items) {
+  const created = [];
+  const unwritten = [];
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const item = items[next];
+      next += 1;
+      try {
+        if (await conditionalPut(item, "attribute_not_exists(sk)")) created.push(item.sk);
+      } catch (error) {
+        logger.warn({ message: "A new due list row could not be written", error: error.message });
+        unwritten.push(item.sk);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(NEW_ROW_CONCURRENCY, items.length) }, worker));
+  return { created, unwritten };
+}
+
 // An item that names a job holds the raw sub; an item without one does not.
 function withJobSub(item, userSub) {
   return item.job ? { ...item, sub: userSub } : item;
@@ -437,8 +463,9 @@ async function updateBusiness(key, set) {
  *
  * The whole write is checked against the cap before anything is written: the rows it adds beyond
  * those it removes are reserved on the account's count, and a write the count has no room for
- * changes nothing. The rows then go in batches; what DynamoDB leaves unwritten is given back to the
- * count. A write for a business records forBusiness.set on it afterwards, only if the business is
+ * changes nothing. Removals and rows that replace stored ones then go in batches; each new row is
+ * created with a conditional put, so of two writes that add one row only the one that created it
+ * counts it. What is not written, or another write created first, is given back to the count. A write for a business records forBusiness.set on it afterwards, only if the business is
  * still there; when it was removed meanwhile, the rows this write added are taken out again.
  * @param {string} userSub
  * @param {object[]} rows - Each with businessId, type, periodEnd (or date), dueDate, source and readAt
@@ -469,27 +496,35 @@ export async function putRows(userSub, rows, replace = () => false, { forBusines
 
   let refreshed = 0;
   for (const refresh of refreshes) if (await refreshReadAt(refresh)) refreshed += 1;
-  // Removals first, so the rows stored never pass what was reserved while the batches run.
-  const unwritten = (await batchWrite([...removals, ...puts.map((put) => put.request)])).map(requestSk);
-  const writtenPuts = puts.filter((put) => !unwritten.includes(requestSk(put.request)));
-  const removed = removals.filter((request) => !unwritten.includes(requestSk(request))).length;
-  const added = writtenPuts.filter((put) => put.isNew).length;
-  await adjustCount(userSub, "rows", added - removed - reserved, countHash);
+  // Removals first, so the rows stored never pass what was reserved while the batches run. A row
+  // that replaces a stored one goes in the batches; a new row is created on its own, so a row that
+  // another write created meanwhile is not counted twice.
+  const replaced = puts.filter((put) => !put.isNew);
+  const batchUnwritten = (await batchWrite([...removals, ...replaced.map((put) => put.request)])).map(requestSk);
+  const newItems = puts.filter((put) => put.isNew).map((put) => put.request.PutRequest.Item);
+  const { created, unwritten: newUnwritten } = await createRows(newItems);
+  const unwritten = [...batchUnwritten, ...newUnwritten];
+  const removed = removals.filter((request) => !batchUnwritten.includes(requestSk(request))).length;
+  const writtenReplaced = replaced.filter((put) => !batchUnwritten.includes(requestSk(put.request)));
+  const written = writtenReplaced.length + created.length;
+  await adjustCount(userSub, "rows", created.length - removed - reserved, countHash);
 
   if (business && !(await updateBusiness({ hashedSub: business.hashedSub, sk: business.sk }, forBusiness.set))) {
     // Every row this write put goes back out. A row it added was counted here, so its removal moves
     // the count. A row it replaced was counted before, and the business's removal took that count
     // away when it removed the row, so a put that brought the row back is removed with no count.
     let takenBack = 0;
-    for (const put of writtenPuts) {
-      const removedNow = await removeItem({ hashedSub: put.request.PutRequest.Item.hashedSub, sk: put.request.PutRequest.Item.sk });
-      if (removedNow && put.isNew) takenBack += 1;
+    for (const put of puts) {
+      const item = put.request.PutRequest.Item;
+      if (put.isNew ? !created.includes(item.sk) : !writtenReplaced.includes(put)) continue;
+      const removedItem = await removeItem({ hashedSub: item.hashedSub, sk: item.sk });
+      if (put.isNew && removedItem) takenBack += 1;
     }
     await adjustCount(userSub, "rows", -takenBack, countHash);
     throw new DueListBusinessMissingError();
   }
-  logger.info({ message: "Due list rows stored", written: writtenPuts.length, refreshed, removed, unwritten: unwritten.length });
-  return { written: writtenPuts.length, refreshed, removed, unwritten };
+  logger.info({ message: "Due list rows stored", written, refreshed, removed, unwritten: unwritten.length });
+  return { written, refreshed, removed, unwritten };
 }
 
 /**
