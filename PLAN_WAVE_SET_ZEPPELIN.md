@@ -35,7 +35,7 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 ## Status
 
-approved 2026-11-22 (the operator's `/collab-loop` on the set). building: waves 1 to 6 gated; wave 8 gated on 5f3575325 (every gate of the round passed, 2026-11-23) and at f36e8ce13 with NAME2's price ids and a Prettier fix; wave 7 `claude/zeppelin-w07` at 9a925128d (AA17 merged onto wave 8), its stills and page review building; the spreadsheets set at d8028916b: waves 1 to 20 landed and spreadsheets main merged in, its final router gate on the worker cedar. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
+approved 2026-11-22 (the operator's `/collab-loop` on the set). building: waves 1 to 6 gated; wave 8 gated on 5f3575325 (every gate of the round passed, 2026-11-23) and at f36e8ce13 with NAME2's price ids and a Prettier fix; wave 7 `claude/zeppelin-w07` at ca204b6a7 (AA17 merged onto wave 8, the page fixes, the guide panels of 11 journeys), its stills fixes building, then its gate round; the spreadsheets set gated at e98fac023 (waves 1 to 20 and spreadsheets main; the full router GREEN on its tree, 2026-11-23), its push after Submit's set is on prod. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
 
 ## The goal
 
