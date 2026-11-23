@@ -155,7 +155,7 @@ These files are made on the user's machine. They carry no download quarantine an
 **Route B, a download: the desktop app.** A user with no terminal downloads one file:
 
 - macOS (Apple silicon): `DIYA-GL.app` in a `.dmg`. The app is a Node SEA launcher that holds the tarball and the pages snapshot as assets. It is an agent app (`LSUIElement`), so it shows no Dock icon. The page shows the stop control from `/_local/`.
-- Windows (x64 and arm64): `DIYA-GL.exe`, a SEA launcher with the Windows GUI subsystem, so no console window opens. It ships in a `.zip`, and in an MSIX for the Store when the operator chooses it.
+- Windows (x64 and arm64): `DIYA-GL.exe`, a SEA launcher with the Windows GUI subsystem, so no console window opens. It ships unsigned in a `.zip` (Q2). DIST11 adds a Store MSIX.
 
 At first start the launcher writes the tarball and the snapshot into a folder per version (`~/Library/Application Support/diya-gl/<version>` or `%LOCALAPPDATA%\diya-gl\<version>`). Then it loads `dist/app/bin/view.js` from there in the same process. `run-dist-bin.js` starts entries with `process.execPath`, which is the launcher in a SEA, so the launcher also takes a first argument that names a file inside its folder and loads that file. Every CLI command then works from the same binary, so Linux x64 and arm64 get CLI binaries from the same build for CI.
 
@@ -166,7 +166,7 @@ At first start the launcher writes the tarball and the snapshot into a folder pe
 | macOS | "Not Opened". The user opens System Settings, Privacy & Security, clicks "Open Anyway" and types the password, once | Opens; Developer ID and notarization |
 | Windows | "Windows protected your PC", "More info", "Run anyway". Smart App Control blocks it with no override | Publisher name shown; warnings stop as reputation builds; a Store install shows none |
 
-Route A costs nothing and needs one terminal command. Route B needs signatures to be usable by the audience that asked for it. Section 5 prices them.
+Route A costs nothing and needs one terminal command. Route B ships unsigned first (Q1, Q2), with the unsigned steps in the table above. DIST10 adds the signatures.
 
 Intel Macs use Route A until the SEA build covers macOS x64.
 
@@ -241,7 +241,7 @@ The port in the second line is an example. DIST1 sets the constant.
 | DIST7 | diya-gl in the MCP Registry | spreadsheets | Sonnet | ~5 files |
 | DIST8 | The `.mcpb` bundle | spreadsheets | Sonnet | ~5 files |
 | DIST9 | SEA desktop apps and CLI binaries, unsigned | spreadsheets | Opus | ~7 files |
-| DIST10 | Sign and notarize the desktop apps | spreadsheets | Sonnet | ~4 files |
+| DIST10 | Sign the macOS and Windows apps | spreadsheets | Sonnet | ~4 files |
 | DIST11 | Windows Store MSIX | spreadsheets | Sonnet | ~4 files |
 | DIST12 | Homebrew cask for the signed app | homebrew-diya-gl | Sonnet | ~3 files |
 | DIST13 | Docs: Submit's MCP page and the capability entries | submit, spreadsheets | Sonnet | ~5 files |
@@ -257,8 +257,8 @@ The port in the second line is an example. DIST1 sets the constant.
 | DIST7 | DIST5, then one npm release that carries `mcpName` |
 | DIST8 | DIST2, DIST6, DIST7 |
 | DIST9 | DIST1, DIST2 |
-| DIST10 | DIST9, Q1, Q2 |
-| DIST11 | DIST9, Q2 |
+| DIST10 | DIST9, the operator's go on the signing costs |
+| DIST11 | DIST10 |
 | DIST12 | DIST10 |
 | DIST13 | DIST3, DIST4, DIST6, DIST7, DIST8 |
 
@@ -325,14 +325,15 @@ Every task edits a section of `diya-gl/README.md`. Merge the tasks in order on o
 #### DIST9. SEA desktop apps and CLI binaries, unsigned
 
 - **Files**: `diya-gl/launcher/launcher.mjs`, `diya-gl/launcher/sea-config.json`, `scripts/build-desktop.mjs`, `diya-gl/launcher/Info.plist`, `.github/workflows/publish-diya-gl.yml` (a matrix job), `app/test/desktop-launcher.test.js`, `diya-gl/README.md`.
-- **Do**: section 2.3, Route B. Build with the Node LTS release that has `--build-sea` (25.5.0 or later; check the release schedule and use the current even-numbered LTS). Embed the packed tarball and the pages snapshot as SEA assets. First prove, in a spike committed as a test, that the launcher loads a file from its extracted folder with `import()`. If it cannot, ship the official Node binary beside the extracted package and make the launcher a script, and record the reason in the PR body. On Windows, set the PE subsystem to GUI before any signature. On macOS, ad-hoc sign (`codesign --sign -`) as the SEA documentation requires. Build on native runners: `macos-latest` (arm64), `windows-latest` (x64), `windows-11-arm`, `ubuntu-24.04`, `ubuntu-24.04-arm`. Attach the `.dmg`, the Windows `.zip` files, the Linux binaries, `SHA256SUMS` and attestations to the release.
+- **Do**: section 2.3, Route B. Build with the Node LTS release that has `--build-sea` (25.5.0 or later; check the release schedule and use the current even-numbered LTS). Embed the packed tarball and the pages snapshot as SEA assets. First prove, in a spike committed as a test, that the launcher loads a file from its extracted folder with `import()`. If it cannot, ship the official Node binary beside the extracted package and make the launcher a script, and record the reason in the PR body. On Windows, set the PE subsystem to GUI before any signature. On macOS, ad-hoc sign (`codesign --sign -`) as the SEA documentation requires. Build on native runners: `macos-latest` (arm64), `windows-latest` (x64), `windows-11-arm`, `ubuntu-24.04`, `ubuntu-24.04-arm`. Attach the `.dmg`, the Windows `.zip` files, the Linux binaries, `SHA256SUMS` and attestations to the release. The apps are unsigned (Q1, Q2): `diya-gl/README.md` and the release notes give each platform's first-open steps from section 2.3's table.
 - **Tests**: each built binary runs `--version`; each desktop build starts with `--no-open`, answers `/_local/ping` and serves `ltd.html` with the network blocked; the embedded tarball's integrity equals `npm view @diy-accounting-uk/diya-gl@<version> dist.integrity`.
 - **Gates**: `npm test`; the matrix job on the PR in build-only mode (no release step on a branch).
 
-#### DIST10. Sign and notarize the desktop apps
+#### DIST10. Sign the macOS and Windows apps
 
 - **Files**: `scripts/build-desktop.mjs`, `diya-gl/launcher/entitlements.plist`, `.github/workflows/publish-diya-gl.yml`, `diya-gl/README.md`.
-- **Operator steps first** (Q1, Q2): enrol DIY Accounting Limited in the Apple Developer Program; make a Developer ID Application certificate and an App Store Connect API key for `notarytool`; create the Artifact Signing account and the organisation identity validation; store each as a GitHub secret. DIST10's sub-agent writes the step list with exact URLs before it starts.
+- **Blocked on**: the operator's go on the signing costs. The first release ships unsigned (Q1, Q2, answered 2026-11-23). The costs: the Apple Developer Program, USD 99 a year (about £79); Microsoft Artifact Signing, USD 9.99 a month (about £95 a year), or the Microsoft Store at £0 (DIST11).
+- **Operator steps first**: enrol DIY Accounting Limited in the Apple Developer Program (D-U-N-S 211569182); make a Developer ID Application certificate and an App Store Connect API key for `notarytool`; for a direct Windows download, create the Artifact Signing account and the organisation identity validation (1 to 30 business days); store each as a GitHub secret. DIST10's sub-agent writes the step list with exact URLs before it starts.
 - **Do**: macOS: sign with the hardened runtime and the entitlements Node needs (`com.apple.security.cs.allow-jit`, `com.apple.security.cs.allow-unsigned-executable-memory`), submit with `xcrun notarytool submit --wait`, then `xcrun stapler staple` the `.dmg`. Windows: sign each `.exe` with `azure/artifact-signing-action`, authenticated by GitHub OIDC with a federated credential.
 - **Tests**: `spctl --assess --type execute` and `codesign --verify --deep --strict` pass on the app; `signtool verify /pa` passes on each `.exe`.
 - **Gates**: `npm test`; the matrix job with signing on a dispatch from `main`.
@@ -370,11 +371,13 @@ Every task edits a section of `diya-gl/README.md`. Merge the tasks in order on o
 ## 5. Questions for the operator
 
 **Q1. Sign and notarize the macOS app.**
+Answered 2026-11-23: ship the app unsigned in the first release. Signing both apps is DIST10, which waits for the operator's go on the costs below.
 Recommendation: yes. The Apple Developer Program for DIY Accounting Limited costs USD 99 a year, about £79 a year, charged in pounds at enrolment. Enrolment as an organisation uses the company's D-U-N-S number, 211569182. It buys a Developer ID certificate and notarization: the app opens with a double-click, and a Homebrew cask can carry it (DIST12).
 Alternative A, £0: ship the app unsigned. Each user goes to System Settings, Privacy & Security, "Open Anyway", and types the password, once. No cask.
 Alternative B, £0: no macOS download. Mac users use `diya-gl shortcut` (Route A) after a `brew` or `npm` install.
 
 **Q2. How to ship the Windows app.**
+Answered 2026-11-23: an unsigned `.zip` (Alternative B) in the first release. Microsoft signing (the Store or Artifact Signing) is DIST10 and DIST11.
 Recommendation: the Microsoft Store first, £0. The company developer account has no fee from May 2026. The Store signs the MSIX, so the user sees no SmartScreen warning, and `winget` installs it. Certification of a launcher that opens the browser is not proven; DIST11 submits once and records the result.
 Alternative A: Artifact Signing for a direct `.zip` download as well, USD 9.99 a month, about £8 a month or £95 a year, plus a pay-as-you-go Azure subscription with no fixed fee. It buys a signature with the company name for downloads outside the Store and for a Store refusal. Identity validation takes 1 to 30 business days.
 Alternative B, £0: an unsigned `.zip`. The user clicks "More info", then "Run anyway". Smart App Control blocks it with no override.
