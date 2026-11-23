@@ -35,7 +35,7 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 ## Status
 
-approved 2026-11-22 (the operator's `/collab-loop` on the set). building: waves 1 to 6 gated; wave 8 gated on 5f3575325 (every gate of the round passed, 2026-11-23) and at f36e8ce13 with NAME2's price ids and a Prettier fix; wave 7 `claude/zeppelin-w07` at 1b909c4cd (AA17 merged onto wave 8, the page fixes, the guide panels of 11 journeys and their fixes), its gate round on eight workers, the docker build passed; the spreadsheets set gated at e98fac023 (waves 1 to 20 and spreadsheets main; the full router GREEN on its tree, 2026-11-23), its push after Submit's set is on prod. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
+approved 2026-11-22 (the operator's `/collab-loop` on the set). building: waves 1 to 6 gated; wave 8 gated on 5f3575325 (every gate of the round passed, 2026-11-23) and at f36e8ce13 with NAME2's price ids and a Prettier fix; wave 7 `claude/zeppelin-w07` gated on 1b909c4cd (every gate of the round, the 42 simulator suites and the docker build) and at 2a3ababee with a Prettier fix and a browser test fix; the set branch `claude/zeppelin-set` at 2a3ababee, its proxy suites, AA14's proof and AA11's judge running; the spreadsheets set gated at e98fac023 (waves 1 to 20 and spreadsheets main; the full router GREEN on its tree, 2026-11-23), its push after Submit's set is on prod. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
 
 ## The goal
 
