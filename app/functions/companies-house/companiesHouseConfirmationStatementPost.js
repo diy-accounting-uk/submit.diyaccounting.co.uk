@@ -51,10 +51,14 @@ import {
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
+import { echoedValuesOf } from "../../services/companiesHouseEchoedValues.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
 import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
+import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
+import { gatewayFieldProblems } from "../../../web/public/lib/companies-house-gateway-text.js";
+import { withoutRequestValues } from "../../services/companiesHouseErrorText.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseConfirmationStatementPost.js" });
 
@@ -201,6 +205,13 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
   const requiresVerificationStatement = selectConfirmationStatementSchema(officers).rootElement === "ConfirmationAndVerificationStatement";
   const normalisedDirectors = requiresVerificationStatement ? validateAndNormaliseDirectors(directors, errorMessages) : directors;
 
+  errorMessages.push(
+    ...gatewayFieldProblems(
+      { shareholdings, statementOfCapital, directors: normalisedDirectors },
+      COMPANIES_HOUSE_FORMS["confirmation-statement"].textFields,
+    ),
+  );
+
   return {
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
@@ -312,26 +323,27 @@ export async function ingestHandler(event) {
       // is testing when they set it.
       const paymentPeriodsGatewayResponse = await postToGateway(paymentPeriodsXml, {});
       const paymentPeriodsParsed = parseGatewayResponse(paymentPeriodsGatewayResponse.data);
+      const paymentPeriodsAnswered = withoutRequestValues(paymentPeriodsParsed, { ...statement, ownPresenter });
 
       if (paymentPeriodsParsed.errors?.length) {
         logger.warn({
           message: "Companies House rejected the PaymentPeriodsRequest",
           companyNumber: statement.companyNumber,
-          errors: paymentPeriodsParsed.errors,
+          errors: paymentPeriodsAnswered.errors,
         });
         if (hasInvalidCompanyAuthenticationCodeError(paymentPeriodsParsed.errors)) {
           return http400BadRequestResponse({
             request,
             headers: { ...responseHeaders },
             message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
-            error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, errors: paymentPeriodsParsed.errors },
+            error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, errors: paymentPeriodsAnswered.errors },
           });
         }
         return http500ServerErrorResponse({
           request,
           headers: { ...responseHeaders },
           message: "Companies House rejected the payment periods request",
-          error: { errors: paymentPeriodsParsed.errors },
+          error: { errors: paymentPeriodsAnswered.errors },
         });
       }
 
@@ -369,8 +381,14 @@ export async function ingestHandler(event) {
 
     // The reader's language choice, so the receipt email of an accepted filing is in it.
     const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
+    const echoedValues = echoedValuesOf(statement, userSub);
     inProgressData = {
+      // The company whose cached register answers an accepted statement drops.
+      companyNumber: statement.companyNumber,
       ...(welsh ? { language: "cy" } : {}),
+      // The keyed hashes of the names and addresses the statement sends, so a rejection read later
+      // can be stripped of them.
+      ...(echoedValues ? { echoedValues } : {}),
       // A statement accepted after its envelope got no answer marks the paid fee used then.
       ...(shouldMarkChargeUsed ? { feeCharge: { activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey } } : {}),
     };
@@ -399,28 +417,30 @@ export async function ingestHandler(event) {
     envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
     const parsed = parseGatewayResponse(gatewayResponse.data);
+    // What is kept and answered of a rejection: its texts with any value the request sent taken out.
+    const answered = withoutRequestValues(parsed, { ...statement, ownPresenter });
 
     if (parsed.errors?.length) {
-      await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);
+      await putAsyncRequest(userSub, submissionNumber, "failed", answered, asyncRequestsTableName);
       await recordSubmissionFailure({
         failure: "gateway-rejected-envelope",
         summary: "Companies House confirmation statement rejected by the gateway",
         userSub,
-        detail: { errors: parsed.errors },
+        detail: { errors: answered.errors },
       });
       if (hasInvalidCompanyAuthenticationCodeError(parsed.errors)) {
         return http400BadRequestResponse({
           request,
           headers: { ...responseHeaders },
           message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
-          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: parsed.errors },
+          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: answered.errors },
         });
       }
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
         message: "Companies House rejected the confirmation statement submission envelope",
-        error: { submissionNumber, errors: parsed.errors },
+        error: { submissionNumber, errors: answered.errors },
       });
     }
 

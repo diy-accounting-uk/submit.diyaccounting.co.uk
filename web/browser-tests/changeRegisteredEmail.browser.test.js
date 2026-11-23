@@ -10,6 +10,9 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { readSubmitCss } from "./submitCss.js";
+import { TEST_EMAIL_DOMAIN } from "@app/http-simulator/fixtures/register.js";
+
+const NEW_EMAIL = `accounts@${TEST_EMAIL_DOMAIN}`;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -78,7 +81,7 @@ test.describe("Change Registered Email Address page", () => {
     await page.fill("#companyNumber", "1");
     await page.click("#companyLookupBtn");
     await delay(300);
-    await page.fill("#registeredEmailAddress", "accounts@example.com");
+    await page.fill("#registeredEmailAddress", NEW_EMAIL);
     await page.check("#acceptEmailStatement");
     await page.click("#continueBtn");
     await delay(200);
@@ -89,7 +92,7 @@ test.describe("Change Registered Email Address page", () => {
     await expect(record).toBeVisible();
     await expect(record.locator(".customer-copy-submission")).toContainText("test-transaction-id");
     await expect(record.locator(".customer-copy-status")).toHaveText("Accepted by Companies House");
-    await expect(record).toContainText("accounts@example.com");
+    await expect(record).toContainText(NEW_EMAIL);
     await expect(record).toContainText("00000001");
   });
 

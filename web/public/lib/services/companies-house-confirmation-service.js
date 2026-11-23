@@ -6,6 +6,7 @@
 // concepts; matches companies-house-service.js and companies-house-filing-service.js in shape.
 
 import { fetchWithIdToken } from "./api-client.js";
+import { readJsonAnswer } from "./json-answer.js";
 
 const CONFIRMATION_STATEMENT_JSON_HEADERS = { "Content-Type": "application/json" };
 
@@ -41,7 +42,7 @@ export async function getConfirmationStatementFilingData(companyNumber, { compan
     headers: CONFIRMATION_STATEMENT_JSON_HEADERS,
     body: JSON.stringify({ companyAuthCode, madeUpDate, companyType, ownPresenter }),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw confirmationStatementErrorFromResponse(response, body);
   }
@@ -61,7 +62,7 @@ export async function renderConfirmationStatement(statement) {
     headers: CONFIRMATION_STATEMENT_JSON_HEADERS,
     body: JSON.stringify(statement),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw confirmationStatementErrorFromResponse(response, body);
   }
@@ -83,7 +84,7 @@ export async function submitConfirmationStatement(statement, extraHeaders = {}) 
     headers: { ...CONFIRMATION_STATEMENT_JSON_HEADERS, ...extraHeaders },
     body: JSON.stringify(statement),
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw confirmationStatementErrorFromResponse(response, body);
   }
@@ -103,7 +104,7 @@ export async function pollConfirmationStatement(submissionNumber, extraHeaders =
     method: "GET",
     headers: extraHeaders,
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw confirmationStatementErrorFromResponse(response, body);
   }

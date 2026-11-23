@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import {
   listVatObligations,
@@ -20,6 +21,7 @@ import {
   submitVatReturn,
   getVatReceipt,
   listVatReceipts,
+  listAccountsReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   renderSmallCompanyAccounts,
@@ -31,6 +33,9 @@ import {
   requestCompaniesHouseCodes,
 } from "../lib/submit-tools.js";
 import { createSession } from "../lib/book-tools.js";
+import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
+import { buildSmallCompanyAccounts } from "../../app/services/smallCompanyAccountsIxbrl.js";
+import { SMALL_COMPANY_CASE_INPUT } from "../../app/test-helpers/accountsDocumentCases.js";
 import { TOOLS } from "../lib/server.js";
 
 const GRANT_ID = "11111111-2222-4333-8444-555555555555";
@@ -94,7 +99,7 @@ const BALANCE_SHEET_YEAR = {
 };
 
 const ACCOUNTS_PARAMS = {
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   companyName: "Brickwork Pro Ltd",
   periodStart: "2025-01-01",
   periodEnd: "2025-12-31",
@@ -110,7 +115,7 @@ const ACCOUNTS_PARAMS = {
 };
 
 const CONFIRMATION_STATEMENT_PARAMS = {
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   companyName: "Brickwork Pro Ltd",
   dateSigned: "2026-03-01",
   reviewDate: "2026-03-01",
@@ -537,6 +542,333 @@ describe("submit-tools", () => {
     });
   });
 
+  describe("list_accounts_receipts", () => {
+    const MICRO_YEAR = {
+      fixedAssets: 0,
+      currentAssets: 100,
+      creditorsWithinOneYear: 0,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 0,
+      capitalAndReserves: 100,
+    };
+    const DORMANT_DOCUMENT = buildMicroEntityAccounts({
+      companyNumber: "00000001",
+      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+      periodStart: "2025-01-01",
+      periodEnd: "2025-12-31",
+      averageNumberOfEmployees: 0,
+      directorName: "Jo Smith",
+      dateOfApproval: "2026-01-15",
+      balanceSheet: { current: MICRO_YEAR, prior: MICRO_YEAR },
+      dormant: true,
+      dormantTradingStatus: "neverTraded",
+      shareClass: "ordinaryShares",
+      nominalValue: 1,
+    });
+    const FILLETED_DOCUMENT = buildSmallCompanyAccounts({ ...SMALL_COMPANY_CASE_INPUT, filleted: true });
+    const DORMANT_NAME = "2026-02-01T10:00:00.000Z-000001.json";
+    const REVISED_NAME = "2026-03-01T10:00:00.000Z-000002.json";
+    const SMALL_NAME = "2026-01-20T10:00:00.000Z-000003.json";
+    const JOINT_NAME = "2026-01-10T10:00:00.000Z-000004.json";
+
+    function receiptRow(name, extra = {}) {
+      return { name, timestamp: name.slice(0, 24), kind: "companies-house-accounts", jointFilingId: null, amended: false, ...extra };
+    }
+
+    const OWN_RECEIPTS = {
+      list: {
+        receipts: [
+          receiptRow(REVISED_NAME, { amended: true }),
+          receiptRow(DORMANT_NAME),
+          { name: "2026-01-30T09:15:00.000Z-123456789012.json", timestamp: "2026-01-30T09:15:00.000Z", kind: null },
+          receiptRow(SMALL_NAME),
+          receiptRow(JOINT_NAME, { jointFilingId: "joint-1" }),
+        ],
+        filingsInProgress: [
+          {
+            submissionNumber: "000005",
+            kind: "accounts",
+            status: "rejected",
+            submittedAt: "2026-03-02T08:00:00.000Z",
+            rejections: [{ code: "9999" }],
+          },
+          { submissionNumber: "000006", kind: "accounts", status: "pending", submittedAt: "2026-03-03T08:00:00.000Z", rejections: [] },
+          {
+            submissionNumber: "000007",
+            kind: "confirmation-statement",
+            status: "rejected",
+            submittedAt: "2026-03-04T08:00:00.000Z",
+            rejections: [],
+          },
+        ],
+      },
+      stored: {
+        [REVISED_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "00000001",
+          kind: "companies-house-accounts",
+          filedDocument: DORMANT_DOCUMENT,
+        },
+        [DORMANT_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "00000001",
+          kind: "companies-house-accounts",
+          filedDocument: DORMANT_DOCUMENT,
+        },
+        [SMALL_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "04549236",
+          kind: "companies-house-accounts",
+          filedDocument: FILLETED_DOCUMENT,
+        },
+        [JOINT_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "04549236",
+          kind: "companies-house-accounts",
+          filedDocument: FILLETED_DOCUMENT,
+        },
+      },
+    };
+
+    // A receipts API that answers each bearer only the receipts stored under that user.
+    function receiptsApi(byToken) {
+      return vi.fn(async (url, init) => {
+        const user = byToken[init.headers["Authorization"]];
+        if (!user) return jsonResponse(401, { message: "Unauthorized" });
+        const path = new URL(url).pathname;
+        if (path === "/api/v1/hmrc/receipt") return jsonResponse(200, user.list);
+        const name = decodeURIComponent(path.slice("/api/v1/hmrc/receipt/".length));
+        return user.stored[name] ? jsonResponse(200, user.stored[name]) : jsonResponse(400, { message: "Receipt not found" });
+      });
+    }
+
+    it("answers each accepted accounts filing's receipt name, company, period, type and whether it can be revised", async () => {
+      vi.stubGlobal("fetch", receiptsApi({ "Bearer session-access-token": OWN_RECEIPTS }));
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.receipts).toEqual([
+        {
+          name: REVISED_NAME,
+          companyNumber: "00000001",
+          periodStart: "2025-01-01",
+          periodEnd: "2025-12-31",
+          accountsType: "dormant micro-entity",
+          status: "accepted",
+          revisedAccounts: true,
+          filedWithCompanyTaxReturn: false,
+          revisable: false,
+          filedOn: "2026-03-01",
+        },
+        {
+          name: DORMANT_NAME,
+          companyNumber: "00000001",
+          periodStart: "2025-01-01",
+          periodEnd: "2025-12-31",
+          accountsType: "dormant micro-entity",
+          status: "accepted",
+          revisedAccounts: false,
+          filedWithCompanyTaxReturn: false,
+          revisable: true,
+          filedOn: "2026-02-01",
+        },
+        {
+          name: SMALL_NAME,
+          companyNumber: "04549236",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          accountsType: "small company, filleted",
+          status: "accepted",
+          revisedAccounts: false,
+          filedWithCompanyTaxReturn: false,
+          revisable: true,
+          filedOn: "2026-01-20",
+        },
+        {
+          name: JOINT_NAME,
+          companyNumber: "04549236",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          accountsType: "small company, filleted",
+          status: "accepted",
+          revisedAccounts: false,
+          filedWithCompanyTaxReturn: true,
+          revisable: false,
+          filedOn: "2026-01-10",
+        },
+      ]);
+      expect(result.rejectedFilings).toEqual([
+        { submissionNumber: "000005", status: "rejected", rejectedOn: "2026-03-02", rejections: [{ code: "9999" }] },
+      ]);
+    });
+
+    it("names a receipt it could not read or map, and still answers the others", async () => {
+      const UNREADABLE_NAME = "2026-02-10T10:00:00.000Z-000008.json";
+      const UNMAPPABLE_NAME = "2026-02-05T10:00:00.000Z-000009.json";
+      vi.stubGlobal(
+        "fetch",
+        receiptsApi({
+          "Bearer session-access-token": {
+            list: { receipts: [receiptRow(UNREADABLE_NAME), receiptRow(UNMAPPABLE_NAME), receiptRow(DORMANT_NAME)], filingsInProgress: [] },
+            stored: {
+              [UNMAPPABLE_NAME]: {
+                statusCode: "ACCEPT",
+                companyNumber: "00000001",
+                kind: "companies-house-accounts",
+                filedDocument: "<html><body>not accounts</body></html>",
+              },
+              [DORMANT_NAME]: OWN_RECEIPTS.stored[DORMANT_NAME],
+            },
+          },
+        }),
+      );
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.receipts.map((row) => [row.name, row.revisable])).toEqual([
+        [UNREADABLE_NAME, false],
+        [UNMAPPABLE_NAME, false],
+        [DORMANT_NAME, true],
+      ]);
+      expect(result.receipts[0].problem).toBe("Receipt not found");
+      expect(result.receipts[1]).toMatchObject({ status: "accepted", companyNumber: "00000001", accountsType: null });
+      expect(result.receipts[1].problem).toEqual(expect.any(String));
+      expect(result.receipts[2]).not.toHaveProperty("problem");
+    });
+
+    it("lists only the newest 25 accounts receipts, reading at most four at a time, and says when there are more", async () => {
+      const names = Array.from(
+        { length: 30 },
+        (_, index) => `2026-01-${String(index + 1).padStart(2, "0")}T10:00:00.000Z-${index}.json`,
+      ).reverse();
+      let inFlight = 0;
+      let mostInFlight = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url) => {
+          const path = new URL(url).pathname;
+          if (path === "/api/v1/hmrc/receipt") {
+            return jsonResponse(200, { receipts: names.map((name) => receiptRow(name)), filingsInProgress: [] });
+          }
+          inFlight += 1;
+          mostInFlight = Math.max(mostInFlight, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          inFlight -= 1;
+          return jsonResponse(200, OWN_RECEIPTS.stored[DORMANT_NAME]);
+        }),
+      );
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.receipts.map((row) => row.name)).toEqual(names.slice(0, 25));
+      expect(result.more).toBe(true);
+      expect(result.moreNote).toEqual(expect.any(String));
+      expect(mostInFlight).toBeLessThanOrEqual(4);
+      expect(mostInFlight).toBeGreaterThan(1);
+    });
+
+    it("answers more false when every accounts receipt is listed", async () => {
+      vi.stubGlobal("fetch", receiptsApi({ "Bearer session-access-token": OWN_RECEIPTS }));
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.more).toBe(false);
+      expect(result).not.toHaveProperty("moreNote");
+    });
+
+    it("answers a customer only the receipts the route holds for that customer", async () => {
+      const otherCustomer = createSession({
+        credentials: { accessToken: async () => "other-access-token", idToken: async () => "other-id-token" },
+      });
+      const OTHER_NAME = "2026-04-01T10:00:00.000Z-000010.json";
+      const fetchMock = receiptsApi({
+        "Bearer session-access-token": OWN_RECEIPTS,
+        "Bearer other-access-token": {
+          list: { receipts: [receiptRow(OTHER_NAME)], filingsInProgress: [] },
+          stored: {
+            [OTHER_NAME]: {
+              statusCode: "ACCEPT",
+              companyNumber: "00000009",
+              kind: "companies-house-accounts",
+              filedDocument: FILLETED_DOCUMENT,
+            },
+          },
+        },
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const own = await listAccountsReceipts(session, {});
+      const other = await listAccountsReceipts(otherCustomer, {});
+
+      expect(own.receipts.map((receipt) => receipt.name)).toEqual([REVISED_NAME, DORMANT_NAME, SMALL_NAME, JOINT_NAME]);
+      expect(other.receipts.map((receipt) => receipt.name)).toEqual([OTHER_NAME]);
+      expect(other.receipts[0].companyNumber).toBe("00000009");
+      expect(other.rejectedFilings).toEqual([]);
+      const ownNames = [REVISED_NAME, DORMANT_NAME, SMALL_NAME, JOINT_NAME].map(encodeURIComponent);
+      for (const [url, init] of fetchMock.mock.calls) {
+        const read = ownNames.filter((name) => String(url).includes(name));
+        if (init.headers["Authorization"] === "Bearer other-access-token") expect(read).toEqual([]);
+        else expect(String(url)).not.toContain(encodeURIComponent(OTHER_NAME));
+      }
+    });
+
+    it("carries clientId on the list and on every receipt it reads", async () => {
+      const fetchMock = receiptsApi({ "Bearer session-access-token": OWN_RECEIPTS });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await listAccountsReceipts(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
+
+      expect(fetchMock.mock.calls).toHaveLength(5);
+      for (const [url] of fetchMock.mock.calls) expect(url).toMatch(/\?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV$/);
+    });
+
+    it("answers a client's rejected accounts filing on that client's list and not on the practice's own", async () => {
+      const CLIENT_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+      const rejection = { rejectCode: "100", description: "The accounts were rejected" };
+      const fetchMock = vi.fn(async (url) => {
+        const { pathname, searchParams } = new URL(url);
+        if (pathname !== "/api/v1/hmrc/receipt") return jsonResponse(400, { message: "Receipt not found" });
+        const clientFiling = searchParams.get("clientId") === CLIENT_ID;
+        return jsonResponse(200, {
+          receipts: [],
+          filingsInProgress: [
+            {
+              submissionNumber: clientFiling ? "00C001" : "00P001",
+              kind: "accounts",
+              status: "rejected",
+              submittedAt: "2026-05-02T09:00:00.000Z",
+              rejections: [rejection],
+              clientId: clientFiling ? CLIENT_ID : null,
+            },
+          ],
+        });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const client = await listAccountsReceipts(session, { clientId: CLIENT_ID });
+      const own = await listAccountsReceipts(session, {});
+
+      expect(client.rejectedFilings).toEqual([
+        { submissionNumber: "00C001", status: "rejected", rejectedOn: "2026-05-02", rejections: [rejection] },
+      ]);
+      expect(own.rejectedFilings.map((filing) => filing.submissionNumber)).toEqual(["00P001"]);
+      expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+        expect.stringMatching(/\/api\/v1\/hmrc\/receipt\?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV$/),
+        expect.stringMatching(/\/api\/v1\/hmrc\/receipt$/),
+      ]);
+    });
+
+    it("is offered to an assistant as the way to find the receipt a revision names", () => {
+      expect(TOOLS.list_accounts_receipts.annotations.readOnlyHint).toBe(true);
+      expect(TOOLS.list_accounts_receipts.description).toContain("revision.revisesReceipt");
+      expect(TOOLS.submit_micro_entity_accounts_sandbox.inputSchema.revision.unwrap().shape.revisesReceipt.description).toContain(
+        "list_accounts_receipts",
+      );
+    });
+  });
+
   describe("render_micro_entity_accounts_sandbox", () => {
     it("posts the balance sheet and returns the rendered iXBRL", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, RENDER_MICRO_ENTITY_ACCOUNTS_RESPONSE));
@@ -612,6 +944,244 @@ describe("submit-tools", () => {
     });
   });
 
+  describe("revised accounts", () => {
+    const REVISION = {
+      originalDateOfApproval: "2026-09-15",
+      nonCompliance: "The original accounts left out a supplier invoice of £240.",
+      amendments: "Creditors falling due within one year rise by £194.",
+    };
+    const SMALL = {
+      ...ACCOUNTS_PARAMS,
+      balanceSheet: undefined,
+      statementsAccepted: {
+        section477Exemption: true,
+        membersNotRequiredAudit: true,
+        directorsResponsibilities: true,
+        smallCompaniesRegime: true,
+      },
+      smallCompany: {
+        principalActivity: "Building",
+        accountingPolicies: "Cost",
+        directors: ["A Director"],
+        balanceSheet: { currentYear: { fixedAssets: 1 } },
+        profitAndLoss: { currentYear: { turnover: 1 } },
+      },
+    };
+
+    it.each([
+      ["render_micro_entity_accounts_sandbox", () => renderMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision: REVISION })],
+      [
+        "submit_micro_entity_accounts_sandbox",
+        () => submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision: REVISION, codesEntryId: "entry-1" }),
+      ],
+      ["render_small_company_accounts_sandbox", () => renderSmallCompanyAccounts(session, { ...SMALL, revision: REVISION })],
+      [
+        "submit_small_company_accounts_sandbox",
+        () => submitSmallCompanyAccounts(session, { ...SMALL, revision: REVISION, codesEntryId: "entry-1" }),
+      ],
+    ])("%s sends the revision in the body", async (_name, call) => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await call();
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).toEqual(REVISION);
+    });
+
+    it("sends the name of the receipt the revision revises when it is given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+      const revision = { ...REVISION, revisesReceipt: "companies-house-accounts-06846849-2026-03-31-20260915.json" };
+
+      await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision, codesEntryId: "entry-1" });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).toEqual(revision);
+    });
+
+    it("sends a revision without a receipt name when none is given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await submitSmallCompanyAccounts(session, { ...SMALL, revision: REVISION, codesEntryId: "entry-1" });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).not.toHaveProperty("revisesReceipt");
+    });
+
+    it("sends no revision for original accounts", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, codesEntryId: "entry-1" });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).not.toHaveProperty("revision");
+    });
+
+    it("answers the route's refusal of a revision with a missing text", async () => {
+      const message = "Missing revision.amendments - say what the revised accounts change";
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(400, { message })));
+
+      await expect(
+        submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision: { ...REVISION, amendments: "" }, codesEntryId: "entry-1" }),
+      ).rejects.toThrow(message);
+    });
+  });
+
+  describe("accounts bodies against their schemas", () => {
+    const REGISTERED_OFFICE = { addressLine1: "1 Brick Lane", cityOrTown: "Leeds", postalCode: "LS1 1AA", country: "England" };
+    const ACCOUNTANTS_REPORT = { accountantsName: "Ledger & Co", statement: "We compiled these accounts from the records." };
+    const REVISION = {
+      originalDateOfApproval: "2026-01-15",
+      nonCompliance: "The original accounts left out a supplier invoice.",
+      amendments: "Creditors falling due within one year rise by £240.",
+    };
+    const OPTIONAL_FIELDS = { registeredOffice: REGISTERED_OFFICE, accountantsReport: ACCOUNTANTS_REPORT, revision: REVISION };
+    const LANGUAGE_AND_ADVANCES = {
+      documentLanguage: "cy",
+      directorsAdvances: [
+        {
+          name: "A Director",
+          terms: "Interest free, repayable on demand",
+          balanceAtStart: 0,
+          advanced: 500,
+          repaid: 200,
+          balanceAtEnd: 300,
+        },
+      ],
+    };
+    const DORMANT = { dormant: true, dormantTradingStatus: "neverTraded", shareClass: "ordinaryShares", nominalValue: 1 };
+    const MICRO_OPTIONAL = { ...OPTIONAL_FIELDS, ...LANGUAGE_AND_ADVANCES, ...DORMANT };
+    const SMALL_OPTIONAL = { ...OPTIONAL_FIELDS, documentLanguage: LANGUAGE_AND_ADVANCES.documentLanguage };
+    const SMALL = {
+      ...ACCOUNTS_PARAMS,
+      balanceSheet: undefined,
+      statementsAccepted: {
+        section477Exemption: true,
+        membersNotRequiredAudit: true,
+        directorsResponsibilities: true,
+        smallCompaniesRegime: true,
+      },
+      smallCompany: {
+        principalActivity: "Building",
+        accountingPolicies: "Cost",
+        directors: ["A Director"],
+        balanceSheet: { currentYear: { fixedAssets: 1 } },
+        profitAndLoss: { currentYear: { turnover: 1 } },
+      },
+    };
+    const FILING = { clientId: "client-1", codesEntryId: "entry-1" };
+    const CASES = [
+      ["render_micro_entity_accounts_sandbox", renderMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...MICRO_OPTIONAL }],
+      ["submit_micro_entity_accounts_sandbox", submitMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...MICRO_OPTIONAL, ...FILING }],
+      ["render_small_company_accounts_sandbox", renderSmallCompanyAccounts, { ...SMALL, ...SMALL_OPTIONAL }],
+      ["submit_small_company_accounts_sandbox", submitSmallCompanyAccounts, { ...SMALL, ...SMALL_OPTIONAL, ...FILING }],
+    ];
+
+    async function bodyOf(handler, params) {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+      await handler(session, params);
+      return JSON.parse(mockFetch.mock.calls[0][1].body);
+    }
+
+    it.each(CASES)("%s sends every field its schema declares", async (name, handler, params) => {
+      const body = await bodyOf(handler, params);
+
+      for (const field of Object.keys(TOOLS[name].inputSchema)) {
+        expect(body, field).toHaveProperty(field);
+        expect(body[field], field).toEqual(params[field]);
+      }
+    });
+
+    it("sends dormant accounts and Welsh accounts with advances in a body the accounts render route accepts", async () => {
+      const { extractAndValidateAccountsParameters } = await import("../../app/functions/companies-house/companiesHouseAccountsPost.js");
+      // The render route validates without the authentication code, which the filing route takes from the codes entry.
+      const RENDER_ROUTE = { requireCompanyAuthCode: false };
+      const dormantYear = {
+        fixedAssets: 0,
+        currentAssets: 100,
+        creditorsWithinOneYear: 0,
+        creditorsAfterOneYear: 0,
+        calledUpShareCapital: 100,
+        profitAndLossAccount: 0,
+        capitalAndReserves: 100,
+      };
+      const dormant = await bodyOf(renderMicroEntityAccounts, {
+        ...ACCOUNTS_PARAMS,
+        ...DORMANT,
+        balanceSheet: { currentYear: dormantYear, priorYear: dormantYear },
+        averageEmployees: 0,
+      });
+      const welsh = await bodyOf(renderMicroEntityAccounts, {
+        ...ACCOUNTS_PARAMS,
+        ...LANGUAGE_AND_ADVANCES,
+        director: { ...ACCOUNTS_PARAMS.director, name: "A Director" },
+      });
+
+      for (const body of [dormant, welsh]) {
+        const errors = [];
+        const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(body) }, errors, RENDER_ROUTE);
+        expect(errors).toEqual([]);
+        expect(accounts.companyNumber).toBe(ACCOUNTS_PARAMS.companyNumber);
+      }
+      expect(extractAndValidateAccountsParameters({ body: JSON.stringify(dormant) }, [], RENDER_ROUTE)).toMatchObject(DORMANT);
+      expect(extractAndValidateAccountsParameters({ body: JSON.stringify(welsh) }, [], RENDER_ROUTE)).toMatchObject(LANGUAGE_AND_ADVANCES);
+    });
+
+    it.each(["render_small_company_accounts_sandbox", "submit_small_company_accounts_sandbox"])(
+      "%s takes a small company's advances inside smallCompany, with the debtors they close at, and sends them there",
+      async (name) => {
+        const smallCompany = {
+          ...SMALL.smallCompany,
+          balanceSheet: {
+            currentYear: {
+              ...Object.fromEntries(
+                Object.keys(TOOLS[name].inputSchema.smallCompany.shape.balanceSheet.shape.currentYear.shape).map((line) => [line, 0]),
+              ),
+              debtors: 300,
+              amountsOwedByDirectors: 300,
+            },
+          },
+          profitAndLoss: {
+            currentYear: Object.fromEntries(
+              Object.keys(TOOLS[name].inputSchema.smallCompany.shape.profitAndLoss.shape.currentYear.shape).map((line) => [line, 0]),
+            ),
+          },
+          directorsAdvances: LANGUAGE_AND_ADVANCES.directorsAdvances,
+        };
+        const parsed = z.object(TOOLS[name].inputSchema).parse({ ...SMALL, ...FILING, smallCompany });
+        expect(parsed.smallCompany.directorsAdvances).toEqual(LANGUAGE_AND_ADVANCES.directorsAdvances);
+        expect(parsed.smallCompany.balanceSheet.currentYear.amountsOwedByDirectors).toBe(300);
+        expect(TOOLS[name].inputSchema).not.toHaveProperty("directorsAdvances");
+        const handler = name.startsWith("render") ? renderSmallCompanyAccounts : submitSmallCompanyAccounts;
+        const body = await bodyOf(handler, parsed);
+        expect(body.smallCompany.directorsAdvances).toEqual(LANGUAGE_AND_ADVANCES.directorsAdvances);
+        expect(body).not.toHaveProperty("directorsAdvances");
+      },
+    );
+
+    it.each(["render_small_company_accounts_sandbox", "submit_small_company_accounts_sandbox"])(
+      "%s takes a fixed asset note that names only the classes the company holds",
+      (name) => {
+        const plantMachinery = {
+          costAtStart: 1000,
+          additions: 0,
+          disposals: 0,
+          depreciationAtStart: 200,
+          depreciationCharge: 200,
+          depreciationOnDisposals: 0,
+        };
+        const fixedAssetNote = z.object(TOOLS[name].inputSchema).shape.smallCompany.shape.fixedAssetNote.parse({ plantMachinery });
+        expect(fixedAssetNote).toEqual({ plantMachinery });
+      },
+    );
+
+    it.each(CASES)("%s sends no field its schema lacks", async (name, handler, params) => {
+      const body = await bodyOf(handler, params);
+
+      expect(Object.keys(body).filter((field) => !(field in TOOLS[name].inputSchema))).toEqual([]);
+    });
+  });
+
   describe("poll_submission for accounts", () => {
     it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE));
@@ -650,7 +1220,7 @@ describe("submit-tools", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await getConfirmationStatementData(session, {
-        companyNumber: "12345678",
+        companyNumber: "00000007",
         codesEntryId: "entry-1",
         madeUpDate: "2026-03-01",
       });
@@ -658,7 +1228,7 @@ describe("submit-tools", () => {
       expect(result).toEqual(CONFIRMATION_STATEMENT_DATA_RESPONSE);
       expect(result.paymentPeriodPaid).toBe(false);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/company/12345678/filing-data");
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/company/00000007/filing-data");
       expect(init.method).toBe("POST");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
       const body = JSON.parse(init.body);
@@ -674,13 +1244,13 @@ describe("submit-tools", () => {
     });
 
     it("requires codesEntryId", async () => {
-      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", madeUpDate: "2026-03-01" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "00000007", madeUpDate: "2026-03-01" })).rejects.toThrow(
         "codesEntryId",
       );
     });
 
     it("requires madeUpDate", async () => {
-      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", codesEntryId: "entry-1" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "00000007", codesEntryId: "entry-1" })).rejects.toThrow(
         "madeUpDate",
       );
     });
@@ -690,7 +1260,7 @@ describe("submit-tools", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       await getConfirmationStatementData(session, {
-        companyNumber: "12345678",
+        companyNumber: "00000007",
         codesEntryId: "entry-1",
         madeUpDate: "2026-03-01",
         companyType: "plc",
@@ -838,7 +1408,7 @@ describe("submit-tools", () => {
 
   describe("small company accounts", () => {
     const SMALL_PARAMS = {
-      companyNumber: "12345678",
+      companyNumber: "00000007",
       companyName: "Brick Ltd",
       periodStart: "2025-04-01",
       periodEnd: "2026-03-31",
@@ -928,14 +1498,14 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, answer));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await requestCompaniesHouseCodes(session, { kind: "accounts", companyNumber: "12345678" });
+      const result = await requestCompaniesHouseCodes(session, { kind: "accounts", companyNumber: "00000007" });
 
       expect(result).toEqual(answer);
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/mcp/codes-entries");
       expect(init.method).toBe("POST");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
-      expect(JSON.parse(init.body)).toEqual({ kind: "accounts", companyNumber: "12345678" });
+      expect(JSON.parse(init.body)).toEqual({ kind: "accounts", companyNumber: "00000007" });
     });
 
     it("sends the directors for a confirmation statement and requires them", async () => {
@@ -943,10 +1513,10 @@ describe("submit-tools", () => {
       vi.stubGlobal("fetch", mockFetch);
       const directors = [{ forename: "Jo", surname: "Brick" }];
 
-      await requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "12345678", directors });
+      await requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "00000007", directors });
 
       expect(JSON.parse(mockFetch.mock.calls[0][1].body).directors).toEqual(directors);
-      await expect(requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "12345678" })).rejects.toThrow(
+      await expect(requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "00000007" })).rejects.toThrow(
         "directors",
       );
     });
@@ -982,7 +1552,7 @@ describe("submit-tools", () => {
     });
 
     it("refuses a kind it does not know", async () => {
-      await expect(requestCompaniesHouseCodes(session, { kind: "vat", companyNumber: "12345678" })).rejects.toThrow("kind");
+      await expect(requestCompaniesHouseCodes(session, { kind: "vat", companyNumber: "00000007" })).rejects.toThrow("kind");
     });
   });
 

@@ -27,7 +27,7 @@ const RESIDENT_BUNDLES = {
   tokensRemaining: 100,
 };
 
-async function serveHomeForResident(page, environmentName = "proxy") {
+async function serveHomeForResident(page, environmentName = "proxy", bundleAnswer = { status: 200, body: RESIDENT_BUNDLES }) {
   await page.addInitScript(() => {
     localStorage.setItem("cognitoIdToken", "id-token");
     localStorage.setItem("userInfo", JSON.stringify({ email: "resident@test.diyaccounting.co.uk" }));
@@ -36,7 +36,7 @@ async function serveHomeForResident(page, environmentName = "proxy") {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     if (url.pathname === "/api/v1/bundle") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(RESIDENT_BUNDLES) });
+      return route.fulfill({ status: bundleAnswer.status, contentType: "application/json", body: JSON.stringify(bundleAnswer.body) });
     }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
     if (url.pathname === "/submit.environment-name.txt")
@@ -63,7 +63,7 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(buttons.first()).toBeVisible();
     const count = await buttons.count();
     expect(count).toBeGreaterThan(0);
-    await expect(page.locator("#dynamicActivities")).not.toContainText("PSC");
+    await expect(page.locator("#dynamicActivities")).not.toContainText("PSC Verification Statement");
     await expect(page.locator("#dynamicActivities")).not.toContainText(/Save diya-gl books/i);
 
     if (SCREENSHOT_DIR) {
@@ -78,6 +78,21 @@ test.describe("Home page activities for a Resident account", () => {
       await page.waitForURL((url) => url.pathname !== "/" || url.hash !== "");
       expect(new URL(page.url()).pathname).toMatch(/\.html$/);
     }
+  });
+
+  test("a catalogue with a paths array written over several lines still gives the activity buttons", async ({ page }) => {
+    const catalogue = fs.readFileSync(path.join(PUBLIC_ROOT, "submit.catalogue.toml"), "utf-8");
+    const oneLine = catalogue.split("\n").find((line) => line.startsWith('paths = ["companies-house/recordsLocation.html"'));
+    const overLines = oneLine.replace("[", "[\n  ").replaceAll('", "', '",\n  "').replace(/\]$/, ",\n]");
+    await serveHomeForResident(page);
+    await page.route("**/submit.catalogue.toml", (route) =>
+      route.fulfill({ status: 200, contentType: "text/x-toml", body: catalogue.replace(oneLine, overLines) }),
+    );
+    await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
+
+    const buttons = page.locator("#dynamicActivities .activity-group button.btn:not([disabled])");
+    await expect(buttons.first()).toBeVisible();
+    await expect(page.locator("#dynamicActivities")).toContainText("Tell Companies House where the company keeps its records");
   });
 
   test("prod shows no status box, and the introduction lists only what the catalogue lists for prod", async ({ page }) => {
@@ -146,5 +161,30 @@ test.describe("Home page activities for a Resident account", () => {
     const status = page.locator("#featureStatusList");
     await expect(status).toContainText("at ddefnydd go iawn: TAW CThEF");
     await expect(status).not.toContainText(/for real use|Production/);
+  });
+});
+
+test.describe("Home page when the account's bundles cannot be read", () => {
+  test("says the list may leave out activities the account holds, and shows no token balance", async ({ page }) => {
+    await serveHomeForResident(page, "proxy", { status: 500, body: { message: "The bundles could not be read" } });
+    await page.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+    await expect(page.locator("#dynamicActivities .activity-message--error")).toHaveText(
+      "Your bundles could not be read, so this list may leave out activities you hold. Reload the page to try again.",
+    );
+    await expect(page.locator("#dynamicActivities .activity-group").first()).toBeVisible();
+    await expect(page.getByText("0 tokens")).toHaveCount(0);
+  });
+
+  test("says nothing of the kind when the bundles are read", async ({ page }) => {
+    await serveHomeForResident(page);
+    await page.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+    await expect(page.locator("#dynamicActivities .activity-group").first()).toBeVisible();
+    await expect(page.locator("#dynamicActivities .activity-message--error")).toHaveCount(0);
+  });
+
+  test("says so in Welsh on the Welsh home page", async ({ page }) => {
+    await serveHomeForResident(page, "proxy", { status: 503, body: { message: "Unavailable" } });
+    await page.goto("http://localhost:3000/cy/index.html", { waitUntil: "networkidle" });
+    await expect(page.locator("#dynamicActivities .activity-message--error")).toContainText("Nid oedd modd darllen eich bwndeli");
   });
 });

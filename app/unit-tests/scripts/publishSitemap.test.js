@@ -62,7 +62,7 @@ describe("publish-sitemap", () => {
   test("every kept entry gets the lastmod its page answers, placed after its loc", () => {
     const xml = filterSitemap(SITEMAP, CATALOG, MANIFEST, "prod", (page) => (page === "privacy.html" ? "2026-11-03" : undefined));
     expect(xml).toContain(
-      "<loc>https://submit.diyaccounting.co.uk/privacy.html</loc>\n    <lastmod>2026-11-03</lastmod>\n    <changefreq>yearly</changefreq>",
+      '<loc>https://submit.diyaccounting.co.uk/privacy.html</loc>\n    <lastmod>2026-11-03</lastmod>\n    <xhtml:link rel="alternate" hreflang="en-GB"',
     );
     expect(xml.match(/<lastmod>/g)).toHaveLength(1);
   });

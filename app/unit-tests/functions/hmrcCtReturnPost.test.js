@@ -78,16 +78,19 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => {
 });
 
 let jointActivityOverride;
+let revisedActivityOverride;
 vi.mock("@app/services/productCatalog.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
     loadCatalogFromRoot: (...args) => {
       const catalog = actual.loadCatalogFromRoot(...args);
-      if (!jointActivityOverride) return catalog;
-      const activities = catalog.activities.map((activity) =>
-        activity.id === "file-company-tax-return-with-accounts" ? { ...activity, ...jointActivityOverride } : activity,
-      );
+      if (!jointActivityOverride && !revisedActivityOverride) return catalog;
+      const activities = catalog.activities.map((activity) => {
+        if (activity.id === "file-company-tax-return-with-accounts") return { ...activity, ...jointActivityOverride };
+        if (activity.id === "file-revised-accounts") return { ...activity, ...revisedActivityOverride };
+        return activity;
+      });
       return { ...catalog, activities };
     },
   };
@@ -159,6 +162,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     vi.clearAllMocks();
     mockLogs.length = 0;
     jointActivityOverride = undefined;
+    revisedActivityOverride = undefined;
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -420,6 +424,15 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
   });
 
+  test("refuses a return whose accounts carry a revision where revised accounts are not offered, and sends nothing", async () => {
+    revisedActivityOverride = { environments: ["prod"] };
+    const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+    const response = await hmrcCtReturnPostHandler(buildEvent({ body: { ...baseBody, revision } }));
+    expect(response.statusCode).toBe(403);
+    expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+  });
+
   test("returns 403 when the environment does not list the matched activity", async () => {
     process.env.ENVIRONMENT_NAME = "prod";
     const response = await hmrcCtReturnPostHandler(buildEvent());
@@ -480,11 +493,12 @@ describe("hmrcCtReturnPost ingestHandler", () => {
       expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
     });
 
-    test("lets the joint filing through under preview features against a synthetic HMRC account", async () => {
+    test("answers 403 for a joint filing under preview features against a synthetic HMRC account when the activity is not listed", async () => {
       jointActivityOverride = { environments: ["prod"] };
       const headers = { "x-preview-features": "on", "hmrcAccount": "synthetic" };
       const response = await hmrcCtReturnPostHandler(buildEvent({ body: jointBody(), headers }));
-      expect(response.statusCode).toBe(201);
+      expect(response.statusCode).toBe(403);
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
     });
 
     test("answers 403 and sends nothing when the caller holds none of the joint filing bundles", async () => {
@@ -794,7 +808,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
 
     test("files as the agent with the client's UTR and company number, not the body's", async () => {
-      const response = await hmrcCtReturnPostHandler(clientEvent({ utr: "9999999999", companyNumber: "11111111" }));
+      const response = await hmrcCtReturnPostHandler(clientEvent({ utr: "9999999999", companyNumber: "00000011" }));
       expect(response.statusCode).toBe(201);
       const [, xml] = mockPostToTransactionEngine.mock.calls[0];
       expect(xml).toContain(`<Key Type="UTR">${CLIENT_UTR}</Key>`);

@@ -142,11 +142,33 @@ const TYPED_ANSWERS = {
   declarantName: "Carol Smith",
 };
 
+// The year before, which the accounts of a company past its first accounts show beside this year's:
+// a profit of 10,000 that cleared the losses of earlier years, so last year closed with no profit and loss
+// reserve and this year's reserve is this year's profit.
+const LAST_YEAR_ANSWERS = {
+  priorTurnover: "60000",
+  priorCostOfSales: "30000",
+  priorAdministrativeExpenses: "20000",
+  priorInterestReceivable: "0",
+  priorTax: "0",
+  priorCashAtBank: "100",
+  priorCalledUpShareCapital: "100",
+  priorProfitAndLossAccount: "0",
+};
+
+async function typeInLastYear(page) {
+  await page.check("#includeComparatives");
+  for (const [id, value] of Object.entries(LAST_YEAR_ANSWERS)) {
+    await loggedFill(page, `#${id}`, value, id);
+  }
+}
+
 export async function typeInCompanyTaxReturnForm(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user types every figure, the statements and the declaration into the form", async () => {
+  await test.step("The user types every figure of both years, the statements and the declaration into the form", async () => {
     for (const [id, value] of Object.entries(TYPED_ANSWERS)) {
       await loggedFill(page, `#${id}`, value, id);
     }
+    await typeInLastYear(page);
     await page.check("#statementSection477Exemption");
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
@@ -630,11 +652,12 @@ export async function verifyAmendedSendStep(page, { accounts }, screenshotPath =
 
 export async function describeTheRevisionAndSend(
   page,
-  { differences, userId, password, companyAuthCode },
+  { nonCompliance, amendments, userId, password, companyAuthCode },
   screenshotPath = defaultScreenshotPath,
 ) {
-  await test.step("The user says what the revised accounts change, then sends them with the codes", async () => {
-    await loggedFill(page, "#revisionDifferences", differences, "What the revised accounts change", { screenshotPath });
+  await test.step("The user says what was wrong with the original accounts and what the revised accounts change, then sends them with the codes", async () => {
+    await loggedFill(page, "#revisionNonCompliance", nonCompliance, "What was wrong with the original accounts", { screenshotPath });
+    await loggedFill(page, "#revisionAmendments", amendments, "What the revised accounts change", { screenshotPath });
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
@@ -711,6 +734,7 @@ export async function typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath 
     for (const [id, value] of Object.entries(LONG_PERIOD_ANSWERS)) {
       await loggedFill(page, `#${id}`, value, id);
     }
+    await typeInLastYear(page);
     await expect(page.locator("#longPeriodPanel")).toContainText("This period of account files as two returns");
     await expect(page.locator("#longPeriodPanel")).toContainText("Return 2 of 2: 1 January 2026 to 31 March 2026 (90 days)");
     await page.check("#loansMadeAp2Yes");

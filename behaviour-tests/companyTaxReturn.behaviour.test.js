@@ -516,7 +516,8 @@ test("Click through: reload while Companies House is pending, then see the filin
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
 
-const REVISION_DIFFERENCES = "The average number of employees is restated from 2 to 3.";
+const REVISION_NON_COMPLIANCE = "The original accounts gave the average number of employees as 2, which was wrong.";
+const REVISION_AMENDMENTS = "The average number of employees is restated from 2 to 3.";
 
 test("Click through: amend the accounts and the return from the locked state, and see revised accounts and an amended return under the original filing", async ({
   page,
@@ -531,7 +532,11 @@ test("Click through: amend the accounts and the return from the locked state, an
   await reviseTheAccounts(page, { approvedOn: "2026-07-01", averageEmployees: "3" }, screenshotPath);
   await previewCompanyTaxReturn(page, screenshotPath);
   await verifyAmendedSendStep(page, { accounts: true }, screenshotPath);
-  await describeTheRevisionAndSend(page, { ...gatewayCredentials, companyAuthCode, differences: REVISION_DIFFERENCES }, screenshotPath);
+  await describeTheRevisionAndSend(
+    page,
+    { ...gatewayCredentials, companyAuthCode, nonCompliance: REVISION_NON_COMPLIANCE, amendments: REVISION_AMENDMENTS },
+    screenshotPath,
+  );
   await verifyRevisedAccountsAndAmendedReturnAccepted(page, screenshotPath);
 
   expect(accountsPosts.bodies).toHaveLength(2);
@@ -539,7 +544,11 @@ test("Click through: amend the accounts and the return from the locked state, an
   const [originalAccounts, revisedAccounts] = accountsPosts.bodies;
   const [originalReturn, amendedReturn] = returnPosts.bodies;
   expect(originalAccounts.revision).toBeUndefined();
-  expect(revisedAccounts.revision).toEqual({ originalDateOfApproval: "2026-06-01", differences: REVISION_DIFFERENCES });
+  expect(revisedAccounts.revision).toEqual({
+    originalDateOfApproval: "2026-06-01",
+    nonCompliance: REVISION_NON_COMPLIANCE,
+    amendments: REVISION_AMENDMENTS,
+  });
   expect(revisedAccounts.director.dateApproved).toBe("2026-07-01");
   expect(originalReturn.amended).toBeUndefined();
   expect(amendedReturn.amended).toBe(true);
@@ -554,7 +563,8 @@ test("Click through: amend the accounts and the return from the locked state, an
   expect(revised.receipt.jointFilingId).toBe(originalAccounts.jointFilingId);
   expect(amended.receipt.jointFilingId).toBe(originalAccounts.jointFilingId);
   expect(revised.receipt.filedDocument).toContain("These are revised accounts");
-  expect(revised.receipt.filedDocument).toContain(REVISION_DIFFERENCES);
+  expect(revised.receipt.filedDocument).toContain(REVISION_NON_COMPLIANCE);
+  expect(revised.receipt.filedDocument).toContain(REVISION_AMENDMENTS);
   expect(Buffer.from(amended.receipt.filed.accountsIxbrl, "utf8").toString()).toContain("These are revised accounts");
   expect(receipts.filter((entry) => !entry.listedAmended)).toHaveLength(2);
 
@@ -625,13 +635,21 @@ test("Click through: Companies House rejects the revised accounts, the amended r
   await reviseTheAccounts(page, { approvedOn: "2026-07-01", averageEmployees: "3" }, screenshotPath);
   await previewCompanyTaxReturn(page, screenshotPath);
   await setCtGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
-  await describeTheRevisionAndSend(page, { ...gatewayCredentials, companyAuthCode, differences: REVISION_DIFFERENCES }, screenshotPath);
+  await describeTheRevisionAndSend(
+    page,
+    { ...gatewayCredentials, companyAuthCode, nonCompliance: REVISION_NON_COMPLIANCE, amendments: REVISION_AMENDMENTS },
+    screenshotPath,
+  );
   await verifyRevisedAccountsRejected(page, screenshotPath);
   expect(returnPosts.bodies).toHaveLength(1);
 
   await returnToReviewToSendAgain(page, screenshotPath);
   await clearGovTestScenario(page);
-  await describeTheRevisionAndSend(page, { ...gatewayCredentials, companyAuthCode, differences: REVISION_DIFFERENCES }, screenshotPath);
+  await describeTheRevisionAndSend(
+    page,
+    { ...gatewayCredentials, companyAuthCode, nonCompliance: REVISION_NON_COMPLIANCE, amendments: REVISION_AMENDMENTS },
+    screenshotPath,
+  );
   await verifyRevisedAccountsAndAmendedReturnAccepted(page, screenshotPath);
   expect(returnPosts.bodies).toHaveLength(2);
   expect(returnPosts.bodies[1].amended).toBe(true);

@@ -17,9 +17,11 @@
 // One table, four item shapes distinguished by stateKey prefix:
 //   rate#{hashedSub}#{minute}         - bundle-endpoint burst counters (bundleGet.js)
 //   supportticket#{ipHash}#{minute}   - support-ticket rate limit (supportTicketPost.js)
+//   chlookup#{hashedSub}#{window}     - Companies House API key calls per account (companiesHouseLookupLimit.js)
+//   lastaccounts#{company}#{tx}       - a filed set's mapped last accounts, public register figures (companiesHouseLastAccounts.js)
 //   geo#{hashedSub}                   - mid-session country state (customAuthorizer.js)
 //   session#{hashedSub}#{appClient}   - sign-in session state (signInActivityPublish.js)
-// Every item carries a short TTL; none of it is customer data.
+// Every item carries a TTL; none of it is customer data.
 
 import { createLogger } from "../lib/logger.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
@@ -38,9 +40,10 @@ const logger = createLogger({ source: "app/data/dynamoDbSecurityStateRepository.
  *   (e.g. an authenticated user's hashed sub vs. an anonymous caller's hashed IP) never collide
  * @param {string} params.identifier - the hashed value identifying the consumer
  * @param {number|string} params.minute - minute bucket key, e.g. from nowMinute()
+ * @param {number} [params.hits=1] - how many hits this request adds
  * @returns {Promise<number>} the updated hit count
  */
-export async function incrementRateCounter({ namespace = "rate", identifier, minute }) {
+export async function incrementRateCounter({ namespace = "rate", identifier, minute, hits = 1 }) {
   const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
 
   const { Attributes } = await executeDynamoDbCommand(
@@ -50,7 +53,7 @@ export async function incrementRateCounter({ namespace = "rate", identifier, min
         Key: { stateKey: `${namespace}#${identifier}#${minute}` },
         UpdateExpression: "SET #ttl = if_not_exists(#ttl, :ttl) ADD hits :one",
         ExpressionAttributeNames: { "#ttl": "ttl" },
-        ExpressionAttributeValues: { ":one": 1, ":ttl": fiveMinuteTtl() },
+        ExpressionAttributeValues: { ":one": hits, ":ttl": fiveMinuteTtl() },
         ReturnValues: "UPDATED_NEW",
       }),
   );
@@ -182,4 +185,35 @@ export async function deleteSignInSession(hashedSub, appClient) {
   );
 
   logger.info({ message: "Sign-in session deleted", hashedSub, appClient });
+}
+
+/**
+ * Reads a cached value by its key, or null when there is none or its time to live has passed.
+ * DynamoDB deletes an expired item some time after it expires, so the read checks the time itself.
+ * @param {string} stateKey
+ * @returns {Promise<object|null>}
+ */
+export async function getCachedValue(stateKey) {
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand((module) => new module.GetCommand({ TableName: tableName, Key: { stateKey } }));
+  const item = result.Item;
+  if (!item || typeof item.ttl !== "number" || item.ttl <= Math.floor(Date.now() / 1000)) return null;
+  return item.value ?? null;
+}
+
+/**
+ * Stores a value under its key for ttlSeconds.
+ * @param {string} stateKey
+ * @param {object} value
+ * @param {number} ttlSeconds
+ */
+export async function putCachedValue(stateKey, value, ttlSeconds) {
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: { stateKey, value, ttl: Math.floor(Date.now() / 1000) + ttlSeconds },
+      }),
+  );
 }

@@ -9,6 +9,9 @@ import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
 import { readSubmitCss } from "./submitCss.js";
+import { registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -30,10 +33,13 @@ async function openFormView(page) {
     await route.fulfill({ status: 200, contentType: "text/html", body: html });
   });
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => {
-    company = { companyNumber: "00000001", companyName: "TEST MICRO LTD" };
-    showView("formView");
-  });
+  await page.evaluate(
+    ({ companyNumber, companyName }) => {
+      company = { companyNumber, companyName };
+      showView("formView");
+    },
+    { companyNumber: JOINERY.number, companyName: JOINERY.name },
+  );
 }
 
 const REQUIRED = {
@@ -73,7 +79,9 @@ test.describe("File micro-entity accounts page - optional balance sheet headings
     await page.fill("#currentPrepaymentsAccruedIncome", "300");
     await page.fill("#currentProvisionsForLiabilities", "50");
     await page.fill("#currentAccrualsDeferredIncome", "100");
-    await expect(page.locator("#yearTotals")).toContainText("Net assets: 4160 this year, 2900 last year. Matches capital and reserves.");
+    await expect(page.locator("#yearTotals")).toContainText(
+      "Net assets: £4,160 this year, £2,900 last year. Matches capital and reserves.",
+    );
     const current = await page.evaluate(() => buildAccountsPayload().balanceSheet.currentYear);
     expect(current).toMatchObject({
       calledUpShareCapitalNotPaid: 10,
@@ -98,7 +106,7 @@ test.describe("File micro-entity accounts page - optional balance sheet headings
       await page.fill("#currentPrepaymentsAccruedIncome", "300");
       await page.fill("#currentAccrualsDeferredIncome", "100");
       await page.locator("#currentFixedAssets").scrollIntoViewIfNeeded();
-      await page.locator("section.form-section", { has: page.locator("table.ledger") }).screenshot({
+      await page.locator("section.form-section", { has: page.locator("#currentFixedAssets") }).screenshot({
         path: `target/micro-headings/balance-sheet-${width}.png`,
       });
     });

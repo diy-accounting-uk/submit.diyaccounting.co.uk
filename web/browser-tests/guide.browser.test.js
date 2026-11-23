@@ -242,4 +242,18 @@ test.describe("guide.html", () => {
     await expect(page.locator("details#view-return")).toHaveAttribute("open", "");
     await expect(page.locator("#view-return-step-3")).toBeInViewport();
   });
+
+  test("the revised accounts journey shows where revised accounts are offered and not on prod", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    const journey = page.locator("details.guide-journey#amend-company-accounts");
+    await journey.locator("summary").click();
+    await expect(journey.locator("ol.guide-steps-list > li").first()).toBeVisible();
+    await expect(journey.locator(".guide-caption").first()).toHaveText("Choose the receipt of the accounts filing you want to revise.");
+
+    await page.route("**/submit.environment-name.txt", (route) => route.fulfill({ status: 200, contentType: "text/plain", body: "prod" }));
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    await expect(page.locator("details#file-small-company-accounts")).toBeAttached();
+    await expect(page.locator("details#amend-company-accounts")).toHaveCount(0);
+  });
 });

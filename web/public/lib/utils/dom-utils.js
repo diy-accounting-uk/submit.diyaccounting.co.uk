@@ -105,17 +105,38 @@ export function requestError(response, result, fallback) {
   const error = new Error(hmrcReason || reason);
   error.status = response?.status;
   error.code = result?.responseBody?.code || result?.code || "";
+  error.service = serviceOfUrl(response?.url);
   return error;
+}
+
+/**
+ * The service a request went to, from its URL: "hmrc" for a route under /api/v1/hmrc/, and ""
+ * for any other route. A failure names HMRC only when its service is "hmrc".
+ * @param {string} url - the request or response URL, absolute or relative to the page
+ */
+export function serviceOfUrl(url) {
+  if (!url) return "";
+  try {
+    return new URL(url, window.location.origin).pathname.startsWith("/api/v1/hmrc/") ? "hmrc" : "";
+  } catch {
+    return "";
+  }
 }
 
 function failureCause(error) {
   if (error?.failure) return error.failure;
   const status = error?.status;
   const code = error?.code || "";
-  if (status === 401)
+  const hmrc = error?.service === "hmrc";
+  if (status === 401 && hmrc)
     return {
       cause: siteText("widget.failure-hmrc-expired", "Your HMRC connection has expired."),
       next: { label: siteText("widget.connect-hmrc-again", "Connect to HMRC again"), href: window.location.pathname },
+    };
+  if (status === 401)
+    return {
+      cause: siteText("widget.failure-sign-in-expired", "Your sign-in has expired."),
+      next: { label: siteText("widget.sign-in-again", "Sign in again"), href: "/auth/login.html" },
     };
   if (code.endsWith("INSOLVENT_TRADER")) {
     return {
@@ -135,21 +156,39 @@ function failureCause(error) {
       next: { label: siteText("widget.add-a-bundle", "Add a bundle"), href: "/bundles.html" },
     };
   }
-  if (status === 403) {
+  if (status === 403 && hmrc) {
     return {
       cause: siteText("widget.failure-hmrc-forbidden", "HMRC did not allow access to these records."),
       next: { label: siteText("widget.connect-hmrc-again", "Connect to HMRC again"), href: window.location.pathname },
     };
   }
-  if (status === 404) {
+  if (status === 403) {
+    return {
+      cause: siteText("widget.failure-forbidden", "You do not have access to this page."),
+      next: { label: siteText("widget.back-to-activities", "Back to activities"), href: "/" },
+    };
+  }
+  if (status === 404 && hmrc) {
     return {
       cause: siteText("widget.failure-hmrc-not-found", "HMRC holds nothing for these details."),
       next: { label: siteText("widget.check-and-try-again", "Check the details and try again"), href: window.location.pathname },
     };
   }
-  if (status >= 500 || status === undefined) {
+  if (status === 404) {
+    return {
+      cause: siteText("widget.failure-not-found", "There is nothing here for these details."),
+      next: { label: siteText("widget.check-and-try-again", "Check the details and try again"), href: window.location.pathname },
+    };
+  }
+  if ((status >= 500 || status === undefined) && hmrc) {
     return {
       cause: siteText("widget.failure-hmrc-server", "HMRC could not complete the request."),
+      next: { label: siteText("widget.try-again", "Try again"), href: window.location.pathname },
+    };
+  }
+  if (status >= 500 || status === undefined) {
+    return {
+      cause: siteText("widget.failure-server", "The request could not be completed."),
       next: { label: siteText("widget.try-again", "Try again"), href: window.location.pathname },
     };
   }
@@ -158,7 +197,11 @@ function failureCause(error) {
     .replace(/^Failed to [^.:]*[.:]\s*/, "")
     .trim();
   return {
-    cause: detail || siteText("widget.failure-hmrc-refused", "HMRC refused the request."),
+    cause:
+      detail ||
+      (hmrc
+        ? siteText("widget.failure-hmrc-refused", "HMRC refused the request.")
+        : siteText("widget.failure-refused", "The request was refused.")),
     next: { label: siteText("widget.check-and-try-again", "Check the details and try again"), href: window.location.pathname },
   };
 }

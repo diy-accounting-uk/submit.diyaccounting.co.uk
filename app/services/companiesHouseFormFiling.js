@@ -1,0 +1,334 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// app/services/companiesHouseFormFiling.js
+// The filing route every Companies House form in companiesHouseForms.js shares: the bundle check,
+// the request check (the company and its authentication code here, the form's own fields in its
+// row), the refusal of a form with a fee this site cannot take, the form body from the row's builder
+// with any document the row attaches, a submission number, the filing state, the GovTalk envelope,
+// the send to the gateway, and a JSON answer for every outcome. The company
+// authentication code goes into the envelope only, is never logged, and is dropped once the call
+// returns.
+
+import { createLogger } from "../lib/logger.js";
+import {
+  extractRequest,
+  parseRequestBody,
+  http200OkResponse,
+  http201CreatedResponse,
+  http400BadRequestResponse,
+  http402PaymentRequiredResponse,
+  http502BadGatewayResponse,
+  http500ServerErrorResponse,
+  getHeader,
+} from "../lib/httpResponseHelper.js";
+import {
+  hasInvalidCompanyAuthenticationCodeError,
+  INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+  INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
+} from "../lib/companiesHouseGatewayErrors.js";
+import { validateEnv } from "../lib/env.js";
+import { isValidIsoDate } from "../lib/hmrcValidation.js";
+import { enforceBundles } from "./bundleManagement.js";
+import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "./companiesHouseApi.js";
+import {
+  buildFormSubmission,
+  allocateSubmissionNumber,
+  resolvePresenterCredentials,
+  postToGateway,
+  gatewayRequestNotDelivered,
+  parseGatewayResponse,
+} from "./companiesHouseXmlGateway.js";
+import { putAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
+import { recordSubmissionInProgress, recordOutcomeUnknown } from "./companiesHouseSubmissionInProgress.js";
+import { echoedValuesOf } from "./companiesHouseEchoedValues.js";
+import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../lib/activityAlert.js";
+import { initializeSalt } from "./subHasher.js";
+import { readOwnPresenterFromBody } from "./companiesHouseOwnPresenter.js";
+import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
+import { gatewayFieldProblems } from "../../web/public/lib/companies-house-gateway-text.js";
+import { withoutRequestValues } from "./companiesHouseErrorText.js";
+import { GATEWAY_FORM_BUILDERS } from "./companiesHouseForms.js";
+import { paidCharge, markChargeUsed } from "./activityCharges.js";
+
+const logger = createLogger({ source: "app/services/companiesHouseFormFiling.js" });
+
+const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
+const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
+
+/**
+ * The fields every form's request carries: the company, its authentication code and the date the
+ * filing is signed. Each failed check adds its message.
+ * @param {object} body - the parsed request body
+ * @param {string[]} errorMessages
+ */
+export function extractCompanyFields(body, errorMessages) {
+  const { companyNumber, companyName, companyAuthCode, dateSigned } = body;
+  const { valid: companyNumberValid, normalised: normalisedCompanyNumber } = isValidCompanyNumber(companyNumber);
+  if (!companyNumberValid) {
+    errorMessages.push("Invalid company number - must be 8 characters");
+  }
+  const trimmedCompanyName = typeof companyName === "string" ? companyName.trim() : "";
+  if (!trimmedCompanyName) {
+    errorMessages.push("Missing companyName");
+  }
+  const trimmedCompanyAuthCode = typeof companyAuthCode === "string" ? companyAuthCode.trim() : "";
+  if (trimmedCompanyAuthCode.length < MIN_COMPANY_AUTH_CODE_LENGTH || trimmedCompanyAuthCode.length > MAX_COMPANY_AUTH_CODE_LENGTH) {
+    errorMessages.push(`Invalid companyAuthCode - must be ${MIN_COMPANY_AUTH_CODE_LENGTH} to ${MAX_COMPANY_AUTH_CODE_LENGTH} characters`);
+  }
+  if (!dateSigned || !isValidIsoDate(dateSigned)) {
+    errorMessages.push("Invalid or missing dateSigned - must be YYYY-MM-DD");
+  }
+  return { companyNumber: normalisedCompanyNumber, companyName: trimmedCompanyName, companyAuthCode: trimmedCompanyAuthCode, dateSigned };
+}
+
+/**
+ * The company fields and the form's own fields of a request for one form kind, with every failed
+ * check's message, the gateway's character check of the row's textFields among them.
+ * @param {object} event - the Lambda event
+ * @param {string} kind - a kind of GATEWAY_FORM_BUILDERS
+ * @param {string[]} errorMessages
+ */
+export function extractFormRequest(event, kind, errorMessages) {
+  const body = parseRequestBody(event) || {};
+  const form = { ...extractCompanyFields(body, errorMessages), ...GATEWAY_FORM_BUILDERS[kind].extractAndValidate(body, errorMessages) };
+  errorMessages.push(...gatewayFieldProblems(form, COMPANIES_HOUSE_FORMS[kind].textFields));
+  return form;
+}
+
+// A 400 whose message joins every refusal's English, with messageIds naming the refusals a form's
+// page words itself, so the page shows them in the reader's language.
+function validationRefusal(request, errorMessages, responseHeaders) {
+  const messageIds = errorMessages.filter((refusal) => typeof refusal === "object").map((refusal) => refusal.id);
+  return http400BadRequestResponse({
+    request,
+    headers: { ...responseHeaders },
+    message: errorMessages.map((refusal) => (typeof refusal === "object" ? refusal.text : refusal)).join(", "),
+    error: messageIds.length > 0 ? { messageIds } : undefined,
+  });
+}
+
+async function recordSubmissionFailure({ kind, failure, summary, userSub, detail = {} }) {
+  await publishActivityFailureEvent({
+    event: `companies-house-${kind}-failed`,
+    summary,
+    failure,
+    userSub,
+    actor: resolveActorClass(),
+    detail,
+  });
+}
+
+/**
+ * File one form through the XML gateway and answer the request.
+ * @param {object} event - the Lambda event
+ * @param {string} kind - a kind of GATEWAY_FORM_BUILDERS and of COMPANIES_HOUSE_FORMS
+ */
+export async function fileCompaniesHouseForm(event, kind) {
+  const { label, gatewayClass, formIdentifier, fee } = COMPANIES_HOUSE_FORMS[kind];
+  const { buildFormXml, buildDocument, checkCompany } = GATEWAY_FORM_BUILDERS[kind];
+  await initializeSalt();
+  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME", "COMPANIES_HOUSE_PACKAGE_REFERENCE"]);
+
+  const { request } = extractRequest(event);
+  const responseHeaders = { "Content-Type": "application/json" };
+
+  let userSub;
+  try {
+    ({ userSub } = await enforceBundles(event));
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(error, request);
+  }
+
+  if (event?.requestContext?.http?.method === "HEAD") {
+    return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });
+  }
+
+  const errorMessages = [];
+  const form = extractFormRequest(event, kind, errorMessages);
+  // Held in this call only: it goes to the envelope builder and nowhere else.
+  const ownPresenter = readOwnPresenterFromBody(parseRequestBody(event), errorMessages);
+
+  if (errorMessages.length > 0) {
+    return validationRefusal(request, errorMessages, responseHeaders);
+  }
+
+  // A form whose fields must agree with the company on the register reads the company before
+  // anything is sent; a register that cannot be read stops the filing.
+  if (checkCompany) {
+    let checked;
+    try {
+      checked = await checkCompany(form);
+    } catch (error) {
+      logger.error({ message: `Could not read the company for a Companies House ${label}`, error: error.message });
+      checked = { unreadable: true };
+    }
+    if (checked.unreadable) {
+      return http502BadGatewayResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Could not read the company from Companies House to check the filing, so it has not been sent",
+        error: { code: "company-unread", status: checked.status },
+      });
+    }
+    if (checked.errors.length > 0) return validationRefusal(request, checked.errors, responseHeaders);
+  }
+
+  const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
+  const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  // Companies House charges a form's fee to the credit account behind the presenter. Under our
+  // presenter the filer pays it first, through a Stripe checkout for the service the form asks for
+  // (feeChoice in companiesHouseForms.js); the route sends the filing only with that charge paid,
+  // marks it used once the gateway takes the filing, and the poll refunds it if Companies House
+  // rejects the filing. Under the filer's own presenter the fee lands on their own account, and a
+  // test submission registers nothing, so neither takes a payment here.
+  let feeCharge;
+  if (fee && !ownPresenter && !gatewayTest) {
+    const { activityId } = COMPANIES_HOUSE_FORMS[kind];
+    const { priceKey, subjectKey } = GATEWAY_FORM_BUILDERS[kind].feeChoice(form);
+    const charge = await paidCharge(userSub, activityId, subjectKey);
+    if (!charge || charge.priceKey !== priceKey) {
+      return http402PaymentRequiredResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: `Companies House charges a fee for a ${label}: pay it before filing`,
+        error: { code: "fee-due", activityId, subjectKey, priceKey, fee },
+      });
+    }
+    feeCharge = { activityId, subjectKey, refundOnReject: true };
+  }
+  const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
+  // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
+  // from the page's developer-mode field; the real gateway ignores headers it does not know.
+  const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
+  const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+
+  const registerRefusal = await GATEWAY_FORM_BUILDERS[kind].refuseAgainstRegister?.({
+    form,
+    request,
+    headers: responseHeaders,
+    userSub,
+    ownPresenter,
+    gatewayHeaders,
+  });
+  if (registerRefusal) return registerRefusal;
+
+  // The keyed hashes of the names and addresses the form sends, so a rejection read later can be
+  // stripped of them.
+  const echoedValues = echoedValuesOf(form, userSub);
+  const inProgressData = echoedValues ? { echoedValues } : {};
+
+  let submissionNumber;
+  let envelopeSent = false;
+  try {
+    const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
+    const formXml = buildFormXml(form);
+
+    submissionNumber = await allocateSubmissionNumber();
+    // The company number is kept so that an accepted filing drops that company's cached register answers.
+    await recordSubmissionInProgress({
+      userSub,
+      submissionNumber,
+      kind,
+      underOwnPresenter: Boolean(ownPresenter),
+      data: { companyNumber: form.companyNumber, ...inProgressData, ...(feeCharge ? { feeCharge } : {}) },
+    });
+
+    const submissionXml = buildFormSubmission({
+      presenterId,
+      presenterCode,
+      companyNumber: form.companyNumber,
+      companyName: form.companyName,
+      companyAuthenticationCode: form.companyAuthCode,
+      packageReference,
+      gatewayClass,
+      formIdentifier,
+      submissionNumber,
+      dateSigned: form.dateSigned,
+      formXml,
+      document: buildDocument ? buildDocument(form) : undefined,
+      gatewayTest,
+    });
+
+    envelopeSent = true;
+    const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
+    const parsed = parseGatewayResponse(gatewayResponse.data);
+    // What is kept and answered of a rejection: its texts with any value the request sent taken out.
+    const answered = withoutRequestValues(parsed, { ...form, ownPresenter });
+
+    if (parsed.errors?.length) {
+      await putAsyncRequest(userSub, submissionNumber, "failed", { ...answered, kind }, asyncRequestsTableName);
+      await recordSubmissionFailure({
+        kind,
+        failure: "gateway-rejected-envelope",
+        summary: `Companies House ${label} rejected by the gateway`,
+        userSub,
+        detail: { errors: answered.errors },
+      });
+      if (hasInvalidCompanyAuthenticationCodeError(parsed.errors)) {
+        return http400BadRequestResponse({
+          request,
+          headers: { ...responseHeaders },
+          message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
+          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: answered.errors },
+        });
+      }
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: `Companies House rejected the ${label} submission envelope`,
+        error: { submissionNumber, errors: answered.errors },
+      });
+    }
+
+    // The gateway took the filing, so the payment is spent on it; a rejection refunds it.
+    if (feeCharge) await markChargeUsed(userSub, feeCharge.activityId, feeCharge.subjectKey);
+
+    await publishActivityEvent({
+      event: `companies-house-${kind}-submitted`,
+      summary: `Companies House ${label} submitted`,
+      userSub,
+    });
+
+    return http201CreatedResponse({
+      request,
+      headers: { ...responseHeaders },
+      data: { submissionNumber, gatewayTimestamp: parsed.gatewayTimestamp, pollInterval: parsed.pollInterval },
+    });
+  } catch (error) {
+    logger.error({ message: `Unexpected error submitting Companies House ${label}`, error: error.message, stack: error.stack });
+    if (envelopeSent && !gatewayRequestNotDelivered(error)) {
+      // The envelope left, so Companies House may have it. The filing stays pending, the page
+      // polls it by number, and a late ACCEPT still gets its receipt and email.
+      await recordOutcomeUnknown({
+        userSub,
+        submissionNumber,
+        kind,
+        data: { companyNumber: form.companyNumber, ...inProgressData, ...(feeCharge ? { feeCharge } : {}) },
+      });
+      await recordSubmissionFailure({
+        kind,
+        failure: "gateway-outcome-unknown",
+        summary: `Companies House ${label} sent with no answer from the gateway; kept pending`,
+        userSub,
+        detail: { submissionNumber, error: error.message },
+      });
+      return http201CreatedResponse({ request, headers: { ...responseHeaders }, data: { submissionNumber } });
+    }
+    if (submissionNumber) {
+      await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message, kind }, asyncRequestsTableName);
+    }
+    await recordSubmissionFailure({
+      kind,
+      failure: "internal-error",
+      summary: `Companies House ${label} submission failed unexpectedly`,
+      userSub,
+    });
+    return http500ServerErrorResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Internal server error",
+      error: { detail: error.message },
+    });
+  }
+}

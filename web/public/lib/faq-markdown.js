@@ -28,6 +28,10 @@ export function formatFaqCategory(category) {
   return CATEGORY_LABELS[category] || category;
 }
 
+function faqCategoryLabel(faq) {
+  return faq.categoryLabel ?? formatFaqCategory(faq.category);
+}
+
 export function escapeFaqHtml(text) {
   return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -127,13 +131,14 @@ export function renderFaqMarkdown(text) {
 }
 
 // One entry as the help page shows it: the question is a heading that holds the accordion button,
-// the answer follows hidden until the button opens it.
+// the answer follows hidden until the button opens it. An entry read from a page's own markup
+// carries its category label and its answer as written there (categoryLabel, answerHtml).
 export function renderFaqItem(faq, headingLevel = 2) {
   return `
       <div class="faq-item" data-id="${faq.id}">
         <h${headingLevel} class="faq-heading">
           <button class="faq-question" aria-expanded="false">
-            <span class="faq-category-badge">${formatFaqCategory(faq.category)}</span>
+            <span class="faq-category-badge">${faqCategoryLabel(faq)}</span>
             <span class="faq-question-text">${escapeFaqHtml(faq.question)}</span>
             <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 9l6 6 6-6"/>
@@ -141,7 +146,7 @@ export function renderFaqItem(faq, headingLevel = 2) {
           </button>
         </h${headingLevel}>
         <div class="faq-answer" hidden>
-          ${renderFaqMarkdown(faq.answer)}
+          ${faq.answerHtml ?? renderFaqMarkdown(faq.answer)}
         </div>
       </div>
     `;
@@ -159,7 +164,7 @@ export function renderFaqGroups(faqs) {
     .map(
       (group) => `
       <section class="faq-group" aria-labelledby="faq-group-${group.category}">
-        <h2 class="faq-group-title" id="faq-group-${group.category}">${formatFaqCategory(group.category)}</h2>${group.items
+        <h2 class="faq-group-title" id="faq-group-${group.category}">${faqCategoryLabel(group.items[0])}</h2>${group.items
           .map((faq) => renderFaqItem(faq, 3))
           .join("")}
       </section>

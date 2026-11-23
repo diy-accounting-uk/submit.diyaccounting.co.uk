@@ -1,0 +1,248 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/allotShares.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dychwelyd cyfrannau a glustnodwyd - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/allotShares.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/allotShares.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/allotShares.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/allotShares.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-allot-shares.return-an-allotment-of-shares-808604">Dychwelyd cyfrannau a glustnodwyd</h1>
+      <p data-i18n="ch-allot-shares.tell-companies-house-the-company-has-e97d66" class="subtitle">
+        Dweud wrth Dŷ’r Cwmnïau fod y cwmni wedi dyroddi rhagor o gyfrannau, gyda’i ddatganiad cyfalaf
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-allot-shares.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-allot-shares.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-allot-shares.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-allot-shares.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-allot-shares.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-allot-shares.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-allot-shares.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-allot-shares.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+              data-gateway-text="off"
+            />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-allot-shares.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-allot-shares.the-6-to-8-character-code-1d105c" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond i ddarllen cyfalaf cyfrannau’r cwmni
+              ac ar gyfer y ffeilio hwn y caiff ei ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+              data-gateway-text="off"
+            />
+          </div>
+          <button
+            data-i18n="ch-allot-shares.look-up-the-company-s-shares-691b58"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="allot-shares"
+          >
+            Chwilio am gyfrannau’r cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Allotment form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-allot-shares.the-shares-allotted-4444ad">Y cyfrannau a glustnodwyd</h2>
+        <p data-i18n="ch-allot-shares.company-3bc806">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+        </p>
+        <p data-i18n="ch-allot-shares.a-company-returns-an-allotment-within-d39e06" class="hint">
+          Mae cwmni’n dychwelyd clustnodiad o fewn mis i’w wneud. Nid yw Tŷ’r Cwmnïau yn codi ffi am y ffeilio hwn. Mae popeth arno’n
+          ymddangos ar y cofnod cyhoeddus.
+        </p>
+        <form id="allotmentForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-allot-shares.allotment-dates-06c42c">Dyddiadau clustnodi</legend>
+            <p data-i18n="ch-allot-shares.if-all-shares-were-allotted-on-3c37c6" id="dates-hint" class="hint">
+              Os clustnodwyd yr holl gyfrannau ar yr un diwrnod, rhowch y dyddiad hwnnw fel y dyddiad o. Os clustnodwyd cyfrannau dros
+              gyfnod o amser, rhowch y ddau ddyddiad.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-allot-shares.from-date-3813fd" for="startDate">O ddyddiad</label>
+              <input type="date" id="startDate" name="startDate" required aria-describedby="dates-hint" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-allot-shares.to-date-optional-e1b0ad" for="endDate">Hyd at ddyddiad (dewisol)</label>
+              <input type="date" id="endDate" name="endDate" aria-describedby="dates-hint" />
+            </div>
+          </fieldset>
+
+          <fieldset class="form-group">
+            <legend data-i18n="ch-allot-shares.shares-allotted-e26a69">Cyfrannau a glustnodwyd</legend>
+            <p data-i18n="ch-allot-shares.give-details-of-the-shares-allotted-bcdba0" class="hint">
+              Rhowch fanylion y cyfrannau a glustnodwyd, gan gynnwys cyfrannau bonws. Mae’r symiau ar gyfer pob cyfran, yn arian cyfred y
+              cyfrannau.
+            </p>
+            <div id="allotmentRows"></div>
+            <button data-i18n="ch-allot-shares.add-another-allotment-d9759d" type="button" id="addAllotmentBtn" class="btn-small">
+              Ychwanegu clustnodiad arall
+            </button>
+          </fieldset>
+
+          <fieldset class="form-group">
+            <legend data-i18n="ch-allot-shares.share-capital-before-the-allotment-7dc50e">Cyfalaf cyfrannau cyn y clustnodiad</legend>
+            <p id="beforeSource" class="hint"></p>
+            <p data-i18n="ch-allot-shares.a-company-with-shares-in-more-e93e10" id="beforeCurrencyHint" class="hint">
+              Mae gan gwmni sydd â chyfrannau mewn mwy nag un arian cyfred dabl ar gyfer pob arian cyfred.
+            </p>
+            <div id="beforeTables"></div>
+            <button data-i18n="ch-allot-shares.add-shares-in-another-currency-f5af23" type="button" id="addCurrencyBtn" class="btn-small">
+              Ychwanegu cyfrannau mewn arian cyfred arall
+            </button>
+          </fieldset>
+
+          <section id="afterSection" class="form-group" aria-live="polite">
+            <h3 data-i18n="ch-allot-shares.statement-of-capital-after-the-allotment-24b0b9">Datganiad cyfalaf ar ôl y clustnodiad</h3>
+            <p data-i18n="ch-allot-shares.the-issued-share-capital-this-return-457401" class="hint">
+              Y cyfalaf cyfrannau a ddyroddwyd y mae’r ffurflen hon yn ei ddatgan: y cyfalaf cynt, gan ychwanegu’r cyfrannau a glustnodwyd,
+              mewn tabl ar gyfer pob arian cyfred.
+            </p>
+            <div id="afterTables"></div>
+            <div id="newClassParticulars"></div>
+          </section>
+          <button data-i18n="ch-allot-shares.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-allot-shares.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <section id="capitalWarning" class="outcome outcome--error" role="alert" hidden>
+          <p data-i18n="ch-allot-shares.the-capital-before-the-allotment-differs-94851d" class="outcome__title">
+            <strong>Mae’r cyfalaf cyn y clustnodiad yn wahanol i gofrestr Tŷ’r Cwmnïau</strong>
+          </p>
+          <p data-i18n="ch-allot-shares.submit-compares-this-return-with-the-fb4f08">
+            Mae Submit yn cymharu’r ffurflen hon â chofrestr Tŷ’r Cwmnïau fel y mae heddiw. Mae ffurflen ar gyfer clustnodiad a wnaed cyn
+            clustnodiad arall y mae’r gofrestr eisoes yn ei ddangos yn datgan y cyfalaf ar ei dyddiad ei hun, felly gall y ddau fod yn
+            wahanol.
+          </p>
+          <ul id="capitalWarningList"></ul>
+          <div class="choice">
+            <input type="checkbox" id="confirmCapital" name="confirmCapital" />
+            <label data-i18n="ch-allot-shares.the-capital-this-return-states-is-042672" for="confirmCapital"
+              >Y cyfalaf y mae’r ffurflen hon yn ei ddatgan yw cyfalaf y cwmni ar y dyddiad y mae’r ffurflen wedi’i gwneud hyd ato</label
+            >
+          </div>
+        </section>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-allot-shares.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-allot-shares.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-allot-shares.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-allot-shares.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button data-i18n="ch-allot-shares.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/allotShares.page.js"></script>
+    <script type="module" src="../../lib/companies-house-text-check.js"></script>
+  </body>
+</html>

@@ -8,6 +8,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { addMonths, registerCompany, registerDates } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -169,15 +170,21 @@ for (const [file, heading] of COMPARISON_PAGES) {
   });
 }
 
+// A company whose accounts fall due nine months from today, so the page counts the days left.
+const DEADLINES_COMPANY = registerCompany("00000008");
+const TODAY = registerDates().today;
+const ACCOUNTS_DUE = addMonths(TODAY, 9);
+const longDate = (iso) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 const DEADLINES_PAGE = "http://localhost:3000/company-filing-deadlines.html";
 const LOOKUP_PATTERN = "**/api/v1/public/company-deadlines*";
 const ACTIVE_COMPANY = {
-  companyNumber: "00000006",
-  companyName: "EXAMPLE LIMITED",
+  companyNumber: "00000008",
+  companyName: DEADLINES_COMPANY.name,
   companyStatus: "active",
   companyType: "ltd",
-  accountsNextDue: "2099-03-31",
-  accountsNextPeriodEnd: "2098-06-30",
+  accountsNextDue: ACCOUNTS_DUE,
+  accountsNextPeriodEnd: TODAY,
   confirmationStatementNextDue: "2020-04-30",
   lastAccountsType: "micro-entity",
 };
@@ -204,11 +211,11 @@ test("a company number shows both dates, the days left, the last accounts type a
   await serveRealSite(page);
   await stubLookup(page, 200, ACTIVE_COMPANY);
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
-  await page.locator("#companyQuery").fill("00000006");
+  await page.locator("#companyQuery").fill("00000008");
   await page.getByRole("button", { name: "Look up" }).click();
   const result = page.locator("#companyResult");
-  await expect(result).toContainText("EXAMPLE LIMITED (00000006)");
-  await expect(result).toContainText("31 March 2099");
+  await expect(result).toContainText(`${DEADLINES_COMPANY.name} (00000008)`);
+  await expect(result).toContainText(longDate(ACCOUNTS_DUE));
   await expect(result).toContainText("days left");
   await expect(result).toContainText("30 April 2020");
   await expect(result).toContainText("overdue by");
@@ -221,7 +228,7 @@ test("a dissolved company shows its status and no filing action", async ({ page 
   await serveRealSite(page);
   await stubLookup(page, 200, { ...ACTIVE_COMPANY, companyStatus: "dissolved" });
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
-  await page.locator("#companyQuery").fill("00000006");
+  await page.locator("#companyQuery").fill("00000008");
   await page.getByRole("button", { name: "Look up" }).click();
   await expect(page.locator("#companyResult")).toContainText("dissolved");
   await expect(page.locator("#companyResult a")).toHaveCount(0);
@@ -233,21 +240,21 @@ test("a name shows matches and choosing one looks the company up", async ({ page
     const isNumber = new URL(route.request().url()).searchParams.has("number");
     const body = isNumber
       ? ACTIVE_COMPANY
-      : { items: [{ companyNumber: "00000006", companyName: "EXAMPLE LIMITED", companyStatus: "active" }] };
+      : { items: [{ companyNumber: "00000008", companyName: DEADLINES_COMPANY.name, companyStatus: "active" }] };
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
   await page.locator("#companyQuery").fill("example");
   await page.getByRole("button", { name: "Look up" }).click();
   await page.locator("#companyMatches button").first().click();
-  await expect(page.locator("#companyResult")).toContainText("EXAMPLE LIMITED (00000006)");
+  await expect(page.locator("#companyResult")).toContainText(`${DEADLINES_COMPANY.name} (00000008)`);
 });
 
 test("a 429 from the lookup tells the reader to try again in a few minutes", async ({ page }) => {
   await serveRealSite(page);
   await stubLookup(page, 429, { message: "busy" }, { "Retry-After": "120" });
   await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
-  await page.locator("#companyQuery").fill("00000006");
+  await page.locator("#companyQuery").fill("00000008");
   await page.getByRole("button", { name: "Look up" }).click();
   await expect(page.locator("#companyError")).toContainText("Try again in a few minutes");
 });

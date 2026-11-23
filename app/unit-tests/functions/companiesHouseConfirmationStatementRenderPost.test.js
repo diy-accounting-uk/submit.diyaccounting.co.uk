@@ -62,7 +62,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildStatementBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
     dateSigned: "2026-09-24",
     reviewDate: "2025-09-21",

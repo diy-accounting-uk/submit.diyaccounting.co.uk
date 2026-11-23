@@ -14,6 +14,7 @@
 // app/lib/originVerifiedEntry.js
 
 import { createHash, timingSafeEqual } from "node:crypto";
+import { loggedPathOf } from "./loggedPath.js";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "./logger.js";
 import { emitMetric } from "./emfMetrics.js";
@@ -85,7 +86,7 @@ export async function refusalForUnverifiedOrigin(event) {
   if (accepted.length === 0) metricName = "OriginSecretUnavailable";
   else if (presentedValue) metricName = "OriginHeaderInvalid";
   emitMetric({ namespace: METRICS_NAMESPACE, metricName });
-  logger.warn({ message: "Origin check failed", reason: metricName, path: event.rawPath });
+  logger.warn({ message: "Origin check failed", reason: metricName, path: loggedPathOf(event) });
 
   if (process.env.ORIGIN_VERIFY_ENFORCE !== "true") return null;
   if (accepted.length === 0) return jsonRefusal(503, "Service unavailable");

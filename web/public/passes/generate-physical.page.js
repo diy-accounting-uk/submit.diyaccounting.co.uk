@@ -159,7 +159,7 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
     const notes = document.getElementById("passNotes").value.trim() || undefined;
     const res = await window.fetchWithIdToken("/api/v1/pass/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...siteLanguageHeader() },
       body: JSON.stringify({ passTypeId: "physical-pass", notes }),
     });
 
@@ -259,4 +259,9 @@ if (window.__submitReady__) {
   initPage();
 } else {
   document.addEventListener("submit-ready", initPage, { once: true });
+}
+
+// The email for the new pass follows the reader's language choice.
+function siteLanguageHeader() {
+  return window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {};
 }

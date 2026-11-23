@@ -3,11 +3,11 @@
 
 // @capability MCP-07 File VAT returns and accounts via API
 // - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
-// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
+// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. The four accounts tools take an optional revision, which files revised accounts that replace accounts already filed, and list_accounts_receipts answers the receipt name a revision names. They also send documentLanguage (Welsh accounts) and directorsAdvances, and the micro-entity tools the dormant fields. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcGrantFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
 // - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
-// - **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
+// - **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, list_accounts_receipts, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant, dormant accounts, welsh accounts, directors advances
 // - **Related:** MCP-05, MCP-04, MCP-08, MCP-21
 // @end-capability
 
@@ -33,6 +33,8 @@
 // starts: the user grants access in the browser, Submit's callback stores HMRC's tokens server
 // side, and the tools that call HMRC read the access token back by the grant id for each call.
 // No tool takes the token as an argument, and none answers the grant id or a token to the chat.
+
+import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -374,6 +376,134 @@ export async function listVatReceipts(session, params = {}) {
   };
 }
 
+// The kind Submit stores on the receipt of accepted accounts, and on a rejected accounts filing.
+const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
+const ACCOUNTS_FILING_KIND = "accounts";
+// Each receipt read carries the whole filed document, so the list reads the newest receipts only,
+// a few at a time.
+const ACCOUNTS_RECEIPTS_LISTED = 25;
+const ACCOUNTS_RECEIPT_READS_AT_ONCE = 4;
+
+// fn, with at most limit of its calls running at once; the others wait their turn.
+function atMostAtOnce(limit, fn) {
+  let running = 0;
+  const waiting = [];
+  return async (...args) => {
+    if (running >= limit) await new Promise((resolve) => waiting.push(resolve));
+    running += 1;
+    try {
+      return await fn(...args);
+    } finally {
+      running -= 1;
+      waiting.shift()?.();
+    }
+  };
+}
+
+// The accounts a filed document holds, in the words the accounts forms use.
+function accountsTypeOf(mapped) {
+  if (mapped.regime === "micro") return mapped.dormant ? "dormant micro-entity" : "micro-entity";
+  return mapped.filleted ? "small company, filleted" : "small company";
+}
+
+/**
+ * list_accounts_receipts: the signed-in account's accounts filings, newest first. Each accepted
+ * filing answers the receipt name a revision's revisesReceipt takes, the company number, the period
+ * and the type of accounts read from the document filed, whether it is itself revised accounts,
+ * whether it went with a Company Tax Return, and whether it can be revised here: accepted, filed
+ * alone, not already revised, and with its document kept. Rejected filings have no receipt; each
+ * answers its submission number and Companies House's reasons. The route answers only the caller's
+ * own receipts (or, with clientId, one of the practice's clients').
+ * @param {Object} session
+ * @param {{clientId?: string}} params
+ */
+export async function listAccountsReceipts(session, params = {}) {
+  const { clientId } = params;
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const { receipts = [], filingsInProgress = [] } = await callSubmitApi(session, `/api/v1/hmrc/receipt${query}`);
+  const accountsRows = receipts.filter((row) => row.kind === ACCOUNTS_RECEIPT_KIND);
+  const more = accountsRows.length > ACCOUNTS_RECEIPTS_LISTED;
+  const accepted = await Promise.all(
+    accountsRows.slice(0, ACCOUNTS_RECEIPTS_LISTED).map(
+      atMostAtOnce(ACCOUNTS_RECEIPT_READS_AT_ONCE, async (row) => {
+        const revisedAccounts = row.amended === true;
+        const filedWithCompanyTaxReturn = Boolean(row.jointFilingId);
+        const filedOn = String(row.timestamp ?? "").slice(0, 10);
+        let stored;
+        try {
+          stored = await callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(row.name)}${query}`);
+        } catch (error) {
+          // A receipt that cannot be read is named with the reason, and the rest of the list still answers.
+          return {
+            name: row.name,
+            companyNumber: null,
+            periodStart: null,
+            periodEnd: null,
+            accountsType: null,
+            status: null,
+            revisedAccounts,
+            filedWithCompanyTaxReturn,
+            revisable: false,
+            filedOn,
+            problem: error.message,
+          };
+        }
+        let mapped = null;
+        let problem;
+        if (stored.filedDocument) {
+          try {
+            mapped = mapIxbrlAccounts(stored.filedDocument, { regime: "any" });
+          } catch (error) {
+            problem = `The document filed with this receipt does not read as accounts: ${error.message}`;
+          }
+        } else {
+          problem = "The document filed with this receipt was not kept.";
+        }
+        const status = stored.statusCode === "ACCEPT" ? "accepted" : "rejected";
+        return {
+          name: row.name,
+          companyNumber: stored.companyNumber,
+          periodStart: mapped?.period?.start ?? null,
+          periodEnd: mapped?.period?.end ?? null,
+          accountsType: mapped ? accountsTypeOf(mapped) : null,
+          status,
+          revisedAccounts,
+          filedWithCompanyTaxReturn,
+          revisable: status === "accepted" && !filedWithCompanyTaxReturn && !revisedAccounts && Boolean(mapped),
+          filedOn,
+          ...(problem ? { problem } : {}),
+        };
+      }),
+    ),
+  );
+  const rejected = filingsInProgress
+    .filter((filing) => filing.kind === ACCOUNTS_FILING_KIND && filing.status === "rejected")
+    .map((filing) => ({
+      submissionNumber: filing.submissionNumber,
+      status: "rejected",
+      rejectedOn: String(filing.submittedAt ?? "").slice(0, 10),
+      rejections: filing.rejections ?? [],
+    }));
+  return {
+    receipts: accepted,
+    rejectedFilings: rejected,
+    more,
+    ...(more ? { moreNote: `Only the newest ${ACCOUNTS_RECEIPTS_LISTED} accounts filings are listed; older filings are not.` } : {}),
+  };
+}
+
+// The fields of dormant micro-entity accounts; the route refuses them with a small company section.
+const DORMANT_FIELDS = ["dormant", "dormantTradingStatus", "shareClass", "nominalValue"];
+
+// The language of the document and the micro-entity note on advances to directors, which the
+// accounts routes read at the top level; a small company's advances travel inside smallCompany.
+function languageAndAdvancesFields(params) {
+  return {
+    ...(params.documentLanguage ? { documentLanguage: params.documentLanguage } : {}),
+    ...(params.directorsAdvances ? { directorsAdvances: params.directorsAdvances } : {}),
+  };
+}
+
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
 
 /**
@@ -410,6 +540,11 @@ function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
     averageEmployees: Number(averageEmployees),
     director,
     statementsAccepted,
+    ...(params.registeredOffice ? { registeredOffice: params.registeredOffice } : {}),
+    ...(params.accountantsReport ? { accountantsReport: params.accountantsReport } : {}),
+    ...(params.revision ? { revision: params.revision } : {}),
+    ...languageAndAdvancesFields(params),
+    ...Object.fromEntries(DORMANT_FIELDS.filter((field) => params[field] !== undefined).map((field) => [field, params[field]])),
   };
 }
 
@@ -487,6 +622,10 @@ function smallCompanyFilingBody(toolName, params, { allowClientId = false } = {}
     director,
     statementsAccepted,
     smallCompany,
+    ...(params.registeredOffice ? { registeredOffice: params.registeredOffice } : {}),
+    ...(params.accountantsReport ? { accountantsReport: params.accountantsReport } : {}),
+    ...(params.revision ? { revision: params.revision } : {}),
+    ...(params.documentLanguage ? { documentLanguage: params.documentLanguage } : {}),
   };
 }
 

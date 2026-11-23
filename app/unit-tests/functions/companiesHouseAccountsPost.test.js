@@ -98,6 +98,34 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => (
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
 }));
 
+const mockGetReceipt = vi.fn();
+vi.mock("@app/data/dynamoDbReceiptRepository.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  getReceipt: (...args) => mockGetReceipt(...args),
+}));
+
+const mockFilingHistory = vi.fn();
+vi.mock("@app/services/companiesHouseApi.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  companiesHouseFilingHistory: (...args) => mockFilingHistory(...args),
+}));
+
+function accountsHistory(...madeUpDates) {
+  const items = madeUpDates.map((madeUpDate) => ({ type: "AA", description_values: { made_up_date: madeUpDate } }));
+  return { ok: true, status: 200, data: { items, totalCount: items.length, truncated: false } };
+}
+
+// The security state table behind the lookups' limits: the stop a Companies House 429 sets, and
+// each account's counter, which here never reaches its share.
+const mockStopValue = vi.fn(async () => undefined);
+const mockPutCachedValue = vi.fn(async () => {});
+vi.mock("@app/data/dynamoDbSecurityStateRepository.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  incrementRateCounter: async () => 1,
+  getCachedValue: (...args) => mockStopValue(...args),
+  putCachedValue: (...args) => mockPutCachedValue(...args),
+}));
+
 const mockGetCompanyProfile = vi.fn();
 vi.mock("@app/functions/companies-house/companiesHouseCompanyGet.js", () => ({
   getCompanyProfile: (...args) => mockGetCompanyProfile(...args),
@@ -107,6 +135,7 @@ import {
   ingestHandler as companiesHouseAccountsPostHandler,
   readRegisteredOffice,
   readAccountantsReport,
+  extractAndValidateAccountsParameters,
 } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -180,6 +209,8 @@ function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
       principalActivity: "Software consultancy",
       accountingPolicies: "Historical cost convention.",
       directors: ["Jo Director"],
+      // The company's first accounts, so they have no prior year.
+      dateOfIncorporation: "2025-01-01",
       balanceSheet: {
         currentYear: {
           fixedAssets: 1000,
@@ -227,6 +258,7 @@ function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, meth
 
 describe("companiesHouseAccountsPost ingestHandler", () => {
   beforeEach(() => {
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -237,6 +269,9 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       }),
     );
     vi.clearAllMocks();
+    mockStopValue.mockResolvedValue(undefined);
+    // The register shows a company incorporated on the default body's period start, with no accounts filed.
+    mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "england-wales", dateOfCreation: "2025-01-01" } });
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -251,6 +286,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     mockBuildAccountsSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
     mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-01-15T10:00:00Z", pollInterval: 1 });
+    mockFilingHistory.mockResolvedValue(accountsHistory("2025-12-31", "2024-12-31"));
   });
 
   test("generates the iXBRL, submits the envelope and returns the submission number", async () => {
@@ -338,6 +374,83 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test.each([
+    [
+      "the current year",
+      (body) => {
+        body.balanceSheet.currentYear.profitAndLossAccount = 3800;
+      },
+      "Capital and reserves of £4,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £3,900.",
+    ],
+    [
+      "the prior year",
+      (body) => {
+        body.balanceSheet.priorYear.profitAndLossAccount = 1900;
+      },
+      "Capital and reserves of £2,900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to £2,000.",
+    ],
+  ])(
+    "refuses capital and reserves in %s that differ from share capital plus the profit and loss account, and sends nothing",
+    async (_year, change, message) => {
+      const body = buildAccountsBody();
+      change(body);
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(parseResponseBody(response).message).toContain(message);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    },
+  );
+
+  test("refuses small company capital and reserves that differ from share capital plus the profit and loss account", async () => {
+    const body = buildSmallCompanyBody();
+    body.smallCompany.balanceSheet.currentYear.profitAndLossAccount = 3800;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain(
+      "Capital and reserves of £4,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £3,900.",
+    );
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("files dormant accounts whose capital and reserves are the share capital alone", async () => {
+    const shareCapitalOnly = {
+      fixedAssets: 0,
+      currentAssets: 100,
+      creditorsWithinOneYear: 0,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 0,
+      capitalAndReserves: 100,
+    };
+    const body = buildAccountsBody({
+      dormant: true,
+      dormantTradingStatus: "neverTraded",
+      shareClass: "ordinaryShares",
+      nominalValue: 1,
+      averageEmployees: 0,
+      balanceSheet: { currentYear: { ...shareCapitalOnly }, priorYear: { ...shareCapitalOnly } },
+    });
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(201);
+    expect(mockPostToGateway).toHaveBeenCalled();
+  });
+
+  test("files a company's first accounts, whose prior year is all zero", async () => {
+    const body = buildAccountsBody();
+    body.balanceSheet.priorYear = {
+      fixedAssets: 0,
+      currentAssets: 0,
+      creditorsWithinOneYear: 0,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 0,
+      profitAndLossAccount: 0,
+      capitalAndReserves: 0,
+    };
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(201);
+  });
+
   test("accepts the optional balance sheet headings when they enter the totals", async () => {
     const body = buildAccountsBody();
     body.balanceSheet.currentYear.prepaymentsAccruedIncome = 300;
@@ -374,6 +487,31 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(response.statusCode).toBe(500);
     const body = parseResponseBody(response);
     expect(body.errors[0].number).toBe("502");
+  });
+
+  test("keeps and answers a rejection with the request's values taken out of its texts", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [
+        {
+          raisedBy: "Gateway",
+          number: "604",
+          type: "fatal",
+          text: "Jo Director cannot approve SIMULATOR EXAMPLE COMPANY LIMITED",
+          location: "",
+        },
+      ],
+    });
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    const kept = JSON.stringify({
+      answer: parseResponseBody(response),
+      stored: mockSend.mock.calls.map(([command]) => command.input),
+      events: mockEventBridgeSend.mock.calls.map(([command]) => command.input),
+    });
+    expect(kept).toContain("[a value of the request] cannot approve [a value of the request]");
+    expect(kept).not.toContain("Jo Director cannot");
   });
 
   async function asyncRequestWrites() {
@@ -524,7 +662,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
 
     test("a Welsh company's small company accounts are built in Welsh and sent with Language CY", async () => {
-      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "wales" } });
+      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "wales", dateOfCreation: "2025-01-01" } });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody({ documentLanguage: "cy" }) }));
       expect(response.statusCode).toBe(201);
       const submission = mockBuildAccountsSubmission.mock.calls[0][0];
@@ -540,6 +678,62 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("Welsh accounts are for a Welsh company");
       expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("answer a JSON 502 with a reason, and send nothing, when the company's profile cannot be read at all", async () => {
+      mockGetCompanyProfile.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response)).toMatchObject({ reason: "company-profile-not-read" });
+      expect(response.body).not.toContain("COMPANIES_HOUSE_BASE_URI");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("read no profile and answer a JSON 429 during the stop a Companies House 429 set", async () => {
+      mockStopValue.mockResolvedValue({ until: Date.now() + 60_000 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(429);
+      expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
+      expect(mockGetCompanyProfile).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("answer the failed read and set the stop when Companies House answers the profile read with 429", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 429, headers: { "retry-after": "30" } }, profile: null });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(429);
+      expect(mockPutCachedValue).toHaveBeenCalledWith("chlookup#stopped", { until: expect.any(Number) }, 30);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("for a company the register does not hold are refused as accounts of no Welsh company", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 404 }, profile: null });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain('jurisdiction as \\"unknown\\"');
+    });
+
+    test("a filing with no registered office reads the profile within the limits: none during the stop, and nothing sent", async () => {
+      mockStopValue.mockResolvedValue({ until: Date.now() + 60_000 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ registeredOffice: undefined }) }));
+      expect(response.statusCode).toBe(429);
+      expect(mockGetCompanyProfile).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("a Welsh filing with no registered office reads the profile once, for the office and the jurisdiction", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: {
+          jurisdiction: "wales",
+          registeredOffice: { addressLine1: "1 Stryd y Castell", cityOrTown: "Caerdydd", postalCode: "CF10 1AA" },
+        },
+      });
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ documentLanguage: "cy", registeredOffice: undefined }) }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(mockGetCompanyProfile).toHaveBeenCalledTimes(1);
+      expect(mockBuildMicroEntityAccounts.mock.calls[0][0].registeredOffice).toMatchObject({ addressLine1: "1 Stryd y Castell" });
     });
 
     test("English accounts read no profile and send no Language", async () => {
@@ -614,7 +808,11 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
 
   describe("revised accounts", () => {
     const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
-    const REVISION = { originalDateOfApproval: "2026-01-10", differences: "Creditors are restated." };
+    const REVISION = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
+    };
 
     async function pendingData() {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -638,18 +836,371 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(await pendingData()).toMatchObject({ amended: true });
     });
 
+    test("a revision filed alone is charged to the accounts activity of its regime, as an original filing is", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ amended: true, chargeActivityId: "file-micro-entity-accounts" });
+    });
+
     test("an original filing stores no amended mark", async () => {
       await companiesHouseAccountsPostHandler(buildEvent());
       expect(await pendingData()).not.toHaveProperty("amended");
     });
 
+    test("refuses a revision on prod, where revised accounts are not offered, and sends nothing", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files an original on prod", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("refuses a revision on prod from a preview request with a synthetic HMRC account, while the accounts go to the live gateway", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({
+          body: buildAccountsBody({ revision: REVISION }),
+          headers: { "x-preview-features": "on", "hmrcAccount": "synthetic" },
+        }),
+      );
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files a revision from a preview request where the accounts go to the Companies House test service", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({
+          body: buildAccountsBody({ revision: REVISION }),
+          headers: { "x-preview-features": "on", "hmrcAccount": "synthetic" },
+        }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToGateway).toHaveBeenCalled();
+    });
+
+    test("files a revision on ci", async () => {
+      process.env.ENVIRONMENT_NAME = "ci";
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToGateway).toHaveBeenCalled();
+    });
+
     test("refuses a revision without a description and sends nothing", async () => {
       const response = await companiesHouseAccountsPostHandler(
-        buildEvent({ body: buildAccountsBody({ revision: { originalDateOfApproval: "2026-01-10", differences: "" } }) }),
+        buildEvent({ body: buildAccountsBody({ revision: { ...REVISION, amendments: "" } }) }),
       );
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.differences");
+      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.amendments");
       expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the receipt revised accounts name", () => {
+    const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
+    const REVISION = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
+      revisesReceipt: RECEIPT_NAME,
+    };
+    const ORIGINAL_RECEIPT = {
+      kind: "companies-house-accounts",
+      statusCode: "ACCEPT",
+      submissionNumber: "00001A",
+      companyNumber: "00000001",
+      filedDocument: filedDocumentFor("2025-01-01", "2025-12-31"),
+    };
+
+    function filedDocumentFor(start, end) {
+      return `<html><xbrli:context id="y2025"><xbrli:period><xbrli:startDate>${start}</xbrli:startDate><xbrli:endDate>${end}</xbrli:endDate></xbrli:period></xbrli:context><ix:nonNumeric name="bus:EntityCurrentLegalOrRegisteredName" contextRef="y2025">SIMULATOR EXAMPLE COMPANY LIMITED</ix:nonNumeric></html>`;
+    }
+
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("files revised accounts that name an accepted accounts receipt of the same company, and keeps its name", async () => {
+      mockGetReceipt.mockResolvedValue(ORIGINAL_RECEIPT);
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockGetReceipt).toHaveBeenCalledWith(expect.any(String), "2026-10-24T10:15:00.000Z-00001A");
+      expect(await pendingData()).toMatchObject({ amended: true, revisesReceipt: RECEIPT_NAME });
+    });
+
+    test("files revised accounts that name no receipt when the register holds accounts made up to the period's end", async () => {
+      const { revisesReceipt, ...withoutReceipt } = REVISION;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: withoutReceipt }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockGetReceipt).not.toHaveBeenCalled();
+      expect(mockFilingHistory).toHaveBeenCalledWith("00000001", { category: "accounts" });
+      expect(await pendingData()).not.toHaveProperty("revisesReceipt");
+      expect(revisesReceipt).toBe(RECEIPT_NAME);
+    });
+
+    test("reads no register for revised accounts that name a receipt, or for original accounts", async () => {
+      mockGetReceipt.mockResolvedValue(ORIGINAL_RECEIPT);
+      for (const body of [buildAccountsBody({ revision: REVISION }), buildAccountsBody()]) {
+        expect((await companiesHouseAccountsPostHandler(buildEvent({ body }))).statusCode).toBe(201);
+      }
+      expect(mockFilingHistory).not.toHaveBeenCalled();
+    });
+
+    describe("revised accounts that name no receipt", () => {
+      const { revisesReceipt, ...WITHOUT_RECEIPT } = REVISION;
+
+      test("are refused with a sentence and a reason when the register holds no accounts made up to the period's end, and nothing is sent", async () => {
+        mockFilingHistory.mockResolvedValue(accountsHistory("2024-12-31", "2023-12-31"));
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(400);
+        expect(parseResponseBody(response)).toMatchObject({
+          message:
+            "Companies House holds no accounts for this company made up to 31 December 2025, so there are no accounts for revised accounts to replace.",
+          reason: "revision-period-not-on-register",
+          companyNumber: "00000001",
+          periodEnd: "2025-12-31",
+        });
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+        expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+      });
+
+      test("are refused for a small company too", async () => {
+        mockFilingHistory.mockResolvedValue(accountsHistory());
+        const response = await companiesHouseAccountsPostHandler(
+          buildEvent({ body: buildSmallCompanyBody({ revision: WITHOUT_RECEIPT }) }),
+        );
+        expect(response.statusCode).toBe(400);
+        expect(parseResponseBody(response).reason).toBe("revision-period-not-on-register");
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+
+      test("are refused with a sentence when the register holds no such company, and nothing is sent", async () => {
+        mockFilingHistory.mockResolvedValue({ ok: false, status: 404, data: {} });
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(400);
+        expect(parseResponseBody(response)).toMatchObject({
+          message: "Companies House holds no company with the number 00000001, so there are no accounts to revise.",
+          reason: "revision-company-not-on-register",
+        });
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+
+      test("are not filed when the register cannot be read, and the answer is the failed read", async () => {
+        mockFilingHistory.mockResolvedValue({ ok: false, status: 429, data: {}, headers: { "retry-after": "30" } });
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(429);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+
+      test("are filed without a register read where the accounts go to the Companies House test service", async () => {
+        process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+        mockFilingHistory.mockResolvedValue(accountsHistory());
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(201);
+        expect(mockFilingHistory).not.toHaveBeenCalled();
+      });
+    });
+
+    const refusals = [
+      ["a receipt not found in this account", null, "is not in your account"],
+      ["a receipt that is not accounts", { ...ORIGINAL_RECEIPT, kind: "company-tax-return" }, "not an accounts filing"],
+      ["accounts Companies House did not accept", { ...ORIGINAL_RECEIPT, statusCode: "REJECT" }, "did not accept those accounts"],
+      ["accounts filed with a Company Tax Return", { ...ORIGINAL_RECEIPT, jointFilingId: "joint-1" }, "Company Tax Return page"],
+      ["accounts that are already revised accounts", { ...ORIGINAL_RECEIPT, amended: true }, "already revised accounts"],
+      ["accounts whose filed document was not kept", { ...ORIGINAL_RECEIPT, filedDocument: undefined }, "was not kept"],
+      ["accounts of another company", { ...ORIGINAL_RECEIPT, companyNumber: "00000009" }, "for another company"],
+      [
+        "accounts for another period",
+        { ...ORIGINAL_RECEIPT, filedDocument: filedDocumentFor("2024-01-01", "2024-12-31") },
+        "The accounts the receipt names are for the period 2024-01-01 to 2024-12-31, so revised accounts for 2025-01-01 to 2025-12-31 cannot replace them.",
+      ],
+    ];
+    for (const [name, receipt, sentence] of refusals) {
+      test(`refuses revised accounts that name ${name}, with a sentence, and sends nothing`, async () => {
+        mockGetReceipt.mockResolvedValue(receipt);
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain(sentence);
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+    }
+
+    test("refuses a receipt name that is not a stored receipt's name", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ revision: { ...REVISION, revisesReceipt: "../other/receipt" } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.revisesReceipt");
+      expect(mockGetReceipt).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the first accounts of a micro-entity", () => {
+    const firstAccountsBody = () => {
+      const body = buildAccountsBody({ dateOfIncorporation: "2025-01-01" });
+      delete body.balanceSheet.priorYear;
+      return body;
+    };
+
+    test("files first accounts with one year, marked with the date of incorporation", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
+      expect(response.statusCode).toBe(201);
+      const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
+      expect(input.dateOfIncorporation).toBe("2025-01-01");
+      expect(input.balanceSheet.prior).toBeUndefined();
+    });
+
+    test("refuses accounts with no prior year that are not first accounts, and first accounts that carry one or start late", async () => {
+      const noPrior = firstAccountsBody();
+      delete noPrior.dateOfIncorporation;
+      const late = { ...firstAccountsBody(), dateOfIncorporation: "2024-12-01" };
+      const withPrior = buildAccountsBody({ dateOfIncorporation: "2025-01-01" });
+      const answers = [];
+      for (const body of [noPrior, late, withPrior]) {
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+        expect(response.statusCode).toBe(400);
+        answers.push(JSON.stringify(parseResponseBody(response)));
+      }
+      expect(answers[0]).toContain("priorYear");
+      expect(answers[1]).toContain("dateOfIncorporation must equal periodStart");
+      expect(answers[2]).toContain("which have no preceding year");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses one year for an established company that names its period's start as the incorporation date, and sends nothing", async () => {
+      for (const profile of [
+        { dateOfCreation: "2019-06-01", accountsLastPeriodStart: "2024-01-01" },
+        { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      ]) {
+        mockGetCompanyProfile.mockResolvedValue({ profile });
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain("must show the prior year");
+      }
+      expect(mockGetCompanyProfile).toHaveBeenCalledWith("00000001");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses one year for an established company that names a period from its incorporation to its latest year end", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2019-06-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      });
+      const body = { ...firstAccountsBody(), dateOfIncorporation: "2019-06-01", periodStart: "2019-06-01", periodEnd: "2025-12-31" };
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("longer than a first financial year can");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files the revision of first accounts after the register holds a later year", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2026-01-01", accountsLastPeriodEnd: "2026-12-31" },
+      });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(201);
+    });
+
+    test("files the revision of first accounts, which the register holds as the last accounts for the same period", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2025-01-01" } });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(201);
+    });
+
+    test("answers a JSON 502 when the register cannot be read, passes on the register's failed answer, and refuses a company it does not hold, sending nothing", async () => {
+      mockGetCompanyProfile.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
+      const unread = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
+      expect(unread.statusCode).toBe(502);
+      expect(parseResponseBody(unread)).toMatchObject({ reason: "company-profile-not-read" });
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 500 }, profile: null });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(500);
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 404 }, profile: null });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("an established company's two years are filed as they are, with no date of incorporation", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody() }));
+      const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
+      expect(input.dateOfIncorporation).toBeUndefined();
+      expect(input.balanceSheet.prior).toBeDefined();
+    });
+  });
+
+  describe("an advance to someone who is not a director", () => {
+    const ADVANCE = { name: "Sam Lender", terms: "Interest free", balanceAtStart: 0, advanced: 0, repaid: 0, balanceAtEnd: 0 };
+    const SENTENCE = "names Sam Lender, who is not among the directors of these accounts: add them to the directors";
+
+    test("refuses micro-entity accounts with a sentence that says an advance names the director who signs them, and sends nothing", async () => {
+      const body = buildAccountsBody({ directorsAdvances: [ADVANCE] });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      const answer = JSON.stringify(parseResponseBody(response));
+      expect(answer).toContain(
+        `directorsAdvances[0] names Sam Lender: on micro-entity accounts an advance names the director who signs the accounts, ${body.director.name}`,
+      );
+      expect(answer).not.toContain(SENTENCE);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses small company accounts and revised small company accounts with the same sentence", async () => {
+      for (const extra of [{}, { revision: { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" } }]) {
+        const response = await companiesHouseAccountsPostHandler(
+          buildEvent({ body: buildSmallCompanyBody(extra, { directorsAdvances: [ADVANCE] }) }),
+        );
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain(`smallCompany.directorsAdvances[0] ${SENTENCE}`);
+      }
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the date the directors approved the accounts", () => {
+    const AFTER_TODAY = "2099-01-01";
+    const SENTENCE = `The date approved, ${AFTER_TODAY}, is after today. Enter the date the directors approved the accounts.`;
+
+    test("refuses micro-entity accounts approved after today, with a sentence that names the date, and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ director: { name: "Jo Director", dateApproved: AFTER_TODAY } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(SENTENCE);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses small company accounts approved after today", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildSmallCompanyBody({ director: { name: "Jo Director", dateApproved: AFTER_TODAY } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(SENTENCE);
+    });
+
+    test("refuses revised accounts approved after today", async () => {
+      const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ revision, director: { name: "Jo Director", dateApproved: AFTER_TODAY } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(SENTENCE);
+    });
+
+    test("files accounts approved today", async () => {
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ director: { name: "Jo Director", dateApproved: today } }) }),
+      );
+      expect(response.statusCode).toBe(201);
     });
   });
 
@@ -680,6 +1231,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
   }
 
   beforeEach(() => {
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -691,6 +1243,9 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       }),
     );
     vi.clearAllMocks();
+    mockStopValue.mockResolvedValue(undefined);
+    // The register shows a company incorporated on the default body's period start, with no accounts filed.
+    mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "england-wales", dateOfCreation: "2025-01-01" } });
     mockEventBridgeSend.mockResolvedValue({});
     mockBuildMicroEntityAccounts.mockReturnValue('<?xml version="1.0"?><html>fake ixbrl</html>');
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");
@@ -717,6 +1272,33 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     expect(generatorInput.companyNumber).toBe("00000099");
     const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
     expect(submissionArgs.companyNumber).toBe("00000099");
+  });
+
+  test("checks a client's revised accounts with no receipt against the client's company, whatever company the body names", async () => {
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { companyNumber: "00000099" },
+      authorisations: { "CH-ACCOUNTS": { status: "authorised" } },
+      archivedAt: null,
+    });
+    // The company the body names holds accounts for the period; the client's company holds none.
+    mockFilingHistory.mockImplementation(async (companyNumber) => accountsHistory(...(companyNumber === "00000001" ? ["2025-12-31"] : [])));
+    const revision = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "The turnover was understated.",
+      amendments: "Turnover is restated.",
+    };
+
+    const response = await companiesHouseAccountsPostHandler(
+      buildEvent({ body: buildAccountsBody({ clientId: "c1", companyNumber: "00000001", revision }) }),
+    );
+
+    expect(mockFilingHistory).toHaveBeenCalledWith("00000099", { category: "accounts" });
+    expect(mockFilingHistory).not.toHaveBeenCalledWith("00000001", expect.anything());
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response)).toMatchObject({ reason: "revision-period-not-on-register", companyNumber: "00000099" });
+    expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
   test("keeps the client id on the pending request, so the receipt of an accepted filing is the client's", async () => {
@@ -982,12 +1564,71 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
 
     test("comparatives render when supplied", async () => {
       const body = buildSmallCompanyBody();
+      delete body.smallCompany.dateOfIncorporation;
       body.smallCompany.balanceSheet.priorYear = { ...body.smallCompany.balanceSheet.currentYear };
       body.smallCompany.profitAndLoss.priorYear = { ...body.smallCompany.profitAndLoss.currentYear };
       await companiesHouseAccountsPostHandler(buildEvent({ body }));
       const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
       expect(submissionArgs.ixbrl).toContain('contextRef="y2024"');
       expect(submissionArgs.ixbrl).toContain('contextRef="e2024"');
+      expect(submissionArgs.ixbrl).not.toContain("bus:DateFormationOrIncorporation");
+    });
+
+    test("refuses accounts that are not the company's first and leave out the prior year's balance sheet", async () => {
+      const body = buildSmallCompanyBody();
+      delete body.smallCompany.dateOfIncorporation;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("smallCompany.balanceSheet.priorYear is required");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses one year of small company accounts when the register holds accounts filed before", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("must show the prior year");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts that do not start on the day of incorporation, or that carry a prior year", async () => {
+      const late = buildSmallCompanyBody();
+      late.smallCompany.dateOfIncorporation = "2024-06-01";
+      const lateAnswer = JSON.stringify(parseResponseBody(await companiesHouseAccountsPostHandler(buildEvent({ body: late }))));
+      expect(lateAnswer).toContain("smallCompany.dateOfIncorporation must equal periodStart");
+      const withPrior = buildSmallCompanyBody();
+      withPrior.smallCompany.balanceSheet.priorYear = { ...withPrior.smallCompany.balanceSheet.currentYear };
+      const priorAnswer = JSON.stringify(parseResponseBody(await companiesHouseAccountsPostHandler(buildEvent({ body: withPrior }))));
+      expect(priorAnswer).toContain("which have no preceding year");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts for a company the register shows has filed accounts before", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts when the register's last accounts give only their end, and it is before the period", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2025-01-01", accountsLastPeriodEnd: "2024-12-31" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts whose period does not start on the date of incorporation in the register", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2015-03-01" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
     test("rejects a balance sheet whose capital and reserves differ from net assets", async () => {
@@ -1094,5 +1735,42 @@ describe("readAccountantsReport", () => {
     const text = [];
     readAccountantsReport("Test Firm LLP", text);
     expect(text).toEqual(["Invalid accountantsReport - must be an object"]);
+  });
+});
+
+describe("the advance to the director of a micro-entity accounts request", () => {
+  const ADVANCE = {
+    name: "Jo Director",
+    terms: "Interest free and repayable on demand",
+    balanceAtStart: 200,
+    advanced: 1000,
+    repaid: 400,
+    balanceAtEnd: 800,
+  };
+  const accountsOf = (overrides) => {
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(buildAccountsBody(overrides)) }, errors);
+    return { accounts, errors };
+  };
+
+  test("carries the advance the form sends", () => {
+    const { accounts, errors } = accountsOf({ directorsAdvances: [ADVANCE] });
+    expect(errors).toEqual([]);
+    expect(accounts.directorsAdvances).toEqual([ADVANCE]);
+  });
+
+  test("carries no advance when the form sends none", () => {
+    const { accounts, errors } = accountsOf({});
+    expect(errors).toEqual([]);
+    expect(accounts.directorsAdvances).toBeUndefined();
+  });
+
+  test("refuses an advance whose figures do not add up, or that gives no terms", () => {
+    expect(accountsOf({ directorsAdvances: [{ ...ADVANCE, balanceAtEnd: 900 }] }).errors).toEqual([
+      "directorsAdvances[0].balanceAtEnd must equal balanceAtStart plus advanced less repaid",
+    ]);
+    expect(accountsOf({ directorsAdvances: [{ ...ADVANCE, terms: "" }] }).errors).toEqual([
+      "directorsAdvances[0].terms is required: state the interest rate and the main conditions",
+    ]);
   });
 });

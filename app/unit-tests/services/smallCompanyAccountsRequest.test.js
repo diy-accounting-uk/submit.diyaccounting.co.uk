@@ -5,7 +5,11 @@
 
 import { describe, test, expect } from "vitest";
 import { extractAndValidateSmallCompany } from "@app/services/smallCompanyAccountsRequest.js";
-import { SMALL_COMPANY_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import {
+  SMALL_COMPANY_CASE_INPUT,
+  SMALL_COMPANY_FORMAT_2_CASE_INPUT,
+  SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
+} from "@app/test-helpers/accountsDocumentCases.js";
 
 const STATEMENTS = {
   section477Exemption: true,
@@ -207,5 +211,101 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     expect(party({ name: "Pat Lee", ultimate: true }).result.controllingParty).toEqual({ name: "Pat Lee", ultimate: true });
     expect(party({ name: "Pat Lee" }).errors).toContain("Invalid smallCompany.controllingParty.ultimate - must be true or false");
     expect(party({ ultimate: true }).errors).toContain("Missing smallCompany.controllingParty.name");
+  });
+});
+
+describe("services/smallCompanyAccountsRequest share capital note", () => {
+  test("keeps the share class and nominal value the form sends", () => {
+    const { result, errors } = validate(
+      sectionFrom(SMALL_COMPANY_CASE_INPUT, { shareCapital: { shareClass: "preferenceShares", nominalValue: 0.5 } }),
+    );
+    expect(errors).toEqual([]);
+    expect(result.shareCapital).toEqual({ shareClass: "preferenceShares", nominalValue: 0.5 });
+  });
+
+  test("carries no note when the form sends none", () => {
+    const { result, errors } = validate(sectionFrom(SMALL_COMPANY_CASE_INPUT));
+    expect(errors).toEqual([]);
+    expect(result.shareCapital).toBeUndefined();
+  });
+
+  test("refuses an unknown class, and a nominal value that does not divide the called up share capital", () => {
+    expect(
+      validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { shareCapital: { shareClass: "founderShares", nominalValue: 1 } })).errors,
+    ).toEqual([
+      "Invalid smallCompany.shareCapital.shareClass - must be one of ordinaryShares, preferenceShares, deferredShares, otherShares",
+    ]);
+    expect(
+      validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { shareCapital: { shareClass: "ordinaryShares", nominalValue: 0.3 } })).errors,
+    ).toEqual(["smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares"]);
+  });
+});
+
+describe("services/smallCompanyAccountsRequest advances to more than one director", () => {
+  const ADVANCES = [
+    {
+      name: "Alex Jones",
+      terms: "Interest free and repayable on demand",
+      balanceAtStart: 300,
+      advanced: 400,
+      repaid: 200,
+      balanceAtEnd: 500,
+    },
+    { name: "Alan James Morgan", terms: "Interest at 2.25% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+  ];
+  const section = (directorsAdvances) => sectionFrom(SMALL_COMPANY_EVERY_LINE_CASE_INPUT, { fixedAssetNote: undefined, directorsAdvances });
+
+  test("keeps one advance a director, in the order the form sends them", () => {
+    const { result, errors } = validate(section(ADVANCES));
+    expect(errors).toEqual([]);
+    expect(result.directorsAdvances).toEqual(ADVANCES);
+  });
+
+  test("refuses a second row for a director, whose two advances would state two values for one fact", () => {
+    const split = [
+      { ...ADVANCES[0], advanced: 100, balanceAtEnd: 200 },
+      { ...ADVANCES[0], terms: "Car loan at 2% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+      ADVANCES[1],
+    ];
+    expect(validate(section(split)).errors).toEqual([
+      "smallCompany.directorsAdvances[1].name names Alex Jones again: give each director one row, with the amounts of all their advances added together",
+    ]);
+  });
+
+  test("refuses advances whose amounts owed at the end do not add up to the amounts owed by directors", () => {
+    expect(validate(section([ADVANCES[0]])).errors).toEqual([
+      "smallCompany.directorsAdvances balanceAtEnd (500) must equal balanceSheet.currentYear.amountsOwedByDirectors",
+    ]);
+  });
+});
+
+describe("services/smallCompanyAccountsRequest comparatives", () => {
+  function validateFor(section, periodStart) {
+    const errors = [];
+    const result = extractAndValidateSmallCompany(section, STATEMENTS, errors, periodStart);
+    return { result, errors };
+  }
+
+  test("accounts with the prior year's balance sheet need no date of incorporation", () => {
+    const { errors } = validateFor(sectionFrom(SMALL_COMPANY_CASE_INPUT), SMALL_COMPANY_CASE_INPUT.periodStart);
+    expect(errors).toEqual([]);
+  });
+
+  test("first accounts give the date of incorporation, equal to the period start, and keep it for the builder", () => {
+    const section = sectionFrom(SMALL_COMPANY_CASE_INPUT, {
+      dateOfIncorporation: SMALL_COMPANY_CASE_INPUT.periodStart,
+      balanceSheet: { currentYear: SMALL_COMPANY_CASE_INPUT.balanceSheet.current },
+      profitAndLoss: { currentYear: SMALL_COMPANY_CASE_INPUT.profitAndLoss.current },
+    });
+    const { result, errors } = validateFor(section, SMALL_COMPANY_CASE_INPUT.periodStart);
+    expect(errors).toEqual([]);
+    expect(result.dateOfIncorporation).toBe(SMALL_COMPANY_CASE_INPUT.periodStart);
+  });
+
+  test("a date of incorporation that is not a date is refused", () => {
+    const section = sectionFrom(SMALL_COMPANY_CASE_INPUT, { dateOfIncorporation: "first" });
+    expect(validateFor(section, SMALL_COMPANY_CASE_INPUT.periodStart).errors).toContain(
+      "Invalid smallCompany.dateOfIncorporation - must be YYYY-MM-DD",
+    );
   });
 });

@@ -53,7 +53,8 @@ import {
   shareNoun,
 } from "./accountsIxbrlCommon.js";
 import { recordAmount, recordFigure, recordTable } from "../lib/submissionRecord.js";
-import { SHARE_CLASS_LABEL, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
+import { SHARE_CLASS_LABEL } from "./microEntityAccountsIxbrl.js";
+import { sharesIssuedFor } from "../../web/public/lib/accounts-notes-check.js";
 import { accountsText } from "./accountsLanguage.js";
 
 const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =
@@ -687,9 +688,12 @@ const DEBTORS_NOTE_ROWS = [
   ["Prepayments and accrued income", "prepaymentsInDebtors", "prepayments"],
 ];
 
-// The debtors note shows the lines of the split that some year carries, above the total debtors.
+// The debtors note shows the lines of the split that some year carries, above the total debtors. A
+// year that states debtors with no split states the total alone: its lines are not known to be 0, so
+// they carry no figure and no fact.
 function debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) {
   const shownRows = DEBTORS_NOTE_ROWS.filter(([, , field]) => balanceSheetYears.some((figures) => (figures[field] ?? 0) !== 0));
+  const totalAlone = (figures) => figures.debtors !== 0 && !hasDebtorsSplit([figures]);
   const cells = (valueOf, conceptKey) =>
     balanceSheetYears.map((figures, index) => {
       const value = valueOf(figures);
@@ -700,7 +704,9 @@ function debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) {
     rows: [
       ...shownRows.map(([label, conceptKey, field]) => ({
         label: accountsText(label),
-        cells: cells((figures) => figures[field] ?? 0, conceptKey),
+        cells: cells((figures) => figures[field] ?? 0, conceptKey).map((cell, index) =>
+          totalAlone(balanceSheetYears[index]) ? null : cell,
+        ),
       })),
       { label: accountsText("Total debtors"), style: "subtotal", cells: cells((figures) => figures.debtors) },
     ],
@@ -777,6 +783,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
+ * @param {string} [input.dateOfIncorporation] - ISO date; given for the company's first accounts, and equal to periodStart
  * @param {string} [input.priorPeriodStart] - ISO date; defaults to a year before periodStart
  * @param {boolean} [input.filleted] - the Companies House copy: section 444(5A) statement, no profit and loss account, no directors' report
  * @param {number} input.averageNumberOfEmployees
@@ -1076,6 +1083,7 @@ export function buildSmallCompanyAccounts(input) {
       title: accountsText("Unaudited financial statements"),
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      dateOfIncorporation: input.dateOfIncorporation,
     }),
   ];
   if (input.revision) {
@@ -1084,6 +1092,8 @@ export function buildSmallCompanyAccounts(input) {
         heading: heading(accountsText("Revised accounts"), forThePeriod),
         periodEnd: input.periodEnd,
         revision: input.revision,
+        dateOfApproval: input.dateOfApproval,
+        contextRef: refs.current,
       }),
     );
   }

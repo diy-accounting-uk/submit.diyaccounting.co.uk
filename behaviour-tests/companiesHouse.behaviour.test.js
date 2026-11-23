@@ -27,6 +27,10 @@ import {
   verifyCompanySearchResults,
   openCompanyProfile,
   verifyCompanyProfile,
+  verifyCompanyAddress,
+  openCompanyView,
+  verifyNoPersonalDetailsShown,
+  openFirstFilingWithAView,
 } from "./steps/behaviour-companies-house-steps.js";
 import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
 
@@ -132,6 +136,23 @@ test("Click through: Search Companies House and view a company profile", async (
 
   await openCompanyProfile(page, expectedCompanyName, screenshotPath);
   await verifyCompanyProfile(page, expectedCompanyName, expectedCompanyStatus, screenshotPath);
+  await verifyCompanyAddress(page, expectedCompanyNumber, "", screenshotPath);
+
+  /* ********************** */
+  /*  COMPANY DRILL-DOWN    */
+  /* ********************** */
+
+  await openCompanyView(page, "Officers", screenshotPath);
+  await verifyCompanyAddress(page, expectedCompanyNumber, "officers", screenshotPath);
+  await verifyNoPersonalDetailsShown(page, screenshotPath);
+  await openCompanyView(page, "Persons with significant control", screenshotPath);
+  await verifyCompanyAddress(page, expectedCompanyNumber, "psc", screenshotPath);
+  await verifyNoPersonalDetailsShown(page, screenshotPath);
+  await openCompanyView(page, "Filing history", screenshotPath);
+  await verifyCompanyAddress(page, expectedCompanyNumber, "filing-history", screenshotPath);
+  await openFirstFilingWithAView(page, screenshotPath);
+  await openCompanyView(page, "Accounts", screenshotPath);
+  await verifyCompanyAddress(page, expectedCompanyNumber, "accounts", screenshotPath);
 
   await goToHomePageUsingMainNav(page, screenshotPath);
 

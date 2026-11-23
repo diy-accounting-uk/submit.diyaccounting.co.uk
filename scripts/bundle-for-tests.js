@@ -38,15 +38,20 @@ const moduleFiles = [
   "lib/utils/dom-utils.js",
   "lib/utils/correlation-utils.js",
   "lib/utils/visitor-kind.js",
+  // The Companies House forms table the form service reads
+  "lib/companies-house-forms.js",
   // Services layer
   "lib/services/auth-service.js",
   "lib/services/api-client.js",
   "lib/services/hmrc-service.js",
   "lib/services/catalog-service.js",
+  // The reader of an API answer the Companies House services share
+  "lib/services/json-answer.js",
   "lib/services/companies-house-service.js",
   "lib/services/companies-house-filing-service.js",
   "lib/services/companies-house-confirmation-service.js",
   "lib/services/companies-house-psc-verification-service.js",
+  "lib/services/companies-house-form-service.js",
   "lib/services/companies-house-error-messages.js",
   "lib/services/hmrc-ct-return-service.js",
   // Main entry point

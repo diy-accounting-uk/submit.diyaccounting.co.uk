@@ -125,7 +125,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "02706061",
+      companyNumber: "00000009",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",
@@ -141,7 +141,7 @@ describe("services/companiesHouseXmlGateway", () => {
 
       expect(firstElementText(document, "Class")).toBe("Accounts");
       expect(firstElementText(document, "Qualifier")).toBe("request");
-      expect(firstElementText(document, "CompanyNumber")).toBe("02706061");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000009");
       expect(firstElementText(document, "CompanyName")).toBe("TEST COMPANY LIMITED");
       expect(firstElementText(document, "FormIdentifier")).toBe("Accounts");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
@@ -206,10 +206,11 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "02706061",
+      companyNumber: "00000009",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",
+      gatewayClass: "ConfirmationAndVerificationStatement",
       formIdentifier: "ConfirmationAndVerificationStatement",
       submissionNumber: "AAA001",
       dateSigned: "2026-06-30",
@@ -217,11 +218,19 @@ describe("services/companiesHouseXmlGateway", () => {
       transactionId: "1700000000000",
     };
 
-    test("carries FormIdentifier and Class as the given formIdentifier", () => {
-      const xml = buildFormSubmission(baseInput);
-      const document = parseXmlDocument(xml);
+    test("carries the given gatewayClass as Class and the given formIdentifier as FormIdentifier", () => {
+      const document = parseXmlDocument(buildFormSubmission(baseInput));
       expect(firstElementText(document, "Class")).toBe("ConfirmationAndVerificationStatement");
       expect(firstElementText(document, "FormIdentifier")).toBe("ConfirmationAndVerificationStatement");
+      const allotment = parseXmlDocument(
+        buildFormSubmission({ ...baseInput, gatewayClass: "ReturnOfAllotmentShares", formIdentifier: "ReturnofAllotmentShares" }),
+      );
+      expect(firstElementText(allotment, "Class")).toBe("ReturnOfAllotmentShares");
+      expect(firstElementText(allotment, "FormIdentifier")).toBe("ReturnofAllotmentShares");
+    });
+
+    test("refuses an envelope with no Class, which the gateway could not route", () => {
+      expect(() => buildFormSubmission({ ...baseInput, gatewayClass: undefined })).toThrow("Missing gatewayClass");
     });
 
     test("carries the given formXml inside Form and no Document when none is given", () => {
@@ -234,6 +243,7 @@ describe("services/companiesHouseXmlGateway", () => {
     test("carries a given document inside Document", () => {
       const xml = buildFormSubmission({
         ...baseInput,
+        gatewayClass: "Accounts",
         formIdentifier: "Accounts",
         formXml: "",
         document: { data: "ZGF0YQ==", date: "2026-06-30", filename: "Accounts.xml", contentType: "application/xml", category: "ACCOUNTS" },
@@ -271,7 +281,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "11111111",
+      companyNumber: "00000011",
       companyName: "EXAMPLE COMPANY",
       companyAuthenticationCode: "123456",
       packageReference: "0012",
@@ -290,7 +300,7 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "Qualifier")).toBe("request");
       expect(firstElement(document, "ConfirmationAndVerificationStatement")).toBeTruthy();
       expect(firstElement(exampleDocument, "ConfirmationAndVerificationStatement")).toBeTruthy();
-      expect(firstElementText(document, "CompanyNumber")).toBe("11111111");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000011");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
     });
 
@@ -318,7 +328,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "11111111",
+      companyNumber: "00000011",
       companyName: "EXAMPLE COMPANY",
       companyAuthenticationCode: "123456",
       packageReference: "0012",
@@ -337,7 +347,7 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "Class")).toBe("PSCVerificationStatement");
       expect(firstElementText(document, "FormIdentifier")).toBe("PSCVerificationStatement");
       expect(firstElement(document, "PSCVerificationStatement")).toBeTruthy();
-      expect(firstElementText(document, "CompanyNumber")).toBe("11111111");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000011");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
     });
 
@@ -450,6 +460,29 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(parseCompanyDataResponse(xml)).toBeUndefined();
     });
 
+    test("parses every currency's capital into statementsOfCapital, and the first into statementOfCapital", () => {
+      const capital = (currency, shareClass, number) =>
+        `<Capital><TotalAmountUnpaid>0</TotalAmountUnpaid><TotalNumberOfIssuedShares>${number}</TotalNumberOfIssuedShares>` +
+        `<ShareCurrency>${currency}</ShareCurrency><TotalAggregateNominalValue>${number}</TotalAggregateNominalValue>` +
+        `<Shares><ShareClass>${shareClass}</ShareClass><PrescribedParticulars>One vote a share.</PrescribedParticulars>` +
+        `<NumShares>${number}</NumShares><AggregateNominalValue>${number}</AggregateNominalValue></Shares></Capital>`;
+      const xml = COMPANY_DATA_RESPONSE_FIXTURE.replace(
+        /<StatementOfCapital>[\s\S]*?<\/StatementOfCapital>/,
+        `<StatementOfCapital>${capital("GBP", "Ordinary", "100")}${capital("EUR", "Euro Ordinary", "10")}</StatementOfCapital>`,
+      );
+      const result = parseCompanyDataResponse(xml);
+      expect(
+        result.statementsOfCapital.map((each) => [each.shareCurrency, each.shares[0].shareClass, each.totalNumberOfIssuedShares]),
+      ).toEqual([
+        ["GBP", "Ordinary", "100"],
+        ["EUR", "Euro Ordinary", "10"],
+      ]);
+      expect(result.statementOfCapital.shareCurrency).toBe("GBP");
+      const withoutCapital = parseCompanyDataResponse(xml.replace(/<StatementOfCapital>[\s\S]*?<\/StatementOfCapital>/, ""));
+      expect(withoutCapital.statementsOfCapital).toEqual([]);
+      expect(withoutCapital.statementOfCapital).toBeUndefined();
+    });
+
     test("parses statementOfCapital in the shape buildConfirmationStatementBody's builder takes", () => {
       const result = parseCompanyDataResponse(COMPANY_DATA_RESPONSE_FIXTURE);
       expect(result.statementOfCapital).toMatchObject({
@@ -553,9 +586,9 @@ describe("services/companiesHouseXmlGateway", () => {
     });
 
     test("carries CompanyNumber instead when no submissionNumber is given", () => {
-      const xml = buildStatusRequest({ ...baseInput, submissionNumber: undefined, companyNumber: "02706061" });
+      const xml = buildStatusRequest({ ...baseInput, submissionNumber: undefined, companyNumber: "00000009" });
       const document = parseXmlDocument(xml);
-      expect(firstElementText(document, "CompanyNumber")).toBe("02706061");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000009");
       expect(document.getElementsByTagName("SubmissionNumber")).toHaveLength(0);
     });
 
@@ -786,7 +819,7 @@ describe("services/companiesHouseXmlGateway", () => {
       const submission = buildAccountsSubmission({
         presenterId: SIMULATOR_TEST_PRESENTER_ID,
         presenterCode: SIMULATOR_TEST_PRESENTER_CODE,
-        companyNumber: "02706061",
+        companyNumber: "00000009",
         companyName: "TEST COMPANY LIMITED",
         companyAuthenticationCode: "ABC123",
         packageReference: "0012",
@@ -817,7 +850,7 @@ describe("services/companiesHouseXmlGateway", () => {
       const submission = buildAccountsSubmission({
         presenterId: SIMULATOR_TEST_PRESENTER_ID,
         presenterCode: "not-the-right-code",
-        companyNumber: "02706061",
+        companyNumber: "00000009",
         companyName: "TEST COMPANY LIMITED",
         companyAuthenticationCode: "ABC123",
         packageReference: "0012",

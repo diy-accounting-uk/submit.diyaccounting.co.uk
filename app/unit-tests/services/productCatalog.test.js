@@ -50,6 +50,7 @@ describe("productCatalogHelper", () => {
       "resident-pro",
       "resident-tax-agent",
       "resident-pro-comp",
+      "resident-vat-comp",
     ]);
     // expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
   });
@@ -201,6 +202,7 @@ describe("productCatalogHelper", () => {
       "resident-pro",
       "resident-tax-agent",
       "resident-pro-comp",
+      "resident-ltd-comp",
     ]);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-vat")).toBe(false);
@@ -244,6 +246,22 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).not.toContain("prod");
   });
 
+  it("file-revised-accounts has no page, holds the two filed-accounts routes, is granted like the joint filing and is not listed on prod", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "file-revised-accounts");
+    expect(bundlesForActivity(catalog, "file-revised-accounts")).toEqual(
+      bundlesForActivity(catalog, "file-company-tax-return-with-accounts"),
+    );
+    expect(activity.paths).toEqual([
+      "^/api/v1/companies-house/company/[^/]+/filed-accounts$",
+      "^/api/v1/companies-house/company/[^/]+/filed-accounts/[^/]+/document$",
+    ]);
+    expect(activity.display).toBe("never");
+    expect(activity.tokenCost).toBe(0);
+    expect(activity.metered).toBe(false);
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+  });
+
   it("file-confirmation-statement activity should be granted by resident-ltd and the bundles that include it, listed in ci and prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");
@@ -252,6 +270,7 @@ describe("productCatalogHelper", () => {
       "resident-pro",
       "resident-tax-agent",
       "resident-pro-comp",
+      "resident-ltd-comp",
     ]);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
@@ -341,6 +360,18 @@ describe("productCatalogHelper", () => {
     expect(comp.tokensGranted).toBe("unlimited");
   });
 
+  it("resident-ltd-comp includes resident-ltd, is hidden, and is granted only by a pass for a year", () => {
+    const comp = getCatalogBundleById(parseCatalog(tomlText), "resident-ltd-comp");
+    expect(comp.includes).toEqual(["resident-ltd"]);
+    expect(comp.hidden).toBe(true);
+    expect(comp.enable).toBe("on-pass");
+    expect(comp.allocation).toBe("on-pass");
+    expect(comp.timeout).toBe("P1Y");
+    expect(comp.prices).toBeUndefined();
+    expect(isActivityAvailable(parseCatalog(tomlText), "file-small-company-accounts", "resident-ltd-comp")).toBe(true);
+    expect(isActivityAvailable(parseCatalog(tomlText), "submit-vat", "resident-ltd-comp")).toBe(false);
+  });
+
   it("the resident bundle is folded away", () => {
     expect(getCatalogBundleById(parseCatalog(tomlText), "resident")).toBeNull();
   });
@@ -422,6 +453,31 @@ describe("productCatalogHelper", () => {
     const activity = catalog.activities.find((a) => a.id === "self-employed");
     expect(activity.environments).toContain("ci");
     expect(activity.environments).not.toContain("prod");
+  });
+
+  it("company-reports is a default-bundle activity whose paths are the report route and the reports page", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "company-reports");
+    expect(activity).toMatchObject({ bundles: ["default"], display: "on-entitlement", metered: false });
+    expect(activity.environments).not.toContain("prod");
+    const matches = (path) => activity.paths.some((pattern) => new RegExp(pattern).test(path));
+    expect(matches("/api/v1/companies-house/company/00000001/reports/filings")).toBe(true);
+    expect(matches("/companies-house/company/00000001/reports")).toBe(true);
+    expect(matches("/companies-house/company/00000001/reports/people")).toBe(true);
+    expect(matches("/api/v1/companies-house/company/00000001/officers")).toBe(false);
+  });
+
+  it("due-list is a default-bundle activity whose paths are the due list API and not its page", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "due-list");
+    expect(activity).toMatchObject({ bundles: ["default"], display: "on-entitlement", metered: false });
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(activity.paths).toEqual(["^/api/v1/due-list.*"]);
+    const matches = (path) => activity.paths.some((pattern) => new RegExp(pattern).test(path));
+    expect(matches("/api/v1/due-list")).toBe(true);
+    expect(matches("/api/v1/due-list/businesses/b1")).toBe(true);
+    expect(matches("/api/v1/due-list/rows")).toBe(true);
+    expect(matches("/due.html")).toBe(false);
   });
 
   it("company-lookup should be available in prod alongside the register filings", () => {

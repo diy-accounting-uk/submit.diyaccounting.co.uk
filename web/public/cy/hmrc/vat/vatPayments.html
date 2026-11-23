@@ -28,11 +28,17 @@
     <header>
       <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
       <h1 data-i18n="vat-payments.vat-payments-00d327">Taliadau TAW</h1>
-      <p data-i18n="vat-payments.retrieve-vat-payments-from-hmrc-af0000" class="subtitle">Cael eich taliadau TAW gan CThEF</p>
+      <p data-i18n="vat-payments.retrieve-vat-payments-from-hmrc-af0000" class="subtitle">Adalwch eich taliadau TAW gan CThEF</p>
     </header>
 
     <main id="mainContent">
-      <p data-i18n="vat-payments.status-production-this-reads-your-real-8ae5ea" class="hint" data-feature-status="production">
+      <p
+        data-i18n="vat-payments.status-production-this-reads-your-real-8ae5ea"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
         <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator">
@@ -76,7 +82,7 @@
           </button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2 data-i18n="vat-payments.retrieve-vat-payments-b9f603">Cael taliadau TAW</h2>
+          <h2 data-i18n="vat-payments.retrieve-vat-payments-b9f603">Adalw taliadau TAW</h2>
           <form id="vatPaymentsForm" novalidate>
             <div class="form-group">
               <label data-i18n="vat-payments.vat-registration-number-873ba7" for="vrn">Rhif cofrestru TAW</label>
@@ -152,7 +158,7 @@
               class="btn"
               data-activity-start="vat-payments"
             >
-              Cael taliadau
+              Adalw taliadau
             </button>
           </form>
         </div>

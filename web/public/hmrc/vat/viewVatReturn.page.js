@@ -13,7 +13,7 @@ async function initializePage() {
   const vrn = urlParams.get("vrn");
   const periodStart = urlParams.get("periodStart");
   const periodEnd = urlParams.get("periodEnd");
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
 
   // If URL params provide complete period data, clear any stale pendingReturnRequest
   // This handles navigation from obligations page where URL params should take precedence
@@ -37,18 +37,6 @@ async function initializePage() {
 
   // The status line says sandbox when this page's HMRC calls go to HMRC's test service
   window.showHmrcStatusForService(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
-
-  // Show synthetic indicator if hmrcAccount=synthetic
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-    const testDataLink = document.getElementById("testDataLink");
-    if (testDataLink) {
-      testDataLink.classList.add("visible");
-    }
-  }
 
   // Developer mode is now controlled by the global toggle via developer-mode.js
   // Show developer section based on sessionStorage and listen for changes
@@ -106,7 +94,6 @@ function cancelRequest() {
   sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   // Show form and hide results
@@ -175,7 +162,7 @@ async function continueReturnRetrieval() {
     };
 
     // Add hmrcAccount header if present in sessionStorage
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) {
       requestHeaders["hmrcAccount"] = hmrcAccount;
     }
@@ -198,7 +185,7 @@ async function continueReturnRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
         return;
       }
       throw requestError(response, result, "Failed to retrieve VAT return");
@@ -230,7 +217,6 @@ async function continueReturnRetrieval() {
     sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Return retrieval failed, cleared session storage to prevent retry loop");
   } finally {
@@ -256,7 +242,7 @@ async function handleFormSubmission(event) {
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
   // Check hmrcAccount for synthetic mode (set by bundle qualifiers via sessionStorage)
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   const allowSyntheticObligations = hmrcAccount === "synthetic";
 
   if (!scopeSufficient) {
@@ -353,7 +339,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
+          showFailure(
+            { status: 401, service: "hmrc" },
+            siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"),
+          );
           return;
         }
         throw requestError(response, result, "Failed to retrieve VAT return");

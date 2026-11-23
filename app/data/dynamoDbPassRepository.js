@@ -273,6 +273,10 @@ export async function setReviewLimit(code, reviewLimit, now) {
 // one key and nothing else under it: no issuer's hashed sub equals it.
 export const HELD_INDEX_KEY = "held";
 
+// The issuedBy-index key under which each campaign pass has a pointer item, so the operator page
+// lists campaign passes with a Query and never a scan.
+export const CAMPAIGN_INDEX_KEY = "campaign";
+
 /**
  * Store the pointer to a pass held for review. The pointer is its own item, so it sits in the
  * issuedBy-index under HELD_INDEX_KEY, sorted by when the hold began, and the pass item itself
@@ -291,6 +295,49 @@ export async function deleteHeldPointer(code) {
   const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
   await executeDynamoDbCommand((module) => new module.DeleteCommand({ TableName: tableName, Key: { pk: `held#${code}` } }));
   logger.info({ message: "Held pointer deleted", pk: `held#${code}` });
+}
+
+/**
+ * Store the pointer to a campaign pass. The pointer is its own item, so it sits in the
+ * issuedBy-index under CAMPAIGN_INDEX_KEY, sorted by creation time, and the pass item keeps no
+ * issuedBy (an issuer would make it a referral pass). It lives as long as the pass.
+ */
+export async function putCampaignPointer({ code, createdAt, ttl }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const item = { pk: `campaign#${code}`, code, issuedBy: CAMPAIGN_INDEX_KEY, createdAt };
+  if (ttl) item.ttl = ttl;
+  await executeDynamoDbCommand((module) => new module.PutCommand({ TableName: tableName, Item: item }));
+  logger.info({ message: "Campaign pointer stored", pk: item.pk });
+}
+
+/**
+ * The campaign passes, newest first: a Query on the issuedBy-index under CAMPAIGN_INDEX_KEY for
+ * the codes, then the pass items by key. A pointer whose pass has gone is left out.
+ */
+export async function getCampaignPasses({ limit = 100 } = {}) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.QueryCommand({
+        TableName: tableName,
+        IndexName: "issuedBy-index",
+        KeyConditionExpression: "issuedBy = :campaign",
+        ExpressionAttributeValues: { ":campaign": CAMPAIGN_INDEX_KEY },
+        ScanIndexForward: false,
+        Limit: limit,
+      }),
+  );
+  const codes = (result.Items || []).map((item) => item.code);
+  const passByCode = new Map();
+  for (let start = 0; start < codes.length; start += FIGURES_BATCH_SIZE) {
+    let keys = codes.slice(start, start + FIGURES_BATCH_SIZE).map((code) => ({ pk: `pass#${code}` }));
+    while (keys.length > 0) {
+      const batch = await executeDynamoDbCommand((module) => new module.BatchGetCommand({ RequestItems: { [tableName]: { Keys: keys } } }));
+      for (const item of batch.Responses?.[tableName] || []) passByCode.set(item.code, item);
+      keys = batch.UnprocessedKeys?.[tableName]?.Keys || [];
+    }
+  }
+  return { items: codes.map((code) => passByCode.get(code)).filter(Boolean) };
 }
 
 /**
@@ -351,25 +398,46 @@ export async function deleteReferralClaim(hashedSub) {
 }
 
 /**
- * Store the record of one redemption: which pass, which account, who issued it and when.
+ * Add one redemption to the record of one account's redemptions of one pass: which pass, which
+ * account, who issued it, when it was last redeemed, and how many times. The count is added only
+ * while it is below limit, in the one write, so two redemptions at once cannot both pass the limit.
+ * A record written before the count was kept has no count, stands for one redemption and takes no
+ * more.
+ *
+ * @param {{code: string, hashedSub: string, issuedBy?: string, passTypeId: string, redeemedAt: string, limit: number}} redemption
+ * @returns {Promise<number|null>} the account's redemptions of the pass, this one included, or null
+ *   when the account has already redeemed it limit times
  */
-export async function putRedemption({ code, hashedSub, issuedBy, passTypeId, redeemedAt }) {
+export async function addRedemption({ code, hashedSub, issuedBy, passTypeId, redeemedAt, limit }) {
   const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
-  await executeDynamoDbCommand(
-    (module) =>
-      new module.PutCommand({
-        TableName: tableName,
-        Item: {
-          pk: `redemption#${code}#${hashedSub}`,
-          code,
-          redeemedBy: hashedSub,
-          issuedBy,
-          passTypeId,
-          redeemedAt,
-        },
-      }),
-  );
+  const values = { ":code": code, ":by": hashedSub, ":type": passTypeId, ":at": redeemedAt, ":one": 1, ":limit": limit };
+  let set = "code = :code, redeemedBy = :by, passTypeId = :type, redeemedAt = :at";
+  if (issuedBy) {
+    set += ", issuedBy = :issuer";
+    values[":issuer"] = issuedBy;
+  }
+  let result;
+  try {
+    result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `redemption#${code}#${hashedSub}` },
+          UpdateExpression: `SET ${set} ADD redemptions :one`,
+          ConditionExpression: "attribute_not_exists(pk) OR redemptions < :limit",
+          ExpressionAttributeValues: values,
+          ReturnValues: "ALL_NEW",
+        }),
+    );
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Redemption refused, the account has reached the pass's limit", passTypeId });
+      return null;
+    }
+    throw error;
+  }
   logger.info({ message: "Redemption recorded", passTypeId });
+  return result.Attributes?.redemptions ?? 1;
 }
 
 /**
@@ -388,7 +456,8 @@ export async function getReferralClaim(hashedSub) {
 }
 
 /**
- * The record of one redemption, or null.
+ * The record of one account's redemptions of one pass, or null. A record written before the
+ * count was kept has no redemptions field and stands for one redemption.
  */
 export async function getRedemption(code, hashedSub) {
   const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");

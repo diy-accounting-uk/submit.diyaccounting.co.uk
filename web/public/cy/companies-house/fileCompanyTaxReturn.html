@@ -133,18 +133,21 @@
         </p>
         <p data-i18n="ch-tax-return.the-company-tax-return-guide-explains-1164a1">
           Mae’r
-          <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide" target="_blank" rel="noopener"
+          <a
+            id="companyTaxReturnGuideLink"
+            href="https://www.gov.uk/guidance/the-company-tax-return-guide.cy"
+            target="_blank"
+            rel="noopener"
             >canllaw Ffurflen Dreth y Cwmni</a
           >
-          (yn Saesneg) yn esbonio pob blwch. Y ffurflen ei hun yw’r
+          yn esbonio pob blwch. Y ffurflen ei hun yw’r
           <a
             id="ct600FormLink"
-            href="https://assets.publishing.service.gov.uk/media/69c543424a06660f085442bd/ct600.pdf"
+            href="https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf"
             target="_blank"
             rel="noopener"
             >CT600 (2026) Fersiwn 3</a
-          >
-          (yn Saesneg).
+          >.
         </p>
         <h3 data-i18n="ch-tax-return.your-answers-5feb1f">Eich atebion</h3>
         <div id="reviewSendTo"></div>
@@ -210,20 +213,38 @@
               aria-describedby="companyAuthCode-hint"
             />
           </div>
-          <div class="form-group" id="revisionGroup" style="display: none">
-            <label data-i18n="ch-tax-return.what-do-the-revised-accounts-change-ff3c9b" for="revisionDifferences"
-              >Beth mae’r cyfrifon diwygiedig yn ei newid?</label
-            >
-            <p data-i18n="ch-tax-return.companies-house-prints-this-in-the-2021dd" id="revisionDifferences-hint" class="hint">
-              Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig, o dan y datganiad eu bod yn cymryd lle’r cyfrifon sydd ganddo.
-            </p>
-            <textarea
-              id="revisionDifferences"
-              name="revisionDifferences"
-              rows="4"
-              maxlength="2000"
-              aria-describedby="revisionDifferences-hint"
-            ></textarea>
+          <div id="revisionGroup" style="display: none">
+            <div class="form-group">
+              <label data-i18n="ch-tax-return.what-was-wrong-with-the-original-b6637a" for="revisionNonCompliance"
+                >Beth oedd o’i le ar y cyfrifon gwreiddiol?</label
+              >
+              <p data-i18n="ch-tax-return.say-how-the-original-accounts-did-116491" id="revisionNonCompliance-hint" class="hint">
+                Dywedwch ym mha ffyrdd nad oedd y cyfrifon gwreiddiol yn cydymffurfio â Deddf Cwmnïau 2006. Mae Tŷ’r Cwmnïau yn argraffu hyn
+                yn y cyfrifon diwygiedig.
+              </p>
+              <textarea
+                id="revisionNonCompliance"
+                name="revisionNonCompliance"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionNonCompliance-hint"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-tax-return.what-do-the-revised-accounts-change-ff3c9b" for="revisionAmendments"
+                >Beth mae’r cyfrifon diwygiedig yn ei newid?</label
+              >
+              <p data-i18n="ch-tax-return.companies-house-prints-this-in-the-2021dd" id="revisionAmendments-hint" class="hint">
+                Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig, o dan y datganiad eu bod yn cymryd lle’r cyfrifon sydd ganddo.
+              </p>
+              <textarea
+                id="revisionAmendments"
+                name="revisionAmendments"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionAmendments-hint"
+              ></textarea>
+            </div>
           </div>
           <p data-i18n="ch-tax-return.sign-in-with-the-government-gateway-968fb6" class="hint">
             <span id="gatewayWhose"
@@ -332,7 +353,7 @@
           </div>
         </section>
         <section id="supportHelp" aria-labelledby="supportHelpHeading">
-          <h3 data-i18n="ch-tax-return.where-to-get-help-00f119" id="supportHelpHeading">Ble i gael help</h3>
+          <h3 data-i18n="ch-tax-return.where-to-get-help-00f119" id="supportHelpHeading">Ble i gael cymorth</h3>
           <ul>
             <li data-i18n="ch-tax-return.a-problem-with-the-live-hmrc-46086f">
               Problem gyda gwasanaeth byw CThEF, neu gyda Phorth y Llywodraeth:
@@ -345,7 +366,7 @@
             </li>
             <li data-i18n="ch-tax-return.a-problem-with-this-software-diy-01b06a">
               Problem gyda’r feddalwedd hon: DIY Accounting yn <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>,
-              neu’r <a href="../../help.html">dudalen Help</a> (yn Saesneg).
+              neu’r <a href="../help.html">dudalen Help</a> (yn Saesneg).
             </li>
           </ul>
         </section>
@@ -357,7 +378,7 @@
             class="secondary-button"
             style="display: none"
           >
-            Gwiriwch y Ffurflen a rhoi cynnig arall arni
+            Gwiriwch y Ffurflen a rhowch gynnig arall arni
           </button>
           <button
             data-i18n="ch-tax-return.start-a-new-return-4a07a8"
@@ -379,6 +400,7 @@
     <script src="../../lib/env-loader.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
     <script src="../../lib/form-errors.js"></script>
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
@@ -390,6 +412,7 @@
     <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/books-import.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
     <script type="module" src="../../companies-house/fileCompanyTaxReturn.page.js"></script>
   </body>
 </html>

@@ -133,7 +133,14 @@ async function seedAccounts({ withSubscriptionRecord = true } = {}) {
     });
   }
   await passes.putReferralClaim(ids.redeemer, ids.code, now);
-  await passes.putRedemption({ code: ids.code, hashedSub: ids.redeemer, issuedBy: ids.referrer, passTypeId: "referral", redeemedAt: now });
+  await passes.addRedemption({
+    code: ids.code,
+    hashedSub: ids.redeemer,
+    issuedBy: ids.referrer,
+    passTypeId: "referral",
+    redeemedAt: now,
+    limit: 1,
+  });
 }
 
 function invoiceFor(monthIndex) {

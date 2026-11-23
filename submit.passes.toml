@@ -236,3 +236,16 @@ defaultMaxUses = 1
 requiresEmailRestriction = false
 userIssuable = false
 
+
+# custom-campaign → the bundles the operator names on operator/campaign-passes.html
+# Grants: each bundle with the duration and tokens the operator sets per pass, over the catalogue's
+# Payment: None (operator-issued; no generate activity exists for it)
+# The pass record carries its own grants, redemption window, total redemptions and redemptions per
+# account, so a campaign needs no change to this file or the catalogue.
+[[passTypes]]
+id = "custom-campaign"
+name = "Custom campaign pass"
+description = "Operator-made pass whose bundles, durations, tokens, window and redemption limits are set per pass"
+bundleId = "resident-vat-comp"
+requiresEmailRestriction = false
+userIssuable = false

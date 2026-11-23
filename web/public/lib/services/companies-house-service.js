@@ -5,6 +5,7 @@
 // Holds no HMRC concepts; small on purpose.
 
 import { fetchWithIdToken } from "./api-client.js";
+import { readJsonAnswer } from "./json-answer.js";
 
 /**
  * Uppercase and left-pad a numeric company number to eight digits, matching the server's
@@ -50,7 +51,7 @@ async function errorFromResponse(response, body) {
 export async function searchCompanies(query, { itemsPerPage = 20, startIndex = 0 } = {}) {
   const params = new URLSearchParams({ q: query, itemsPerPage: String(itemsPerPage), startIndex: String(startIndex) });
   const response = await fetchWithIdToken(`/api/v1/companies-house/search?${params}`, { method: "GET" });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -64,7 +65,7 @@ export async function searchCompanies(query, { itemsPerPage = 20, startIndex = 0
  */
 export async function getCompanyProfile(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}`, { method: "GET" });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -82,7 +83,7 @@ export async function getOfficers(companyNumber) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/officers`, {
     method: "GET",
   });
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
   }
@@ -99,9 +100,65 @@ export async function getPscs(companyNumber) {
     `/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/persons-with-significant-control`,
     { method: "GET" },
   );
-  const body = await response.json();
+  const body = await readJsonAnswer(response);
   if (!response.ok) {
     throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Get a company's filing history, every category, newest first.
+ * @param {string} companyNumber
+ * @returns {Promise<{companyNumber: string, totalCount: number, filings: object[]}>}
+ */
+export async function getFilingHistory(companyNumber) {
+  const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filing-history`, {
+    method: "GET",
+  });
+  const body = await readJsonAnswer(response);
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Get the sets of accounts Companies House holds for a company, each with whether it holds an
+ * iXBRL document.
+ * @param {string} companyNumber
+ * @returns {Promise<{companyNumber: string, filedAccounts: object[]}>}
+ */
+export async function getFiledAccounts(companyNumber) {
+  const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filed-accounts`, {
+    method: "GET",
+  });
+  const body = await readJsonAnswer(response);
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Get one company report. A report the route has no module for yet answers 404 with the reason
+ * "unknown_report", which the error carries. A report cut short answers 200 with partial,
+ * callLimitReached or tooLarge in its body.
+ * @param {string} companyNumber
+ * @param {string} report - filings, people, capital, charges, history or accounts
+ * @returns {Promise<{companyNumber: string, report: string, readAt: string, partial?: boolean, retryAfterSeconds?: number,
+ *   callLimitReached?: boolean, tooLarge?: boolean}>}
+ */
+export async function getCompanyReport(companyNumber, report) {
+  const response = await fetchWithIdToken(
+    `/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/reports/${encodeURIComponent(report)}`,
+    { method: "GET" },
+  );
+  const body = await response.json();
+  if (!response.ok) {
+    const error = await errorFromResponse(response, body);
+    error.reason = body?.reason;
+    throw error;
   }
   return body;
 }
@@ -112,5 +169,8 @@ if (typeof window !== "undefined") {
   window.getCompanyProfile = getCompanyProfile;
   window.getOfficers = getOfficers;
   window.getPscs = getPscs;
+  window.getFilingHistory = getFilingHistory;
+  window.getFiledAccounts = getFiledAccounts;
+  window.getCompanyReport = getCompanyReport;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 }

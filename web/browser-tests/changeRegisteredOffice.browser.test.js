@@ -10,17 +10,20 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { readSubmitCss } from "./submitCss.js";
+import { addressLine1, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const TEIFI = registerCompany(REGISTER_COMPANY_NUMBERS[5]);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const CURRENT_ADDRESS = {
   etag: "test-etag-1",
-  premises: "1",
-  addressLine1: "1 Example Street",
+  premises: TEIFI.address.premises,
+  addressLine1: addressLine1(TEIFI.address),
   addressLine2: "",
-  locality: "Cardiff",
+  locality: TEIFI.address.locality,
   region: "",
-  postalCode: "CF14 3UZ",
+  postalCode: TEIFI.address.postalCode,
   country: "United Kingdom",
 };
 
@@ -137,7 +140,7 @@ test.describe("Change Registered Office Address page", () => {
     await delay(200);
   }
 
-  async function lookUpCompany(page, companyNumber = "00000001") {
+  async function lookUpCompany(page, companyNumber = TEIFI.number) {
     await page.fill("#companyNumber", companyNumber);
     await page.click("#companyLookupBtn");
     await delay(200);
@@ -169,8 +172,8 @@ test.describe("Change Registered Office Address page", () => {
     await lookUpCompany(page);
 
     await expect(page.locator("#formView")).toBeVisible();
-    await expect(page.locator("#currentAddressList")).toContainText("1 Example Street");
-    await expect(page.locator("#currentAddressList")).toContainText("CF14 3UZ");
+    await expect(page.locator("#currentAddressList")).toContainText(addressLine1(TEIFI.address));
+    await expect(page.locator("#currentAddressList")).toContainText(TEIFI.address.postalCode);
   });
 
   test("shows an error and stays on the company view when the lookup fails", async ({ page }) => {
@@ -214,7 +217,7 @@ test.describe("Change Registered Office Address page", () => {
     await delay(200);
 
     await expect(page.locator("#reviewView")).toBeVisible();
-    await expect(page.locator("#reviewCompanyNumber")).toContainText("00000001");
+    await expect(page.locator("#reviewCompanyNumber")).toContainText(TEIFI.number);
     await expect(page.locator("#reviewAddress")).toContainText("Bedford Road");
     await expect(page.locator("#reviewAddress")).toContainText("LS12 3AB");
   });
@@ -275,7 +278,7 @@ test.describe("Change Registered Office Address page", () => {
     await expect(page.locator("#filingResult")).toContainText("accepted");
     const openCalls = await page.evaluate(() => window.__openTransactionCalls);
     expect(openCalls).toHaveLength(1);
-    expect(openCalls[0].companyNumber).toBe("00000001");
+    expect(openCalls[0].companyNumber).toBe(TEIFI.number);
   });
 
   test("shows the filing result as a submission record with the new address", async ({ page }) => {
@@ -298,7 +301,7 @@ test.describe("Change Registered Office Address page", () => {
     await expect(record.locator(".customer-copy-submission")).toContainText(String(new Date().getFullYear()));
     await expect(record).toContainText("Bedford Road");
     await expect(record).toContainText("LS12 3AB");
-    await expect(record).toContainText("00000001");
+    await expect(record).toContainText(TEIFI.number);
   });
 
   test("the banner reads sandbox when the filing service is the Companies House test service", async ({ page }) => {

@@ -38,7 +38,13 @@
     </header>
 
     <main id="mainContent">
-      <p data-i18n="vat-submit.status-production-returns-you-submit-here-5961c5" class="hint" data-feature-status="production">
+      <p
+        data-i18n="vat-submit.status-production-returns-you-submit-here-5961c5"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
         <strong>Statws: cynhyrchu (production).</strong> Mae’r Ffurflenni TAW y byddwch yn eu cyflwyno yma yn cyrraedd CThEF.
         <span id="hmrcAssistStatusNote" hidden
           >Rhagolwg (preview) yw’r gwiriad HMRC Assist ar y dudalen hon: gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei
@@ -235,7 +241,7 @@
                 <tr>
                   <th scope="row">
                     <label data-i18n="vat-submit.box-4-vat-reclaimed-in-the-58efa3" for="vatReclaimedCurrPeriod"
-                      >Blwch 4: TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd
+                      >Blwch 4: TAW a adhawliwyd yn y cyfnod ar bryniannau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd
                       Iwerddon o Aelod-wladwriaethau’r UE)</label
                     >
                     <p data-i18n="vat-submit.enter-an-amount-with-up-to-1be124" id="vatReclaimedCurrPeriod-hint" class="hint">
@@ -312,7 +318,7 @@
                 <tr>
                   <th scope="row">
                     <label data-i18n="vat-submit.box-7-total-value-of-purchases-1ee58e" for="totalValuePurchasesExVAT"
-                      >Blwch 7: Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW</label
+                      >Blwch 7: Cyfanswm gwerth y pryniannau a’r holl fewnbynnau eraill, heb gynnwys TAW</label
                     >
                     <p data-i18n="vat-submit.enter-a-whole-number-without-pence-c5339d" id="totalValuePurchasesExVAT-hint" class="hint">
                       Nodwch rif cyfan heb geiniogau, er enghraifft £15000
@@ -398,8 +404,8 @@
                 <input type="checkbox" id="declaration" name="declaration" required aria-describedby="declaration-hint" /><label
                   data-i18n="vat-submit.when-you-submit-this-vat-information-540c7c"
                   for="declaration"
-                  >Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn hyd
-                  eithaf eich gwybodaeth a’ch cred. Gall datganiad ffug arwain at erlyniad.</label
+                  >Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn. Gall
+                  datganiad ffug arwain at erlyniad.</label
                 >
               </div>
               <p data-i18n="vat-submit.tick-this-box-to-confirm-you-3a13b5" id="declaration-hint" class="hint">

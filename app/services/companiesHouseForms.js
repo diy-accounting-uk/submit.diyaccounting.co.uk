@@ -1,0 +1,1046 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// app/services/companiesHouseForms.js
+// The server half of each Companies House form that companiesHouseFormFiling.js files: the check
+// of the form's own request fields and the builder of its body. The browser half of each row, its
+// form identifier, schema, catalogue activity and words, is web/public/lib/companies-house-forms.js.
+// A new form adds its row here and there, its builder, its route file and its page.
+
+import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
+import { isValidIsoDate } from "../lib/hmrcValidation.js";
+import { buildPscVerificationStatementBody } from "./companiesHousePscVerificationStatementXml.js";
+import { buildPscCessationBody } from "./companiesHousePscCessationXml.js";
+import { PSC_KIND_ELEMENTS } from "./companiesHousePscParticularsXml.js";
+import { buildPscChangeDetailsBody, changeDetailsProblems, natureOfControlProblems } from "./companiesHousePscChangeDetailsXml.js";
+import {
+  buildAccountingReferenceDateBody,
+  changeToPeriod,
+  FIVE_YEAR_EXTENSION_REASONS,
+} from "./companiesHouseAccountingReferenceDateXml.js";
+import { buildOfficerResignationBody, OFFICER_RESIGNATION_ROLES } from "./companiesHouseOfficerResignationXml.js";
+import {
+  buildSailAddressBody,
+  SAIL_ADDRESS_COUNTRIES,
+  SAIL_ADDRESS_PARTS,
+  SAIL_COUNTRIES_BY_JURISDICTION,
+} from "./companiesHouseSailAddressXml.js";
+import { cachedCompaniesHouseGet } from "./companiesHouseCache.js";
+import { buildRecordChangeOfLocationBody, RECORD_DESTINATIONS, RECORD_TYPES } from "./companiesHouseRecordLocationXml.js";
+import {
+  buildChangeOfNameBody,
+  supportingDocumentFor,
+  NAME_CHANGE_METHODS,
+  NAME_SUPPORTING_DOCUMENTS,
+} from "./companiesHouseChangeOfNameXml.js";
+import {
+  buildPscStatementNotificationBody,
+  buildPscStatementWithdrawalBody,
+  isLinkedStatement,
+  PSC_STATEMENTS,
+  RESTRICTIONS_WITHDRAWAL_REASONS,
+} from "./companiesHousePscStatementXml.js";
+import {
+  buildPscNotificationBody,
+  entityProblems,
+  FIRST_NOTIFICATION_DATE,
+  individualProblems,
+} from "./companiesHousePscNotificationXml.js";
+import {
+  buildOfficerAppointmentBody,
+  OFFICER_APPOINTMENT_ROLES,
+  OFFICER_ADDRESS_COUNTRY_CODES,
+  OFFICER_NAME_MISMATCH_REASONS,
+} from "./companiesHouseOfficerAppointmentXml.js";
+import { buildOfficerChangeBody, OFFICER_CHANGE_ROLES } from "./companiesHouseOfficerChangeXml.js";
+import { buildAllotmentOfSharesBody } from "./companiesHouseAllotmentOfSharesXml.js";
+import { refuseCapitalUnlikeRegister } from "./companiesHouseAllotmentRegister.js";
+import { toMillionths, multiplyMillionths, fromMillionths } from "../../web/public/lib/share-capital.js";
+import { isValidProposedCompanyName } from "../../web/public/lib/companies-house-company-name.js";
+import { todayInLondon } from "../../web/public/lib/approval-date-check.js";
+
+function extractPscVerificationStatement(body, errorMessages) {
+  const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
+  if (!surname || typeof surname !== "string") {
+    errorMessages.push("Missing surname");
+  }
+  const { valid: personalCodeValid, normalised: normalisedPersonalCode } = isValidCompaniesHousePersonalCode(personalCode);
+  if (!personalCodeValid) {
+    errorMessages.push("Invalid personalCode - must be the 11-character Companies House personal code, letters and digits");
+  }
+  if (dobMonth !== undefined && (dobMonth < 1 || dobMonth > 12)) {
+    errorMessages.push("Invalid dobMonth - must be 1 to 12");
+  }
+  return { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode: normalisedPersonalCode };
+}
+
+const trimmed = (value) => (typeof value === "string" ? value.trim() : "");
+
+// The particulars that name one PSC as the register shows it, as every PSC form's request gives them.
+function extractPscParticulars(body, errorMessages) {
+  const { pscKind, title, forename, otherForenames, surname, name, dobMonth, dobYear } = body;
+  const elementName = PSC_KIND_ELEMENTS[pscKind];
+  if (!elementName) {
+    errorMessages.push(`Invalid pscKind - must be one of ${Object.keys(PSC_KIND_ELEMENTS).join(", ")}`);
+  } else if (elementName === "Individual" && !trimmed(surname)) {
+    errorMessages.push("Missing surname");
+  } else if (elementName !== "Individual" && !trimmed(name)) {
+    errorMessages.push("Missing name");
+  }
+  if (dobMonth !== undefined && dobMonth !== null && (!Number.isInteger(dobMonth) || dobMonth < 1 || dobMonth > 12)) {
+    errorMessages.push("Invalid dobMonth - must be 1 to 12");
+  }
+  if (dobYear !== undefined && dobYear !== null && (!Number.isInteger(dobYear) || dobYear < 1900 || dobYear > 9999)) {
+    errorMessages.push("Invalid dobYear - must be a four-digit year");
+  }
+  const individual = elementName === "Individual";
+  return {
+    kind: pscKind,
+    title: individual ? trimmed(title) || undefined : undefined,
+    forename: individual ? trimmed(forename) || undefined : undefined,
+    otherForenames: individual ? trimmed(otherForenames) || undefined : undefined,
+    surname: individual ? trimmed(surname) : undefined,
+    name: individual ? undefined : trimmed(name),
+    dobMonth: individual ? dobMonth : undefined,
+    dobYear: individual ? dobYear : undefined,
+  };
+}
+
+// Today's date in the United Kingdom, as YYYY-MM-DD.
+const todayInUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+
+function refuseFutureDate(field, date, errorMessages) {
+  if (isValidIsoDate(date ?? "") && date > todayInUk()) errorMessages.push(`Invalid ${field} - must not be in the future`);
+}
+
+// A date the event happened on, and the date the company had confirmation of it, which cannot be
+// earlier. The form gives notice of an event that has happened and been confirmed, so neither date
+// is ahead of today.
+// A refusal as a string, or as { text, id } when the form's page has it in the reader's words.
+const refusal = (text, id) => (id ? { text, id } : text);
+
+// messageIds names the page's siteText id for each of the date refusals the page words itself:
+// futureEvent, confirmationBefore and futureConfirmation.
+function extractEventAndConfirmationDates(body, eventField, errorMessages, messageIds = {}) {
+  const eventDate = body[eventField];
+  const { confirmationDate } = body;
+  const today = todayInUk();
+  if (!eventDate || !isValidIsoDate(eventDate)) {
+    errorMessages.push(`Invalid or missing ${eventField} - must be YYYY-MM-DD`);
+  } else if (eventDate > today) {
+    errorMessages.push(refusal(`Invalid ${eventField} - must not be in the future`, messageIds.futureEvent));
+  }
+  if (!confirmationDate || !isValidIsoDate(confirmationDate)) {
+    errorMessages.push("Invalid or missing confirmationDate - must be YYYY-MM-DD");
+  } else if (eventDate && isValidIsoDate(eventDate) && confirmationDate < eventDate) {
+    errorMessages.push(refusal(`Invalid confirmationDate - must not be before ${eventField}`, messageIds.confirmationBefore));
+  } else if (confirmationDate > today) {
+    errorMessages.push(refusal("Invalid confirmationDate - must not be in the future", messageIds.futureConfirmation));
+  }
+  return { [eventField]: eventDate, confirmationDate };
+}
+
+function extractPscCessation(body, errorMessages) {
+  return {
+    ...extractPscParticulars(body, errorMessages),
+    ...extractEventAndConfirmationDates(body, "cessationDate", errorMessages, {
+      futureEvent: "ch.cease.future-cessation",
+      confirmationBefore: "ch.cease.confirmation-before",
+      futureConfirmation: "ch.cease.future-confirmation",
+    }),
+  };
+}
+
+const ADDRESS_FIELDS = ["premise", "street", "thoroughfare", "postTown", "county", "country", "otherForeignCountry", "postcode"];
+const NAME_FIELDS = ["title", "forename", "otherForenames", "surname"];
+const IDENTIFICATION_FIELDS = ["legalForm", "lawGoverned", "placeRegistered", "registrationNumber", "countryOrState"];
+
+// An object of the request with only the named fields, each trimmed, empty ones left out; any other
+// value as it came, for the check to refuse.
+function trimmedFields(value, fields) {
+  if (value === undefined || value === null || typeof value !== "object") return value;
+  return Object.fromEntries(fields.map((field) => [field, trimmed(value[field]) || undefined]).filter(([, part]) => part !== undefined));
+}
+
+function trimmedText(value) {
+  return typeof value === "string" ? trimmed(value) : value;
+}
+
+function extractResidentialAddress(residentialAddress) {
+  if (residentialAddress?.sameAsServiceAddress === true) return { sameAsServiceAddress: true };
+  return trimmedFields(residentialAddress, ADDRESS_FIELDS);
+}
+
+function extractPscChangeDetails(body, errorMessages) {
+  const particulars = extractPscParticulars(body, errorMessages);
+  const individual = PSC_KIND_ELEMENTS[body.pscKind] === "Individual";
+  const changes = {
+    newName: individual ? trimmedFields(body.newName, NAME_FIELDS) : trimmedText(body.newName),
+    address: trimmedFields(body.address, ADDRESS_FIELDS),
+    residentialAddress: extractResidentialAddress(body.residentialAddress),
+    nationality: trimmedText(body.nationality),
+    countryOfResidence: trimmedText(body.countryOfResidence),
+    identification: trimmedFields(body.identification, IDENTIFICATION_FIELDS),
+    naturesOfControl: body.naturesOfControl,
+  };
+  if (PSC_KIND_ELEMENTS[body.pscKind]) {
+    changeDetailsProblems({ kind: body.pscKind, ...changes }).forEach((problem) => errorMessages.push(`Invalid change - ${problem}`));
+  }
+  return {
+    ...particulars,
+    ...changes,
+    ...extractEventAndConfirmationDates(body, "dateOfChange", errorMessages, {
+      futureEvent: "ch.change-psc.future-change",
+      confirmationBefore: "ch.change-psc.confirmation-before",
+      futureConfirmation: "ch.change-psc.future-confirmation",
+    }),
+  };
+}
+
+function extractAccountingReferenceDate(body, errorMessages) {
+  const { currentPeriodEnd, newPeriodEnd } = body;
+  const fiveYearExtensionReason = trimmed(body.fiveYearExtensionReason) || undefined;
+  const extensionAuthorisedCode = trimmed(body.extensionAuthorisedCode) || undefined;
+  const currentValid = Boolean(currentPeriodEnd) && isValidIsoDate(currentPeriodEnd);
+  const newValid = Boolean(newPeriodEnd) && isValidIsoDate(newPeriodEnd);
+  if (!currentValid) errorMessages.push("Invalid or missing currentPeriodEnd - must be YYYY-MM-DD");
+  if (!newValid) errorMessages.push("Invalid or missing newPeriodEnd - must be YYYY-MM-DD");
+  const change = currentValid && newValid ? changeToPeriod(currentPeriodEnd, newPeriodEnd) : undefined;
+  if (change === null) errorMessages.push("Invalid newPeriodEnd - must differ from currentPeriodEnd");
+  if (fiveYearExtensionReason && !FIVE_YEAR_EXTENSION_REASONS[fiveYearExtensionReason]) {
+    errorMessages.push(`Invalid fiveYearExtensionReason - must be one of ${Object.keys(FIVE_YEAR_EXTENSION_REASONS).join(", ")}`);
+  } else if (fiveYearExtensionReason && change === "SHORT") {
+    errorMessages.push("Invalid fiveYearExtensionReason - applies only when the period is extended");
+  }
+  if (extensionAuthorisedCode && fiveYearExtensionReason !== "secretary-of-state-approval") {
+    errorMessages.push("Invalid extensionAuthorisedCode - applies only with fiveYearExtensionReason secretary-of-state-approval");
+  } else if (extensionAuthorisedCode && extensionAuthorisedCode.length !== 4) {
+    errorMessages.push("Invalid extensionAuthorisedCode - must be 4 characters");
+  }
+  return { currentPeriodEnd, newPeriodEnd, fiveYearExtensionReason, extensionAuthorisedCode };
+}
+
+function extractOfficerResignation(body, errorMessages) {
+  const { officerRole, corporate, corporateName, title, forename, otherForenames, surname, dateOfBirth, resignationDate } = body;
+  if (!OFFICER_RESIGNATION_ROLES[officerRole]) {
+    errorMessages.push(`Invalid officerRole - must be one of ${Object.keys(OFFICER_RESIGNATION_ROLES).join(", ")}`);
+  }
+  if (typeof corporate !== "boolean") {
+    errorMessages.push("Invalid corporate - must be true or false");
+  } else if (corporate && !trimmed(corporateName)) {
+    errorMessages.push("Missing corporateName");
+  } else if (!corporate && !trimmed(surname)) {
+    errorMessages.push("Missing surname");
+  }
+  const directorPerson = officerRole === "director" && corporate === false;
+  if (!resignationDate || !isValidIsoDate(resignationDate)) {
+    errorMessages.push("Invalid or missing resignationDate - must be YYYY-MM-DD");
+  } else if (resignationDate > todayInUk()) {
+    errorMessages.push("Invalid resignationDate - must not be in the future");
+  }
+  if (directorPerson && (!dateOfBirth || !isValidIsoDate(dateOfBirth))) {
+    errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");
+  } else if (directorPerson && resignationDate && isValidIsoDate(resignationDate) && dateOfBirth >= resignationDate) {
+    errorMessages.push("Invalid dateOfBirth - must be before resignationDate");
+  }
+  const person = corporate === false;
+  return {
+    role: officerRole,
+    corporate,
+    corporateName: person ? undefined : trimmed(corporateName),
+    title: person ? trimmed(title) || undefined : undefined,
+    forename: person ? trimmed(forename) || undefined : undefined,
+    otherForenames: person ? trimmed(otherForenames) || undefined : undefined,
+    surname: person ? trimmed(surname) : undefined,
+    dateOfBirth: directorPerson ? dateOfBirth : undefined,
+    resignationDate,
+  };
+}
+
+function extractSailAddress(body, errorMessages) {
+  const given = body.address && typeof body.address === "object" && !Array.isArray(body.address) ? body.address : null;
+  if (!given) {
+    errorMessages.push("Missing address");
+    return {};
+  }
+  const address = {};
+  for (const [field, { required }] of Object.entries(SAIL_ADDRESS_PARTS)) {
+    const value = trimmed(given[field]);
+    if (required && !value) errorMessages.push(`Missing address.${field}`);
+    if (value) address[field] = value;
+  }
+  if (typeof given.country !== "string" || !Object.hasOwn(SAIL_ADDRESS_COUNTRIES, given.country)) {
+    errorMessages.push(`Invalid address.country - must be one of ${Object.keys(SAIL_ADDRESS_COUNTRIES).join(", ")}`);
+  }
+  return { address: { ...address, country: given.country } };
+}
+
+/**
+ * The check of a SAIL address against the company: its country must be in the part of the UK the
+ * company is registered in, which the company profile gives as its jurisdiction. The profile is read
+ * once, through the Companies House cache.
+ * @param {object} form - the extracted request, with companyNumber and address.country
+ * @returns {Promise<{errors: string[]} | {unreadable: true}>}
+ */
+async function checkSailAddressCountry(form) {
+  const profile = await cachedCompaniesHouseGet(form.companyNumber, `/company/${form.companyNumber}`, {}, { kind: "profile" });
+  if (!profile.ok) return { unreadable: true, status: profile.status };
+  const jurisdiction = profile.data?.jurisdiction;
+  const allowed = SAIL_COUNTRIES_BY_JURISDICTION[jurisdiction];
+  if (!allowed) {
+    return {
+      errors: [
+        `Invalid address.country - Companies House gives this company no part of the UK a SAIL can be in (jurisdiction ${jurisdiction || "none"})`,
+      ],
+    };
+  }
+  if (!allowed.includes(form.address.country)) {
+    const names = allowed.map((code) => SAIL_ADDRESS_COUNTRIES[code]).join(" or ");
+    return {
+      errors: [
+        `Invalid address.country - the SAIL must be in the part of the UK the company is registered in: ${names}, not ${SAIL_ADDRESS_COUNTRIES[form.address.country]}`,
+      ],
+    };
+  }
+  return { errors: [] };
+}
+
+function extractRecordLocation(body, errorMessages) {
+  const { destination, removeSailAddress } = body;
+  const records = body.records ?? [];
+  if (!RECORD_DESTINATIONS.includes(destination)) {
+    errorMessages.push(`Invalid destination - must be one of ${RECORD_DESTINATIONS.join(", ")}`);
+  }
+  if (removeSailAddress !== undefined && typeof removeSailAddress !== "boolean") {
+    errorMessages.push("Invalid removeSailAddress - must be true or false");
+  }
+  const removing = removeSailAddress === true;
+  if (!Array.isArray(records) || records.some((record) => !RECORD_TYPES.includes(record))) {
+    errorMessages.push(`Invalid records - each must be one of ${RECORD_TYPES.join(", ")}`);
+  } else if (new Set(records).size !== records.length) {
+    errorMessages.push("Invalid records - a record is named twice");
+  } else if (removing && records.length > 0) {
+    errorMessages.push("Invalid records - removeSailAddress moves every record, so name none");
+  } else if (!removing && records.length === 0) {
+    errorMessages.push("Missing records - name at least one record that has moved");
+  }
+  if (removing && destination === "sail") {
+    errorMessages.push("Invalid removeSailAddress - the SAIL address is removed only by a move to the registered office");
+  }
+  return { destination, records: Array.isArray(records) ? records : [], removeSailAddress: removing };
+}
+
+// A supporting letter is a PDF of at most this many bytes: the request reaches a Lambda, whose
+// payload holds 6 MB, and the letter travels in it as base64.
+const MAX_SUPPORTING_DOCUMENT_BYTES = 3_000_000;
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
+function readSupportingDocument(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  const kind = trimmed(value.kind);
+  const contentBase64 = typeof value.contentBase64 === "string" ? value.contentBase64.replace(/\s+/g, "") : "";
+  if (!NAME_SUPPORTING_DOCUMENTS[kind]) {
+    errorMessages.push(`Invalid supportingDocument.kind - must be one of ${Object.keys(NAME_SUPPORTING_DOCUMENTS).join(", ")}`);
+    return undefined;
+  }
+  if (!contentBase64 || contentBase64.length % 4 !== 0 || !BASE64.test(contentBase64)) {
+    errorMessages.push("Invalid supportingDocument.contentBase64 - must be the PDF as base64");
+    return undefined;
+  }
+  const bytes = Buffer.from(contentBase64, "base64");
+  if (bytes.length > MAX_SUPPORTING_DOCUMENT_BYTES) {
+    errorMessages.push(`Invalid supportingDocument.contentBase64 - the PDF must be at most ${MAX_SUPPORTING_DOCUMENT_BYTES} bytes`);
+    return undefined;
+  }
+  if (bytes.subarray(0, 5).toString("latin1") !== "%PDF-") {
+    errorMessages.push("Invalid supportingDocument.contentBase64 - must be a PDF");
+    return undefined;
+  }
+  return { kind, contentBase64 };
+}
+
+function extractChangeOfName(body, errorMessages) {
+  const { method, meetingDate, sameDay, noticeGiven, dateSigned } = body;
+  const proposedName = trimmed(body.proposedName).toUpperCase();
+  if (!NAME_CHANGE_METHODS[method]) {
+    errorMessages.push(`Invalid method - must be one of ${Object.keys(NAME_CHANGE_METHODS).join(", ")}`);
+  }
+  if (!isValidProposedCompanyName(proposedName)) {
+    errorMessages.push({
+      text: "Invalid proposedName - must be 3 to 160 characters that Companies House allows in a company name",
+      id: "ch.name.name-characters",
+    });
+  } else if (proposedName === trimmed(body.companyName).toUpperCase()) {
+    errorMessages.push("Invalid proposedName - must differ from the company's present name");
+  }
+  const meetingDateGiven = meetingDate !== undefined && meetingDate !== null && meetingDate !== "";
+  if (method === "resolution" && !meetingDateGiven) {
+    errorMessages.push("Missing meetingDate - a change by resolution needs the date the resolution was passed");
+  } else if (meetingDateGiven && !isValidIsoDate(meetingDate)) {
+    errorMessages.push("Invalid meetingDate - must be YYYY-MM-DD");
+  } else if (meetingDateGiven && dateSigned && isValidIsoDate(dateSigned) && meetingDate > dateSigned) {
+    errorMessages.push("Invalid meetingDate - must not be after dateSigned");
+  }
+  if (sameDay !== undefined && typeof sameDay !== "boolean") {
+    errorMessages.push("Invalid sameDay - must be true or false");
+  }
+  if (noticeGiven !== true) {
+    errorMessages.push("Missing noticeGiven - must be true: notice of the change of name has been given");
+  }
+  return {
+    method,
+    proposedName,
+    meetingDate: meetingDateGiven ? meetingDate : undefined,
+    sameDay: sameDay === true,
+    supportingDocument: readSupportingDocument(body.supportingDocument, errorMessages),
+  };
+}
+
+// A statement, and for a statement linked to a PSC the particulars that name the PSC.
+function extractPscStatement(body, errorMessages, statements) {
+  const { statement } = body;
+  if (!statements.includes(statement)) {
+    errorMessages.push(`Invalid statement - must be one of ${statements.join(", ")}`);
+    return { statement };
+  }
+  return isLinkedStatement(statement) ? { statement, ...extractPscParticulars(body, errorMessages) } : { statement };
+}
+
+// A statement's relevant date or its withdrawal date: the date something happened, so not ahead of today.
+function validDate(body, field, errorMessages) {
+  if (!body[field] || !isValidIsoDate(body[field])) errorMessages.push(`Invalid or missing ${field} - must be YYYY-MM-DD`);
+  else if (body[field] > todayInUk()) errorMessages.push(`Invalid ${field} - must not be in the future`);
+  return body[field];
+}
+
+function extractPscStatementNotification(body, errorMessages) {
+  const notifiable = Object.keys(PSC_STATEMENTS).filter((statement) => PSC_STATEMENTS[statement].notifiable);
+  return {
+    ...extractPscStatement(body, errorMessages, notifiable),
+    relevantDate: validDate(body, "relevantDate", errorMessages),
+  };
+}
+
+function extractPscStatementWithdrawal(body, errorMessages) {
+  const { statement, restrictionsWithdrawalReason } = body;
+  const restrictions = statement === "RESTRICTIONS_NOTICE_ISSUED_TO_PSC";
+  if (restrictions && !RESTRICTIONS_WITHDRAWAL_REASONS.includes(restrictionsWithdrawalReason)) {
+    errorMessages.push(`Invalid restrictionsWithdrawalReason - must be one of ${RESTRICTIONS_WITHDRAWAL_REASONS.join(", ")}`);
+  } else if (!restrictions && restrictionsWithdrawalReason !== undefined) {
+    errorMessages.push("Invalid restrictionsWithdrawalReason - only for RESTRICTIONS_NOTICE_ISSUED_TO_PSC");
+  }
+  return {
+    ...extractPscStatement(body, errorMessages, Object.keys(PSC_STATEMENTS)),
+    withdrawalDate: validDate(body, "withdrawalDate", errorMessages),
+    restrictionsWithdrawalReason: restrictions ? restrictionsWithdrawalReason : undefined,
+  };
+}
+
+// An address as a request gives it, each field trimmed and an empty field left out.
+const requestAddress = (address) =>
+  address && typeof address === "object"
+    ? Object.fromEntries(ADDRESS_FIELDS.map((field) => [field, trimmed(address[field]) || undefined]))
+    : undefined;
+
+function extractPscNotification(body, errorMessages) {
+  const { pscKind, naturesOfControl, serviceAddress, residentialAddress, personalCode, nameMismatchReason } = body;
+  const elementName = PSC_KIND_ELEMENTS[pscKind];
+  if (!elementName) errorMessages.push(`Invalid pscKind - must be one of ${Object.keys(PSC_KIND_ELEMENTS).join(", ")}`);
+  const form =
+    elementName === "Individual"
+      ? {
+          kind: pscKind,
+          title: trimmed(body.title) || undefined,
+          forename: trimmed(body.forename) || undefined,
+          otherForenames: trimmed(body.otherForenames) || undefined,
+          surname: trimmed(body.surname),
+          dateOfBirth: body.dateOfBirth,
+          nationality: trimmed(body.nationality),
+          countryOfResidence: trimmed(body.countryOfResidence),
+          serviceAddress:
+            serviceAddress?.sameAsRegisteredOffice === true
+              ? { sameAsRegisteredOffice: true }
+              : { address: requestAddress(serviceAddress?.address) },
+          residentialAddress:
+            residentialAddress?.sameAsServiceAddress === true
+              ? { sameAsServiceAddress: true }
+              : { address: requestAddress(residentialAddress?.address) },
+          verification:
+            personalCode === undefined || personalCode === null || personalCode === ""
+              ? undefined
+              : {
+                  personalCode: isValidCompaniesHousePersonalCode(personalCode).normalised,
+                  nameMismatchReason: nameMismatchReason || undefined,
+                },
+        }
+      : {
+          kind: pscKind,
+          name: trimmed(body.name),
+          address: requestAddress(body.address),
+          legalForm: trimmed(body.legalForm),
+          lawGoverned: trimmed(body.lawGoverned),
+          placeRegistered: elementName === "Corporate" ? trimmed(body.placeRegistered) || undefined : undefined,
+          registrationNumber: elementName === "Corporate" ? trimmed(body.registrationNumber) || undefined : undefined,
+          countryOrState: elementName === "Corporate" ? trimmed(body.countryOrState) || undefined : undefined,
+        };
+  if (elementName === "Individual") {
+    individualProblems(form).forEach((problem) => errorMessages.push(`Invalid particulars - ${problem}`));
+  } else if (elementName) {
+    entityProblems(form, elementName === "Corporate").forEach((problem) => errorMessages.push(`Invalid particulars - ${problem}`));
+  }
+  natureOfControlProblems(naturesOfControl).forEach((problem) => errorMessages.push(`Invalid naturesOfControl - ${problem}`));
+  const dates = extractEventAndConfirmationDates(body, "notificationDate", errorMessages, {
+    futureEvent: "ch.notify-psc.future-notification",
+    confirmationBefore: "ch.notify-psc.confirmation-before",
+    futureConfirmation: "ch.notify-psc.future-confirmation",
+  });
+  if (isValidIsoDate(dates.notificationDate ?? "") && dates.notificationDate < FIRST_NOTIFICATION_DATE) {
+    errorMessages.push(`Invalid notificationDate - must not be before ${FIRST_NOTIFICATION_DATE}`);
+  }
+  return { ...form, naturesOfControl, ...dates };
+}
+
+// An address as the officer appointment form carries it, or undefined after naming what is wrong.
+function extractOfficerAddress(address, field, errorMessages) {
+  if (!address || typeof address !== "object") {
+    errorMessages.push(`Missing ${field}`);
+    return undefined;
+  }
+  const premise = trimmed(address.premise);
+  const postTown = trimmed(address.postTown);
+  const country = trimmed(address.country);
+  const otherForeignCountry = trimmed(address.otherForeignCountry);
+  if (!premise) errorMessages.push(`Missing ${field}.premise`);
+  if (!postTown) errorMessages.push(`Missing ${field}.postTown`);
+  if (country && !OFFICER_ADDRESS_COUNTRY_CODES.includes(country)) {
+    errorMessages.push(`Invalid ${field}.country - must be one of ${OFFICER_ADDRESS_COUNTRY_CODES.join(", ")}`);
+  } else if (!country && !otherForeignCountry) {
+    errorMessages.push(`Missing ${field}.country or ${field}.otherForeignCountry`);
+  }
+  return {
+    premise,
+    street: trimmed(address.street) || undefined,
+    thoroughfare: trimmed(address.thoroughfare) || undefined,
+    postTown,
+    county: trimmed(address.county) || undefined,
+    country: country || undefined,
+    otherForeignCountry: country ? undefined : otherForeignCountry,
+    postcode: trimmed(address.postcode) || undefined,
+  };
+}
+
+function extractOfficerPreviousNames(previousNames, errorMessages) {
+  if (previousNames === undefined) return [];
+  if (!Array.isArray(previousNames)) {
+    errorMessages.push("Invalid previousNames - must be a list");
+    return [];
+  }
+  return previousNames.map((previous) => {
+    if (!trimmed(previous?.surname)) errorMessages.push("Missing previousNames surname");
+    return { forename: trimmed(previous?.forename) || undefined, surname: trimmed(previous?.surname) };
+  });
+}
+
+function extractCompanyIdentification(identification, errorMessages) {
+  if (identification?.uk) {
+    const registrationNumber = trimmed(identification.uk.registrationNumber);
+    if (!registrationNumber) errorMessages.push("Missing companyIdentification.uk.registrationNumber");
+    return { uk: { registrationNumber } };
+  }
+  if (identification?.nonUk) {
+    const { placeRegistered, registrationNumber, lawGoverned, legalForm } = identification.nonUk;
+    if (!trimmed(lawGoverned)) errorMessages.push("Missing companyIdentification.nonUk.lawGoverned");
+    if (!trimmed(legalForm)) errorMessages.push("Missing companyIdentification.nonUk.legalForm");
+    if (trimmed(placeRegistered) && !trimmed(registrationNumber)) {
+      errorMessages.push("Missing companyIdentification.nonUk.registrationNumber - a body entered in a register needs its number there");
+    }
+    return {
+      nonUk: {
+        placeRegistered: trimmed(placeRegistered) || undefined,
+        registrationNumber: trimmed(registrationNumber) || undefined,
+        lawGoverned: trimmed(lawGoverned),
+        legalForm: trimmed(legalForm),
+      },
+    };
+  }
+  errorMessages.push("Missing companyIdentification - must give uk or nonUk");
+  return undefined;
+}
+
+function extractOfficerAppointment(body, errorMessages) {
+  const { officerRole, corporate, appointmentDate, consentToAct } = body;
+  if (!OFFICER_APPOINTMENT_ROLES[officerRole]) {
+    errorMessages.push(`Invalid officerRole - must be one of ${Object.keys(OFFICER_APPOINTMENT_ROLES).join(", ")}`);
+  }
+  if (typeof corporate !== "boolean") {
+    errorMessages.push("Invalid corporate - must be true or false");
+  }
+  if (!appointmentDate || !isValidIsoDate(appointmentDate)) {
+    errorMessages.push("Invalid or missing appointmentDate - must be YYYY-MM-DD");
+  } else if (body.dateSigned && isValidIsoDate(body.dateSigned) && appointmentDate > body.dateSigned) {
+    errorMessages.push("Invalid appointmentDate - must not be after dateSigned");
+  }
+  refuseFutureDate("appointmentDate", appointmentDate, errorMessages);
+  if (consentToAct !== true) {
+    errorMessages.push("Missing consentToAct - the company must confirm the officer has consented to act");
+  }
+  const common = { role: officerRole, corporate, appointmentDate, consentToAct: true };
+  if (corporate === true) {
+    if (!trimmed(body.corporateName)) errorMessages.push("Missing corporateName");
+    return {
+      ...common,
+      corporateName: trimmed(body.corporateName),
+      address: extractOfficerAddress(body.address, "address", errorMessages),
+      companyIdentification: extractCompanyIdentification(body.companyIdentification, errorMessages),
+    };
+  }
+  if (corporate !== false) return common;
+  if (!trimmed(body.surname)) errorMessages.push("Missing surname");
+  const serviceAddress =
+    body.serviceAddress?.sameAsRegisteredOffice === true
+      ? { sameAsRegisteredOffice: true }
+      : { address: extractOfficerAddress(body.serviceAddress?.address, "serviceAddress.address", errorMessages) };
+  const person = {
+    ...common,
+    title: trimmed(body.title) || undefined,
+    forename: trimmed(body.forename) || undefined,
+    otherForenames: trimmed(body.otherForenames) || undefined,
+    surname: trimmed(body.surname),
+    serviceAddress,
+    previousNames: extractOfficerPreviousNames(body.previousNames, errorMessages),
+  };
+  if (officerRole !== "director") return person;
+  const { dateOfBirth, nationality, countryOfResidence, personalCode, identityVerified, nameMismatchReason } = body;
+  if (!dateOfBirth || !isValidIsoDate(dateOfBirth)) {
+    errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");
+  } else if (appointmentDate && isValidIsoDate(appointmentDate) && dateOfBirth >= appointmentDate) {
+    errorMessages.push("Invalid dateOfBirth - must be before appointmentDate");
+  }
+  if (!trimmed(nationality)) errorMessages.push("Missing nationality");
+  const { valid: personalCodeValid, normalised: normalisedPersonalCode } = isValidCompaniesHousePersonalCode(personalCode);
+  if (!personalCodeValid) {
+    errorMessages.push("Invalid personalCode - must be the 11-character Companies House personal code, letters and digits");
+  }
+  if (identityVerified !== true) {
+    errorMessages.push("Missing identityVerified - a director must have verified their identity with Companies House");
+  }
+  if (nameMismatchReason !== undefined && !OFFICER_NAME_MISMATCH_REASONS.includes(nameMismatchReason)) {
+    errorMessages.push(`Invalid nameMismatchReason - must be one of ${OFFICER_NAME_MISMATCH_REASONS.join(", ")}`);
+  }
+  const residentialAddress =
+    body.residentialAddress?.sameAsServiceAddress === true
+      ? { sameAsServiceAddress: true }
+      : { address: extractOfficerAddress(body.residentialAddress?.address, "residentialAddress.address", errorMessages) };
+  return {
+    ...person,
+    dateOfBirth,
+    nationality: trimmed(nationality),
+    countryOfResidence: trimmed(countryOfResidence) || undefined,
+    residentialAddress,
+    personalCode: normalisedPersonalCode,
+    identityVerified: true,
+    nameMismatchReason,
+  };
+}
+
+function extractOfficerNewName(newName, errorMessages) {
+  if (newName === undefined) return undefined;
+  if (!trimmed(newName?.surname)) errorMessages.push("Missing newName.surname");
+  return {
+    title: trimmed(newName?.title) || undefined,
+    surname: trimmed(newName?.surname),
+    forename: trimmed(newName?.forename) || undefined,
+    otherForenames: trimmed(newName?.otherForenames) || undefined,
+  };
+}
+
+function extractCorporateOfficerChange(body, common, errorMessages) {
+  if (!trimmed(body.corporateName)) errorMessages.push("Missing corporateName - the name the register holds");
+  const newCorporateName = trimmed(body.newCorporateName) || undefined;
+  const address = body.address === undefined ? undefined : extractOfficerAddress(body.address, "address", errorMessages);
+  const companyIdentification =
+    body.companyIdentification === undefined ? undefined : extractCompanyIdentification(body.companyIdentification, errorMessages);
+  if (!newCorporateName && body.address === undefined && body.companyIdentification === undefined) {
+    errorMessages.push("Missing change - give newCorporateName, address or companyIdentification");
+  }
+  return { ...common, corporateName: trimmed(body.corporateName), newCorporateName, address, companyIdentification };
+}
+
+function extractOfficerChange(body, errorMessages) {
+  const { officerRole, corporate, dateOfChange } = body;
+  if (!OFFICER_CHANGE_ROLES[officerRole]) {
+    errorMessages.push(`Invalid officerRole - must be one of ${Object.keys(OFFICER_CHANGE_ROLES).join(", ")}`);
+  }
+  if (typeof corporate !== "boolean") {
+    errorMessages.push("Invalid corporate - must be true or false");
+  }
+  if (!dateOfChange || !isValidIsoDate(dateOfChange)) {
+    errorMessages.push("Invalid or missing dateOfChange - must be YYYY-MM-DD");
+  } else if (body.dateSigned && isValidIsoDate(body.dateSigned) && dateOfChange > body.dateSigned) {
+    errorMessages.push("Invalid dateOfChange - must not be after dateSigned");
+  }
+  refuseFutureDate("dateOfChange", dateOfChange, errorMessages);
+  const common = { role: officerRole, corporate, dateOfChange };
+  if (corporate === true) return extractCorporateOfficerChange(body, common, errorMessages);
+  if (corporate !== false) return common;
+  const director = officerRole === "director";
+  if (!trimmed(body.surname)) errorMessages.push("Missing surname - the name the register holds");
+  const { dateOfBirth, residentialAddressUnchanged } = body;
+  if (director && (!dateOfBirth || !isValidIsoDate(dateOfBirth))) {
+    errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");
+  } else if (director && dateOfChange && isValidIsoDate(dateOfChange) && dateOfBirth >= dateOfChange) {
+    errorMessages.push("Invalid dateOfBirth - must be before dateOfChange");
+  }
+  const newName = extractOfficerNewName(body.newName, errorMessages);
+  let serviceAddress;
+  if (body.serviceAddress?.sameAsRegisteredOffice === true) serviceAddress = { sameAsRegisteredOffice: true };
+  else if (body.serviceAddress !== undefined) {
+    serviceAddress = { address: extractOfficerAddress(body.serviceAddress?.address, "serviceAddress.address", errorMessages) };
+  }
+  if (residentialAddressUnchanged !== undefined && residentialAddressUnchanged !== true) {
+    errorMessages.push("Invalid residentialAddressUnchanged - must be true when given");
+  }
+  const person = {
+    ...common,
+    title: trimmed(body.title) || undefined,
+    surname: trimmed(body.surname),
+    forename: trimmed(body.forename) || undefined,
+    otherForenames: trimmed(body.otherForenames) || undefined,
+    newName,
+    serviceAddress,
+  };
+  if (!director) {
+    if (
+      body.residentialAddress !== undefined ||
+      body.nationality !== undefined ||
+      body.countryOfResidence !== undefined ||
+      residentialAddressUnchanged
+    ) {
+      errorMessages.push("Invalid change - a secretary's change carries only newName and serviceAddress");
+    }
+    if (!newName && !serviceAddress) errorMessages.push("Missing change - give newName or serviceAddress");
+    return person;
+  }
+  let residentialAddress;
+  if (body.residentialAddress?.sameAsServiceAddress === true) residentialAddress = { sameAsServiceAddress: true };
+  else if (body.residentialAddress !== undefined) {
+    residentialAddress = { address: extractOfficerAddress(body.residentialAddress?.address, "residentialAddress.address", errorMessages) };
+  }
+  const nationality = trimmed(body.nationality) || undefined;
+  const countryOfResidence = trimmed(body.countryOfResidence) || undefined;
+  if (!newName && !serviceAddress && !residentialAddress && !nationality && !countryOfResidence) {
+    errorMessages.push("Missing change - give newName, serviceAddress, residentialAddress, nationality or countryOfResidence");
+  }
+  if (residentialAddressUnchanged === true && !serviceAddress) {
+    errorMessages.push("Invalid residentialAddressUnchanged - it goes with a new serviceAddress");
+  } else if (residentialAddressUnchanged === true && residentialAddress) {
+    errorMessages.push("Invalid residentialAddressUnchanged - a new residentialAddress is given too");
+  } else if (serviceAddress && residentialAddressUnchanged !== true && !residentialAddress) {
+    errorMessages.push(
+      "Missing residentialAddress - a director's new service address needs residentialAddressUnchanged true or a new residentialAddress",
+    );
+  }
+  if (residentialAddress?.sameAsServiceAddress === true && serviceAddress?.sameAsRegisteredOffice === true) {
+    errorMessages.push("Invalid residentialAddress - it cannot be the same as a service address that is the registered office");
+  }
+  return {
+    ...person,
+    dateOfBirth,
+    residentialAddressUnchanged: residentialAddressUnchanged === true ? true : undefined,
+    residentialAddress,
+    nationality,
+    countryOfResidence,
+  };
+}
+
+// The currencies a return of allotment is taken in here; each is in the gateway's list of current currencies.
+export const ALLOTMENT_CURRENCIES = ["GBP", "EUR", "USD"];
+
+const MAX_SHARE_CLASS_LENGTH = 50;
+const MAX_PARTICULARS_LENGTH = 4000;
+const MAX_CONSIDERATION_LENGTH = 2000;
+const MAX_ALLOTMENTS = 50;
+const MAX_SHARE_CLASSES = 50;
+// NumShares and the per-share amounts take up to fifteen digits before the point.
+const MAX_SHARE_NUMBER = toMillionths("999999999999999.999999");
+const MAX_NOMINAL_DIGITS = 8;
+
+// Whether a nominal value is above 0 with at most eight significant digits, as the schema's ShareValue takes.
+function isNominalValue(text) {
+  const millionths = toMillionths(text);
+  if (!millionths) return false;
+  return fromMillionths(millionths).replace(".", "").replace(/^0+/, "").length <= MAX_NOMINAL_DIGITS;
+}
+
+const classKey = (currency, shareClass) => `${currency} ${shareClass.toLowerCase()}`;
+
+// A number of shares or an amount of a request, as text and as millionths; null with a message when it is not one.
+function readDecimal(value, name, errorMessages, { positive = false } = {}) {
+  const text = typeof value === "number" ? String(value) : trimmed(value);
+  const millionths = toMillionths(text);
+  if (millionths === null || millionths > MAX_SHARE_NUMBER || (positive && millionths === 0n)) {
+    errorMessages.push(
+      `Invalid ${name} - must be a number ${positive ? "above 0" : "of 0 or more"}, with at most 15 digits and 6 decimal places`,
+    );
+    return null;
+  }
+  return { text, millionths };
+}
+
+function readShareClass(value, name, errorMessages) {
+  const shareClass = trimmed(value);
+  if (!shareClass) errorMessages.push(`Missing ${name}`);
+  else if (shareClass.length > MAX_SHARE_CLASS_LENGTH)
+    errorMessages.push(`Invalid ${name} - must be at most ${MAX_SHARE_CLASS_LENGTH} characters`);
+  return shareClass;
+}
+
+function readCurrency(value, name, errorMessages) {
+  if (!ALLOTMENT_CURRENCIES.includes(value)) errorMessages.push(`Invalid ${name} - must be one of ${ALLOTMENT_CURRENCIES.join(", ")}`);
+  return value;
+}
+
+function readAllotment(given, index, errorMessages) {
+  const at = `allotments[${index}]`;
+  const allotment = given && typeof given === "object" ? given : {};
+  const shareClass = readShareClass(allotment.shareClass, `${at}.shareClass`, errorMessages);
+  const currency = readCurrency(allotment.currency, `${at}.currency`, errorMessages);
+  const number = readDecimal(allotment.numShares, `${at}.numShares`, errorMessages, { positive: true });
+  const paid = readDecimal(allotment.amountPaidPerShare, `${at}.amountPaidPerShare`, errorMessages);
+  const unpaid = readDecimal(allotment.amountUnpaidPerShare, `${at}.amountUnpaidPerShare`, errorMessages);
+  const nominalText = typeof allotment.nominalValue === "number" ? String(allotment.nominalValue) : trimmed(allotment.nominalValue);
+  const nominal = toMillionths(nominalText);
+  if (!isNominalValue(nominalText)) {
+    errorMessages.push(`Invalid ${at}.nominalValue - must be a number above 0, with at most 8 digits and 6 decimal places`);
+  } else if (paid && unpaid && paid.millionths + unpaid.millionths < nominal) {
+    errorMessages.push(
+      `Invalid ${at} - the amount paid and the amount unpaid on each share add up to less than its nominal value of ${nominalText}`,
+    );
+  }
+  const consideration = trimmed(allotment.consideration);
+  if (allotment.consideration !== undefined && allotment.consideration !== null && typeof allotment.consideration !== "string") {
+    errorMessages.push(`Invalid ${at}.consideration - must be text`);
+  } else if (consideration.length > MAX_CONSIDERATION_LENGTH) {
+    errorMessages.push(`Invalid ${at}.consideration - must be at most ${MAX_CONSIDERATION_LENGTH} characters`);
+  }
+  return {
+    shareClass,
+    currency,
+    numShares: number?.text,
+    amountPaidPerShare: paid?.text,
+    amountUnpaidPerShare: unpaid?.text,
+    nominalValue: nominalText,
+    ...(consideration ? { consideration } : {}),
+  };
+}
+
+function readCapital(given, index, errorMessages) {
+  const at = `statementOfCapital[${index}]`;
+  const capital = given && typeof given === "object" ? given : {};
+  const currency = readCurrency(capital.currency, `${at}.currency`, errorMessages);
+  const totalUnpaid = readDecimal(capital.totalAmountUnpaid, `${at}.totalAmountUnpaid`, errorMessages);
+  const givenShares = Array.isArray(capital.shares) ? capital.shares : [];
+  if (givenShares.length === 0) errorMessages.push(`Missing ${at}.shares - a statement of capital names each class of shares`);
+  if (givenShares.length > MAX_SHARE_CLASSES) errorMessages.push(`Invalid ${at}.shares - at most ${MAX_SHARE_CLASSES} classes`);
+  const shares = givenShares.slice(0, MAX_SHARE_CLASSES).map((givenShare, shareIndex) => {
+    const shareAt = `${at}.shares[${shareIndex}]`;
+    const share = givenShare && typeof givenShare === "object" ? givenShare : {};
+    const shareClass = readShareClass(share.shareClass, `${shareAt}.shareClass`, errorMessages);
+    const prescribedParticulars = trimmed(share.prescribedParticulars);
+    if (!prescribedParticulars)
+      errorMessages.push(`Missing ${shareAt}.prescribedParticulars - the rights attached to the shares of this class`);
+    if (prescribedParticulars.length > MAX_PARTICULARS_LENGTH) {
+      errorMessages.push(`Invalid ${shareAt}.prescribedParticulars - must be at most ${MAX_PARTICULARS_LENGTH} characters`);
+    }
+    const number = readDecimal(share.numShares, `${shareAt}.numShares`, errorMessages, { positive: true });
+    const nominal = readDecimal(share.aggregateNominalValue, `${shareAt}.aggregateNominalValue`, errorMessages, { positive: true });
+    return { shareClass, prescribedParticulars, numShares: number?.text, aggregateNominalValue: nominal?.text };
+  });
+  return { currency, totalAmountUnpaid: totalUnpaid?.text, shares };
+}
+
+// The statement of capital is the capital after the allotment, so it holds every class allotted, with
+// at least the shares allotted, their nominal value and what is unpaid on them.
+function checkStatementHoldsAllotments(statementOfCapital, allotments, errorMessages) {
+  const classes = new Map();
+  const unpaidByCurrency = new Map();
+  statementOfCapital.forEach((capital, index) => {
+    if (unpaidByCurrency.has(capital.currency))
+      errorMessages.push(`Invalid statementOfCapital[${index}] - ${capital.currency} is stated twice`);
+    unpaidByCurrency.set(capital.currency, { stated: toMillionths(capital.totalAmountUnpaid), allotted: 0n });
+    capital.shares.forEach((share, shareIndex) => {
+      const key = classKey(capital.currency, share.shareClass);
+      if (classes.has(key)) {
+        errorMessages.push(`Invalid statementOfCapital[${index}].shares[${shareIndex}] - the class ${share.shareClass} is stated twice`);
+      }
+      classes.set(key, {
+        number: toMillionths(share.numShares),
+        nominal: toMillionths(share.aggregateNominalValue),
+        allotted: 0n,
+        allottedNominal: 0n,
+      });
+    });
+  });
+  allotments.forEach((allotment, index) => {
+    const at = `allotments[${index}]`;
+    const held = classes.get(classKey(allotment.currency, allotment.shareClass));
+    if (!held) {
+      errorMessages.push(
+        `Invalid ${at} - the statement of capital has no ${allotment.currency} class ${allotment.shareClass}; it states the capital after the allotment`,
+      );
+      return;
+    }
+    const number = toMillionths(allotment.numShares);
+    const nominal = multiplyMillionths(number, toMillionths(allotment.nominalValue));
+    const unpaid = multiplyMillionths(number, toMillionths(allotment.amountUnpaidPerShare));
+    if (nominal === null || unpaid === null) {
+      errorMessages.push(`Invalid ${at} - the number of shares times an amount on each share has more than 6 decimal places`);
+      return;
+    }
+    held.allotted += number;
+    held.allottedNominal += nominal;
+    unpaidByCurrency.get(allotment.currency).allotted += unpaid;
+    if (held.number < held.allotted || held.nominal < held.allottedNominal) {
+      errorMessages.push(
+        `Invalid ${at} - the statement of capital states fewer ${allotment.shareClass} shares, or less nominal value, than are allotted; it states the capital after the allotment`,
+      );
+    }
+  });
+  for (const [currency, { stated, allotted }] of unpaidByCurrency) {
+    if (stated < allotted) {
+      errorMessages.push(
+        `Invalid statementOfCapital - the total amount unpaid in ${currency} is less than the ${fromMillionths(allotted)} unpaid on the shares allotted`,
+      );
+    }
+  }
+}
+
+function extractAllotmentOfShares(body, errorMessages) {
+  const { startDate, endDate } = body;
+  const before = errorMessages.length;
+  if (!startDate || !isValidIsoDate(startDate)) {
+    errorMessages.push("Invalid or missing startDate - must be YYYY-MM-DD");
+  }
+  const period = endDate !== undefined && endDate !== null && endDate !== "";
+  if (period && !isValidIsoDate(endDate)) {
+    errorMessages.push("Invalid endDate - must be YYYY-MM-DD");
+  } else if (period && isValidIsoDate(startDate) && endDate < startDate) {
+    errorMessages.push("Invalid endDate - must not be before startDate");
+  }
+  // A return is made after the allotment: a date after today in the UK is not a date shares were allotted.
+  const today = todayInLondon(new Date());
+  if (isValidIsoDate(startDate) && startDate > today) errorMessages.push("Invalid startDate - must not be after today");
+  if (period && isValidIsoDate(endDate) && endDate > today) errorMessages.push("Invalid endDate - must not be after today");
+  const givenAllotments = Array.isArray(body.allotments) ? body.allotments : [];
+  if (givenAllotments.length === 0) errorMessages.push("Missing allotments - name at least one allotment of shares");
+  if (givenAllotments.length > MAX_ALLOTMENTS) errorMessages.push(`Invalid allotments - at most ${MAX_ALLOTMENTS}`);
+  const allotments = givenAllotments.slice(0, MAX_ALLOTMENTS).map((allotment, index) => readAllotment(allotment, index, errorMessages));
+  const givenCapitals = Array.isArray(body.statementOfCapital) ? body.statementOfCapital : [];
+  if (givenCapitals.length === 0) errorMessages.push("Missing statementOfCapital - the company's capital after the allotment");
+  if (givenCapitals.length > ALLOTMENT_CURRENCIES.length) errorMessages.push("Invalid statementOfCapital - one entry for each currency");
+  const statementOfCapital = givenCapitals
+    .slice(0, ALLOTMENT_CURRENCIES.length)
+    .map((capital, index) => readCapital(capital, index, errorMessages));
+  if (errorMessages.length === before) checkStatementHoldsAllotments(statementOfCapital, allotments, errorMessages);
+  const { capitalDifferenceConfirmed } = body;
+  if (capitalDifferenceConfirmed !== undefined && typeof capitalDifferenceConfirmed !== "boolean") {
+    errorMessages.push("Invalid capitalDifferenceConfirmed - must be true or false");
+  }
+  return {
+    startDate,
+    ...(period ? { endDate } : {}),
+    statementOfCapital,
+    allotments,
+    capitalDifferenceConfirmed: capitalDifferenceConfirmed === true,
+  };
+}
+
+/**
+ * Each form's request check and body builder, by the kind its filing state carries.
+ *
+ * A check pushes each refusal into errorMessages as a string, or as { text, id } when the form's
+ * page has the refusal in the reader's words: id is the page's siteText id, which the page
+ * registers with window.companiesHouseFormPage.registerMessages, and text is the route's English.
+ *
+ * A form whose filing carries a document in the envelope has buildDocument as well, and a form whose
+ * fields must agree with the company on the register has checkCompany. A form whose request states
+ * something only the gateway's company data holds has refuseAgainstRegister, which answers a refusal
+ * or undefined before anything is filed.
+ */
+export const GATEWAY_FORM_BUILDERS = {
+  "psc-verification-statement": {
+    extractAndValidate: extractPscVerificationStatement,
+    buildFormXml: (form) =>
+      buildPscVerificationStatementBody({
+        title: form.title,
+        forename: form.forename,
+        otherForenames: form.otherForenames,
+        surname: form.surname,
+        dobMonth: form.dobMonth,
+        dobYear: form.dobYear,
+        personalCode: form.personalCode,
+      }),
+  },
+  "psc-cessation": {
+    extractAndValidate: extractPscCessation,
+    buildFormXml: (form) => buildPscCessationBody(form),
+  },
+  "psc-change-details": {
+    extractAndValidate: extractPscChangeDetails,
+    buildFormXml: (form) => buildPscChangeDetailsBody(form),
+  },
+  "accounting-reference-date": {
+    extractAndValidate: extractAccountingReferenceDate,
+    buildFormXml: (form) => buildAccountingReferenceDateBody(form),
+  },
+  "officer-resignation": {
+    extractAndValidate: extractOfficerResignation,
+    buildFormXml: (form) => buildOfficerResignationBody(form),
+  },
+  "sail-address": {
+    extractAndValidate: extractSailAddress,
+    checkCompany: checkSailAddressCountry,
+    buildFormXml: (form) => buildSailAddressBody(form.address),
+  },
+  "record-location": {
+    extractAndValidate: extractRecordLocation,
+    buildFormXml: (form) => buildRecordChangeOfLocationBody(form),
+  },
+  "change-of-name": {
+    extractAndValidate: extractChangeOfName,
+    buildFormXml: (form) => buildChangeOfNameBody(form),
+    buildDocument: (form) =>
+      form.supportingDocument ? supportingDocumentFor({ ...form.supportingDocument, date: form.dateSigned }) : undefined,
+    // The price of the service asked for, and the one filing the payment covers: the company, the
+    // service and the new name, so a later change of the same company's name is paid for afresh.
+    feeChoice: (form) => {
+      const priceKey = form.sameDay ? "same-day" : "standard";
+      return { priceKey, subjectKey: `${form.companyNumber}:${priceKey}:${form.proposedName}` };
+    },
+  },
+  "psc-statement-notification": {
+    extractAndValidate: extractPscStatementNotification,
+    buildFormXml: (form) => buildPscStatementNotificationBody(form),
+  },
+  "psc-statement-withdrawal": {
+    extractAndValidate: extractPscStatementWithdrawal,
+    buildFormXml: (form) => buildPscStatementWithdrawalBody(form),
+  },
+  "psc-notification": {
+    extractAndValidate: extractPscNotification,
+    buildFormXml: (form) => buildPscNotificationBody(form),
+  },
+  "officer-appointment": {
+    extractAndValidate: extractOfficerAppointment,
+    buildFormXml: (form) => buildOfficerAppointmentBody(form),
+  },
+  "officer-change": {
+    extractAndValidate: extractOfficerChange,
+    buildFormXml: (form) => buildOfficerChangeBody(form),
+  },
+  "allotment-of-shares": {
+    extractAndValidate: extractAllotmentOfShares,
+    refuseAgainstRegister: refuseCapitalUnlikeRegister,
+    buildFormXml: (form) => buildAllotmentOfSharesBody(form),
+  },
+};

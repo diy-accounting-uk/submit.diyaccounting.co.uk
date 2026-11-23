@@ -1,0 +1,314 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Give or withdraw a PSC statement - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/pscStatements.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/pscStatements.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/pscStatements.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/pscStatements.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Give or withdraw a PSC statement</h1>
+      <p class="subtitle">
+        Tell Companies House the company has no person with significant control, cannot confirm one yet, or that such a statement is no
+        longer true
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="psc-statements">Look up the company</button>
+        </form>
+      </div>
+
+      <!-- Statement form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Which statement?</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <form id="statementForm" novalidate>
+          <fieldset class="form-group">
+            <legend>What are you telling Companies House?</legend>
+            <div class="choice">
+              <input type="radio" id="action-notify" name="action" value="notify" /><label for="action-notify">Give a statement</label>
+            </div>
+            <div class="choice">
+              <input type="radio" id="action-withdraw" name="action" value="withdraw" /><label for="action-withdraw"
+                >A statement on the register is no longer true</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="notifySection" class="form-group" style="display: none">
+            <legend>The statement</legend>
+            <p id="notify-hint" class="hint">Choose the one statement that applies. For more than one statement, file once for each.</p>
+            <div class="choice">
+              <input type="radio" id="notify-none" name="notifyStatement" value="NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL" /><label
+                for="notify-none"
+                >The company knows or has reasonable cause to believe that there is no registrable person or registrable relevant legal
+                entity in relation to the company.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-awaiting" name="notifyStatement" value="AWAITING_CONFIRMATION_FROM_PSC" /><label
+                for="notify-awaiting"
+                >The company knows or has cause to believe that a person has become a registrable person or a registrable relevant legal
+                entity in relation to the company, but it has not yet had confirmation.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-790d" name="notifyStatement" value="PSC_CONTACTED_BUT_NO_RESPONSE" /><label for="notify-790d"
+                >The company has given a notice under section 790D or 790DA of the Companies Act 2006 which has not been complied
+                with.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-790e" name="notifyStatement" value="PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS" /><label
+                for="notify-790e"
+                >A registrable person or registrable relevant legal entity has failed to comply with a notice given by the company under
+                section 790E or 790EA of the Companies Act 2006.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-restrictions" name="notifyStatement" value="RESTRICTIONS_NOTICE_ISSUED_TO_PSC" /><label
+                for="notify-restrictions"
+                >The company has issued a restrictions notice under paragraph 1 of Schedule 1B to the Companies Act 2006.</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="withdrawSection" class="form-group" style="display: none">
+            <legend>The statement that is no longer true</legend>
+            <div class="choice">
+              <input
+                type="radio"
+                id="withdraw-none"
+                name="withdrawStatement"
+                value="NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL"
+              /><label for="withdraw-none"
+                >The company knows or has reasonable cause to believe that there is no registrable person or registrable relevant legal
+                entity in relation to the company.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-awaiting" name="withdrawStatement" value="AWAITING_CONFIRMATION_FROM_PSC" /><label
+                for="withdraw-awaiting"
+                >The company knows or has cause to believe that a person has become a registrable person or a registrable relevant legal
+                entity in relation to the company, but it has not yet had confirmation as mentioned in section 790LA(1).</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-steps" name="withdrawStatement" value="STEPS_TO_FIND_PSC_NOT_YET_COMPLETED" /><label
+                for="withdraw-steps"
+                >The company has not yet completed taking reasonable steps to find out if there is anyone who is a registrable person or
+                registrable relevant legal entity in relation to the company.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-exists" name="withdrawStatement" value="PSC_EXISTS_BUT_NOT_IDENTIFIED" /><label
+                for="withdraw-exists"
+                >The company knows or has reasonable cause to believe that there is a registrable person in relation to the company, but it
+                has not identified the registrable person.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-unconfirmed" name="withdrawStatement" value="PSC_DETAILS_NOT_CONFIRMED" /><label
+                for="withdraw-unconfirmed"
+                >The company has identified a registrable person in relation to the company but all the required particulars of that person
+                have not been confirmed.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-790d" name="withdrawStatement" value="PSC_CONTACTED_BUT_NO_RESPONSE" /><label
+                for="withdraw-790d"
+                >The company has given a notice under section 790D or 790DA of the Companies Act 2006 which has not been complied
+                with.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-790e" name="withdrawStatement" value="PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS" /><label
+                for="withdraw-790e"
+                >A registrable person or registrable relevant legal entity has failed to comply with a notice given by the company under
+                section 790E or 790EA of the Companies Act 2006.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-restrictions" name="withdrawStatement" value="RESTRICTIONS_NOTICE_ISSUED_TO_PSC" /><label
+                for="withdraw-restrictions"
+                >The company has issued a restrictions notice under paragraph 1 of Schedule 1B to the Companies Act 2006.</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="pscSection" class="form-group" style="display: none">
+            <legend>The person with significant control the notice was given to</legend>
+            <p id="psc-hint" class="hint">The persons with significant control on the register now, as Companies House shows them.</p>
+            <div id="pscChoices" aria-describedby="psc-hint"></div>
+            <p id="noPscs" class="hint" style="display: none">
+              The register lists no current person with significant control this statement can name.
+            </p>
+          </fieldset>
+
+          <fieldset id="reasonSection" class="form-group" style="display: none">
+            <legend>How the restrictions ended</legend>
+            <div class="choice">
+              <input type="radio" id="reason-company" name="restrictionsReason" value="RESTRICTIONS_NOTICE_WITHDRAWN_BY_COMPANY" /><label
+                for="reason-company"
+                >The company has withdrawn the restrictions notice by giving a withdrawal notice.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="reason-court" name="restrictionsReason" value="RESTRICTIONS_NOTICE_WITHDRAWN_BY_COURT_ORDER" /><label
+                for="reason-court"
+                >The court has made an order under paragraph 8 of Schedule 1B to the Companies Act 2006 directing that a relevant interest
+                in the company cease to be subject to restrictions.</label
+              >
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label for="relevantDate">Relevant date</label>
+            <div id="notifyDateHint" class="hint">
+              <p>This could be the date:</p>
+              <ul>
+                <li>the company first knew or had cause to believe that there is no PSC</li>
+                <li>the company first knew or had cause to believe that the person had become a PSC in relation to the company</li>
+                <li>by which the person was required to comply with a section 790D, 790DA, 790E or 790EA notice</li>
+                <li>the restrictions notice was given</li>
+              </ul>
+            </div>
+            <div id="withdrawDateHint" class="hint" style="display: none">
+              <p>This could be the date:</p>
+              <ul>
+                <li>on which the company first knew or had cause to believe the statement is no longer true</li>
+                <li>the person complied with a section 790D, 790DA, 790E or 790EA notice</li>
+                <li>on which the withdrawal of the restrictions notice was given</li>
+                <li>on which the order directing that a relevant interest in the company cease to be subject to restrictions is made</li>
+              </ul>
+            </div>
+            <input type="date" id="relevantDate" name="relevantDate" required />
+          </div>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script type="module" src="../lib/companies-house-text-check.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../lib/companies-house-namesakes.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="pscStatements.page.js"></script>
+  </body>
+</html>

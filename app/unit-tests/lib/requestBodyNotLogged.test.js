@@ -62,7 +62,8 @@ describe("extractRequest logging", () => {
       body: bodyJson,
     });
     const logged = loggedLines.find((l) => l.args[0]?.message === "Processing request with event").args[0];
-    expect(logged.request).toContain("/api/v1/thing?a=b");
+    expect(logged.request).toContain("/api/v1/thing?a={a}");
+    expect(logged.request).not.toContain("a=b");
     expect(logged.event.bodyLength).toBe(bodyJson.length);
     expect(logged.event.bodyContentType).toBe("application/json");
     expect(logged.event.body).toBeUndefined();

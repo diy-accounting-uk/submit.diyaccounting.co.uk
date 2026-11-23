@@ -11,6 +11,11 @@ window.siteText =
 // Companies House OAuth token: the filing goes through the XML Gateway with the operator's
 // presenter credentials, so only the Cognito id token is needed to reach the API.
 
+const amendReceiptName = new URLSearchParams(window.location.search).get("amend");
+// The status line ships hidden: an original shows the page's own status, and an amend address
+// shows the revised accounts activity's status once startRevision has set it.
+if (!amendReceiptName) document.querySelector("[data-feature-status]").hidden = false;
+
 const PROFIT_AND_LOSS_INPUT_FIELDS = {
   1: ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"],
   2: [
@@ -93,6 +98,8 @@ const INTANGIBLE_ASSET_FIELDS = [
 ];
 
 let company = null;
+// The revision this page is filing, or null for original accounts.
+let revision = null;
 
 function views() {
   return {
@@ -160,20 +167,96 @@ function applyProfitAndLossFormat() {
   });
 }
 
-function readDirectorsAdvances(currentYear) {
-  const name = document.getElementById("directorsAdvanceName").value.trim();
-  if (currentYear.amountsOwedByDirectors === 0 && name === "") return undefined;
-  return [
-    {
-      name,
-      terms: document.getElementById("directorsAdvanceTerms").value.trim(),
-      balanceAtStart: readPounds("directorsAdvanceAtStart"),
-      advanced: readPounds("directorsAdvanceMade"),
-      repaid: readPounds("directorsAdvanceRepaid"),
-      balanceAtEnd: currentYear.amountsOwedByDirectors,
-    },
-  ];
+// One advance for each row that holds something: a director owing the company money in the year.
+function readDirectorsAdvances() {
+  const advances = Array.from(document.querySelectorAll(".directors-advance-row"))
+    .map((row) => {
+      const boxes = Object.fromEntries(Array.from(row.querySelectorAll("[data-advance-field]"), (box) => [box.dataset.advanceField, box]));
+      if (Object.values(boxes).every((box) => box.value.trim() === "")) return null;
+      const pounds = (field) => window.parseMoneyInput(boxes[field].value, { wholePounds: true }) ?? 0;
+      return {
+        name: boxes.name.value.trim(),
+        terms: boxes.terms.value.trim(),
+        balanceAtStart: pounds("balanceAtStart"),
+        advanced: pounds("advanced"),
+        repaid: pounds("repaid"),
+        balanceAtEnd: pounds("balanceAtEnd"),
+      };
+    })
+    .filter(Boolean);
+  return advances.length ? advances : undefined;
 }
+
+let directorsAdvanceRowsAdded = 0;
+
+function directorsAdvanceRows() {
+  return Array.from(document.querySelectorAll("#directorsAdvanceRows .directors-advance-row"));
+}
+
+// Each row states its number, and offers its removal while another row is left.
+function numberDirectorsAdvanceRows() {
+  const rows = directorsAdvanceRows();
+  rows.forEach((row, index) => {
+    row.querySelector(".directors-advance-row__title").textContent = window.siteText("ch.small.advance-number", "Advance {number}", {
+      number: index + 1,
+    });
+    row.querySelector(".directors-advance-row__remove").hidden = rows.length === 1;
+  });
+}
+
+// Taking a row away moves each later advance up one row and drops the last row, so the first row
+// keeps the ids the form's checks name.
+function removeDirectorsAdvanceRow(row) {
+  const rows = directorsAdvanceRows();
+  for (let index = rows.indexOf(row); index < rows.length - 1; index++) {
+    rows[index].querySelectorAll("[data-advance-field]").forEach((box) => {
+      box.value = rows[index + 1].querySelector(`[data-advance-field="${box.dataset.advanceField}"]`).value;
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+  rows.at(-1).remove();
+  numberDirectorsAdvanceRows();
+}
+
+// The row's heading and the button that takes the row away.
+function completeDirectorsAdvanceRow(row) {
+  const title = document.createElement("h4");
+  title.className = "directors-advance-row__title";
+  row.prepend(title);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "secondary-button directors-advance-row__remove";
+  remove.textContent = window.siteText("ch.small.remove-advance", "Remove this advance");
+  remove.addEventListener("click", () => removeDirectorsAdvanceRow(row));
+  row.append(remove);
+}
+
+// Another advance row: a copy of the first with its own ids, empty.
+function addDirectorsAdvanceRow() {
+  const rows = document.getElementById("directorsAdvanceRows");
+  const row = rows.querySelector(".directors-advance-row").cloneNode(true);
+  row.querySelectorAll(".directors-advance-row__title, .directors-advance-row__remove").forEach((element) => element.remove());
+  directorsAdvanceRowsAdded += 1;
+  const suffix = `-${directorsAdvanceRowsAdded + 1}`;
+  row.querySelectorAll("[id]").forEach((element) => {
+    element.id += suffix;
+  });
+  row.querySelectorAll("[for]").forEach((label) => label.setAttribute("for", label.getAttribute("for") + suffix));
+  row
+    .querySelectorAll("[aria-describedby]")
+    .forEach((box) => box.setAttribute("aria-describedby", box.getAttribute("aria-describedby") + suffix));
+  row.querySelectorAll("input").forEach((box) => {
+    box.value = "";
+    box.name += suffix;
+  });
+  completeDirectorsAdvanceRow(row);
+  rows.append(row);
+  numberDirectorsAdvanceRows();
+  return row;
+}
+
+completeDirectorsAdvanceRow(document.querySelector("#directorsAdvanceRows .directors-advance-row"));
+numberDirectorsAdvanceRows();
 
 function readBalanceSheet(prefix) {
   const figures = {};
@@ -247,7 +330,30 @@ function comparativesIncluded() {
   return document.getElementById("includeComparatives").checked;
 }
 
-function renderTotals() {
+// Accounts show the prior year unless they are the company's first, which the company's profile and
+// the period start show. The box follows that rule, and the line under it says which it is.
+let firstAccountsRule = null;
+import("../lib/first-accounts.js").then((module) => {
+  firstAccountsRule = module;
+  toggleSections();
+});
+
+function firstAccountsDate() {
+  return firstAccountsRule?.dateOfIncorporationFor(company, document.getElementById("periodStart").value);
+}
+
+function applyFirstAccountsRule() {
+  if (!firstAccountsRule) return;
+  firstAccountsRule.applyComparativesRule({
+    box: document.getElementById("includeComparatives"),
+    line: document.getElementById("firstAccountsLine"),
+    company,
+    periodStart: document.getElementById("periodStart").value,
+  });
+}
+
+async function renderTotals() {
+  const { formatPounds } = await import("../lib/balance-sheet-check.js");
   ["current", "prior"].forEach((prefix) => {
     if (prefix === "prior" && !comparativesIncluded()) return;
     const profitAndLoss = readProfitAndLoss(prefix);
@@ -255,14 +361,16 @@ function renderTotals() {
       profitAndLossFormat() === 1
         ? `${window.siteText("ch.small.gross-profit", "Gross profit: {amount}.", { amount: profitAndLoss.grossProfit })} `
         : "";
-    document.getElementById(prefix + "ProfitAndLossTotals").textContent =
+    const totals = document.getElementById(prefix + "ProfitAndLossTotals");
+    totals.hidden = PROFIT_AND_LOSS_INPUT_FIELDS[profitAndLossFormat()].every((field) => profitAndLoss[field] === 0);
+    totals.textContent =
       grossProfitText +
       window.siteText(
         "ch.small.profit-totals",
-        "Operating profit: {operating}. Profit before tax: {beforeTax}. Profit for the year: {profit}.",
+        "Operating profit: {operating}. Profit before tax: {pretax}. Profit for the year: {profit}.",
         {
           operating: profitAndLoss.operatingProfit,
-          beforeTax: profitAndLoss.profitBeforeTax,
+          pretax: profitAndLoss.profitBeforeTax,
           profit: profitAndLoss.profit,
         },
       );
@@ -274,13 +382,13 @@ function renderTotals() {
         : window.siteText(
             "ch.small.mismatch-capital",
             "Does not match share capital plus the profit and loss reserve ({amount}) - correct this before previewing.",
-            { amount: balanceSheet.capitalAndReserves },
+            { amount: formatPounds(balanceSheet.capitalAndReserves) },
           );
     document.getElementById(prefix + "BalanceSheetTotals").textContent = window.siteText(
       "ch.small.net-assets",
       "Net assets: {amount}. {verdict}",
       {
-        amount: netAssets,
+        amount: formatPounds(netAssets),
         verdict,
       },
     );
@@ -330,6 +438,7 @@ function renderTotals() {
 
 function toggleSections() {
   applyProfitAndLossFormat();
+  applyFirstAccountsRule();
   document.getElementById("comparativeFields").style.display = comparativesIncluded() ? "block" : "none";
   document.getElementById("fixedAssetNoteFields").style.display = document.getElementById("includeFixedAssetNote").checked
     ? "block"
@@ -339,6 +448,7 @@ function toggleSections() {
     : "none";
   window.accountsFormSections.showAccountantsReportFields();
   window.accountsFormSections.showControllingPartyFields();
+  document.getElementById("shareCapitalNoteFields").hidden = !document.getElementById("includeShareCapitalNote").checked;
   renderTotals();
 }
 
@@ -351,12 +461,14 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    const { companyFromProfile } = await import("../lib/first-accounts.js");
+    company = companyFromProfile(profile);
     window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
+    window.priorYearFill.fill(company.companyNumber, "small", profile);
   } catch (error) {
     console.error("Failed to look up the company:", error);
     showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
@@ -388,12 +500,14 @@ function documentLanguagePayload() {
 
 function buildAccountsPayload() {
   const includeComparatives = comparativesIncluded();
+  const dateOfIncorporation = firstAccountsDate();
   const fixedAssetNote = readFixedAssetNote();
   const intangibleAssetNote = readIntangibleAssetNote();
   const registeredOffice = window.accountsFormSections.readRegisteredOffice();
   const accountantsReport = window.accountsFormSections.readAccountantsReport();
   const controllingParty = window.accountsFormSections.readControllingParty();
-  const directorsAdvances = readDirectorsAdvances(readBalanceSheet("current"));
+  const directorsAdvances = readDirectorsAdvances();
+  const shareCapital = readShareCapitalNote();
   return {
     ...documentLanguagePayload(),
     companyNumber: company.companyNumber,
@@ -415,6 +529,7 @@ function buildAccountsPayload() {
     },
     smallCompany: {
       filleted: document.getElementById("copyFilleted").checked,
+      ...(dateOfIncorporation ? { dateOfIncorporation } : {}),
       principalActivity: document.getElementById("principalActivity").value.trim(),
       accountingPolicies: document.getElementById("accountingPolicies").value.trim(),
       directors: document
@@ -436,7 +551,9 @@ function buildAccountsPayload() {
       ...readPolicies(),
       ...(controllingParty ? { controllingParty } : {}),
       ...(directorsAdvances ? { directorsAdvances } : {}),
+      ...(shareCapital ? { shareCapital } : {}),
     },
+    ...(revision ? { revision: revision.module.revisionRequest(revisionElements(), revision.source) } : {}),
   };
 }
 
@@ -489,6 +606,40 @@ function formProblem() {
   return null;
 }
 
+// The share capital note, when its box is ticked.
+function readShareCapitalNote() {
+  if (!document.getElementById("includeShareCapitalNote").checked) return undefined;
+  return {
+    shareClass: document.getElementById("shareCapitalClass").value,
+    nominalValue: Number(document.getElementById("shareCapitalNominalValue").value.trim()),
+  };
+}
+
+// The first thing wrong with the notes on advances and share capital, by the rules the accounts
+// route applies, as the sentence the page shows; null when nothing is.
+async function notesProblem() {
+  const check = await import("../lib/accounts-notes-check.js");
+  const directorNames = document
+    .getElementById("directors")
+    .value.split("\n")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  const calledUpShareCapital = readPounds("currentCalledUpShareCapital");
+  const shareCapital = readShareCapitalNote();
+  const owed = [readBalanceSheet("current"), ...(comparativesIncluded() ? [readBalanceSheet("prior")] : [])].map(
+    (sheet) => sheet.amountsOwedByDirectors,
+  );
+  const findings = [
+    ...(check.directorsAdvancesMissing(readDirectorsAdvances(), owed) ? [{ rule: "advances-required" }] : []),
+    ...check.directorsAdvancesFindings(readDirectorsAdvances() || [], {
+      directorNames,
+      amountsOwedByDirectors: readBalanceSheet("current").amountsOwedByDirectors,
+    }),
+    ...(shareCapital ? check.shareCapitalFindings(shareCapital, calledUpShareCapital) : []),
+  ];
+  return findings.length ? check.noteFindingSentence(findings[0], { calledUpShareCapital }) : null;
+}
+
 const STATEMENT_MESSAGES = {
   statementSection477Exemption: window.siteText(
     "ch.accounts.confirm-477",
@@ -510,7 +661,10 @@ async function handleAccountsFormSubmit(event) {
   const form = event.currentTarget;
   if (!window.formErrors.requireFormFields(form)) return;
   if (window.formErrors.reportMoneyProblems(form)) return;
-  const problem = formProblem();
+  if (revision && reportRevisionProblems()) return;
+  const approvalDateCheck = await import("../lib/approval-date-check.js");
+  if (approvalDateCheck.showApprovalDateAfterToday(document.getElementById("directorDateApproved"), new Date())) return;
+  const problem = formProblem() || (await notesProblem());
   if (problem) {
     showStatus(problem, "error");
     return;
@@ -522,9 +676,19 @@ async function handleAccountsFormSubmit(event) {
   try {
     const preview = await window.renderMicroEntityAccounts(buildAccountsPayload());
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
-    document.getElementById("previewRendered").srcdoc = preview.ixbrl;
+    window.accountsFormSections.showInFrame(document.getElementById("previewRendered"), preview.ixbrl);
     showView("previewView");
     document.getElementById("previewView").scrollIntoView();
+    priorYearWarningShown = revisingFilletedAsFullWithoutPriorYear();
+    if (priorYearWarningShown) {
+      showStatus(
+        window.siteText(
+          "ch.revision.prior-profit-and-loss-empty",
+          "The accounts filed were a filleted copy, so they hold no profit and loss account for the prior year. This full copy states the prior year's profit and loss lines as nothing: type them on the form if the company had them.",
+        ),
+        "warning",
+      );
+    }
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
     showStatus(error.message || window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
@@ -579,12 +743,17 @@ function pollUntilSettled(submission, extraHeaders) {
     pollIntervalSeconds: submission.pollInterval,
     poll: () => window.pollMicroEntityAccounts(submissionNumber, extraHeaders),
     onPending: (result) =>
-      document.getElementById("filingResult").replaceChildren(
-        paragraphWithValues(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
-          number: submissionNumber,
-          status: result.statusCode,
-        }),
-      ),
+      document
+        .getElementById("filingResult")
+        .replaceChildren(
+          paragraphWithValues(
+            ...window.companiesHouseGatewayPoll.statusSentence(
+              window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
+              submissionNumber,
+              result.statusCode,
+            ),
+          ),
+        ),
   });
 }
 
@@ -613,11 +782,16 @@ async function checkOutcome(submission, headers) {
   result.replaceChildren(
     notReceived
       ? paragraphWithValues(`${notReceived.title} ${notReceived.detail}`, {})
-      : paragraphWithValues(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-          number: outcome.submissionNumber,
-          status: outcome.statusCode,
-        }),
+      : paragraphWithValues(
+          ...window.companiesHouseGatewayPoll.statusSentence(
+            window.siteText("ch.small.outcome", "Submission {number} was {status}."),
+            outcome.submissionNumber,
+            outcome.statusCode,
+          ),
+        ),
   );
+  const revisionHeadline = revision && !notReceived ? revisionOutcomeHeadline(outcome.statusCode) : null;
+  if (revisionHeadline) result.prepend(paragraphWithValues(revisionHeadline, {}));
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
   showFilingCopyLink(outcome);
@@ -636,6 +810,7 @@ async function handleSubmitFiling() {
       {
         input: companyAuthCodeInput,
         message: window.siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code"),
+        passes: () => companyAuthCodeInput.value.trim().length >= 6 && companyAuthCodeInput.value.trim().length <= 8,
       },
     ]);
     return;
@@ -670,7 +845,13 @@ async function handleSubmitFiling() {
     const tokensExhausted = error.status === 403 && error.reason === "tokens_exhausted";
     // The request layer already showed its own refusal; the page's message replaces it.
     if (tokensExhausted) hideStatus();
-    showStatus(error.message || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."), "error");
+    const { registerRefusalOfError } = await import("../lib/accounts-revision-register.js");
+    showStatus(
+      registerRefusalOfError(error) ||
+        error.message ||
+        window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
+      "error",
+    );
     if (tokensExhausted) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
       document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });
@@ -688,6 +869,7 @@ updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
 
 function startAgain() {
+  endRevision();
   company = null;
   document.getElementById("companyForm").reset();
   document.getElementById("accountsForm").reset();
@@ -699,12 +881,16 @@ function startAgain() {
   showView("companyView");
 }
 
+document.getElementById("directorsReportConsistent").value = window.siteText("ch.accounts.not-applicable", "Not applicable");
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
 document.getElementById("accountsForm").addEventListener("input", renderTotals);
 document.getElementById("includeComparatives").addEventListener("change", toggleSections);
+document.getElementById("periodStart").addEventListener("input", toggleSections);
 document.getElementById("includeFixedAssetNote").addEventListener("change", toggleSections);
 document.getElementById("includeIntangibleAssetNote").addEventListener("change", toggleSections);
+document.getElementById("includeShareCapitalNote").addEventListener("change", toggleSections);
+document.getElementById("addDirectorsAdvance").addEventListener("click", addDirectorsAdvanceRow);
 document.getElementById("includeAccountantsReport").addEventListener("change", toggleSections);
 document.querySelectorAll('input[name="controllingParty"]').forEach((radio) => radio.addEventListener("change", toggleSections));
 document.querySelectorAll('input[name="profitAndLossFormat"]').forEach((radio) => radio.addEventListener("change", toggleSections));
@@ -718,3 +904,141 @@ document.getElementById("changeCompanyLink").addEventListener("click", (event) =
 
 applyProfitAndLossFormat();
 window.booksImport.mount(document.getElementById("booksImport"), { kind: "small-company-accounts" });
+
+// The request, the checks and the result of a revision of accounts already filed. ?amend=<receipt name>
+// opens the form from the receipt of the accepted filing.
+function revisionElements() {
+  return {
+    section: document.getElementById("revisionSection"),
+    originalDate: document.getElementById("revisionOriginalDate"),
+    nonCompliance: document.getElementById("revisionNonCompliance"),
+    amendments: document.getElementById("revisionAmendments"),
+  };
+}
+
+function revisionOutcomeHeadline(statusCode) {
+  if (statusCode === "ACCEPT") return window.siteText("ch.revision.accepted", "Companies House accepted the revised accounts.");
+  if (statusCode === "REJECT") return window.siteText("ch.revision.rejected", "Companies House rejected the revised accounts.");
+  return null;
+}
+
+// A refusal reads as one failure: its sentence and the next step it names, as a link.
+function refuseRevision(text, next) {
+  window.showFailure(
+    { failure: { cause: text, next } },
+    window.siteText("ch.revision.refused-title", "These accounts cannot be revised here"),
+  );
+  showView("companyView");
+}
+
+function showRevisionLateNote() {
+  const dateApproved = document.getElementById("directorDateApproved").value;
+  document.getElementById("revisionLateNote").hidden = !(revision && revision.module.isPastDeliveryDays(dateApproved, new Date()));
+}
+
+// The preview's warning of empty prior-year profit and loss lines goes once one of them is typed.
+let priorYearWarningShown = false;
+document.getElementById("accountsForm").addEventListener("input", () => {
+  if (priorYearWarningShown && !revisingFilletedAsFullWithoutPriorYear()) {
+    priorYearWarningShown = false;
+    hideStatus();
+  }
+});
+
+// A filleted original revised as a full copy, with prior-year balance sheet figures filed and no prior-year
+// profit and loss line typed (a box still holding the page's starting value counts as empty): the tax
+// line fills from the filed tax note, so it does not count.
+function revisingFilletedAsFullWithoutPriorYear() {
+  if (!revision?.source.mapped.filleted || document.getElementById("copyFilleted").checked) return false;
+  if (Object.keys(revision.source.mapped.balanceSheet.priorYear).length === 0) return false;
+  return PROFIT_AND_LOSS_INPUT_FIELDS[profitAndLossFormat()]
+    .filter((field) => field !== "tax")
+    .map((field) => document.getElementById(`prior${field[0].toUpperCase()}${field.slice(1)}`))
+    .every((box) => box.value.trim() === "" || box.value === box.defaultValue);
+}
+
+// Shows each problem with the revision beside its field; answers true when there is one.
+function reportRevisionProblems() {
+  return revision.module.showRevisionProblems(revisionElements(), document.getElementById("directorDateApproved"));
+}
+
+async function startRevision(receiptName) {
+  showLoading();
+  hideStatus();
+  try {
+    const module = await import("../lib/accounts-revision.js");
+    const statusLine = document.querySelector("[data-feature-status]");
+    const restoreStatus = await module.showRevisionStatus(statusLine);
+    statusLine.hidden = false;
+    if (!(await module.isRevisionOfferedHere())) {
+      refuseRevision(
+        window.siteText("ch.revision.not-offered", "Revised accounts cannot be filed here yet, so these accounts cannot be amended."),
+        module.refusalNextStep("record", receiptName),
+      );
+      return;
+    }
+    const read = await module.readRevisionSource(receiptName, {
+      fetchReceipt: (name) => window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {}),
+      loadBundle: window.booksImport.loadBundle,
+    });
+    if (read.refusal) {
+      refuseRevision(read.refusal, module.refusalNextStep(read.next, receiptName));
+      return;
+    }
+    if (read.source.regime !== "small") {
+      refuseRevision(
+        window.siteText("ch.revision.not-small", "Those are micro-entity accounts, so they are revised on the micro-entity accounts page."),
+        module.refusalNextStep("micro", receiptName),
+      );
+      return;
+    }
+    const profile = await window.getCompanyProfile(read.source.companyNumber);
+    const { companyFromProfile } = await import("../lib/first-accounts.js");
+    company = companyFromProfile(profile);
+    window.accountsFormSections.fillFiledRegisteredOffice(read.source.registeredOffice, profile.registeredOffice);
+    document.getElementById("formCompanyName").textContent = company.companyName;
+    document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+    showDocumentLanguageChoice(profile.jurisdiction);
+    window.booksImport.fillSmallCompanyFormFromMapped(read.source.mapped);
+    module.fillCarriedOver(read.source);
+    toggleSections();
+    renderTotals();
+    revision = { module, source: read.source, restoreStatus };
+    module.showRevisionSection(revisionElements(), read.source);
+    document.getElementById("revisionCopyNote").hidden = false;
+    document.getElementById("revisionCopyFull").hidden = read.source.mapped.filleted;
+    document.getElementById("revisionCopyFilleted").hidden = !read.source.mapped.filleted;
+    document.getElementById("revisionBanner").hidden = false;
+    document.getElementById("changeCompanyLine").hidden = true;
+    showRevisionLateNote();
+    showView("formView");
+  } catch (error) {
+    console.error("Failed to open the accounts to revise:", error);
+    refuseRevision(
+      window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
+      { label: window.siteText("ch.revision.next-receipts", "Back to your receipts"), href: "../hmrc/receipt/receipts.html" },
+    );
+  } finally {
+    hideLoading();
+  }
+}
+
+function endRevision() {
+  if (!revision) return;
+  revision.module.hideRevisionSection(revisionElements());
+  revision.restoreStatus();
+  revision = null;
+  document.getElementById("revisionBanner").hidden = true;
+  document.getElementById("revisionLateNote").hidden = true;
+  document.getElementById("revisionCopyNote").hidden = true;
+  document.getElementById("revisionAccountantsNote").hidden = true;
+  document.getElementById("changeCompanyLine").hidden = false;
+}
+
+document.getElementById("directorDateApproved").addEventListener("input", showRevisionLateNote);
+
+if (amendReceiptName && window.__submitReady__) {
+  startRevision(amendReceiptName);
+} else if (amendReceiptName) {
+  document.addEventListener("submit-ready", () => startRevision(amendReceiptName), { once: true });
+}

@@ -136,8 +136,8 @@ function accountsReceiptRecord(receipt, dateText) {
 
 /**
  * The customer copy of an accepted Companies House accounts filing.
- * @param {object} receipt - the stored receipt: statusCode, submissionNumber, companyNumber, filedDocument
- * @param {{receiptName: string, linksTo?: {correct: string, again: string}}} options
+ * @param {object} receipt - the stored receipt: statusCode, submissionNumber, companyNumber, filedDocument, amended
+ * @param {{receiptName: string, linksTo?: {correct: string, again: string}}} options - linksTo.correct is the form that amends these accounts
  * @returns {string}
  */
 export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
@@ -167,16 +167,25 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
     },
   ];
   return customerCopyHtml({
-    title: siteText("ch.record.accounts-copy-title", "Your copy of the accounts filed at Companies House"),
+    title: receipt.amended
+      ? siteText("ch.record.revised-accounts-copy-title", "Your copy of the revised accounts filed at Companies House")
+      : siteText("ch.record.accounts-copy-title", "Your copy of the accounts filed at Companies House"),
     reference: { label: siteText("ch.record.submission-number", "Submission number"), value: String(receipt.submissionNumber ?? ABSENT) },
     status: { kind: "accepted", text: siteText("ch.record.accepted", "Accepted by Companies House") },
     date: dateText,
     sections,
     links: [
-      {
-        href: linksTo.correct ?? "fileMicroEntityAccounts.html",
-        text: siteText("ch.record.file-again", "File accounts again with corrected figures"),
-      },
+      linksTo.correct
+        ? { href: linksTo.correct, text: siteText("ch.record.amend-accounts", "Amend these accounts") }
+        : { href: "fileMicroEntityAccounts.html", text: siteText("ch.record.file-again", "File accounts again with corrected figures") },
+      ...(receipt.revisesReceipt
+        ? [
+            {
+              href: `filings.html?receipt=${encodeURIComponent(receipt.revisesReceipt)}`,
+              text: siteText("ch.record.original-accounts", "See the original accounts these revise"),
+            },
+          ]
+        : []),
       { href: linksTo.again ?? "companySearch.html", text: siteText("ch.record.look-up-another", "Look up another company") },
       { href: "../hmrc/receipt/receipts.html", text: siteText("ch.record.all-receipts", "All your receipts") },
     ],

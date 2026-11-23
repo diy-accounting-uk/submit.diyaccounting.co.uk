@@ -86,6 +86,30 @@ export function toPassTotals(passes, storedByCode) {
   };
 }
 
+/**
+ * One pass as its card shows it: its code, type and redemption window, its total and per-account
+ * redemption limits, the bundles it grants (a campaign pass's grants with their own duration and
+ * tokens; null for a pass that grants its one bundle on the catalogue's terms) and its figures.
+ */
+export function toPassCard(pass, stored) {
+  return {
+    code: pass.code,
+    passTypeId: pass.passTypeId,
+    bundleId: pass.bundleId,
+    validFrom: pass.validFrom,
+    validUntil: pass.validUntil || null,
+    maxUses: pass.maxUses ?? null,
+    usesPerAccount: pass.usesPerAccount ?? 1,
+    grants: pass.grants ?? null,
+    useCount: pass.useCount,
+    heldForReview: pass.reviewLimit !== undefined && pass.useCount >= pass.reviewLimit,
+    createdAt: pass.createdAt,
+    notes: pass.notes || null,
+    revokedAt: pass.revokedAt || null,
+    figures: toPassFigures(pass, stored),
+  };
+}
+
 export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
 
@@ -119,20 +143,7 @@ export async function ingestHandler(event) {
     const storedByCode = await getPassFigures(liveItems.map((pass) => pass.code));
 
     // Map passes to safe public-facing format
-    const passes = liveItems.map((pass) => ({
-      code: pass.code,
-      passTypeId: pass.passTypeId,
-      bundleId: pass.bundleId,
-      validFrom: pass.validFrom,
-      validUntil: pass.validUntil || null,
-      maxUses: pass.maxUses ?? null,
-      useCount: pass.useCount,
-      heldForReview: pass.reviewLimit !== undefined && pass.useCount >= pass.reviewLimit,
-      createdAt: pass.createdAt,
-      notes: pass.notes || null,
-      revokedAt: pass.revokedAt || null,
-      figures: toPassFigures(pass, storedByCode.get(pass.code)),
-    }));
+    const passes = liveItems.map((pass) => toPassCard(pass, storedByCode.get(pass.code)));
 
     return http200OkResponse({
       request,

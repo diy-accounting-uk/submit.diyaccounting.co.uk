@@ -4,46 +4,87 @@
 // web/browser-tests/companySearch.browser.test.js
 
 import { test, expect } from "@playwright/test";
-import { servePageScripts } from "./hmrcFieldTableAssets.js";
+import { servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
+import { findReaderViewDefects } from "../../behaviour-tests/helpers/behaviour-helpers.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const EXAMPLE_COMPANY_RESULT = {
+const COMPANY = registerCompany("00000001");
+
+const COMPANY_RESULT = {
   totalResults: 1,
   itemsPerPage: 20,
   startIndex: 0,
   items: [
     {
-      companyNumber: "00000001",
-      title: "SIMULATOR EXAMPLE COMPANY LIMITED",
-      companyStatus: "active",
+      companyNumber: COMPANY.number,
+      title: COMPANY.name,
+      companyStatus: COMPANY.status,
       companyType: "ltd",
-      dateOfCreation: "2009-04-16",
-      addressSnippet: "1 Example Street, Cardiff, CF14 3UZ",
+      dateOfCreation: COMPANY.incorporatedOn,
+      addressSnippet: `${addressLine1(COMPANY.address)}, ${COMPANY.address.locality}, ${COMPANY.address.postalCode}`,
     },
   ],
 };
 
-const EXAMPLE_COMPANY_PROFILE = {
-  companyNumber: "00000001",
-  companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
-  companyStatus: "active",
+// Results shaped like the live register's: a 160-character name, a long registered office, a long
+// status, and a company name with one long word.
+const LONG_NAME =
+  "THE NORTHERN AND MIDLANDS CONSOLIDATED ENGINEERING FABRICATION AND STRUCTURAL STEELWORK CONTRACTORS AND INDUSTRIAL MAINTENANCE SERVICES (HOLDINGS) LIMITED";
+const LONG_RESULTS = {
+  totalResults: 3,
+  itemsPerPage: 20,
+  startIndex: 0,
+  items: [
+    {
+      companyNumber: "00000001",
+      title: LONG_NAME.padEnd(160, " X").slice(0, 160),
+      companyStatus: "active-proposal-to-strike-off",
+      companyType: "ltd",
+      dateOfCreation: "2009-04-16",
+      addressSnippet:
+        "Unit 14 The Old Mill Business Park, Riverside Industrial Estate, Upper Harbour Lane Road, Whitby, North Yorkshire, YO21 1DN",
+    },
+    {
+      companyNumber: "SC000001",
+      title: "GLENMORE-ENGINEERING-AND-FABRICATION-SERVICES-INTERNATIONAL LIMITED",
+      companyStatus: "voluntary-arrangement",
+      companyType: "ltd",
+      dateOfCreation: "2015-06-15",
+      addressSnippet: "Suite 3/2, Clydeside Commercial Centre, 1234 Great Western Road, Glasgow, G12 0XX",
+    },
+    {
+      companyNumber: COMPANY.number,
+      title: COMPANY.name,
+      companyStatus: COMPANY.status,
+      companyType: "ltd",
+      dateOfCreation: COMPANY.incorporatedOn,
+      addressSnippet: `${addressLine1(COMPANY.address)}, ${COMPANY.address.locality}, ${COMPANY.address.postalCode}`,
+    },
+  ],
+};
+
+const COMPANY_PROFILE = {
+  companyNumber: COMPANY.number,
+  companyName: COMPANY.name,
+  companyStatus: COMPANY.status,
   companyType: "ltd",
-  dateOfCreation: "2009-04-16",
-  jurisdiction: "england-wales",
+  dateOfCreation: COMPANY.incorporatedOn,
+  jurisdiction: COMPANY.jurisdiction,
   registeredOfficeAddress: {
-    address_line_1: "1 Example Street",
-    locality: "Cardiff",
-    postal_code: "CF14 3UZ",
+    address_line_1: addressLine1(COMPANY.address),
+    locality: COMPANY.address.locality,
+    postal_code: COMPANY.address.postalCode,
     country: "United Kingdom",
   },
-  sicCodes: ["62012"],
-  accountsNextDue: "2099-01-31",
-  confirmationStatementNextDue: "2099-04-30",
+  sicCodes: COMPANY.sicCodes,
+  accountsNextDue: COMPANY.accounts.next.due,
+  confirmationStatementNextDue: COMPANY.confirmationStatementDates.due,
 };
 
 test.describe("Company Lookup page", () => {
@@ -60,9 +101,11 @@ test.describe("Company Lookup page", () => {
     });
   }
 
-  async function setupRoutes(page, { searchResult = EXAMPLE_COMPANY_RESULT, profile = EXAMPLE_COMPANY_PROFILE, searchError = null } = {}) {
+  async function setupRoutes(page, { searchResult = COMPANY_RESULT, profile = COMPANY_PROFILE, searchError = null } = {}) {
     await page.addInitScript(
       ({ searchResultArg, profileArg, searchErrorArg }) => {
+        // The lookup shows its results to a reader who is signed in.
+        localStorage.setItem("cognitoIdToken", "id-token");
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
@@ -110,29 +153,59 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 
     await expect(page.locator("#searchResultsContainer")).toBeVisible();
-    await expect(page.locator("#searchResults")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#searchResults")).toContainText(COMPANY.name);
     await expect(page.locator("#searchResults")).toContainText("00000001");
     await expect(page.locator("#searchResults")).toContainText("Active");
     await expect(page.locator("#searchResults")).toContainText("16 April 2009");
   });
 
+  for (const width of [360, 600, 1024, 1280]) {
+    test(`fits results with the register's long names, addresses and statuses in its container at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      setupPage(page);
+      await setupRoutes(page, { searchResult: LONG_RESULTS });
+      await serveSiteStyles(page);
+      await loadPage(page);
+
+      // The watch list the button reads is the account's; here it is an empty list.
+      await page.evaluate(() => {
+        window.watchList.button = (companyNumber) => {
+          const element = document.createElement("button");
+          element.type = "button";
+          element.className = "secondary-button watch-list-add";
+          element.dataset.companyNumber = companyNumber;
+          element.textContent = "Add to watch list";
+          return element;
+        };
+      });
+      await page.fill("#companyQuery", "Engineering");
+      await page.click("#searchBtn");
+      await expect(page.locator("#searchResults tbody tr")).toHaveCount(3);
+      await expect(page.locator("#searchResults")).toContainText(LONG_RESULTS.items[0].addressSnippet);
+
+      expect(await findReaderViewDefects(page)).toEqual([]);
+      await page.screenshot({ path: `target/screenshots/company-search/long-results-${width}.png`, fullPage: true });
+    });
+  }
+
   test("stacks the result table into labelled rows without sideways scroll at 390px", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 900 });
     setupPage(page);
     await setupRoutes(page);
+    await serveSiteStyles(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(300);
 
     const labels = await page.locator("#searchResults tbody td").evaluateAll((cells) => cells.map((cell) => cell.dataset.label));
-    expect(labels).toEqual(["Company", "Number", "Status", "Incorporated", "Address"]);
+    expect(labels).toEqual(["Company", "Number", "Status", "Incorporated", "Address", "Watch list"]);
     const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(scrollsSideways).toBe(false);
   });
@@ -154,7 +227,7 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 
@@ -162,28 +235,30 @@ test.describe("Company Lookup page", () => {
     await delay(200);
 
     await expect(page.locator("#profileView")).toBeVisible();
-    await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#companyProfile")).toContainText(COMPANY.name);
     await expect(page.locator("#companyProfile")).toContainText("Active");
     await expect(page.locator("#companyProfile")).toContainText("Private limited company");
     await expect(page.locator("#companyProfile")).toContainText("England and Wales");
     await expect(page.locator("#companyProfile")).toContainText("16 April 2009");
-    await expect(page.locator("#companyProfile")).toContainText("62012 - Business and domestic software development");
+    await expect(page.locator("#companyProfile")).toContainText(
+      "16230 - Manufacture of other builders' carpentry and joinery; 43320 - Joinery installation",
+    );
     await expect(page.locator("#companyProfile")).not.toContainText("2009-04-16");
   });
 
-  test("puts the company number in the URL when a result is selected", async ({ page }) => {
+  test("moves to the company's address when a result is selected", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 
     await page.click("#searchResults button");
     await delay(200);
 
-    expect(page.url()).toContain("companyNumber=00000001");
+    expect(new URL(page.url()).pathname).toBe("/companies-house/company/00000001");
   });
 
   test("opens the profile view directly when the URL carries a company number", async ({ page }) => {
@@ -192,7 +267,7 @@ test.describe("Company Lookup page", () => {
     await loadPage(page, "companyNumber=00000001");
 
     await expect(page.locator("#profileView")).toBeVisible();
-    await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#companyProfile")).toContainText(COMPANY.name);
   });
 
   test("shows a retry message with the wait time when the API reports a rate limit", async ({ page }) => {
@@ -202,7 +277,7 @@ test.describe("Company Lookup page", () => {
     });
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 

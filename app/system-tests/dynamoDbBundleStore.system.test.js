@@ -98,3 +98,107 @@ describe("System: dynamoDbBundleStore with local dynalite", () => {
     expect(afterDelete.find((b) => b.bundleId === bundle.bundleId)).toBeUndefined();
   });
 });
+
+describe("System: the account settings item and its watch list with local dynalite", () => {
+  it("adds many companies at once and keeps every one, up to the cap, with the other settings as they were", async () => {
+    const userId = "watch-list-concurrent-user";
+    await store.updateAccountSettings(userId, { passGeneration: false });
+    const numbers = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(8, "0"));
+
+    const outcomes = await Promise.all(numbers.map((number) => store.addToWatchedCompanies(userId, number, 10)));
+
+    const stored = await store.getAccountSettings(userId);
+    expect(stored.passGeneration).toBe(false);
+    expect(stored.watchedCompanies).toHaveLength(10);
+    expect(new Set(stored.watchedCompanies).size).toBe(10);
+    expect(outcomes.filter((outcome) => outcome.status === "added")).toHaveLength(10);
+    expect(outcomes.filter((outcome) => outcome.status === "full")).toHaveLength(2);
+  });
+
+  it("adds a company already on the list once, and removes one not on it as a change of nothing", async () => {
+    const userId = "watch-list-duplicate-user";
+    const [first, second] = await Promise.all([
+      store.addToWatchedCompanies(userId, "SC000001", 50),
+      store.addToWatchedCompanies(userId, "SC000001", 50),
+    ]);
+    expect([first.status, second.status].sort()).toEqual(["added", "unchanged"]);
+    expect((await store.removeFromWatchedCompanies(userId, "00000009")).status).toBe("unchanged");
+    expect((await store.getAccountSettings(userId)).watchedCompanies).toEqual(["SC000001"]);
+  });
+
+  it("loses neither a watch list change nor a pass generation change made at the same moment", async () => {
+    const userId = "watch-list-and-setting-user";
+    await store.updateAccountSettings(userId, { passGeneration: true });
+    await store.addToWatchedCompanies(userId, "00000001", 50);
+
+    await Promise.all([
+      store.updateAccountSettings(userId, { passGeneration: false }),
+      store.addToWatchedCompanies(userId, "00000002", 50),
+      store.removeFromWatchedCompanies(userId, "00000001"),
+      store.addToWatchedCompanies(userId, "00000003", 50),
+    ]);
+
+    const stored = await store.getAccountSettings(userId);
+    expect(stored.passGeneration).toBe(false);
+    expect([...stored.watchedCompanies].sort()).toEqual(["00000002", "00000003"]);
+  });
+
+  it("removes from a watch list stored whole before operations existed", async () => {
+    const userId = "watch-list-stored-whole-user";
+    await store.updateAccountSettings(userId, { passGeneration: true, watchedCompanies: ["00000001", "00000002", "00000003"] });
+
+    await Promise.all([store.removeFromWatchedCompanies(userId, "00000001"), store.removeFromWatchedCompanies(userId, "00000003")]);
+
+    expect((await store.getAccountSettings(userId)).watchedCompanies).toEqual(["00000002"]);
+  });
+});
+
+describe("System: the account's first source on the settings item with local dynalite", () => {
+  const first = { utmSource: "newsletter", landedAt: "2026-11-20T09:00:00.000Z" };
+  const later = { utmSource: "google", landedAt: "2026-12-01T10:00:00.000Z" };
+
+  it("has no first source until one is recorded, then keeps the first whatever is recorded after it", async () => {
+    const userId = "first-source-user";
+    expect(await store.getFirstAccountSource(userId)).toBeUndefined();
+
+    expect(await store.recordFirstAccountSource(userId, first)).toEqual(first);
+    expect(await store.recordFirstAccountSource(userId, later)).toEqual(first);
+    expect(await store.getFirstAccountSource(userId)).toEqual(first);
+  });
+
+  it("keeps one of many sources recorded at once", async () => {
+    const userId = "first-source-at-once-user";
+    const sources = Array.from({ length: 8 }, (_, index) => ({ utmSource: `source-${index}` }));
+    const stored = await Promise.all(sources.map((source) => store.recordFirstAccountSource(userId, source)));
+    expect(new Set(stored.map((source) => source.utmSource)).size).toBe(1);
+    expect(await store.getFirstAccountSource(userId)).toEqual(stored[0]);
+  });
+
+  it("leaves the settings and the bundles as they were", async () => {
+    const userId = "first-source-with-settings-user";
+    await store.updateAccountSettings(userId, { passGeneration: true });
+    await store.addToWatchedCompanies(userId, "00000001", 50);
+
+    await store.recordFirstAccountSource(userId, first);
+
+    expect(await store.getAccountSettings(userId)).toEqual({ passGeneration: true, watchedCompanies: ["00000001"] });
+    expect(await store.getUserBundles(userId)).toEqual([]);
+    await store.updateAccountSettings(userId, { passGeneration: false });
+    expect(await store.getFirstAccountSource(userId)).toEqual(first);
+  });
+});
+
+describe("System: the time the record of first sources began with local dynalite", () => {
+  it("keeps the time of the first call, whatever time a later call gives, and shows in no account's bundles or settings", async () => {
+    const calls = await Promise.all(
+      ["2026-11-22T10:00:00.000Z", "2026-11-22T10:00:01.000Z", "2026-11-22T10:00:02.000Z"].map((now) => store.beginFirstSourceRecord(now)),
+    );
+    expect(new Set(calls.map((call) => call.beganAt)).size).toBe(1);
+    expect(calls.filter((call) => call.begunNow)).toHaveLength(1);
+
+    const later = await store.beginFirstSourceRecord("2027-01-01T00:00:00.000Z");
+    expect(later).toEqual({ beganAt: calls[0].beganAt, begunNow: false });
+    expect(await store.getUserBundles("#all-accounts")).toEqual([]);
+    expect(await store.getFirstAccountSource("first-source-user")).not.toHaveProperty("firstSourceRecordBeganAt");
+  });
+});

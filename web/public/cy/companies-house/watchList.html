@@ -1,0 +1,116 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/watchList.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rhestr wylio cwmnïau - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/watchList.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/watchList.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/watchList.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/watchList.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="/submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="/lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-watch-list.company-watch-list-2f5d4e">Rhestr wylio cwmnïau</h1>
+      <p data-i18n="ch-watch-list.keep-the-companies-you-look-after-ffe960" class="subtitle">
+        Cadwch y cwmnïau rydych yn gofalu amdanynt mewn un rhestr, gyda’u dyddiadau ffeilio nesaf
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="ch-watch-list.status-production-this-reads-the-live-ea48cf" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae’r dudalen hon yn darllen cofrestr fyw Tŷ’r Cwmnïau.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <div
+        id="watchListView"
+        class="results-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich rhestr wylio"
+        data-sign-in-text="Mewngofnodwch i gadw rhestr o’r cwmnïau rydych yn gofalu amdanynt."
+        data-i18n-data-sign-in-title="ch-watch-list.sign-in-to-see-your-watch-98b5c4"
+        data-i18n-data-sign-in-text="ch-watch-list.sign-in-to-keep-a-list-cf9316"
+        data-i18n-data-sign-in-title="ch-watch-list.sign-in-to-see-your-watch-98b5c4"
+        data-i18n-data-sign-in-text="ch-watch-list.sign-in-to-keep-a-list-cf9316"
+      >
+        <h2 data-i18n="ch-watch-list.your-companies-15788e">Eich cwmnïau</h2>
+        <p id="watchListCount" class="hint"></p>
+        <p data-i18n="ch-watch-list.your-watch-list-is-empty-search-02cda9" id="watchListEmpty" class="hint" style="display: none">
+          Mae eich rhestr wylio yn wag. Chwiliwch am gwmni isod a’i ychwanegu.
+        </p>
+        <p data-i18n="ch-watch-list.your-watch-list-holds-50-companies-572ee9" id="watchListFull" class="hint" style="display: none">
+          Mae eich rhestr wylio yn dal 50 o gwmnïau, y nifer mwyaf y gall ei dal. Tynnwch un i ychwanegu un arall.
+        </p>
+        <div id="watchListTable"></div>
+      </div>
+
+      <div id="watchSearchView" class="form-container" data-requires-sign-in>
+        <h2 data-i18n="ch-watch-list.add-a-company-c99831">Ychwanegu cwmni</h2>
+        <form id="watchSearchForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-watch-list.company-name-or-number-cd75c6" for="companyQuery">Enw neu rif y cwmni</label>
+            <p data-i18n="ch-watch-list.a-company-name-or-the-8-8782ed" id="companyQuery-hint" class="hint">
+              Enw cwmni, neu rif y cwmni sydd ag 8 nod, er enghraifft 00000001.
+            </p>
+            <input
+              type="text"
+              id="companyQuery"
+              name="companyQuery"
+              required
+              value=""
+              aria-describedby="companyQuery-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-watch-list.search-49c266" type="submit" id="searchBtn" class="btn" data-activity-start="company-watch-list">
+            Chwilio
+          </button>
+        </form>
+      </div>
+
+      <div id="searchResultsContainer" class="results-container" style="display: none">
+        <h3 data-i18n="ch-watch-list.search-results-e978b0">Canlyniadau chwilio</h3>
+        <div id="searchResults"></div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="/lib/welsh-text.js"></script>
+    <script src="/widgets/page-chrome.js"></script>
+    <script src="/lib/stacked-table.js"></script>
+    <script src="/lib/env-loader.js"></script>
+    <script type="module" src="/submit.js"></script>
+    <script src="/developer-mode.js"></script>
+    <script src="/lib/request-cache.js"></script>
+    <script src="/lib/toml-parser.js"></script>
+    <script src="/widgets/entitlement-status.js"></script>
+    <script src="/widgets/auth-status.js"></script>
+    <script src="/lib/form-errors.js"></script>
+    <script src="/lib/companies-house-labels.js"></script>
+    <script src="/widgets/status-messages.js"></script>
+    <script src="/widgets/signed-out-panel.js"></script>
+    <script src="/widgets/pass-redeemer.js"></script>
+    <script src="/lib/watch-list-button.js"></script>
+    <script src="/companies-house/watchList.page.js"></script>
+  </body>
+</html>

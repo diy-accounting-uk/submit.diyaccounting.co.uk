@@ -43,6 +43,7 @@ import {
   submitVatReturn,
   getVatReceipt,
   listVatReceipts,
+  listAccountsReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   renderSmallCompanyAccounts,
@@ -97,9 +98,84 @@ const accountantsReportSchema = z
   .optional()
   .describe("Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report");
 
+const revisionSchema = z
+  .object({
+    originalDateOfApproval: z
+      .string()
+      .describe(
+        "The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them",
+      ),
+    nonCompliance: z
+      .string()
+      .describe(
+        'How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under "What was wrong with the original accounts"',
+      ),
+    amendments: z
+      .string()
+      .describe('The significant amendments the revised accounts make; Companies House prints it under "What the revised accounts change"'),
+    revisesReceipt: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it",
+      ),
+  })
+  .optional()
+  .describe(
+    "Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision",
+  );
+
+const directorsAdvancesSchema = z
+  .array(
+    z.object({
+      name: z.string().describe("The director, one of the directors the accounts name"),
+      terms: z.string().describe("The interest rate and the main conditions of the advance or credit"),
+      balanceAtStart: z.number().describe("Whole pounds the director owed at the start of the period"),
+      advanced: z.number().describe("Whole pounds advanced to the director in the period"),
+      repaid: z.number().describe("Whole pounds the director repaid in the period"),
+      balanceAtEnd: z.number().describe("Whole pounds owed at the end: balanceAtStart plus advanced less repaid"),
+    }),
+  )
+  .optional()
+  .describe(
+    "One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)",
+  );
+
+const documentLanguageSchema = z
+  .enum(["en", "cy"])
+  .optional()
+  .describe(
+    "cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English",
+  );
+
 const accountsFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
+  revision: revisionSchema,
+  directorsAdvances: directorsAdvancesSchema,
+  documentLanguage: documentLanguageSchema,
+  dormant: z
+    .boolean()
+    .optional()
+    .describe(
+      "True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below",
+    ),
+  dormantTradingStatus: z
+    .enum(["neverTraded", "noLongerTrading"])
+    .optional()
+    .describe(
+      "Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account",
+    ),
+  shareClass: z
+    .enum(["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"])
+    .optional()
+    .describe("Required when dormant: the class of the allotted shares, printed in the share capital note"),
+  nominalValue: z
+    .number()
+    .optional()
+    .describe(
+      "Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each",
+    ),
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -137,6 +213,24 @@ const smallCompanyBalanceSheetYearSchema = z.object({
     .describe("Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out"),
   accruals: z.number().optional().describe("Whole pounds of accruals and deferred income due within one year; 0 when left out"),
   bankLoansAfterOneYear: z.number().optional().describe("The part of creditorsAfterOneYear owed to a bank; 0 when left out"),
+  tradeDebtors: z
+    .number()
+    .optional()
+    .describe("Part of debtors; with otherDebtors, amountsOwedByDirectors and prepayments it adds up to debtors"),
+  otherDebtors: z.number().optional().describe("Part of debtors"),
+  amountsOwedByDirectors: z
+    .number()
+    .optional()
+    .describe(
+      "Part of debtors owed by directors; smallCompany.directorsAdvances then states each director's advance, closing at this total",
+    ),
+  prepayments: z.number().optional().describe("Part of debtors"),
+  provisionsForLiabilities: z.number().optional().describe("Whole pounds of provisions; 0 when left out"),
+  amountsOwedToDirectors: z.number().optional().describe("The part of creditorsAfterOneYear owed to directors; 0 when left out"),
+  amountsOwedToGroupUndertakings: z
+    .number()
+    .optional()
+    .describe("The part of creditorsAfterOneYear owed to group undertakings; 0 when left out"),
   calledUpShareCapital: z.number(),
   profitAndLossAccount: z.number(),
   capitalAndReserves: z.number(),
@@ -166,6 +260,8 @@ const fixedAssetClassSchema = z.object({
 const smallCompanyFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
+  revision: revisionSchema,
+  documentLanguage: documentLanguageSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -200,6 +296,9 @@ const smallCompanyFilingInputSchema = {
         .optional()
         .describe("Without a name, states that the company has no ultimate controlling party"),
       directors: z.array(z.string()).describe("Every director's name, at least one"),
+      directorsAdvances: directorsAdvancesSchema.describe(
+        "Inside smallCompany: one row per director who owed the company money in the period, each named as in directors; Companies House prints them in the note on advances and credits to directors (section 413)",
+      ),
       balanceSheet: z.object({
         currentYear: smallCompanyBalanceSheetYearSchema,
         priorYear: smallCompanyBalanceSheetYearSchema.optional(),
@@ -209,11 +308,12 @@ const smallCompanyFilingInputSchema = {
         priorYear: smallCompanyProfitAndLossYearSchema.optional(),
       }),
       fixedAssetNote: z
-        .record(
+        .partialRecord(
           z.enum(["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"]),
           fixedAssetClassSchema,
         )
-        .optional(),
+        .optional()
+        .describe("The classes the company holds, each by its name; a class it holds none of is left out"),
     })
     .describe("The figures and notes, as derive_small_company_accounts answers them plus principalActivity and accountingPolicies"),
 };
@@ -627,13 +727,31 @@ export const TOOLS = {
     },
     handler: listVatReceipts,
   },
+  list_accounts_receipts: {
+    title: "List accounts receipts",
+    annotations: READS,
+    description:
+      "The accounts filings of the signed-in account, newest first, over the deployed API. Call it before revising " +
+      "accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the " +
+      "company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a " +
+      "Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their " +
+      "submission number and Companies House's reasons, and have no receipt to revise. A receipt that cannot be read, " +
+      "or whose filed document does not read as accounts, answers problem with the reason and is not revisable. " +
+      "It lists the newest 25 accounts filings; when there are more it answers more true, and older filings are not " +
+      "listed. clientId narrows the list to one of the practice's clients.",
+    inputSchema: {
+      clientId: z.string().optional().describe("A practice client's id, to list that client's accounts filings"),
+    },
+    handler: listAccountsReceipts,
+  },
   render_micro_entity_accounts_sandbox: {
     title: "Render micro-entity accounts",
     annotations: READS,
     description:
       "The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the " +
       "deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a " +
-      "practice client's row, so this tool takes companyNumber only, not clientId.",
+      "practice client's row, so this tool takes companyNumber only, not clientId. With revision, it renders revised " +
+      "accounts that replace accounts already filed for the same period.",
     inputSchema: accountsFilingInputSchema,
     handler: renderMicroEntityAccounts,
   },
@@ -645,7 +763,8 @@ export const TOOLS = {
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
       "submission number. The company authentication code is not an argument: the user types it on the link " +
       "request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this " +
-      "call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client.",
+      "call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. " +
+      "With revision, it files revised accounts that replace accounts already filed for the same period.",
     inputSchema: {
       ...accountsFilingInputSchema,
       companyNumber: accountsFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),
@@ -663,7 +782,7 @@ export const TOOLS = {
       "The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, " +
       "with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML " +
       "Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, " +
-      "not clientId.",
+      "not clientId. With revision, it renders revised accounts that replace accounts already filed for the same period.",
     inputSchema: smallCompanyFilingInputSchema,
     handler: renderSmallCompanyAccounts,
   },
@@ -676,7 +795,8 @@ export const TOOLS = {
       "submission number. The company authentication code is not an argument: the user types it on the link " +
       "request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry " +
       "is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass " +
-      "one codesEntryId for every client. poll_submission with kind accounts reaches the outcome.",
+      "one codesEntryId for every client. poll_submission with kind accounts reaches the outcome. With revision, it files " +
+      "revised accounts that replace accounts already filed for the same period.",
     inputSchema: {
       ...smallCompanyFilingInputSchema,
       companyNumber: smallCompanyFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),

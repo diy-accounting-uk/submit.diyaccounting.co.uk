@@ -30,6 +30,7 @@ version = "1.1.0"
 [[bundles]]
 id = "default"
 name = "Default"
+nameCy = "Diofyn"
 enable = "never"
 allocation = "automatic"
 
@@ -43,6 +44,7 @@ allocation = "automatic"
 [[bundles]]
 id = "day-guest"
 name = "Day pass"
+nameCy = "Tocyn diwrnod"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -96,6 +98,7 @@ tokensGranted = 3
 [[bundles]]
 id = "week-guest"
 name = "Week pass"
+nameCy = "Tocyn wythnos"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -113,6 +116,7 @@ tokensGranted = 3
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
+nameCy = "Gwestai drwy wahoddiad"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -231,7 +235,7 @@ currency = "gbp"
 id = "resident-tax-agent"
 name = "Resident Tax Agent"
 passSummary = "do everything in Resident Pro and manage a practice's clients, with no limit on tokens"
-passSummaryCy = "gwneud popeth yn Resident Pro a rheoli cleientiaid practis, heb derfyn ar gredyd"
+passSummaryCy = "gwneud popeth yn Resident Pro a rheoli cleientiaid practis, heb derfyn ar gredyd (tokens)"
 description = "Manage a practice's clients and file for them, with everything in Resident Pro and no token limit. £199.99/yr / £19.99/mo, cancel anytime."
 includes = ["resident-pro"]
 levelName = "Tax agent"
@@ -263,6 +267,7 @@ currency = "gbp"
 [[bundles]]
 id = "resident-guest"
 name = "Resident Guest"
+nameCy = "Gwestai Resident"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -282,8 +287,9 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro-comp"
 name = "Resident Tax Agent (Complimentary)"
+nameCy = "Resident Tax Agent (am ddim)"
 passSummary = "do everything in Resident Pro and manage a practice's clients, with no limit on tokens"
-passSummaryCy = "gwneud popeth yn Resident Pro a rheoli cleientiaid practis, heb derfyn ar gredyd"
+passSummaryCy = "gwneud popeth yn Resident Pro a rheoli cleientiaid practis, heb derfyn ar gredyd (tokens)"
 includes = ["resident-tax-agent"]
 levelName = "Pro"
 enable = "on-pass"
@@ -291,6 +297,47 @@ hidden = true
 allocation = "on-email-match"
 listedInEnvironments = ["local", "test", "simulator", "proxy", "ci"]
 tokensGranted = "unlimited"
+
+# resident-vat-comp: Complimentary Resident VAT, granted only through a campaign pass, so a pass
+# never grants the on-subscription resident-vat bundle itself
+# Unlocked by: a custom campaign pass that the operator creates on operator/campaign-passes.html
+# Payment: None
+# Tokens: 100, refreshing monthly, as resident-vat; a campaign pass may set its own duration and tokens
+[[bundles]]
+id = "resident-vat-comp"
+name = "Resident VAT (Complimentary)"
+nameCy = "Resident VAT (am ddim)"
+passSummary = "submit VAT returns to HMRC and make pass links for other people"
+passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF a gwneud dolenni tocyn i bobl eraill"
+includes = ["resident-vat"]
+levelName = "Resident"
+enable = "on-pass"
+hidden = true
+allocation = "on-pass"
+timeout = "P1Y"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+
+# resident-ltd-comp: Complimentary Resident Ltd, granted only through a campaign pass, so a pass
+# never grants the on-subscription resident-ltd bundle itself
+# Unlocked by: a custom campaign pass that the operator creates on operator/campaign-passes.html
+# Payment: None for the bundle; a confirmation statement still carries its per-filing price
+# Tokens: 100, refreshing monthly, as resident-ltd; a campaign pass may set its own duration and tokens
+[[bundles]]
+id = "resident-ltd-comp"
+name = "Resident Ltd (Complimentary)"
+nameCy = "Resident Ltd (am ddim)"
+passSummary = "file accounts and confirmation statements to Companies House"
+passSummaryCy = "ffeilio cyfrifon a datganiadau cadarnhau i Dŷ'r Cwmnïau"
+includes = ["resident-ltd"]
+levelName = "Resident"
+enable = "on-pass"
+hidden = true
+allocation = "on-pass"
+listedInEnvironments = ["local", "test", "simulator", "proxy", "ci", "prod"]
+timeout = "P1Y"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
 
 # operator: The one-stop objectives dashboard, for the site operator only
 # Unlocked by: operator pass (email-restricted, admin-issued to the operator's own account)
@@ -300,6 +347,7 @@ tokensGranted = "unlimited"
 [[bundles]]
 id = "operator"
 name = "Operator"
+nameCy = "Gweithredwr"
 passSummary = "open the operator dashboard"
 passSummaryCy = "agor dangosfwrdd y gweithredwr"
 levelName = "Operator"
@@ -376,7 +424,7 @@ hmrcScopesRequired = ["read:vat"]
 [[activities]]
 id = "vat-liabilities"
 name = "VAT Liabilities (HMRC)"
-nameCy = "Dyledion TAW (CThEF)"
+nameCy = "Rhwymedigaethau talu TAW (CThEF)"
 display = "always-with-upsell"
 bundles = ["day-guest", "week-guest", "invited-guest", "resident-vat", "resident-guest"]
 tokenCost = 0
@@ -524,8 +572,38 @@ nameCy = "Chwilio am gwmni (Tŷ'r Cwmnïau)"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
-paths = ["companies-house/companySearch.html", "^/api/v1/companies-house/search$", "^/api/v1/companies-house/company/[^/]+$"]
+paths = ["companies-house/companySearch.html", "^/api/v1/companies-house/search$", "^/api/v1/companies-house/company/[^/]+$", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-history|registered-email-address/eligibility)$", "^/api/v1/public/company-deadlines$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
+
+[[activities]]
+id = "company-watch-list"
+name = "Company Watch List (Companies House)"
+nameCy = "Rhestr wylio cwmnïau (Tŷ'r Cwmnïau)"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["companies-house/watchList.html"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
+
+[[activities]]
+id = "due-list"
+name = "Due List (preview)"
+nameCy = "Rhestr dyddiadau dyledus (rhagolwg (preview))"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["^/api/v1/due-list.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "company-reports"
+name = "Company Reports (Companies House, preview)"
+nameCy = "Adroddiadau cwmni (Tŷ'r Cwmnïau, rhagolwg (preview))"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["^/api/v1/companies-house/company/[^/]+/reports/[^/]+$", "^/companies-house/company/[^/]+/reports(/[^/]+)?$"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "change-registered-office"
@@ -552,12 +630,12 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 [[activities]]
 id = "file-micro-entity-accounts"
 name = "File Micro-entity Accounts (Companies House)"
-nameCy = "Ffeilio cyfrifon microgwmni (Tŷ'r Cwmnïau)"
+nameCy = "Ffeilio cyfrifon micro-endid (Tŷ'r Cwmnïau)"
 display = "always-with-upsell"
 bundles = ["resident-ltd"]
 tokenCost = 1
 metered = true
-paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
+paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$", "^/api/v1/companies-house/company/[^/]+/last-accounts$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
@@ -568,7 +646,7 @@ display = "always-with-upsell"
 bundles = ["resident-ltd"]
 tokenCost = 1
 metered = true
-paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
+paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$", "^/api/v1/companies-house/company/[^/]+/last-accounts$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
@@ -594,6 +672,21 @@ display = "never"
 bundles = ["resident-ltd"]
 tokenCost = 0
 metered = false
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+# file-revised-accounts: accounts filed to replace accounts already filed for the same period. It
+# has no page of its own: a revision rides on the accounts request, and this entry decides whether a
+# revision is offered and accepted in an environment. Its two routes read the sets of accounts
+# Companies House already holds for the company, and one set's iXBRL document.
+# display: never - it is a choice on the pages that file accounts, not a home page entry
+[[activities]]
+id = "file-revised-accounts"
+name = "File Revised Accounts (Companies House, preview)"
+display = "never"
+bundles = ["resident-ltd"]
+tokenCost = 0
+metered = false
+paths = ["^/api/v1/companies-house/company/[^/]+/filed-accounts$", "^/api/v1/companies-house/company/[^/]+/filed-accounts/[^/]+/document$"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
@@ -624,11 +717,125 @@ default = true
 [[activities]]
 id = "file-psc-verification-statement"
 name = "File PSC Verification Statement (Companies House, sandbox)"
-nameCy = "Ffeilio datganiad gwirio PSC (Tŷ'r Cwmnïau, amgylchedd prawf)"
+nameCy = "Ffeilio datganiad gwirio PRhA (Tŷ'r Cwmnïau, amgylchedd prawf)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 metered = false
 paths = ["^/api/v1/companies-house/psc-verification-statement.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "cease-psc"
+name = "Tell Companies House a PSC has ceased (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau fod PRhA wedi peidio â bod yn un (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCCessation form type for this presenter.
+paths = ["companies-house/ceasePsc.html", "^/api/v1/companies-house/psc-cessation.*", "^/api/v1/companies-house/forms/psc-cessation/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "change-psc-details"
+name = "Tell Companies House a PSC's details have changed (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau fod manylion PRhA wedi newid (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCChangeDetails form type for this presenter.
+paths = ["companies-house/changePscDetails.html", "^/api/v1/companies-house/psc-change-details.*", "^/api/v1/companies-house/forms/psc-change-details/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "change-accounting-reference-date"
+name = "Change the accounting reference date (Companies House, sandbox)"
+nameCy = "Newid y dyddiad cyfeirnod cyfrifyddu (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the ChangeAccountingReferenceDate form type for this presenter.
+paths = ["companies-house/changeAccountingRefDate.html", "^/api/v1/companies-house/accounting-reference-date.*", "^/api/v1/companies-house/forms/accounting-reference-date/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "change-records-location"
+name = "Tell Companies House where the company keeps its records (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau ble mae'r cwmni'n cadw ei gofnodion (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the SailAddress and RecordChangeOfLocation form types for this presenter.
+paths = ["companies-house/recordsLocation.html", "^/api/v1/companies-house/sail-address.*", "^/api/v1/companies-house/record-location.*", "^/api/v1/companies-house/forms/sail-address/.*", "^/api/v1/companies-house/forms/record-location/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "change-company-name"
+name = "Change the company name (Companies House, sandbox)"
+nameCy = "Newid enw'r cwmni (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the ChangeOfName form type for this presenter.
+paths = ["companies-house/changeCompanyName.html", "^/api/v1/companies-house/change-of-name.*", "^/api/v1/companies-house/forms/change-of-name/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+# The name the Stripe product, and so the customer's checkout and receipt, carries.
+stripeProductName = "Change of company name"
+
+# prices
+# ======
+# Two one-off prices for one Stripe product, "Change of company name": the standard service and
+# the same-day service. key names each price for the checkout and for its env var,
+# STRIPE_[TEST_]PRICE_ID_CHANGE_COMPANY_NAME_STANDARD and ..._SAME_DAY. Each is worked out as
+# the confirmation statement's is: (Companies House fee + Stripe fee) x 1.2, where Stripe's
+# standard UK card rate is 1.5% + 20p charged on the price itself, so P = 1.2 x (fee + 20) / 0.982,
+# rounded up to the penny. Change an amount here when either fee changes.
+[[activities.prices]]
+key = "standard"
+interval = "submission"
+amount = 2469
+currency = "gbp"
+default = true
+# Companies House fee £20 (2000p): P = 1.2 x 2020 / 0.982 = 2468.43, so 2469 (£24.69).
+
+[[activities.prices]]
+key = "same-day"
+interval = "submission"
+amount = 10412
+currency = "gbp"
+# Companies House fee £85 (8500p): P = 1.2 x 8520 / 0.982 = 10411.41, so 10412 (£104.12).
+
+[[activities]]
+id = "psc-statements"
+name = "Give or withdraw a PSC statement (Companies House, sandbox)"
+nameCy = "Rhoi neu dynnu datganiad PRhA yn ôl (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCStatementNotification and PSCStatementWithdrawal form types for this presenter.
+paths = ["companies-house/pscStatements.html", "^/api/v1/companies-house/psc-statement-(notification|withdrawal).*", "^/api/v1/companies-house/forms/psc-statement-(notification|withdrawal)/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "notify-psc"
+name = "Tell Companies House about a new PSC (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau am PRhA newydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCNotification form type for this presenter.
+paths = ["companies-house/notifyPsc.html", "^/api/v1/companies-house/psc-notification.*", "^/api/v1/companies-house/forms/psc-notification/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "allot-shares"
+name = "Return an allotment of shares (Companies House, sandbox)"
+nameCy = "Dychwelyd cyfrannau a glustnodwyd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the ReturnofAllotmentShares form type for this presenter.
+paths = ["companies-house/allotShares.html", "^/api/v1/companies-house/allotment-of-shares.*", "^/api/v1/companies-house/forms/allotment-of-shares/.*"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
@@ -715,6 +922,48 @@ display = "on-entitlement"
 bundles = ["operator"]
 metered = false
 paths = ["operator/dashboard.html", "^/api/v1/operator/.*"]
+
+[[activities]]
+id = "operator-campaign-passes"
+name = "Campaign passes"
+nameCy = "Tocynnau ymgyrch"
+display = "on-entitlement"
+bundles = ["operator"]
+metered = false
+paths = ["operator/campaign-passes.html", "^/api/v1/pass/campaign$"]
+
+[[activities]]
+id = "remove-officer"
+name = "Remove a director or secretary (Companies House, sandbox)"
+nameCy = "Tynnu cyfarwyddwr neu ysgrifennydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the OfficerResignation form type for this presenter.
+paths = ["companies-house/removeOfficer.html", "^/api/v1/companies-house/officer-resignation.*", "^/api/v1/companies-house/forms/officer-resignation/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "appoint-officer"
+name = "Appoint a director or secretary (Companies House, sandbox)"
+nameCy = "Penodi cyfarwyddwr neu ysgrifennydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the OfficerAppointment form type for this presenter.
+paths = ["companies-house/appointOfficer.html", "^/api/v1/companies-house/officer-appointment.*", "^/api/v1/companies-house/forms/officer-appointment/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "change-officer"
+name = "Change a director's or secretary's details (Companies House, sandbox)"
+nameCy = "Newid manylion cyfarwyddwr neu ysgrifennydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the OfficerChangeDetails form type for this presenter.
+paths = ["companies-house/changeOfficer.html", "^/api/v1/companies-house/officer-change.*", "^/api/v1/companies-house/forms/officer-change/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 # Passes:
 # Example invite pass record in DynamoDB:

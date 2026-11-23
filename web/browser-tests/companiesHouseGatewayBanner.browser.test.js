@@ -16,9 +16,12 @@ const GATEWAY_PAGES = ["fileMicroEntityAccounts.html", "fileSmallCompanyAccounts
 
 function bannerOf(page) {
   const html = fs.readFileSync(path.join(process.cwd(), "web/public/companies-house", page), "utf-8");
-  const match = html.match(/<p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway">[\s\S]*?<\/p>/);
+  // The accounts forms ship the banner hidden and their page script reveals it; the banner is read as shown.
+  const match = html.match(
+    /<p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway"( hidden)?>[\s\S]*?<\/p>/,
+  );
   if (!match) throw new Error(`${page}: no XML gateway banner`);
-  return match[0];
+  return match[0].replace(/ hidden>/, ">");
 }
 
 async function openBanner(page, pageName, env) {

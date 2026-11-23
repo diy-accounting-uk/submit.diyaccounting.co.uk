@@ -127,7 +127,7 @@ describe("credentialFieldMaskInitScript", () => {
 describe("provisionSceneCompany", () => {
   test("keeps the canned company number and creates nothing on the simulator lane", async () => {
     const company = await provisionSceneCompany({ DIY_SUBMIT_ENV_FILEPATH: ".env.simulator" });
-    expect(company.companyNumber).toBe("06846849");
+    expect(company.companyNumber).toBe("00000004");
     expect(company.authCode).toBeUndefined();
     await expect(company.release()).resolves.toBeUndefined();
   });

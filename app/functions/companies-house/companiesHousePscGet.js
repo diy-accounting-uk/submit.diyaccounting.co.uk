@@ -13,11 +13,12 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
-  companiesHouseHttpGet,
-  httpResponseFromCompaniesHouseResponse,
-  isValidCompanyNumber,
-  http403ForbiddenFromBundleEnforcement,
-} from "../../services/companiesHouseApi.js";
+  LOOKUP_CALLS,
+  lookupFailureResponse,
+  lookupLimitResponse,
+  lookupRefusalSeconds,
+} from "../../services/companiesHouseLookupLimit.js";
+import { companiesHouseHttpGet, isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -40,9 +41,26 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { companyNumber: normalised };
 }
 
+// The register's own id for a PSC: the last segment of its self link
+// (/company/{number}/persons-with-significant-control/{kind}/{id}).
+function registerPscId(item) {
+  const self = typeof item.links?.self === "string" ? item.links.self : "";
+  return self.split("/").filter(Boolean).pop() || undefined;
+}
+
 function mapPsc(item) {
   return {
+    pscId: registerPscId(item),
     name: item.name,
+    // An individual's name in the parts a filing about the person names them by.
+    nameElements: item.name_elements
+      ? {
+          title: item.name_elements.title,
+          forename: item.name_elements.forename,
+          middleName: item.name_elements.middle_name,
+          surname: item.name_elements.surname,
+        }
+      : undefined,
     kind: item.kind,
     naturesOfControl: item.natures_of_control,
     notifiedOn: item.notified_on,
@@ -83,11 +101,14 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  const refusalSeconds = await lookupRefusalSeconds(userSub, LOOKUP_CALLS.psc);
+  if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
+
   const chResponse = await companiesHouseHttpGet(`/company/${companyNumber}/persons-with-significant-control`);
 
   if (!chResponse.ok) {
     logger.warn({ message: "Companies House PSC lookup failed", companyNumber, status: chResponse.status });
-    return httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders);
+    return lookupFailureResponse(request, chResponse, responseHeaders);
   }
 
   await publishActivityEvent({

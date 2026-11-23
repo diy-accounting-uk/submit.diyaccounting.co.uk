@@ -133,6 +133,36 @@ describe("System: dynamoDbReceiptStore with local dynalite", () => {
     expect(receipts.length).toBe(0);
   });
 
+  it("lists and reads a customer's accounts receipts for that customer only", async () => {
+    const firstCustomer = "user-accounts-first";
+    const secondCustomer = "user-accounts-second";
+    const firstReceiptId = "2026-02-01T10:00:00.000Z-000001";
+    const secondReceiptId = "2026-02-02T10:00:00.000Z-000002";
+    await store.putReceipt(firstCustomer, firstReceiptId, {
+      statusCode: "ACCEPT",
+      submissionNumber: "000001",
+      companyNumber: "00000001",
+      kind: "companies-house-accounts",
+      filedDocument: "<html/>",
+    });
+    await store.putReceipt(secondCustomer, secondReceiptId, {
+      statusCode: "ACCEPT",
+      submissionNumber: "000002",
+      companyNumber: "00000002",
+      kind: "companies-house-accounts",
+      filedDocument: "<html/>",
+    });
+
+    const firstList = await store.listUserReceipts(firstCustomer);
+    const secondList = await store.listUserReceipts(secondCustomer);
+
+    expect(firstList.map((row) => [row.name, row.kind])).toEqual([[`${firstReceiptId}.json`, "companies-house-accounts"]]);
+    expect(secondList.map((row) => [row.name, row.kind])).toEqual([[`${secondReceiptId}.json`, "companies-house-accounts"]]);
+    expect(await store.getReceipt(secondCustomer, firstReceiptId)).toBeNull();
+    expect(await store.getReceipt(firstCustomer, secondReceiptId)).toBeNull();
+    expect((await store.getReceipt(firstCustomer, firstReceiptId)).companyNumber).toBe("00000001");
+  });
+
   it("should store multiple receipts and list them in correct order", async () => {
     const userSub = "user-multi-receipts";
     const receipts = [

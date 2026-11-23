@@ -23,9 +23,12 @@ import {
   placeholderCriterion,
   sameBalanceSheetDateCriterion,
   substanceCriteria,
+  revisionDateCriterion,
+  revisionFactsCriterion,
   STATEMENTS,
   taxNoteBracketsCriterion,
 } from "../../../scripts/lib/companiesHouseReviewCriteria.js";
+import { exampleMatches, kindOf, notCarriedReason } from "../../../scripts/companies-house-review.mjs";
 import { WELSH_ACCOUNTS_TEXT } from "../../../app/services/accountsLanguage.js";
 import { parseFindings, readReviewFolder } from "../../../scripts/lib/companiesHouseReviewFolder.js";
 import {
@@ -47,6 +50,10 @@ const KIND_OF = {
   "micro-entity-accounts-dormant": "dormant",
   "small-company-accounts-full": "small-full",
   "small-company-accounts-filleted": "small-filleted",
+  "micro-entity-accounts-revised": "micro-revised",
+  "micro-entity-accounts-dormant-revised": "dormant-revised",
+  "small-company-accounts-full-revised": "small-full-revised",
+  "small-company-accounts-filleted-revised": "small-filleted-revised",
 };
 
 const text = (markup) =>
@@ -232,6 +239,102 @@ const STATEMENT_ENGLISH = {
     "These accounts have been prepared and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
 };
 
+describe("revised cases", () => {
+  it("tells each revised case from its original", () => {
+    for (const c of cases) expect(kindOf(c.input), c.name).toBe(KIND_OF[c.name]);
+  });
+
+  it("reconciles the revision's texts, its date and the original's date with the document", () => {
+    const c = caseNamed("small-company-accounts-filleted-revised");
+    const fields = Object.fromEntries(reconcile(c.input, c.ours).rows.map((r) => [r.field, r]));
+    expect(fields["revision.nonCompliance"]).toMatchObject({ result: "match", tagged: c.input.revision.nonCompliance });
+    expect(fields["revision.amendments"]).toMatchObject({ result: "match", tagged: c.input.revision.amendments });
+    expect(fields["revision date (director.dateApproved)"]).toMatchObject({ result: "match", tagged: "20 October 2026" });
+    expect(fields["revision.originalDateOfApproval"]).toMatchObject({ result: "match" });
+    const otherDate = { ...c.input, revision: { ...c.input.revision, originalDateOfApproval: "2026-08-01" } };
+    expect(reconcile(otherDate, c.ours).rows.find((r) => r.field === "revision.originalDateOfApproval").result).toBe("MISMATCH");
+  });
+
+  it("an original case reconciles no revision field", () => {
+    const c = caseNamed("small-company-accounts-full");
+    expect(reconcile(c.input, c.ours).rows.filter((r) => r.field.startsWith("revision"))).toEqual([]);
+  });
+
+  it("takes a revised document as the example of a revised case only, and an original one for an original case", () => {
+    const micro = (revised) =>
+      `<ix:nonNumeric name="bus:AccountingStandardsDimension">bus:Micro-entities</ix:nonNumeric>` +
+      `<ix:nonNumeric name="bus:AccountsTypeDimension">bus:FilletedAccounts</ix:nonNumeric>` +
+      `<ix:nonNumeric name="bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" contextRef="c">${revised}</ix:nonNumeric>`;
+    expect(exampleMatches("micro-revised", micro("true"))).toBe(true);
+    expect(exampleMatches("micro-revised", micro("false"))).toBe(false);
+    expect(exampleMatches("micro", micro("false"))).toBe(true);
+    expect(exampleMatches("micro", micro("true"))).toBe(false);
+  });
+
+  it("judges the dormant example's going concern and controlling party facts not carried for dormant cases only", () => {
+    const dormant = caseNamed("micro-entity-accounts-dormant-revised").input;
+    const smallFull = caseNamed("small-company-accounts-full-revised").input;
+    for (const concept of [
+      "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse",
+      "ControllingPartyUltimateControllingPartyTruefalse",
+    ]) {
+      expect(notCarriedReason(concept, dormant), concept).toMatch(/dormant accounts do not need/);
+      expect(notCarriedReason(concept, caseNamed("micro-entity-accounts-dormant").input), concept).toMatch(/dormant accounts do not need/);
+      expect(notCarriedReason(concept, smallFull), concept).toBeFalsy();
+    }
+  });
+
+  it("judges the software's false flags and the deferred tax policy not carried for small company cases only", () => {
+    const smallFull = caseNamed("small-company-accounts-full-revised").input;
+    const smallFilleted = caseNamed("small-company-accounts-filleted").input;
+    const micro = caseNamed("micro-entity-accounts-revised").input;
+    for (const concept of [
+      "CompanyHasPublishedCommitmentToUKEffectiveStewardshipCodeTruefalse",
+      "DefinedBenefitPlanMulti-employerPlanTruefalse",
+      "InvestmentEntityRequiredToApplyExceptionFromConsolidationTruefalse",
+      "DeferredTaxPolicy",
+    ]) {
+      expect(notCarriedReason(concept, smallFull), concept).toBeTruthy();
+      expect(notCarriedReason(concept, smallFilleted), concept).toBeTruthy();
+      expect(notCarriedReason(concept, micro), concept).toBeFalsy();
+    }
+  });
+
+  it("judges the prior period's dates not carried for every case, and a fact outside the reasons still missing", () => {
+    for (const c of cases) {
+      expect(notCarriedReason("StartDateForPriorPeriod", c.input), c.name).toMatch(/comparative contexts/);
+      expect(notCarriedReason("EndDateForPriorPeriod", c.input), c.name).toMatch(/comparative contexts/);
+      expect(notCarriedReason("DescriptionOfSomethingOnlyTheExampleHas", c.input), c.name).toBeFalsy();
+    }
+  });
+
+  it("takes a small filleted example that makes the section 444(5A) statement in words", () => {
+    const filleted = (statement) =>
+      `<ix:nonNumeric name="bus:AccountingStandardsDimension">bus:SmallEntities</ix:nonNumeric>` +
+      `<ix:nonNumeric name="bus:AccountsTypeDimension">bus:FilletedAccounts</ix:nonNumeric>` +
+      `<ix:nonFraction name="core:TotalInventories" contextRef="c">0</ix:nonFraction>` +
+      `<ix:nonNumeric name="bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" contextRef="c">true</ix:nonNumeric>` +
+      `<p>${statement}</p>`;
+    expect(
+      exampleMatches(
+        "small-filleted-revised",
+        filleted("The directors have elected not to deliver to the registrar a copy of the company's Profit and Loss Account."),
+      ),
+    ).toBe(true);
+    expect(exampleMatches("small-filleted-revised", filleted("Delivered in accordance with section 444(5A)."))).toBe(true);
+    expect(exampleMatches("small-filleted-revised", filleted("A balance sheet with no statement about the profit and loss account."))).toBe(
+      false,
+    );
+  });
+
+  it("judges the example's revision facts not carried for an original case and missing for a revised one", () => {
+    const original = caseNamed("micro-entity-accounts").input;
+    const revised = caseNamed("micro-entity-accounts-revised").input;
+    expect(notCarriedReason("DateApprovalRevisionReport", original)).toBe("amended filing");
+    expect(notCarriedReason("DateApprovalRevisionReport", revised)).toBeFalsy();
+  });
+});
+
 describe("statement phrase rules", () => {
   it.each(Object.entries(STATEMENT_ENGLISH))("%s: the builder's Welsh holds every Welsh phrase the review checks", (key, english) => {
     const welsh = WELSH_ACCOUNTS_TEXT[english].replace(/[‘’]/g, "'").toLowerCase();
@@ -249,7 +352,40 @@ describe("substance criteria", () => {
   it.each(cases.map((c) => [c.name, c]))("passes every check for %s", (_name, c) => {
     const rows = substanceCriteria({ kind: c.kind, input: c.input, ours: c.ours, today: TODAY });
     expect(rows.filter((row) => row.result !== "pass").map((row) => `${row.criterion}: ${row.evidence}`)).toEqual([]);
-    expect(rows.length).toBe(c.kind === "dormant" ? 7 : 6);
+    expect(rows.length).toBe(6 + (c.kind.startsWith("dormant") ? 1 : 0) + (c.input.revision ? 2 : 0));
+  });
+
+  it("fails a revised case whose revision fact is missing or only hidden, and names it", () => {
+    const c = caseNamed("micro-entity-accounts-revised");
+    expect(revisionFactsCriterion(c.ours).result).toBe("pass");
+    const hiddenAmendments = {
+      ...c.ours,
+      facts: c.ours.facts.map((fact) =>
+        fact.concept === "StatementSignificantAmendmentsToPreviouslyFiledReport" ? { ...fact, hidden: true, visible: false } : fact,
+      ),
+    };
+    const missingDate = { ...c.ours, facts: c.ours.facts.filter((fact) => fact.concept !== "DateApprovalRevisionReport") };
+    expect(revisionFactsCriterion(hiddenAmendments)).toMatchObject({
+      result: "fail",
+      evidence: expect.stringContaining("StatementSignificantAmendments"),
+    });
+    expect(revisionFactsCriterion(missingDate)).toMatchObject({
+      result: "fail",
+      evidence: expect.stringContaining("DateApprovalRevisionReport"),
+    });
+  });
+
+  it("fails a revision approved before the original accounts", () => {
+    const c = caseNamed("small-company-accounts-full-revised");
+    expect(revisionDateCriterion(c.input).result).toBe("pass");
+    const early = { ...c.input, director: { ...c.input.director, dateApproved: "2026-09-01" } };
+    expect(revisionDateCriterion(early)).toMatchObject({ result: "fail", evidence: expect.stringContaining("1 September 2026") });
+  });
+
+  it("an original case gets no revision rows", () => {
+    const c = caseNamed("micro-entity-accounts");
+    const criteria = substanceCriteria({ kind: c.kind, input: c.input, ours: c.ours, today: TODAY }).map((found) => found.criterion);
+    expect(criteria).not.toContain("A revised case shows the six revision facts as visible text");
   });
 
   it("passes the tax note's charge printed without brackets and fails it in brackets", () => {
@@ -412,8 +548,9 @@ describe("substance criteria", () => {
 
   it("passes a company that has one case only", () => {
     const dormant = caseNamed("micro-entity-accounts-dormant");
-    expect(sameBalanceSheetDateCriterion(cases, dormant).result).toBe("pass");
-    expect(sameBalanceSheetDateCriterion(cases, dormant).evidence).toContain("only case");
+    const originals = cases.filter((candidate) => !candidate.input.revision);
+    expect(sameBalanceSheetDateCriterion(originals, dormant).result).toBe("pass");
+    expect(sameBalanceSheetDateCriterion(originals, dormant).evidence).toContain("only case");
   });
 });
 

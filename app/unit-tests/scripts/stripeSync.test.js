@@ -30,7 +30,7 @@ describe("buildStripeProductsFromCatalog", () => {
     const pricesOf = (bundleId) => products.filter((p) => p.bundleId === bundleId);
     const confirmationStatementPrices = pricesOf("file-confirmation-statement");
 
-    expect(products).toHaveLength(9);
+    expect(products).toHaveLength(11);
 
     const expected = {
       "resident-vat": ["Resident VAT", 999, 99],
@@ -56,6 +56,26 @@ describe("buildStripeProductsFromCatalog", () => {
       interval: "submission",
       multiPrice: false,
     });
+  });
+
+  test("gives the change of company name one product with its standard and same-day one-off prices, each named by its key", () => {
+    const products = buildStripeProductsFromCatalog(catalog, { bundleId: "change-company-name" });
+    expect(products).toEqual([
+      expect.objectContaining({
+        name: "Change of company name",
+        priceAmount: 2469,
+        interval: "submission",
+        key: "standard",
+        multiPrice: true,
+      }),
+      expect.objectContaining({
+        name: "Change of company name",
+        priceAmount: 10412,
+        interval: "submission",
+        key: "same-day",
+        multiPrice: true,
+      }),
+    ]);
   });
 
   test("skips a bundle without Stripe price fields", () => {
@@ -481,6 +501,14 @@ describe("computeEnvUpdates", () => {
       STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1",
     });
     expect(updates[".env.prod"]).toEqual({ STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT: "price_test_1" });
+  });
+
+  test("a price named by a key with a hyphen gets the key in its row name, the hyphen read as an underscore", () => {
+    const updates = computeEnvUpdates("test", [{ bundleId: "change-company-name", priceId: "price_test_9", interval: "same-day" }]);
+    expect(updates[".env.ci"]).toEqual({
+      STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY: "price_test_9",
+      STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY: "price_test_9",
+    });
   });
 
   test("a live-mode price lands only in .env.prod's live-named row", () => {

@@ -11,6 +11,9 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import { registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -58,6 +61,7 @@ async function openPreviewView(page, pagePath, { balance, accountsAnswer = null,
     "lib/services/companies-house-filing-service.js",
     "application/javascript",
   );
+  await serveFromDisk(page, "**/lib/services/json-answer.js", "lib/services/json-answer.js", "application/javascript");
   await page.route("**/lib/services/api-client.js", async (route) => {
     await route.fulfill({
       status: 200,
@@ -84,10 +88,13 @@ async function openPreviewView(page, pagePath, { balance, accountsAnswer = null,
   });
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await delay(400);
-  await page.evaluate(() => {
-    company = { companyNumber: "00000001", companyName: "TEST LTD" };
-    showView("previewView");
-  });
+  await page.evaluate(
+    ({ companyNumber, companyName }) => {
+      company = { companyNumber, companyName };
+      showView("previewView");
+    },
+    { companyNumber: JOINERY.number, companyName: JOINERY.name },
+  );
 }
 
 async function screenshot(page, name) {

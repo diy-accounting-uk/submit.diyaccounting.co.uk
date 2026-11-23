@@ -57,3 +57,30 @@ h2 + form > .form-section:first-child {
 .input-prefix--amount {
   max-width: 16rem;
 }
+
+/* Each director's advance after the first starts below a rule, so the rows read as separate notes. */
+.directors-advance-row__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--step-0);
+}
+
+.directors-advance-row__remove {
+  margin-top: var(--space-3);
+}
+
+.directors-advance-row + .directors-advance-row {
+  border-top: 1px solid var(--c-rule);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+}
+
+/* A row's Remove button and the buttons that add a row keep a gap from the fields next to them. */
+.form-section > .remove-row {
+  margin-bottom: var(--space-3);
+}
+
+#addAllotmentBtn,
+#addCurrencyBtn,
+.capital-table > .btn-small:not(.remove-row) {
+  margin-bottom: var(--space-4);
+}

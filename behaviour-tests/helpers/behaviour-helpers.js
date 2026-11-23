@@ -271,6 +271,7 @@ export async function runLocalHttpSimulator(runSimulator, port) {
       process.env.HMRC_SANDBOX_BASE_URI = result.baseUrl;
       process.env.HMRC_AGENT_AUTHORISATION_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_BASE_URI = result.baseUrl;
+      process.env.COMPANIES_HOUSE_DOCUMENT_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_IDENTITY_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_FILING_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_XMLGW_URI = `${result.baseUrl}/v1-0/xmlgw/Gateway`;

@@ -179,7 +179,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "12345678",
+          "text": "00000007",
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
@@ -255,7 +255,7 @@
         {
           "action": "fill",
           "target": "#directorDateApproved",
-          "value": "2026-09-15",
+          "value": "{{daysAgo:7}}",
           "note": "A book holds no approval date; the step has no caption so the guide keeps the published video's frames."
         },
         {
@@ -523,7 +523,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Companies House authentication code.",
@@ -534,7 +534,7 @@
         {
           "action": "type",
           "target": "#gatewayUserId",
-          "text": "dummy-gateway-user",
+          "text": "584203917461",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Government Gateway user ID.",

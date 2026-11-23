@@ -47,7 +47,6 @@ function cancelRequest() {
   sessionStorage.removeItem("pendingObligationsRequest");
   window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   showSearchCriteria();
@@ -57,18 +56,13 @@ function cancelRequest() {
 }
 
 function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-    const testDataLink = document.getElementById("testDataLink");
-    if (testDataLink) {
-      testDataLink.classList.add("visible");
-    }
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
 
   const devSection = document.getElementById("developerSection");
 
@@ -117,7 +111,7 @@ async function retrieveObligations(nino, filters, testScenario, runFraudPreventi
     ...govClientHeaders,
   };
 
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   if (hmrcAccount) {
     requestHeaders["hmrcAccount"] = hmrcAccount;
   }
@@ -185,7 +179,7 @@ async function continueObligationsRetrieval() {
     console.error("Error retrieving obligations:", error);
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showFailure({ status: 401 }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
+      showFailure({ status: 401, service: "hmrc" }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
     } else {
       showFailure(error, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
     }
@@ -193,7 +187,6 @@ async function continueObligationsRetrieval() {
     sessionStorage.removeItem("pendingObligationsRequest");
     window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Obligations retrieval failed, cleared session storage to prevent retry loop");
   } finally {
@@ -231,7 +224,7 @@ async function handleFormSubmission(event) {
       const state = generateRandomState();
       const requestData = { nino, ...filters, testScenario, runFraudPreventionHeaderValidation };
 
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const currentActivity = `${location.pathname}`;
 
       sessionStorage.setItem("oauth_state", state);
@@ -274,7 +267,7 @@ async function handleFormSubmission(event) {
       console.error("Error retrieving obligations:", error);
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showFailure({ status: 401 }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
       } else {
         showFailure(error, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
       }

@@ -1,0 +1,121 @@
+<!-- cy/pass.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from pass.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Defnyddio tocyn - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi i chi, a’i ychwanegu at eich cyfrif."
+      data-i18n-content="pass.description-82197e"
+    />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/pass.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/pass.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/pass.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/pass.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://submit.diyaccounting.co.uk/cy/pass.html" />
+    <meta property="og:title" content="Mae gennych docyn ar gyfer DIY Accounting Submit" data-i18n-content="pass.og-title-611ccc" />
+    <meta
+      property="og:description"
+      content="Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi i chi, a’i ychwanegu at eich cyfrif."
+      data-i18n-content="pass.og-description-82197e"
+    />
+    <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-pass-link.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="You have a pass for DIY Accounting Submit" />
+    <meta name="twitter:description" content="Open this link to see what your pass gives you, and add it to your account." />
+    <meta name="twitter:image" content="https://submit.diyaccounting.co.uk/images/social/og-pass-link.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+    <script src="../lib/session-beacon.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="pass.redeem-a-pass-80ed7a">Defnyddio tocyn</h1>
+      <p data-i18n="pass.add-the-bundle-that-your-pass-ffdd2a" class="subtitle">Ychwanegwch y Bundle y mae eich tocyn yn ei roi i chi</p>
+    </header>
+
+    <main id="mainContent">
+      <section id="passCard" class="pass-card" aria-labelledby="passHeading">
+        <h2 data-i18n="pass.checking-your-pass-785894" id="passHeading" tabindex="-1">Yn gwirio eich tocyn</h2>
+        <div id="passBundle" class="pass-bundle" hidden></div>
+        <p id="passMessage" class="pass-message" role="status"></p>
+        <p id="passError" class="pass-error" role="alert" hidden></p>
+        <form id="passForm" class="pass-entry" action="pass.html" method="get" hidden>
+          <label data-i18n="pass.pass-ebdf8c" for="passInput">Tocyn</label>
+          <p data-i18n="pass.four-words-with-hyphens-between-them-ec6631" id="passInput-hint" class="hint">
+            Pedwar gair gyda chysylltnodau rhyngddynt, er enghraifft word-word-word-word.
+          </p>
+          <input type="text" id="passInput" name="pass" autocomplete="off" spellcheck="false" aria-describedby="passInput-hint" required />
+          <button data-i18n="pass.redeem-pass-831ca4" type="submit" id="passEnterBtn" class="btn">Defnyddio’r tocyn</button>
+        </form>
+        <div id="passActions" class="pass-actions">
+          <button data-i18n="pass.redeem-pass-831ca4" type="button" id="passRedeemBtn" class="btn" data-activity-start="bundle" hidden>
+            Defnyddio’r tocyn
+          </button>
+          <a data-i18n="pass.go-to-your-activities-bd71e5" id="passHomeLink" class="btn" href="index.html" hidden
+            >Ewch i’ch gweithgareddau</a
+          >
+          <a data-i18n="pass.see-your-bundles-e75eba" id="passBundlesLink" class="pass-link" href="bundles.html" hidden
+            >Gweld eich Bundles</a
+          >
+        </div>
+        <p id="passAfterAction" class="pass-after-action hint" hidden></p>
+      </section>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../lib/welsh-text.js"></script>
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/bundle-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+
+    <script src="../lib/post-login-redirect.js"></script>
+    <script src="../lib/pass-card.js"></script>
+    <script src="../pass.page.js"></script>
+  </body>
+</html>

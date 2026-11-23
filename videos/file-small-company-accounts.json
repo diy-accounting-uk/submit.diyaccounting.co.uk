@@ -178,7 +178,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "06846849",
+          "text": "00000004",
           "clear": true,
           "caption": "Type the company number.",
           "instruction": "Enter your company number.",
@@ -221,7 +221,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{yearsAgo:1}}",
+          "value": "{{register:00000004:periodStart}}",
           "caption": "Set the accounting period.",
           "instruction": "Enter the first and last day of the accounting period as Period start and Period end.",
           "headline": "Set the accounting period",
@@ -230,7 +230,7 @@
         {
           "action": "fill",
           "target": "#periodEnd",
-          "value": "{{daysAgo:1}}"
+          "value": "{{register:00000004:periodEnd}}"
         },
         {
           "action": "fill",
@@ -334,12 +334,13 @@
           "dwellMs": 500
         },
         {
-          "action": "click",
+          "action": "point",
           "target": "#includeComparatives",
-          "caption": "Add last year's figures for comparison.",
-          "instruction": "Tick Include prior-year comparatives to add last year's figures.",
-          "headline": "Add last year",
-          "keyWord": "last"
+          "caption": "These are not the first accounts, so last year's figures go beside this year's.",
+          "instruction": "Check that Include prior-year comparatives is ticked: accounts that are not the company's first show last year's figures.",
+          "headline": "Last year beside this year",
+          "keyWord": "last",
+          "dwellMs": 500
         },
         {
           "action": "fill",
@@ -438,7 +439,7 @@
         {
           "action": "type",
           "target": "#directors",
-          "text": "Joanna Hale",
+          "text": "Eleanor Bramwell",
           "caption": "Name the directors.",
           "instruction": "Enter the directors who held office during the period, one name on each line.",
           "headline": "Name the directors",
@@ -447,7 +448,7 @@
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Joanna Hale",
+          "text": "Eleanor Bramwell",
           "caption": "Name the director approving the accounts.",
           "instruction": "Enter the name of the director approving the accounts and the date of approval.",
           "headline": "Name the approving director",
@@ -525,7 +526,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Companies House authentication code.",

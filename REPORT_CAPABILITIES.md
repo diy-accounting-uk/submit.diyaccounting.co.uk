@@ -24,12 +24,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Account and engagement APIs](#account-and-engagement-apis-site)
     - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest: use when a signed-in user clicks the homepage join button to register feedback interest.
     - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon: use when the site needs to record a visit or logout as an activity event, filtered for crawlers.
+    - [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in) Record the source of an account at its sign-in: use when an account that landed from a tagged link must have its source recorded, whether or not it ever requests a bundle.
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
     - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
     - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
     - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
     - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
     - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages: use when a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
+    - [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site: use when a change to i18n/cy.toml, a Welsh page or a page script has deployed, and every Welsh page must be shown to read in Welsh, signed in.
     - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML: use when faqs.toml, the guide's journeys or a video walkthrough changed, or a crawler or assistant must read the help page or the guide without JavaScript.
     - [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages: use when a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
   - [Server and API plumbing](#server-and-api-plumbing-site)
@@ -43,6 +45,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners: use when adding or changing a cross-sell page for a sibling product or an affiliate.
     - [SITE-12](#site-12-map-the-site-structure) Map the site structure: use when adding or moving a page and its place in the header, nav or footer needs checking.
     - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+    - [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules: use when working out a filing or payment date that no service states: a Company Tax Return and its payment from an accounting period, a VAT return or payment from its period end, the next VAT period, the standard Income Tax updates, the Self Assessment payments or a director or PSC change.
     - [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs: use when web/marketing/marketing.toml changes, a brand stylesheet or icon changes, or the social images, logos, brand shots or listing-pack screenshots of marketing.diyaccounting.co.uk need to be made again.
     - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week: use when checking whether a gov.uk page still states a tax fact the site prints, or whether a source file is close to the 30 day limit.
     - [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month: use when checking whether a vendor on a comparison page still shows the price that page quotes.
@@ -116,12 +119,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register: use when a user types a company name or number and needs matching results to pick from.
     - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile: use when a filing journey has a company number and needs the company's registered details.
     - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in: use when a director with no account wants to know when a company's accounts and confirmation statement are next due.
+    - [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in: use when a page with no sign-in builds a company's book from what Companies House holds: its profile, its current officers and its last filed accounts.
+    - [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies: use when a signed-in user wants the companies they look after in one list, with each one's next accounts and confirmation statement dates.
   - [Registered office and email](#registered-office-and-email-ch)
     - [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address: use when a company needs to change its registered office address on the public register.
     - [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address: use when a company needs to register or change its registered email address with Companies House.
   - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch)
-    - [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review: use when a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
-    - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
+    - [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review: use when a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
+    - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway, or revised accounts that replace accounts it has filed.
+    - [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House: use when a page offers to revise accounts already filed at Companies House, from the receipt of the accepted filing.
+    - [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts: use when an accounts form has looked up a company and its prior-year column is to start from the accounts the register already holds.
     - [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending: use when a Companies House filing under our presenter is still pending when the reader leaves the page, and its final accept or reject must reach the filings list and the receipt email.
   - [Company Tax Return filing](#company-tax-return-filing-ch)
     - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC: use when a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
@@ -133,6 +140,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Test, validation and provisioning](#test-validation-and-provisioning-ch)
     - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies: use when a test needs a real-shaped Companies House test company without a live entity.
     - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts: use when the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
+    - [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions: use when a Companies House form filed through the shared filing route needs its test submissions validated, or filed on the Companies House test service for the XML team.
     - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it: use when an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
     - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does: use when accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
     - [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would: use when a companies-house-review run has finished, before any accounts submission or retest email cites it, or the operator asks whether the accounts are ready for Companies House.
@@ -154,6 +162,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
     - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
     - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review: use when an operator must see every pass held for review, whoever issued it, and release one.
+    - [BILL-59](#bill-59-create-a-custom-campaign-pass) Create a custom campaign pass: use when an operator must create a pass for a campaign with its own bundles, durations, tokens, redemption window and redemption limits, or see the campaign passes and their redemptions.
     - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
     - [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page: use when a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
@@ -646,9 +655,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in) Record the source of an account at its sign-in · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules · [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -685,12 +694,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group account-and-engagement-apis-site -->
 - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest
 - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon
+- [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in) Record the source of an account at its sign-in
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
 - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
 - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
+- [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site
 - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML
 - [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 <!-- /generated:group account-and-engagement-apis-site -->
@@ -715,6 +726,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** session beacon, visitor classification, crawler, ai agent, activity event, analytics event, logout beacon
 - **Related:** SITE-01, SITE-03
 
+#### SITE-37 Record the source of an account at its sign-in
+
+- **Use when:** an account that landed from a tagged link must have its source recorded, whether or not it ever requests a bundle.
+- **Does:** submit.js posts the stored attribution.landing on the first page after a sign-in, keepalive, until the route answers with success. accountAcquisitionPost.js cleans the fields, drops the click ids, stores the account's first landing on its settings item and publishes one account-acquisition activity event for it. The answer's firstRecord says whether the post is that first record, and submit.js fires the GA4 sign_up event only then. An account the user pool created before the record of first sources began stores no landing and is never a first record.
+- **Run:** `POST /api/v1/account/acquisition`
+- **Entry:** `app/functions/account/accountAcquisitionPost.js:ingestHandler`; `web/public/submit.js:recordAccountAcquisitionAfterSignIn`
+- **Files:** app/functions/account/accountAcquisitionPost.js, app/unit-tests/functions/accountAcquisitionPost.test.js, web/public/submit.js, web/public/auth/loginWithCognitoCallback.page.js, web/browser-tests/loginCallbackAcquisition.browser.test.js, app/lib/acquisition.js, app/services/cognitoAccountCreation.js, app/unit-tests/services/cognitoAccountCreation.test.js
+- **Keywords:** acquisition, landing, utm, attribution, sign_up, first sign-in, account source, activity event
+- **Related:** SITE-04
+
 #### SITE-05 Submit support tickets
 
 - **Use when:** a visitor needs to send a support request from the site.
@@ -728,7 +749,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-24 Change an account setting
 
 - **Use when:** a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
-- **Does:** accountSettingsPut.js validates the named settings against app/lib/accountSettings.js. It merges them into one settings item in the user's own partition of the bundles table. getUserBundles leaves that item out of the bundle list. bundleGet.js returns the settings with the bundles. settings.page.js and viewer-settings.js call the route.
+- **Does:** accountSettingsPut.js validates the named settings against app/lib/accountSettings.js. It writes each named setting on its own path of one settings item in the user's own partition of the bundles table, and applies a watchList add or remove of one company number to the stored list in one conditional write, for an account that holds the company-watch-list activity. getUserBundles leaves that item out of the bundle list. bundleGet.js returns the settings with the bundles. settings.page.js and viewer-settings.js call the route.
 - **Run:** `PUT /api/v1/account/settings`
 - **Entry:** `app/functions/account/accountSettingsPut.js:ingestHandler`; `web/public/lib/services/viewer-settings.js:updateAccountSetting`
 - **Files:** app/functions/account/accountSettingsPut.js, app/lib/accountSettings.js, app/data/dynamoDbBundleRepository.js, app/functions/account/bundleGet.js, web/public/settings.html, web/public/settings.page.js, web/public/lib/services/viewer-settings.js, app/unit-tests/functions/accountSettings.test.js, app/unit-tests/lib/accountSettings.test.js, web/browser-tests/settings.browser.test.js
@@ -758,7 +779,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-29 Render the customer emails to files for a visual check
 
 - **Use when:** a customer email template changed and a person or a browser test must see each message as a reader does.
-- **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
+- **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical, digital and email-restricted operator pass, each in English and Welsh, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
 - **Run:** `node scripts/render-customer-emails.mjs`; `npx playwright test --project=browser-tests web/browser-tests/customerEmail.browser.test.js`
 - **Entry:** `scripts/render-customer-emails.mjs:renderCustomerEmails`
 - **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
@@ -768,12 +789,22 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-30 Build the Welsh pages
 
 - **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
-- **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
+- **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block (and, on the home page, the list of the site's Welsh services), and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
 - **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
 - **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
 - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/lib/welsh-text.js, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
 - **Keywords:** welsh, cymraeg, cy, i18n, translation, hreflang, language switch, catalogue, stale translation
 - **Related:** SITE-14
+
+#### SITE-35 Prove the Welsh pages read in Welsh on a running site
+
+- **Use when:** a change to i18n/cy.toml, a Welsh page or a page script has deployed, and every Welsh page must be shown to read in Welsh, signed in.
+- **Does:** welsh-proof.mjs signs in (the Cognito test user from cognito-native-test-credentials.json, or the mock identity provider on a local simulator), chooses Welsh with the site's own language switch, then opens every page under web/public/cy/ that --only selects. It reads each page for lang="cy" on the html element and for English sentences left in the Welsh text. It prints one line per finding and a summary line, and exits 1 on any finding.
+- **Run:** `HMRC_ACCOUNT=synthetic node scripts/welsh-proof.mjs --base https://submit.diyaccounting.co.uk --only both`, between `npm run test:enableCognitoNative -- prod` and `npm run test:disableCognitoNative`; on the simulator, `node scripts/welsh-proof.mjs --base http://localhost:3000/ --only both` beside `TEST_SERVER_HTTP_PORT=3000 npm run start:simulator`
+- **Entry:** `scripts/welsh-proof.mjs:main`; `scripts/welsh-proof.mjs:englishSentences`
+- **Files:** scripts/welsh-proof.mjs, app/unit-tests/scripts/welshProof.test.js
+- **Keywords:** welsh, cymraeg, welsh proof, lang cy, english left in welsh, language switch, cy pages, signed-in welsh
+- **Related:** SITE-30, DEV-49
 
 #### SITE-31 Write the FAQ and the guide into the page HTML
 
@@ -862,6 +893,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners
 - [SITE-12](#site-12-map-the-site-structure) Map the site structure
 - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
+- [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules
 - [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs
 - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week
 - [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
@@ -906,6 +938,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, scripts/rates-fact-ids.mjs, scripts/build-rates-page.mjs, web/public/mtd-calendar.html, web/public/rates.html, web/public/lib/rates/, web/public/lib/diya-gl/tax/, web/unit-tests/mtdCalendar.test.js, web/unit-tests/ratesPage.test.js, web/unit-tests/ratesCompute.test.js, web/unit-tests/taxSources.test.js
 - **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts, rates and allowances, calculator, corporation tax, national insurance, income tax, mileage, cis
 - **Related:** SITE-10, SITE-12
+
+#### SITE-36 Compute due dates from sourced rules
+
+- **Use when:** working out a filing or payment date that no service states: a Company Tax Return and its payment from an accounting period, a VAT return or payment from its period end, the next VAT period, the standard Income Tax updates, the Self Assessment payments or a director or PSC change.
+- **Does:** due-rules.js is a plain ES module that the browser and app/ both import. Each function answers rows of ISO dates in UK days, each with the fact id of its rule and source "computed"; every fact id has a source file under .claude/skills/tax-sources/sources with its gov.uk quote. A period of account longer than 12 months splits into accounting periods of 12 months and the rest. A month added to the last day of a month lands on the last day of the later month, as HMRC counts.
+- **Run:** `npx vitest run web/unit-tests/dueRules.test.js`
+- **Entry:** `web/public/lib/due/due-rules.js:ct600Rows`; `web/public/lib/due/due-rules.js:ctPaymentRows`; `web/public/lib/due/due-rules.js:vatReturnDue`; `web/public/lib/due/due-rules.js:vatPaymentDue`; `web/public/lib/due/due-rules.js:expectedNextVatPeriod`; `web/public/lib/due/due-rules.js:itsaStandardRows`; `web/public/lib/due/due-rules.js:saPaymentRows`; `web/public/lib/due/due-rules.js:changeDue`
+- **Files:** web/public/lib/due/due-rules.js, web/public/lib/due/due-row-types.js, web/unit-tests/dueRules.test.js, .claude/skills/tax-sources/sources/ct-accounting-period-12-months.json, .claude/skills/tax-sources/sources/sa-payments-on-account.json, .claude/skills/tax-sources/sources/sa-balancing-payment.json, .claude/skills/tax-sources/sources/ch-officer-changes-14-days.json, .claude/skills/tax-sources/sources/ch-psc-changes-14-days.json, .claude/skills/tax-sources/sources/vat-payment-same-deadline.json
+- **Keywords:** due dates, deadline rules, ct600 due date, corporation tax payment date, vat return due date, vat payment date, payments on account, balancing payment, officer change 14 days, psc change, period of account split
+- **Related:** SITE-22
 
 #### SITE-25 Build the marketing site data, social images, brand shots and listing packs
 
@@ -953,10 +995,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-13 Warm backend routes via prefetch scripts
 
 - **Use when:** a page must pre-warm a Lambda or route before its own script needs the real response.
-- **Does:** Each prefetch-*-head.js script issues one HEAD request from the page's head element. It targets the catalog, HMRC receipt, HMRC receipt name, HMRC token or mock auth URL route. It does not fetch or cache the response body.
+- **Does:** Each prefetch-*-head.js script issues one HEAD request from the page's head element. It targets the HMRC receipt, HMRC receipt name, HMRC token or mock auth URL route. It does not fetch or cache the response body.
 - **Run:** no command; see Does and Entry
-- **Entry:** `web/public/prefetch/prefetch-catalog-head.js`
-- **Files:** web/public/prefetch/prefetch-catalog-head.js, web/public/prefetch/prefetch-hmrc-receipt-head.js, web/public/prefetch/prefetch-hmrc-receipt-name-head.js, web/public/prefetch/prefetch-hmrc-token-head.js, web/public/prefetch/prefetch-mock-authurl-head.js
+- **Entry:** `web/public/prefetch/prefetch-hmrc-receipt-head.js`
+- **Files:** web/public/prefetch/prefetch-hmrc-receipt-head.js, web/public/prefetch/prefetch-hmrc-receipt-name-head.js, web/public/prefetch/prefetch-hmrc-token-head.js, web/public/prefetch/prefetch-mock-authurl-head.js
 - **Keywords:** prefetch, head request, warm route, cold start, lambda warming
 - **Related:** SITE-09
 
@@ -1096,7 +1138,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** hmrcVatReturnGet.js's ingestHandler calls getVatReturn to read back a filed HMRC VAT return. viewVatReturn.html displays the result, including a status-clear case.
 - **Run:** `GET /api/v1/hmrc/vat/return`
 - **Entry:** `app/functions/hmrc/hmrcVatReturnGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatReturnGet.js:getVatReturn`
-- **Files:** app/functions/hmrc/hmrcVatReturnGet.js, app/unit-tests/functions/hmrcVatReturnGet.test.js, behaviour-tests/getVatReturn.behaviour.test.js, web/public/hmrc/vat/viewVatReturn.html, web/browser-tests/view-vat-return.browser.test.js, web/browser-tests/viewVatReturn.statusClear.browser.test.js, web/public/prefetch/prefetch-hmrc-vat-return-get-head.js
+- **Files:** app/functions/hmrc/hmrcVatReturnGet.js, app/unit-tests/functions/hmrcVatReturnGet.test.js, behaviour-tests/getVatReturn.behaviour.test.js, web/public/hmrc/vat/viewVatReturn.html, web/browser-tests/view-vat-return.browser.test.js, web/browser-tests/viewVatReturn.statusClear.browser.test.js
 - **Keywords:** vat return, view vat return, period key, hmrc vat api, status clear, get vat return
 - **Related:** HMRC-01, HMRC-03
 
@@ -1568,12 +1610,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area CH -->
 - [OAuth and identity](#oauth-and-identity-ch): [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token · [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration) Verify the Companies House OAuth app configuration
-- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
+- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in · [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
-- [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
+- [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House · [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
-- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
+- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
 
 ### OAuth and identity (CH)
@@ -1609,6 +1651,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register
 - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
 - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
+- [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in
+- [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 <!-- /generated:group company-search-and-profile-ch -->
 
 #### CH-03 Search the Companies House register
@@ -1641,6 +1685,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** company filing deadlines, accounts due, confirmation statement due, public lookup, no sign-in, companies house, cache, rate limit
 - **Related:** CH-03, CH-04
 
+#### CH-22 Read a company's register for a prefilled package with no sign-in
+
+- **Use when:** a page with no sign-in builds a company's book from what Companies House holds: its profile, its current officers and its last filed accounts.
+- **Does:** companiesHousePublicRegisterGet.js answers GET /api/v1/public/company-register?number= with no authorizer. It answers profile (company name and number, date of creation, registered office, next and last accounts periods, last accounts type), officers (each current officer's name, role and appointment date) and filedAccounts (the last filed set's iXBRL text, a pdf mark, or a none mark). The profile and officers fields carry the names buildBookFromRegister takes. It reads the profile, the officers and, through fetchLastFiledAccounts, the accounts filing history and the newest set's document. It answers JSON errors for an unknown company, a document over the response limit and a 429 from Companies House. It sets Cache-Control on a found answer so CloudFront keeps it for an hour.
+- **Run:** `curl 'https://submit.diyaccounting.co.uk/api/v1/public/company-register?number=00000001'`
+- **Entry:** `app/functions/companies-house/companiesHousePublicRegisterGet.js:ingestHandler`
+- **Files:** app/functions/companies-house/companiesHousePublicRegisterGet.js, app/unit-tests/functions/companiesHousePublicRegisterGet.test.js, app/services/companiesHouseFiledAccounts.js, app/system-tests/companiesHouseSimulator.system.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
+- **Keywords:** company register, filed accounts, ixbrl, officers, public lookup, no sign-in, prefilled package, companies house, cache, rate limit
+- **Related:** CH-20
+
+#### CH-23 Keep a watch list of companies
+
+- **Use when:** a signed-in user wants the companies they look after in one list, with each one's next accounts and confirmation statement dates.
+- **Does:** watchList.page.js lists the company numbers of the account's watchedCompanies setting (app/lib/accountSettings.js, at most 50, written by PUT /api/v1/account/settings). It reads each company's profile once per visit, one at a time, and shows its name, status, next accounts and confirmation statement due dates and the time it was read. A 429 shows the lookup's rate-limit message and stops the reads. Each company links to its drill-down address and can be removed. The page searches Companies House and adds a result with watch-list-button.js, which also puts "Add to watch list" on the company lookup's results and profile.
+- **Run:** open `/companies-house/watchList.html` (activity `company-watch-list`, default bundle)
+- **Entry:** `web/public/companies-house/watchList.page.js`; `web/public/lib/watch-list-button.js:button`
+- **Files:** web/public/companies-house/watchList.html, web/public/companies-house/watchList.page.js, web/public/lib/watch-list-button.js, web/public/lib/services/watch-list-service.js, app/lib/accountSettings.js, web/browser-tests/watchList.browser.test.js
+- **Keywords:** watch list, watched companies, company watch list, next accounts due, confirmation statement due, account setting
+- **Related:** CH-03, SITE-24
+
 ### Registered office and email (CH)
 
 <!-- generated:group registered-office-and-email-ch -->
@@ -1671,30 +1735,52 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Micro-entity accounts filing (CH)
 
 <!-- generated:group micro-entity-accounts-filing-ch -->
-- [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review
+- [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review
 - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
+- [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House
+- [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts
 - [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 <!-- /generated:group micro-entity-accounts-filing-ch -->
 
-#### CH-07 Render micro-entity accounts for review
+#### CH-07 Render micro-entity and small company accounts for review
 
 - **Use when:** a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
-- **Does:** companiesHouseAccountsRenderPost.js renders FRS 105 micro-entity iXBRL from the entered balance sheet, using buildMicroEntityAccounts. It never calls the Companies House XML Gateway.
+- **Does:** companiesHouseAccountsRenderPost.js renders the iXBRL of the entered accounts with buildAccountsIxbrl: FRS 105 micro-entity accounts with buildMicroEntityAccounts, or FRS 102 section 1A small company accounts with buildSmallCompanyAccounts. A request with a revision renders the revised accounts with their revision page. It never calls the Companies House XML Gateway.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsRenderPost.js:ingestHandler`
 - **Files:** app/functions/companies-house/companiesHouseAccountsRenderPost.js, app/unit-tests/functions/companiesHouseAccountsRenderPost.test.js
-- **Keywords:** companies house, micro-entity accounts, FRS 105, ixbrl, render, balance sheet
+- **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, FRS 105, FRS 102, ixbrl, render, balance sheet
 - **Related:** CH-08, CH-13
 
 #### CH-08 File micro-entity accounts to Companies House
 
-- **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
-- **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book.
+- **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway, or revised accounts that replace accounts it has filed.
+- **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book. A request carrying a revision section (read by readRevision in jointFiling.js: the original approval date, what was wrong with the original accounts and what the revised accounts change) files revised accounts under section 454 of the Companies Act 2006, which replace accounts already filed for the period; refuseRevisionWhenNotEnabled refuses it where the file-revised-accounts activity is not listed and the request is not a sandbox preview. A revision that names no receipt is checked against the register where the filing goes to the live gateway (refuseRevisionWithNothingToReplace in revisedAccountsRegister.js): the company must be on it with accounts made up to the period's end.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsPost.js:ingestHandler`; `app/functions/companies-house/companiesHouseAccountsGet.js:ingestHandler`
-- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js
-- **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
+- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/services/revisedAccountsRegister.js, web/public/lib/accounts-revision-register.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js
+- **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, amended accounts, section 454, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
+
+#### CH-24 File revised accounts to Companies House
+
+- **Use when:** a page offers to revise accounts already filed at Companies House, from the receipt of the accepted filing.
+- **Does:** accounts-revision.js reads an accounts receipt, refuses one that is not accounts, not accepted or part of a joint filing, and maps the filed document with the books bundle's mapIxbrlAccounts for either regime. It answers the regime, the original approval date, the period, the figures, the signer, the dormant facts, the balance sheet lines and the notes the mapping does not read (the accounting policies, the controlling party, the debtors, the advances to directors and the intangible assets note), and keeps the filed document and the mapped accounts; the form opens with each note filled as filed and names any note it cannot carry. It shows the page's revision section and checks it: both revision texts, and a new approval date on or after the original. fileMicroEntityAccounts.html and fileSmallCompanyAccounts.html file the revision with the accounts request's revision field; a filleted copy holds no profit and loss account, so the small company form asks for those lines.
+- **Run:** `companies-house/fileMicroEntityAccounts.html?amend=<receipt name>` or `companies-house/fileSmallCompanyAccounts.html?amend=<receipt name>`, opened from "Amend" on companies-house/filings.html
+- **Entry:** `web/public/lib/accounts-revision.js:readRevisionSource`; `web/public/lib/accounts-revision.js:checkRevision`
+- **Files:** web/public/lib/accounts-revision.js, web/public/companies-house/fileMicroEntityAccounts.page.js, web/public/companies-house/fileSmallCompanyAccounts.page.js, web/public/companies-house/filings.page.js, web/public/lib/filing-record.js, web/browser-tests/fileMicroEntityAccounts.amend.browser.test.js
+- **Keywords:** revised accounts, amend accounts, revision, section 454, 28 days, original approval date, revision texts, file-revised-accounts
+- **Related:** CH-07, CH-08
+
+#### CH-25 Fill the accounts forms' prior year from the last filed accounts
+
+- **Use when:** an accounts form has looked up a company and its prior-year column is to start from the accounts the register already holds.
+- **Does:** the last-accounts route finds the register's newest set of accounts, fetches its iXBRL document through the Document API and maps it with diya-gl's mapIxbrlAccounts for either regime. prior-year-fill.js puts each figure into the open form's prior-year field for that line where the field is empty, says how many it placed and which lines it left empty, names the other accounts form when the last accounts were of the other type, and says why nothing was filled for accounts filed on paper, with no iXBRL document, over the size limit, unreadable, or for a company with none. A prior year whose capital and reserves differ from share capital plus the profit and loss account is named with the line to correct. It never runs on a revision and never overwrites a figure already entered.
+- **Run:** look up a company on `companies-house/fileMicroEntityAccounts.html` or `companies-house/fileSmallCompanyAccounts.html`; `GET /api/v1/companies-house/company/{companyNumber}/last-accounts`
+- **Entry:** `web/public/lib/prior-year-fill.js:fillPriorYear`; `app/services/companiesHouseLastAccounts.js:readLastAccounts`; `app/functions/companies-house/companiesHouseLastAccountsGet.js:ingestHandler`
+- **Files:** web/public/lib/prior-year-fill.js, app/services/companiesHouseLastAccounts.js, app/functions/companies-house/companiesHouseLastAccountsGet.js, web/unit-tests/prior-year-fill.test.js, app/unit-tests/services/companiesHouseLastAccounts.test.js, app/unit-tests/fixtures/filed-accounts/, web/browser-tests/accountsPriorYearFill.browser.test.js
+- **Keywords:** prior year, comparatives, last filed accounts, last year's figures, Document API, iXBRL, mapIxbrlAccounts, prefill accounts
+- **Related:** CH-07, CH-08, CH-24
 
 #### CH-21 Poll Companies House for filings the reader left pending
 
@@ -1776,6 +1862,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group test-validation-and-provisioning-ch -->
 - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies
 - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts
+- [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions
 - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it
 - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does
 - [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would
@@ -1802,6 +1889,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** frc taxonomy, frs 102, frs 105, ixbrl, concepts fixture, xbrl validator, companies house, taxonomy schema
 - **Related:** CH-08, CH-07
 
+#### CH-26 Build, validate and file the Companies House forms' test submissions
+
+- **Use when:** a Companies House form filed through the shared filing route needs its test submissions validated, or filed on the Companies House test service for the XML team.
+- **Does:** companies-house-test-submissions.mjs holds the test cases of each form kind. For each case it builds the body with the form's own request check and builder, wraps it in the GovTalk envelope with the test flag and a unique submission number, and validates the body against the form's schema and the whole envelope against the envelope, FormSubmission and form schemas. With --file it files each case through Submit's own filing route and polls the answer through Submit's own poll; with --measure-lag it then reads the company's filing history through Submit's lookup every 30 seconds and writes the minutes until the filing shows. It writes one JSON line a case to the path given, which must be outside the repository.
+- **Run:** `node scripts/companies-house-test-submissions.mjs --out /tmp/test-submissions.jsonl`; `npx dotenv -e .env.ci -- node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path> [--measure-lag]`
+- **Entry:** `scripts/companies-house-test-submissions.mjs:testSubmissionCases`; `scripts/companies-house-test-submissions.mjs:buildTestSubmission`; `scripts/companies-house-test-submissions.mjs:validateTestSubmission`
+- **Files:** scripts/companies-house-test-submissions.mjs, app/unit-tests/scripts/companiesHouseTestSubmissions.test.js
+- **Keywords:** companies house, xml gateway, test submission, test flag, GatewayTest, schema validation, form filing, register lag
+- **Related:** CH-12, CH-13
+
 #### CH-16 Check an accounts iXBRL document as a reader sees it
 
 - **Use when:** an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
@@ -1815,7 +1912,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-17 Review accounts filings as the Companies House XML team does
 
 - **Use when:** accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
-- **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
+- **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip, a revised document for each of the four revised cases. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
 - **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator] [--fixture <cases.json>] [--case <name>]...`
 - **Entry:** `.claude/skills/companies-house-review/SKILL.md`; `scripts/companies-house-review.mjs:main`
 - **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/lib/companiesHouseReviewReconcile.js, scripts/lib/companiesHouseReviewCriteria.js, scripts/lib/companiesHouseReviewPage.js, scripts/fixtures/companies-house-test-service-cases.json
@@ -1846,7 +1943,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-59](#bill-59-create-a-custom-campaign-pass) Create a custom campaign pass · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies
@@ -1927,6 +2024,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state
 - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
 - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review
+- [BILL-59](#bill-59-create-a-custom-campaign-pass) Create a custom campaign pass
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
 - [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
@@ -2022,6 +2120,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** pass, held for review, held pointer, operator, release, issuedBy-index
 - **Related:** BILL-45, BILL-10, DATA-26
 
+#### BILL-59 Create a custom campaign pass
+
+- **Use when:** an operator must create a pass for a campaign with its own bundles, durations, tokens, redemption window and redemption limits, or see the campaign passes and their redemptions.
+- **Does:** web/public/operator/campaign-passes.html is the operator-only page, behind the operator bundle. Its form posts a custom-campaign pass to passAdminPost.js with grants (bundle, duration, tokens, refresh interval), usesPerAccount, maxUses and the window. It shows the new pass's link and QR code, and lists the campaign passes from passCampaignGet.js. passCampaignGet.js Queries the issuedBy-index under the key "campaign", where passService writes a pointer for each campaign pass. passPost.js counts each account's redemptions of every pass and refuses past usesPerAccount with account_limit_reached. grantBundle takes each grant's duration and tokens over the catalogue's. resident-vat-comp grants resident-vat through includes.
+- **Run:** `GET /api/v1/pass/campaign`; `POST /api/v1/pass/admin` with `grants`
+- **Entry:** `web/public/operator/campaign-passes.html:`; `app/functions/account/passCampaignGet.js:ingestHandler`
+- **Files:** web/public/operator/campaign-passes.html, web/public/operator/campaign-passes.page.js, web/public/lib/pass-card.js, app/functions/account/passCampaignGet.js, app/unit-tests/functions/passCampaignGet.test.js, app/functions/account/passAdminPost.js, app/functions/account/passPost.js, app/functions/account/bundlePost.js, app/services/passService.js, app/data/dynamoDbPassRepository.js, web/browser-tests/operatorCampaignPasses.browser.test.js
+- **Keywords:** campaign pass, custom pass, operator, usesPerAccount, grants, duration override, token override, resident-vat-comp, issuedBy-index
+- **Related:** BILL-07, BILL-10, BILL-50, SITE-19
+
 #### BILL-10 Redeem a pass
 
 - **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
@@ -2035,7 +2143,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-58 Pass link landing page
 
 - **Use when:** a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
-- **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" reads `/api/v1/bundle`, stops when the account holds the bundle, and otherwise posts to `/api/v1/pass`. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
+- **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" posts to `/api/v1/pass`, and the server decides: an account that holds the bundle on terms at least as good gets the already_held state from the answer, and a pass that would give better terms replaces the held bundle. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
 - **Run:** open `/pass.html?pass=<code>`; `npx playwright test --project=browser-tests web/browser-tests/pass.browser.test.js`
 - **Entry:** `web/public/pass.page.js`
 - **Files:** web/public/pass.html, web/public/pass.page.js, web/public/widgets/pass-redeemer.js, web/public/auth/signed-out.page.js, web/public/css/pass-page.css, web/browser-tests/pass.browser.test.js
@@ -2703,11 +2811,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-132 Enable DynamoDB PITR on deploy
 
 - **Use when:** a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
-- **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time.
+- **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time. With Wait "TableActive" it instead waits until a new table without PITR is ACTIVE, so its TTL, index and stream calls do not reach a CREATING table.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/infra/ensurePitr.mjs:onEvent`; `app/functions/infra/ensurePitr.mjs:isComplete`
 - **Files:** app/functions/infra/ensurePitr.mjs, app/unit-tests/functions/ensurePitr.test.js
-- **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups
+- **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups, table active, creating
 - **Related:** OPS-113
 
 #### OPS-133 Serve the root-domain holding page
@@ -5466,11 +5574,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-07 File VAT returns and accounts via API
 
 - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
-- **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
+- **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. The four accounts tools take an optional revision, which files revised accounts that replace accounts already filed, and list_accounts_receipts answers the receipt name a revision names. They also send documentLanguage (Welsh accounts) and directorsAdvances, and the micro-entity tools the dormant fields. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
 - **Run:** no command; see Does and Entry
 - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcGrantFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
 - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
-- **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
+- **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, list_accounts_receipts, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant, dormant accounts, welsh accounts, directors advances
 - **Related:** MCP-05, MCP-04, MCP-08, MCP-21
 
 #### MCP-08 Manage practice clients and HMRC agent authorisation
@@ -7077,6 +7185,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - 14-day window: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - 202 accepted: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - 202 poll: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- 28 days: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - 401 retry: [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
 - 403: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
 - 403 bundle message: [SITE-09](#site-09-track-and-poll-async-api-requests)
@@ -7098,7 +7207,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account link: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - account linking: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
+- account setting: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - account settings: [SITE-24](#site-24-change-an-account-setting)
+- account source: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - accounts data product: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
@@ -7111,6 +7222,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - acm certificate: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
 - acm certificate expiry: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
 - acm fixture: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
+- acquisition: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - actionlint gap: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - actions logs: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - actions role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
@@ -7119,7 +7231,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activity: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - activity bus: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - activity charges: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
-- activity event: [SITE-04](#site-04-track-visits-via-session-beacon), [DATA-01](#data-01-publish-activity-events-to-the-bus)
+- activity event: [SITE-04](#site-04-track-visits-via-session-beacon), [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - activity events: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - activity list: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - activity_events: [DATA-11](#data-11-run-glue-data-quality-checks)
@@ -7188,6 +7300,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - allowed-commit-identities: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - allowlist: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - alternate link: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
+- amend accounts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- amended accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - amount owed: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - analytics event: [SITE-04](#site-04-track-visits-via-session-beacon)
 - analytics lake: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
@@ -7238,7 +7352,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - athena query: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - athena view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - athena workgroup: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
-- attribution: [DATA-68](#data-68-sql-view-campaign-results-by-place)
+- attribution: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in), [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - audit trail: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - auth logic: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - auth platform brand: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -7287,9 +7401,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - backup plan: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - backup salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
-- balance sheet: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- balance sheet: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - balance transaction: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - balance transactions: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
+- balancing payment: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - bankcode: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
@@ -7425,7 +7540,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - business review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - business source adjustable summary: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - business views: [DATA-10](#data-10-create-or-replace-athena-business-views)
-- cache: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
+- cache: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - cache scope: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - cached formula results: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - cached status: [BILL-13](#bill-13-check-a-clients-authorisation-status)
@@ -7437,6 +7552,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - campaign bidding: [DATA-32](#data-32-sync-the-google-ads-account)
+- campaign pass: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - campaign threads: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
@@ -7620,7 +7736,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - compaction alternative: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - companies house deadline: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
@@ -7636,8 +7752,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company number: [CH-04](#ch-04-fetch-a-company-profile)
 - company package: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
+- company register: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- company watch list: [CH-23](#ch-23-keep-a-watch-list-of-companies)
+- comparatives: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - compare prices: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - compare-prices-check.yml: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - comparison page: [SITE-34](#site-34-check-the-compared-prices-each-month)
@@ -7663,7 +7782,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - configuration set: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - confirmation statement: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
-- confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
+- confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - connector directory: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
@@ -7702,6 +7821,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
 - corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [SS-04](#ss-04-apply-book-edits-and-derivations)
+- corporation tax payment date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - correlation headers: [SITE-07](#site-07-format-http-responses-and-errors)
@@ -7736,6 +7856,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - create_in_progress: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - createinvitation: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access)
 - createpass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass)
+- creating: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - creation order: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - creationtime: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - credential leak: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
@@ -7762,6 +7883,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
+- ct600 due date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - cumulative update: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
@@ -7772,6 +7894,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - currency conversion: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
+- custom pass: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -7784,7 +7907,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - cutover: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - cy: [SITE-30](#site-30-build-the-welsh-pages)
-- cymraeg: [SITE-30](#site-30-build-the-welsh-pages)
+- cy pages: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- cymraeg: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - daily cap: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - daily check: [OPS-48](#ops-48-verify-backup-health-daily)
@@ -7821,6 +7945,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dead letter queue: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - dead script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - deadline read: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
+- deadline rules: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - debugger client: [DEV-02](#dev-02-simulate-local-app-oauth)
 - decisions: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
@@ -7902,6 +8027,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - direct api gateway: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
+- directors advances: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - directory listing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs), [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - directory reviewer: [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
@@ -7942,6 +8068,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - do-next skill: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - docker build: [OPS-150](#ops-150-build-a-deployment), [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - docker image: [OPS-51](#ops-51-publish-build-artifacts-and-documentation), [OPS-114](#ops-114-provision-ecr-image-repositories), [SS-05](#ss-05-run-the-diya-gl-cli)
+- document api: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - document client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - document submission: [CH-09](#ch-09-query-and-submit-document-transactions)
 - dom helpers: [SITE-14](#site-14-render-page-chrome-and-widgets)
@@ -7967,7 +8094,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dora-row action: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora_runs: [DATA-11](#data-11-run-glue-data-quality-checks)
 - dormant: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
-- dormant accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
+- dormant accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - double rule: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - download page: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - downloads by product: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
@@ -7980,12 +8107,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - dt partition: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dt partition projection: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
-- due dates: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
+- due dates: [SITE-36](#site-36-compute-due-dates-from-sourced-rules), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - duplicate mechanism: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - duplicate script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - duplicate workflow: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - durable user: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - duration: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
+- duration override: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - dynalite: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - dynamodb: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - dynamodb backup: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
@@ -8028,6 +8156,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - enforce bundle: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - enforce tokens: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - engagement: [SITE-03](#site-03-capture-feedback-interest)
+- english left in welsh: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - enhanced measurement: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
 - ensure-cognito-test-user: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - ensuresession: [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
@@ -8126,6 +8255,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - file in the browser: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- file-revised-accounts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- filed accounts: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -8149,6 +8280,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - firehose putrecordbatch: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - firehose transform: [DATA-02](#data-02-transform-activity-events-into-lake-rows), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
 - first paint: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
+- first sign-in: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - fixed asset register: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - fixture: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - fixtures: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-12](#ch-12-generate-synthetic-test-companies), [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8165,6 +8297,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - foreign property period: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - fork setup: [OPS-215](#ops-215-list-every-github-secret-and-variable-in-the-readme)
 - form bundle number: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- form filing: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - form layouts: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - format specification: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - forum answers: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
@@ -8179,8 +8312,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - frontend bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
-- frs 102: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
-- frs 105: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- frs 102: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- frs 105: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - full deploy: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - full rotation: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - full tax year: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
@@ -8207,6 +8340,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gap analysis: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - gate fixtures: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - gate probes: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- gatewaytest: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - gclid: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs), [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - gcp billing budget: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - gcp iam bindings: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
@@ -8291,6 +8425,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - grant: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - grant flow: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - grantbundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
+- grants: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - green build: [DEV-31](#dev-31-watch-github-ci-to-green)
 - gross fee net: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - grouping strategy: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
@@ -8471,7 +8606,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - issue pass: [BILL-07](#bill-07-admin-issue-a-pass)
 - issue template: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - issued passes: [BILL-09](#bill-09-list-a-users-issued-passes)
-- issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review)
+- issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - issues and comments: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - item counts: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
@@ -8492,7 +8627,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
-- ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
+- ixbrl: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - java version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
@@ -8546,13 +8681,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lambda warming: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - lambda wiring: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks), [BILL-36](#bill-36-cdk-account-stack)
 - lambda worker: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- landing: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - landing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - lane: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
-- language switch: [SITE-30](#site-30-build-the-welsh-pages)
+- lang cy: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- language switch: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - lapse: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - laptop load: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
+- last filed accounts: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - last known good: [OPS-149](#ops-149-finish-a-deployment)
+- last year's figures: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - last-known-good: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - late submission penalty: [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - launchd: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
@@ -8583,6 +8722,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - list-imports: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
+- list_accounts_receipts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - listing packs: [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs)
@@ -8652,6 +8792,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - manual destroy: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - manual review: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - manual stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- mapixbrlaccounts: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - markdown: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - marketing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs)
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
@@ -8704,7 +8845,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa claim: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - micro-entity: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
-- micro-entity accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- micro-entity accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - microsoft advertising: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - microsoft advertising skill: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
@@ -8761,6 +8902,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - new applicant: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - new-session: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - newsletters: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
+- next accounts due: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - next.md: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - next.md readiness: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - next.md shape: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -8779,7 +8921,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
-- no sign-in: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
+- no sign-in: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - no stored key: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - no webhook: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - no-op verdict: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
@@ -8824,6 +8966,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - observability stack: [OPS-117](#ops-117-provision-the-observability-stack)
 - observabilitystack: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - oembed: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
+- officer change 14 days: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
+- officers: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
@@ -8847,7 +8991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openid discovery: [DEV-02](#dev-02-simulate-local-app-oauth)
 - opening balances: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-59](#bill-59-create-a-custom-campaign-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator asks: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
@@ -8875,6 +9019,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - origin label: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - origin secret rotation: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - origin verify: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
+- original approval date: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - originfor tag: [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin), [OPS-116](#ops-116-provision-the-holding-page-stack)
 - outbound call: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - outbound call record: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
@@ -8931,6 +9076,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payable: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- payments on account: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - payout: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
@@ -8955,6 +9101,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - performance max: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - period key: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
+- period of account split: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - perplexitybot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
@@ -9031,6 +9178,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pre-push hook: [SS-42](#ss-42-route-tests-by-blast-radius)
 - pre-tax profit: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - prefetch: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
+- prefill accounts: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
+- prefilled package: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - prepare_vat_return: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - presenter credential: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - presenter poll: [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending)
@@ -9049,6 +9198,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - price update: [BILL-44](#bill-44-document-the-price-update-project)
 - prices: [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment)
 - pricing project: [BILL-44](#bill-44-document-the-price-update-project)
+- prior year: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - privacy: [SITE-10](#site-10-serve-general-site-pages)
 - privacy banner: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - private issue: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events), [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record), [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result), [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
@@ -9088,9 +9238,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy behaviour: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
 - proxy secrets: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
+- psc change: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
-- public lookup: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
+- public lookup: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - public surfaces: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -9129,7 +9280,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ranked fixes: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - ranked report: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
-- rate limit: [SITE-05](#site-05-submit-support-tickets), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
+- rate limit: [SITE-05](#site-05-submit-support-tickets), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -9190,6 +9341,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - refund: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - refused: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - register: [CH-03](#ch-03-search-the-companies-house-register)
+- register lag: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registered office: [CH-05](#ch-05-file-a-change-of-registered-office-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registerlambdaroute: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
@@ -9213,7 +9365,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remove pass: [BILL-56](#bill-56-delete-generated-passes)
 - remove tooling: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
-- render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-accounts-for-review)
+- render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review)
 - render dashboard: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
@@ -9241,6 +9393,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - resident-pro: [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - resident-tax-agent: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - resident-tax-agent licence: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- resident-vat-comp: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - resource manager: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - resource name: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - resource naming: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
@@ -9281,6 +9434,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - reviewer sign-in: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront), [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
+- revised accounts: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- revision: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- revision texts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
@@ -9374,6 +9530,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - schema change: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
+- schema validation: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -9407,6 +9564,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secrets manager oauth: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - secrets manager read: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - section 1a: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- section 454: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - section 6.6: [OPS-64](#ops-64-runbook-information-security-operations)
 - security baseline: [OPS-121](#ops-121-provision-the-security-baseline-stack)
 - security detection: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
@@ -9478,7 +9636,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sibling repositories: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - sideways relief: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - sign in: [SITE-01](#site-01-sign-customers-in-via-cognito), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
+- sign_up: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
+- signed-in welsh: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - simulator: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
@@ -9501,7 +9661,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
-- small company accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- small company accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - small files: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - snapshot review: [OPS-193](#ops-193-review-the-operator-dashboard-each-night), [DEV-55](#dev-55-review-the-operator-dashboard)
@@ -9673,6 +9833,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - synthetics runtime: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - system test: [DEV-01](#dev-01-run-the-http-simulator-server)
 - system tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
+- table active: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - table change: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - table name lookup: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - tagging: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
@@ -9701,6 +9862,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
 - test discovery: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- test flag: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - test items: [OPS-217](#ops-217-expire-the-test-items-a-table-already-holds)
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
@@ -9711,6 +9873,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test router: [SS-42](#ss-42-route-tests-by-blast-radius)
 - test shards: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - test step: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- test submission: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - test support api: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - test user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
@@ -9744,6 +9907,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - token counts: [DEV-37](#dev-37-write-the-session-report)
 - token exchange: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - token limit: [OPS-72](#ops-72-forward-bedrock-budget-alerts)
+- token override: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - token refresh: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
 - token refresh retry: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - toml parser: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
@@ -9837,6 +10001,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user provisioning role: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - user-agent classification: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
+- usesperaccount: [BILL-59](#bill-59-create-a-custom-campaign-pass)
+- utm: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - utm_campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utm_source: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
@@ -9861,6 +10027,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat logic: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - vat mtd: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - vat obligations: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations)
+- vat payment date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - vat payments: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - vat penalties: [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - vat receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
@@ -9868,6 +10035,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat return: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - vat return body: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - vat return csv: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
+- vat return due date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - vat return from a spreadsheet: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - vat scheme: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - vat validation: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -9934,8 +10102,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - warm route: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
+- watch list: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
 - watchdog: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
+- watched companies: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - wave branch: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
@@ -9962,7 +10132,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - well-known: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
-- welsh: [SITE-30](#site-30-build-the-welsh-pages)
+- welsh: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- welsh accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- welsh proof: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - whole-site design pass: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
@@ -10002,7 +10174,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - xlsx xml: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xml: [CH-11](#ch-11-parse-xml-safely)
-- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-11](#ch-11-parse-xml-safely), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-11](#ch-11-parse-xml-safely), [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - xml submission: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - xmldom: [CH-11](#ch-11-parse-xml-safely)
 - xxe: [CH-11](#ch-11-parse-xml-safely)

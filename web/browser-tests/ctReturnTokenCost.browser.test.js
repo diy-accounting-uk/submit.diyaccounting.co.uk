@@ -10,6 +10,9 @@ import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+
+const PRECISION = registerCompany(REGISTER_COMPANY_NUMBERS[6]);
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -173,14 +176,14 @@ function newServer(overrides = {}) {
 }
 
 async function serveSite(page, server) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {
       // storage can be blocked; the page then asks for sign-in
     }
-  });
+  }, PRECISION.email);
   const json = (route, status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -193,8 +196,8 @@ async function serveSite(page, server) {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "ci" });
     } else if (url.pathname === "/api/v1/bundle") {
       await json(route, 200, server.balance);
-    } else if (url.pathname === "/api/v1/companies-house/company/12345678") {
-      await json(route, 200, { companyNumber: "12345678", companyName: "Precision Code Ltd" });
+    } else if (url.pathname === `/api/v1/companies-house/company/${PRECISION.number}`) {
+      await json(route, 200, { companyNumber: PRECISION.number, companyName: PRECISION.name });
     } else if (url.pathname === "/api/v1/hmrc/ct/return/preview") {
       await json(route, 200, server.previewBody ?? DEFAULT_PREVIEW);
     } else if (url.pathname === "/api/v1/hmrc/ct/return" && method === "POST") {
@@ -243,7 +246,7 @@ async function openForm(page, server, viewport = { width: 1280, height: 900 }) {
   await page.setViewportSize(viewport);
   await serveSite(page, server);
   await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
-  await page.locator("#companyNumber").fill("12345678");
+  await page.locator("#companyNumber").fill(PRECISION.number);
   await page.locator("#companyLookupBtn").click();
   await expect(page.locator("#formView")).toBeVisible();
 }

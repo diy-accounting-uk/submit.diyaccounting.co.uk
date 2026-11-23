@@ -19,11 +19,12 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
-  companiesHouseHttpGet,
-  httpResponseFromCompaniesHouseResponse,
-  isValidCompanyNumber,
-  http403ForbiddenFromBundleEnforcement,
-} from "../../services/companiesHouseApi.js";
+  LOOKUP_CALLS,
+  lookupFailureResponse,
+  lookupLimitResponse,
+  lookupRefusalSeconds,
+} from "../../services/companiesHouseLookupLimit.js";
+import { companiesHouseHttpGet, isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -111,10 +112,13 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  const refusalSeconds = await lookupRefusalSeconds(userSub, LOOKUP_CALLS.profile);
+  if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
+
   const { chResponse, profile } = await getCompanyProfile(companyNumber);
 
   if (!chResponse.ok) {
-    return httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders);
+    return lookupFailureResponse(request, chResponse, responseHeaders);
   }
 
   await publishActivityEvent({
@@ -152,6 +156,11 @@ export async function getCompanyProfile(companyNumber) {
     sicCodes: data.sic_codes,
     accountsNextDue: data.accounts?.next_accounts?.due_on,
     accountsNextPeriodEnd: data.accounts?.next_accounts?.period_end_on,
+    accountsNextPeriodStart: data.accounts?.next_accounts?.period_start_on,
+    accountingReferenceDate: data.accounts?.accounting_reference_date,
+    accountsLastPeriodStart: data.accounts?.last_accounts?.period_start_on,
+    accountsLastPeriodEnd: data.accounts?.last_accounts?.period_end_on,
+    accountsLastType: data.accounts?.last_accounts?.type,
     confirmationStatementNextDue: data.confirmation_statement?.next_due,
     confirmationStatementNextMadeUpTo: data.confirmation_statement?.next_made_up_to,
   };

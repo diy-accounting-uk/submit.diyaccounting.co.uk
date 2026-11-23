@@ -48,6 +48,7 @@ async function serveRealSite(page) {
 const searches = [
   ["Self Assessment", "self-assessment-itsa"],
   ["Companies House", "companies-house-filings"],
+  ["correct accounts", "revised-accounts"],
 ];
 
 test.describe("Help search", () => {
@@ -55,6 +56,7 @@ test.describe("Help search", () => {
     for (const [query, faqId] of searches) {
       test(`searching "${query}" at ${width}px shows its answer`, async ({ page }) => {
         await serveRealSite(page);
+        await page.addInitScript(() => localStorage.setItem("consent.analytics", "declined"));
         await page.setViewportSize({ width, height: 900 });
         await page.goto("http://localhost:3000/help.html", { waitUntil: "domcontentloaded" });
         await page.locator("#faq-search").fill(query);
@@ -64,6 +66,7 @@ test.describe("Help search", () => {
         await result.locator(".faq-question").click();
         await expect(result.locator(".faq-answer")).toBeVisible();
         await expect(result.locator(".faq-answer")).toContainText(query === "Self Assessment" ? "Sandbox" : "Companies House");
+        await page.screenshot({ path: `target/screenshots/help/${faqId}-${width}.png`, fullPage: true });
       });
     }
   }

@@ -9,12 +9,15 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
+
+const SIGNED_IN_EMAIL = PEOPLE.priyaHaldane.email;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
-const WIDTHS = [375, 1280];
+const WIDTHS = [375, 390, 1280];
 const CODE = "river-cloud-stone-lamp";
 
 const CONTENT_TYPES = {
@@ -46,14 +49,18 @@ async function serveRealSite(
   } = {},
 ) {
   const calls = { check: 0, redeem: 0, bundle: 0 };
-  await page.addInitScript((isSignedIn) => {
-    try {
-      if (isSignedIn) {
-        localStorage.setItem("cognitoIdToken", "mock-id-token");
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
-      }
-    } catch {}
-  }, signedIn);
+  await page.addInitScript(
+    ({ isSignedIn, email }) => {
+      try {
+        localStorage.setItem("consent.analytics", "declined");
+        if (isSignedIn) {
+          localStorage.setItem("cognitoIdToken", "mock-id-token");
+          localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
+        }
+      } catch {}
+    },
+    { isSignedIn: signedIn, email: SIGNED_IN_EMAIL },
+  );
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -155,11 +162,24 @@ for (const width of WIDTHS) {
         "With it you can submit VAT returns to HMRC, file accounts with Companies House, and make pass links for other people.",
       );
       await expect(message).toContainText("It comes with 100 tokens. A VAT return uses 1 token.");
-      await expect(page.locator("#passAfterAction")).toHaveText("You are signed in as pat@example.com.");
+      await expect(page.locator("#passAfterAction")).toHaveText(`You are signed in as ${SIGNED_IN_EMAIL}.`);
       await expect(page.getByRole("button", { name: "Redeem pass" })).toBeEnabled();
       expect(calls.redeem).toBe(0);
       await expectNoSideScroll(page);
       await shot(page, "valid-signed-in", width);
+    });
+
+    test("the heading the page focuses for a screen reader shows no focus ring, and a button reached by keyboard shows its ring", async ({
+      page,
+    }) => {
+      await serveRealSite(page);
+      await open(page, width);
+      await expect(heading(page)).toBeFocused();
+      const ring = (locator) => locator.evaluate((element) => getComputedStyle(element).outlineStyle);
+      expect(await ring(heading(page))).toBe("none");
+      const button = page.getByRole("button", { name: "Redeem pass" });
+      while (!(await button.evaluate((element) => element === document.activeElement))) await page.keyboard.press("Tab");
+      expect(await ring(button)).toBe("solid");
     });
 
     test("signed out, valid: the same button, and one sentence that says sign-in comes next", async ({ page }) => {
@@ -198,6 +218,22 @@ for (const width of WIDTHS) {
       await expect(heading(page)).toHaveText("You have a pass for Week pass");
       await expect(page.locator("#passMessage")).toContainText("It comes with 3 tokens.");
       await expect(page.locator("#passMessage")).toContainText("It lasts 7 days.");
+    });
+
+    test("a campaign pass states each further bundle with its own duration and tokens", async ({ page }) => {
+      const grants = [
+        { bundleId: "resident-vat-comp", duration: "P1Y", tokens: 50, tokenRefreshInterval: "P1M" },
+        { bundleId: "week-guest", duration: "P6M", tokens: 10 },
+        { bundleId: "day-guest" },
+      ];
+      await serveRealSite(page, { check: { valid: true, bundleId: "resident-vat-comp", grants } });
+      await open(page, width);
+      await expect(page.locator("#passMessage")).toContainText("It comes with 50 tokens.");
+      await expect(page.locator("#passMessage")).toContainText("It lasts 1 year.");
+      await expect(page.locator("#passMessage")).toContainText(
+        "It also adds Week pass for 6 months from redemption, 10 tokens; Day pass for 1 day from redemption, 3 tokens.",
+      );
+      await shot(page, "valid-campaign", width);
     });
 
     test("adding: the button is disabled and the heading names the bundle", async ({ page }) => {
@@ -259,16 +295,28 @@ for (const width of WIDTHS) {
       await expect(page).toHaveURL(`${SITE}/`);
     });
 
-    test("an account that holds the bundle posts nothing and says so", async ({ page }) => {
-      const calls = await serveRealSite(page, { held: ["resident-pro"] });
+    test("an account that holds the bundle posts the pass and shows the server's already_held answer", async ({ page }) => {
+      const calls = await serveRealSite(page, {
+        held: ["resident-pro"],
+        redeem: { redeemed: false, reason: "already_held", bundleId: "resident-pro" },
+        redeemStatus: 409,
+      });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
       await expect(heading(page)).toHaveText("You already have this bundle");
       await expect(page.locator("#passMessage")).toHaveText(
-        "Your account already has Resident Pro. This pass is still unused, so you can give it to someone else.",
+        "Your account already has Resident Pro on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.",
       );
-      expect(calls.redeem).toBe(0);
+      expect(calls.redeem).toBe(1);
       await shot(page, "already-held", width);
+    });
+
+    test("an account that holds the bundle on worse terms redeems a better pass", async ({ page }) => {
+      const calls = await serveRealSite(page, { held: ["resident-pro"] });
+      await open(page, width);
+      await page.getByRole("button", { name: "Redeem pass" }).click();
+      await expect(heading(page)).toHaveText("Pass redeemed");
+      expect(calls.redeem).toBe(1);
     });
 
     const GET_REFUSALS = [
@@ -327,17 +375,22 @@ for (const width of WIDTHS) {
       await serveRealSite(page, { redeem: { redeemed: false, reason: "wrong_email" } });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
-      await expect(page.getByRole("alert")).toHaveText("This pass is for a different email address. You are signed in as pat@example.com.");
+      await expect(page.getByRole("alert")).toHaveText(
+        `This pass is for a different email address. You are signed in as ${SIGNED_IN_EMAIL}.`,
+      );
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).not.toHaveAttribute("data-activity-start");
       await shot(page, "error-wrong-email", width);
     });
 
     test("the server answering already_held shows the already holds state", async ({ page }) => {
-      await serveRealSite(page, { redeem: { redeemed: false, reason: "already_held" }, redeemStatus: 409 });
+      await serveRealSite(page, { redeem: { redeemed: false, reason: "already_held", bundleId: "resident-pro" }, redeemStatus: 409 });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
       await expect(heading(page)).toHaveText("You already have this bundle");
+      await expect(page.locator("#passMessage")).toHaveText(
+        "Your account already has Resident Pro on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.",
+      );
     });
 
     test("a pass that is used up, for an account that holds the bundle, shows Pass redeemed", async ({ page }) => {

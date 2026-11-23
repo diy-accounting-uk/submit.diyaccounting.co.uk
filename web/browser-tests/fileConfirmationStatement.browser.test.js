@@ -10,12 +10,15 @@ import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { pageScrollsSideways, recordScreenshotPath, serveFilingResultAssets } from "./submissionRecordAssets.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
+const COMPANY = registerCompany("00000001");
+
 const COMPANY_PROFILE = {
-  companyNumber: "00000001",
-  companyName: "TEST COMPANY LTD",
+  companyNumber: COMPANY.number,
+  companyName: COMPANY.name,
   companyStatus: "active",
   companyType: "ltd",
   confirmationStatementNextDue: "2026-10-05",
@@ -40,7 +43,7 @@ const PSCS_RESULT = {
 
 const FILING_DATA = {
   sicCodes: ["62012"],
-  registeredEmailAddress: "test@example.com",
+  registeredEmailAddress: COMPANY.email,
   paymentPeriodPaid: false,
   statementOfCapital: null,
   shareholdings: [],
@@ -221,7 +224,7 @@ test.describe("File Confirmation Statement page", () => {
     await lookUpCompany(page);
 
     await expect(page.locator("#authView")).toBeVisible();
-    await expect(page.locator("#authCompanyName")).toContainText("TEST COMPANY LTD");
+    await expect(page.locator("#authCompanyName")).toContainText(COMPANY.name);
     await expect(page.locator("#publicOfficersBody")).toContainText("Jane Doe");
     await expect(page.locator("#publicPscsBody")).toContainText("Jane Doe");
   });
@@ -283,11 +286,20 @@ test.describe("File Confirmation Statement page", () => {
 
     await expect(page.locator("#reviewView")).toBeVisible();
     await expect(page.locator("#sicCodes")).toHaveValue("62012");
-    await expect(page.locator("#registeredEmailAddress")).toHaveValue("test@example.com");
+    await expect(page.locator("#registeredEmailAddress")).toHaveValue(COMPANY.email);
     await expect(page.locator("#directorRowsContainer")).toContainText("Jane Doe");
     const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
     expect(filingDataCalls).toHaveLength(1);
     expect(filingDataCalls[0].companyNumber).toBe("00000001");
+  });
+
+  test("names each director with the month and year of birth only, never the day", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await expect(page.locator('[data-director-row="0"] legend')).toHaveText("Jane Doe (January 1980)");
   });
 
   test("blocks the preview when a director's personal code is left blank", async ({ page }) => {
@@ -345,6 +357,78 @@ test.describe("File Confirmation Statement page", () => {
     expect(previewCalls).toHaveLength(1);
     expect(previewCalls[0].directors[0].personalCode).toBe("CWMPS832223");
     expect(previewCalls[0].directors[0].otherForenames).toBe("ELIZABETH");
+  });
+
+  test("the gateway's character check passes a share class's prescribed particulars, which take any text", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      filingData: {
+        ...FILING_DATA,
+        statementOfCapital: {
+          totalAmountUnpaid: 0,
+          totalNumberOfIssuedShares: 100,
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: 100,
+          shares: [
+            { shareClass: "ORDINARY", prescribedParticulars: "Un bleidlais — ŵyr a wyres", numShares: 100, aggregateNominalValue: 100 },
+          ],
+        },
+      },
+    });
+    for (const module of ["companies-house-text-check.js", "companies-house-gateway-text.js"]) {
+      await page.route(`**/lib/${module}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public/lib", module), "utf-8"),
+        }),
+      );
+    }
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await expect(page.locator("#prescribedParticulars-0")).toHaveValue("Un bleidlais — ŵyr a wyres");
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.fill("#shareClass-0", "ORDINARY ŵ");
+    await page.click("#previewBtn");
+    await delay(200);
+    const messages = await page.evaluate(() => window.__statusMessages.map(({ message }) => message));
+    expect(messages.join(" ")).toContain("Share class has characters Companies House does not accept: ŵ");
+    expect(messages.join(" ")).not.toContain("Prescribed particulars");
+
+    await page.fill("#shareClass-0", "ORDINARY");
+    await page.click("#previewBtn");
+    await delay(200);
+    await expect(page.locator("#previewView")).toBeVisible();
+  });
+
+  test("a statement whose capital and shareholders are as the register sends no statement of capital and says so", async ({ page }) => {
+    setupPage(page);
+    // The register answers its figures as strings, as Companies House's filing data does.
+    const registerCapital = {
+      totalAmountUnpaid: "0",
+      totalNumberOfIssuedShares: "100",
+      shareCurrency: "GBP",
+      totalAggregateNominalValue: "100",
+      shares: [{ shareClass: "ORDINARY", prescribedParticulars: "One vote a share.", numShares: "100", aggregateNominalValue: "100" }],
+    };
+    const registerHolding = { shareClass: "ORDINARY", numberHeld: "100", shareholders: [{ forename: "ELEANOR", surname: "BRAMWELL" }] };
+    await setupRoutes(page, { filingData: { ...FILING_DATA, statementOfCapital: registerCapital, shareholdings: [registerHolding] } });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    const previewCalls = await page.evaluate(() => window.__previewCalls);
+    expect(previewCalls[0]).not.toHaveProperty("statementOfCapital");
+    await expect(page.locator("#previewView")).toContainText("As on the register");
+    await expect(page.locator("#previewView")).not.toContainText("Changed from the register");
   });
 
   test("sends the register's shareholdings on a statement where nothing changed", async ({ page }) => {
@@ -477,6 +561,36 @@ test.describe("File Confirmation Statement page", () => {
     expect(filingDataCalls).toHaveLength(0);
   });
 
+  test("the authentication code line stays while the code is short and goes at six characters", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await page.fill("#companyAuthCode", "AB1");
+    await page.click("#authSubmitBtn");
+    const line = page.locator('#form-error-summary a[href="#companyAuthCode"]');
+    await expect(line).toHaveCount(1);
+    await page.fill("#companyAuthCode", "AB123");
+    await expect(line).toHaveCount(1);
+    await page.fill("#companyAuthCode", "AB1234");
+    await expect(line).toHaveCount(0);
+    await expect(page.locator("#form-error-summary")).toHaveCount(0);
+  });
+
+  test("the presenter code line goes once the code is typed", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await page.check("#useOwnPresenter");
+    await page.fill("#ownPresenterId", "OWN-PRES-7731");
+    await enterAuthCode(page);
+    const line = page.locator('#form-error-summary a[href="#ownPresenterCode"]');
+    await expect(line).toHaveCount(1);
+    await page.fill("#ownPresenterCode", "x");
+    await expect(line).toHaveCount(0);
+  });
+
   test("files under the own presenter: no Submit fee, own presenter on the submit, nothing in storage", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false } });
@@ -539,7 +653,7 @@ test.describe("File Confirmation Statement page", () => {
     await delay(300);
 
     await expect(page.locator("#resultView")).toBeVisible();
-    await expect(page.locator("#filingResult")).toContainText("ACCEPT");
+    await expect(page.locator("#filingResult")).toContainText("was accepted.");
     await expect(page.locator("#pscFollowUp")).toBeVisible();
     await expect(page.locator('[data-psc-follow-up-row="0"]')).toContainText("Jane Doe");
     const submitCalls = await page.evaluate(() => window.__submitCalls);
@@ -550,7 +664,7 @@ test.describe("File Confirmation Statement page", () => {
     await page.click('[data-psc-verify-index="0"]');
     await delay(300);
 
-    await expect(page.locator("#pscVerifyResult-0")).toContainText("ACCEPT");
+    await expect(page.locator("#pscVerifyResult-0")).toContainText("was accepted.");
     const pscSubmitCalls = await page.evaluate(() => window.__pscVerificationSubmitCalls);
     expect(pscSubmitCalls).toHaveLength(1);
     expect(pscSubmitCalls[0]).toMatchObject({
@@ -562,6 +676,38 @@ test.describe("File Confirmation Statement page", () => {
       dobMonth: 1,
       dobYear: 1980,
     });
+  });
+
+  test("a director's name from the register with a character the gateway refuses stops the confirmation statement before its preview", async ({
+    page,
+  }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      filingData: {
+        ...FILING_DATA,
+        officers: [{ role: "director", type: "person", forename: "Jane", surname: "Dŵr", dob: "1980-01-01" }],
+      },
+    });
+    for (const script of ["lib/companies-house-gateway-text.js", "lib/companies-house-text-check.js"]) {
+      await page.route(`**/${script}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public", script), "utf-8"),
+        }),
+      );
+    }
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await expect
+      .poll(async () => (await page.evaluate(() => window.__statusMessages)).map((each) => each.message).join(" | "))
+      .toContain("Jane Dŵr: surname has characters Companies House does not accept: ŵ");
+    await expect(page.locator("#previewView")).toBeHidden();
   });
 
   async function submitWithGateway(page, { pollInterval, statuses }) {
@@ -600,7 +746,7 @@ test.describe("File Confirmation Statement page", () => {
 
     await expect(page.locator("#checkAgainBtn")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("#filingResult")).toContainText("has not finished checking submission ABC123");
-    await expect(page.locator("#filingResult")).not.toContainText("was PENDING");
+    await expect(page.locator("#filingResult")).not.toContainText("was waiting to be checked");
     await expect(page.locator("#filingRecord")).toBeEmpty();
     const calls = await page.evaluate(() => window.__pollCalls);
     expect(calls).toHaveLength(8);
@@ -610,9 +756,21 @@ test.describe("File Confirmation Statement page", () => {
       window.__pollStatuses = ["ACCEPT"];
     });
     await page.click("#checkAgainBtn");
-    await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 10_000 });
+    await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 10_000 });
     await expect(page.locator("#checkAgainBtn")).toBeHidden();
     await expect(page.locator("#pscFollowUp")).toBeVisible();
+  });
+
+  test("a status code with no word shows as its own sentence with the code while the page checks again", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await submitWithGateway(page, { pollInterval: 1, statuses: ["INTERNAL_FAILURE", "ACCEPT"] });
+
+    await expect(page.locator("#filingResult")).toContainText("Companies House answered INTERNAL_FAILURE for submission ABC123.", {
+      timeout: 10_000,
+    });
+    await expect(page.locator("#filingResult")).not.toContainText("waiting to be checked");
+    await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 10_000 });
   });
 
   test("polls no more when the gateway's PollInterval is 0", async ({ page }) => {
@@ -642,12 +800,12 @@ test.describe("File Confirmation Statement page", () => {
 
     const copy = page.locator("#filingRecord .customer-copy");
     await expect(copy).toBeVisible();
-    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the confirmation statement for TEST COMPANY LTD");
+    await expect(copy.locator(".customer-copy-title")).toHaveText(`Your copy of the confirmation statement for ${COMPANY.name}`);
     await expect(copy.locator(".customer-copy-submission")).toContainText("ABC123");
     await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by Companies House");
 
     const statement = copy.locator(".submission-record").first();
-    await expect(statement.locator(".entity")).toHaveText("TEST COMPANY LTD");
+    await expect(statement.locator(".entity")).toHaveText(COMPANY.name);
     await expect(statement.locator(".reference")).toHaveText("Company number 00000001");
     await expect(statement.locator("h2")).toHaveText("Confirmation statement");
     await expect(statement.locator(".subtitle")).toHaveText("Made up to 21 September 2026");
@@ -655,7 +813,8 @@ test.describe("File Confirmation Statement page", () => {
     await expect(statement.locator("tr", { hasText: "Nature of business" }).locator("td.text-value")).toHaveText(
       "Confirmed as on the register",
     );
-    await expect(statement.locator("tr", { hasText: "Directors verifying" }).locator("td.text-value")).toContainText("Jane ELIZABETH Doe");
+    await expect(statement.locator("tr", { hasText: "Shareholders" }).locator("td.text-value")).toHaveText("Confirmed as on the register");
+    await expect(statement.locator("tr", { hasText: "Directors verifying" }).locator("td.text-value")).toContainText("JANE ELIZABETH DOE");
 
     const officers = copy.locator(".submission-record").nth(1);
     await expect(officers.locator("tr", { hasText: "Jane Doe" }).locator("td.text-value")).toHaveText("Director. Identity verified");

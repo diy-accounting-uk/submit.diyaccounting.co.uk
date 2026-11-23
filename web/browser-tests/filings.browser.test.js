@@ -9,9 +9,11 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { accountsDocumentCases, computationsDocumentCase, SMALL_COMPANY_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -21,12 +23,13 @@ const CT_RECEIPT_NAME = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
 
 const accountsCase = accountsDocumentCases()[0];
 const smallCompanyCase = accountsDocumentCases().find((candidate) => candidate.name === "small-company-accounts");
+const revisedAccountsCase = accountsDocumentCases().find((candidate) => candidate.name === "micro-entity-accounts-revised");
 
 const ACCOUNTS_RECEIPT = {
   kind: "companies-house-accounts",
   statusCode: "ACCEPT",
   submissionNumber: "00001A",
-  companyNumber: "06846849",
+  companyNumber: "00000003",
   rejections: [],
   filedDocument: accountsCase.xhtml,
 };
@@ -42,7 +45,7 @@ const CT_RECEIPT = {
   filed: {
     boxes: {
       1: "Example Trading Limited",
-      2: "06846849",
+      2: "00000003",
       3: "8596148860",
       30: "2025-04-01",
       35: "2026-03-31",
@@ -55,12 +58,21 @@ const CT_RECEIPT = {
   },
 };
 
-const LIBRARIES = ["submission-record.js", "review-links.js", "filing-record.js", "ct600-fields.js", "long-period.js"];
+const LIBRARIES = [
+  "submission-record.js",
+  "review-links.js",
+  "filing-record.js",
+  "ct600-fields.js",
+  "long-period.js",
+  "accounts-revision.js",
+  "first-accounts.js",
+  "accounts-notes-check.js",
+];
 
 test.describe("Filings page - customer copy", () => {
   const html = fs.readFileSync(path.join(PUBLIC_DIR, "companies-house/filings.html"), "utf-8");
 
-  async function openFiling(page, name, receipt, { width = 1280, styled = true } = {}) {
+  async function openFiling(page, name, receipt, { width = 1280, styled = true, revisionOffered = false } = {}) {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript((receiptBody) => {
       localStorage.setItem("cognitoIdToken", "token");
@@ -74,6 +86,28 @@ test.describe("Filings page - customer copy", () => {
           contentType: "application/javascript",
           body: fs.readFileSync(path.join(PUBLIC_DIR, "lib", library), "utf-8"),
         }),
+      );
+    }
+    if (revisionOffered) {
+      await page.route("**/lib/books-bundle.js", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(PUBLIC_DIR, "lib", "books-bundle.js"), "utf-8"),
+        }),
+      );
+      await page.route("**/lib/services/catalog-service.js", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: `export const fetchCatalogText = async () => "";
+            export const fetchCurrentEnvironmentName = async () => "ci";
+            export const parseCatalogueText = () => ({});
+            export const isRevisedAccountsOffered = () => true;`,
+        }),
+      );
+      await page.route("**/lib/services/viewer-settings.js", (route) =>
+        route.fulfill({ status: 200, contentType: "application/javascript", body: "export const fetchViewer = async () => ({});" }),
       );
     }
     await page.route("**/companies-house/filings.page.js", (route) =>
@@ -105,7 +139,7 @@ test.describe("Filings page - customer copy", () => {
     const frame = page.frameLocator("iframe.filed-document");
     await expect(frame.locator("body")).toContainText("Balance sheet");
     await expect(copy.locator(".submission-record .entity").first()).toHaveText("Companies House receipt");
-    await expect(copy.locator("tr", { hasText: "Company number" }).locator("td.text-value")).toHaveText("06846849");
+    await expect(copy.locator("tr", { hasText: "Company number" }).locator("td.text-value")).toHaveText("00000003");
     await expect(copy.locator(".customer-copy-links a")).toHaveText([
       "File accounts again with corrected figures",
       "Look up another company",
@@ -157,7 +191,7 @@ test.describe("Filings page - customer copy", () => {
   });
 
   test("links an accepted Company Tax Return that kept its answers to the page that amends it", async ({ page }) => {
-    const formRequest = { company: { companyNumber: "06846849", companyName: "Example Trading Limited" }, values: { turnover: "1000" } };
+    const formRequest = { company: { companyNumber: "00000003", companyName: "Example Trading Limited" }, values: { turnover: "1000" } };
     await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, formRequest });
     const link = page.locator("#amendFilingLink");
     await expect(link).toBeVisible();
@@ -194,6 +228,129 @@ test.describe("Filings page - customer copy", () => {
       await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT, { width });
       expect(await pageScrollsSideways(page)).toBe(false);
       await page.screenshot({ path: recordScreenshotPath("filing-accounts", width), fullPage: true });
+    });
+  }
+  test("offers to amend accepted micro-entity accounts where revised accounts are offered", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT, { revisionOffered: true });
+
+    const amendHref = `fileMicroEntityAccounts.html?amend=${encodeURIComponent(ACCOUNTS_RECEIPT_NAME)}`;
+    await expect(page.locator("#amendFilingLink")).toBeVisible();
+    await expect(page.locator("#amendFilingLink")).toHaveAttribute("href", amendHref);
+    const layoutOf = (selector) =>
+      page.locator(selector).evaluate((button) => {
+        const style = getComputedStyle(button);
+        return { display: style.display, alignItems: style.alignItems, height: button.getBoundingClientRect().height };
+      });
+    expect(await layoutOf("#amendFilingLink")).toEqual(await layoutOf("#printFilingBtn"));
+    const links = page.locator("#filingContent .customer-copy-links a");
+    await expect(links.first()).toHaveText("Amend these accounts");
+    await expect(links.first()).toHaveAttribute("href", amendHref);
+    await screenshotAtBothWidths(page, "filing-amend-offered");
+  });
+
+  test("offers no amend link for accounts where revised accounts are not offered", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT);
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+  });
+
+  test("offers no amend link here for accounts filed with a Company Tax Return", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, jointFilingId: "joint-1" }, { revisionOffered: true });
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveText("File accounts again with corrected figures");
+  });
+
+  test("says why small company accounts filed without the previous year's figures have no amend link", async ({ page }) => {
+    const singleYear = buildSmallCompanyAccounts({
+      ...SMALL_COMPANY_CASE_INPUT,
+      balanceSheet: { current: SMALL_COMPANY_CASE_INPUT.balanceSheet.current },
+      profitAndLoss: { ...SMALL_COMPANY_CASE_INPUT.profitAndLoss, prior: undefined },
+      fixedAssetNote: undefined,
+    });
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, companyNumber: SMALL_COMPANY_CASE_INPUT.companyNumber, filedDocument: singleYear },
+      { revisionOffered: true },
+    );
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    await expect(page.locator("#filingNotice")).toHaveText(
+      "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
+    );
+    await expect(page.locator("#filingContent")).toContainText(`Company number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
+    await screenshotAtBothWidths(page, "filing-no-comparatives");
+  });
+
+  test("says why a company's first accounts, which have one year, have no amend link yet", async ({ page }) => {
+    const firstAccounts = buildSmallCompanyAccounts({
+      ...SMALL_COMPANY_CASE_INPUT,
+      dateOfIncorporation: SMALL_COMPANY_CASE_INPUT.periodStart,
+      balanceSheet: { current: SMALL_COMPANY_CASE_INPUT.balanceSheet.current },
+      profitAndLoss: { ...SMALL_COMPANY_CASE_INPUT.profitAndLoss, prior: undefined },
+      fixedAssetNote: undefined,
+    });
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, companyNumber: SMALL_COMPANY_CASE_INPUT.companyNumber, filedDocument: firstAccounts },
+      { revisionOffered: true },
+    );
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    await expect(page.locator("#filingNotice")).toHaveText(
+      "These are the company's first accounts, so they have no previous year. This site cannot yet read back accounts with one year, so they cannot be amended here yet.",
+    );
+    await screenshotAtBothWidths(page, "filing-first-accounts");
+  });
+
+  test("says nothing of comparatives when accounts with both years are offered to amend", async ({ page }) => {
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, filedDocument: smallCompanyCase.xhtml },
+      { revisionOffered: true },
+    );
+    await expect(page.locator("#amendFilingLink")).toBeVisible();
+    await expect(page.locator("#filingNotice")).toBeHidden();
+  });
+
+  test("offers to amend accepted small company accounts on the small company form", async ({ page }) => {
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, filedDocument: smallCompanyCase.xhtml },
+      { revisionOffered: true },
+    );
+    const amendHref = `fileSmallCompanyAccounts.html?amend=${encodeURIComponent(ACCOUNTS_RECEIPT_NAME)}`;
+    await expect(page.locator("#amendFilingLink")).toHaveAttribute("href", amendHref);
+    await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveAttribute("href", amendHref);
+  });
+
+  for (const width of [1280, 390]) {
+    test(`titles the copy of revised accounts as revised (${width})`, async ({ page }) => {
+      const originalName = "2026-09-20T09:00:00.000Z-00000A.json";
+      await openFiling(
+        page,
+        ACCOUNTS_RECEIPT_NAME,
+        { ...ACCOUNTS_RECEIPT, amended: true, revisesReceipt: originalName, filedDocument: revisedAccountsCase.xhtml },
+        { width, revisionOffered: true },
+      );
+
+      await expect(page.locator("#filingContent .customer-copy-title")).toHaveText(
+        "Your copy of the revised accounts filed at Companies House",
+      );
+      await expect(page.locator("#amendFilingLink")).toBeHidden();
+      const original = page.locator("#filingContent .customer-copy-links a", { hasText: "See the original accounts these revise" });
+      await expect(original).toHaveAttribute("href", `filings.html?receipt=${encodeURIComponent(originalName)}`);
+      await expect(page.frameLocator("iframe.filed-document").locator("body")).toContainText("Revised accounts");
+      const inset = await page.locator(".filed-document-download a").evaluate((link) => {
+        const sheet = link.closest(".customer-copy-sheet").getBoundingClientRect();
+        return link.getBoundingClientRect().left - sheet.left;
+      });
+      expect(inset).toBeGreaterThanOrEqual(16);
+      fs.mkdirSync(path.join(process.cwd(), "target/browser-test-results/revised-accounts"), { recursive: true });
+      await page.screenshot({
+        path: path.join(process.cwd(), "target/browser-test-results/revised-accounts", `receipt-titled-revised-${width}.png`),
+        fullPage: true,
+      });
     });
   }
 });

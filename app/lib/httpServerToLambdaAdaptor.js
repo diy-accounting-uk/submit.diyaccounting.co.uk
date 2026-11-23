@@ -15,6 +15,7 @@
 
 import { createLogger } from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
+import { routePatternOf } from "./loggedPath.js";
 
 const logger = createLogger({ source: "app/lib/httpServerToLambdaAdaptor.js" });
 
@@ -125,7 +126,10 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body, i
  */
 export function registerLambdaRoute(app, method, path, handler) {
   app[method](path, async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaEvent = {
+      ...buildLambdaEventFromHttpRequest(httpRequest),
+      routeKey: `${method.toUpperCase()} ${routePatternOf(path)}`,
+    };
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });

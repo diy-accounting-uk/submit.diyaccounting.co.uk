@@ -52,6 +52,18 @@
   margin: var(--space-2) 0 0;
 }
 
+/* A pass card's terms: its redemption window, its limits and each bundle it grants, one a line. */
+.pass-terms {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+}
+
+.pass-terms li + li {
+  margin-top: var(--space-1);
+}
+
 .bundle-note--ok {
   color: var(--c-ok);
 }

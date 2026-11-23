@@ -12,6 +12,7 @@ import { calculateTtl, TTL_PRESETS } from "./dateUtils.js";
 //   passes              test pass or test actor 2 days; end date + 30 days; last use + 30 days; figures 13 months
 //   hmrc-api-requests   test actor 2 days; any other caller 28 days
 //   integration-calls   test actor 2 days; any other caller 90 days
+//   due-list rows       90 days after the row's due date
 // commissions, activity-charges, practice-clients and bundle-capacity keep their items; DataStack.java says why.
 
 // A short ttl deletes the record later. A record gets one only when the code proves that a test or a
@@ -141,4 +142,13 @@ export function callRecordRetention(actor, startedAt) {
  */
 export function figuresRetention(computedAt) {
   return calculateTtl(computedAt, TTL_PRESETS.THIRTEEN_MONTHS);
+}
+
+/**
+ * Retention of a due list row: ninety days after its due date, so a closed or old row goes without a sweep.
+ * @param {string} dueDate - The row's due date, YYYY-MM-DD
+ * @returns {{ttl: number, ttl_datestamp: string}}
+ */
+export function dueListRowRetention(dueDate) {
+  return calculateTtl(new Date(`${dueDate}T00:00:00Z`), TTL_PRESETS.NINETY_DAYS);
 }

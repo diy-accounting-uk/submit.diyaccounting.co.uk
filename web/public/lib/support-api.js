@@ -8,6 +8,12 @@
  * review. The response says only whether it was filed.
  */
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 /**
  * Submit a support ticket via the Lambda API
  * This files the request on behalf of the user; the person never needs a GitHub account.
@@ -34,7 +40,7 @@ export async function submitSupportTicket({ subject, description, category, emai
       const errorData = await response.json().catch(() => ({}));
       return {
         success: false,
-        error: errorData.message || `Failed to submit ticket (${response.status})`,
+        error: errorData.message || siteText("help.ticket-failed", "Failed to submit ticket ({status})", { status: response.status }),
       };
     }
 
@@ -43,7 +49,7 @@ export async function submitSupportTicket({ subject, description, category, emai
     console.error("Error submitting support ticket:", error);
     return {
       success: false,
-      error: "Network error. Please try again or email support@diyaccounting.co.uk.",
+      error: siteText("help.network-error", "Network error. Please try again or email support@diyaccounting.co.uk."),
     };
   }
 }

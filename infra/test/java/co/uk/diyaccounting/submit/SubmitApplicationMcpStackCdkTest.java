@@ -81,8 +81,16 @@ class SubmitApplicationMcpStackCdkTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /.well-known/oauth-protected-resource"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /.well-known/oauth-protected-resource/mcp"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "ANY /mcp/oauth/{action}"));
-        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /mcp"));
-        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /mcp/oauth/{action}"));
+        // ANY answers HEAD on the MCP paths, which have no GET route and so no HEAD route.
+        for (String routeKey : List.of("HEAD /mcp", "HEAD /mcp/oauth/{action}")) {
+            int found = 0;
+            for (Template template : apiTemplates) {
+                found += template.findResources(
+                                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", routeKey)))
+                        .size();
+            }
+            org.junit.jupiter.api.Assertions.assertEquals(0, found, routeKey);
+        }
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/mcp/hmrc-grants"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/mcp/hmrc-grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/mcp/hmrc-grants/{grantId}"));

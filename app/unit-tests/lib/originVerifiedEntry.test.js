@@ -50,6 +50,27 @@ describe("originVerifiedEntry", () => {
     expect(emitMetric).not.toHaveBeenCalled();
   });
 
+  test("logs a failed check with the route pattern in place of the company number in the path", async () => {
+    const { ingestHandler } = await loadEntry({ enforce: true });
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const result = await ingestHandler({
+        rawPath: "/api/v1/companies-house/company/SC123456",
+        routeKey: "GET /api/v1/companies-house/company/{companyNumber}",
+        pathParameters: { companyNumber: "SC123456" },
+        requestContext: { http: { method: "GET" } },
+        headers: {},
+      });
+      expect(result.statusCode).toBe(403);
+    } finally {
+      write.mockRestore();
+    }
+    const failure = lines.find((line) => line.includes("Origin check failed"));
+    expect(failure).toContain("/api/v1/companies-house/company/{companyNumber}");
+    expect(failure).not.toContain("SC123456");
+  });
+
   test("accepts the previous value while a roll is in progress", async () => {
     const { ingestHandler } = await loadEntry({ enforce: true });
     const result = await ingestHandler(httpEvent({ [HEADER]: "old-value" }));

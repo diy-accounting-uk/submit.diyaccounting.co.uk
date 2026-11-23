@@ -31,6 +31,7 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { recordFiledReceipt } from "../../services/filedReceipt.js";
+import { closeVatReturnRow } from "../../data/dynamoDbDueListRepository.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -140,6 +141,37 @@ export function apiEndpoint(app) {
   });
 }
 /* v8 ignore stop */
+
+// The longest a filing waits for its due list row to close.
+export const DUE_LIST_ROW_CLOSE_LIMIT_MS = 3000;
+
+/**
+ * Closes the account's due list row for the period a filed return covers. The filing is done by
+ * then, so a failure here is logged, with no personal data, and changes neither the filing's answer
+ * nor its receipt; a close that has not answered within DUE_LIST_ROW_CLOSE_LIMIT_MS is left behind
+ * the same way. A practice's filing for a client leaves the practice's own list as it is.
+ * @param {string} userSub
+ * @param {string|undefined} periodEnd
+ * @param {string|undefined} clientId
+ */
+export async function closeDueListVatRow(userSub, periodEnd, clientId) {
+  if (clientId || !periodEnd || !process.env.DUE_LIST_DYNAMODB_TABLE_NAME) return;
+  let limit;
+  try {
+    const overLimit = new Promise((resolve, reject) => {
+      limit = setTimeout(
+        () => reject(Object.assign(new Error("the row close did not answer in time"), { name: "TimeoutError" })),
+        DUE_LIST_ROW_CLOSE_LIMIT_MS,
+      );
+    });
+    const { matched, closed } = await Promise.race([closeVatReturnRow(userSub, periodEnd), overLimit]);
+    logger.info({ message: "Due list VAT return row after filing", matched, closed });
+  } catch (error) {
+    logger.warn({ message: "The due list VAT return row could not be closed after filing", errorName: error.name });
+  } finally {
+    clearTimeout(limit);
+  }
+}
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function extractAndValidateParameters(event, errorMessages) {
@@ -697,6 +729,7 @@ export async function ingestHandler(event) {
     requestId,
     traceparent,
     correlationId,
+    periodEnd,
   };
   logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
 
@@ -764,6 +797,7 @@ export async function ingestHandler(event) {
             language: payload.language,
           });
           resultData.receiptId = receiptId;
+          await closeDueListVatRow(payload.userSub, payload.periodEnd, payload.clientId);
         }
 
         return resultData;
@@ -915,6 +949,8 @@ export async function workerHandler(event) {
         userSub,
         result,
       });
+      // After the request is marked completed, so the due list cannot hold back the filing's answer.
+      if (receiptId) await closeDueListVatRow(userSub, payload.periodEnd, payload.clientId);
 
       logger.info({ message: "Successfully processed SQS message", requestId });
     },

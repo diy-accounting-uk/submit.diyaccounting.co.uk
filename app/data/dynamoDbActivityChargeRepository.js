@@ -75,6 +75,41 @@ export async function getActivityCharge(hashedSub, chargeKey) {
   return result.Item || null;
 }
 
+// Conditional: a charge that is paid or used moves to "refunded" once, with Stripe's refund id, so
+// a second poll of the same rejection does not record a second refund.
+export async function markActivityChargeRefunded(hashedSub, chargeKey, refundId) {
+  const tableName = getResourceName("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub, chargeKey },
+          UpdateExpression: "SET #status = :refunded, refundedAt = :refundedAt, stripeRefundId = :refundId",
+          ConditionExpression: "#status IN (:paid, :used)",
+          ExpressionAttributeNames: { "#status": "status" },
+          ExpressionAttributeValues: {
+            ":refunded": "refunded",
+            ":paid": "paid",
+            ":used": "used",
+            ":refundedAt": new Date().toISOString(),
+            ":refundId": refundId,
+          },
+        }),
+    );
+    logger.info({ message: "Activity charge marked refunded", hashedSub, chargeKey });
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Activity charge not paid or used, not marked refunded", hashedSub, chargeKey });
+      return false;
+    }
+    logger.error({ message: "Error marking activity charge refunded", error: error.message, hashedSub, chargeKey });
+    throw error;
+  }
+}
+
 // Conditional: only a charge in "paid" state moves to "used", so a second attempt at the same
 // filing (or a retry racing the first) cannot spend an already-used charge a second time.
 export async function markActivityChargeUsed(hashedSub, chargeKey) {

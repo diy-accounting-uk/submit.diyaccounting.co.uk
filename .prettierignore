@@ -32,3 +32,5 @@ web/public/lib/books-bundle.js
 # iXBRL documents copied byte for byte from the spreadsheets fixtures; the reader parses them as filed.
 web/browser-tests/fixtures/ixds-two-file/
 web/browser-tests/fixtures/ixds-two-file-disagree/
+# Filed accounts documents that the last-accounts mapping reads as filed, byte for byte.
+app/unit-tests/fixtures/filed-accounts/

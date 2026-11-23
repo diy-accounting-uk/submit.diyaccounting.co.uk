@@ -37,7 +37,7 @@ export const DATED_FACTS = [
     id: "ch-identity-verification-2025-11",
     date: "2025-11-18",
     title: "Companies House: director and PSC identity verification",
-    text: "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A director gives the personal code with the company's next confirmation statement. A PSC verifies and gives the personal code within a 14 day period that depends on the PSC's situation.",
+    text: "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A new director gives the Companies House personal code as part of the appointment filing, or when the company is incorporated. A new PSC gives the personal code when first added to the Companies House register, or within 14 days of being added.",
   },
   {
     id: "vat-mtd-all-registered-2022-04",
@@ -111,6 +111,11 @@ export const COMPANY_YEARLY_FACTS = [
     pageLabel: "Look up when a company's accounts and confirmation statement are due",
   },
   {
+    id: "ch-revised-accounts-28-days",
+    title: "Revised accounts at Companies House",
+    text: "When the directors revise accounts already filed, they must deliver the revised accounts to Companies House within 28 days of the date of revision.",
+  },
+  {
     id: "ct600-12-months",
     title: "Company Tax Return (CT600)",
     text: "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers. A period of account longer than 12 months, up to 18 months, files as two returns, both due 12 months after the period of account ends.",
@@ -181,7 +186,7 @@ export const AVAILABILITY = [
     activity: "file-micro-entity-accounts",
     otherActivities: ["file-small-company-accounts"],
     video: "yPSpvLKrTJU",
-    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production", "micro-entity"], NOT_OFFERED],
+    cells: [["production"], ["production"], ["production", "package zip"], ["production"], ["production", "micro-entity"], NOT_OFFERED],
   },
   {
     filing: "Companies House confirmation statement",
@@ -208,6 +213,12 @@ export const AVAILABILITY = [
     web: "companies-house/fileCompanyTaxReturn.html",
     activity: "file-company-tax-return-with-accounts",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
+  {
+    filing: "Companies House revised accounts (micro-entity, small company, dormant)",
+    web: "companies-house/fileMicroEntityAccounts.html",
+    activity: "file-revised-accounts",
+    cells: [["preview", "from an accepted filing"], ["preview"], ["preview", "package zip"], ["preview"], NOT_OFFERED, NOT_OFFERED],
   },
 ];
 
@@ -243,6 +254,7 @@ export const RELEVANT_FOR = {
   "ch-identity-verification-2025-11": COMPANIES,
   "ch-confirmation-statement-12-months": COMPANIES,
   "ch-accounts-9-months": COMPANIES,
+  "ch-revised-accounts-28-days": COMPANIES,
   "ct600-12-months": COMPANIES,
   "ct-payment-9-months-1-day": COMPANIES,
 };

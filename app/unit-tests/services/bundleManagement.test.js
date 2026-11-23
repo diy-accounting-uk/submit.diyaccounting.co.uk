@@ -86,6 +86,17 @@ describe("bundleEnforcement.js", () => {
   });
 
   describe("enforceBundles", () => {
+    test("refuses a named activity that the catalogue does not hold", async () => {
+      const authorizerContext = { sub: "user-named-activity", email: "named@example.com" };
+      const event = buildEvent(makeJWT("user-named-activity"), authorizerContext, "/api/v1/account/settings");
+      getUserBundles.mockResolvedValue([]);
+
+      await expect(enforceBundles(event, { activityId: "no-such-activity" })).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "ACTIVITY_NOT_IN_CATALOGUE", activityId: "no-such-activity" },
+      });
+    });
+
     test("should throw BundleAuthorizationError when no authorization token", async () => {
       const event = buildEvent(null);
 
@@ -438,15 +449,18 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/companies-house/confirmation-statement",
         "/api/v1/companies-house/confirmation-statement/render",
         "/api/v1/companies-house/confirmation-statement/00001A",
-        "/api/v1/companies-house/company/00000006/officers",
-        "/api/v1/companies-house/company/00000006/persons-with-significant-control",
-        "/api/v1/companies-house/company/00000006/filing-data",
+        "/api/v1/companies-house/company/00000008/filing-data",
+        "/api/v1/companies-house/company/00000008/filed-accounts",
+        "/api/v1/companies-house/company/00000008/filed-accounts/MzAwMDAwMDAwMA/document",
         "/api/v1/companies-house/psc-verification-statement",
         "/api/v1/companies-house/psc-verification-statement/00001A",
       ];
       const lookupRoutes = [
         "/api/v1/companies-house/search",
-        "/api/v1/companies-house/company/00000006",
+        "/api/v1/companies-house/company/00000008",
+        "/api/v1/companies-house/company/00000008/officers",
+        "/api/v1/companies-house/company/00000008/persons-with-significant-control",
+        "/api/v1/companies-house/company/00000008/filing-history",
         "/companies-house/companySearch.html",
       ];
       const defaultBundleRoutes = [
@@ -454,8 +468,8 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/companies-house/transaction/abc123",
         "/api/v1/companies-house/transaction/abc123/registered-office-address",
         "/api/v1/companies-house/transaction/abc123/registered-email-address",
-        "/api/v1/companies-house/company/00000006/registered-office-address",
-        "/api/v1/companies-house/company/00000006/registered-email-address/eligibility",
+        "/api/v1/companies-house/company/00000008/registered-office-address",
+        "/api/v1/companies-house/company/00000008/registered-email-address/eligibility",
         "/api/v1/companies-house/token",
       ];
 
@@ -484,9 +498,11 @@ describe("bundleEnforcement.js", () => {
       });
 
       test.each([
-        "/api/v1/companies-house/company/00000006",
-        "/api/v1/companies-house/company/00000006/officers",
-        "/api/v1/companies-house/company/00000006/persons-with-significant-control",
+        "/api/v1/companies-house/company/00000008",
+        "/api/v1/companies-house/company/00000008/officers",
+        "/api/v1/companies-house/company/00000008/persons-with-significant-control",
+        "/api/v1/companies-house/company/00000008/filed-accounts",
+        "/api/v1/companies-house/company/00000008/filed-accounts/MzAwMDAwMDAwMA/document",
       ])("%s is allowed for a resident filer", async (urlPath) => {
         const event = defaultOnlyEvent(urlPath);
         getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);
@@ -535,6 +551,32 @@ describe("bundleEnforcement.js", () => {
       const result = await enforceBundles(buildClientScopedEvent(), { clientId: "c1" });
 
       expect(result.client.clientId).toBe("c1");
+    });
+
+    test("logs the refusal with the route pattern in place of the client id in the path", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
+      const event = {
+        ...buildClientScopedEvent(),
+        routeKey: "GET /api/v1/practice/clients/{clientId}",
+        rawPath: "/api/v1/practice/clients/client-7q2m",
+        pathParameters: { clientId: "client-7q2m" },
+      };
+      event.requestContext = {
+        ...event.requestContext,
+        http: { ...event.requestContext.http, path: "/api/v1/practice/clients/client-7q2m" },
+      };
+      const lines = [];
+      const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+
+      try {
+        await expect(enforceBundles(event, { clientId: "c1" })).rejects.toMatchObject({
+          details: { code: "CLIENT_SCOPE_FORBIDDEN", path: "/api/v1/practice/clients/{clientId}" },
+        });
+      } finally {
+        write.mockRestore();
+      }
+      expect(lines.join("")).toContain("/api/v1/practice/clients/{clientId}");
+      expect(lines.join("")).not.toContain("client-7q2m");
     });
 
     test("refuses a client-scoped request when the practice holds no resident-tax-agent subscription", async () => {

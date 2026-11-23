@@ -61,6 +61,15 @@ function handler(event) {
   if (uri === "/" || uri.indexOf("/.well-known/") === 0) {
     return request;
   }
+  // Every view of the company lookup's drill-down is one page, which reads its path on load.
+  if (uri.indexOf("/companies-house/company/") === 0) {
+    request.uri = "/companies-house/companySearch.html";
+    return request;
+  }
+  if (uri.indexOf("/cy/companies-house/company/") === 0) {
+    request.uri = "/cy/companies-house/companySearch.html";
+    return request;
+  }
   const path = uri.slice(1);
   const last = path.slice(path.lastIndexOf("/") + 1);
   if (last === "") {

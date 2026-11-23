@@ -13,6 +13,10 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const busy = {
   code: "tiger-happy-mountain-silver",
+  bundleId: "week-guest",
+  createdAt: "2026-09-14T09:00:00.000Z",
+  validFrom: "2026-09-14T09:00:00.000Z",
+  validUntil: "2026-12-31T00:00:00.000Z",
   passTypeId: "digital-pass",
   maxUses: 50,
   useCount: 14,
@@ -29,6 +33,9 @@ const busy = {
 };
 const quiet = {
   code: "ocean-purple-forest-dawn",
+  bundleId: "day-guest",
+  createdAt: "2026-10-02T09:00:00.000Z",
+  validFrom: "2026-10-02T09:00:00.000Z",
   passTypeId: "physical-pass",
   maxUses: 1,
   useCount: 1,
@@ -44,6 +51,10 @@ const quiet = {
 };
 const unused = {
   code: "river-calm-stone-amber",
+  bundleId: "week-guest",
+  createdAt: "2026-11-10T09:00:00.000Z",
+  validFrom: "2026-11-10T09:00:00.000Z",
+  validUntil: "2027-02-28T00:00:00.000Z",
   passTypeId: "digital-pass",
   maxUses: 20,
   useCount: 0,

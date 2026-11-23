@@ -1,0 +1,203 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "company-watch-list",
+  "title": "Keep a watch list of companies",
+  "description": "A signed-in walk through the company watch list: find a company, add it, and read its next filing dates.",
+  "auth": "user",
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/companies-house/watchList.html"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 3000,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "Keep the companies you look after in one list.",
+          "headline": "Watch your companies",
+          "keyWord": "companies"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
+        {
+          "action": "hold",
+          "ms": 300
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your watch list.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('Company Watch List (Companies House)')",
+          "label": "Waiting for the activity to appear"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "chapter": "Open the list",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Company Watch List (Companies House)"
+          },
+          "caption": "Open Company Watch List.",
+          "headline": "Open the watch list",
+          "keyWord": "watch"
+        },
+        {
+          "action": "await",
+          "until": "#watchSearchForm",
+          "label": "Opening the watch list"
+        },
+        {
+          "action": "type",
+          "target": "#companyQuery",
+          "text": "00000001",
+          "clear": true,
+          "caption": "Find a company by name or number.",
+          "headline": "Find a company",
+          "keyWord": "Find"
+        },
+        {
+          "action": "click",
+          "target": "#searchBtn",
+          "caption": "Companies House answers with the company.",
+          "headline": "Companies House answers",
+          "keyWord": "answers",
+          "instruction": "Enter a company name or number in Company name or number, then choose Search."
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
+      ]
+    },
+    {
+      "id": "add",
+      "chapter": "Add and read",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#searchResults .watch-list-add",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 30000
+        },
+        {
+          "action": "click",
+          "target": "#searchResults .watch-list-add",
+          "caption": "Add it to your watch list.",
+          "headline": "Add to the list",
+          "keyWord": "Add"
+        },
+        {
+          "action": "await",
+          "until": "#watchListTable .watch-list-remove",
+          "label": "Reading the company",
+          "timeoutMs": 30000,
+          "caption": "The list shows each company's next filing dates.",
+          "headline": "Next filing dates",
+          "keyWord": "dates"
+        },
+        {
+          "action": "scroll",
+          "target": "#watchListView"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
+        {
+          "action": "point",
+          "target": "#watchListTable",
+          "caption": "Accounts and confirmation statement dates, read from the register.",
+          "headline": "Dates from the register",
+          "keyWord": "register",
+          "dwellMs": 600,
+          "instruction": "Choose Add to watch list, then read the next accounts and confirmation statement dates."
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "company-watch-list"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    }
+  ]
+}

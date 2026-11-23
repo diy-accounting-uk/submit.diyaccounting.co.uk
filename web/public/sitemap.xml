@@ -46,6 +46,17 @@
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/help.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/help.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/help.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/help.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/help.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/help.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/help.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/help.html" />
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -246,6 +257,17 @@
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/privacy.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/privacy.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/privacy.html" />
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/privacy.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/privacy.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/privacy.html" />
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -256,11 +278,33 @@
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/terms.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/terms.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/terms.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/terms.html" />
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/terms.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/terms.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/terms.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/terms.html" />
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/accessibility.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/accessibility.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/accessibility.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/accessibility.html" />
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/accessibility.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/accessibility.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/accessibility.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/accessibility.html" />
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>

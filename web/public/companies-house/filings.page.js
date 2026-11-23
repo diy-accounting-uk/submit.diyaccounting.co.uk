@@ -27,21 +27,64 @@ function fitFrameToDocument(frame) {
   if (frame.contentDocument?.readyState === "complete") fit();
 }
 
-async function mountFilingCopy(container, receipt, receiptName) {
+async function mountFilingCopy(container, receipt, receiptName, amendHref) {
   const { filingCopyHtml } = await import("../lib/filing-record.js");
-  const html = filingCopyHtml(receipt, { receiptName });
+  const html = filingCopyHtml(receipt, { receiptName, ...(amendHref ? { linksTo: { correct: amendHref } } : {}) });
   const parsed = new DOMParser().parseFromString(html, "text/html");
   container.replaceChildren(...parsed.body.childNodes);
   container.querySelectorAll("iframe.filed-document").forEach(fitFrameToDocument);
 }
 
 // A Company Tax Return that carries the answers it was made from can be amended: the filing page
-// refills the form from them.
-function showAmendLink(receipt, receiptName) {
+// refills the form from them. Accepted micro-entity and small company accounts filed on their own can
+// be revised where revised accounts are offered: the accounts form refills from the document filed.
+async function amendHrefOf(receipt, receiptName) {
+  if (receipt.kind === "company-tax-return") {
+    const amendable = receipt.statusCode === "ACCEPT" && Boolean(receipt.formRequest);
+    return amendable ? `fileCompanyTaxReturn.html?amend=${encodeURIComponent(receiptName)}` : null;
+  }
+  const revisionModule = await import("../lib/accounts-revision.js");
+  if (revisionModule.refusalOf(receipt) || !(await revisionModule.isRevisionOfferedHere())) return null;
+  const bundle = await import("../lib/books-bundle.js");
+  try {
+    const { regime } = revisionModule.revisionSourceOf(receipt, bundle);
+    const form = { micro: "fileMicroEntityAccounts.html", small: "fileSmallCompanyAccounts.html" }[regime];
+    return form ? `${form}?amend=${encodeURIComponent(receiptName)}` : null;
+  } catch (error) {
+    console.warn("These accounts cannot be revised here because the filed document could not be read:", error);
+    if (filedWithoutComparatives(receipt, bundle)) {
+      const { marksFirstAccounts } = await import("../lib/first-accounts.js");
+      showNotice(
+        marksFirstAccounts(receipt.filedDocument)
+          ? window.siteText(
+              "ch.filing.first-accounts-one-year",
+              "These are the company's first accounts, so they have no previous year. This site cannot yet read back accounts with one year, so they cannot be amended here yet.",
+            )
+          : window.siteText(
+              "ch.filing.no-comparatives-why",
+              "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
+            ),
+      );
+    }
+    return null;
+  }
+}
+
+// The reader asks for both years unless the company is new; accounts that read once the prior year is
+// excused were filed with one year only.
+function filedWithoutComparatives(receipt, bundle) {
+  try {
+    bundle.mapIxbrlAccounts(receipt.filedDocument, { regime: "any", firstAccounts: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function showAmendLink(amendHref) {
   const link = element("amendFilingLink");
-  const amendable = receipt.kind === "company-tax-return" && receipt.statusCode === "ACCEPT" && Boolean(receipt.formRequest);
-  link.style.display = amendable ? "inline-block" : "none";
-  if (amendable) link.href = `fileCompanyTaxReturn.html?amend=${encodeURIComponent(receiptName)}`;
+  link.hidden = !amendHref;
+  if (amendHref) link.href = amendHref;
 }
 
 async function showFiling(receiptName) {
@@ -61,8 +104,9 @@ async function showFiling(receiptName) {
     );
     return;
   }
-  await mountFilingCopy(element("filingContent"), receipt, receiptName);
-  showAmendLink(receipt, receiptName);
+  const amendHref = await amendHrefOf(receipt, receiptName);
+  await mountFilingCopy(element("filingContent"), receipt, receiptName, amendHref);
+  showAmendLink(amendHref);
   element("filingActions").style.display = "flex";
 }
 

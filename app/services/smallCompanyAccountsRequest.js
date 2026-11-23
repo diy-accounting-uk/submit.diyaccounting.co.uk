@@ -21,8 +21,10 @@ import {
   INTANGIBLE_ASSET_FIELDS,
   intangibleAssetClosingFigures,
 } from "./smallCompanyAccountsIxbrl.js";
-import { SHARE_CLASSES, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
+import { SHARE_CLASSES, shareCapitalFindings, directorsAdvancesMissing } from "../../web/public/lib/accounts-notes-check.js";
 import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
+import { comparativesFinding } from "../../web/public/lib/first-accounts.js";
+import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../web/public/lib/balance-sheet-check.js";
 
 const SMALL_COMPANY_STATEMENT_FIELDS = [
   "section477Exemption",
@@ -85,9 +87,8 @@ function readBalanceSheetYear(values, label, errorMessages) {
     if (netAssets !== figures.capitalAndReserves) {
       errorMessages.push(`${label}.capitalAndReserves does not equal net assets (${netAssets})`);
     }
-    if (figures.calledUpShareCapital + figures.profitAndLossAccount !== figures.capitalAndReserves) {
-      errorMessages.push(`${label}.capitalAndReserves does not equal calledUpShareCapital plus profitAndLossAccount`);
-    }
+    const mismatch = capitalAndReservesMismatch(figures);
+    if (mismatch) errorMessages.push(capitalAndReservesMessage(mismatch, YEAR_NAMES[label.split(".").pop()]));
   }
   return figures;
 }
@@ -175,14 +176,12 @@ function readShareCapital(values, calledUpShareCapital, errorMessages) {
   if (values === undefined || values === null) return undefined;
   const { shareClass } = values;
   const nominalValue = Number(values.nominalValue);
-  if (!SHARE_CLASSES.includes(shareClass)) {
-    errorMessages.push(`Invalid smallCompany.shareCapital.shareClass - must be one of ${SHARE_CLASSES.join(", ")}`);
-  }
-  if (!Number.isFinite(nominalValue) || nominalValue <= 0) {
-    errorMessages.push("Invalid smallCompany.shareCapital.nominalValue - must be a positive number of pounds per share");
-  } else if (Number.isFinite(calledUpShareCapital) && sharesIssuedFor(calledUpShareCapital, nominalValue) === null) {
-    errorMessages.push("smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares");
-  }
+  const messages = {
+    "share-class": `Invalid smallCompany.shareCapital.shareClass - must be one of ${SHARE_CLASSES.join(", ")}`,
+    "nominal-value": "Invalid smallCompany.shareCapital.nominalValue - must be a positive number of pounds per share",
+    "whole-shares": "smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares",
+  };
+  for (const { rule } of shareCapitalFindings({ shareClass, nominalValue }, calledUpShareCapital)) errorMessages.push(messages[rule]);
   return { shareClass, nominalValue };
 }
 
@@ -193,7 +192,7 @@ function readShareCapital(values, calledUpShareCapital, errorMessages) {
  * @param {string[]} errorMessages - validation messages are appended here
  * @returns {object} the buildSmallCompanyAccounts input fields this section supplies, plus the accepted statements
  */
-export function extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages) {
+export function extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages, periodStart) {
   const section = smallCompany && typeof smallCompany === "object" ? smallCompany : {};
 
   if (section.filleted !== undefined && typeof section.filleted !== "boolean") {
@@ -229,6 +228,30 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
   const priorProfitAndLoss = section.profitAndLoss?.priorYear
     ? readProfitAndLossYear(section.profitAndLoss.priorYear, profitAndLossFormat, "smallCompany.profitAndLoss.priorYear", errorMessages)
     : undefined;
+  const dateOfIncorporation = section.dateOfIncorporation;
+  if (dateOfIncorporation !== undefined && !(typeof dateOfIncorporation === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateOfIncorporation))) {
+    errorMessages.push("Invalid smallCompany.dateOfIncorporation - must be YYYY-MM-DD");
+  }
+  // The prior year's balance sheet is what a revision reads back, so the route requires it; the
+  // Company Tax Return's book publishes no prior-year profit and loss account to require.
+  const comparatives = comparativesFinding({
+    periodStart,
+    dateOfIncorporation,
+    hasPriorYear: dateOfIncorporation ? Boolean(priorBalanceSheet || priorProfitAndLoss) : Boolean(priorBalanceSheet),
+  });
+  if (comparatives === "prior-year-required") {
+    errorMessages.push(
+      "smallCompany.balanceSheet.priorYear is required: accounts show the preceding year's figures unless they are the company's first, which give smallCompany.dateOfIncorporation",
+    );
+  } else if (comparatives === "first-accounts-start-on-incorporation") {
+    errorMessages.push(
+      "smallCompany.dateOfIncorporation must equal periodStart: a company's first accounts start on the day it was incorporated",
+    );
+  } else if (comparatives === "first-accounts-have-no-prior-year") {
+    errorMessages.push(
+      "smallCompany.dateOfIncorporation marks first accounts, which have no preceding year: leave out the priorYear figures",
+    );
+  }
   const intangibleAssetNote = readIntangibleAssetNote(
     section.intangibleAssetNote,
     currentBalanceSheet.fixedAssets,
@@ -246,18 +269,17 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     if (text) policies[field] = text;
   }
   const controllingParty = readControllingParty(section.controllingParty, errorMessages);
-  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages);
-  const owedByDirectors = [currentBalanceSheet, priorBalanceSheet].some((sheet) => sheet?.amountsOwedByDirectors > 0);
-  if (owedByDirectors && !directorsAdvances?.length) {
+  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages, {
+    directorNames: directors,
+    amountsOwedByDirectors: currentBalanceSheet.amountsOwedByDirectors ?? 0,
+  });
+  if (
+    directorsAdvancesMissing(
+      directorsAdvances,
+      [currentBalanceSheet, priorBalanceSheet].map((sheet) => sheet?.amountsOwedByDirectors),
+    )
+  ) {
     errorMessages.push("smallCompany.directorsAdvances is required when a balance sheet shows amountsOwedByDirectors");
-  }
-  if (directorsAdvances?.length) {
-    const closing = directorsAdvances.reduce((total, advance) => total + advance.balanceAtEnd, 0);
-    if (closing !== (currentBalanceSheet.amountsOwedByDirectors ?? 0)) {
-      errorMessages.push(
-        `smallCompany.directorsAdvances balanceAtEnd (${closing}) must equal balanceSheet.currentYear.amountsOwedByDirectors`,
-      );
-    }
   }
 
   const statements = {};
@@ -272,6 +294,7 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     principalActivity,
     accountingPolicies,
     directors,
+    ...(dateOfIncorporation ? { dateOfIncorporation } : {}),
     balanceSheet: { current: currentBalanceSheet, ...(priorBalanceSheet ? { prior: priorBalanceSheet } : {}) },
     profitAndLoss: { current: currentProfitAndLoss, ...(priorProfitAndLoss ? { prior: priorProfitAndLoss } : {}) },
     ...(fixedAssetNote ? { fixedAssetNote } : {}),

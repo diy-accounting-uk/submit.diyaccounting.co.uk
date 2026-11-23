@@ -11,6 +11,9 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000003");
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -31,7 +34,7 @@ const ACCOUNTS_RECEIPT = {
   kind: "companies-house-accounts",
   statusCode: "ACCEPT",
   submissionNumber: "00001A",
-  companyNumber: "06846849",
+  companyNumber: "00000003",
   rejections: [],
   filedDocument: accountsDocumentCases()[0].xhtml,
 };
@@ -47,8 +50,8 @@ const CT_RECEIPT = {
   successMessage: "The submission was successfully received.",
   filed: {
     boxes: {
-      1: "Example Trading Limited",
-      2: "06846849",
+      1: COMPANY.name,
+      2: "00000003",
       3: "8596148860",
       30: "2025-04-01",
       35: "2026-03-31",
@@ -147,12 +150,12 @@ const COST_STATES = [
     bundles: [
       { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 0, tokenResetAt: "2026-12-01T00:00:00.000Z" },
     ],
-    welsh: /^Nid oes gennych gredydau ar ôl\. Bydd eich lwfans yn adnewyddu ar 1 Rhagfyr 2026, neu gallwch ychwanegu bwndel\.$/,
+    welsh: /^Nid oes gennych gredydau \(tokens\) ar ôl\. Bydd eich lwfans yn adnewyddu ar 1 Rhagfyr 2026, neu gallwch ychwanegu Bundle\.$/,
   },
   {
     state: "no token left, with no refresh date",
     bundles: [{ bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 0 }],
-    welsh: /^Nid oes gennych gredydau ar ôl\. Gallwch ychwanegu bwndel\.$/,
+    welsh: /^Nid oes gennych gredydau \(tokens\) ar ôl\. Gallwch ychwanegu Bundle\.$/,
   },
 ];
 
@@ -185,7 +188,8 @@ test.describe("Welsh pages in a long-used account's states", () => {
     const card = page.locator("#generatedPassesList [data-pass-code]").first();
     await expect(card.locator('[data-figure="filed"] dt')).toHaveText("Wedi ffeilio");
     await expect(card.locator('[data-figure="last-used"] dd')).toHaveText("28 Hyd 2026");
-    await expect(card).toContainText("Yn dod i ben 1 Awst 2027 · 14 o 25 defnydd");
+    await expect(card.locator(".pass-terms li").nth(0)).toHaveText("Defnyddiwch ef o 1 Awst 2026 tan 1 Awst 2027");
+    await expect(card.locator(".pass-terms li").nth(1)).toHaveText("Hyd at 25 defnydd, 1 i bob cyfrif");
     await expect(card.locator(".pass-copy-link")).toHaveText("Copïo’r ddolen");
     const cardLines = (await card.innerText()).split("\n").map((line) => line.trim());
     for (const english of ["Filed", "Uses", "Subscribers", "Last used", "Copy Link", "View QR", "Post", "Digital"])

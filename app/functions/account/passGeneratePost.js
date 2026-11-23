@@ -17,6 +17,7 @@ import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
+  getHeader,
   http200OkResponse,
   http400BadRequestResponse,
   http403ForbiddenResponse,
@@ -143,6 +144,8 @@ export async function ingestHandler(event) {
       userSub,
       detail: { passTypeId, bundleId: pass.bundleId, issuedBy: hashedSub },
     });
+    const welsh = getHeader(event.headers || {}, "X-Site-Language") === "cy";
+    const passBundle = catalog.bundles?.find((b) => b.id === pass.bundleId);
     await requestCustomerEmail({
       kind: "pass-generated",
       userSub,
@@ -153,6 +156,10 @@ export async function ingestHandler(event) {
         bundleId: pass.bundleId,
         validUntil: pass.validUntil || null,
         maxUses: pass.maxUses ?? null,
+        usesLeft: pass.maxUses === null || pass.maxUses === undefined ? null : pass.maxUses - (pass.useCount ?? 0),
+        generatedBy: "user",
+        passSummary: (welsh ? passBundle?.passSummaryCy : passBundle?.passSummary) ?? null,
+        ...(welsh ? { language: "cy" } : {}),
       },
     });
 

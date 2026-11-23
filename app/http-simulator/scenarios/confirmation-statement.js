@@ -11,6 +11,7 @@
 // one shared counter), so at most one registry ever carries a given number.
 
 import { isAuthenticated } from "./accounts-filing.js";
+import { registerCompanies, COMPANY_AUTHENTICATION_CODE } from "../fixtures/register.js";
 
 const AUTHORISATION_FAILURE_ERROR = {
   raisedBy: "Gateway",
@@ -65,47 +66,57 @@ const PRESENTER_ID_MISSING_ERROR = {
   text: "No presenter ID supplied",
 };
 
-// The one company this simulator answers CompanyDataRequest and PaymentPeriodsRequest for: two
-// directors (each also a PSC, as DIY Accounting Limited's own three directors are), one share
-// class, matching the shape CS-9's sandbox proof carries without any real company's authentication
-// code or personal codes.
-export const FIXTURE_COMPANY_NUMBER = "06846849";
-export const FIXTURE_COMPANY_AUTHENTICATION_CODE = "SIMCS01";
+// The confirmation statement journey's company: two directors, each also a PSC, and one share class,
+// with a statement due now (fixtures/register.js names the test numbers).
+export const FIXTURE_COMPANY_NUMBER = "00000004";
+// The authentication code of every company this simulator answers CompanyDataRequest and
+// PaymentPeriodsRequest for.
+export const FIXTURE_COMPANY_AUTHENTICATION_CODE = COMPANY_AUTHENTICATION_CODE;
 
-export const FIXTURE_COMPANY = {
-  companyNumber: FIXTURE_COMPANY_NUMBER,
-  companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
-  companyCategory: "PRI",
-  jurisdiction: "EW",
-  tradingOnMarket: false,
-  dtr5Applies: false,
-  madeUpDate: "2025-09-21",
-  nextDueDate: "2026-10-05",
-  registeredOfficeAddress: {
-    premise: "1",
-    street: "Example Street",
-    postTown: "London",
-    country: "GB-ENG",
-    postcode: "AB1 2CD",
-  },
-  registeredEmailAddress: "confirmation-statement@example.com",
-  sicCodes: ["69201", "69202"],
-  officers: [
-    { role: "director", forename: "ELEANOR", surname: "BRAMWELL", dob: "1970-01-01", appointmentDate: "2015-01-01" },
-    { role: "director", forename: "MARCUS", surname: "TENNANT", dob: "1975-02-02", appointmentDate: "2015-01-01" },
-  ],
-  statementOfCapital: {
-    totalAmountUnpaid: "0",
-    totalNumberOfIssuedShares: "100",
-    shareCurrency: "GBP",
-    totalAggregateNominalValue: "100",
-    shares: [{ shareClass: "ORDINARY", prescribedParticulars: "ORDINARY SHARES", numShares: "100", aggregateNominalValue: "100" }],
-  },
-  shareholdings: [
-    { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "BRAMWELL", forename: "ELEANOR" }] },
-    { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "TENNANT", forename: "MARCUS" }] },
-  ],
-};
+const JURISDICTION_CODES = { "england-wales": "EW", "wales": "WA", "scotland": "SC", "northern-ireland": "NI" };
+const twoDigits = (value) => String(value).padStart(2, "0");
+
+// A register company's company data as CompanyDataRequest answers it.
+function companyDataOf(company) {
+  return {
+    companyNumber: company.number,
+    companyName: company.name,
+    companyCategory: "PRI",
+    jurisdiction: JURISDICTION_CODES[company.jurisdiction],
+    tradingOnMarket: false,
+    dtr5Applies: false,
+    madeUpDate: company.confirmationStatementDates.madeUpTo,
+    nextDueDate: company.confirmationStatementDates.due,
+    registeredOfficeAddress: {
+      premise: company.address.premises,
+      street: company.address.street,
+      postTown: company.address.locality,
+      country: company.address.countryCode,
+      postcode: company.address.postalCode,
+    },
+    registeredEmailAddress: company.email,
+    sicCodes: company.sicCodes,
+    officers: company.officers.map((officer) => ({
+      role: officer.role,
+      forename: officer.forename.toUpperCase(),
+      surname: officer.surname.toUpperCase(),
+      dob: `${officer.dateOfBirth.year}-${twoDigits(officer.dateOfBirth.month)}-01`,
+      appointmentDate: officer.appointedOn,
+    })),
+    statementOfCapital: company.capital,
+    shareholdings: company.shareholdings ?? [],
+  };
+}
+
+// The company data of each active company of the register, keyed by number. 00000003's shares are
+// in two currencies. A dissolved company has none.
+export const TEST_COMPANY_DATA = Object.fromEntries(
+  registerCompanies()
+    .filter((company) => company.status === "active")
+    .map((company) => [company.number, companyDataOf(company)]),
+);
+
+export const FIXTURE_COMPANY = TEST_COMPANY_DATA[FIXTURE_COMPANY_NUMBER];
 
 let submissions = new Map();
 let usedSubmissionNumbers = new Set();
@@ -119,12 +130,15 @@ export function resetConfirmationStatementFilings() {
   usedSubmissionNumbers = new Set();
 }
 
-function isFixtureCompany({ companyNumber, companyAuthenticationCode }) {
-  return companyNumber === FIXTURE_COMPANY_NUMBER && companyAuthenticationCode === FIXTURE_COMPANY_AUTHENTICATION_CODE;
+// The company data of the company this request names, when its authentication code is the simulator's.
+function companyDataFor({ companyNumber, companyAuthenticationCode }) {
+  if (companyAuthenticationCode !== FIXTURE_COMPANY_AUTHENTICATION_CODE) return null;
+  return TEST_COMPANY_DATA[companyNumber] ?? null;
 }
 
 /**
- * Handle a parsed CompanyDataRequest. Returns either { errors: [...] } or { company: FIXTURE_COMPANY }.
+ * Handle a parsed CompanyDataRequest. Returns either { errors: [...] } or { company } with the named
+ * company's data.
  */
 export function requestCompanyData({ senderIdHash, authValueHash, companyNumber, companyAuthenticationCode, scenario }) {
   if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
@@ -139,12 +153,13 @@ export function requestCompanyData({ senderIdHash, authValueHash, companyNumber,
   if (scenario === "AUTH_CODE_INVALID") {
     return { errors: [AUTH_CODE_INVALID_ERROR] };
   }
-  if (!isFixtureCompany({ companyNumber, companyAuthenticationCode })) {
+  const company = companyDataFor({ companyNumber, companyAuthenticationCode });
+  if (!company) {
     return {
       errors: [schemaFailureError("Company Authentication Code and Company Number combination did not match", "CompanyAuthenticationCode")],
     };
   }
-  return { company: FIXTURE_COMPANY };
+  return { company };
 }
 
 /**
@@ -164,7 +179,7 @@ export function requestPaymentPeriods({ senderIdHash, authValueHash, companyNumb
   if (scenario === "AUTH_CODE_INVALID") {
     return { errors: [AUTH_CODE_INVALID_ERROR] };
   }
-  if (!isFixtureCompany({ companyNumber, companyAuthenticationCode })) {
+  if (!companyDataFor({ companyNumber, companyAuthenticationCode })) {
     return {
       errors: [schemaFailureError("Company Authentication Code and Company Number combination did not match", "CompanyAuthenticationCode")],
     };

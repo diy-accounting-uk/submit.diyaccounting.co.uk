@@ -10,6 +10,8 @@ let __syntheticBundleIds = new Set();
 let __tokensRemaining = 0;
 let __hasTokenBundles = false;
 let __unlimitedTokenBundleIds = new Set();
+// Set when the last read of the account's bundles failed, so the list says it may be short.
+let __bundlesReadFailed = false;
 let __fetchBundlesController = null;
 
 async function initializeBundles() {
@@ -26,6 +28,7 @@ async function initializeBundles() {
     const signal = __fetchBundlesController.signal;
 
     // Fetch user bundles from endpoint (single source of truth)
+    __bundlesReadFailed = false;
     try {
       const rc = window.requestCache;
       let bundlesData;
@@ -72,6 +75,7 @@ async function initializeBundles() {
       }
       console.warn("Failed to fetch bundles:", err);
       __userBundles = [];
+      __bundlesReadFailed = true;
     } finally {
       if (__fetchBundlesController?.signal === signal) {
         __fetchBundlesController = null;
@@ -424,7 +428,18 @@ async function renderDynamicActivities() {
     const loginNote = needsLogin
       ? [messageParagraph("activity-message", window.pageText("login-note", "These activities need an account and a bundle."))]
       : [];
-    dynamicContainer.replaceChildren(...loginNote, ...sections);
+    const readNote = __bundlesReadFailed
+      ? [
+          messageParagraph(
+            "activity-message activity-message--error",
+            window.pageText(
+              "bundles-unread",
+              "Your bundles could not be read, so this list may leave out activities you hold. Reload the page to try again.",
+            ),
+          ),
+        ]
+      : [];
+    dynamicContainer.replaceChildren(...readNote, ...loginNote, ...sections);
     dynamicContainer.querySelector(".activity-secondary")?.classList.remove("activity-secondary");
   } catch (error) {
     console.error("Error loading activities:", error);

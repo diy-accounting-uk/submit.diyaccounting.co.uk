@@ -33,8 +33,8 @@ field, so rates, allowances and any other tax figure use it unchanged.
 
 | Field | Rule |
 |---|---|
-| `url` | A gov.uk page. No other host. |
-| `title` | The GOV.UK page's title without " - GOV.UK". `scripts/verify-tax-sources.mjs` reads it from the page and fails on a difference. |
+| `url` | A `www.gov.uk` page, or the statute itself on `www.legislation.gov.uk` when no GOV.UK page states the fact. No other host. |
+| `title` | The page's title, without " - GOV.UK" on a GOV.UK page. `scripts/verify-tax-sources.mjs` reads it from the page and fails on a difference. |
 | `retrieved` | ISO date (`YYYY-MM-DD`) of the day the page was read. Maximum age 30 days. |
 | `quote` | Verbatim page text: whole sentences, so it starts with a capital letter and ends at the end of a sentence. Whitespace differences are ignored; wording is not. Table cells read left to right, row by row, as flat text. |
 | `table` | Optional. `true` when the quote is a table or a list that gov.uk states only that way. The page prints the link line and not the words. |
@@ -46,10 +46,11 @@ fact live in the page that shows it (`scripts/build-mtd-calendar.mjs` for the ca
 source file. One page can need several files, one per quote. A fact can list in several files.
 
 Two rules govern how a page prints a source. The line under a quote is one link in words:
-"Source: GOV.UK, <title> (checked <date>)", never the bare address or "Retrieved". A section that cites
+"Source: GOV.UK, <title> (checked <date>)", or "Source: legislation.gov.uk, <title> (checked <date>)" for a
+statute, never the bare address or "Retrieved". A section that cites
 one GOV.UK page more than once prints the link once (`sourcesQuoteHtml` in `scripts/tax-sources.mjs`).
 
-A fact with no gov.uk page that states it stays off the site. Say so in the report instead of
+A fact with no GOV.UK page and no statute that states it stays off the site. Say so in the report instead of
 sourcing it elsewhere.
 
 ## Add a source

@@ -43,7 +43,7 @@ function loadConfig() {
               match: ".*",
               claims: {
                 sub: "user",
-                email: "user@example.com",
+                email: "reader@test.diyaccounting.co.uk",
                 aud: ["debugger"],
                 scope: "openid somescope",
                 nonce: "5678",
@@ -109,7 +109,7 @@ function generateLoginForm(redirectUri, state, clientId, scope, codeChallenge) {
     <input type="hidden" name="scope" value="${scope}">
     <input type="hidden" name="code_challenge" value="${codeChallenge}">
     <input type="text" name="username" placeholder="Enter any user/subject" value="user" required autofocus>
-    <textarea name="claims" rows="5" placeholder="Optional claims JSON">{"email": "user@example.com"}</textarea>
+    <textarea name="claims" rows="5" placeholder="Optional claims JSON">{"email": "reader@test.diyaccounting.co.uk"}</textarea>
     <input type="submit" name="submit" value="Sign-in">
   </form>
 </body>
@@ -241,7 +241,7 @@ export function apiEndpoint(app) {
     const claims = {
       ...defaultClaims,
       sub: codeData?.username || defaultClaims.sub || "user",
-      email: codeData?.claims?.email || defaultClaims.email || "user@example.com",
+      email: codeData?.claims?.email || defaultClaims.email || "reader@test.diyaccounting.co.uk",
       iss: `${baseUrl}/default`,
       aud: defaultClaims.aud || "debugger",
       iat: now,

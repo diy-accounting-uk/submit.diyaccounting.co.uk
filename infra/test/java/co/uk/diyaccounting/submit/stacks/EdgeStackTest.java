@@ -334,7 +334,7 @@ class EdgeStackTest {
     }
 
     @Test
-    void publicDeadlinesPathIsCachedByQueryStringAndComesBeforeTheGeneralApiBehaviour() {
+    void publicDeadlinesPathIsCachedByItsTwoParametersAndComesBeforeTheGeneralApiBehaviour() {
         Template template = Template.fromStack(synthEdgeStack());
 
         template.hasResourceProperties(
@@ -349,7 +349,11 @@ class EdgeStackTest {
                                 "ParametersInCacheKeyAndForwardedToOrigin",
                                 Match.objectLike(Map.of(
                                         "QueryStringsConfig",
-                                        Map.of("QueryStringBehavior", "all"),
+                                        Map.of(
+                                                "QueryStringBehavior",
+                                                "whitelist",
+                                                "QueryStrings",
+                                                List.of("number", "q")),
                                         "CookiesConfig",
                                         Map.of("CookieBehavior", "none"),
                                         "HeadersConfig",
@@ -373,6 +377,71 @@ class EdgeStackTest {
         assertEquals(List.of("GET", "HEAD"), behaviours.get(cached).get("AllowedMethods"));
         assertNotEquals(
                 "4135ea2d-6df8-44a3-9df3-4b5a84be39ad", behaviours.get(cached).get("CachePolicyId"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void publicDeadlinesPathAnswersCorsForTheSpreadsheetsAndDiyaGlSitesWithTheApiSecurityHeaders() {
+        Template template = Template.fromStack(synthEdgeStack());
+        var policies = template.findResources("AWS::CloudFront::ResponseHeadersPolicy");
+        assertEquals(6, policies.size(), "custom response headers policies of one deployment");
+        template.resourceCountIs("AWS::CloudFront::ResponseHeadersPolicy", 6);
+
+        String deadlinesPolicyId = null;
+        Map<String, Object> deadlinesConfig = null;
+        Map<String, Object> apiConfig = null;
+        for (var entry : policies.entrySet()) {
+            var config = (Map<String, Object>)
+                    ((Map<String, Object>) entry.getValue().get("Properties")).get("ResponseHeadersPolicyConfig");
+            String name = String.valueOf(config.get("Name"));
+            if (name.endsWith("-public-deadlines-whp")) {
+                deadlinesPolicyId = entry.getKey();
+                deadlinesConfig = config;
+            } else if (name.endsWith("-diya-gl-whp")) {
+                apiConfig = config;
+            }
+        }
+        assertTrue(deadlinesConfig != null, "public deadlines policy present");
+        assertTrue(apiConfig != null, "API policy present");
+
+        var cors = (Map<String, Object>) deadlinesConfig.get("CorsConfig");
+        assertEquals(
+                List.of(
+                        "https://spreadsheets.diyaccounting.co.uk",
+                        "https://ci-spreadsheets.diyaccounting.co.uk",
+                        "https://diya-gl.co.uk",
+                        "https://ci.diya-gl.co.uk"),
+                ((Map<String, Object>) cors.get("AccessControlAllowOrigins")).get("Items"));
+        assertEquals(
+                List.of("GET", "HEAD"), ((Map<String, Object>) cors.get("AccessControlAllowMethods")).get("Items"));
+        assertEquals(true, cors.get("OriginOverride"));
+        assertEquals(false, cors.get("AccessControlAllowCredentials"));
+        assertEquals(apiConfig.get("SecurityHeadersConfig"), deadlinesConfig.get("SecurityHeadersConfig"));
+        assertEquals(apiConfig.get("CustomHeadersConfig"), deadlinesConfig.get("CustomHeadersConfig"));
+        assertFalse(
+                apiConfig.containsKey("CorsConfig"), "the shared API policy keeps passing the origin's CORS through");
+
+        var distribution = (Map<String, Object>) template.findResources("AWS::CloudFront::Distribution")
+                .values()
+                .iterator()
+                .next();
+        var behaviours = (List<Map<String, Object>>)
+                ((Map<String, Object>) ((Map<String, Object>) distribution.get("Properties")).get("DistributionConfig"))
+                        .get("CacheBehaviors");
+        var deadlinesBehaviour = behaviours.stream()
+                .filter(b -> "/api/v1/public/company-deadlines".equals(b.get("PathPattern")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(
+                deadlinesPolicyId,
+                ((Map<String, Object>) deadlinesBehaviour.get("ResponseHeadersPolicyId")).get("Ref"));
+        var generalApiBehaviour = behaviours.stream()
+                .filter(b -> "/api/v1/*".equals(b.get("PathPattern")))
+                .findFirst()
+                .orElseThrow();
+        assertNotEquals(
+                deadlinesPolicyId,
+                ((Map<String, Object>) generalApiBehaviour.get("ResponseHeadersPolicyId")).get("Ref"));
     }
 
     @Test
@@ -404,6 +473,104 @@ class EdgeStackTest {
                 "AWS::WAFv2::WebACL",
                 Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
         assertTrue(EdgeStack.PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES < 2000L);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void publicRegisterPathIsCachedAnHourByItsNumberWithTheDeadlinesCorsPolicyBeforeTheGeneralApiBehaviour() {
+        Template template = Template.fromStack(synthEdgeStack());
+
+        template.hasResourceProperties(
+                "AWS::CloudFront::CachePolicy",
+                Match.objectLike(Map.of(
+                        "CachePolicyConfig",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                Match.stringLikeRegexp("-public-register-cp$"),
+                                "DefaultTTL",
+                                0,
+                                "MaxTTL",
+                                EdgeStack.PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS,
+                                "ParametersInCacheKeyAndForwardedToOrigin",
+                                Match.objectLike(Map.of(
+                                        "QueryStringsConfig",
+                                        Map.of("QueryStringBehavior", "whitelist", "QueryStrings", List.of("number")),
+                                        "CookiesConfig",
+                                        Map.of("CookieBehavior", "none"),
+                                        "HeadersConfig",
+                                        Map.of("HeaderBehavior", "none"))))))));
+        assertEquals(3600, EdgeStack.PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS);
+        template.resourceCountIs("AWS::CloudFront::CachePolicy", 3);
+        template.resourceCountIs("AWS::CloudFront::ResponseHeadersPolicy", 6);
+
+        String deadlinesPolicyId = template.findResources("AWS::CloudFront::ResponseHeadersPolicy").entrySet().stream()
+                .filter(entry -> String.valueOf(((Map<String, Object>)
+                                        ((Map<String, Object>) entry.getValue().get("Properties"))
+                                                .get("ResponseHeadersPolicyConfig"))
+                                .get("Name"))
+                        .endsWith("-public-deadlines-whp"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+        String registerCachePolicyId = template.findResources("AWS::CloudFront::CachePolicy").entrySet().stream()
+                .filter(entry -> String.valueOf(((Map<String, Object>)
+                                        ((Map<String, Object>) entry.getValue().get("Properties"))
+                                                .get("CachePolicyConfig"))
+                                .get("Name"))
+                        .endsWith("-public-register-cp"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+
+        var distribution = (Map<String, Object>) template.findResources("AWS::CloudFront::Distribution")
+                .values()
+                .iterator()
+                .next();
+        var behaviours = (List<Map<String, Object>>)
+                ((Map<String, Object>) ((Map<String, Object>) distribution.get("Properties")).get("DistributionConfig"))
+                        .get("CacheBehaviors");
+        var patterns =
+                behaviours.stream().map(b -> (String) b.get("PathPattern")).toList();
+        int register = patterns.indexOf("/api/v1/public/company-register");
+        assertTrue(register >= 0, "public register behaviour present");
+        assertTrue(register < patterns.indexOf("/api/v1/*"), "it must come before /api/v1/*");
+        var behaviour = behaviours.get(register);
+        assertEquals(List.of("GET", "HEAD"), behaviour.get("AllowedMethods"));
+        assertEquals(deadlinesPolicyId, ((Map<String, Object>) behaviour.get("ResponseHeadersPolicyId")).get("Ref"));
+        assertEquals(registerCachePolicyId, ((Map<String, Object>) behaviour.get("CachePolicyId")).get("Ref"));
+    }
+
+    @Test
+    void publicRegisterPathHasItsOwnPerAddressRateRuleTighterThanTheDeadlinesRule() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> rateStatement = Map.of(
+                "Limit",
+                (int) EdgeStack.PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES,
+                "AggregateKeyType",
+                "IP",
+                "EvaluationWindowSec",
+                300,
+                "ScopeDownStatement",
+                Match.objectLike(Map.of(
+                        "ByteMatchStatement",
+                        Match.objectLike(Map.of(
+                                "PositionalConstraint",
+                                "STARTS_WITH",
+                                "SearchString",
+                                "/api/v1/public/company-register")))));
+        Map<String, Object> rule = Map.of(
+                "Name",
+                "PublicRegisterRateLimitRule",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
+        assertEquals(10L, EdgeStack.PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES);
+        assertTrue(EdgeStack.PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES
+                < EdgeStack.PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES);
     }
 
     @Test
@@ -722,8 +889,8 @@ class EdgeStackTest {
         String reference =
                 "{{resolve:secretsmanager:prod/submit/origin/verify:SecretString:current::11111111-2222-3333-4444-555555555555}}";
 
-        assertEquals(7, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
-        assertEquals(7, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
+        assertEquals(8, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
+        assertEquals(8, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
     }
 
     @Test

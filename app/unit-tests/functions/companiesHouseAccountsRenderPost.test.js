@@ -147,6 +147,8 @@ function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
       principalActivity: "Software consultancy",
       accountingPolicies: "Historical cost convention.",
       directors: ["Jo Director"],
+      // The company's first accounts, so they have no prior year.
+      dateOfIncorporation: "2025-01-01",
       balanceSheet: {
         currentYear: {
           fixedAssets: 1000,
@@ -338,6 +340,20 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
       expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
     });
 
+    test("records the render as small company accounts, and as revised small company accounts for a revision", async () => {
+      const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+      const summaries = [];
+      for (const body of [buildSmallCompanyBody(), buildSmallCompanyBody({ revision })]) {
+        mockEventBridgeSend.mockClear();
+        await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
+        summaries.push(JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail).summary);
+      }
+      expect(summaries).toEqual([
+        "Companies House small company accounts rendered",
+        "Companies House revised small company accounts rendered",
+      ]);
+    });
+
     test("filleted previews carry the section 444(5A) statement and no profit and loss account", async () => {
       const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildSmallCompanyBody({}, { filleted: true }) }));
       const ixbrl = parseResponseBody(response).ixbrl;
@@ -365,6 +381,35 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
     const response = await companiesHouseAccountsRenderPostHandler(buildEvent());
     expect(response.statusCode).toBe(403);
     expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
+  });
+
+  describe("revised accounts", () => {
+    const REVISION = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
+    };
+
+    test("refuses to render a revision on prod, where revised accounts are not offered", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+      expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
+    });
+
+    test("renders an original on prod", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent());
+      expect(response.statusCode).toBe(200);
+    });
+
+    test("renders a revision on ci", async () => {
+      process.env.ENVIRONMENT_NAME = "ci";
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(200);
+      expect(mockBuildMicroEntityAccounts).toHaveBeenCalledWith(expect.objectContaining({ revision: REVISION }));
+    });
   });
 
   test("returns 200 with an empty object for a HEAD request", async () => {

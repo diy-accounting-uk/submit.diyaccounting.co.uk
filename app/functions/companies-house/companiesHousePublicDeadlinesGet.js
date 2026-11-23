@@ -26,12 +26,20 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { companiesHouseHttpGet, isValidCompanyNumber } from "../../services/companiesHouseApi.js";
+import {
+  PUBLIC_LOOKUP_CALLS,
+  lookupLimitResponse,
+  publicLookupRefusal,
+  stopCompaniesHouseLookups,
+} from "../../services/companiesHouseLookupLimit.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHousePublicDeadlinesGet.js" });
 
 export const METRICS_NAMESPACE = "Submit/Business";
 export const ORIGIN_REQUEST_METRIC = "PublicCompanyDeadlinesOriginRequest";
 export const COMPANIES_HOUSE_429_METRIC = "PublicCompanyDeadlinesCompaniesHouse429";
+// Counted each time the budget of all public lookups refuses a lookup; its alarm shows the budget spent.
+export const PUBLIC_BUDGET_SPENT_METRIC = "PublicCompaniesHouseBudgetSpent";
 
 const MIN_QUERY_LENGTH = 2;
 const MAX_QUERY_LENGTH = 100;
@@ -66,7 +74,10 @@ export function deadlinesFromProfile(data) {
     companyStatus: data.company_status,
     companyType: data.type,
     accountsNextDue: data.accounts?.next_accounts?.due_on,
+    accountsNextPeriodStart: data.accounts?.next_accounts?.period_start_on,
     accountsNextPeriodEnd: data.accounts?.next_accounts?.period_end_on,
+    accountsOverdue: data.accounts?.next_accounts?.overdue,
+    accountsLastPeriodEnd: data.accounts?.last_accounts?.period_end_on,
     confirmationStatementNextDue: data.confirmation_statement?.next_due,
     lastAccountsType: data.accounts?.last_accounts?.type,
   };
@@ -81,7 +92,7 @@ export function matchesFromSearch(data) {
   }));
 }
 
-function failureResponse(request, kind, chResponse) {
+async function failureResponse(request, kind, chResponse) {
   if (chResponse.status === 404) {
     countOriginRequest(kind, "not_found");
     return http404NotFoundResponse({
@@ -91,6 +102,7 @@ function failureResponse(request, kind, chResponse) {
     });
   }
   if (chResponse.status === 429) {
+    await stopCompaniesHouseLookups(chResponse.headers?.["retry-after"]);
     countOriginRequest(kind, "rate_limited");
     emitMetric({ namespace: METRICS_NAMESPACE, metricName: COMPANIES_HOUSE_429_METRIC });
     const retryAfter = Number.parseInt(chResponse.headers?.["retry-after"], 10);
@@ -108,6 +120,16 @@ function failureResponse(request, kind, chResponse) {
     headers: jsonHeaders(NO_STORE),
     message: "Companies House did not answer. Try again in a few minutes.",
   });
+}
+
+// Charges the lookup to the budget of all public lookups; answers the JSON 429 once it is spent, or
+// while Companies House has stopped lookups on the shared key.
+async function budgetRefusal(request, kind) {
+  const refusal = await publicLookupRefusal(PUBLIC_LOOKUP_CALLS.deadlines);
+  if (!refusal) return null;
+  countOriginRequest(kind, refusal.reason);
+  if (refusal.reason === "budget_spent") emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
+  return lookupLimitResponse(request, jsonHeaders(NO_STORE), refusal.seconds);
 }
 
 function badRequest(request, kind, message) {
@@ -129,6 +151,8 @@ export async function ingestHandler(event) {
   if (hasNumber) {
     const { valid, normalised } = isValidCompanyNumber(params.number);
     if (!valid) return badRequest(request, "lookup", "Invalid company number - must be 8 characters");
+    const refusal = await budgetRefusal(request, "lookup");
+    if (refusal) return refusal;
     const chResponse = await companiesHouseHttpGet(`/company/${normalised}`);
     if (!chResponse.ok) return failureResponse(request, "lookup", chResponse);
     countOriginRequest("lookup", "found");
@@ -143,6 +167,8 @@ export async function ingestHandler(event) {
   if (query.length < MIN_QUERY_LENGTH || query.length > MAX_QUERY_LENGTH) {
     return badRequest(request, "search", `Search term must be between ${MIN_QUERY_LENGTH} and ${MAX_QUERY_LENGTH} characters`);
   }
+  const refusal = await budgetRefusal(request, "search");
+  if (refusal) return refusal;
   const chResponse = await companiesHouseHttpGet("/search/companies", { q: query, items_per_page: MAX_MATCHES });
   if (!chResponse.ok) return failureResponse(request, "search", chResponse);
   countOriginRequest("search", "found");

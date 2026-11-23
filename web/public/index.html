@@ -51,9 +51,12 @@
     <link rel="modulepreload" href="./lib/services/catalog-service.js" />
     <link rel="modulepreload" href="./lib/services/catalogue-aggregates.js" />
     <link rel="modulepreload" href="./lib/services/companies-house-service.js" />
+    <link rel="modulepreload" href="./lib/services/json-answer.js" />
     <link rel="modulepreload" href="./lib/services/companies-house-filing-service.js" />
     <link rel="modulepreload" href="./lib/services/companies-house-confirmation-service.js" />
     <link rel="modulepreload" href="./lib/services/companies-house-psc-verification-service.js" />
+    <link rel="modulepreload" href="./lib/services/companies-house-form-service.js" />
+    <link rel="modulepreload" href="./lib/companies-house-forms.js" />
     <link rel="modulepreload" href="./lib/services/hmrc-ct-return-service.js" />
     <link rel="modulepreload" href="./lib/services/companies-house-error-messages.js" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -113,7 +116,6 @@
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
     <!-- HEAD-prefetch scripts to prime API Gateway/Lambda and authorizers to reduce cold-start impact -->
-    <!--script async src="./prefetch/prefetch-catalog-head.js"></script-->
     <!--script async src="./prefetch/prefetch-bundle-head.js"></script-->
   </head>
   <body>
@@ -216,6 +218,9 @@
       <span data-i18n="index.rt-none">No activities available. Request additional bundles to access more features.</span>
       <span data-i18n="index.rt-error">Error loading activities. Please refresh the page.</span>
       <span data-i18n="index.rt-unavailable">Unable to load activities. Please try again later.</span>
+      <span data-i18n="index.rt-bundles-unread"
+        >Your bundles could not be read, so this list may leave out activities you hold. Reload the page to try again.</span
+      >
       <span data-i18n="index.rt-insufficient">Insufficient tokens</span>
       <span data-i18n="index.rt-no-tokens-available">No tokens available</span>
       <span data-i18n="index.rt-no-tokens">No tokens</span>

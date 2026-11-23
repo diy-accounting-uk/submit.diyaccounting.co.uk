@@ -1,0 +1,227 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tell Companies House where the company keeps its records - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/recordsLocation.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/recordsLocation.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/recordsLocation.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/recordsLocation.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Tell Companies House where the company keeps its records</h1>
+      <p class="subtitle">Register an inspection location (SAIL), or say which records are kept there or at the registered office</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="change-records-location">Look up the company</button>
+        </form>
+      </div>
+
+      <!-- Records form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>What has changed?</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <p class="hint">Companies House charges no fee for these filings.</p>
+        <form id="recordsForm" novalidate>
+          <fieldset class="form-group">
+            <legend>What are you telling Companies House?</legend>
+            <div class="choice">
+              <input type="radio" name="change" id="change-sail" value="sail" checked />
+              <label for="change-sail">The address of the inspection location (form AD02)</label>
+            </div>
+            <div class="choice">
+              <input type="radio" name="change" id="change-to-sail" value="to-sail" />
+              <label for="change-to-sail">Records are now kept at the inspection location (form AD03)</label>
+            </div>
+            <div class="choice">
+              <input type="radio" name="change" id="change-to-office" value="to-office" />
+              <label for="change-to-office">Records are now kept at the registered office (form AD04)</label>
+            </div>
+          </fieldset>
+
+          <fieldset id="addressFields" class="form-group">
+            <legend>Address of the inspection location</legend>
+            <p id="address-hint" class="hint">
+              A company has one inspection location (a SAIL, single alternative inspection location). It must be in the part of the United
+              Kingdom where the company is registered.
+            </p>
+            <div class="form-group">
+              <label for="sailPremise">Building name or number</label>
+              <input type="text" id="sailPremise" name="sailPremise" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailStreet">Street (optional)</label>
+              <input type="text" id="sailStreet" name="sailStreet" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailThoroughfare">Locality (optional)</label>
+              <input type="text" id="sailThoroughfare" name="sailThoroughfare" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailPostTown">Town or city</label>
+              <input type="text" id="sailPostTown" name="sailPostTown" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailCounty">County (optional)</label>
+              <input type="text" id="sailCounty" name="sailCounty" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailCountry">Country</label>
+              <select id="sailCountry" name="sailCountry">
+                <option value="GB-ENG">England</option>
+                <option value="GB-WLS">Wales</option>
+                <option value="GB-SCT">Scotland</option>
+                <option value="GB-NIR">Northern Ireland</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sailPostcode">Postcode (optional)</label>
+              <input type="text" id="sailPostcode" name="sailPostcode" class="input--code" maxlength="15" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailCareOf">Care of (optional)</label>
+              <input type="text" id="sailCareOf" name="sailCareOf" maxlength="100" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="sailPoBox">PO box (optional)</label>
+              <input type="text" id="sailPoBox" name="sailPoBox" maxlength="10" autocomplete="off" />
+            </div>
+          </fieldset>
+
+          <fieldset id="recordFields" class="form-group" style="display: none">
+            <legend id="recordsLegend">Records now kept at the inspection location</legend>
+            <p id="records-hint" class="hint">
+              Tick each record that has moved. Leave out a record that an earlier filing already placed there.
+            </p>
+            <div id="removeSailChoice" class="choice" hidden>
+              <input type="checkbox" id="removeSail" name="removeSail" />
+              <label for="removeSail">Every record is back at the registered office: take the inspection location off the register</label>
+            </div>
+            <div id="recordChoices" aria-describedby="records-hint"></div>
+          </fieldset>
+
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script type="module" src="../lib/companies-house-text-check.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="recordsLocation.page.js"></script>
+  </body>
+</html>

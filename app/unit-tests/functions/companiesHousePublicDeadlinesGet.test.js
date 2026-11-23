@@ -18,28 +18,37 @@ vi.mock("@aws-sdk/lib-dynamodb", () => ({
   UpdateCommand: class {},
 }));
 vi.mock("@aws-sdk/client-dynamodb", () => ({ DynamoDBClient: class {} }));
+const mockIncrementRateCounter = vi.fn();
+const mockGetCachedValue = vi.fn();
+const mockPutCachedValue = vi.fn();
+vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
+  incrementRateCounter: (...args) => mockIncrementRateCounter(...args),
+  getCachedValue: (...args) => mockGetCachedValue(...args),
+  putCachedValue: (...args) => mockPutCachedValue(...args),
+}));
 
 import {
   ingestHandler,
   deadlinesFromProfile,
   COMPANIES_HOUSE_429_METRIC,
   ORIGIN_REQUEST_METRIC,
+  PUBLIC_BUDGET_SPENT_METRIC,
   METRICS_NAMESPACE,
   FOUND_CACHE_SECONDS,
 } from "@app/functions/companies-house/companiesHousePublicDeadlinesGet.js";
 
 const PROFILE = {
-  company_number: "00000006",
+  company_number: "00000008",
   company_name: "EXAMPLE LIMITED",
   company_status: "active",
   type: "ltd",
   date_of_creation: "2009-04-16",
   registered_office_address: { address_line_1: "1 Private Street", postal_code: "AB1 2CD" },
   sic_codes: ["62020"],
-  officers: { href: "/company/00000006/officers" },
+  officers: { href: "/company/00000008/officers" },
   accounts: {
-    next_accounts: { due_on: "2027-03-31", period_end_on: "2026-06-30", period_start_on: "2025-07-01" },
-    last_accounts: { type: "micro-entity", made_up_to: "2025-06-30" },
+    next_accounts: { due_on: "2027-03-31", period_end_on: "2026-06-30", period_start_on: "2025-07-01", overdue: false },
+    last_accounts: { type: "micro-entity", made_up_to: "2025-06-30", period_start_on: "2024-07-01", period_end_on: "2025-06-30" },
   },
   confirmation_statement: { next_due: "2027-04-30", last_made_up_to: "2026-04-16" },
 };
@@ -80,15 +89,18 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test("answers a company number with exactly the public fields", async () => {
     upstream(200, PROFILE);
-    const response = await ingestHandler(get({ number: "00000006" }));
+    const response = await ingestHandler(get({ number: "00000008" }));
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response)).toEqual({
-      companyNumber: "00000006",
+      companyNumber: "00000008",
       companyName: "EXAMPLE LIMITED",
       companyStatus: "active",
       companyType: "ltd",
       accountsNextDue: "2027-03-31",
+      accountsNextPeriodStart: "2025-07-01",
       accountsNextPeriodEnd: "2026-06-30",
+      accountsOverdue: false,
+      accountsLastPeriodEnd: "2025-06-30",
       confirmationStatementNextDue: "2027-04-30",
       lastAccountsType: "micro-entity",
     });
@@ -98,21 +110,50 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test("lets CloudFront keep a found answer", async () => {
     upstream(200, PROFILE);
-    const response = await ingestHandler(get({ number: "00000006" }));
+    const response = await ingestHandler(get({ number: "00000008" }));
     expect(response.headers["Cache-Control"]).toBe(`public, max-age=${FOUND_CACHE_SECONDS}`);
   });
 
   test("pads a short numeric company number to eight characters", async () => {
     upstream(200, PROFILE);
-    await ingestHandler(get({ number: "6" }));
-    expect(mockFetch.mock.calls[0][0]).toContain("/company/00000006");
+    await ingestHandler(get({ number: "8" }));
+    expect(mockFetch.mock.calls[0][0]).toContain("/company/00000008");
   });
 
   test("leaves absent fields out of the answer for a dormant company with no filings", async () => {
-    upstream(200, { company_number: "00000006", company_name: "X", company_status: "dissolved", type: "ltd" });
-    const body = parseResponseBody(await ingestHandler(get({ number: "00000006" })));
+    upstream(200, { company_number: "00000008", company_name: "X", company_status: "dissolved", type: "ltd" });
+    const body = parseResponseBody(await ingestHandler(get({ number: "00000008" })));
     expect(body.accountsNextDue).toBeUndefined();
+    expect(body.accountsNextPeriodStart).toBeUndefined();
+    expect(body.accountsOverdue).toBeUndefined();
+    expect(body.accountsLastPeriodEnd).toBeUndefined();
     expect(body.companyStatus).toBe("dissolved");
+  });
+
+  test("marks a company whose next accounts are late as overdue", async () => {
+    upstream(200, {
+      ...PROFILE,
+      accounts: {
+        next_accounts: { due_on: "2026-03-31", period_end_on: "2025-06-30", period_start_on: "2024-07-01", overdue: true },
+        last_accounts: { type: "micro-entity", made_up_to: "2024-06-30", period_start_on: "2023-07-01", period_end_on: "2024-06-30" },
+      },
+    });
+    const body = parseResponseBody(await ingestHandler(get({ number: "00000008" })));
+    expect(body.accountsOverdue).toBe(true);
+    expect(body.accountsNextPeriodStart).toBe("2024-07-01");
+    expect(body.accountsLastPeriodEnd).toBe("2024-06-30");
+  });
+
+  test("answers a company that has filed no accounts yet with its first period and no last period end", async () => {
+    upstream(200, {
+      ...PROFILE,
+      accounts: { next_accounts: { due_on: "2027-01-16", period_end_on: "2026-04-30", period_start_on: "2025-04-16", overdue: false } },
+    });
+    const body = parseResponseBody(await ingestHandler(get({ number: "00000008" })));
+    expect(body.accountsNextPeriodStart).toBe("2025-04-16");
+    expect(body.accountsOverdue).toBe(false);
+    expect(body.accountsLastPeriodEnd).toBeUndefined();
+    expect(body.lastAccountsType).toBeUndefined();
   });
 
   test("returns at most five matches with public fields only", async () => {
@@ -135,7 +176,7 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test.each([
     ["no parameter", {}],
-    ["both parameters", { number: "00000006", q: "example" }],
+    ["both parameters", { number: "00000008", q: "example" }],
     ["a company number of the wrong length", { number: "123456789" }],
     ["a company number with a symbol", { number: "0000-006" }],
     ["a name of one character", { q: "a" }],
@@ -151,7 +192,7 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test("answers 404 as JSON when Companies House has no such company", async () => {
     upstream(404, { errors: [{ error: "company-profile-not-found" }] });
-    const response = await ingestHandler(get({ number: "00000006" }));
+    const response = await ingestHandler(get({ number: "00000008" }));
     expect(response.statusCode).toBe(404);
     expect(response.headers["Cache-Control"]).toBe("no-store");
     expect(response.body).not.toContain("company-profile-not-found");
@@ -159,7 +200,7 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test("answers 429 with Retry-After and counts it when Companies House answers 429", async () => {
     upstream(429, {}, { "retry-after": "120" });
-    const response = await ingestHandler(get({ number: "00000006" }));
+    const response = await ingestHandler(get({ number: "00000008" }));
     expect(response.statusCode).toBe(429);
     expect(response.headers["Retry-After"]).toBe("120");
     expect(parseResponseBody(response).message).toContain("few minutes");
@@ -174,7 +215,7 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test("answers 502 as JSON when Companies House fails", async () => {
     upstream(500, { error: "boom" });
-    const response = await ingestHandler(get({ number: "00000006" }));
+    const response = await ingestHandler(get({ number: "00000008" }));
     expect(response.statusCode).toBe(502);
     expect(response.headers["Cache-Control"]).toBe("no-store");
     expect(response.body).not.toContain("boom");
@@ -182,7 +223,7 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
 
   test("writes one metric for each outcome with its kind", async () => {
     upstream(200, PROFILE);
-    await ingestHandler(get({ number: "00000006" }));
+    await ingestHandler(get({ number: "00000008" }));
     upstream(404, {});
     await ingestHandler(get({ number: "00000007" }));
     upstream(200, { items: [] });
@@ -204,9 +245,60 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
       "companyStatus",
       "companyType",
       "accountsNextDue",
+      "accountsNextPeriodStart",
       "accountsNextPeriodEnd",
+      "accountsOverdue",
+      "accountsLastPeriodEnd",
       "confirmationStatementNextDue",
       "lastAccountsType",
     ]);
+  });
+
+  test("answers a JSON 429, not cached, and calls Companies House not at all once public lookups have spent their budget", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockIncrementRateCounter.mockResolvedValue(101);
+    try {
+      for (const query of [{ number: "00000001" }, { q: "example" }]) {
+        const response = await ingestHandler(get(query));
+        expect(response.statusCode).toBe(429);
+        expect(response.headers["Cache-Control"]).toBe("no-store");
+        expect(parseResponseBody(response).message).toMatch(/Try again in a few minutes/);
+      }
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockIncrementRateCounter).toHaveBeenCalledWith(expect.objectContaining({ identifier: "all-public-lookups", hits: 1 }));
+      expect(mockEmitMetric).toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("stops lookups on the shared key for the Retry-After Companies House names when it answers 429", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockIncrementRateCounter.mockResolvedValue(1);
+    upstream(429, {}, { "retry-after": "120" });
+    try {
+      const response = await ingestHandler(get({ number: "00000008" }));
+      expect(response.statusCode).toBe(429);
+      expect(mockPutCachedValue).toHaveBeenCalledWith("chlookup#stopped", { until: expect.any(Number) }, 120);
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("answers a JSON 429 with the seconds left in a Companies House stop, before any call", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockGetCachedValue.mockResolvedValue({ until: Date.now() + 75_000 });
+    try {
+      for (const query of [{ number: "00000008" }, { q: "example" }]) {
+        const response = await ingestHandler(get(query));
+        expect(response.statusCode).toBe(429);
+        expect(response.headers["Retry-After"]).toBe("75");
+      }
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockIncrementRateCounter).not.toHaveBeenCalled();
+      expect(mockEmitMetric).not.toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
   });
 });

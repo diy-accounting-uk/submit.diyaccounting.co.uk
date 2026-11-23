@@ -121,20 +121,20 @@ const REAL_GATEWAY_OUTCOME_TIMEOUT_MS = 300_000;
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
   if (!filesThroughRealCompaniesHouseGateway()) {
     await test.step("The user sees the filing accepted", async () => {
-      await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
+      await expect(page.locator("#filingResult")).toContainText(/\b(?:Status:|was) accepted\b/, { timeout: 30000 });
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png`, readerView: true });
     });
     return;
   }
   await test.step("The user sees the filing accepted, or still being checked under its submission number", async () => {
     // A regular expression, because hasText with a string ignores case and the pending note's own
-    // words would match "ACCEPT".
-    const accepted = page.locator("#filingResult", { hasText: /\bACCEPT\b/ });
+    // words ("Once Companies House accepts the filing") would match a looser text.
+    const accepted = page.locator("#filingResult", { hasText: /\b(?:Status:|was) accepted\b/ });
     const pending = page.locator("#checkAgainBtn");
     await expect(accepted.or(pending).first()).toBeVisible({ timeout: REAL_GATEWAY_OUTCOME_TIMEOUT_MS });
     // allocateSubmissionNumber writes a base-36 counter, zero-padded to six digits and capital
     // letters (00006W), and the page names it in either answer. Its zero padding gives it a digit,
-    // which keeps the outcome words ACCEPT and REJECT from matching.
+    // which keeps the capitalised words of the outcome from matching.
     await expect(page.locator("#filingResult")).toContainText(/\b(?=[A-Z]*\d)[0-9A-Z]{6}\b/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-outcome.png`, readerView: true });
   });
@@ -163,7 +163,7 @@ export async function openFilingCustomerCopy(page, screenshotPath = defaultScree
 
 export async function verifyFilingRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode}`, async () => {
-    await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
+    await expect(page.locator("#filingResult")).toContainText(/\b(?:Status:|was) rejected\b/, { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png`, readerView: true });
   });
@@ -290,12 +290,15 @@ const bookFixturesDirectory = path.resolve(process.cwd(), "fixtures/diya-gl");
 /**
  * Zip a fixture book (book.toml and lines.jsonl) for the "Fill from your books" card, with the
  * company number the sandbox looks up in place of the fixture's own, and return the file's path.
+ * peopleNamed maps a name the fixture gives a director or member to the name the zipped book gives
+ * them instead.
  */
-export async function writeFixtureBookZip(fixtureName, companyNumber, outputDirectory) {
+export async function writeFixtureBookZip(fixtureName, companyNumber, outputDirectory, peopleNamed = {}) {
   const directory = path.join(bookFixturesDirectory, fixtureName);
-  const bookToml = fs
+  let bookToml = fs
     .readFileSync(path.join(directory, "book.toml"), "utf8")
     .replace(/("diya-gl:companyNumber" = ")\d+(")/, `$1${companyNumber}$2`);
+  for (const [fixturePerson, name] of Object.entries(peopleNamed)) bookToml = bookToml.replaceAll(`"${fixturePerson}"`, `"${name}"`);
   const zip = new JSZip();
   zip.file("book.toml", bookToml);
   zip.file("lines.jsonl", fs.readFileSync(path.join(directory, "lines.jsonl")));
@@ -371,5 +374,155 @@ export async function completeSmallCompanyAnswersTheBookLeaves(page, answers, sc
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementSmallCompaniesRegime");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-completed.png`, readerView: true });
+  });
+}
+
+export async function fillInDormantAnswers(page, { tradingStatus, shareClass, nominalValue }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user says the company was dormant and gives its trading history and shares", async () => {
+    await page.check("#dormant");
+    await expect(page.locator("#dormantFields")).toBeVisible();
+    await page.selectOption("#dormantTradingStatus", tradingStatus);
+    await page.selectOption("#shareClass", shareClass);
+    await loggedFill(page, "#nominalValue", nominalValue, "Nominal value");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-dormant-answers.png`, readerView: true });
+  });
+}
+
+// Opens the amend form from the customer copy of an accepted filing; answers the amend address so a
+// journey can open it again.
+export async function amendFiledAccountsFromCopy(page, screenshotPath = defaultScreenshotPath) {
+  return test.step("The user chooses Amend on the customer copy and sees the form filled from the accounts filed", async () => {
+    const amendLink = page.locator("#amendFilingLink");
+    await expect(amendLink).toBeVisible({ timeout: 30000 });
+    const amendHref = new URL(await amendLink.getAttribute("href"), page.url()).href;
+    await loggedClick(page, "#amendFilingLink", "Amending the accounts", { screenshotPath });
+    await expect(page.locator("#revisionBanner")).toContainText("You are revising the accounts filed at Companies House", {
+      timeout: 30000,
+    });
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionOriginalDate")).not.toHaveValue("");
+    await expect(page.locator("#periodEnd")).not.toHaveValue("");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-amend-form.png`, readerView: true });
+    return amendHref;
+  });
+}
+
+export async function openAmendFormAgain(page, amendHref, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user opens the amend form for the same accounts again, with no test scenario", async () => {
+    await page.evaluate(() => sessionStorage.removeItem("showDeveloperOptions"));
+    await page.goto(amendHref);
+    await expect(page.locator("#revisionSection")).toBeVisible({ timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-amend-form-again.png`, readerView: true });
+  });
+}
+
+export async function describeTheRevision(
+  page,
+  { averageEmployees, nonCompliance, amendments, dateApproved },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user corrects the figure, states what was wrong and what the revision changes, and approves it", async () => {
+    await loggedFill(page, "#averageEmployees", String(averageEmployees), "Average employees");
+    await loggedFill(page, "#revisionNonCompliance", nonCompliance, "What was wrong with the original accounts");
+    await loggedFill(page, "#revisionAmendments", amendments, "What the revised accounts change");
+    await loggedFill(page, "#directorDateApproved", dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementMicroEntityProvisions");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-described.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisionPreview(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user previews the revised accounts and sees the revision statement", async () => {
+    await loggedClick(page, "#previewBtn", "Previewing the revised accounts", { screenshotPath });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 15000 });
+    await expect(page.frameLocator("#previewRendered").locator("body")).toContainText("These are revised accounts", { timeout: 15000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-preview.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisionAccepted(page, screenshotPath = defaultScreenshotPath) {
+  if (filesThroughRealCompaniesHouseGateway()) {
+    await verifyFilingAccepted(page, screenshotPath);
+    return;
+  }
+  await test.step("The user sees the revised accounts accepted", async () => {
+    await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.", { timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-accepted.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisionRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user sees the revised accounts rejected with reject code ${expectedRejectCode}`, async () => {
+    await expect(page.locator("#filingResult")).toContainText("Companies House rejected the revised accounts.", { timeout: 30000 });
+    await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-rejected.png`, readerView: true });
+  });
+}
+
+// The copy of the revised accounts holds the revision statement, and the receipts list names the
+// filing as revised accounts. A real gateway that is still checking the filing has no receipt yet.
+export async function verifyRevisedAccountsOnRecord(page, screenshotPath = defaultScreenshotPath) {
+  if (filesThroughRealCompaniesHouseGateway() && (await page.locator("#checkAgainBtn").isVisible())) {
+    await test.step("The user sees no copy yet for revised accounts Companies House is still checking", async () => {
+      await expect(page.locator("#filingCopyLink")).toBeHidden();
+    });
+    return;
+  }
+  await test.step("The user opens the copy of the revised accounts and finds them listed as revised accounts", async () => {
+    await loggedClick(page, "#filingCopyLink", "Opening the copy of the revised accounts", { screenshotPath });
+    const copy = page.locator(".customer-copy");
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the revised accounts filed at Companies House", {
+      timeout: 30000,
+    });
+    await expect(page.frameLocator("iframe.filed-document").locator("body")).toContainText("These are revised accounts", {
+      timeout: 30000,
+    });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revised-copy.png`, fullPage: true, readerView: true });
+    await page.goto(new URL("../hmrc/receipt/receipts.html", page.url()).href);
+    await expect(page.locator(".receipt-kind", { hasText: "Revised accounts" }).first()).toBeVisible({ timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-receipts-revised.png`, fullPage: true, readerView: true });
+  });
+}
+
+// The small company revision: the texts and the approval date, the answers the filed document does
+// not hold (the accounting policies, and for a filleted copy the profit and loss account), and the statements.
+export async function describeTheSmallCompanyRevision(
+  page,
+  { revision, accounts, filleted = false },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step(`The user corrects the ${filleted ? "filleted" : "full"} small company accounts and states the revision`, async () => {
+    await expect(page.locator(filleted ? "#revisionCopyFilleted" : "#revisionCopyFull")).toBeVisible();
+    if (filleted) {
+      for (const field of SMALL_COMPANY_INPUT_FIELDS.profitAndLoss[1]) {
+        await loggedFill(page, `#current${upperFirst(field)}`, String(accounts.currentYear.profitAndLoss[field]), `current ${field}`);
+      }
+    }
+    await loggedFill(page, "#averageEmployees", String(revision.averageEmployees), "Average employees");
+    await loggedFill(page, "#accountingPolicies", accounts.accountingPolicies, "Accounting policies");
+    await loggedFill(page, "#revisionNonCompliance", revision.nonCompliance, "What was wrong with the original accounts");
+    await loggedFill(page, "#revisionAmendments", revision.amendments, "What the revised accounts change");
+    await loggedFill(page, "#directorDateApproved", revision.dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementSmallCompaniesRegime");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-small-revision-described.png`, readerView: true });
+  });
+}
+
+// A corrected book dropped on the amend form replaces the figures and leaves the revision in place.
+export async function dropCorrectedBookOnTheRevision(page, bookZipFile, expectedStatus, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user drops the corrected book and the figures change while the revision stays", async () => {
+    const originalDate = await page.locator("#revisionOriginalDate").inputValue();
+    await page.locator("#booksImportFile").setInputFiles(bookZipFile);
+    await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 60_000 });
+    await expect(page.locator("#revisionBanner")).toBeVisible();
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionOriginalDate")).toHaveValue(originalDate);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-corrected-book-dropped.png`, readerView: true });
   });
 }

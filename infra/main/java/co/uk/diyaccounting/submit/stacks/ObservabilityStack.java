@@ -795,6 +795,47 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // Companies House lookup budget alarm. app/services/companiesHouseLookupLimit.js logs
+        // event CompaniesHouseLookupBudgetRefused when the budget of all signed-in lookups on the
+        // shared Companies House key refuses a lookup; every deployment's OpsStack counts those
+        // lines into this metric. The alarm fires in any five-minute window, the limit's own
+        // window, with a refusal. No SnsAction: the alarm-state-change rule in OpsStack routes it,
+        // as it does the token charge alarm above.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-CompaniesHouseLookupBudgetRefusedAlarm")
+                .alarmName(props.resourceNamePrefix() + "-companies-house-lookup-budget-refused")
+                .alarmDescription(
+                        "The budget of all signed-in Companies House lookups refused a lookup >= 1 time in 5 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("CompaniesHouseLookupBudgetRefused")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // Public Companies House budget alarm. The two public lookups emit PublicCompaniesHouseBudgetSpent
+        // each time the budget of all public lookups on the shared key refuses one, which happens only
+        // when callers across many addresses read past it. Routed by the alarm-state-change rule.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-PublicCompaniesHouseBudgetSpentAlarm")
+                .alarmName(props.resourceNamePrefix() + "-public-companies-house-budget-spent")
+                .alarmDescription(
+                        "The budget of all public Companies House lookups refused a lookup >= 1 time in 5 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("PublicCompaniesHouseBudgetSpent")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // HMRC fraud prevention header violation alarm. app/services/hmrcApi.js sendToHmrc emits
         // HmrcFraudHeaderViolation for every request to the HMRC production API that lacks a
         // required Gov-Client or Gov-Vendor header. The metric is environment-wide and must

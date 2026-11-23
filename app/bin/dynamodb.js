@@ -433,6 +433,103 @@ export async function ensurePassesTableExists(tableName, endpoint) {
   }
 }
 
+// Create the due list table if it doesn't exist. Key schema matches dynamoDbDueListRepository.js:
+// partition key is the account's hashed sub, sort key names the item, and one index finds the items
+// a daily job is due to act on.
+export async function ensureDueListTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring due list table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "hashedSub", KeyType: "HASH" },
+            { AttributeName: "sk", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "hashedSub", AttributeType: "S" },
+            { AttributeName: "sk", AttributeType: "S" },
+            { AttributeName: "job", AttributeType: "S" },
+            { AttributeName: "jobOn", AttributeType: "S" },
+          ],
+          GlobalSecondaryIndexes: [
+            {
+              IndexName: "job-jobOn-index",
+              KeySchema: [
+                { AttributeName: "job", KeyType: "HASH" },
+                { AttributeName: "jobOn", KeyType: "RANGE" },
+              ],
+              Projection: { ProjectionType: "ALL" },
+            },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
+    }
+  }
+}
+
+// Create the Companies House cache table if it doesn't exist. Key schema matches
+// dynamoDbCompaniesHouseCacheRepository.js: partition key is the company number, sort key names the answer.
+export async function ensureCompaniesHouseCacheTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring Companies House cache table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "companyNumber", KeyType: "HASH" },
+            { AttributeName: "sk", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "companyNumber", AttributeType: "S" },
+            { AttributeName: "sk", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`, { cause: err });
+    }
+  }
+}
+
 // Create commissions table if it doesn't exist. Key schema matches dynamoDbCommissionRepository.js.
 export async function ensureCommissionsTableExists(tableName, endpoint) {
   logger.info(`[dynamodb]: Ensuring commissions table: '${tableName}' exists on endpoint '${endpoint}'`);
@@ -590,6 +687,8 @@ const CONFIGURED_TABLES = [
   ["SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", ensureSubscriptionsTableExists],
   ["BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", ensureCapacityTableExists],
   ["PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", ensurePracticeClientsTableExists],
+  ["DUE_LIST_DYNAMODB_TABLE_NAME", ensureDueListTableExists],
+  ["COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME", ensureCompaniesHouseCacheTableExists],
   ["MCP_SESSIONS_DYNAMODB_TABLE_NAME", ensureMcpSessionsTableExists],
   ["ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", ensureAsyncRequestsTableExists],
   ["BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME", ensureAsyncRequestsTableExists],

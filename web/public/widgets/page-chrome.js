@@ -261,6 +261,33 @@
     return inEnglish ? ' <span class="lang-mark">' + escapeHtml(siteText("chrome.in-english", "(in English)")) + "</span>" : "";
   }
 
+  // The copy in a language of the address as it is now, with its query: a pass code or a company
+  // number goes with the reader, and a parameter the page has already removed does not. A page
+  // served at an address other than its own path (the company lookup's drill-down, opened cold or
+  // moved with history.pushState) has its Welsh copy at the same address under /cy/.
+  function copyOfAddress(rootPrefix, copy, language) {
+    const here = window.location.pathname;
+    const own = alternatePath(pageLanguage);
+    const elsewhere = own !== null && here !== own && here + "index.html" !== own;
+    let path = copy;
+    if (elsewhere) path = language === "cy" ? "/cy" + here : here.replace(/^\/cy(?=\/)/, "");
+    return (rootPrefix + path.replace(/^\//, "") || "./") + window.location.search;
+  }
+
+  // The link's address is read again when it is about to be used. pointerdown comes before a
+  // click, a middle click and the context menu's "open in new tab", with a mouse, a pen or a
+  // finger; focus comes before a keyboard's Enter or menu key; click covers an address that
+  // changed while the link held focus.
+  function followAddress(link, address) {
+    const refresh = function () {
+      link.setAttribute("href", address());
+    };
+    refresh();
+    ["pointerdown", "focus", "click"].forEach(function (type) {
+      link.addEventListener(type, refresh);
+    });
+  }
+
   // The option names the other language. It goes to this page's copy in that language when there
   // is one, and to this page again when there is not, so the chrome changes and the body stays.
   function buildLanguageSwitch(rootPrefix) {
@@ -273,10 +300,14 @@
     nav.setAttribute("aria-label", siteText("chrome.language", "Language"));
     const item = document.createElement("a");
     if (copy) {
-      item.setAttribute("href", rootPrefix + copy.replace(/^\//, "") || "./");
+      followAddress(item, function () {
+        return copyOfAddress(rootPrefix, copy, other);
+      });
       item.setAttribute("hreflang", HREFLANG[other]);
     } else {
-      item.setAttribute("href", window.location.href.split("#")[0]);
+      followAddress(item, function () {
+        return window.location.href.split("#")[0];
+      });
     }
     item.setAttribute("lang", HREFLANG[other]);
     item.textContent = LANGUAGE_NAMES[other];
@@ -300,7 +331,9 @@
       return notice;
     }
     const link = document.createElement("a");
-    link.setAttribute("href", rootPrefix + copy.replace(/^\//, "") || "./");
+    followAddress(link, function () {
+      return copyOfAddress(rootPrefix, copy, language);
+    });
     link.setAttribute("hreflang", HREFLANG[language]);
     if (language === "cy") {
       notice.append(siteText("chrome.notice-welsh-copy", "This page is also in Welsh.") + " ");
@@ -501,6 +534,18 @@
       inEnglishMarkHtml(chromeLanguage() === "cy");
     const legal = escapeHtml(siteText("chrome.footer-legal", "Free to use under the {licence}.")).replace("{licence}", licenceLink);
 
+    // A reader in Welsh is told, on every page, the language of our replies.
+    const supportLink = '<a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>';
+    const welshMessages =
+      chromeLanguage() === "cy"
+        ? '<p class="footer-legal footer-welsh-messages">' +
+          escapeHtml(siteText("chrome.welsh-messages", "You can write to us in Welsh at {email}. We reply in English for now.")).replace(
+            "{email}",
+            supportLink,
+          ) +
+          "</p>"
+        : "";
+
     return (
       '<nav class="footer-links" aria-label="' +
       escapeHtml(siteText("chrome.footer-site-information", "Site information")) +
@@ -512,6 +557,7 @@
       sourceLink +
       devLinks +
       "</nav>" +
+      welshMessages +
       '<p class="footer-legal">&copy; 2006-2026 DIY Accounting Limited. ' +
       legal +
       "</p>"

@@ -47,6 +47,7 @@ import {
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 import { accountsText } from "./accountsLanguage.js";
+import { sharesIssuedFor } from "../../web/public/lib/accounts-notes-check.js";
 
 // The FRS 105 micro-entity profit and loss account (Format 2) a Company Tax Return carries.
 export const MICRO_PROFIT_AND_LOSS_LINES = [
@@ -148,7 +149,6 @@ const DORMANT_NEVER_TRADED_SENTENCE =
   "The company has not traded during the year or the preceding financial period. During this time the company received no income and incurred no expenditure and therefore no profit and loss account is presented.";
 
 export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
-export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
 
 export const SHARE_CLASS_LABEL = {
   ordinaryShares: "ordinary",
@@ -156,19 +156,6 @@ export const SHARE_CLASS_LABEL = {
   deferredShares: "deferred",
   otherShares: "other",
 };
-
-/**
- * The number of shares a fully paid share capital figure represents at a nominal value, or null
- * when the capital is not a whole number of shares.
- * @param {number} calledUpShareCapital
- * @param {number} nominalValue
- * @returns {number|null}
- */
-export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
-  if (!Number.isFinite(nominalValue) || nominalValue <= 0 || !Number.isFinite(calledUpShareCapital)) return null;
-  const shares = Math.round((calledUpShareCapital / nominalValue) * 1e6) / 1e6;
-  return Number.isInteger(shares) ? shares : null;
-}
 
 // A heading shows in every year once any year carries a figure for it, so both columns agree;
 // a heading no year carries is left out.
@@ -199,14 +186,15 @@ function withOptionalHeadings(balanceSheetYears) {
  * @param {number} input.averageNumberOfEmployees
  * @param {string} input.directorName
  * @param {string} input.dateOfApproval - ISO date
- * @param {{originalDateOfApproval: string, differences: string}} [input.revision] - makes the document revised accounts that replace accounts already filed
+ * @param {{originalDateOfApproval: string, nonCompliance: string, amendments: string}} [input.revision] - makes the document revised accounts that replace accounts already filed
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {object} input.balanceSheet
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
  *   creditorsAfterOneYear, calledUpShareCapital, profitAndLossAccount, capitalAndReserves
  * @param {number} [input.balanceSheet.current.calledUpShareCapitalNotPaid] - and prepaymentsAccruedIncome, provisionsForLiabilities,
  *   accrualsDeferredIncome: optional headings that enter the balance sheet totals
- * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year
+ * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year; first accounts have none
+ * @param {string} [input.dateOfIncorporation] - ISO date; given for the company's first accounts, and equal to periodStart
  * @param {Array<{name: string, terms: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} [input.directorsAdvances] - the section 413 note on advances and credits to directors, for a company whose directors owe it money
  * @param {{current: object, prior?: object}} [input.profitAndLoss] - MICRO_PROFIT_AND_LOSS_LINES; when
  *   present the document is the full copy HMRC takes with a Company Tax Return, with the profit and
@@ -446,6 +434,8 @@ export function buildMicroEntityAccounts(input) {
         heading: heading(accountsText("Revised accounts"), forThePeriod),
         periodEnd: input.periodEnd,
         revision: input.revision,
+        dateOfApproval: input.dateOfApproval,
+        contextRef: refs.current,
       })}`
     : "";
 
@@ -456,6 +446,7 @@ export function buildMicroEntityAccounts(input) {
     title: accountsText(input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts"),
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
+    dateOfIncorporation: input.dateOfIncorporation,
   })}${revisionHtml}${accountantsPage}
 <div class="page">
 ${heading(

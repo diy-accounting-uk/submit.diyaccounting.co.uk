@@ -26,7 +26,7 @@ const BOOK_DIRECTORY = join(process.cwd(), "fixtures", "diya-gl", "precision-cod
 
 const COMPANY = {
   companyName: "Precision Code Ltd",
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   utr: "8596148860",
   companyType: 0,
   declarantName: "Carol Smith",

@@ -11,9 +11,11 @@
 // The script starts dynalite, a mock OAuth2 server carrying the MCP client (mock-oauth2-config.json,
 // issuer "oauth2", the Cognito-shaped /oauth2/authorize and /oauth2/token paths auth.js uses) and the
 // proxy's Express server, then drives the MCP server as a client would: sign_in, open_book,
-// derive_micro_entity_accounts, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts_sandbox and
-// poll_submission. The test service answers every accounts poll PENDING, so the proof is the
-// gateway's acknowledgement at submit and PENDING on each poll. Every process it started is stopped on
+// derive_micro_entity_accounts, render_micro_entity_accounts_sandbox, request_companies_house_codes (entering the
+// code on its link as the codes page does), submit_micro_entity_accounts_sandbox and
+// poll_submission, then files the case micro-entity-accounts-revised with its revision as revised accounts that
+// replace the original, and polls that submission too. The test service answers every accounts poll
+// PENDING, so the proof is the gateway's acknowledgement at each submit and PENDING on each poll. Every process it started is stopped on
 // exit. MCP_PROOF_TRANSCRIPT names a file that receives the script's own lines (no token, secret,
 // presenter credential or company authentication code is among them).
 
@@ -28,6 +30,7 @@ const REPOSITORY_ROOT = resolve(import.meta.dirname, "../..");
 const BOOK_DIRECTORY = join(REPOSITORY_ROOT, "mcp/test/fixtures/brickwork-pro-ltd-vat");
 const CASES_FILE = join(REPOSITORY_ROOT, "scripts/fixtures/companies-house-test-service-cases.json");
 const CASE_NAME = "micro-entity-accounts";
+const REVISED_CASE_NAME = "micro-entity-accounts-revised";
 const POLL_BUDGET = 5;
 const MIN_POLL_DELAY_MS = 1000;
 const MAX_POLL_DELAY_MS = 30_000;
@@ -137,6 +140,34 @@ function dayAfter(isoDate) {
   return date.toISOString().slice(0, 10);
 }
 
+// The stand-in for the user typing the company authentication code on the link
+// request_companies_house_codes answers: the same PUT the codes page sends. Answers the entry id the
+// filing call names as codesEntryId.
+async function enterCodes(client, baseUrl, companyNumber, companyAuthCode) {
+  const codes = await callTool(client, "request_companies_house_codes", { kind: "accounts", companyNumber });
+  const entered = await fetch(`${baseUrl}/api/v1/mcp/codes-entries/${encodeURIComponent(codes.entryId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ companyAuthCode }),
+  });
+  if (!entered.ok) throw new Error(`Entering the codes for ${companyNumber} answered HTTP ${entered.status}`);
+  say(`request_companies_house_codes: company ${companyNumber}, codes entered on the link`);
+  return codes.entryId;
+}
+
+async function pollPending(client, label, submitted) {
+  let delayMs = Math.min(Math.max(Number(submitted.pollInterval) * 1000 || MIN_POLL_DELAY_MS, MIN_POLL_DELAY_MS), MAX_POLL_DELAY_MS);
+  for (let poll = 1; poll <= POLL_BUDGET; poll++) {
+    await sleep(delayMs);
+    const polled = await callTool(client, "poll_submission", { kind: "accounts", submissionNumber: submitted.submissionNumber });
+    say(`poll_submission ${label} ${poll}/${POLL_BUDGET}: statusCode ${polled.statusCode}, submissionNumber ${polled.submissionNumber}`);
+    if (polled.statusCode !== "PENDING")
+      throw new Error(`Poll ${poll} of the ${label} filing answered ${polled.statusCode}, expected PENDING: ${JSON.stringify(polled)}`);
+    if (Number(polled.pollInterval) > 0)
+      delayMs = Math.min(Math.max(Number(polled.pollInterval) * 1000, MIN_POLL_DELAY_MS), MAX_POLL_DELAY_MS);
+  }
+}
+
 async function main() {
   const logDirectory = mkdtempSync(join(tmpdir(), "diya-mcp-accounts-proof-logs-"));
   process.env.MCP_PROOF_LOG_DIR = logDirectory;
@@ -146,8 +177,12 @@ async function main() {
   if (missingGatewayVariables.length > 0) {
     throw new Error(`${missingGatewayVariables.join(", ")} must be set; run npm run mcp:accounts-test-service-proof`);
   }
-  const fixture = JSON.parse(readFileSync(CASES_FILE, "utf8")).find((testCase) => testCase.name === CASE_NAME);
+  const cases = JSON.parse(readFileSync(CASES_FILE, "utf8"));
+  const fixture = cases.find((testCase) => testCase.name === CASE_NAME);
   if (!fixture?.companyAuthCode || !fixture.companyNumber) throw new Error(`${CASES_FILE} has no usable case ${CASE_NAME}`);
+  const revisedFixture = cases.find((testCase) => testCase.name === REVISED_CASE_NAME);
+  if (!revisedFixture?.companyAuthCode || !revisedFixture.companyNumber || !revisedFixture.revision)
+    throw new Error(`${CASES_FILE} has no usable case ${REVISED_CASE_NAME}`);
   for (const port of REQUIRED_FREE_PORTS) {
     if (await portIsListening(port)) throw new Error(`Port ${port} is already in use`);
   }
@@ -274,7 +309,7 @@ async function main() {
 
     const submitted = await callTool(client, "submit_micro_entity_accounts_sandbox", {
       ...filing,
-      companyAuthCode: fixture.companyAuthCode,
+      codesEntryId: await enterCodes(client, baseUrl, fixture.companyNumber, fixture.companyAuthCode),
     });
     if (!submitted.submissionNumber)
       throw new Error(`submit_micro_entity_accounts_sandbox answered no submissionNumber: ${JSON.stringify(submitted)}`);
@@ -282,16 +317,35 @@ async function main() {
       `submit_micro_entity_accounts_sandbox: company ${fixture.companyNumber}, submissionNumber ${submitted.submissionNumber}, gatewayTimestamp ${submitted.gatewayTimestamp}`,
     );
 
-    let delayMs = Math.min(Math.max(Number(submitted.pollInterval) * 1000 || MIN_POLL_DELAY_MS, MIN_POLL_DELAY_MS), MAX_POLL_DELAY_MS);
-    for (let poll = 1; poll <= POLL_BUDGET; poll++) {
-      await sleep(delayMs);
-      const polled = await callTool(client, "poll_submission", { kind: "accounts", submissionNumber: submitted.submissionNumber });
-      say(`poll_submission ${poll}/${POLL_BUDGET}: statusCode ${polled.statusCode}, submissionNumber ${polled.submissionNumber}`);
-      if (polled.statusCode !== "PENDING")
-        throw new Error(`Poll ${poll} answered ${polled.statusCode}, expected PENDING: ${JSON.stringify(polled)}`);
-      if (Number(polled.pollInterval) > 0)
-        delayMs = Math.min(Math.max(Number(polled.pollInterval) * 1000, MIN_POLL_DELAY_MS), MAX_POLL_DELAY_MS);
-    }
+    await pollPending(client, "original", submitted);
+
+    const revisedFiling = {
+      companyNumber: revisedFixture.companyNumber,
+      companyName: revisedFixture.companyName,
+      periodStart: revisedFixture.periodStart,
+      periodEnd: revisedFixture.periodEnd,
+      balanceSheet: revisedFixture.balanceSheet,
+      averageEmployees: revisedFixture.averageEmployees,
+      director: revisedFixture.director,
+      statementsAccepted: revisedFixture.statementsAccepted,
+      revision: revisedFixture.revision,
+    };
+    const revisedRendered = await callTool(client, "render_micro_entity_accounts_sandbox", revisedFiling);
+    say(`render_micro_entity_accounts_sandbox ${REVISED_CASE_NAME}: ${Object.keys(revisedRendered).join(", ")}`);
+
+    const revisedSubmitted = await callTool(client, "submit_micro_entity_accounts_sandbox", {
+      ...revisedFiling,
+      codesEntryId: await enterCodes(client, baseUrl, revisedFixture.companyNumber, revisedFixture.companyAuthCode),
+    });
+    if (!revisedSubmitted.submissionNumber)
+      throw new Error(
+        `submit_micro_entity_accounts_sandbox ${REVISED_CASE_NAME} answered no submissionNumber: ${JSON.stringify(revisedSubmitted)}`,
+      );
+    say(
+      `submit_micro_entity_accounts_sandbox ${REVISED_CASE_NAME}: company ${revisedFixture.companyNumber}, revision of accounts approved ${revisedFixture.revision.originalDateOfApproval}, submissionNumber ${revisedSubmitted.submissionNumber}, gatewayTimestamp ${revisedSubmitted.gatewayTimestamp}`,
+    );
+
+    await pollPending(client, "revised", revisedSubmitted);
 
     await callTool(client, "sign_out");
     say("sign_out: refresh token revoked and local credentials removed");
@@ -303,7 +357,7 @@ async function main() {
 
 try {
   await main();
-  say("Result: acknowledged at submit, PENDING on every poll");
+  say("Result: original and revised accounts acknowledged at submit, PENDING on every poll");
 } catch (error) {
   say(`Result: failed: ${error.message}`);
   process.exitCode = 1;

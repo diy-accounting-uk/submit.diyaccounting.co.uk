@@ -32,9 +32,24 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { parse as parseTOML } from "@iarna/toml";
 import { generatePassQrCodeBuffer, generateAnnotatedPassQrCodeSvg, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
+import { isOperatorEmail } from "../app/lib/operators.js";
+import { passGrantsOnlyToOperators } from "../app/services/passGrantRule.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
+
+/**
+ * Why a pass for this bundle cannot be restricted to this email, or null: a pass for the operator
+ * bundle must be restricted to an operator's email (the operator list of ENVIRONMENT_NAME).
+ * @param {string} bundleId
+ * @param {string|null} email
+ * @returns {Promise<string|null>}
+ */
+export async function operatorRestrictionProblem(bundleId, email) {
+  if (!passGrantsOnlyToOperators(bundleId)) return null;
+  if (email && (await isOperatorEmail(email))) return null;
+  return `A pass for the bundle '${bundleId}' must be restricted to an operator's email (--email)`;
+}
 
 // Parse CLI arguments
 function parseArgs(args) {
@@ -128,6 +143,12 @@ async function main() {
     console.error(`ERROR: Pass type '${args.passType}' requires --email`);
     process.exit(1);
   }
+  process.env.ENVIRONMENT_NAME = args.environment;
+  const operatorProblem = await operatorRestrictionProblem(passType.bundleId, args.email);
+  if (operatorProblem) {
+    console.error(`ERROR: ${operatorProblem}`);
+    process.exit(1);
+  }
 
   const tableName = `${args.environment}-env-passes`;
   const maxUses = args.maxUses ?? passType.defaultMaxUses ?? 1;
@@ -156,6 +177,10 @@ async function main() {
       const { initializeEmailHashSecret } = await import("../app/lib/emailHash.js");
       await initializeEmailHashSecret();
     } catch (err) {
+      if (passGrantsOnlyToOperators(passType.bundleId)) {
+        console.error(`ERROR: Could not fetch email hash secret, and an operator pass must be restricted: ${err.message}`);
+        process.exit(1);
+      }
       console.error(`WARNING: Could not fetch email hash secret: ${err.message}`);
       console.error("Pass will be created without email restriction.");
       args.email = null;
@@ -227,7 +252,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(`ERROR: ${err.message}`);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error(`ERROR: ${err.message}`);
+    process.exit(1);
+  });
+}

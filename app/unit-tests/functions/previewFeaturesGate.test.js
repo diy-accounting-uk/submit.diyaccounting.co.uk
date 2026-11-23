@@ -38,6 +38,8 @@ describe("preview features against the environment gate", () => {
   const saved = {
     environmentName: process.env.ENVIRONMENT_NAME,
     filingBaseUri: process.env.COMPANIES_HOUSE_FILING_BASE_URI,
+    gatewayTest: process.env.COMPANIES_HOUSE_GATEWAY_TEST,
+    corporationTaxGatewayTest: process.env.HMRC_CT_GATEWAY_TEST,
   };
 
   beforeEach(() => {
@@ -50,6 +52,8 @@ describe("preview features against the environment gate", () => {
     for (const [name, value] of [
       ["ENVIRONMENT_NAME", saved.environmentName],
       ["COMPANIES_HOUSE_FILING_BASE_URI", saved.filingBaseUri],
+      ["COMPANIES_HOUSE_GATEWAY_TEST", saved.gatewayTest],
+      ["HMRC_CT_GATEWAY_TEST", saved.corporationTaxGatewayTest],
     ]) {
       if (value === undefined) delete process.env[name];
       else process.env[name] = value;
@@ -88,20 +92,107 @@ describe("preview features against the environment gate", () => {
     await expect(enforceBundles(event)).rejects.toBeInstanceOf(BundleEntitlementError);
   });
 
-  test("a preview request for a Companies House path runs only where the filing service is the test service", () => {
+  test("a preview request for a Companies House XML gateway path runs only where the gateway is the test service", () => {
     const event = practiceEvent({ "x-preview-features": "on" });
-    const path = "/api/v1/companies-house/accounts/render";
-
     process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api-sandbox.company-information.service.gov.uk";
-    expect(previewRunsAgainstSandbox(event, path)).toBe(true);
 
+    for (const path of [
+      "/api/v1/companies-house/accounts",
+      "/api/v1/companies-house/accounts/render",
+      "/api/v1/companies-house/confirmation-statement",
+      "/api/v1/companies-house/psc-verification-statement",
+      "/api/v1/companies-house/company/00000008/filing-data",
+    ]) {
+      process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+      expect(previewRunsAgainstSandbox(event, path), path).toBe(true);
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      expect(previewRunsAgainstSandbox(event, path), path).toBe(false);
+    }
+  });
+
+  test("a preview request for a Companies House REST path runs only where the filing API is the sandbox", () => {
+    const event = practiceEvent({ "x-preview-features": "on" });
+    process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+
+    for (const path of ["/api/v1/companies-house/transaction", "/api/v1/companies-house/company/00000008/registered-office-address"]) {
+      process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api-sandbox.company-information.service.gov.uk";
+      expect(previewRunsAgainstSandbox(event, path), path).toBe(true);
+      process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
+      expect(previewRunsAgainstSandbox(event, path), path).toBe(false);
+    }
+  });
+
+  test("a synthetic HMRC account does not let a preview request reach a live Companies House service", () => {
+    const event = practiceEvent({ "x-preview-features": "on", "hmrcAccount": "synthetic" });
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
     process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
-    expect(previewRunsAgainstSandbox(event, path)).toBe(false);
+
+    expect(previewRunsAgainstSandbox(event, "/api/v1/companies-house/psc-verification-statement")).toBe(false);
+    expect(previewRunsAgainstSandbox(event, "/api/v1/companies-house/transaction")).toBe(false);
+  });
+
+  test.each([
+    ["an XML gateway filing", "/api/v1/companies-house/accounts"],
+    ["a REST filing", "/api/v1/companies-house/transaction"],
+  ])(
+    "enforceBundles refuses %s that the environment does not list, for a synthetic preview request on live Companies House services",
+    async (_kind, path) => {
+      process.env.ENVIRONMENT_NAME = "an-environment-that-lists-nothing";
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
+      const event = buildLambdaEvent({
+        method: "POST",
+        path,
+        headers: { "x-preview-features": "on", "hmrcAccount": "synthetic" },
+        authorizer: buildJwtAuthorizerContext("preview-sub"),
+      });
+
+      await expect(enforceBundles(event)).rejects.toMatchObject({ details: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED" } });
+    },
+  );
+
+  test.each([
+    ["an XML gateway filing on the gateway's test service", "/api/v1/companies-house/accounts", { COMPANIES_HOUSE_GATEWAY_TEST: "true" }],
+    [
+      "a REST filing on the sandbox filing API",
+      "/api/v1/companies-house/transaction",
+      { COMPANIES_HOUSE_FILING_BASE_URI: "https://api-sandbox.company-information.service.gov.uk" },
+    ],
+  ])("enforceBundles lets a preview request run %s that the environment does not list", async (_kind, path, settings) => {
+    process.env.ENVIRONMENT_NAME = "an-environment-that-lists-nothing";
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+    process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
+    Object.assign(process.env, settings);
+    const event = buildLambdaEvent({
+      method: "POST",
+      path,
+      headers: { "x-preview-features": "on" },
+      authorizer: buildJwtAuthorizerContext("preview-sub"),
+    });
+
+    const outcome = await enforceBundles(event).catch((error) => error);
+    expect(outcome?.details?.code).not.toBe("ACTIVITY_ENVIRONMENT_RESTRICTED");
   });
 
   test("a preview request for an HMRC path with no synthetic account does not run on the Companies House test service", () => {
     process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api-sandbox.company-information.service.gov.uk";
 
+    expect(previewRunsAgainstSandbox(practiceEvent({ "x-preview-features": "on" }), "/api/v1/hmrc/itsa/business-details")).toBe(false);
+  });
+
+  test("a preview request with the synthetic HMRC account for a Corporation Tax path is refused whatever the gateway setting holds", () => {
+    const headers = { "x-preview-features": "on", "hmrcAccount": "synthetic" };
+
+    for (const setting of [undefined, "false", "true"]) {
+      if (setting === undefined) delete process.env.HMRC_CT_GATEWAY_TEST;
+      else process.env.HMRC_CT_GATEWAY_TEST = setting;
+      for (const path of ["/api/v1/hmrc/ct/return", "/api/v1/hmrc/ct/return/preview", "/api/v1/hmrc/ct/return/abc-123"]) {
+        expect(previewRunsAgainstSandbox(practiceEvent(headers), path), `${setting} ${path}`).toBe(false);
+      }
+    }
+  });
+
+  test("a preview request without the synthetic HMRC account for another HMRC path is refused", () => {
     expect(previewRunsAgainstSandbox(practiceEvent({ "x-preview-features": "on" }), "/api/v1/hmrc/itsa/business-details")).toBe(false);
   });
 });

@@ -16,6 +16,7 @@
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,12 +32,17 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
 } from "./helpers/behaviour-helpers.js";
+import { companiesHouseLookupFixture, isCompaniesHouseSimulatorLane } from "./steps/behaviour-companies-house-filing-steps.js";
+import { COMPANY_AUTHENTICATION_CODE } from "@app/http-simulator/fixtures/register.js";
 import { fillInHostedUINativeAuth, handleTotpChallenge, submitHostedUINativeAuth } from "./steps/behaviour-login-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BOOK_FIXTURE_DIRECTORY = path.join(__dirname, "../mcp/test/fixtures/brickwork-pro-ltd-vat");
+const REVISED_ACCOUNTS_CASE = JSON.parse(
+  readFileSync(path.join(__dirname, "../scripts/fixtures/companies-house-test-service-cases.json"), "utf8"),
+).find((testCase) => testCase.name === "micro-entity-accounts-revised");
 const LOOPBACK_PORT = 53682;
 const LOOPBACK_REDIRECT_URI = `http://127.0.0.1:${LOOPBACK_PORT}/callback`;
 
@@ -196,12 +202,9 @@ test("an unauthenticated client is challenged, registers, and is sent to the ups
   await discoverRegisterAndConsent(page);
 });
 
-test("a chat client connects, signs in, refreshes, lists the hosted tools and derives a VAT return from a cloud book", async ({ page }) => {
-  test.skip(testAuthProvider !== "cognito-native", "the sign-in needs the Cognito Hosted UI with a native test user");
-  addOnPageLogging(page);
-
-  const { mcpUrl, tokenUrl, clientId, pkce, state } = await discoverRegisterAndConsent(page);
-
+// Steps 6 and 7: the Hosted UI sign-in, the loopback redirect with its code, the token exchange
+// and one refresh. Answers the refreshed access token.
+async function signInAndRefresh(page, { tokenUrl, clientId, pkce, state }) {
   /* ******************************************************* */
   /*  SIGN IN, THEN CATCH THE LOOPBACK REDIRECT AND ITS CODE   */
   /* ******************************************************* */
@@ -257,7 +260,15 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
   expect(refreshed.response.status, JSON.stringify(refreshed.body)).toBe(200);
   expect(refreshed.body.access_token).toBeTruthy();
   expect(refreshed.body.access_token).not.toBe(exchanged.body.access_token);
-  const accessToken = refreshed.body.access_token;
+  return refreshed.body.access_token;
+}
+
+test("a chat client connects, signs in, refreshes, lists the hosted tools and derives a VAT return from a cloud book", async ({ page }) => {
+  test.skip(testAuthProvider !== "cognito-native", "the sign-in needs the Cognito Hosted UI with a native test user");
+  addOnPageLogging(page);
+
+  const { mcpUrl, tokenUrl, clientId, pkce, state } = await discoverRegisterAndConsent(page);
+  const accessToken = await signInAndRefresh(page, { tokenUrl, clientId, pkce, state });
 
   /* ******************************************************************************* */
   /*  SAVE THE BOOK TO THE USER'S CLOUD STORAGE WITH THE CONNECTOR'S OWN ACCESS TOKEN  */
@@ -301,5 +312,88 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(removed.status).toBe(200);
+  }
+});
+
+test("a chat client files revised micro-entity accounts through the hosted connector with the codes typed on its link", async ({
+  page,
+}) => {
+  test.skip(testAuthProvider !== "cognito-native", "the sign-in needs the Cognito Hosted UI with a native test user");
+  addOnPageLogging(page);
+
+  const { mcpUrl, tokenUrl, clientId, pkce, state } = await discoverRegisterAndConsent(page);
+  const accessToken = await signInAndRefresh(page, { tokenUrl, clientId, pkce, state });
+  const authorised = { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" };
+
+  /* ******************************************************** */
+  /*  GRANT THE BUNDLE THAT FILES ACCOUNTS, BY A TEST PASS     */
+  /* ******************************************************** */
+
+  const issued = await fetch(siteUrl("api/v1/pass/admin"), {
+    method: "POST",
+    headers: authorised,
+    body: JSON.stringify({
+      passTypeId: "resident-ltd",
+      bundleId: "resident-ltd",
+      validityPeriod: "P1D",
+      maxUses: 1,
+      createdBy: "behaviour-test",
+      testPass: true,
+    }),
+  });
+  const issuedBody = await issued.json();
+  expect(issued.status, JSON.stringify(issuedBody)).toBe(200);
+  const passCode = issuedBody?.data?.code || issuedBody?.code;
+  expect(passCode, JSON.stringify(issuedBody)).toBeTruthy();
+  const redeemed = await fetch(siteUrl("api/v1/pass"), { method: "POST", headers: authorised, body: JSON.stringify({ code: passCode }) });
+  expect(redeemed.ok, `pass redeem answered HTTP ${redeemed.status}`).toBe(true);
+
+  /* ***************************************************************** */
+  /*  THE CODES ON THEIR LINK, THEN THE REVISED FILING AND ONE POLL     */
+  /* ***************************************************************** */
+
+  const { companyNumber, companyName } = companiesHouseLookupFixture(envFilePath);
+  const transport = new StreamableHTTPClientTransport(new URL(mcpUrl), {
+    requestInit: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+  const client = new Client({ name: "mcp-hosted-behaviour-test", version: "1.0.0" });
+  await client.connect(transport);
+  try {
+    const codes = await client.callTool({ name: "request_companies_house_codes", arguments: { kind: "accounts", companyNumber } });
+    expect(codes.isError, JSON.stringify(codes.content)).toBeFalsy();
+    expect(codes.structuredContent.entryId).toBeTruthy();
+
+    await page.goto(new URL(codes.structuredContent.url, baseUrl).toString());
+    // The simulator checks the authentication code its register holds; the other lanes file with their own.
+    await page.locator("#companyAuthCode").fill(isCompaniesHouseSimulatorLane(envFilePath) ? COMPANY_AUTHENTICATION_CODE : "AB12CD");
+    await page.locator("#saveCodesBtn").click();
+    await expect(page.locator("#codesDoneView")).toBeVisible();
+
+    const filed = await client.callTool({
+      name: "submit_micro_entity_accounts_sandbox",
+      arguments: {
+        companyNumber,
+        companyName,
+        periodStart: REVISED_ACCOUNTS_CASE.periodStart,
+        periodEnd: REVISED_ACCOUNTS_CASE.periodEnd,
+        balanceSheet: REVISED_ACCOUNTS_CASE.balanceSheet,
+        averageEmployees: REVISED_ACCOUNTS_CASE.averageEmployees,
+        director: REVISED_ACCOUNTS_CASE.director,
+        statementsAccepted: REVISED_ACCOUNTS_CASE.statementsAccepted,
+        revision: REVISED_ACCOUNTS_CASE.revision,
+        codesEntryId: codes.structuredContent.entryId,
+      },
+    });
+    expect(filed.isError, JSON.stringify(filed.content)).toBeFalsy();
+    expect(filed.structuredContent.submissionNumber).toBeTruthy();
+
+    const polled = await client.callTool({
+      name: "poll_submission",
+      arguments: { kind: "accounts", submissionNumber: filed.structuredContent.submissionNumber },
+    });
+    expect(polled.isError, JSON.stringify(polled.content)).toBeFalsy();
+    expect(polled.structuredContent.statusCode).toBeTruthy();
+  } finally {
+    await client.close();
   }
 });

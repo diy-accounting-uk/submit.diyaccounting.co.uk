@@ -19,7 +19,8 @@ import {
 import { getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { claimPresenterPollSlot, deferPresenterPoll } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { getPendingFiling } from "../data/dynamoDbCompaniesHousePendingFilerRepository.js";
-import { FORM_KINDS, recordSubmissionStatus, isGatewayTest, hasStoredFinalStatus } from "./companiesHouseSubmissionStatus.js";
+import { recordSubmissionStatus, isGatewayTest, hasStoredFinalStatus } from "./companiesHouseSubmissionStatus.js";
+import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
 
 // The presenter poll runs on a schedule shared by every deployment of an environment. It never
 // polls more often than this, or than the PollInterval the gateway last sent, whichever is longer.
@@ -32,7 +33,7 @@ const logger = createLogger({ source: "app/services/companiesHousePresenterPoll.
 async function recordPresenterStatus(status) {
   const { submissionNumber, statusCode } = status;
   const filing = await getPendingFiling(submissionNumber);
-  if (!filing?.userSub || !FORM_KINDS[filing.kind]) {
+  if (!filing?.userSub || !COMPANIES_HOUSE_FORMS[filing.kind]) {
     // Filed under this presenter by something other than this environment's submit Lambdas.
     logger.info({ message: "Companies House status for a submission this environment did not record", submissionNumber, statusCode });
     return { submissionNumber, statusCode, outcome: "not-ours" };

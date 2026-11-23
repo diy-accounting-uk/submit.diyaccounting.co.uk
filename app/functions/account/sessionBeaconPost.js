@@ -18,21 +18,16 @@ import { extractRequest, http200OkResponse, http400BadRequestResponse, getHeader
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { classifyVisitor, classifyBot } from "../../lib/visitorClassifier.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { buildRecordableAttributionMap } from "../../lib/acquisition.js";
 
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
 
-// Landing-attribution fields session-beacon.js carries from analytics.js's localStorage
-// capture. The beacon is sent only after consent, and carries them when the browser still
-// holds a valid stored landing.
-const ATTRIBUTION_DETAIL_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "msclkid", "ref", "landedAt"];
+// A path of this site: a leading slash, then letters, digits and . _ ~ - /, 200 characters at most.
+// A query, a fragment or any other character makes the value something else, and it is dropped.
+const SITE_PATH = /^\/[A-Za-z0-9._~/-]{0,199}$/;
 
-function extractAttribution(body) {
-  const attribution = {};
-  for (const key of ATTRIBUTION_DETAIL_KEYS) {
-    const value = body[key];
-    if (typeof value === "string" && value) attribution[key] = value;
-  }
-  return attribution;
+function sitePathOf(value) {
+  return typeof value === "string" && SITE_PATH.test(value) ? value : undefined;
 }
 
 /* v8 ignore start */
@@ -86,7 +81,7 @@ export async function ingestHandler(event) {
     return publishConsentAnswer({ request, body, country, visitorType });
   }
 
-  const page = body.page || "/";
+  const page = body.page === undefined || body.page === "" ? "/" : sitePathOf(body.page);
 
   const actorByVisitorType = { "ai-agent": "ai-agent", "synthetic": "synthetic" };
 
@@ -99,9 +94,9 @@ export async function ingestHandler(event) {
       visitorType,
       botClass: classifyBot(userAgent),
       country,
-      page,
+      ...(page ? { page } : {}),
       userAgent: userAgent.substring(0, 100),
-      ...extractAttribution(body),
+      ...buildRecordableAttributionMap(body),
     },
   });
 

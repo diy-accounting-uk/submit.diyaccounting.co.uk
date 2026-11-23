@@ -105,12 +105,21 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/companies-house-rejections.js", "lib/companies-house-rejections.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-gateway-poll.js", "lib/companies-house-gateway-poll.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-form-sections.js", "lib/accounts-form-sections.js", "application/javascript");
+  await serveFile(page, "**/lib/balance-sheet-check.js", "lib/balance-sheet-check.js", "application/javascript");
+  await serveFile(page, "**/lib/accounts-notes-check.js", "lib/accounts-notes-check.js", "application/javascript");
+  await serveFile(page, "**/lib/first-accounts.js", "lib/first-accounts.js", "application/javascript");
+  await serveFile(page, "**/lib/long-period.js", "lib/long-period.js", "application/javascript");
+  await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");
+  await serveFile(page, "**/lib/company-drill-paths.js", "lib/company-drill-paths.js", "application/javascript");
+  await serveFile(page, "**/lib/watch-list-button.js", "lib/watch-list-button.js", "application/javascript");
+  await serveFile(page, "**/lib/services/watch-list-service.js", "lib/services/watch-list-service.js", "application/javascript");
   await serveFile(page, "**/lib/stacked-table.js", "lib/stacked-table.js", "application/javascript");
   await serveFile(page, "**/lib/services/viewer-settings.js", "lib/services/viewer-settings.js", "application/javascript");
   await serveFile(page, "**/lib/services/catalog-service.js", "lib/services/catalog-service.js", "application/javascript");
   await serveFile(page, "**/lib/services/catalogue-aggregates.js", "lib/services/catalogue-aggregates.js", "application/javascript");
   await serveFile(page, "**/lib/bundle-listing.js", "lib/bundle-listing.js", "application/javascript");
+  await serveFile(page, "**/lib/ct600-agent.js", "lib/ct600-agent.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
@@ -135,6 +144,15 @@ export async function serveItsaPageScripts(page) {
       window.hmrcScopeCheck.grantHeaders = window.hmrcScopeCheck.grantHeaders || (() => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }));`,
     });
   });
+  // The HMRC account the test stored stands for the one the bundle read decides.
+  await page.route("**/developer-mode.js", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `window.readHmrcAccount = () => Promise.resolve(sessionStorage.getItem("hmrcAccount"));`,
+    });
+  });
+  await serveFile(page, "**/lib/hmrc-sandbox-status.js", "lib/hmrc-sandbox-status.js", "application/javascript");
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/review-links.js", "lib/review-links.js", "application/javascript");

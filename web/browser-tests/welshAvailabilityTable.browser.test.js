@@ -45,6 +45,7 @@ async function measure(page, pagePath) {
     width: table.getBoundingClientRect().width,
     cellFont: getComputedStyle(table.querySelector("td")).fontSize,
     bodyFont: getComputedStyle(document.body).fontSize,
+    scrollsSideways: table.parentElement.scrollWidth > table.parentElement.clientWidth,
   }));
 }
 
@@ -54,11 +55,24 @@ test.describe("MTD calendar availability table at 1280px", () => {
     const welshPage = await browser.newPage();
     await welshPage.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
     await englishPage.addInitScript(() => localStorage.setItem("siteLanguage", "en"));
+    for (const shown of [englishPage, welshPage]) await shown.addInitScript(() => localStorage.setItem("consent.analytics", "declined"));
     const english = await measure(englishPage, "mtd-calendar.html");
     const welsh = await measure(welshPage, "cy/mtd-calendar.html");
+    for (const [name, shown] of [
+      ["en", englishPage],
+      ["cy", welshPage],
+    ]) {
+      for (const width of [1280, 390]) {
+        await shown.setViewportSize({ width, height: 900 });
+        await shown.locator(".availability-table").screenshot({ path: `target/screenshots/availability/${name}-table-${width}.png` });
+      }
+      await shown.setViewportSize({ width: 1280, height: 900 });
+    }
     expect(english.cellFont).toBe(english.bodyFont);
     expect(welsh.height).toBeLessThanOrEqual(english.height);
     expect(welsh.width).toBeLessThanOrEqual(english.width + 1);
+    expect(english.scrollsSideways).toBe(false);
+    expect(welsh.scrollsSideways).toBe(false);
     await englishPage.close();
     await welshPage.close();
   });

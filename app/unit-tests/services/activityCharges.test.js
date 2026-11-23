@@ -30,37 +30,37 @@ describe("activityCharges", () => {
 
   test("hasPaidCharge is true for a recorded paid charge", async () => {
     mockGetActivityCharge.mockResolvedValue({ status: "paid" });
-    const result = await hasPaidCharge("test-user-sub", "file-confirmation-statement", "12345678#2026-01-01");
+    const result = await hasPaidCharge("test-user-sub", "file-confirmation-statement", "00000007#2026-01-01");
 
     expect(result).toBe(true);
-    expect(mockGetActivityCharge).toHaveBeenCalledWith(hashSub("test-user-sub"), "charge#file-confirmation-statement#12345678#2026-01-01");
+    expect(mockGetActivityCharge).toHaveBeenCalledWith(hashSub("test-user-sub"), "charge#file-confirmation-statement#00000007#2026-01-01");
   });
 
   test("hasPaidCharge is false when no charge is recorded", async () => {
     mockGetActivityCharge.mockResolvedValue(null);
-    const result = await hasPaidCharge("test-user-sub", "file-confirmation-statement", "12345678#2026-01-01");
+    const result = await hasPaidCharge("test-user-sub", "file-confirmation-statement", "00000007#2026-01-01");
     expect(result).toBe(false);
   });
 
   test("hasPaidCharge is false once a charge has been used", async () => {
     mockGetActivityCharge.mockResolvedValue({ status: "used" });
-    const result = await hasPaidCharge("test-user-sub", "file-confirmation-statement", "12345678#2026-01-01");
+    const result = await hasPaidCharge("test-user-sub", "file-confirmation-statement", "00000007#2026-01-01");
     expect(result).toBe(false);
   });
 
   test("recordPaidChargeByHashedSub writes a paid charge keyed by the given hashed sub", async () => {
     mockPutActivityChargeIfAbsent.mockResolvedValue(true);
-    const result = await recordPaidChargeByHashedSub("hashed-sub-value", "file-confirmation-statement", "12345678#2026-01-01", {
+    const result = await recordPaidChargeByHashedSub("hashed-sub-value", "file-confirmation-statement", "00000007#2026-01-01", {
       stripeSessionId: "cs_test_123",
     });
 
     expect(result).toBe(true);
     expect(mockPutActivityChargeIfAbsent).toHaveBeenCalledWith(
       "hashed-sub-value",
-      "charge#file-confirmation-statement#12345678#2026-01-01",
+      "charge#file-confirmation-statement#00000007#2026-01-01",
       {
         activityId: "file-confirmation-statement",
-        subjectKey: "12345678#2026-01-01",
+        subjectKey: "00000007#2026-01-01",
         status: "paid",
         stripeSessionId: "cs_test_123",
       },
@@ -69,18 +69,18 @@ describe("activityCharges", () => {
 
   test("recordPaidChargeByHashedSub returns false for a retried write (idempotent)", async () => {
     mockPutActivityChargeIfAbsent.mockResolvedValue(false);
-    const result = await recordPaidChargeByHashedSub("hashed-sub-value", "file-confirmation-statement", "12345678#2026-01-01");
+    const result = await recordPaidChargeByHashedSub("hashed-sub-value", "file-confirmation-statement", "00000007#2026-01-01");
     expect(result).toBe(false);
   });
 
   test("markChargeUsed hashes the user sub and marks the charge used", async () => {
     mockMarkActivityChargeUsed.mockResolvedValue(true);
-    const result = await markChargeUsed("test-user-sub", "file-confirmation-statement", "12345678#2026-01-01");
+    const result = await markChargeUsed("test-user-sub", "file-confirmation-statement", "00000007#2026-01-01");
 
     expect(result).toBe(true);
     expect(mockMarkActivityChargeUsed).toHaveBeenCalledWith(
       hashSub("test-user-sub"),
-      "charge#file-confirmation-statement#12345678#2026-01-01",
+      "charge#file-confirmation-statement#00000007#2026-01-01",
     );
   });
 });

@@ -20,6 +20,41 @@ class SubmitApplicationBillingStackCdkTest extends SubmitApplicationCdkTestEnvir
 
     @Test
     @SetEnvironmentVariable.SetEnvironmentVariables({
+        @SetEnvironmentVariable(
+                key = "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                value = "price_live_name_standard"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY",
+                value = "price_live_name_same_day"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                value = "price_test_name_standard"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY",
+                value = "price_test_name_same_day"),
+    })
+    void changeOfNamePriceIdsReachTheActivityCheckoutLambdaWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
+        String checkoutFunctionName =
+                submitApplication.billingStack.billingActivityCheckoutPostLambdaProps.ingestFunctionName();
+
+        for (String variable : java.util.List.of(
+                "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY",
+                "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY")) {
+            assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, variable);
+        }
+    }
+
+    @Test
+    @SetEnvironmentVariable.SetEnvironmentVariables({
         @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_VAT_YEAR", value = "price_live_resident_vat_year"),
         @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_VAT_MONTH", value = "price_live_resident_vat_month"),
         @SetEnvironmentVariable(key = "STRIPE_TEST_PRICE_ID_RESIDENT_VAT_YEAR", value = "price_test_resident_vat_year"),

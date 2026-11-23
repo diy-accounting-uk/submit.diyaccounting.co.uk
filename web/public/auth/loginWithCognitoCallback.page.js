@@ -96,6 +96,16 @@ function signedInProvider(idTokenPayload) {
   return "cognito";
 }
 
+// Tells the page the sign-in lands on to post the stored landing as the account's source. The post
+// is made there and not here, because this page leaves before an answer could arrive.
+function markSignInForAccountAcquisition() {
+  try {
+    sessionStorage.setItem("attribution.landing.signIn", "1");
+  } catch {
+    // no storage: no post
+  }
+}
+
 function base64UrlDecode(str) {
   // Replace URL-safe chars
   str = str.replace(/-/g, "+").replace(/_/g, "/");
@@ -243,6 +253,7 @@ async function handleAuthCallback(code, state) {
     if (typeof gtag === "function") {
       gtag("event", "login", { method: loginProvider });
     }
+    markSignInForAccountAcquisition();
     showStatus(siteText("login.callback-fetching-bundles", "Authenticated successfully. Fetching bundles..."), "info");
 
     // Extract MFA status from the ID token

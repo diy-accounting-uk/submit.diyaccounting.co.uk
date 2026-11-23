@@ -14,6 +14,13 @@ import { escapeXmlText } from "../lib/xmlDom.js";
 import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 import { accountsText, buildingWelshAccounts, welshDisplayDate } from "./accountsLanguage.js";
+import {
+  DIRECTORS_ADVANCE_FIGURES,
+  MAX_ADVANCE_NAME_LENGTH,
+  MAX_ADVANCE_TERMS_LENGTH,
+  MAX_DIRECTORS_ADVANCES,
+  directorsAdvancesFindings,
+} from "../../web/public/lib/accounts-notes-check.js";
 
 const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
 
@@ -55,6 +62,7 @@ const LANGUAGES_NAMESPACE = "http://xbrl.frc.org.uk/cd/2026-01-01/languages";
 //   at its default, undimensioned member).
 export const CONCEPTS = {
   companiesHouseRegisteredNumber: { prefix: "bus", name: "UKCompaniesHouseRegisteredNumber" },
+  dateFormationOrIncorporation: { prefix: "bus", name: "DateFormationOrIncorporation" },
   entityCurrentLegalOrRegisteredName: { prefix: "bus", name: "EntityCurrentLegalOrRegisteredName" },
   balanceSheetDate: { prefix: "bus", name: "BalanceSheetDate" },
   dateAuthorisationFinancialStatementsForIssue: { prefix: "core", name: "DateAuthorisationFinancialStatementsForIssue" },
@@ -73,6 +81,18 @@ export const CONCEPTS = {
   countryFormationOrIncorporation: { prefix: "bus", name: "CountryFormationOrIncorporation" },
   scopeAccounts: { prefix: "bus", name: "ScopeAccounts" },
   reportAmendedRevisedVersion: { prefix: "bus", name: "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" },
+  revisedReportReplacesPreviouslyFiledReport: { prefix: "bus", name: "StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod" },
+  revisedReportNowStatutoryAccounts: { prefix: "bus", name: "StatementThatThisReportNowStatutoryAccountsForPeriod" },
+  revisedReportPreparedAsDatePreviouslyFiledReport: {
+    prefix: "bus",
+    name: "StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  },
+  previouslyFiledReportNonCompliance: {
+    prefix: "bus",
+    name: "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  },
+  previouslyFiledReportSignificantAmendments: { prefix: "bus", name: "StatementSignificantAmendmentsToPreviouslyFiledReport" },
+  dateApprovalRevisionReport: { prefix: "bus", name: "DateApprovalRevisionReport" },
   addressLine1: { prefix: "bus", name: "AddressLine1" },
   addressLine2: { prefix: "bus", name: "AddressLine2" },
   addressLine3: { prefix: "bus", name: "AddressLine3" },
@@ -623,36 +643,47 @@ export function controllingPartyNote({ controllingParty, contextRef }) {
   };
 }
 
-const DIRECTORS_ADVANCE_FIELDS = ["balanceAtStart", "advanced", "repaid", "balanceAtEnd"];
+// The message the accounts route gives for each finding of the shared advances rules, under the
+// request path of the rows.
+function advanceFindingMessage(finding, label) {
+  const row = `${label}[${finding.index}]`;
+  switch (finding.rule) {
+    case "too-many-rows":
+      return `${label} lists ${finding.total} rows: the note holds at most ${MAX_DIRECTORS_ADVANCES}, one for each director`;
+    case "name-missing":
+      return `${row}.name is required`;
+    case "name-too-long":
+      return `${row}.name must be at most ${MAX_ADVANCE_NAME_LENGTH} characters`;
+    case "figure":
+      return `${row}.${finding.field} must be a whole number of pounds, not negative`;
+    case "terms-missing":
+      return `${row}.terms is required: state the interest rate and the main conditions`;
+    case "terms-too-long":
+      return `${row}.terms must be at most ${MAX_ADVANCE_TERMS_LENGTH} characters`;
+    case "arithmetic":
+      return `${row}.balanceAtEnd must equal balanceAtStart plus advanced less repaid`;
+    case "same-director":
+      return `${row}.name names ${finding.name} again: give each director one row, with the amounts of all their advances added together`;
+    case "not-a-director":
+      return `${row} names ${finding.name}, who is not among the directors of these accounts: add them to the directors`;
+    case "not-the-signer":
+      return `${row} names ${finding.name}: on micro-entity accounts an advance names the director who signs the accounts, ${finding.signer}`;
+    default:
+      return `${label} balanceAtEnd (${finding.total}) must equal balanceSheet.currentYear.amountsOwedByDirectors`;
+  }
+}
 
 /**
- * The problems in the advances to directors figures: one row per director, whole pounds that are
- * not negative, and a closing balance equal to the opening balance plus the advances less the
- * repayments.
- * @param {Array<{name: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} directorsAdvances
+ * The problems in the advances to directors rows, by the rules the accounts forms share: at most
+ * one row for each director the taxonomy can name, a name and terms within their lengths, whole
+ * pounds that are not negative, and a closing balance equal to the opening balance plus the
+ * advances less the repayments.
+ * @param {Array<{name: string, terms: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} directorsAdvances
+ * @param {{directorNames?: string[], amountsOwedByDirectors?: number}} [accounts] - as directorsAdvancesFindings takes them
  * @returns {string[]}
  */
-export function directorsAdvancesProblems(directorsAdvances) {
-  const problems = [];
-  directorsAdvances.forEach((row, index) => {
-    const label = `directorsAdvances[${index}]`;
-    if (typeof row?.name !== "string" || row.name.trim() === "") problems.push(`${label}.name is required`);
-    for (const field of DIRECTORS_ADVANCE_FIELDS) {
-      if (!Number.isInteger(row?.[field]) || row[field] < 0) {
-        problems.push(`${label}.${field} must be a whole number of pounds, not negative`);
-      }
-    }
-    if (typeof row?.terms !== "string" || row.terms.trim() === "") {
-      problems.push(`${label}.terms is required: state the interest rate and the main conditions`);
-    }
-    if (
-      DIRECTORS_ADVANCE_FIELDS.every((field) => Number.isInteger(row?.[field])) &&
-      row.balanceAtStart + row.advanced - row.repaid !== row.balanceAtEnd
-    ) {
-      problems.push(`${label}.balanceAtEnd must equal balanceAtStart plus advanced less repaid`);
-    }
-  });
-  return problems;
+export function directorsAdvancesProblems(directorsAdvances, accounts) {
+  return directorsAdvancesFindings(directorsAdvances, accounts).map((finding) => advanceFindingMessage(finding, "directorsAdvances"));
 }
 
 /**
@@ -661,8 +692,11 @@ export function directorsAdvancesProblems(directorsAdvances) {
  * @param {unknown} values
  * @param {string} label - the request path, e.g. "smallCompany.directorsAdvances"
  * @param {string[]} errorMessages
+ * @param {{directorNames?: string[], signerName?: string, amountsOwedByDirectors?: number}} accounts - as
+ *   directorsAdvancesFindings takes them: the directors each advance is to one of, or the director
+ *   who signs micro-entity accounts, and the amounts owed by directors the closing balances add up to
  */
-export function readDirectorsAdvances(values, label, errorMessages) {
+export function readDirectorsAdvances(values, label, errorMessages, accounts) {
   if (values === undefined || values === null) return undefined;
   if (!Array.isArray(values)) {
     errorMessages.push(`${label} must be a list`);
@@ -671,9 +705,11 @@ export function readDirectorsAdvances(values, label, errorMessages) {
   const rows = values.map((row) => ({
     name: typeof row?.name === "string" ? row.name.trim() : "",
     terms: typeof row?.terms === "string" ? row.terms.trim() : "",
-    ...Object.fromEntries(DIRECTORS_ADVANCE_FIELDS.map((field) => [field, Number(row?.[field])])),
+    ...Object.fromEntries(DIRECTORS_ADVANCE_FIGURES.map((field) => [field, Number(row?.[field])])),
   }));
-  for (const problem of directorsAdvancesProblems(rows)) errorMessages.push(`${label}${problem.slice("directorsAdvances".length)}`);
+  for (const finding of directorsAdvancesFindings(rows, accounts)) {
+    errorMessages.push(advanceFindingMessage(finding, label));
+  }
   return rows;
 }
 
@@ -804,9 +840,11 @@ export function pageHeading({ companyName, companyNumber, title, subtitleHtml })
 
 /**
  * The cover page: the company name and registered number tagged, the kind of accounts, and the
- * period with its start and end dates tagged.
+ * period with its start and end dates tagged. First accounts say so, with the date of incorporation
+ * tagged; it equals the period's start date, which is how a reader knows the accounts have no
+ * preceding year.
  */
-export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd }) {
+export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd, dateOfIncorporation }) {
   return `<div class="page cover">
 <p class="cover-name">${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)}</p>
 <p class="cover-line">${accountsText("Registered number: {number}", { number: renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber) })}</p>
@@ -815,43 +853,58 @@ export function coverPage({ refs, companyName, companyNumber, title, periodStart
 <p class="cover-line">${accountsText("Period from {start} to {end}", {
     start: renderDateFact("startDateForPeriodCoveredByReport", refs.periodStartInstant, periodStart),
     end: renderDateFact("endDateForPeriodCoveredByReport", refs.currentInstant, periodEnd),
-  })}</p>
+  })}</p>${
+    dateOfIncorporation
+      ? `
+<p class="cover-line">${accountsText("The company's first accounts, from its incorporation on {date}", {
+          date: renderDateFact("dateFormationOrIncorporation", refs.periodStartInstant, dateOfIncorporation),
+        })}</p>`
+      : ""
+  }
 </div>`;
 }
 
 /**
- * The page that makes accounts a revision: the statements the Companies (Revision of Defective
- * Accounts and Reports) Regulations 2008 require of revised accounts, and the respects in which
- * they differ from the original accounts. Revised accounts carry the date they were approved on
- * the balance sheet, as any accounts do.
+ * The page that makes accounts a revision by replacement: the statements the Companies (Revision of
+ * Defective Accounts and Reports) Regulations 2008 require of revised accounts, the respects in
+ * which the original accounts did not comply with the Act, the significant amendments, and the date
+ * the directors approved the revised accounts. Each statement and the date are tagged, as the
+ * gateway requires of revised accounts that carry no supplementary note. Revised accounts carry
+ * that approval date on the balance sheet too, as any accounts do.
  * @param {object} input
  * @param {string} input.periodEnd - ISO date the accounts are made up to
- * @param {{originalDateOfApproval: string, differences: string}} input.revision
+ * @param {{originalDateOfApproval: string, nonCompliance: string, amendments: string}} input.revision
+ * @param {string} input.dateOfApproval - ISO date the directors approved the revised accounts
+ * @param {string} input.contextRef - the current period's context
  * @param {string} input.heading - the page heading, already built
  * @returns {string}
  */
-export function revisionPage({ heading, periodEnd, revision }) {
-  const originalDate = displayDate(revision.originalDateOfApproval);
+export function revisionPage({ heading, periodEnd, revision, dateOfApproval, contextRef }) {
+  const statement = (conceptKey, english, values) => renderTextFact(conceptKey, contextRef, accountsText(english, values));
+  const approval = accountsText("The directors approved these revised accounts on {date}.", {
+    date: renderDateFact("dateApprovalRevisionReport", contextRef, dateOfApproval),
+  });
   return `<div class="page">
-${heading}<p>${escapeXmlText(
-    accountsText(
-      "These are revised accounts. They replace the original accounts of the company for the financial year ended {end}, which were approved on {approved}.",
-      { end: displayDate(periodEnd), approved: originalDate },
-    ),
+${heading}<p>${statement(
+    "revisedReportReplacesPreviouslyFiledReport",
+    "These are revised accounts. They replace the original accounts of the company for the financial year ended {end}, which were approved on {approved}.",
+    { end: displayDate(periodEnd), approved: displayDate(revision.originalDateOfApproval) },
   )}</p>
-<p>${escapeXmlText(accountsText("The revised accounts are now the statutory accounts of the company."))}</p>
-<p>${escapeXmlText(
-    accountsText(
-      "They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.",
-    ),
+<p>${statement("revisedReportNowStatutoryAccounts", "The revised accounts are now the statutory accounts of the company.")}</p>
+<p>${statement(
+    "revisedReportPreparedAsDatePreviouslyFiledReport",
+    "They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.",
   )}</p>
 <p>${escapeXmlText(
     accountsText(
       "They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.",
     ),
   )}</p>
-<h3>${escapeXmlText(accountsText("Respects in which the original accounts differ"))}</h3>
-<p>${escapeXmlText(revision.differences)}</p>
+<h3>${escapeXmlText(accountsText("What was wrong with the original accounts"))}</h3>
+<p>${renderTextFact("previouslyFiledReportNonCompliance", contextRef, revision.nonCompliance)}</p>
+<h3>${escapeXmlText(accountsText("What the revised accounts change"))}</h3>
+<p>${renderTextFact("previouslyFiledReportSignificantAmendments", contextRef, revision.amendments)}</p>
+<p>${approval}</p>
 </div>`;
 }
 

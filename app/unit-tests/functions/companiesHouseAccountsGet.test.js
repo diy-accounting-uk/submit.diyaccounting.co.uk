@@ -224,7 +224,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
     await companiesHouseAccountsGetHandler(buildEvent());
     expect(mockBuildStatusRequest).toHaveBeenCalledWith({
@@ -410,6 +410,20 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       expect(receipt.input.Item.receipt).toMatchObject({ kind: "companies-house-accounts", jointFilingId: JOINT_FILING_ID, amended: true });
     });
 
+    test("writes the receipt a revision revises into the receipt of the revision", async () => {
+      const original = "2026-10-24T10:15:00.000Z-00001A.json";
+      storePendingRequest({
+        filedDocument: "<html/>",
+        chargeActivityId: "file-micro-entity-accounts",
+        amended: true,
+        revisesReceipt: original,
+      });
+      gatewayAnswers("ACCEPT");
+      await companiesHouseAccountsGetHandler(buildEvent());
+      const [receipt] = await puts();
+      expect(receipt.input.Item.receipt).toMatchObject({ kind: "companies-house-accounts", amended: true, revisesReceipt: original });
+    });
+
     test("copies the form request of the pending request into the receipt and not into the response", async () => {
       const formRequest = { company: { companyNumber: "00001A", companyName: "Example Ltd" }, values: { turnover: "1000" } };
       storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts", formRequest });
@@ -466,5 +480,15 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     const response = await companiesHouseAccountsGetHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response)).toEqual({});
+  });
+
+  test("answers 500 in JSON when the poll cannot be made", async () => {
+    mockPostToGateway.mockRejectedValue(new Error("socket hang up"));
+
+    const response = await companiesHouseAccountsGetHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(parseResponseBody(response).message).toBe("The status of this submission could not be read from Companies House");
   });
 });

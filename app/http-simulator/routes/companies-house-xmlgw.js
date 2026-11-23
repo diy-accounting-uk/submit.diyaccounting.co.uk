@@ -32,6 +32,18 @@ import {
   pollPscVerificationStatement,
   completedPscVerificationStatementStatuses,
 } from "../scenarios/psc-verification-statement.js";
+import { submitGatewayForm, pollGatewayForm, completedGatewayFormStatuses } from "../scenarios/gateway-forms.js";
+import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
+import { gatewayFormSchemaErrors, formElementXml } from "../gatewayFormSchema.js";
+
+// Each form filed through the shared filing route, by the GovTalk Class the gateway routes it by:
+// its FormIdentifier, which names its root element, and its schema; each is answered by
+// gateway-forms.js.
+const GATEWAY_FORMS = new Map(
+  Object.values(COMPANIES_HOUSE_FORMS)
+    .filter((form) => form.sharedPoll)
+    .map((form) => [form.gatewayClass, { formIdentifier: form.formIdentifier, schema: form.schema }]),
+);
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
 
@@ -140,8 +152,8 @@ function buildOfficerXml(officer) {
   }</DOB></Person><AppointmentDate>${officer.appointmentDate}</AppointmentDate></${tag}>`;
 }
 
-function buildStatementOfCapitalXml(statementOfCapital) {
-  const sharesXml = (statementOfCapital.shares || [])
+function buildCapitalXml(capital) {
+  const sharesXml = (capital.shares || [])
     .map(
       (share) =>
         `<Shares><ShareClass>${escapeXmlText(share.shareClass)}</ShareClass><PrescribedParticulars>${escapeXmlText(
@@ -151,11 +163,17 @@ function buildStatementOfCapitalXml(statementOfCapital) {
         }</AggregateNominalValue></Shares>`,
     )
     .join("");
-  return `<StatementOfCapital><Capital><TotalAmountUnpaid>${statementOfCapital.totalAmountUnpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>${
-    statementOfCapital.totalNumberOfIssuedShares
-  }</TotalNumberOfIssuedShares><ShareCurrency>${escapeXmlText(
-    statementOfCapital.shareCurrency,
-  )}</ShareCurrency><TotalAggregateNominalValue>${statementOfCapital.totalAggregateNominalValue}</TotalAggregateNominalValue>${sharesXml}</Capital></StatementOfCapital>`;
+  return `<Capital><TotalAmountUnpaid>${capital.totalAmountUnpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>${
+    capital.totalNumberOfIssuedShares
+  }</TotalNumberOfIssuedShares><ShareCurrency>${escapeXmlText(capital.shareCurrency)}</ShareCurrency><TotalAggregateNominalValue>${
+    capital.totalAggregateNominalValue
+  }</TotalAggregateNominalValue>${sharesXml}</Capital>`;
+}
+
+// A statement of capital holds one Capital for each currency the company's shares are in; a company
+// whose shares are in one currency gives one capital, a company in more gives a list.
+function buildStatementOfCapitalXml(statementOfCapital) {
+  return `<StatementOfCapital>${[].concat(statementOfCapital).map(buildCapitalXml).join("")}</StatementOfCapital>`;
 }
 
 function buildShareholdingXml(shareholding) {
@@ -256,7 +274,8 @@ function handleAccounts(document, { senderIdHash, authValueHash, scenario }) {
   if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
   if (!documentData) return schemaFailureFor("Body/FormSubmission/Document/Data");
 
-  const outcome = submitAccounts({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario });
+  const ixbrl = Buffer.from(documentData, "base64").toString("utf8");
+  const outcome = submitAccounts({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario, ixbrl });
   if (outcome.errors) {
     return { errors: outcome.errors };
   }
@@ -299,9 +318,12 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
   const confirmationStatementOutcome = isNoTransactionFound(accountsOutcome)
     ? (pollConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? accountsOutcome)
     : accountsOutcome;
-  const outcome = isNoTransactionFound(confirmationStatementOutcome)
+  const pscVerificationOutcome = isNoTransactionFound(confirmationStatementOutcome)
     ? (pollPscVerificationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? confirmationStatementOutcome)
     : confirmationStatementOutcome;
+  const outcome = isNoTransactionFound(pscVerificationOutcome)
+    ? (pollGatewayForm({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? pscVerificationOutcome)
+    : pscVerificationOutcome;
 
   if (outcome.errors) {
     return { errors: outcome.errors };
@@ -324,6 +346,7 @@ function handlePresenterPoll({ senderIdHash, authValueHash, scenario }) {
     ...completedAccountsStatuses(senderIdHash),
     ...completedConfirmationStatementStatuses(senderIdHash),
     ...completedPscVerificationStatementStatuses(senderIdHash),
+    ...completedGatewayFormStatuses(senderIdHash),
   ]);
   return { qualifier: "response", bodyXml: buildPresenterPollBodyXml(statuses) };
 }
@@ -412,6 +435,36 @@ function handlePscVerificationStatement(document, { senderIdHash, authValueHash,
   };
 }
 
+// A form filed through the shared filing route: its FormHeader, whose FormIdentifier names the
+// form's root element, and a Form that holds that element, valid against the form's schema.
+async function handleGatewayForm(document, envelopeXml, gatewayClass, { senderIdHash, authValueHash, scenario }) {
+  const { formIdentifier, schema } = GATEWAY_FORMS.get(gatewayClass);
+  const formHeader = firstElement(document, "FormHeader");
+  if (!formHeader) return schemaFailureFor("Body/FormSubmission/FormHeader");
+  const companyNumber = firstElementText(formHeader, "CompanyNumber");
+  const submissionNumber = firstElementText(formHeader, "SubmissionNumber");
+  if (!companyNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyNumber");
+  if (!firstElementText(formHeader, "CompanyName")) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyName");
+  if (!firstElementText(formHeader, "FormIdentifier")) return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
+  if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
+  // The live gateway answers a FormIdentifier that does not name the Form's element with a 9999.
+  if (firstElementText(formHeader, "FormIdentifier") !== formIdentifier || !firstElement(document, formIdentifier)) {
+    return {
+      errors: [{ raisedBy: gatewayClass, number: 9999, type: "fatal", text: "FormIdentifier does not match content in Form element" }],
+    };
+  }
+  const formXml = formElementXml(envelopeXml, formIdentifier);
+  if (!formXml) return schemaFailureFor("Body/FormSubmission/Form");
+  const schemaErrors = await gatewayFormSchemaErrors(formXml, schema);
+  if (schemaErrors.length) {
+    console.log(`[http-simulator:companies-house-xmlgw] ${formIdentifier} refused by its schema: ${schemaErrors[0]}`);
+    return schemaFailureFor(`Body/FormSubmission/Form/${formIdentifier}`);
+  }
+  const outcome = submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario, document });
+  if (outcome.errors) return { errors: outcome.errors };
+  return { qualifier: "acknowledgement", gatewayTimestamp: outcome.gatewayTimestamp, pollInterval: outcome.pollInterval, bodyXml: "" };
+}
+
 function handleCompanyDataRequest(document, { senderIdHash, authValueHash, scenario }) {
   const companyDataRequest = firstElement(document, "CompanyDataRequest");
   if (!companyDataRequest) {
@@ -452,7 +505,7 @@ export function apiEndpoint(app) {
   // The real gateway expects Content-Type: text/xml. express.json()/urlencoded() (registered
   // globally in server.js) skip bodies whose content type they don't recognise, so this route
   // parses its own raw body regardless of what Content-Type arrives with.
-  app.post(GATEWAY_PATH, express.text({ type: () => true }), (req, res) => {
+  app.post(GATEWAY_PATH, express.text({ type: () => true }), async (req, res) => {
     const govTestScenario = req.headers["gov-test-scenario"];
 
     console.log(`[http-simulator:companies-house-xmlgw] POST ${GATEWAY_PATH}`);
@@ -490,6 +543,8 @@ export function apiEndpoint(app) {
       outcome = handleConfirmationStatement(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PSCVerificationStatement") {
       outcome = handlePscVerificationStatement(document, { ...credentials, scenario: govTestScenario });
+    } else if (GATEWAY_FORMS.has(requestClass)) {
+      outcome = await handleGatewayForm(document, req.body, requestClass, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "CompanyDataRequest") {
       outcome = handleCompanyDataRequest(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PaymentPeriodsRequest") {
@@ -499,7 +554,10 @@ export function apiEndpoint(app) {
     } else if (requestClass === "StatusAck") {
       outcome = handleStatusAck(document, { ...credentials, scenario: govTestScenario });
     } else {
-      outcome = schemaFailureFor("Header/MessageDetails/Class");
+      // TIS v5.3 appendix b: the gateway answers a Class it does not route with error 501.
+      outcome = {
+        errors: [{ raisedBy: "Gateway", number: 501, type: "fatal", text: `Invalid Gateway Target (Class) supplied [${requestClass}]` }],
+      };
     }
 
     const responseXml = buildResponseEnvelope({

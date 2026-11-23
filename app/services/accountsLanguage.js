@@ -61,6 +61,7 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Registered number: {number}": "Rhif cofrestru: {number}",
   "for the {period}": "ar gyfer y {period}",
   "Period from {start} to {end}": "Cyfnod o {start} i {end}",
+  "The company's first accounts, from its incorporation on {date}": "Cyfrifon cyntaf y cwmni, o'i gorffori ar {date}",
   "year ended {date}": "flwyddyn a ddaeth i ben ar {date}",
   "period ended {date}": "cyfnod a ddaeth i ben ar {date}",
   "year": "flwyddyn",
@@ -86,7 +87,9 @@ export const WELSH_ACCOUNTS_TEXT = {
     "Maent wedi eu paratoi fel ar ddyddiad y cyfrifon gwreiddiol, nid fel ar ddyddiad y diwygiad, ac felly nid ydynt yn ymdrin â digwyddiadau rhwng y dyddiadau hynny.",
   "They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.":
     "Maent wedi eu paratoi yn unol â darpariaethau Deddf Cwmnïau 2006 a oedd yn gymwys i’r cyfrifon gwreiddiol pan gawsant eu cymeradwyo.",
-  "Respects in which the original accounts differ": "Y ffyrdd y mae’r cyfrifon gwreiddiol yn wahanol",
+  "What was wrong with the original accounts": "Beth oedd o’i le ar y cyfrifon gwreiddiol",
+  "What the revised accounts change": "Beth mae’r cyfrifon diwygiedig yn ei newid",
+  "The directors approved these revised accounts on {date}.": "Cymeradwyodd y cyfarwyddwyr y cyfrifon diwygiedig hyn ar {date}.",
 
   // The balance sheet (FRC 2026 Welsh labels).
   "Called up share capital not paid": "Cyfalaf cyfranddaliadau wedi'i alw na thalwyd",
@@ -172,7 +175,7 @@ export const WELSH_ACCOUNTS_TEXT = {
     "Cymeradwywyd yr adroddiad hwn gan y bwrdd cyfarwyddwyr ar {date} a’i lofnodi ar ei ran gan:",
 
   // The small company profit and loss account, Formats 1 and 2 (FRC 2026 Welsh labels).
-  "Cost of sales": "Cost gwerthiant",
+  "Cost of sales": "Cost gwerthiannau",
   "Gross profit": "Elw gros",
   "Administrative expenses": "Treuliau gweinyddol",
   "Operating profit": "Elw gweithredol",
@@ -184,7 +187,7 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Change in stocks of finished goods and in work in progress": "Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill",
   "Own work capitalised": "Gwaith eich hun wedi’i gyfalafu",
   "Other operating income": "Incwm gweithredol arall",
-  "Other external charges": "Taliadau allanol eraill",
+  "Other external charges": "Costau allanol eraill",
   "Depreciation and other amounts written off tangible and intangible fixed assets":
     "Dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol",
   "Other operating expenses": "Treuliau gweithredol eraill",
@@ -200,7 +203,7 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Other creditors": "Credydwyr eraill",
   "Accruals": "Croniadau",
   "Bank loans": "Benthyciadau banc",
-  "Amounts owed to directors": "Symiau sy’n ddyledus i gyfarwyddwyr",
+  "Amounts owed to directors": "Symiau dyledus i gyfarwyddwyr",
   "Amounts owed to group undertakings": "Symiau sy’n ddyledus i ymgymeriadau grŵp",
 
   // Small company notes.
@@ -211,17 +214,17 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Tangible fixed assets": "Asedau sefydlog diriaethol",
   "Intangible assets": "Asedau anniriaethol",
   "Impairment": "Amhariad",
-  "Cash and cash equivalents": "Arian parod a chyfwerth ag arian parod",
+  "Cash and cash equivalents": "Arian parod a’r hyn sy’n gyfwerth ag arian parod",
   "Financial instruments": "Offerynnau ariannol",
-  "Employee benefits": "Buddion gweithwyr",
+  "Employee benefits": "Buddiannau gweithwyr",
   "Foreign currency": "Arian tramor",
   "Leases": "Prydlesi",
   "Taxation": "Trethiant",
   "Dividends": "Difidendau",
   "Land and buildings": "Tir ac adeiladau",
-  "Plant and machinery": "Offer a pheiriannau",
+  "Plant and machinery": "Cyfarpar a pheirianwaith",
   "Fixtures and fittings": "Gosodiadau a ffitiadau",
-  "Computer equipment": "Offer cyfrifiadurol",
+  "Computer equipment": "Cyfarpar cyfrifiadurol",
   "Motor vehicles": "Cerbydau modur",
   "Total": "Cyfanswm",
   "Cost": "Cost",
@@ -239,7 +242,7 @@ export const WELSH_ACCOUNTS_TEXT = {
     "Nodir yr elw gweithredol ar ôl codi dibrisiant ar asedau diriaethol o £{amount}.",
   "Trade debtors": "Dyledwyr masnach",
   "Other debtors": "Dyledwyr eraill",
-  "Amounts owed by directors": "Symiau sy’n ddyledus gan gyfarwyddwyr",
+  "Amounts owed by directors": "Symiau dyledus gan gyfarwyddwyr",
   "Total debtors": "Cyfanswm y dyledwyr",
   "Tax on profit": "Treth ar elw",
   "UK corporation tax: current tax on profit for the year": "Treth gorfforaeth y DU: treth gyfredol ar elw’r flwyddyn",

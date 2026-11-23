@@ -328,8 +328,22 @@ describe("passGeneratePost", () => {
           bundleId: "day-guest",
           validUntil: "2026-02-24T00:00:00.000Z",
           maxUses: 20,
+          usesLeft: 20,
+          generatedBy: "user",
+          passSummary: "submit VAT returns to HMRC",
         },
       });
+    });
+
+    test("a pass generated from a Welsh page requests the Welsh email with the Welsh summary", async () => {
+      const event = buildEventWithToken(validToken, { passTypeId: "digital-pass" });
+      event.headers["X-Site-Language"] = "cy";
+
+      await ingestHandler(event);
+
+      const { data } = mockRequestCustomerEmail.mock.calls[0][0];
+      expect(data.language).toBe("cy");
+      expect(data.passSummary).toBe("cyflwyno Ffurflenni TAW i CThEF");
     });
 
     test("a refused request for tokens requests no email", async () => {

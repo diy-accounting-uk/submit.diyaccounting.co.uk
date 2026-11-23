@@ -97,6 +97,14 @@ function createFakeDynamo() {
           }
           return { Attributes: table.get(key) };
         }
+        case "DeleteCommand": {
+          fake.countWrite();
+          const stored = tableOf(input.TableName).get(keyOf(input.TableName, input.Key));
+          const settled = input.ExpressionAttributeValues?.[":settled"];
+          if (settled !== undefined && stored?.countedAt !== undefined && stored.countedAt >= settled) throw conditionFailure();
+          tableOf(input.TableName).delete(keyOf(input.TableName, input.Key));
+          return {};
+        }
         case "TransactWriteCommand": {
           fake.countWrite();
           const [{ Put }, { Delete }] = input.TransactItems;
@@ -431,6 +439,129 @@ describe("salt-rotate runs", () => {
       tokensConsumed: 3,
       saltVersion: "v2",
     });
+  });
+
+  test("the due list's count item under the earlier hash is deleted, not carried onto the new hash, whose count stays", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-return#2026-09-30", type: "vat-return" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 1, rows: 1 });
+    const context = createContext(state);
+    const writeRegistry = context.writeRegistry;
+    // A write lands under the new hash during the rotation and counts only what it found there.
+    context.writeRegistry = async (registry) => {
+      await writeRegistry(registry);
+      if (registry.rotation?.state === "cutover") {
+        const newA = hashValue(registry.versions.v2, SUB_A);
+        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "business#shop-2", businessId: "shop-2", kind: "vat" });
+        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "count", businesses: 1, rows: 0 });
+      }
+    };
+
+    const { report } = await runRotation(context, { mode: "rotate" });
+
+    const newA = hashValue(newSaltOf(state), SUB_A);
+    const items = state.dynamo.items(DUE_LIST);
+    expect(
+      items
+        .filter((item) => item.hashedSub === newA)
+        .map((item) => item.sk)
+        .sort(),
+    ).toEqual(["business#shop-1", "business#shop-2", "count", "row#shop-1#vat-return#2026-09-30"]);
+    // The new hash's count was written by a write that counted every salt version's items.
+    expect(items.filter((item) => item.sk === "count")).toEqual([{ hashedSub: newA, sk: "count", businesses: 1, rows: 0 }]);
+    expect(items.filter((item) => item.hashedSub === hashA)).toEqual([]);
+    expect(report["due-list"]).toMatchObject({ moved: 2, recounted: 1 });
+  });
+
+  test("an earlier hash's count moved within the settle window is deleted only after the rotation waits it out", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 1, rows: 3, countedAt: state.clock });
+    const context = createContext(state);
+    let deletedBeforeTheWait = false;
+    const sleep = context.sleep;
+    context.sleep = async (ms) => {
+      deletedBeforeTheWait ||= !state.dynamo.items(DUE_LIST).some((item) => item.sk === "count" && item.hashedSub === hashA);
+      await sleep(ms);
+    };
+
+    const { report } = await runRotation(context, { mode: "rotate" });
+
+    expect(deletedBeforeTheWait).toBe(false);
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([]);
+    expect(report["due-list"]).toMatchObject({ moved: 1, recounted: 1 });
+  });
+
+  test("an earlier hash's count still moving after the wait is left, and the rotation stops for a sweep to finish", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 0, rows: 2, countedAt: state.clock });
+    const context = createContext(state);
+    const sleep = context.sleep;
+    context.sleep = async (ms) => {
+      await sleep(ms);
+      const count = state.dynamo.items(DUE_LIST).find((item) => item.sk === "count");
+      if (count) state.dynamo.seed(DUE_LIST, { ...count, countedAt: state.clock });
+    };
+
+    await expect(runRotation(context, { mode: "rotate" })).rejects.toThrow("Items remain under an earlier version in: due-list");
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toHaveLength(1);
+    expect(state.logs.join("\n")).toContain("recount-left");
+  });
+
+  test("an account with no due list items keeps its count item through a rotation", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    const context = createContext(state);
+    const writeRegistry = context.writeRegistry;
+    context.writeRegistry = async (registry) => {
+      await writeRegistry(registry);
+      if (registry.rotation?.state === "cutover") {
+        state.dynamo.seed(DUE_LIST, { hashedSub: hashValue(registry.versions.v2, SUB_A), sk: "count", businesses: 0, rows: 0 });
+      }
+    };
+
+    await runRotation(context, { mode: "rotate" });
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toHaveLength(1);
+  });
+
+  test.each([1, 2, 3, 4, 5, 8])("a due list rotation stopped after %i writes leaves no count item once resumed", async (writes) => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 1, rows: 2 });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-return#2026-09-30", type: "vat-return" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-payment#2026-11-07", type: "vat-payment" });
+
+    state.dynamo.writesBeforeFailure = writes;
+    await expect(runRotation(createContext(state), { mode: "rotate" })).rejects.toThrow("Stopped halfway");
+    state.dynamo.writesBeforeFailure = Infinity;
+    await runRotation(createContext(state), { mode: "rotate" });
+
+    const newA = hashValue(newSaltOf(state), SUB_A);
+    const items = state.dynamo.items(DUE_LIST);
+    expect(items.filter((item) => item.sk === "count")).toEqual([]);
+    expect(
+      items
+        .filter((item) => item.hashedSub === newA)
+        .map((item) => item.sk)
+        .sort(),
+    ).toEqual(["business#shop-1", "row#shop-1#vat-payment#2026-11-07", "row#shop-1#vat-return#2026-09-30"]);
+    expect(items.filter((item) => item.hashedSub === hashA)).toEqual([]);
+  });
+
+  test("a sweep with nothing to move keeps the count item a write keeps under the current hash", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    await runRotation(createContext(state), { mode: "rotate" });
+    const newA = hashValue(newSaltOf(state), SUB_A);
+    state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "count", businesses: 1, rows: 0 });
+
+    await runRotation(createContext(state), { mode: "sweep" });
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([
+      expect.objectContaining({ hashedSub: newA, businesses: 1, rows: 0 }),
+    ]);
   });
 
   test("a sweep refuses while a rotation is in flight", async () => {

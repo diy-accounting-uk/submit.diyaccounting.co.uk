@@ -38,12 +38,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability SITE-03 -->
 <!-- capability SITE-04 -->
+<!-- capability SITE-37 -->
 <!-- capability SITE-05 -->
 <!-- capability SITE-24 -->
 <!-- capability SITE-27 -->
 <!-- capability SITE-28 -->
 <!-- capability SITE-29 -->
 <!-- capability SITE-30 -->
+<!-- capability SITE-35 -->
 <!-- capability SITE-31 -->
 <!-- capability SITE-32 -->
 ### Server and API plumbing (SITE)
@@ -65,6 +67,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-11 -->
 <!-- capability SITE-12 -->
 <!-- capability SITE-22 -->
+<!-- capability SITE-36 -->
 <!-- capability SITE-25 -->
 <!-- capability SITE-33 -->
 <!-- capability SITE-34 -->
@@ -190,6 +193,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability CH-03 -->
 <!-- capability CH-04 -->
 <!-- capability CH-20 -->
+<!-- capability CH-22 -->
+<!-- capability CH-23 -->
 ### Registered office and email (CH)
 
 <!-- generated:group registered-office-and-email-ch -->
@@ -204,6 +209,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability CH-07 -->
 <!-- capability CH-08 -->
+<!-- capability CH-24 -->
+<!-- capability CH-25 -->
 <!-- capability CH-21 -->
 ### Company Tax Return filing (CH)
 
@@ -227,6 +234,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability CH-12 -->
 <!-- capability CH-13 -->
+<!-- capability CH-26 -->
 <!-- capability CH-16 -->
 <!-- capability CH-17 -->
 <!-- capability CH-18 -->
@@ -260,6 +268,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-48 -->
 <!-- capability BILL-49 -->
 <!-- capability BILL-50 -->
+<!-- capability BILL-59 -->
 <!-- capability BILL-10 -->
 <!-- capability BILL-58 -->
 <!-- capability BILL-11 -->

@@ -31,6 +31,12 @@ async function fetchBundleData() {
     return data;
   } catch (err) {
     console.warn("Failed to fetch bundle data:", err);
+    if (window.showStatus) {
+      window.showStatus(
+        window.siteText("usage.read-failed", "Your bundles and tokens could not be read. Reload the page to try again."),
+        "error",
+      );
+    }
     return null;
   }
 }

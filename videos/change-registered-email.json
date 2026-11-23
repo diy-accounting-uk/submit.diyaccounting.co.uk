@@ -161,7 +161,7 @@
         {
           "action": "type",
           "target": "#registeredEmailAddress",
-          "text": "office@example.com",
+          "text": "accounts@test.diyaccounting.co.uk",
           "caption": "Type the new registered email address.",
           "headline": "Enter the new address",
           "keyWord": "address"

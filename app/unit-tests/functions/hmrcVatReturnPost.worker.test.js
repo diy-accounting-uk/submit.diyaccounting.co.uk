@@ -164,6 +164,61 @@ describe("hmrcVatReturnPost workerHandler", () => {
     expect(mockRequestCustomerEmail).toHaveBeenCalledWith(expect.objectContaining({ kind: "submission-receipt", synthetic: true }));
   });
 
+  describe("the due list row a filed return closes", () => {
+    const DUE_LIST_TABLE = "worker-test-due-list";
+    const OPEN_ROW = { hashedSub: "h", sk: "row#v1#vat-return#2026-09-30", type: "vat-return", periodEnd: "2026-09-30", status: "open" };
+    const onDueList = (command) => command.input?.TableName === DUE_LIST_TABLE;
+
+    beforeEach(() => {
+      process.env.DUE_LIST_DYNAMODB_TABLE_NAME = DUE_LIST_TABLE;
+      mockSend.mockImplementation(async (cmd) => {
+        if (cmd instanceof MockQueryCommand) return onDueList(cmd) ? { Items: [OPEN_ROW] } : { Items: [], Count: 0 };
+        if (cmd instanceof MockGetCommand) return { Item: null };
+        return {};
+      });
+      mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
+    });
+
+    test("closes the row for the message's period end, after the request is marked completed", async () => {
+      const requestId = "worker-test-due-list";
+      await hmrcVatReturnPostWorker({
+        Records: [buildSubmissionRecord({ requestId, payloadOverrides: { periodEnd: "2026-09-30" } })],
+      });
+
+      const closes = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof MockUpdateCommand && onDueList(cmd));
+      expect(closes).toHaveLength(1);
+      expect(closes[0].input.Key.sk).toBe(OPEN_ROW.sk);
+      const completedCommand = (await asyncTableUpdateCalls(requestId))[0];
+      expect(await invocationOrderOf(completedCommand)).toBeLessThan(await invocationOrderOf(closes[0]));
+    });
+
+    test("completes a message that holds no period end without reading the due list", async () => {
+      const requestId = "worker-test-no-period-end";
+      await hmrcVatReturnPostWorker({ Records: [buildSubmissionRecord({ requestId })] });
+
+      expect(mockSend.mock.calls.map(([cmd]) => cmd).filter(onDueList)).toHaveLength(0);
+      expect((await asyncTableUpdateCalls(requestId))[0].input.ExpressionAttributeValues[":status"]).toBe("completed");
+      expect(await receiptPutCalls()).toHaveLength(1);
+    });
+
+    test("marks the request completed when the due list cannot be read", async () => {
+      mockSend.mockImplementation(async (cmd) => {
+        if (onDueList(cmd)) throw Object.assign(new Error("no such table"), { name: "ResourceNotFoundException" });
+        if (cmd instanceof MockQueryCommand) return { Items: [], Count: 0 };
+        if (cmd instanceof MockGetCommand) return { Item: null };
+        return {};
+      });
+      const requestId = "worker-test-due-list-down";
+
+      await hmrcVatReturnPostWorker({
+        Records: [buildSubmissionRecord({ requestId, payloadOverrides: { periodEnd: "2026-09-30" } })],
+      });
+
+      expect((await asyncTableUpdateCalls(requestId))[0].input.ExpressionAttributeValues[":status"]).toBe("completed");
+      expect(await receiptPutCalls()).toHaveLength(1);
+    });
+  });
+
   test("stores the receipt before marking the request completed, so a poll never sees completed without it", async () => {
     mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
 

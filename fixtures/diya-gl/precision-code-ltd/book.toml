@@ -21,7 +21,7 @@ taxAuthorityIdentifier = "HMRC"
 "diya-gl:product" = "Company"
 "diya-gl:vatRegistered" = true
 "diya-gl:basisOfAccounting" = "accrual"
-"diya-gl:companyNumber" = "12345678"
+"diya-gl:companyNumber" = "00000007"
 "diya-gl:vatNumber" = "123456789"
 "diya-gl:cisRegistered" = true
 

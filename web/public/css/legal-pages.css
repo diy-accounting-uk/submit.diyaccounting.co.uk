@@ -7,6 +7,12 @@
   margin-bottom: var(--space-3);
 }
 
+.legal-language {
+  color: var(--c-ink-muted);
+  max-width: var(--measure);
+  margin-bottom: var(--space-3);
+}
+
 .legal p,
 .legal li {
   max-width: var(--measure);

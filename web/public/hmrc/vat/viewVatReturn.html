@@ -24,7 +24,6 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <script src="../../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <!--script async src="../../prefetch/prefetch-hmrc-vat-return-get-head.js"></script-->
   </head>
   <body>
     <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
@@ -35,7 +34,9 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="production"><strong>Status: production.</strong> This reads your real records at HMRC.</p>
+      <p class="hint" data-feature-status="production" role="status" hidden>
+        <strong>Status: production.</strong> This reads your real records at HMRC.
+      </p>
       <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>

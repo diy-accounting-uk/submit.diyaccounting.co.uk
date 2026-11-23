@@ -137,6 +137,52 @@ describe("sessionBeaconPost ingestHandler", () => {
     });
   });
 
+  it("caps each attribution field at 200 characters and drops one that holds markup, an email address or a landedAt that is not a timestamp", async () => {
+    await ingestHandler(
+      buildBeaconEvent({
+        page: "/",
+        utmSource: "a".repeat(5000),
+        utmMedium: "<script>alert(1)</script>",
+        utmCampaign: "someone@example.com",
+        gclid: "abc123",
+        landedAt: "my name is Someone 1 2020",
+        utmTerm: { nested: "x" },
+      }),
+    );
+    const { detail } = mockPublishActivityEvent.mock.calls[0][0];
+    expect(detail.utmSource).toBe("a".repeat(200));
+    expect(detail.gclid).toBe("abc123");
+    for (const dropped of ["utmMedium", "utmCampaign", "landedAt", "utmTerm"]) expect(detail).not.toHaveProperty(dropped);
+  });
+
+  it.each([
+    ["/index.html", "/index.html"],
+    [
+      "/cy/companies-house/company/04512345/accounts/2098-04-30/SIMTX_0001-AA",
+      "/cy/companies-house/company/04512345/accounts/2098-04-30/SIMTX_0001-AA",
+    ],
+    [undefined, "/"],
+  ])("keeps the site path %s as the page", async (sent, kept) => {
+    await ingestHandler(buildBeaconEvent(sent === undefined ? {} : { page: sent }));
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail.page).toBe(kept);
+  });
+
+  it.each([
+    ["a query", "/bundles.html?pass=secret-code"],
+    ["a fragment", "/index.html#someone@example.com"],
+    ["no leading slash", "https://elsewhere.example/index.html"],
+    ["markup", "/<script>alert(1)</script>"],
+    ["a space", "/my name is Someone"],
+    ["more than 200 characters", `/${"a".repeat(200)}`],
+    ["an object", { path: "/index.html" }],
+    ["a number", 42],
+  ])("drops a page with %s and still publishes the session", async (_name, sent) => {
+    const response = await ingestHandler(buildBeaconEvent({ page: sent }));
+    expect(response.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail).not.toHaveProperty("page");
+  });
+
   it("carries no attribution fields when the beacon sends none", async () => {
     await ingestHandler(buildBeaconEvent({ page: "/index.html" }));
 

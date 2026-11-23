@@ -4,7 +4,7 @@
 // Minimal TOML parser for configuration files
 // Supports: key = value, [section], [[array-of-tables]] (including a dotted path such as
 // [[bundles.prices]], which nests onto the last entry of the array its parent path names),
-// strings, multi-line strings ("""), numbers, arrays
+// strings, multi-line strings ("""), numbers, arrays (on one line or across lines)
 (function () {
   // Walk a dotted path's parent segments (all but the last), descending into the last
   // entry of any array-of-tables found along the way. [[bundles.prices]] resolves "bundles"
@@ -92,6 +92,10 @@
               }
               currentSection[key] = parts.join("\n").trim();
             }
+          } else if (value.startsWith("[") && !value.endsWith("]")) {
+            const collected = collectArrayLines(lines, i, value);
+            currentSection[key] = parseValue(collected.text);
+            i = collected.lastIndex;
           } else {
             currentSection[key] = parseValue(value);
           }
@@ -104,6 +108,44 @@
     },
   };
 
+  // A multi-line array: its opening line's value, then each line after it, skipping comments, up
+  // to the line that closes it. Returns the joined text and the index of that closing line.
+  function collectArrayLines(lines, openingIndex, openingValue) {
+    const parts = [openingValue];
+    let index = openingIndex + 1;
+    while (index < lines.length) {
+      const line = lines[index].trim();
+      if (line && !line.startsWith("#")) parts.push(line);
+      if (line.endsWith("]")) break;
+      index++;
+    }
+    return { text: parts.join(" "), lastIndex: index };
+  }
+
+  // The items of an array's inner text, split at each comma that is neither inside a string nor
+  // inside an array within the array.
+  function splitArrayItems(inner) {
+    const items = [];
+    let depth = 0;
+    let inString = false;
+    let start = 0;
+    for (let index = 0; index < inner.length; index++) {
+      const character = inner[index];
+      if (inString) {
+        if (character === "\\") index++;
+        else if (character === '"') inString = false;
+      } else if (character === '"') inString = true;
+      else if (character === "[") depth++;
+      else if (character === "]") depth--;
+      else if (character === "," && depth === 0) {
+        items.push(inner.substring(start, index));
+        start = index + 1;
+      }
+    }
+    items.push(inner.substring(start));
+    return items;
+  }
+
   function parseValue(val) {
     val = val.trim();
     // Double-quoted string
@@ -114,7 +156,10 @@
     if (val.startsWith("[") && val.endsWith("]")) {
       const inner = val.substring(1, val.length - 1).trim();
       if (!inner) return [];
-      return inner.split(",").map((v) => parseValue(v.trim()));
+      return splitArrayItems(inner)
+        .map((v) => v.trim())
+        .filter((v) => v !== "")
+        .map((v) => parseValue(v));
     }
     // Boolean
     if (val === "true") return true;

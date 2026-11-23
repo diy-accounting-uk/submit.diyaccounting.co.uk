@@ -6,6 +6,8 @@
 // - Deduplicates in-flight GET requests
 // - TTL-based freshness with optional ETag revalidation
 // - Explicit invalidation by URL substring
+// - Only a 2xx answer is cached or returned; any other status rejects with an error that carries
+//   the status and the JSON body, so a caller never reads a failed request as data
 
 (function () {
   "use strict";
@@ -44,6 +46,15 @@
     return fetch;
   }
 
+  // The error for an answer that is not 2xx: its message from the body when the body has one.
+  async function failedAnswer(res) {
+    const body = await res.json().catch(() => null);
+    const error = new Error((body && body.message) || `Request failed with status ${res.status}`);
+    error.status = res.status;
+    error.body = body;
+    return error;
+  }
+
   async function fetchWithETag(url, init, prevEtag) {
     const headers = new Headers((init && init.headers) || {});
     if (prevEtag) headers.set("If-None-Match", prevEtag);
@@ -52,6 +63,7 @@
     if (res.status === 304) {
       return { status: 304, etag: prevEtag };
     }
+    if (!res.ok) throw await failedAnswer(res);
     const etag = res.headers.get("ETag") || undefined;
     const data = await res.json();
     return { status: res.status, etag, data };
@@ -70,15 +82,25 @@
       // Not a cacheable GET request
       const fetchFn = chooseFetch(init);
       const res = await fetchFn(url, init);
+      if (!res.ok) throw await failedAnswer(res);
       return res.json();
     }
 
     const now = Date.now();
-    const entry = L1.get(k);
+    const cached = L1.get(k);
+    // A read whose caller aborted it answers nobody else: the next caller reads again.
+    const entry = cached && cached.promise && cached.init && cached.init.signal && cached.init.signal.aborted ? undefined : cached;
 
-    // Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh
+    // Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh. When
+    // the caller that started the read aborts it after this caller joined, this caller reads again on
+    // its own, unless its own signal is aborted too.
     if (entry && entry.promise && !force && (entry.ttlMs === 0 || now - entry.ts < entry.ttlMs)) {
-      return entry.promise;
+      const ownerSignal = entry.init && entry.init.signal;
+      return entry.promise.catch((error) => {
+        const ownerAborted = error && error.name === "AbortError" && ownerSignal && ownerSignal.aborted;
+        if (!ownerAborted || (init && init.signal && init.signal.aborted)) throw error;
+        return getJSON(url, { ttlMs, force, init });
+      });
     }
 
     // Serve fresh cached data directly when available
@@ -90,7 +112,7 @@
       try {
         if (entry && entry.etag && entry.ttlMs > 0 && now - entry.ts >= entry.ttlMs) {
           // TTL expired; try ETag revalidation
-          const r = await fetchWithETag(url, entry.init || init, entry.etag);
+          const r = await fetchWithETag(url, init || entry.init, entry.etag);
           if (r.status === 304) {
             if (L1.get(k) === record) {
               entry.ts = Date.now();
@@ -106,6 +128,7 @@
         } else {
           const fetchFn = chooseFetch(init);
           const res = await fetchFn(url, init);
+          if (!res.ok) throw await failedAnswer(res);
           const etag = res.headers.get("ETag") || undefined;
           const data = await res.json();
           const fresh = { ts: Date.now(), ttlMs, data, etag, init, promise: null };

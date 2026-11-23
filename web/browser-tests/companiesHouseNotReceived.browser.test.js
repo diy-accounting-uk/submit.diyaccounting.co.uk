@@ -10,6 +10,9 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000001");
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -70,15 +73,18 @@ async function serveSite(page, { language, apiBodies = {} }) {
 async function fileWithOutcome(page, pagePath, rejections) {
   await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
   await page.waitForFunction(() => typeof window.handleSubmitFiling === "function" || typeof handleSubmitFiling === "function");
-  await page.evaluate(async (outcomeRejections) => {
-    window.submitMicroEntityAccounts = async () => ({ submissionNumber: "00001A", pollInterval: 1 });
-    window.pollMicroEntityAccounts = async () => ({ statusCode: "REJECT", submissionNumber: "00001A", rejections: outcomeRejections });
-    window.buildAccountsPayload = () => ({});
-    company = { companyNumber: "00000001", companyName: "TEST LTD" };
-    showView("previewView");
-    document.getElementById("companyAuthCode").value = "ABC123";
-    await handleSubmitFiling();
-  }, rejections);
+  await page.evaluate(
+    async ({ outcomeRejections, companyName }) => {
+      window.submitMicroEntityAccounts = async () => ({ submissionNumber: "00001A", pollInterval: 1 });
+      window.pollMicroEntityAccounts = async () => ({ statusCode: "REJECT", submissionNumber: "00001A", rejections: outcomeRejections });
+      window.buildAccountsPayload = () => ({});
+      company = { companyNumber: "00000001", companyName };
+      showView("previewView");
+      document.getElementById("companyAuthCode").value = "ABC123";
+      await handleSubmitFiling();
+    },
+    { outcomeRejections: rejections, companyName: COMPANY.name },
+  );
   const shown = page.locator("#rejections");
   await expect(shown).toBeVisible({ timeout: 15000 });
   return shown;
@@ -95,7 +101,7 @@ test.describe("A filing Companies House never received", () => {
     await expect(shown).not.toContainText("did not receive");
     const result = page.locator("#filingResult");
     await expect(result.locator(".outcome__title")).toHaveText(WELSH_HEADLINE);
-    await expect(result.locator(".hint")).toHaveText("Rhif cyflwyno 00001A.");
+    await expect(result.locator(".hint")).toHaveText("Rhif cyflwyniad 00001A.");
     await expect(result).toHaveClass(/outcome--error/);
     await expect(result).not.toContainText("REJECT");
   });
@@ -107,7 +113,7 @@ test.describe("A filing Companies House never received", () => {
 
     await expect(shown).toHaveText(`9001: ${COMPANIES_HOUSE_REASON.description}`);
     await expect(page.locator("#filingResult .outcome__title")).not.toHaveText(WELSH_HEADLINE);
-    await expect(page.locator("#filingResult .hint")).toContainText("REJECT");
+    await expect(page.locator("#filingResult .hint")).toHaveText("Statws: wedi’i wrthod. Rhif cyflwyno 00001A.");
   });
 
   test("the English page shows the reason in English, without our code", async ({ page }) => {
@@ -129,13 +135,13 @@ test.describe("A filing Companies House never received", () => {
 
     await serveSite(page, { language: "cy" });
     await fileWithOutcome(page, "cy/companies-house/fileSmallCompanyAccounts.html", [NOT_RECEIVED]);
-    await expect(page.locator("#filingResult")).toHaveText(`${WELSH_HEADLINE} Rhif cyflwyno 00001A.`);
+    await expect(page.locator("#filingResult")).toHaveText(`${WELSH_HEADLINE} Rhif cyflwyniad 00001A.`);
   });
 
   test("the small company page keeps the rejected outcome for a reason Companies House sent", async ({ page }) => {
     await serveSite(page, { language: "en" });
     await fileWithOutcome(page, "companies-house/fileSmallCompanyAccounts.html", [COMPANIES_HOUSE_REASON]);
-    await expect(page.locator("#filingResult")).toHaveText("Submission 00001A was REJECT.");
+    await expect(page.locator("#filingResult")).toHaveText("Submission 00001A was rejected.");
   });
 
   test("the Welsh filings list names it as not received, with the reason in Welsh", async ({ page }) => {

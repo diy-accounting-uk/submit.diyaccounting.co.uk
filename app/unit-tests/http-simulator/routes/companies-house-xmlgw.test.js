@@ -3,7 +3,7 @@
 
 // app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js
 
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHash } from "crypto";
 import express from "express";
 import request from "supertest";
@@ -15,8 +15,28 @@ import {
   FIXTURE_COMPANY_AUTHENTICATION_CODE,
 } from "@app/http-simulator/scenarios/confirmation-statement.js";
 import { resetPscVerificationStatementFilings } from "@app/http-simulator/scenarios/psc-verification-statement.js";
+import { resetGatewayFormFilings } from "@app/http-simulator/scenarios/gateway-forms.js";
+import { buildFormSubmission, parseCompanyDataResponse } from "@app/services/companiesHouseXmlGateway.js";
+import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
+import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChangeDetailsXml.js";
+import { buildAccountingReferenceDateBody } from "@app/services/companiesHouseAccountingReferenceDateXml.js";
+import { buildChangeOfNameBody, supportingDocumentFor } from "@app/services/companiesHouseChangeOfNameXml.js";
+import { getCompany, resetCompanyFixtures } from "@app/http-simulator/scenarios/companies.js";
+import { nextReferenceDate } from "../../../../web/public/lib/accounting-reference-period.js";
+import { buildPscStatementNotificationBody, buildPscStatementWithdrawalBody } from "@app/services/companiesHousePscStatementXml.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
+import { buildTestSubmission, testSubmissionCases } from "../../../../scripts/companies-house-test-submissions.mjs";
+import { registerDates, registerCompany, addDays, addMonths } from "@app/http-simulator/fixtures/register.js";
+import { accountsDueNineMonthsAfter } from "../../../../web/public/lib/accounting-reference-period.js";
+
+const DATES = registerDates();
+const CURRENT_END = DATES.next.end;
+const SHORTENED_END = addMonths(CURRENT_END, -3);
+const LONGEST_END = addDays(addMonths(DATES.next.start, 18), -1);
+const TOO_LONG_END = addMonths(CURRENT_END, 9);
+const FIXTURE_COMPANY_NAME = registerCompany(FIXTURE_COMPANY_NUMBER).name;
+const HARBOUR_LANE_NAME = registerCompany("00000001").name;
 
 function md5Lowercase(value) {
   return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
@@ -26,11 +46,41 @@ const VALID_SENDER_ID = md5Lowercase(SIMULATOR_PRESENTER_ID);
 const VALID_AUTH_VALUE = md5Lowercase(SIMULATOR_PRESENTER_CODE);
 const WRONG_HASH = md5Lowercase("not-the-right-credential");
 
+const REVISED_FLAG = "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse";
+const REVISION_STATEMENTS = {
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod":
+    "These revised accounts replace the original accounts for the year ended 30 June 2026.",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod": "They are now the statutory accounts of the company for that year.",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport": "They are prepared as at the date of the original accounts.",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006":
+    "The original balance sheet omitted the share capital.",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport": "The share capital is now shown.",
+  "bus:DateApprovalRevisionReport": "1 October 2026",
+};
+
+// A minimal iXBRL accounts document holding the given facts, each as visible text.
+function ixbrlDocument(facts) {
+  const factsXml = Object.entries(facts)
+    .map(([name, text]) => `<p><ix:nonNumeric name="${name}" contextRef="current">${text}</ix:nonNumeric></p>`)
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body>${factsXml}</body></html>`;
+}
+
+const REVISED_BY_REPLACEMENT = ixbrlDocument({ [REVISED_FLAG]: "true", ...REVISION_STATEMENTS });
+const REVISED_BY_SUPPLEMENTARY_NOTE = ixbrlDocument({
+  [REVISED_FLAG]: "true",
+  "bus:SupplementaryNote": "Note 3 omitted the share capital, which is £100.",
+});
+const REVISED_WITH_NEITHER = ixbrlDocument({ [REVISED_FLAG]: "true" });
+const ORIGINAL = ixbrlDocument({ [REVISED_FLAG]: "false" });
+
+const base64 = (text) => Buffer.from(text, "utf8").toString("base64");
+
 function accountsEnvelope({
   senderId = VALID_SENDER_ID,
   authValue = VALID_AUTH_VALUE,
   submissionNumber = "AAA001",
-  companyNumber = "02706061",
+  companyNumber = "00000009",
   documentData = "PGh0bWw+PC9odG1sPg==",
 } = {}) {
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -174,7 +224,7 @@ function confirmationStatementEnvelope({
     <FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
       <FormHeader>
         <CompanyNumber>${companyNumber}</CompanyNumber>
-        <CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>
+        <CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>
         <CompanyAuthenticationCode>${FIXTURE_COMPANY_AUTHENTICATION_CODE}</CompanyAuthenticationCode>
         <PackageReference></PackageReference>
         <FormIdentifier>${formIdentifier}</FormIdentifier>
@@ -225,7 +275,7 @@ function pscVerificationStatementEnvelope({
     <FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
       <FormHeader>
         <CompanyNumber>${companyNumber}</CompanyNumber>
-        <CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>
+        <CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>
         <CompanyAuthenticationCode>${FIXTURE_COMPANY_AUTHENTICATION_CODE}</CompanyAuthenticationCode>
         <PackageReference></PackageReference>
         <FormIdentifier>PSCVerificationStatement</FormIdentifier>
@@ -235,7 +285,7 @@ function pscVerificationStatementEnvelope({
       <Form>
       <PSCVerificationStatement xmlns="http://xmlgw.companieshouse.gov.uk">
         <Individual>
-          <Surname>EXAMPLE</Surname>
+          <Surname>BRAMWELL</Surname>
           <Change>
             <VerificationDetails>
               <CompaniesHousePersonalCode>CWMPS832223</CompaniesHousePersonalCode>
@@ -355,7 +405,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
 
   test("acknowledges a dormant company's accounts and polls them to ACCEPT", async () => {
     const dormantDocument = buildMicroEntityAccounts({
-      companyNumber: "02706061",
+      companyNumber: "00000009",
       companyName: "TEST DORMANT LIMITED",
       registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
       periodStart: "2025-07-01",
@@ -473,6 +523,50 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     expect(firstElementText(document, "Number")).toBe("9999");
     expect(firstElementText(document, "RaisedBy")).toBe("Accounts");
     expect(firstElementText(document, "Text")).toContain("No element 'Authority'");
+  });
+
+  test("acknowledges a revised Accounts submission that states every fact of a revision by replacement", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REV001", documentData: base64(REVISED_BY_REPLACEMENT) }));
+
+    const document = parseXmlDocument(response.text);
+    expect(firstElementText(document, "Qualifier")).toBe("acknowledgement");
+    expect(allElements(document, "GovTalkErrors")).toHaveLength(0);
+  });
+
+  test("acknowledges a revised Accounts submission with a non-empty supplementary note", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REV002", documentData: base64(REVISED_BY_SUPPLEMENTARY_NOTE) }));
+
+    expect(firstElementText(parseXmlDocument(response.text), "Qualifier")).toBe("acknowledgement");
+  });
+
+  test("rejects a revised Accounts submission with neither form of revision, with the validator's text", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REV003", documentData: base64(REVISED_WITH_NEITHER) }));
+
+    const document = parseXmlDocument(response.text);
+    expect(firstElementText(document, "Qualifier")).toBe("error");
+    expect(firstElementText(document, "RaisedBy")).toBe("Accounts");
+    expect(firstElementText(document, "Number")).toBe("9999");
+    expect(firstElementText(document, "Text")).toBe(
+      "For accounts identified as 'amended/revised' either SupplementaryNote must be provided and be non-empty or all relevant statement items and DateApprovalRevisionReport must be present.",
+    );
+  });
+
+  test("acknowledges an original Accounts submission that states no revision", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "ORI001", documentData: base64(ORIGINAL) }));
+
+    expect(firstElementText(parseXmlDocument(response.text), "Qualifier")).toBe("acknowledgement");
   });
 
   test("polls PENDING on the first poll and ACCEPT afterwards", async () => {
@@ -635,7 +729,60 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       expect(firstElementText(document, "Qualifier")).toBe("response");
       expect(firstElementText(document, "CompanyNumber")).toBe(FIXTURE_COMPANY_NUMBER);
       expect(allElements(document, "Director")).toHaveLength(2);
-      expect(allElements(document, "SICCode").map((el) => el.textContent)).toEqual(["69201", "69202"]);
+      expect(allElements(document, "SICCode").map((el) => el.textContent)).toEqual(registerCompany(FIXTURE_COMPANY_NUMBER).sicCodes);
+    });
+
+    const companyData = async (companyNumber) =>
+      (await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(companyDataRequestEnvelope({ companyNumber }))).text;
+
+    test("answers each test company's statement of capital, one capital for each currency", async () => {
+      for (const companyNumber of ["00000001", "SC000001", "00000007", FIXTURE_COMPANY_NUMBER]) {
+        const capitals = parseCompanyDataResponse(await companyData(companyNumber)).statementsOfCapital;
+        expect(
+          capitals.map((capital) => capital.shareCurrency),
+          companyNumber,
+        ).toEqual(["GBP"]);
+        expect(capitals[0].shares.length, companyNumber).toBeGreaterThan(0);
+      }
+      expect(parseCompanyDataResponse(await companyData("00000001")).statementsOfCapital).toEqual([
+        {
+          totalAmountUnpaid: "0",
+          totalNumberOfIssuedShares: "100",
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: "100",
+          shares: [
+            {
+              shareClass: "Ordinary",
+              prescribedParticulars:
+                "One vote a share. Each share takes part equally in dividends and in a distribution of capital. Not redeemable.",
+              numShares: "100",
+              aggregateNominalValue: "100",
+            },
+          ],
+        },
+      ]);
+    });
+
+    test("answers a test company whose shares are in two currencies with a capital for each", async () => {
+      const capitals = parseCompanyDataResponse(await companyData("00000003")).statementsOfCapital;
+      expect(
+        capitals.map(({ shareCurrency, totalNumberOfIssuedShares, totalAggregateNominalValue, totalAmountUnpaid }) => [
+          shareCurrency,
+          totalNumberOfIssuedShares,
+          totalAggregateNominalValue,
+          totalAmountUnpaid,
+        ]),
+      ).toEqual([
+        ["GBP", "1000", "1000", "0"],
+        ["EUR", "500", "250", "50"],
+      ]);
+      expect(capitals[1].shares.map((share) => share.shareClass)).toEqual(["A Preference"]);
+    });
+
+    test("holds no company data for a live company's number", async () => {
+      const document = parseXmlDocument(await companyData("06846849"));
+      expect(firstElementText(document, "Number")).toBe("604");
+      expect(allElements(document, "StatementOfCapital")).toHaveLength(0);
     });
 
     test("rejects a company authentication code that does not match the fixture", async () => {
@@ -702,10 +849,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     });
 
     test("rejects a submission missing a required FormHeader element", async () => {
-      const missingCompanyName = confirmationStatementEnvelope().replace(
-        "<CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>",
-        "",
-      );
+      const missingCompanyName = confirmationStatementEnvelope().replace(`<CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>`, "");
       const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingCompanyName);
 
       const document = parseXmlDocument(response.text);
@@ -834,10 +978,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     });
 
     test("rejects a submission missing a required FormHeader element", async () => {
-      const missingCompanyName = pscVerificationStatementEnvelope().replace(
-        "<CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>",
-        "",
-      );
+      const missingCompanyName = pscVerificationStatementEnvelope().replace(`<CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>`, "");
       const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingCompanyName);
 
       const document = parseXmlDocument(response.text);
@@ -903,6 +1044,416 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       expect(firstElementText(parseXmlDocument(accountsPoll.text), "StatusCode")).toBe("PENDING");
       expect(firstElementText(parseXmlDocument(confirmationStatementPoll.text), "StatusCode")).toBe("PENDING");
       expect(firstElementText(parseXmlDocument(pscVerificationStatementPoll.text), "StatusCode")).toBe("PENDING");
+    });
+  });
+});
+
+describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing route", () => {
+  let app;
+
+  function cessationEnvelope(submissionNumber) {
+    return buildFormSubmission({
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+      companyNumber: FIXTURE_COMPANY_NUMBER,
+      companyName: FIXTURE_COMPANY_NAME,
+      companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      packageReference: "0012",
+      gatewayClass: "PSCCessation",
+      formIdentifier: "PSCCessation",
+      submissionNumber,
+      dateSigned: "2026-11-20",
+      formXml: buildPscCessationBody({
+        kind: "individual-person-with-significant-control",
+        surname: "BRAMWELL",
+        cessationDate: "2026-11-01",
+        confirmationDate: "2026-11-03",
+      }),
+      gatewayTest: true,
+    });
+  }
+
+  const post = (xml, scenario) => {
+    const call = request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml");
+    return (scenario ? call.set("Gov-Test-Scenario", scenario) : call).send(xml);
+  };
+  const statusOf = async (submissionNumber) =>
+    firstElementText(parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text), "StatusCode");
+
+  beforeEach(() => {
+    resetAccountsFilings();
+    resetConfirmationStatementFilings();
+    resetPscVerificationStatementFilings();
+    resetGatewayFormFilings();
+    app = buildApp();
+  });
+
+  test("acknowledges a PSCCessation submission and polls it PENDING then ACCEPT", async () => {
+    const acknowledgement = parseXmlDocument((await post(cessationEnvelope("CES001"))).text);
+    expect(firstElementText(acknowledgement, "Qualifier")).toBe("acknowledgement");
+    expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+
+    expect(await statusOf("CES001")).toBe("PENDING");
+    expect(await statusOf("CES001")).toBe("ACCEPT");
+  });
+
+  test("answers REJECT with a reason under the REJECT scenario", async () => {
+    await post(cessationEnvelope("CES002"), "REJECT");
+    await statusOf("CES002");
+    const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "CES002" }))).text);
+    expect(firstElementText(final, "StatusCode")).toBe("REJECT");
+    expect(firstElementText(final, "RejectCode")).toBe("9998");
+    expect(firstElementText(final, "Description")).toBe("The details on this form do not match the company's record at Companies House.");
+  });
+
+  test("refuses a PSCCessation envelope whose Form does not hold the PSCCessation element", async () => {
+    const response = await post(cessationEnvelope("CES003").replace(/<PSCCessation[\s\S]*<\/PSCCessation>/, ""));
+    expect(allElements(parseXmlDocument(response.text), "GovTalkErrors")).toHaveLength(1);
+  });
+
+  test("acknowledges a PSCChangeDetails submission and polls it PENDING then ACCEPT", async () => {
+    const envelope = buildFormSubmission({
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+      companyNumber: FIXTURE_COMPANY_NUMBER,
+      companyName: FIXTURE_COMPANY_NAME,
+      companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      packageReference: "0012",
+      gatewayClass: "PSCChangeDetails",
+      formIdentifier: "PSCChangeDetails",
+      submissionNumber: "CHG001",
+      dateSigned: "2026-11-20",
+      formXml: buildPscChangeDetailsBody({
+        kind: "individual-person-with-significant-control",
+        surname: "BRAMWELL",
+        naturesOfControl: ["OWNERSHIPOFSHARES_75TO100PERCENT"],
+        dateOfChange: "2026-11-01",
+        confirmationDate: "2026-11-03",
+      }),
+      gatewayTest: true,
+    });
+    const acknowledgement = parseXmlDocument((await post(envelope)).text);
+    expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+    expect(await statusOf("CHG001")).toBe("PENDING");
+    expect(await statusOf("CHG001")).toBe("ACCEPT");
+  });
+
+  test("acknowledges a PSCStatementNotification and a PSCStatementWithdrawal and polls each PENDING then ACCEPT", async () => {
+    for (const [formIdentifier, submissionNumber, formXml] of [
+      [
+        "PSCStatementNotification",
+        "STN001",
+        buildPscStatementNotificationBody({ statement: "NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL", relevantDate: "2026-11-01" }),
+      ],
+      [
+        "PSCStatementWithdrawal",
+        "STW001",
+        buildPscStatementWithdrawalBody({ statement: "PSC_CONTACTED_BUT_NO_RESPONSE", withdrawalDate: "2026-11-05" }),
+      ],
+    ]) {
+      const envelope = buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+        companyName: FIXTURE_COMPANY_NAME,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        gatewayClass: formIdentifier,
+        formIdentifier,
+        submissionNumber,
+        dateSigned: "2026-11-20",
+        formXml,
+        gatewayTest: true,
+      });
+      expect(allElements(parseXmlDocument((await post(envelope)).text), "GovTalkErrors"), formIdentifier).toHaveLength(0);
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      expect(await statusOf(submissionNumber)).toBe("ACCEPT");
+    }
+  });
+
+  test("refuses a PSCCessation body its schema refuses, and records no submission", async () => {
+    const outOfOrder = cessationEnvelope("CES005").replace(
+      /(<CessationDate>.*?<\/CessationDate>)(<ConfirmationDate>.*?<\/ConfirmationDate>)/,
+      "$2$1",
+    );
+    const response = parseXmlDocument((await post(outOfOrder)).text);
+    expect(firstElementText(response, "Qualifier")).toBe("error");
+    expect(firstElementText(response, "Location")).toBe("Body/FormSubmission/Form/PSCCessation");
+
+    const retried = parseXmlDocument((await post(cessationEnvelope("CES005"))).text);
+    expect(firstElementText(retried, "Qualifier")).toBe("acknowledgement");
+  });
+
+  test("acknowledges a return of allotment under the Class ReturnOfAllotmentShares, whose body keeps its schema's root element", async () => {
+    const [allotment] = testSubmissionCases().filter((testCase) => testCase.kind === "allotment-of-shares");
+    const { envelopeXml } = buildTestSubmission(allotment, {
+      submissionNumber: "ALT001",
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+    });
+    expect(envelopeXml).toContain("<Class>ReturnOfAllotmentShares</Class>");
+    expect(envelopeXml).toContain("<FormIdentifier>ReturnofAllotmentShares</FormIdentifier>");
+    expect(envelopeXml).toContain("<ReturnofAllotmentShares ");
+    const acknowledgement = parseXmlDocument((await post(envelopeXml)).text);
+    expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+  });
+
+  test("answers a FormIdentifier that does not name the Form's element with error 9999, as the gateway does", async () => {
+    const [allotment] = testSubmissionCases().filter((testCase) => testCase.kind === "allotment-of-shares");
+    const { envelopeXml } = buildTestSubmission(allotment, {
+      submissionNumber: "ALT003",
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+    });
+    const misnamed = envelopeXml.replace(
+      "<FormIdentifier>ReturnofAllotmentShares</FormIdentifier>",
+      "<FormIdentifier>ReturnOfAllotmentShares</FormIdentifier>",
+    );
+    const response = parseXmlDocument((await post(misnamed)).text);
+    expect(firstElementText(response, "Number")).toBe("9999");
+    expect(firstElementText(response, "Text")).toBe("FormIdentifier does not match content in Form element");
+  });
+
+  test("answers a Class the gateway does not route, such as ReturnofAllotmentShares, with error 501", async () => {
+    const [allotment] = testSubmissionCases().filter((testCase) => testCase.kind === "allotment-of-shares");
+    const { envelopeXml } = buildTestSubmission(allotment, {
+      submissionNumber: "ALT002",
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+    });
+    const response = parseXmlDocument((await post(envelopeXml.replaceAll("ReturnOfAllotmentShares", "ReturnofAllotmentShares"))).text);
+    expect(firstElementText(response, "Number")).toBe("501");
+    expect(firstElementText(response, "Text")).toBe("Invalid Gateway Target (Class) supplied [ReturnofAllotmentShares]");
+  });
+
+  test("refuses a submission number already used", async () => {
+    await post(cessationEnvelope("CES004"));
+    const response = await post(cessationEnvelope("CES004"));
+    expect(firstElementText(parseXmlDocument(response.text), "Text")).toContain("SubmissionNumber has already been used");
+  });
+
+  describe("a change of accounting reference date for company 00000001, whose current period is the year to the register's next 31 March", () => {
+    function changeEnvelope(submissionNumber, change) {
+      return buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: "00000001",
+        companyName: HARBOUR_LANE_NAME,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        gatewayClass: "ChangeAccountingReferenceDate",
+        formIdentifier: "ChangeAccountingReferenceDate",
+        submissionNumber,
+        dateSigned: DATES.today,
+        formXml: buildAccountingReferenceDateBody({ currentPeriodEnd: CURRENT_END, ...change }),
+        gatewayTest: true,
+      });
+    }
+
+    async function settled(submissionNumber, change) {
+      const acknowledgement = parseXmlDocument((await post(changeEnvelope(submissionNumber, change))).text);
+      expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      return parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text);
+    }
+
+    const nextAccounts = () => getCompany("00000001").accounts.next_accounts;
+
+    beforeEach(() => resetCompanyFixtures());
+
+    test("a shortened period is accepted, and the register then shows the period ending on the new date", async () => {
+      const final = await settled("ARD001", { newPeriodEnd: SHORTENED_END });
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(nextAccounts()).toEqual({
+        period_start_on: DATES.next.start,
+        period_end_on: SHORTENED_END,
+        due_on: accountsDueNineMonthsAfter(SHORTENED_END),
+      });
+      expect(getCompany("00000001").accounts.accounting_reference_date).toEqual({
+        day: SHORTENED_END.slice(8),
+        month: SHORTENED_END.slice(5, 7),
+      });
+    });
+
+    test("the register keeps the old period until Companies House accepts the change", async () => {
+      await post(changeEnvelope("ARD002", { newPeriodEnd: SHORTENED_END }));
+      expect(await statusOf("ARD002")).toBe("PENDING");
+
+      expect(nextAccounts().period_end_on).toBe(CURRENT_END);
+    });
+
+    test("a period extended to the last day within 18 months is accepted", async () => {
+      const final = await settled("ARD003", { newPeriodEnd: LONGEST_END });
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(nextAccounts().period_end_on).toBe(LONGEST_END);
+    });
+
+    test("a period extended past 18 months is rejected with the reason, and the register does not change", async () => {
+      const final = await settled("ARD004", { newPeriodEnd: TOO_LONG_END });
+
+      expect(firstElementText(final, "StatusCode")).toBe("REJECT");
+      expect(firstElementText(final, "RejectCode")).toBe("9997");
+      expect(firstElementText(final, "Description")).toContain("beyond 18 months");
+      expect(nextAccounts().period_end_on).toBe(CURRENT_END);
+    });
+
+    test("a company in administration extends past 18 months", async () => {
+      const final = await settled("ARD005", { newPeriodEnd: TOO_LONG_END, fiveYearExtensionReason: "administration" });
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+    });
+
+    test("a period that is neither the current nor the one before is rejected", async () => {
+      const xml = changeEnvelope("ARD006", { newPeriodEnd: SHORTENED_END }).replace(
+        `<AccountRefDate>${CURRENT_END}</AccountRefDate>`,
+        `<AccountRefDate>${addMonths(CURRENT_END, -36)}</AccountRefDate>`,
+      );
+      await post(xml);
+      await statusOf("ARD006");
+      const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "ARD006" }))).text);
+
+      expect(firstElementText(final, "RejectCode")).toBe("9996");
+    });
+  });
+
+  describe("a change of name for company 00000001", () => {
+    const PDF_BASE64 = Buffer.from("%PDF-1.4\n%%EOF\n").toString("base64");
+
+    function nameEnvelope(submissionNumber, proposedName, letter) {
+      return buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: "00000001",
+        companyName: HARBOUR_LANE_NAME,
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        gatewayClass: "ChangeOfName",
+        formIdentifier: "ChangeOfName",
+        submissionNumber,
+        dateSigned: "2026-11-22",
+        formXml: buildChangeOfNameBody({ method: "resolution", proposedName, meetingDate: "2026-11-20" }),
+        document: letter ? supportingDocumentFor({ kind: letter, contentBase64: PDF_BASE64, date: "2026-11-22" }) : undefined,
+        gatewayTest: true,
+      });
+    }
+
+    async function settled(submissionNumber, proposedName, letter) {
+      const acknowledgement = parseXmlDocument((await post(nameEnvelope(submissionNumber, proposedName, letter))).text);
+      expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      return parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text);
+    }
+
+    const registeredName = () => getCompany("00000001").company_name;
+
+    beforeEach(() => resetCompanyFixtures());
+
+    test("a change by resolution is accepted, and the register then shows the new name", async () => {
+      await post(nameEnvelope("NAM001", "HARBOUR LANE JOINERY AND KITCHENS LIMITED"));
+      expect(await statusOf("NAM001")).toBe("PENDING");
+      expect(registeredName()).toBe(HARBOUR_LANE_NAME);
+
+      expect(await statusOf("NAM001")).toBe("ACCEPT");
+      expect(registeredName()).toBe("HARBOUR LANE JOINERY AND KITCHENS LIMITED");
+    });
+
+    test("a name with a sensitive word and no letter is rejected with the reason, and the name does not change", async () => {
+      const final = await settled("NAM002", "BRAMWELL ACCREDITED TRAINING LIMITED");
+
+      expect(firstElementText(final, "StatusCode")).toBe("REJECT");
+      expect(firstElementText(final, "RejectCode")).toBe("9994");
+      expect(firstElementText(final, "Description")).toContain("sensitive word");
+      expect(registeredName()).toBe(HARBOUR_LANE_NAME);
+    });
+
+    test("a name with a sensitive word and its permission letter is accepted", async () => {
+      const final = await settled("NAM003", "BRAMWELL ACCREDITED TRAINING LIMITED", "sensitive-word-permission");
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(registeredName()).toBe("BRAMWELL ACCREDITED TRAINING LIMITED");
+    });
+
+    test("another company's name is rejected, and accepted with a letter of no objection", async () => {
+      const taken = getCompany("SC000001").company_name;
+
+      const refused = await settled("NAM004", taken);
+      expect(firstElementText(refused, "RejectCode")).toBe("9995");
+
+      const allowed = await settled("NAM005", taken, "same-as-no-objection");
+      expect(firstElementText(allowed, "StatusCode")).toBe("ACCEPT");
+    });
+  });
+
+  describe("a change of accounting reference date for company 00000005, whose next accounts' period has ended and is not filed", () => {
+    const company = () => getCompany("00000005").accounts;
+    let fixture;
+
+    function changeEnvelope(submissionNumber, currentPeriodEnd, newPeriodEnd) {
+      return buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: "00000005",
+        companyName: "SIMULATOR YEAR ENDED LIMITED",
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        gatewayClass: "ChangeAccountingReferenceDate",
+        formIdentifier: "ChangeAccountingReferenceDate",
+        submissionNumber,
+        dateSigned: new Date().toISOString().slice(0, 10),
+        formXml: buildAccountingReferenceDateBody({ currentPeriodEnd, newPeriodEnd }),
+        gatewayTest: true,
+      });
+    }
+
+    async function settled(submissionNumber, currentPeriodEnd, newPeriodEnd) {
+      await post(changeEnvelope(submissionNumber, currentPeriodEnd, newPeriodEnd));
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      return parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text);
+    }
+
+    const dayBefore = (iso) => new Date(Date.parse(`${iso}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
+
+    beforeEach(() => {
+      resetCompanyFixtures();
+      fixture = structuredClone(company());
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    test("the period running now, after the ended one, is the current period: a change to it is accepted and moves the reference date", async () => {
+      const currentEnd = nextReferenceDate(fixture.next_accounts.period_end_on, fixture.accounting_reference_date);
+      const final = await settled("ARY001", currentEnd, dayBefore(currentEnd));
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(company().next_accounts).toEqual(fixture.next_accounts);
+      expect(company().accounting_reference_date).not.toEqual(fixture.accounting_reference_date);
+    });
+
+    test("the ended period of the next accounts is the previous period: a change to it is accepted and moves that period", async () => {
+      const previousEnd = fixture.next_accounts.period_end_on;
+      const final = await settled("ARY002", previousEnd, dayBefore(previousEnd));
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(company().next_accounts.period_end_on).toBe(dayBefore(previousEnd));
+    });
+
+    test("the period of the last filed accounts, two back, is neither and is rejected", async () => {
+      const final = await settled("ARY003", fixture.last_accounts.period_end_on, dayBefore(fixture.last_accounts.period_end_on));
+
+      expect(firstElementText(final, "RejectCode")).toBe("9996");
+      expect(company()).toEqual(fixture);
+    });
+
+    test("once the accounts are overdue no period can be changed", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(Date.parse(`${fixture.next_accounts.due_on}T12:00:00Z`) + 86400000));
+      const final = await settled("ARY004", fixture.next_accounts.period_end_on, dayBefore(fixture.next_accounts.period_end_on));
+
+      expect(firstElementText(final, "RejectCode")).toBe("9993");
+      expect(firstElementText(final, "Description")).toContain("overdue");
+      expect(company()).toEqual(fixture);
     });
   });
 });

@@ -96,7 +96,7 @@ describe("billingActivityCheckoutPost", () => {
   function buildBody(overrides = {}) {
     return {
       activityId: "file-confirmation-statement",
-      subjectKey: "12345678#2026-01-01",
+      subjectKey: "00000007#2026-01-01",
       ...overrides,
     };
   }
@@ -120,10 +120,41 @@ describe("billingActivityCheckoutPost", () => {
     expect(params.mode).toBe("payment");
     expect(params.customer_email).toBe("user@example.com");
     expect(params.metadata.activityId).toBe("file-confirmation-statement");
-    expect(params.metadata.subjectKey).toBe("12345678#2026-01-01");
+    expect(params.metadata.subjectKey).toBe("00000007#2026-01-01");
     expect(params.metadata.hashedSub).toBeDefined();
     expect(params.metadata.hashedSub.length).toBe(64);
     expect(params.line_items).toEqual([{ price: "price_fcs_live_123", quantity: 1 }]);
+  });
+
+  test.each([
+    ["standard", "price_name_standard"],
+    ["same-day", "price_name_same_day"],
+  ])("a change of company name charges the %s price the body names, and keeps its key on the session", async (priceKey, priceId) => {
+    process.env.STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD = "price_name_standard";
+    process.env.STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY = "price_name_same_day";
+    const subjectKey = `12345678:${priceKey}:BRAMWELL TENNANT TRADING LIMITED`;
+    const result = await ingestHandler(
+      buildEventWithToken(validToken, buildBody({ activityId: "change-company-name", subjectKey, priceKey })),
+    );
+
+    expect(result.statusCode).toBe(200);
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items).toEqual([{ price: priceId, quantity: 1 }]);
+    expect(params.metadata).toMatchObject({ activityId: "change-company-name", subjectKey, priceKey });
+  });
+
+  test("a change of company name with no price key, or one it does not have, is refused with the keys it has", async () => {
+    for (const priceKey of [undefined, "next-week"]) {
+      const result = await ingestHandler(
+        buildEventWithToken(
+          validToken,
+          buildBody({ activityId: "change-company-name", subjectKey: "12345678:standard:X LIMITED", priceKey }),
+        ),
+      );
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body)).toMatchObject({ code: "unknown-price", priceKeys: ["standard", "same-day"] });
+    }
+    expect(mockCheckoutSessionsCreate).not.toHaveBeenCalled();
   });
 
   test("uses the test price id for a synthetic test user's verified email", async () => {

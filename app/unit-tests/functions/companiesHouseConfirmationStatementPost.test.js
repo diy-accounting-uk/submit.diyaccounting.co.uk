@@ -111,7 +111,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildStatementBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
+    companyNumber: "00000004",
     companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
     companyAuthCode: "SIMCS01",
     dateSigned: "2026-09-24",
@@ -185,7 +185,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(submissionArgs).toMatchObject({
       presenterId: "presenter-id",
       presenterCode: "presenter-code",
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyName: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
       companyAuthenticationCode: "SIMCS01",
       packageReference: "0012",
@@ -234,7 +234,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
       .map(([cmd]) => cmd)
       .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
       .map((cmd) => cmd.input.ExpressionAttributeValues);
-    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "06846849:2025-09-21" };
+    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "00000004:2025-09-21" };
     expect(writes.map((values) => values[":data"].feeCharge)).toEqual([feeCharge, feeCharge]);
   });
 
@@ -351,6 +351,74 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("refuses a Welsh lower-case letter in a shareholder's address or a director's name, naming the field and the letter", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({
+        body: buildStatementBody({
+          shareholdings: [
+            {
+              shareClass: "ORDINARY",
+              numberHeld: 100,
+              shareholders: [
+                { surname: "JONES", address: { premise: "3", street: "Ffordd Glyndŵr", postTown: "Machynlleth", country: "GB-WLS" } },
+              ],
+            },
+          ],
+          directors: [{ personalCode: "CWMPS832223", forename: "Siân", otherForenames: "MAIR", surname: "EXAMPLE", dob: "1970-01-01" }],
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(400);
+    const { message } = parseResponseBody(response);
+    expect(message).toContain("shareholdings[0].shareholders[0].address.street has characters Companies House does not accept: ŵ");
+    expect(message).toContain("directors[0].forename has characters Companies House does not accept: â");
+    expect(message).not.toMatch(/Glynd|Siân/);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("refuses a shareholder's surname over the 160 characters its schema allows, naming the field and the limit", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({
+        body: buildStatementBody({
+          shareholdings: [{ shareClass: "ORDINARY", numberHeld: 100, shareholders: [{ surname: "A".repeat(161) }] }],
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("shareholdings[0].shareholders[0].surname must be at most 160 characters");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  const ECHOED = {
+    errors: [{ raisedBy: "Gateway", number: "604", type: "fatal", text: "Director ALICE MARGARET EXAMPLE has no verified identity" }],
+    statuses: [],
+  };
+  const CLEANED = [
+    {
+      raisedBy: "Gateway",
+      number: "604",
+      type: "fatal",
+      text: "Director [a value of the request] [a value of the request] [a value of the request] has no verified identity",
+    },
+  ];
+
+  test("a rejected payment periods query whose text echoes a director's name answers the code with the name taken out", async () => {
+    mockParseGatewayResponse.mockReturnValue(ECHOED);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(500);
+    expect(parseResponseBody(response).errors).toEqual(CLEANED);
+  });
+
+  test("a rejected submission whose text echoes a director's name keeps the code and takes the name out of the answer, the state and the event", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({ errors: [], statuses: [] }).mockReturnValue(ECHOED);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(500);
+    expect(parseResponseBody(response).errors).toEqual(CLEANED);
+    const kept = JSON.stringify([mockSend.mock.calls, mockEventBridgeSend.mock.calls]);
+    expect(kept).toContain("604");
+    expect(kept).not.toMatch(/ALICE|MARGARET/);
+  });
+
   test("rejects a director's personal code that is not 11 characters", async () => {
     const response = await companiesHouseConfirmationStatementPostHandler(
       buildEvent({
@@ -435,7 +503,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(response.statusCode).toBe(402);
     const body = parseResponseBody(response);
     expect(body.code).toBe("fee-due");
-    expect(mockHasPaidCharge).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "06846849:2025-09-21");
+    expect(mockHasPaidCharge).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "00000004:2025-09-21");
     expect(mockBuildConfirmationStatementSubmission).not.toHaveBeenCalled();
   });
 
@@ -444,7 +512,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     mockHasPaidCharge.mockResolvedValue(true);
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);
-    expect(mockMarkChargeUsed).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "06846849:2025-09-21");
+    expect(mockMarkChargeUsed).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "00000004:2025-09-21");
   });
 
   test("does not mark a charge used when the payment period was already paid through Companies House", async () => {
@@ -456,7 +524,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   });
 
   test("skips the fee gate entirely when the company number is in COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS", async () => {
-    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "06846849";
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "00000004";
     mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);
@@ -466,7 +534,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   });
 
   test("skips the fee gate when the company number is one of several in the comma-separated list, with whitespace tolerated", async () => {
-    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 06846849 ,07654321";
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 00000004 ,00000011";
     mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);

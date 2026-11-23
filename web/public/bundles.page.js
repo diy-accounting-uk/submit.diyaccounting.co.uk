@@ -171,6 +171,15 @@ const fetchUserBundles = async () => {
       return __userBundles;
     }
     console.warn("Failed to fetch bundles:", err);
+    if (window.showStatus) {
+      window.showStatus(
+        window.siteText(
+          "bundles.read-failed",
+          "Your bundles could not be read, so this page may offer a bundle you already hold. Reload the page to try again.",
+        ),
+        "error",
+      );
+    }
   } finally {
     if (__fetchBundlesController?.signal === signal) {
       __fetchBundlesController = null;
@@ -545,7 +554,10 @@ document.addEventListener("click", async (e) => {
 
     const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {}),
+      },
       body: JSON.stringify({ bundleId, ...(interval && { interval }), acquisition: readStoredLandingAttribution() }),
     });
     const body = await response.json().catch(() => ({}));
@@ -1067,8 +1079,6 @@ async function initFeedbackEngagementSection() {
 // --- My Generated Passes ---
 let __myPassesNextPageKey = null;
 
-const fewerThanThree = () => siteText("bundles.fewer-than-three", "fewer than 3");
-
 // Chromium's Intl has no Welsh dates, so a Welsh date is written here with HMRC's Welsh month names.
 const WELSH_MONTHS = [
   "Ionawr",
@@ -1094,28 +1104,10 @@ function dateInReaderLanguage(date, { month = "long", utc = false } = {}) {
   return `${part("Date")} ${(month === "short" ? WELSH_SHORT_MONTHS : WELSH_MONTHS)[part("Month")]} ${part("FullYear")}`;
 }
 
-function figureCell(key, label, value, { count = true } = {}) {
-  const shown = value === null || value === undefined ? (count ? fewerThanThree() : "—") : String(value);
-  return domEl("div", { "class": "pass-figure", "data-figure": key }, domEl("dt", {}, label), domEl("dd", {}, shown));
-}
+// The pass card's type label, terms and figures come from lib/pass-card.js, which the operator's
+// campaign pass page shares.
+const passCardHelpers = { siteText, dateText: dateInReaderLanguage };
 
-function lastUsedLabel(lastUsed) {
-  if (!lastUsed) return siteText("bundles.not-used-yet", "Not used yet");
-  return dateInReaderLanguage(new Date(lastUsed), { month: "short" });
-}
-
-function passFiguresEl(figures, className) {
-  return domEl(
-    "dl",
-    { class: className },
-    figureCell("uses", siteText("bundles.figure-uses", "Uses"), figures.uses, { count: false }),
-    figureCell("new-accounts", siteText("bundles.figure-new-accounts", "New accounts"), figures.newAccounts),
-    figureCell("filed", siteText("bundles.figure-filed", "Filed"), figures.filed),
-    figureCell("subscribers", siteText("bundles.figure-subscribers", "Subscribers"), figures.subscribers),
-    figureCell("paid-charges", siteText("bundles.figure-paid-charges", "Paid charges"), figures.paidCharges),
-    figureCell("last-used", siteText("bundles.figure-last-used", "Last used"), lastUsedLabel(figures.lastUsed), { count: false }),
-  );
-}
 let __noGeneratedPasses = false;
 
 const PASS_ACTIVITY_IDS = ["generate-pass-digital", "generate-pass-physical"];
@@ -1148,13 +1140,25 @@ function renderGeneratedPassesEmptyText() {
   emptyMsg.style.display = "block";
 }
 
-// A pass just generated lands here: show it, scroll to it and put focus on it.
-function focusNewlyGeneratedPass() {
+// A pass just generated lands here with ?newPass=<code>. The code leaves the address as the page
+// starts, so a reload or the language switch does not show its status again, and the first list of
+// generated passes shows it once.
+let newlyGeneratedPassCode = takeNewPassFromAddress();
+
+function takeNewPassFromAddress() {
   const url = new URL(window.location.href);
-  const newCode = url.searchParams.get("newPass");
-  if (!newCode) return;
+  const code = url.searchParams.get("newPass");
+  if (!code) return null;
   url.searchParams.delete("newPass");
   window.history.replaceState(null, "", url);
+  return code;
+}
+
+// The pass just generated: show it, scroll to it and put focus on it.
+function focusNewlyGeneratedPass() {
+  const newCode = newlyGeneratedPassCode;
+  if (!newCode) return;
+  newlyGeneratedPassCode = null;
   const card = Array.from(document.querySelectorAll("#generatedPassesList [data-pass-code]")).find(
     (el) => el.getAttribute("data-pass-code") === newCode,
   );
@@ -1265,19 +1269,11 @@ async function fetchMyGeneratedPasses(append) {
     document.getElementById("generatedPassesToolbar").hidden = false;
     document.getElementById("passDeleteConfirm")?.remove();
 
+    const catalogue = __catalogueData || (await fetchAndParse("/submit.catalogue.toml", { ttlMs: 300000 }));
     data.passes.forEach((pass) => {
-      const typeLabel =
-        pass.passTypeId === "digital-pass" ? siteText("bundles.pass-digital", "Digital") : siteText("bundles.pass-physical", "Physical");
-      const expiryLabel = pass.validUntil
-        ? siteText("bundles.pass-expires", "Expires {date}", { date: dateInReaderLanguage(new Date(pass.validUntil)) })
-        : siteText("bundles.pass-no-expiry", "No expiry");
-      const usageLabel =
-        pass.maxUses === undefined || pass.maxUses === null
-          ? siteText("bundles.pass-uses", "{count} uses", { count: pass.useCount || 0 })
-          : siteText("bundles.pass-uses-of", "{count} of {max} uses", { count: pass.useCount || 0, max: pass.maxUses });
-      const heldLabel = pass.heldForReview ? ` · ${siteText("bundles.pass-on-hold", "on hold for review")}` : "";
+      const typeLabel = window.passCard.typeLabel(pass, passCardHelpers);
       const passUrl = `${window.location.origin}/pass.html?pass=${encodeURIComponent(pass.code)}`;
-      const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
+      const qrPage = pass.passTypeId === "physical-pass" ? "generate-physical.html" : "generate-digital.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
       const card = domEl(
         "div",
@@ -1298,8 +1294,9 @@ async function fetchMyGeneratedPasses(append) {
           domEl("span", { class: "status-tag" }, typeLabel),
         ),
         pass.notes ? domEl("div", { class: "bundle-note" }, pass.notes) : null,
-        domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}${heldLabel}`),
-        pass.figures ? passFiguresEl(pass.figures, "pass-figures") : null,
+        window.passCard.termsEl(pass, catalogue, passCardHelpers),
+        pass.heldForReview ? domEl("div", { class: "bundle-note" }, siteText("bundles.pass-on-hold", "on hold for review")) : null,
+        pass.figures ? window.passCard.figuresEl(pass.figures, "pass-figures", passCardHelpers) : null,
         domEl(
           "div",
           { class: "bundle-row-line" },
@@ -1376,7 +1373,7 @@ async function fetchMyGeneratedPasses(append) {
                   }),
             ),
           ),
-          passFiguresEl(data.totals, "pass-figures"),
+          window.passCard.figuresEl(data.totals, "pass-figures", passCardHelpers),
         ),
       );
     }

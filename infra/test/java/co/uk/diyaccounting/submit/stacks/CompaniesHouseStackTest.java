@@ -84,6 +84,7 @@ class CompaniesHouseStackTest {
                         .sharedNames(sharedNames)
                         .baseImageTag("latest")
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseDocumentBaseUri("https://document-api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn(companiesHouseApiKeyArn)
                         .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
                         .companiesHouseFilingApiKeyArn(companiesHouseFilingApiKeyArn)
@@ -94,6 +95,43 @@ class CompaniesHouseStackTest {
                         .companiesHousePresenterIdArn(companiesHousePresenterIdArn)
                         .companiesHousePresenterCodeArn(companiesHousePresenterCodeArn)
                         .companiesHouseCsFeeWaivedCompanyNumbers("")
+                        .build());
+    }
+
+    // synthCompaniesHouseStack()'s defaults, with the Stripe keys a poll refunds a fee with.
+    private static CompaniesHouseStack synthCompaniesHouseStackWithStripe(
+            String stripeSecretKeyArn, String stripeTestSecretKeyArn) {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+        return new CompaniesHouseStack(
+                app,
+                "TestCompaniesHouseStack",
+                CompaniesHouseStack.CompaniesHouseStackProps.builder()
+                        .env(Environment.builder()
+                                .account("111111111111")
+                                .region("eu-west-2")
+                                .build())
+                        .crossRegionReferences(false)
+                        .envName("docs")
+                        .deploymentName("docs")
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled("false")
+                        .sharedNames(sharedNames)
+                        .baseImageTag("latest")
+                        .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseDocumentBaseUri("https://document-api.company-information.service.gov.uk")
+                        .companiesHouseApiKeyArn("")
+                        .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseFilingApiKeyArn("")
+                        .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
+                        .companiesHouseClientId("test-companies-house-client-id")
+                        .companiesHouseClientSecretArn("")
+                        .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
+                        .companiesHousePresenterIdArn("")
+                        .companiesHousePresenterCodeArn("")
+                        .companiesHouseCsFeeWaivedCompanyNumbers("")
+                        .stripeSecretKeyArn(stripeSecretKeyArn)
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn)
                         .build());
     }
 
@@ -125,6 +163,7 @@ class CompaniesHouseStackTest {
                         .sharedNames(sharedNames)
                         .baseImageTag("latest")
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseDocumentBaseUri("https://document-api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn("")
                         .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
                         .companiesHouseFilingApiKeyArn("")
@@ -162,6 +201,7 @@ class CompaniesHouseStackTest {
                         .sharedNames(sharedNames)
                         .baseImageTag("latest")
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseDocumentBaseUri("https://document-api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn("")
                         .companiesHouseFilingBaseUri("")
                         .companiesHouseFilingApiKeyArn("")
@@ -194,11 +234,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresTwentySixLambdas() {
+    void stackWiresFortySixLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 26);
+        template.resourceCountIs("AWS::Lambda::Function", 46);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -219,12 +259,30 @@ class CompaniesHouseStackTest {
                 stack.hmrcCtReturnGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscCessationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscChangeDetailsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscStatementNotificationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscStatementWithdrawalPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscNotificationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountingReferenceDatePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseOfficerResignationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseSailAddressPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseRecordLocationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseOfficerAppointmentPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseOfficerChangePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAllotmentOfSharesPostLambdaProps.ingestFunctionName(),
                 pollFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
@@ -249,6 +307,40 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void theAllotmentOfSharesRouteChargesTheAccountsShareAndReadsTheStopAndWritesNoStop() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        var names = SubmitSharedNames.forDocs().companiesHouse;
+        var actions = actionsOnRoleFor(
+                template,
+                names.companiesHouseAllotmentOfSharesPostIngestLambdaFunctionName,
+                SubmitSharedNames.forDocs().data.securityStateTableName);
+        assertEquals(java.util.Set.of("dynamodb:GetItem", "dynamodb:UpdateItem"), actions);
+    }
+
+    @Test
+    void everyLookupOnTheSharedKeyCanChargeItsCounterAndReadAndWriteTheStopACompaniesHouse429Sets() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        var names = SubmitSharedNames.forDocs().companiesHouse;
+        for (String functionName : List.of(
+                names.companiesHouseSearchGetIngestLambdaFunctionName,
+                names.companiesHouseCompanyGetIngestLambdaFunctionName,
+                names.companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName,
+                names.companiesHouseOfficersGetIngestLambdaFunctionName,
+                names.companiesHousePscGetIngestLambdaFunctionName,
+                names.companiesHouseFilingHistoryGetIngestLambdaFunctionName,
+                names.companiesHouseFiledAccountsGetIngestLambdaFunctionName,
+                names.companiesHouseFiledDocumentGetIngestLambdaFunctionName,
+                names.companiesHouseLastAccountsGetIngestLambdaFunctionName,
+                names.companiesHousePublicDeadlinesGetIngestLambdaFunctionName,
+                names.companiesHousePublicRegisterGetIngestLambdaFunctionName)) {
+            var actions = actionsOnRole(template, functionName);
+            assertTrue(actions.contains("dynamodb:UpdateItem"), functionName + " charges its counter");
+            assertTrue(actions.contains("dynamodb:GetItem"), functionName + " reads the stop");
+            assertTrue(actions.contains("dynamodb:PutItem"), functionName + " writes the stop");
+        }
+    }
+
+    @Test
     void presenterPollReadsAndWritesTheFilingStateByKeyAndNeverScans() {
         CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);
@@ -267,6 +359,30 @@ class CompaniesHouseStackTest {
         assertHasEnvironmentVariable(template, pollFunctionName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
         assertHasEnvironmentVariable(template, pollFunctionName, "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME");
         assertHasEnvironmentVariable(template, pollFunctionName, "COMPANIES_HOUSE_PRESENTER_ID_ARN");
+    }
+
+    @Test
+    void theLambdasThatRecordAnAcceptedFilingMayOnlyListDeleteAndMarkTheCompanyCache() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+        String cacheTable = SubmitSharedNames.forDocs().data.companiesHouseCacheTableName;
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(),
+                pollFunctionName())) {
+            assertEquals(
+                    java.util.Set.of("dynamodb:DeleteItem", "dynamodb:PutItem", "dynamodb:Query"),
+                    actionsOnTable(template, functionName, cacheTable),
+                    functionName + " lists, drops and marks the company's cache entries, and nothing else");
+            assertHasEnvironmentVariable(template, functionName, "COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME");
+        }
+        assertEquals(
+                java.util.Set.of("dynamodb:GetItem", "dynamodb:PutItem"),
+                actionsOnTable(
+                        template, stack.companiesHouseCompanyReportGetLambdaProps.ingestFunctionName(), cacheTable),
+                "the company reports Lambda reads answers and the marker, and writes answers");
     }
 
     @Test
@@ -303,6 +419,69 @@ class CompaniesHouseStackTest {
                     !roleCanUpdateActivityCharges(template, functionName),
                     functionName + " files no form with a fee, so it may not update the activity charges");
             assertHasEnvironmentVariable(template, functionName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theSharedFormLambdasHoldOnlyWhatTheFilingRouteAndItsPollCall() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        for (String fileName : List.of(
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscCessationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName())) {
+            var fileActions = actionsOnRole(template, fileName);
+            assertTrue(
+                    fileActions.contains("dynamodb:UpdateItem"),
+                    fileName + ": the filing route allocates the number and writes the filing");
+            String filingTable = SubmitSharedNames.forDocs().data.companiesHouseAccountsAsyncRequestsTableName;
+            assertTrue(
+                    !actionsOnRoleFor(template, fileName, filingTable).contains("dynamodb:GetItem"),
+                    fileName + ": the filing route reads no item back from the filing table");
+            assertTrue(
+                    !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, fileName),
+                    fileName + ": the filing route charges no token");
+            assertHasEnvironmentVariable(template, fileName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
+        }
+
+        String pollName = stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName();
+        var pollActions = actionsOnRole(template, pollName);
+        assertTrue(pollActions.contains("dynamodb:GetItem"), "the poll reads the filer's request");
+        assertTrue(pollActions.contains("dynamodb:PutItem"), "the poll writes the receipt");
+        assertTrue(
+                !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, pollName),
+                "a shared-route filing stores no token charge, so its poll charges none");
+        assertTrue(
+                roleCanUpdateActivityCharges(template, pollName),
+                "the poll refunds the fee of a change of company name that Companies House rejects");
+        assertHasEnvironmentVariable(template, pollName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theChangeOfNameFeeIsCheckedBeforeFilingAndRefundedByEitherPoll() {
+        CompaniesHouseStack stack = synthCompaniesHouseStackWithStripe(
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:stripe-live",
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:stripe-test");
+        Template template = Template.fromStack(stack);
+
+        String fileName = stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName();
+        assertTrue(
+                roleCanUpdateActivityCharges(template, fileName),
+                "the change of name route marks the paid charge used");
+        assertHasEnvironmentVariable(template, fileName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+
+        for (String pollName :
+                List.of(stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(), pollFunctionName())) {
+            assertTrue(roleCanUpdateActivityCharges(template, pollName), pollName + " marks a refunded charge");
+            assertHasEnvironmentVariable(template, pollName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+            assertHasEnvironmentVariable(template, pollName, "STRIPE_SECRET_KEY_ARN");
+            assertHasEnvironmentVariable(template, pollName, "STRIPE_TEST_SECRET_KEY_ARN");
+            String policies = String.valueOf(template.findResources("AWS::IAM::Policy"));
+            assertTrue(policies.contains("secret:stripe-live-*"), "a poll reads the live Stripe key");
+            assertTrue(policies.contains("secret:stripe-test-*"), "a poll reads the test Stripe key");
         }
     }
 
@@ -502,15 +681,16 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllTwentySixRoutesForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllFortySixRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(26, stack.lambdaFunctionProps.size());
+        assertEquals(46, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
                         "/api/v1/companies-house/company/{companyNumber}",
                         "/api/v1/public/company-deadlines",
+                        "/api/v1/public/company-register",
                         "/api/v1/companies-house/token",
                         "/api/v1/companies-house/grants/{grantId}",
                         "/api/v1/companies-house/transaction",
@@ -528,17 +708,36 @@ class CompaniesHouseStackTest {
                         "/api/v1/hmrc/ct/return/{correlationId}",
                         "/api/v1/companies-house/company/{companyNumber}/officers",
                         "/api/v1/companies-house/company/{companyNumber}/persons-with-significant-control",
+                        "/api/v1/companies-house/company/{companyNumber}/filing-history",
+                        "/api/v1/companies-house/company/{companyNumber}/reports/{report}",
+                        "/api/v1/companies-house/company/{companyNumber}/filed-accounts",
+                        "/api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document",
+                        "/api/v1/companies-house/company/{companyNumber}/last-accounts",
                         "/api/v1/companies-house/company/{companyNumber}/filing-data",
                         "/api/v1/companies-house/confirmation-statement/render",
                         "/api/v1/companies-house/confirmation-statement",
                         "/api/v1/companies-house/confirmation-statement/{submissionNumber}",
                         "/api/v1/companies-house/psc-verification-statement",
-                        "/api/v1/companies-house/psc-verification-statement/{submissionNumber}"),
+                        "/api/v1/companies-house/psc-verification-statement/{submissionNumber}",
+                        "/api/v1/companies-house/psc-cessation",
+                        "/api/v1/companies-house/psc-change-details",
+                        "/api/v1/companies-house/psc-statement-notification",
+                        "/api/v1/companies-house/psc-statement-withdrawal",
+                        "/api/v1/companies-house/psc-notification",
+                        "/api/v1/companies-house/forms/{kind}/{submissionNumber}",
+                        "/api/v1/companies-house/accounting-reference-date",
+                        "/api/v1/companies-house/officer-resignation",
+                        "/api/v1/companies-house/sail-address",
+                        "/api/v1/companies-house/record-location",
+                        "/api/v1/companies-house/change-of-name",
+                        "/api/v1/companies-house/officer-appointment",
+                        "/api/v1/companies-house/officer-change",
+                        "/api/v1/companies-house/allotment-of-shares"),
                 stack.lambdaFunctionProps.stream().map(p -> p.urlPath()).toList());
     }
 
     @Test
-    void allFourLookupLambdasAndTheRegisteredOfficeAddressReadGetTheBaseUriAndNoApiKeyEnvVarWhenTheArnIsBlank() {
+    void theLookupLambdasAndTheRegisteredOfficeAddressReadGetTheBaseUriAndNoApiKeyEnvVarWhenTheArnIsBlank() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
@@ -547,7 +746,11 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
-                stack.companiesHousePscGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -580,7 +783,31 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void allFourLookupLambdasGetTheApiKeyArnEnvVarAndGrantWhenTheArnIsConfigured() {
+    void theAccountsFilingLambdaCanReadTheRegisterAsALimitedLookup() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN);
+        Template template = Template.fromStack(stack);
+        String functionName = stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName();
+
+        // The register read for revised accounts and the Welsh accounts check call the Companies
+        // House API with the shared key, under the limits of the signed-in lookups.
+        for (String variable : List.of(
+                "COMPANIES_HOUSE_BASE_URI",
+                "COMPANIES_HOUSE_DOCUMENT_BASE_URI",
+                "COMPANIES_HOUSE_API_KEY_ARN",
+                "SECURITY_STATE_DYNAMODB_TABLE_NAME")) {
+            assertHasEnvironmentVariable(template, functionName, variable);
+        }
+        assertEquals(
+                java.util.Set.of("secretsmanager:GetSecretValue"),
+                actionsOnRoleFor(template, functionName, API_KEY_ARN));
+        // One update charges the account's counter; the stop a Companies House 429 sets is read and written.
+        assertEquals(
+                java.util.Set.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"),
+                actionsOnRoleFor(template, functionName, "security-state"));
+    }
+
+    @Test
+    void theLookupLambdasGetTheApiKeyArnEnvVarAndGrantWhenTheArnIsConfigured() {
         CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN);
         Template template = Template.fromStack(stack);
 
@@ -588,7 +815,12 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
-                stack.companiesHousePscGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseSailAddressPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -596,10 +828,12 @@ class CompaniesHouseStackTest {
             assertEquals(API_KEY_ARN, env.get("COMPANIES_HOUSE_API_KEY_ARN"));
         }
 
-        // The wildcard suffix Secrets Manager requires, granted to the four signed-in lookup Lambda
-        // roles (search, company, officers, PSCs) and the public deadlines Lambda, and no others; the registered office
-        // address read takes
-        // the filing key with the filing base URI.
+        // The wildcard suffix Secrets Manager requires, granted to the eight signed-in lookup Lambda
+        // roles (search, company, officers, PSCs, filing history, filed accounts, the filed
+        // document and the last accounts), the company reports Lambda, the public deadlines Lambda,
+        // the public register Lambda, the accounts filing Lambda and the SAIL address filing, which reads
+        // the company's jurisdiction, and no others; the registered
+        // office address read takes the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -611,7 +845,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                5);
+                13);
     }
 
     @Test
@@ -666,7 +900,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                5);
+                13);
     }
 
     @Test
@@ -674,7 +908,7 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        // The 24 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
+        // The 44 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
         // enforceBundles(), and the OAuth token exchange publishes activity events, which label
         // an operator's events from the same list.
         var operatorEmailsArn = Match.objectLike(Map.of(
@@ -687,7 +921,7 @@ class CompaniesHouseStackTest {
                 Match.objectLike(Map.of(
                         "PolicyDocument",
                         Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
-                25);
+                44);
     }
 
     @Test
@@ -726,14 +960,21 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lookupAndFilingLambdasQueryBundlesAndAllTwentyOneLambdasPublishActivityEvents() {
+    void lookupAndFilingLambdasQueryBundlesAndPublishActivityEvents() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
         // Every Lambda except the token exchange queries the bundles table: the two company
-        // lookup routes, the registered office address read, the six filing routes, the three
+        // lookup routes, the officers, PSC, filing history, filed accounts, filed document and
+        // last accounts reads, the registered office address read, the six filing routes, the three
         // accounts routes, the three Company Tax Return routes, the six confirmation statement
-        // routes, and the two PSC verification statement routes, all gated by enforceBundles(), and
+        // routes, the two PSC verification statement routes, the PSC cessation route, the PSC change
+        // of details route, the change of accounting reference date route, the officer resignation
+        // route, the SAIL address route, the record location route, the change of name route, the two
+        // PSC statement routes, the PSC notification route, the officer appointment
+        // route, the officer change of details route, the allotment of shares route and
+        // the shared
+        // form poll, all gated by enforceBundles(), and
         // the presenter poll, whose token charge reads the filer's bundles. The token exchange has
         // no authorizer and so no user to check a bundle entitlement against.
         template.resourcePropertiesCountIs(
@@ -743,7 +984,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                24);
+                43);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -751,7 +992,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                25);
+                44);
     }
 
     @Test
@@ -1028,6 +1269,55 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void filingHistoryAndFiledAccountsRoutesCarryTheirDesignedPathsAndJwtOnlyAuthorizer() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+
+        assertEquals(
+                List.of(
+                        "/api/v1/companies-house/company/{companyNumber}/filing-history",
+                        "/api/v1/companies-house/company/{companyNumber}/filed-accounts",
+                        "/api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document",
+                        "/api/v1/companies-house/company/{companyNumber}/last-accounts"),
+                List.of(
+                        stack.companiesHouseFilingHistoryGetLambdaProps.urlPath(),
+                        stack.companiesHouseFiledAccountsGetLambdaProps.urlPath(),
+                        stack.companiesHouseFiledDocumentGetLambdaProps.urlPath(),
+                        stack.companiesHouseLastAccountsGetLambdaProps.urlPath()));
+        for (var props : List.of(
+                stack.companiesHouseFilingHistoryGetLambdaProps,
+                stack.companiesHouseFiledAccountsGetLambdaProps,
+                stack.companiesHouseFiledDocumentGetLambdaProps,
+                stack.companiesHouseLastAccountsGetLambdaProps)) {
+            assertEquals(HttpMethod.GET, props.httpMethod());
+            assertTrue(props.jwtAuthorizer());
+            assertFalse(props.customAuthorizer());
+        }
+    }
+
+    @Test
+    void theFiledAccountsLambdasAloneReadTheDocumentApi() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        for (var props : List.of(
+                stack.companiesHouseFilingHistoryGetLambdaProps,
+                stack.companiesHouseFiledAccountsGetLambdaProps,
+                stack.companiesHouseFiledDocumentGetLambdaProps,
+                stack.companiesHouseLastAccountsGetLambdaProps,
+                stack.companiesHouseOfficersGetLambdaProps)) {
+            var env = environmentVariablesOf(template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", props.ingestFunctionName()))));
+            boolean readsDocuments = props == stack.companiesHouseFiledAccountsGetLambdaProps
+                    || props == stack.companiesHouseFiledDocumentGetLambdaProps
+                    || props == stack.companiesHouseLastAccountsGetLambdaProps;
+            assertEquals(
+                    readsDocuments ? "https://document-api.company-information.service.gov.uk" : null,
+                    env.get("COMPANIES_HOUSE_DOCUMENT_BASE_URI"),
+                    props.ingestFunctionName());
+        }
+    }
+
+    @Test
     void confirmationStatementRoutesCarryTheirDesignedPathsMethodsAndJwtOnlyAuthorizer() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
@@ -1101,9 +1391,11 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
@@ -1136,15 +1428,13 @@ class CompaniesHouseStackTest {
             assertFalse(environmentVariablesOf(functions).containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
         }
 
-        // Neither preview reaches the gateway, so both carry neither.
+        // Neither preview reaches the gateway, so neither carries a PackageReference.
         for (String functionName : List.of(
                 stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
-            var previewEnv = environmentVariablesOf(functions);
-            assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_GATEWAY_TEST"));
-            assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
+            assertFalse(environmentVariablesOf(functions).containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
         }
     }
 
@@ -1154,9 +1444,11 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
@@ -1212,10 +1504,14 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);
 
-        // The wildcard suffix Secrets Manager requires, granted to exactly the eight Lambda roles
+        // The wildcard suffix Secrets Manager requires, granted to exactly the twenty-two Lambda roles
         // that reach the gateway (accounts submit/poll, filing-data, confirmation statement
-        // submit/poll, PSC verification statement submit/poll, the presenter poll) for each of the
-        // two presenter secrets.
+        // submit/poll, PSC verification statement submit/poll, PSC cessation submit, PSC change of
+        // details submit, the change of accounting reference date submit, the officer resignation submit,
+        // SAIL address submit, record location submit, the change of name submit, PSC statement and statement
+        // withdrawal submit, PSC notification submit, officer appointment submit, officer change
+        // of details submit, allotment of shares submit, the shared form
+        // poll, the presenter poll) for each of the two presenter secrets.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1227,7 +1523,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_ID_ARN + "-*")))))))),
-                8);
+                22);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1239,7 +1535,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_CODE_ARN + "-*")))))))),
-                8);
+                22);
     }
 
     @Test
@@ -1254,7 +1550,21 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscCessationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscChangeDetailsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountingReferenceDatePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseOfficerResignationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseSailAddressPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseRecordLocationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscStatementNotificationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscStatementWithdrawalPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscNotificationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseOfficerAppointmentPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseOfficerChangePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAllotmentOfSharesPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -1369,6 +1679,89 @@ class CompaniesHouseStackTest {
                         .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
                 .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
                 .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .forEach(statement -> {
+                    Object action = statement.get("Action");
+                    if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));
+                    else actions.add(String.valueOf(action));
+                });
+        return actions;
+    }
+
+    @Test
+    void theCompanyCacheGrantOfTheLambdasThatRecordAnAcceptedFilingNamesTheCacheTableAndNothingElse() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+        String cacheTable = SubmitSharedNames.forDocs().data.companiesHouseCacheTableName;
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(),
+                pollFunctionName())) {
+            var statements = statementsOnTable(template, functionName, cacheTable);
+            assertEquals(1, statements.size(), functionName + " has one statement on the cache table");
+            String resources = String.valueOf(statements.get(0).get("Resource"));
+            assertEquals(
+                    resources.split("table/", -1).length - 1,
+                    resources.split("table/" + cacheTable, -1).length - 1,
+                    functionName + " names no other table in its cache statement: " + resources);
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    resources.contains("\"*\"") || resources.equals("*"),
+                    functionName + " names no wildcard resource in its cache statement");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> statementsOnTable(
+            Template template, String functionName, String tableName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        return template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("table/" + tableName))
+                .toList();
+    }
+
+    // The IAM actions on the Lambda's own role in the statements whose resource names the fragment.
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> actionsOnRoleFor(Template template, String functionName, String fragment) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        var actions = new java.util.TreeSet<String>();
+        template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains(fragment))
+                .forEach(statement -> {
+                    Object action = statement.get("Action");
+                    if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));
+                    else actions.add(String.valueOf(action));
+                });
+        return actions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> actionsOnTable(Template template, String functionName, String tableName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        var actions = new java.util.TreeSet<String>();
+        template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("table/" + tableName))
                 .forEach(statement -> {
                     Object action = statement.get("Action");
                     if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));

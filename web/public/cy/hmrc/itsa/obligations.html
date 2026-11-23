@@ -34,10 +34,14 @@
     </header>
 
     <main id="mainContent">
-      <p data-i18n="itsa-obligations.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
-        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
-        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
-        ddiweddariad yn 2027.
+      <p
+        data-i18n="itsa-obligations.status-production-this-uses-your-real-57175d"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator">
         <span data-i18n="itsa-obligations.synthetic-mode-calls-go-to-hmrc-efa44d"
@@ -80,7 +84,7 @@
           </button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2 data-i18n="itsa-obligations.retrieve-obligations-63a80e">Cael rhwymedigaethau</h2>
+          <h2 data-i18n="itsa-obligations.retrieve-obligations-63a80e">Adalw rhwymedigaethau</h2>
           <form id="itsaObligationsForm" novalidate>
             <div class="form-group">
               <label data-i18n="itsa-obligations.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
@@ -162,7 +166,7 @@
             </div>
 
             <button data-i18n="itsa-obligations.retrieve-obligations-63a80e" type="submit" id="retrieveBtn" class="btn">
-              Cael rhwymedigaethau
+              Adalw rhwymedigaethau
             </button>
           </form>
         </div>
@@ -221,6 +225,7 @@
     <script src="../../../widgets/status-messages.js"></script>
     <script src="../../../widgets/signed-out-panel.js"></script>
     <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../lib/hmrc-sandbox-status.js"></script>
     <script src="../../../hmrc/itsa/obligations.page.js"></script>
   </body>
 </html>

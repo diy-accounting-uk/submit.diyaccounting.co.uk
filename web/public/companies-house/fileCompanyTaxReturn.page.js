@@ -58,6 +58,7 @@ import {
   reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
+import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import {
   DEFAULT_AGENT_STATUS,
@@ -546,6 +547,31 @@ async function readJointFilingOffered() {
 
 const jointFilingOffered = readJointFilingOffered();
 
+// A revision of the accounts has its own catalogue activity. The amend panel offers to amend the
+// accounts only when that activity is shown to this person in this environment. A catalogue or
+// environment that cannot be read leaves the offer off.
+async function readRevisedAccountsOffered() {
+  try {
+    const service = await import("/lib/services/catalog-service.js");
+    const viewerSettings = await import("/lib/services/viewer-settings.js");
+    const [text, environmentName, viewer] = await Promise.all([
+      service.fetchCatalogText(),
+      service.fetchCurrentEnvironmentName(),
+      viewerSettings.fetchViewer(),
+    ]);
+    return service.isRevisedAccountsOffered(service.parseCatalogueText(text), environmentName, viewer);
+  } catch (error) {
+    console.warn("Amending the accounts is off because the catalogue could not be read:", error);
+    return false;
+  }
+}
+
+let revisedAccountsOffered = false;
+readRevisedAccountsOffered().then((offered) => {
+  revisedAccountsOffered = offered;
+  if (offered && element("amendPanel").style.display === "block") showAmendPanel();
+});
+
 async function applyJointFilingOffer() {
   const offered = await jointFilingOffered;
   const both = element("sendToBoth");
@@ -674,6 +700,7 @@ function accountsSection() {
     companiesHouseCopyGroup(),
     companiesHouseMicroNote(),
     checkboxGroup("includeComparatives", siteText("ch.ct.include-comparatives", "Include last year's figures")),
+    create("p", { "id": "firstAccountsLine", "class": "hint", "aria-live": "polite" }),
     forRegime(
       "small",
       create("h4", {}, siteText("ch.ct.profit-and-loss", "Profit and loss account")),
@@ -701,9 +728,12 @@ function accountsSection() {
       create(
         "p",
         { class: "hint" },
-        siteText("ch.ct.micro-balance-hint", "Micro-entity accounts always show last year's balance sheet beside this year's."),
+        siteText(
+          "ch.ct.micro-balance-hint",
+          "Micro-entity accounts show last year's balance sheet beside this year's, unless they are the company's first accounts.",
+        ),
       ),
-      microLedger(MICRO_BALANCE_SHEET_FIELDS),
+      microLedger(MICRO_BALANCE_SHEET_FIELDS, "ledger--micro-balance-sheet"),
     ),
     create("h4", {}, siteText("ch.ct.about-accounts", "About the accounts")),
     ...ACCOUNTS_TEXT_FIELDS.map((field) => (field.smallOnly ? forRegime("small", accountsTextGroup(field)) : accountsTextGroup(field))),
@@ -1095,7 +1125,21 @@ function copyOf(values) {
   return values.companiesHouseCopy === "filleted" && regimeOf(values) === "small" ? "filleted" : "full";
 }
 
+// Accounts show last year's figures unless they are the company's first, which the company's
+// profile and the period start show. The box follows that rule, the line under it says which, and
+// the micro-entity balance sheet leaves out last year's column for first accounts.
+function applyFirstAccountsRule() {
+  const first = applyComparativesRule({
+    box: element("includeComparatives"),
+    line: element("firstAccountsLine"),
+    company,
+    periodStart: element("periodStart").value,
+  });
+  element("formSections").querySelector(".ledger--micro-balance-sheet").classList.toggle("ledger--one-year", first);
+}
+
 function toggleSections() {
+  applyFirstAccountsRule();
   const oneYear = !element("includeComparatives").checked;
   for (const table of element("formSections").querySelectorAll(".ledger--years")) table.classList.toggle("ledger--one-year", oneYear);
   element("fixedAssetNoteFields").style.display = element("includeFixedAssetNote").checked ? "block" : "none";
@@ -1774,6 +1818,7 @@ function handleFormInput(event) {
   const control = event.target;
   if (control.id) state.edited.add(control.id);
   if (control.id?.startsWith("loanName")) syncRepaymentNames();
+  if (control.id === "periodStart") toggleSections();
   setDefaults();
   refresh();
 }
@@ -1934,9 +1979,10 @@ async function handleCompanySubmit(event) {
   window.hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
+    company = { ...companyFromProfile(profile), registeredOffice: profile.registeredOffice };
     element("formCompanyName").textContent = company.companyName;
     element("formCompanyNumber").textContent = company.companyNumber;
+    toggleSections();
     showView("formView");
     await ensureBundle();
     applyClientToForm();
@@ -2291,6 +2337,14 @@ function waitSeconds(seconds) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(seconds, 1) * 1000));
 }
 
+// HMRC's status of a return, in the word a sentence about the return reads it as. A return HMRC has
+// not settled reads as waiting, as the polls treat it, until HMRC answers ACCEPT or REJECT.
+function returnStatusWord(statusCode) {
+  if (statusCode === "ACCEPT") return siteText("ch.ct.status-accept", "accepted");
+  if (statusCode === "REJECT") return siteText("ch.ct.status-reject", "rejected");
+  return siteText("ch.ct.status-pending", "waiting to be checked");
+}
+
 async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
   let waitFor = firstWaitSeconds;
   let result;
@@ -2303,7 +2357,7 @@ async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
         siteText("ch.ct.return-word", "Return "),
         { strong: correlationId },
         siteText("ch.ct.is", " is "),
-        { strong: result.statusCode },
+        { strong: returnStatusWord(result.statusCode) },
         siteText("ch.ct.checking-again", ". Checking again..."),
       ),
     );
@@ -2417,7 +2471,7 @@ async function showOutcome(outcome) {
       siteText("ch.ct.not-settled", "HMRC has not settled the return yet. Return "),
       { strong: outcome.correlationId },
       siteText("ch.ct.is-still", " is still "),
-      { strong: outcome.statusCode },
+      { strong: returnStatusWord(outcome.statusCode) },
       siteText("ch.ct.full-stop", "."),
     ),
   );
@@ -2651,6 +2705,7 @@ function lockPeriodDates() {
 
 function unlockAccounts() {
   for (const control of accountsControls()) control.disabled = false;
+  applyFirstAccountsRule();
   element("accountsLockNote")?.remove();
   element("section-accounts")
     .querySelector("h3")
@@ -2703,7 +2758,7 @@ function chooseAmendedReturns(preview) {
 function showAmendPanel() {
   const accepted = sending.taxReturnAccepted && (sending.mode === "hmrc" || companiesHouseAccepted());
   element("amendPanel").style.display = accepted ? "block" : "none";
-  element("amendAccountsBtn").style.display = accepted && sending.mode === "both" ? "inline-block" : "none";
+  element("amendAccountsBtn").style.display = accepted && sending.mode === "both" && revisedAccountsOffered ? "inline-block" : "none";
   const firstReturnChanged =
     Boolean(sending.longPeriod) &&
     !sending.amendment &&
@@ -2730,12 +2785,13 @@ function startAmendment({ accounts }) {
     unlockFirstReturn();
   }
   if (accounts) {
-    sending.revision = { originalDateOfApproval: element("directorDateApproved").value, differences: "" };
+    sending.revision = { originalDateOfApproval: element("directorDateApproved").value, nonCompliance: "", amendments: "" };
     sending.companiesHouse = null;
     unlockAccounts();
   }
   if (sending.longPeriod) lockPeriodDates();
-  element("revisionDifferences").value = "";
+  element("revisionNonCompliance").value = "";
+  element("revisionAmendments").value = "";
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
   element("returnIrmark").style.display = "none";
@@ -2747,10 +2803,18 @@ function startAmendment({ accounts }) {
   showView("formView");
 }
 
-function revisionDifferencesProblem() {
-  const input = element("revisionDifferences");
-  if (input.value.trim()) return null;
-  return { input, message: siteText("ch.ct.say-differences", "Say what the revised accounts change") };
+// The two statements revised accounts make about the original accounts: one problem for each left empty.
+function revisionProblems() {
+  const problems = [];
+  const nonCompliance = element("revisionNonCompliance");
+  if (!nonCompliance.value.trim()) {
+    problems.push({ input: nonCompliance, message: siteText("ch.ct.say-non-compliance", "Say what was wrong with the original accounts") });
+  }
+  const amendments = element("revisionAmendments");
+  if (!amendments.value.trim()) {
+    problems.push({ input: amendments, message: siteText("ch.ct.say-amendments", "Say what the revised accounts change") });
+  }
+  return problems;
 }
 
 // What a reload needs of the two returns: which each has reached, never a code or a password.
@@ -2977,14 +3041,21 @@ function renderCompaniesHouse() {
     return;
   }
   outcome.className = "outcome";
+  const word = window.companiesHouseGatewayPoll.statusWord(statusCode);
   outcome.replaceChildren(
-    paragraph(
-      siteText("ch.ct.ch-not-settled", "Companies House has not settled the accounts yet. Submission "),
-      { strong: submissionNumber },
-      siteText("ch.ct.is", " is "),
-      { strong: statusCode },
-      siteText("ch.ct.full-stop", "."),
-    ),
+    word === null
+      ? paragraph(
+          siteText("ch.ct.ch-not-settled-alone", "Companies House has not settled the accounts yet."),
+          " ",
+          window.companiesHouseGatewayPoll.unknownStatusText(submissionNumber, statusCode),
+        )
+      : paragraph(
+          siteText("ch.ct.ch-not-settled", "Companies House has not settled the accounts yet. Submission "),
+          { strong: submissionNumber },
+          siteText("ch.ct.is", " is "),
+          { strong: word },
+          siteText("ch.ct.full-stop", "."),
+        ),
     ...(sending.taxReturnSent
       ? []
       : [
@@ -3210,7 +3281,7 @@ function renderLongOutcome() {
           siteText("ch.ct.return-part-word", "Return {part} of 2 ", { part }),
           { strong: entry.correlationId },
           siteText("ch.ct.is", " is "),
-          { strong: entry.statusCode },
+          { strong: returnStatusWord(entry.statusCode) },
           siteText("ch.ct.checking-again", ". Checking again..."),
         ),
       );
@@ -3315,6 +3386,7 @@ function lockFirstReturn() {
 
 function unlockFirstReturn() {
   for (const control of firstColumnControls()) control.disabled = false;
+  applyFirstAccountsRule();
   element("firstReturnLockNote")?.remove();
 }
 
@@ -3363,12 +3435,16 @@ async function handleSubmitReturn() {
     }
     window.formErrors.clearFormErrors();
     if (sending.amendment?.accounts) {
-      const differencesProblem = revisionDifferencesProblem();
-      if (differencesProblem) {
-        window.formErrors.showFormErrors([differencesProblem]);
+      const problems = revisionProblems();
+      if (problems.length) {
+        window.formErrors.showFormErrors(problems);
         return;
       }
-      sending.revision = { ...sending.revision, differences: element("revisionDifferences").value.trim() };
+      sending.revision = {
+        ...sending.revision,
+        nonCompliance: element("revisionNonCompliance").value.trim(),
+        amendments: element("revisionAmendments").value.trim(),
+      };
     }
   }
   await runSend(async () => {
@@ -3439,7 +3515,8 @@ function startAgain() {
   forgetJoint();
   hideAmendPanel();
   agentClient = null;
-  element("revisionDifferences").value = "";
+  element("revisionNonCompliance").value = "";
+  element("revisionAmendments").value = "";
   element("jointProgress").style.display = "none";
   element("booksImport").hidden = false;
   element("companyAuthCode").value = "";
@@ -3551,16 +3628,26 @@ async function loadAmendment(receiptName) {
       return;
     }
     if (receipt.kind === "companies-house-accounts" && !receipt.jointFilingId) {
-      refuseAmendment(
-        siteText(
-          "ch.ct.refuse-accounts-alone",
-          "These accounts were filed on their own. Amend the Company Tax Return filed with them, or file revised accounts from the start.",
-        ),
+      const cause = siteText(
+        "ch.ct.refuse-accounts-alone",
+        "These accounts were filed on their own, so they are revised on the accounts form, not with a Company Tax Return.",
       );
+      const failure = new Error(cause);
+      failure.failure = {
+        cause,
+        next: {
+          label: siteText("ch.ct.amend-accounts-alone", "Open these accounts, then choose Amend"),
+          href: `filings.html?receipt=${encodeURIComponent(receiptName)}`,
+        },
+      };
+      window.showFailure(failure, siteText("ch.ct.refuse-accounts-alone-title", "These accounts cannot be amended here"));
       return;
     }
     if (receipt.longPeriod && !(await loadFiledLongReturns(receipt))) return;
-    company = receipt.formRequest.company;
+    // The register says whether the filed accounts were the company's first; the receipt does not.
+    const profile = await window.getCompanyProfile(receipt.formRequest.company.companyNumber);
+    const { dateOfCreation, accountsLastPeriodStart } = companyFromProfile(profile);
+    company = { ...receipt.formRequest.company, dateOfCreation, accountsLastPeriodStart };
     element("formCompanyName").textContent = company.companyName;
     element("formCompanyNumber").textContent = company.companyNumber;
     fillValues(receipt.formRequest.values);

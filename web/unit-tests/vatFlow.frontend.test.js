@@ -180,6 +180,8 @@ describe("VAT Flow Frontend JavaScript", () => {
 
     // Execute the page script to define page-specific functions; the books import widget is not under test here
     window.booksImport = { mount() {} };
+    // developer-mode.js, which settles the HMRC account from the bundles, is not loaded here
+    window.readHmrcAccount = () => Promise.resolve(sessionStorage.getItem("hmrcAccount"));
     eval(submitVatPageSource);
   });
 

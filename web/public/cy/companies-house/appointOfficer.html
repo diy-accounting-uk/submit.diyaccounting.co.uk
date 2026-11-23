@@ -1,0 +1,579 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/appointOfficer.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Penodi cyfarwyddwr neu ysgrifennydd - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/appointOfficer.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/appointOfficer.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/appointOfficer.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/appointOfficer.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-appoint-officer.appoint-a-director-or-secretary-5be7fe">Penodi cyfarwyddwr neu ysgrifennydd</h1>
+      <p data-i18n="ch-appoint-officer.tell-companies-house-that-a-director-104587" class="subtitle">
+        Dweud wrth Dŷ’r Cwmnïau fod cyfarwyddwr neu ysgrifennydd wedi’i benodi
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-appoint-officer.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-appoint-officer.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-appoint-officer.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-appoint-officer.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-appoint-officer.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-appoint-officer.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-appoint-officer.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-appoint-officer.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-appoint-officer.look-up-the-company-570ac0"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="appoint-officer"
+          >
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Appointment form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-appoint-officer.who-is-being-appointed-978c9e">Pwy sy’n cael ei benodi?</h2>
+        <p data-i18n="ch-appoint-officer.company-3bc806">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+        </p>
+        <form id="appointmentForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-appoint-officer.appointment-8a4f95">Penodiad</legend>
+            <div class="choice">
+              <input type="radio" id="kindDirector" name="officerKind" value="director" checked /><label
+                data-i18n="ch-appoint-officer.a-director-who-is-a-person-6ef2be"
+                for="kindDirector"
+                >Cyfarwyddwr sy’n unigolyn</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="kindCorporateDirector" name="officerKind" value="corporate-director" /><label
+                data-i18n="ch-appoint-officer.a-corporate-director-a-company-or-518f84"
+                for="kindCorporateDirector"
+                >Cyfarwyddwr corfforaethol (cwmni neu ffyrm)</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="kindSecretary" name="officerKind" value="secretary" /><label
+                data-i18n="ch-appoint-officer.a-secretary-who-is-a-person-99d507"
+                for="kindSecretary"
+                >Ysgrifennydd sy’n unigolyn</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="kindCorporateSecretary" name="officerKind" value="corporate-secretary" /><label
+                data-i18n="ch-appoint-officer.a-corporate-secretary-a-company-or-a8fcbe"
+                for="kindCorporateSecretary"
+                >Ysgrifennydd corfforaethol (cwmni neu ffyrm)</label
+              >
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label data-i18n="ch-appoint-officer.date-of-appointment-b92224" for="appointmentDate">Dyddiad y penodiad</label>
+            <input type="date" id="appointmentDate" name="appointmentDate" required />
+          </div>
+
+          <div id="personFields">
+            <fieldset class="form-group">
+              <legend data-i18n="ch-appoint-officer.their-name-228e74">Eu henw</legend>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.title-optional-8280fb" for="officerTitle">Teitl (dewisol)</label>
+                <input type="text" id="officerTitle" name="officerTitle" autocomplete="off" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.first-forename-optional-91a29b" for="officerForename">Enw cyntaf (dewisol)</label>
+                <input type="text" id="officerForename" name="officerForename" autocomplete="off" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.other-forenames-optional-824237" for="officerOtherForenames"
+                  >Enwau cyntaf eraill (dewisol)</label
+                >
+                <input type="text" id="officerOtherForenames" name="officerOtherForenames" autocomplete="off" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.surname-f762da" for="officerSurname">Cyfenw</label>
+                <input type="text" id="officerSurname" name="officerSurname" autocomplete="off" maxlength="160" required />
+              </div>
+            </fieldset>
+
+            <fieldset class="form-group">
+              <legend data-i18n="ch-appoint-officer.former-name-optional-3817f3">Enw blaenorol (dewisol)</legend>
+              <p data-i18n="ch-appoint-officer.a-name-used-for-business-in-1d2523" id="formerName-hint" class="hint">
+                Enw a ddefnyddiwyd ar gyfer busnes yn yr 20 mlynedd diwethaf, fel enw cyn priodi. Gadewch yn wag os nad oes un.
+              </p>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.former-forename-optional-5ebc4b" for="formerForename"
+                  >Enw cyntaf blaenorol (dewisol)</label
+                >
+                <input
+                  type="text"
+                  id="formerForename"
+                  name="formerForename"
+                  autocomplete="off"
+                  maxlength="50"
+                  aria-describedby="formerName-hint"
+                />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.former-surname-optional-7042e5" for="formerSurname">Cyfenw blaenorol (dewisol)</label>
+                <input
+                  type="text"
+                  id="formerSurname"
+                  name="formerSurname"
+                  autocomplete="off"
+                  maxlength="50"
+                  aria-describedby="formerName-hint"
+                />
+              </div>
+            </fieldset>
+
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="serviceSameAsOffice" name="serviceSameAsOffice" /><label
+                  data-i18n="ch-appoint-officer.their-service-address-is-the-company-afb594"
+                  for="serviceSameAsOffice"
+                  >Swyddfa gofrestredig y cwmni yw eu cyfeiriad gohebiaeth</label
+                >
+              </div>
+            </div>
+            <fieldset id="serviceAddressFields" class="form-group">
+              <legend data-i18n="ch-appoint-officer.service-address-ef36f8">Cyfeiriad gohebiaeth</legend>
+              <p data-i18n="ch-appoint-officer.the-address-that-will-appear-on-3fa883" id="serviceAddress-hint" class="hint">
+                Y cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Nid oes rhaid iddo fod yn gyfeiriad eu cartref.
+              </p>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.building-name-or-number-bbd5d1" for="servicePremise">Enw neu rif yr adeilad</label>
+                <input
+                  type="text"
+                  id="servicePremise"
+                  name="servicePremise"
+                  maxlength="50"
+                  required
+                  aria-describedby="serviceAddress-hint"
+                />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.street-optional-b8fc5c" for="serviceStreet">Stryd (dewisol)</label>
+                <input type="text" id="serviceStreet" name="serviceStreet" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.town-or-city-9ce565" for="servicePostTown">Tref neu ddinas</label>
+                <input type="text" id="servicePostTown" name="servicePostTown" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.county-or-region-optional-8c5d96" for="serviceCounty"
+                  >Sir neu ranbarth (dewisol)</label
+                >
+                <input type="text" id="serviceCounty" name="serviceCounty" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.country-701d02" for="serviceCountry">Gwlad</label>
+                <select id="serviceCountry" name="serviceCountry" class="address-country" required></select>
+              </div>
+              <div id="serviceOtherCountryGroup" class="form-group" style="display: none">
+                <label data-i18n="ch-appoint-officer.country-name-48c90d" for="serviceOtherCountry">Enw’r wlad</label>
+                <input type="text" id="serviceOtherCountry" name="serviceOtherCountry" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.postcode-optional-042d21" for="servicePostcode">Cod post (dewisol)</label>
+                <input type="text" id="servicePostcode" name="servicePostcode" class="input--code" maxlength="15" />
+              </div>
+            </fieldset>
+
+            <div id="directorFields">
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.date-of-birth-eb4c4e" for="dateOfBirth">Dyddiad geni</label>
+                <input type="date" id="dateOfBirth" name="dateOfBirth" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.nationality-8fb1b6" for="nationality">Cenedligrwydd</label>
+                <p data-i18n="ch-appoint-officer.companies-house-use-our-list-of-a76124" id="nationality-hint" class="hint">
+                  Mae Tŷ’r Cwmnïau yn dweud mai dim ond cenedligrwyddau a gwledydd o’i restr safonol y mae’n eu derbyn.
+                  <a href="https://www.gov.uk/government/publications/nationalities" lang="en"
+                    >Nationalities and countries for company filings</a
+                  >
+                  <span class="lang-mark">(yn Saesneg)</span> Rhowch y cenedligrwydd yn Saesneg, fel y mae yn y rhestr.
+                </p>
+                <input type="text" id="nationality" name="nationality" maxlength="50" required aria-describedby="nationality-hint" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.country-where-they-usually-live-optional-abc4e0" for="countryOfResidence"
+                  >Y wlad lle maent yn byw fel arfer (dewisol)</label
+                >
+                <input type="text" id="countryOfResidence" name="countryOfResidence" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <div class="choice">
+                  <input type="checkbox" id="residentialSameAsService" name="residentialSameAsService" /><label
+                    data-i18n="ch-appoint-officer.their-home-address-is-the-same-8367eb"
+                    for="residentialSameAsService"
+                    >Mae cyfeiriad eu cartref yr un fath â’u cyfeiriad gohebiaeth</label
+                  >
+                </div>
+              </div>
+              <fieldset id="residentialAddressFields" class="form-group">
+                <legend data-i18n="ch-appoint-officer.home-address-63ab85">Cyfeiriad cartref</legend>
+                <p data-i18n="ch-appoint-officer.their-usual-home-address-8ae1c9" id="residentialAddress-hint" class="hint">
+                  Cyfeiriad arferol eu cartref.
+                </p>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.building-name-or-number-bbd5d1" for="residentialPremise"
+                    >Enw neu rif yr adeilad</label
+                  >
+                  <input
+                    type="text"
+                    id="residentialPremise"
+                    name="residentialPremise"
+                    maxlength="50"
+                    required
+                    aria-describedby="residentialAddress-hint"
+                  />
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.street-optional-b8fc5c" for="residentialStreet">Stryd (dewisol)</label>
+                  <input type="text" id="residentialStreet" name="residentialStreet" maxlength="50" />
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.town-or-city-9ce565" for="residentialPostTown">Tref neu ddinas</label>
+                  <input type="text" id="residentialPostTown" name="residentialPostTown" maxlength="50" required />
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.county-or-region-optional-8c5d96" for="residentialCounty"
+                    >Sir neu ranbarth (dewisol)</label
+                  >
+                  <input type="text" id="residentialCounty" name="residentialCounty" maxlength="50" />
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.country-701d02" for="residentialCountry">Gwlad</label>
+                  <select id="residentialCountry" name="residentialCountry" class="address-country" required></select>
+                </div>
+                <div id="residentialOtherCountryGroup" class="form-group" style="display: none">
+                  <label data-i18n="ch-appoint-officer.country-name-48c90d" for="residentialOtherCountry">Enw’r wlad</label>
+                  <input type="text" id="residentialOtherCountry" name="residentialOtherCountry" maxlength="50" required />
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.postcode-optional-042d21" for="residentialPostcode">Cod post (dewisol)</label>
+                  <input type="text" id="residentialPostcode" name="residentialPostcode" class="input--code" maxlength="15" />
+                </div>
+              </fieldset>
+
+              <fieldset class="form-group">
+                <legend data-i18n="ch-appoint-officer.identity-verification-b207ae">Gwiriad hunaniaeth</legend>
+                <p data-i18n="ch-appoint-officer.companies-house-all-directors-must-verify-dd50fd" class="hint">
+                  Mae Tŷ’r Cwmnïau yn dweud bod rhaid i bob cyfarwyddwr wirio ei hunaniaeth i brofi pwy ydyw, a bod angen rhoi cod personol
+                  Tŷ’r Cwmnïau y cyfarwyddwr a chadarnhau ei fod wedi gwirio ei hunaniaeth.
+                  <a href="https://www.gov.uk/government/publications/appoint-a-director-ap01" lang="en">Appoint a director (AP01)</a>
+                  <span class="lang-mark">(yn Saesneg)</span>
+                </p>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.companies-house-personal-code-07df48" for="personalCode"
+                    >Cod personol Tŷ’r Cwmnïau</label
+                  >
+                  <p data-i18n="ch-appoint-officer.the-11-character-code-the-director-21e289" id="personalCode-hint" class="hint">
+                    Y cod o 11 nod a gafodd y cyfarwyddwr ar ôl gwirio ei hunaniaeth, er enghraifft ABCDE123456.
+                    <a href="https://www.gov.uk/guidance/companies-house-personal-codes-for-identity-verification" lang="en"
+                      >Companies House personal codes for identity verification</a
+                    >
+                    <span class="lang-mark">(yn Saesneg)</span>
+                  </p>
+                  <input
+                    type="text"
+                    id="personalCode"
+                    data-gateway-text="off"
+                    name="personalCode"
+                    class="input--code"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="13"
+                    required
+                    aria-describedby="personalCode-hint"
+                  />
+                </div>
+                <div class="form-group">
+                  <div class="choice">
+                    <input type="checkbox" id="identityVerified" name="identityVerified" /><label
+                      data-i18n="ch-appoint-officer.the-director-has-verified-their-identity-ae2593"
+                      for="identityVerified"
+                      >Mae’r cyfarwyddwr wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau</label
+                    >
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-appoint-officer.if-their-name-here-differs-from-37111e" for="nameMismatchReason"
+                    >Os yw eu henw yma yn wahanol i’r enw a wiriwyd ganddynt, pam (dewisol)</label
+                  >
+                  <select id="nameMismatchReason" name="nameMismatchReason">
+                    <option data-i18n="ch-appoint-officer.the-names-match-4dc53d" value="">Mae’r enwau’n cyfateb</option>
+                    <option data-i18n="ch-appoint-officer.preferred-name-be5ede" value="PREFERRED_NAME">Enw dewisol</option>
+                    <option data-i18n="ch-appoint-officer.legally-changed-name-for-example-marriage-67aa4f" value="LEGALLY_CHANGED">
+                      Enw wedi’i newid yn gyfreithiol (er enghraifft, priodas neu ysgariad)
+                    </option>
+                    <option
+                      data-i18n="ch-appoint-officer.translation-or-a-different-naming-convention-3d40ed"
+                      value="TRANSLATION_OR_DIFF_CONV"
+                    >
+                      Cyfieithiad neu gonfensiwn enwi gwahanol
+                    </option>
+                    <option data-i18n="ch-appoint-officer.error-on-the-public-register-82b131" value="REGISTER_ERROR">
+                      Gwall ar y gofrestr gyhoeddus
+                    </option>
+                    <option data-i18n="ch-appoint-officer.prefer-not-to-say-51fcc5" value="NOT_SAY">
+                      Mae’n well gennyf beidio â dweud
+                    </option>
+                  </select>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+
+          <div id="corporateFields" style="display: none">
+            <div class="form-group">
+              <label data-i18n="ch-appoint-officer.name-of-the-corporate-body-or-f8339a" for="corporateName"
+                >Enw’r corff corfforaethol neu’r ffyrm</label
+              >
+              <input type="text" id="corporateName" name="corporateName" autocomplete="off" maxlength="160" required />
+            </div>
+            <fieldset id="corporateAddressFields" class="form-group">
+              <legend data-i18n="ch-appoint-officer.principal-office-address-5f41b9">Cyfeiriad y brif swyddfa</legend>
+              <p data-i18n="ch-appoint-officer.the-address-that-will-appear-on-56b48b" id="corporateAddress-hint" class="hint">
+                Y cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Rhaid iddo fod yn lleoliad ffisegol lle gellir danfon dogfennau.
+              </p>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.building-name-or-number-bbd5d1" for="corporatePremise">Enw neu rif yr adeilad</label>
+                <input
+                  type="text"
+                  id="corporatePremise"
+                  name="corporatePremise"
+                  maxlength="50"
+                  required
+                  aria-describedby="corporateAddress-hint"
+                />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.street-optional-b8fc5c" for="corporateStreet">Stryd (dewisol)</label>
+                <input type="text" id="corporateStreet" name="corporateStreet" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.town-or-city-9ce565" for="corporatePostTown">Tref neu ddinas</label>
+                <input type="text" id="corporatePostTown" name="corporatePostTown" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.county-or-region-optional-8c5d96" for="corporateCounty"
+                  >Sir neu ranbarth (dewisol)</label
+                >
+                <input type="text" id="corporateCounty" name="corporateCounty" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.country-701d02" for="corporateCountry">Gwlad</label>
+                <select id="corporateCountry" name="corporateCountry" class="address-country" required></select>
+              </div>
+              <div id="corporateOtherCountryGroup" class="form-group" style="display: none">
+                <label data-i18n="ch-appoint-officer.country-name-48c90d" for="corporateOtherCountry">Enw’r wlad</label>
+                <input type="text" id="corporateOtherCountry" name="corporateOtherCountry" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.postcode-optional-042d21" for="corporatePostcode">Cod post (dewisol)</label>
+                <input type="text" id="corporatePostcode" name="corporatePostcode" class="input--code" maxlength="15" />
+              </div>
+            </fieldset>
+
+            <fieldset class="form-group">
+              <legend data-i18n="ch-appoint-officer.is-it-a-limited-company-registered-de63f1">
+                Ai cwmni cyfyngedig sydd wedi’i gofrestru yn y DU ydyw?
+              </legend>
+              <div class="choice">
+                <input type="radio" id="corporateUkYes" name="corporateUk" value="yes" checked /><label
+                  data-i18n="ch-appoint-officer.yes-85a39a"
+                  for="corporateUkYes"
+                  >Ie</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="corporateUkNo" name="corporateUk" value="no" /><label
+                  data-i18n="ch-appoint-officer.no-1ea442"
+                  for="corporateUkNo"
+                  >Nage</label
+                >
+              </div>
+            </fieldset>
+            <div id="ukRegistrationFields" class="form-group">
+              <label data-i18n="ch-appoint-officer.company-registration-number-4cd520" for="ukRegistrationNumber"
+                >Rhif cofrestru’r cwmni</label
+              >
+              <input type="text" id="ukRegistrationNumber" name="ukRegistrationNumber" class="input--code" maxlength="20" required />
+            </div>
+            <div id="nonUkFields" style="display: none">
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.legal-form-of-the-corporate-body-c4ccd5" for="legalForm"
+                  >Ffurf gyfreithiol y corff corfforaethol neu’r ffyrm</label
+                >
+                <input type="text" id="legalForm" name="legalForm" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.governing-law-da3aaa" for="lawGoverned">Y gyfraith lywodraethol</label>
+                <input type="text" id="lawGoverned" name="lawGoverned" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.register-it-is-entered-in-with-77a384" for="placeRegistered"
+                  >Y gofrestr y mae wedi’i chofnodi ynddi, gyda’r wladwriaeth (dewisol)</label
+                >
+                <input type="text" id="placeRegistered" name="placeRegistered" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-appoint-officer.its-number-in-that-register-optional-feeb97" for="nonUkRegistrationNumber"
+                  >Ei rif yn y gofrestr honno (dewisol)</label
+                >
+                <input type="text" id="nonUkRegistrationNumber" name="nonUkRegistrationNumber" class="input--code" maxlength="20" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="consentToAct" name="consentToAct" /><label
+                data-i18n="ch-appoint-officer.the-company-confirms-that-the-person-cbc76e"
+                for="consentToAct"
+                >Mae’r cwmni’n cadarnhau bod yr unigolyn neu’r corff a enwir yma wedi cydsynio i weithredu yn y penodiad hwn.</label
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-appoint-officer.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-appoint-officer.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-appoint-officer.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-appoint-officer.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-appoint-officer.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-appoint-officer.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-appoint-officer.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-appoint-officer.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button data-i18n="ch-appoint-officer.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script type="module" src="../../lib/companies-house-text-check.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/appointOfficer.page.js"></script>
+  </body>
+</html>

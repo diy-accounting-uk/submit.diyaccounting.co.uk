@@ -3,7 +3,7 @@
 
 // @capability SITE-30 Build the Welsh pages
 // - **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
-// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
+// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block (and, on the home page, the list of the site's Welsh services), and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
 // - **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
 // - **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
 // - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/lib/welsh-text.js, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
@@ -56,11 +56,20 @@ export const WELSH_PAGES = [
   { id: "get-started", en: "get-started.html", cy: "cy/get-started.html", enUrl: `${SITE_ORIGIN}/get-started.html` },
   { id: "tools", en: "tools.html", cy: "cy/tools.html", enUrl: `${SITE_ORIGIN}/tools.html`, marks: "build" },
   { id: "bundles", en: "bundles.html", cy: "cy/bundles.html", enUrl: `${SITE_ORIGIN}/bundles.html`, marks: "build" },
+  { id: "pass", en: "pass.html", cy: "cy/pass.html", enUrl: `${SITE_ORIGIN}/pass.html`, marks: "build" },
   // The sign-in page; its OAuth callbacks stay at their registered English addresses.
   { id: "login", en: "auth/login.html", cy: "cy/auth/login.html", enUrl: `${SITE_ORIGIN}/auth/login.html`, marks: "build" },
   { id: "spreadsheets", en: "spreadsheets.html", cy: "cy/spreadsheets.html", enUrl: `${SITE_ORIGIN}/spreadsheets.html`, marks: "build" },
   { id: "mtd-calendar", en: "mtd-calendar.html", cy: "cy/mtd-calendar.html", enUrl: `${SITE_ORIGIN}/mtd-calendar.html`, marks: "build" },
   { id: "rates", en: "rates.html", cy: "cy/rates.html", enUrl: `${SITE_ORIGIN}/rates.html`, marks: "build" },
+  // The pages a customer relies on. help-page.js reads the questions of the Welsh copy from its own markup.
+  ...["privacy", "terms", "accessibility", "help"].map((id) => ({
+    id,
+    en: `${id}.html`,
+    cy: `cy/${id}.html`,
+    enUrl: `${SITE_ORIGIN}/${id}.html`,
+    marks: "build",
+  })),
   // LANG10a: the HMRC VAT pages and the receipts page, ids vat-* and receipt-*.
   ...[
     ["vat-submit", "hmrc/vat/submitVat.html"],
@@ -110,6 +119,14 @@ export const WELSH_PAGES = [
     en: "companies-house/companySearch.html",
     cy: "cy/companies-house/companySearch.html",
     enUrl: `${SITE_ORIGIN}/companies-house/companySearch.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-watch-list",
+    en: "companies-house/watchList.html",
+    cy: "cy/companies-house/watchList.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/watchList.html`,
     marks: "build",
     markAttributes: CH_MARK_ATTRIBUTES,
   },
@@ -170,10 +187,98 @@ export const WELSH_PAGES = [
     markAttributes: CH_MARK_ATTRIBUTES,
   },
   {
+    id: "ch-cease-psc",
+    en: "companies-house/ceasePsc.html",
+    cy: "cy/companies-house/ceasePsc.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/ceasePsc.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-change-ard",
+    en: "companies-house/changeAccountingRefDate.html",
+    cy: "cy/companies-house/changeAccountingRefDate.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeAccountingRefDate.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-records-location",
+    en: "companies-house/recordsLocation.html",
+    cy: "cy/companies-house/recordsLocation.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/recordsLocation.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-change-name",
+    en: "companies-house/changeCompanyName.html",
+    cy: "cy/companies-house/changeCompanyName.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeCompanyName.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-allot-shares",
+    en: "companies-house/allotShares.html",
+    cy: "cy/companies-house/allotShares.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/allotShares.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
     id: "ch-mcp-codes",
     en: "companies-house/mcpCodes.html",
     cy: "cy/companies-house/mcpCodes.html",
     enUrl: `${SITE_ORIGIN}/companies-house/mcpCodes.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-change-psc",
+    en: "companies-house/changePscDetails.html",
+    cy: "cy/companies-house/changePscDetails.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changePscDetails.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-remove-officer",
+    en: "companies-house/removeOfficer.html",
+    cy: "cy/companies-house/removeOfficer.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/removeOfficer.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-psc-statements",
+    en: "companies-house/pscStatements.html",
+    cy: "cy/companies-house/pscStatements.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/pscStatements.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-appoint-officer",
+    en: "companies-house/appointOfficer.html",
+    cy: "cy/companies-house/appointOfficer.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/appointOfficer.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-notify-psc",
+    en: "companies-house/notifyPsc.html",
+    cy: "cy/companies-house/notifyPsc.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/notifyPsc.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-change-officer",
+    en: "companies-house/changeOfficer.html",
+    cy: "cy/companies-house/changeOfficer.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeOfficer.html`,
     marks: "build",
     markAttributes: CH_MARK_ATTRIBUTES,
   },
@@ -443,7 +548,8 @@ function relocate(url, pages, page) {
 
 // HMRC's Welsh services. The HMRC Assist line names the VAT Return, so only the VAT pages and the
 // receipts page carry it.
-// The line under a GOV.UK quote that tax-sources.mjs writes: "Source: <a>GOV.UK, title</a> (checked 13 November 2026)".
+// The line under a source quote that tax-sources.mjs writes: "Source: <a>GOV.UK, title</a> (checked 13 November 2026)",
+// or legislation.gov.uk in place of GOV.UK for a statute.
 // The quote keeps its English words, each paragraph marked lang="en-GB"; the line is ours, so the copy
 // writes it in Welsh with the date in Welsh month names, and marks only the linked GOV.UK title as English.
 const SOURCE_FOOTER_PATTERN =
@@ -508,6 +614,15 @@ function welshServicesBlock(catalogue, page) {
   return `<aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>${block}</aside>`;
 }
 
+// The services the site gives in Welsh, listed on the Welsh home page. Its links name the English
+// files, and the copy's link pass sends each one to its Welsh copy.
+function welshOfferBlock(catalogue, page) {
+  if (page.id !== "index") return "";
+  const entry = catalogue.shared["welsh-offer"];
+  if (!entry || !entry.cy) throw new Error("shared.welsh-offer: no Welsh text in i18n/cy.toml");
+  return `<section class="welsh-offer" aria-labelledby="welshOfferHeading" data-welsh-offer>${entry.cy.trim()}</section>`;
+}
+
 export async function renderWelshPage(page, catalogue = loadCatalogue(), pages = WELSH_PAGES) {
   const english = readEnglishPage(page);
   for (const { hreflang, href } of expectedAlternates(page)) {
@@ -538,9 +653,14 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   );
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
-  html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue, page)}</main>`, `</main> in ${page.en}`);
+  html = replaceOnce(
+    html,
+    /<\/main>/,
+    `${welshOfferBlock(catalogue, page)}${welshServicesBlock(catalogue, page)}</main>`,
+    `</main> in ${page.en}`,
+  );
   html = html.replace(/<blockquote class="(source-quote[^"]*)">([\s\S]*?)<\/blockquote>/g, (whole, className, inner) => {
-    const quotes = inner.replace(/<p>/g, '<p lang="en-GB">');
+    const quotes = inner.replace(/<(p|ul)>/g, '<$1 lang="en-GB">');
     return `<blockquote class="${className}">${quotes.replace(SOURCE_FOOTER_PATTERN, (footer, link, day, month, year) => welshSourceFooter(catalogue, link, day, month, year))}</blockquote>`;
   });
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages, page)}${end}`);
@@ -562,7 +682,9 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
 // The Welsh text of every siteText call and the pages that have a Welsh copy, for page-chrome.js.
 export async function renderWelshText(catalogue = loadCatalogue(), scripts = scriptStrings(), pages = WELSH_PAGES) {
   const ids = [...new Set(scripts.map(({ id }) => id))].sort();
-  const text = Object.fromEntries(ids.map((id) => [id, welshText(catalogue, id)]));
+  // A fragment a script joins to a value ("Return ", " is ") keeps the spaces its Welsh entry states.
+  const fragments = new Set(scripts.filter(({ source }) => source !== source.trim()).map(({ id }) => id));
+  const text = Object.fromEntries(ids.map((id) => [id, fragments.has(id) ? catalogue.strings[id].cy : welshText(catalogue, id)]));
   const source = [
     "// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0",
     "// Copyright (C) 2006-2026 DIY Accounting Limited",

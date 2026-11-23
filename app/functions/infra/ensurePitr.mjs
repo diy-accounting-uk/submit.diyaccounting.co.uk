@@ -3,11 +3,11 @@
 
 // @capability OPS-132 Enable DynamoDB PITR on deploy
 // - **Use when:** a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
-// - **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time.
+// - **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time. With Wait "TableActive" it instead waits until a new table without PITR is ACTIVE, so its TTL, index and stream calls do not reach a CREATING table.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/infra/ensurePitr.mjs:onEvent`; `app/functions/infra/ensurePitr.mjs:isComplete`
 // - **Files:** app/functions/infra/ensurePitr.mjs, app/unit-tests/functions/ensurePitr.test.js
-// - **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups
+// - **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups, table active, creating
 // - **Related:** OPS-113
 // @end-capability
 
@@ -21,8 +21,18 @@
 // one immediate attempt (fast path for tables whose backups are already ready) and swallows that
 // one exception; isComplete then polls DescribeContinuousBackups, retrying the update once
 // ContinuousBackupsStatus turns ENABLED, until PointInTimeRecoveryStatus itself reports ENABLED.
+//
+// A resource with the property Wait "TableActive" is the wait of a table without PITR: onEvent
+// changes nothing and isComplete polls DescribeTable until TableStatus is ACTIVE.
 
-import { DynamoDBClient, UpdateContinuousBackupsCommand, DescribeContinuousBackupsCommand } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  UpdateContinuousBackupsCommand,
+  DescribeContinuousBackupsCommand,
+  DescribeTableCommand,
+} from "@aws-sdk/client-dynamodb";
+
+const TABLE_ACTIVE_WAIT = "TableActive";
 
 let dynamoDbClient = null;
 
@@ -55,9 +65,14 @@ async function enablePointInTimeRecovery(tableName) {
 
 export async function onEvent(event) {
   const tableName = event.ResourceProperties.TableName;
+  const waitsForActive = event.ResourceProperties.Wait === TABLE_ACTIVE_WAIT;
 
   if (event.RequestType === "Delete") {
-    return { PhysicalResourceId: event.PhysicalResourceId || physicalResourceIdFor(tableName) };
+    return { PhysicalResourceId: event.PhysicalResourceId || (waitsForActive ? `${tableName}-active` : physicalResourceIdFor(tableName)) };
+  }
+
+  if (waitsForActive) {
+    return { PhysicalResourceId: `${tableName}-active`, Data: { TableName: tableName } };
   }
 
   await enablePointInTimeRecovery(tableName);
@@ -73,6 +88,11 @@ export async function isComplete(event) {
   }
 
   const client = getDynamoDbClient();
+  if (event.ResourceProperties.Wait === TABLE_ACTIVE_WAIT) {
+    const { Table } = await client.send(new DescribeTableCommand({ TableName: tableName }));
+    return { IsComplete: Table?.TableStatus === "ACTIVE" };
+  }
+
   const { ContinuousBackupsDescription } = await client.send(new DescribeContinuousBackupsCommand({ TableName: tableName }));
 
   const pointInTimeRecoveryStatus = ContinuousBackupsDescription?.PointInTimeRecoveryDescription?.PointInTimeRecoveryStatus;

@@ -115,7 +115,7 @@ describe("derive_small_company_accounts", () => {
           expect(Math.abs(fixedAssetNoteNetBookValue(fixedAssetNote) - answer.balanceSheet.currentYear.fixedAssets)).toBeLessThan(5);
         }
         const xhtml = buildSmallCompanyAccounts({
-          companyNumber: "12345678",
+          companyNumber: "00000007",
           companyName: answer.companyName,
           registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
           periodStart: answer.periodStart,

@@ -47,7 +47,7 @@ function showFieldError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (!field || validationQuiet) return;
   if (errorSink) {
-    errorSink.push({ input: field, message });
+    errorSink.push({ input: field, message, passes: () => boxPasses(fieldId) });
     return;
   }
 
@@ -257,6 +257,21 @@ function validateAll9BoxFields() {
   return isValid;
 }
 
+// Whether one box now meets its rules, checked without writing beside the field.
+function boxPasses(fieldId) {
+  const value = document.getElementById(fieldId).value;
+  validationQuiet = true;
+  try {
+    if (fieldId === "netVatDue") return validateNetVatDue(value, fieldId);
+    if (["vatDueSales", "vatDueAcquisitions", "vatReclaimedCurrPeriod"].includes(fieldId)) {
+      return validateVatMonetaryAmount(value, fieldId, BOX_NAMES[fieldId]);
+    }
+    return validateVatWholeAmount(value, fieldId, BOX_NAMES[fieldId]);
+  } finally {
+    validationQuiet = false;
+  }
+}
+
 function boxesAreValid() {
   validationQuiet = true;
   try {
@@ -299,27 +314,27 @@ async function handleFormSubmission(event) {
   const vatBoxData = collect9BoxData();
 
   const errors = [];
+  const vatNumberInput = document.getElementById("vatNumber");
   if (!vatNumber) {
     errors.push({
-      input: document.getElementById("vatNumber"),
+      input: vatNumberInput,
       message: siteText("widget.required-vrn", "Enter your VAT registration number"),
+      passes: () => vatNumberInput.value.trim() !== "",
     });
   } else if (!/^\d{9}$/.test(vatNumber)) {
     errors.push({
-      input: document.getElementById("vatNumber"),
+      input: vatNumberInput,
       message: siteText("widget.vrn-nine-numbers", "The VAT registration number must be 9 numbers"),
+      passes: () => /^\d{9}$/.test(vatNumberInput.value.trim()),
     });
   }
-  if (!periodStart)
-    errors.push({
-      input: document.getElementById("periodStart"),
-      message: siteText("widget.required-period-start", "Enter the period start date"),
-    });
-  if (!periodEnd)
-    errors.push({
-      input: document.getElementById("periodEnd"),
-      message: siteText("widget.required-period-end", "Enter the period end date"),
-    });
+  for (const [id, filled, message] of [
+    ["periodStart", periodStart, () => siteText("widget.required-period-start", "Enter the period start date")],
+    ["periodEnd", periodEnd, () => siteText("widget.required-period-end", "Enter the period end date")],
+  ]) {
+    const input = document.getElementById(id);
+    if (!filled) errors.push({ input, message: message(), passes: () => input.value !== "" });
+  }
 
   errorSink = errors;
   try {
@@ -336,9 +351,11 @@ async function handleFormSubmission(event) {
   }
 
   if (!declaration) {
+    const declarationInput = document.getElementById("declaration");
     errors.push({
-      input: document.getElementById("declaration"),
+      input: declarationInput,
       message: siteText("vat-submit.tick-declaration", "Tick the box to confirm the declaration"),
+      passes: () => declarationInput.checked,
     });
   }
   window.formErrors.showFormErrors(errors);
@@ -355,7 +372,7 @@ async function handleFormSubmission(event) {
     allowSyntheticObligations,
   };
 
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   const requestData = JSON.stringify(submissionData);
 
   sessionStorage.setItem("submission_data", requestData);
@@ -447,7 +464,6 @@ function cancelRequest() {
   sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   // Show form and clear status
@@ -521,7 +537,6 @@ async function continueVatSubmission() {
     sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Submission failed, cleared session storage to prevent retry loop");
   } finally {
@@ -723,7 +738,7 @@ async function loadOpenObligations() {
       ...(await getGovClientHeaders()),
       "x-wait-time-ms": "0",
     };
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) requestHeaders["hmrcAccount"] = hmrcAccount;
 
     const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
@@ -780,7 +795,7 @@ async function resumeHmrcAssistCheck() {
 
 async function connectHmrc() {
   try {
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     const state = generateRandomState();
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem("currentActivity", location.pathname);
@@ -806,7 +821,7 @@ async function initializePage() {
   const periodStart = urlParams.get("periodStart");
   const periodEnd = urlParams.get("periodEnd");
   window.CarriedIdentifiers.bind("vrn", document.getElementById("vatNumber"));
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
 
   // If URL params provide complete period data, clear any stale submission_data
   // This handles navigation from obligations page where URL params should take precedence
@@ -836,28 +851,16 @@ async function initializePage() {
     document.getElementById("hmrcAssistStatusNote"),
   );
 
-  // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-    const testDataLink = document.getElementById("testDataLink");
-    if (testDataLink) {
-      testDataLink.classList.add("visible");
-    }
-  }
-
   // Developer mode is now controlled by the global toggle via developer-mode.js
   // Show developer section based on sessionStorage and listen for changes
   const devSection = document.getElementById("developerSection");
   const syntheticObligationsOption = document.getElementById("syntheticObligationsOption");
   // hmrcAccount was already declared above from urlParams
 
-  function updateDeveloperSectionVisibility() {
+  async function updateDeveloperSectionVisibility() {
     const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
-    // Re-read hmrcAccount from sessionStorage each time (may have been set by async bundle loading)
-    const currentHmrcAccount = sessionStorage.getItem("hmrcAccount");
+    // The account the bundle read has decided, read again each time as a second decision may change it
+    const currentHmrcAccount = await window.readHmrcAccount();
     if (devSection) {
       devSection.style.display = developerModeEnabled ? "block" : "none";
     }

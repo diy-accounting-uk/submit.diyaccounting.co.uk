@@ -6,19 +6,12 @@
 // statement, through the poll logic companiesHouseConfirmationStatementGet.js shares via
 // companiesHouseSubmissionStatus.js.
 
-import {
-  extractRequest,
-  http200OkResponse,
-  http404NotFoundResponse,
-  buildValidationError,
-  http500ServerErrorResponse,
-  getHeader,
-} from "../../lib/httpResponseHelper.js";
+import { extractRequest, http200OkResponse, buildValidationError, getHeader } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
-import { pollSubmission } from "../../services/companiesHouseSubmissionStatus.js";
+import { answerSubmissionPoll } from "../../services/companiesHouseSubmissionPollAnswer.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { readOwnPresenterFromHeaders } from "../../services/companiesHouseOwnPresenter.js";
 
@@ -75,30 +68,9 @@ export async function ingestHandler(event) {
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
-  const result = await pollSubmission({
-    userSub,
-    submissionNumber,
-    govTestScenario,
-    ownPresenter,
-    kind: "psc-verification-statement",
+  return answerSubmissionPoll({
+    request,
+    responseHeaders,
+    poll: { userSub, submissionNumber, govTestScenario, ownPresenter, kind: "psc-verification-statement" },
   });
-
-  if (result.notFound) {
-    return http404NotFoundResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Submission not found",
-    });
-  }
-
-  if (result.errors) {
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Companies House gateway returned an error while polling this submission",
-      error: { submissionNumber, errors: result.errors },
-    });
-  }
-
-  return http200OkResponse({ request, headers: { ...responseHeaders }, data: result.data });
 }

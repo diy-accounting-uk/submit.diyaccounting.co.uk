@@ -34,12 +34,16 @@ function figuresOf(mapped, lines) {
 }
 
 describe("the builders' accounts read back through the diya-gl reader", () => {
-  test("the fixture holds the four accounts cases", () => {
+  test("the fixture holds the four accounts cases and a revision of each", () => {
     expect(cases.map((testCase) => testCase.name)).toEqual([
       "micro-entity-accounts",
       "micro-entity-accounts-dormant",
       "small-company-accounts-full",
       "small-company-accounts-filleted",
+      "micro-entity-accounts-revised",
+      "micro-entity-accounts-dormant-revised",
+      "small-company-accounts-full-revised",
+      "small-company-accounts-filleted-revised",
     ]);
   });
 

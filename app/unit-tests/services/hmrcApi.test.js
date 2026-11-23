@@ -424,3 +424,214 @@ describe("services/hmrcApi", () => {
     });
   });
 });
+
+describe("the HMRC request lines", () => {
+  it("log the answer's top-level field names and its status, and audit the answer whole", async () => {
+    const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
+    const answer = { obligations: [{ periodKey: "26A1", start: "2026-01-01", end: "2026-03-31", status: "O" }], vatDue: 4321.55 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(answer),
+        headers: { forEach: (fn) => fn("application/json", "content-type") },
+      }),
+    );
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const govClientHeaders = { "Gov-Client-Device-ID": "dev" };
+      await hmrcHttpGet(
+        "/organisations/vat/176493528/obligations",
+        buildHmrcHeaders("token-123", govClientHeaders, "SCENARIO", "r1", null, "c1"),
+        govClientHeaders,
+        "SCENARIO",
+        "synthetic",
+        {},
+        "user-sub-1",
+      );
+    } finally {
+      write.mockRestore();
+    }
+    const responseLine = lines
+      .join("")
+      .split("\n")
+      .filter(Boolean)
+      .map((text) => JSON.parse(text))
+      .find((entry) => String(entry.message).startsWith("Response from GET"));
+
+    expect(responseLine).toMatchObject({ status: 200, responseFields: ["obligations", "vatDue"] });
+    expect(responseLine).not.toHaveProperty("hmrcResponseBody");
+    for (const value of ["26A1", "4321.55", "2026-03-31"]) expect(JSON.stringify(responseLine)).not.toContain(value);
+    expect(putHmrcApiRequest).toHaveBeenCalledWith(
+      "user-sub-1",
+      expect.objectContaining({ httpResponse: expect.objectContaining({ body: answer }) }),
+    );
+  });
+
+  it("name the VAT number in the path in place of its value", async () => {
+    const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ obligations: [] }),
+        headers: { forEach: (fn) => fn("application/json", "content-type") },
+      }),
+    );
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const govClientHeaders = { "Gov-Client-Device-ID": "dev" };
+      await hmrcHttpGet(
+        "/organisations/vat/176493528/obligations",
+        buildHmrcHeaders("token-123", govClientHeaders, "SCENARIO", "r1", null, "c1"),
+        govClientHeaders,
+        "SCENARIO",
+        "synthetic",
+        {},
+        "user-sub-1",
+      );
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("/organisations/vat/{vrn}/obligations");
+    expect(logged).not.toContain("[VRN]/obligations");
+    expect(logged).not.toContain("176493528");
+  });
+
+  it("log each query parameter's name and never its value", async () => {
+    const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ obligations: [] }),
+        headers: { forEach: (fn) => fn("application/json", "content-type") },
+      }),
+    );
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const govClientHeaders = { "Gov-Client-Device-ID": "dev" };
+      await hmrcHttpGet(
+        "/organisations/vat/obligations",
+        buildHmrcHeaders("token-123", govClientHeaders, "SCENARIO", "r1", null, "c1"),
+        govClientHeaders,
+        "SCENARIO",
+        "synthetic",
+        { from: "2025-04-06", to: "2026-04-05", status: "O" },
+        "user-sub-1",
+      );
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("/organisations/vat/obligations?from={from}&to={to}&status={status}");
+    for (const value of ["2025-04-06", "2026-04-05", "status=O"]) expect(logged).not.toContain(value);
+  });
+});
+
+describe("the lines of a failed HMRC answer", () => {
+  it.each(["http400BadRequestFromHmrcResponse", "http404NotFoundFromHmrcResponse", "http500ServerErrorFromHmrcResponse"])(
+    "%s logs the route's pattern and the query's names, never a value",
+    async (name) => {
+      const hmrcApi = await import("@app/services/hmrcApi.js");
+      const { context } = await import("@app/lib/logger.js");
+      const request = new URL("https://submit.example/api/v1/hmrc/vat/return/2026A1?vrn=176540158&periodKey=26A1&from=2026-01-01");
+      const lines = [];
+      const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+      try {
+        context.run(new Map([["loggedPath", "/api/v1/hmrc/vat/return/{periodKey}"]]), () =>
+          hmrcApi[name](request, { status: 400, data: { code: "X" } }, {}),
+        );
+      } finally {
+        write.mockRestore();
+      }
+      const logged = lines.join("");
+
+      expect(logged).toContain("https://submit.example/api/v1/hmrc/vat/return/{periodKey}?vrn={vrn}&periodKey={periodKey}&from={from}");
+      for (const value of ["176540158", "26A1", "2026-01-01", "2026A1"]) expect(logged).not.toContain(value);
+    },
+  );
+});
+
+describe("the HMRC error lines", () => {
+  const errorAnswer = {
+    code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+    message: "An empty or non-matching body was submitted",
+    paths: ["/periodIncome/turnover"],
+    errors: [
+      { code: "FORMAT_VALUE", message: "The value 12345.678 for turnover is not valid", path: "/periodIncome/turnover" },
+      { code: "FORMAT_NINO", message: "The provided NINO is invalid", path: "/nino" },
+    ],
+  };
+
+  it("hold HMRC's code and the code and field path of each error, and none of HMRC's message", async () => {
+    const { loggedHmrcErrorOf } = await import("@app/services/hmrcApi.js");
+
+    expect(loggedHmrcErrorOf(errorAnswer)).toEqual({
+      code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+      paths: ["/periodIncome/turnover", "/nino"],
+      errors: [
+        { code: "FORMAT_VALUE", path: "/periodIncome/turnover" },
+        { code: "FORMAT_NINO", path: "/nino" },
+      ],
+      messageOmitted: true,
+    });
+    expect(loggedHmrcErrorOf({ code: "INVALID_REQUEST", message: "Reference 'X1234' was not found" })).toEqual({
+      code: "INVALID_REQUEST",
+      paths: [],
+      errors: [],
+      messageOmitted: true,
+    });
+    expect(loggedHmrcErrorOf(undefined)).toEqual({ paths: [], errors: [] });
+  });
+
+  it("leave out a message that repeats a submitted name in letters alone", async () => {
+    const { loggedHmrcErrorOf } = await import("@app/services/hmrcApi.js");
+    const answer = {
+      code: "RULE_BUSINESS_NAME_MISMATCH",
+      message: "The trading name Jane Smith Plumbing does not match the business",
+      errors: [{ code: "RULE_BUSINESS_NAME_MISMATCH", message: "Jane Smith Plumbing is not the registered name", path: "/tradingName" }],
+    };
+
+    const logged = JSON.stringify(loggedHmrcErrorOf(answer));
+
+    expect(logged).not.toContain("Jane Smith");
+    expect(logged).toContain("RULE_BUSINESS_NAME_MISMATCH");
+    expect(logged).toContain("/tradingName");
+  });
+
+  it.each([
+    ["http400BadRequestFromHmrcResponse", 400],
+    ["http404NotFoundFromHmrcResponse", 404],
+    ["http500ServerErrorFromHmrcResponse", 500],
+    ["http403ForbiddenFromHmrcResponse", 403],
+  ])("%s logs the error's codes and paths and none of its values, and answers the caller with HMRC's answer", async (name, status) => {
+    const hmrcApi = await import("@app/services/hmrcApi.js");
+    const answer = { ...errorAnswer, message: "The value 98765 was refused" };
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    let response;
+    try {
+      const first = name === "http403ForbiddenFromHmrcResponse" ? "token-123" : new URL("https://submit.example/api/v1/hmrc/itsa/period");
+      response = hmrcApi[name](first, { status, data: answer }, {});
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("FORMAT_VALUE");
+    expect(logged).toContain("/periodIncome/turnover");
+    for (const value of ["98765", "12345.678"]) expect(logged).not.toContain(value);
+    expect(JSON.stringify(JSON.parse(response.body))).toContain("FORMAT_VALUE");
+  });
+});

@@ -20,6 +20,7 @@ import { fetchWithTimeout } from "./httpFetch.js";
 import { hmrcCallTarget } from "./hmrcHosts.js";
 import { callActorClass, integrationApi, recordedFetch } from "./integrationCalls.js";
 import { warmOperators } from "./operators.js";
+import { eventWithLoggedPath, loggedPathOf, loggedQueryOf } from "./loggedPath.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
 
@@ -236,10 +237,11 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
       ...data,
     }),
   };
-  // Log only fields that cannot carry a secret: the request path (no query string),
-  // the response status and the request id. Never the raw response body/headers or
-  // anything sourced from process.env, both of which can carry customer or credential data.
-  const requestPath = request instanceof URL ? request.pathname : undefined;
+  // Log only fields that cannot carry a secret: the route pattern of the request (no query string,
+  // no path parameter values), the response status and the request id. Never the raw response
+  // body/headers or anything sourced from process.env, both of which can carry customer or
+  // credential data.
+  const requestPath = request instanceof URL ? (context.get("loggedPath") ?? request.pathname) : undefined;
   if (requestPath) {
     levelledLogger({
       message: "Responding to request with response",
@@ -301,7 +303,7 @@ function redactPresenterHeaders(headers) {
 
 // The event minus its body: request line, route, headers and requestContext, plus the body's size and content type.
 export function describeEventWithoutBody(event) {
-  const { body, ...eventWithoutBody } = event || {};
+  const { body, ...eventWithoutBody } = eventWithLoggedPath(event) || {};
   let bodyLength = 0;
   if (typeof body === "string") bodyLength = body.length;
   else if (body !== undefined && body !== null) bodyLength = JSON.stringify(body).length;
@@ -328,6 +330,8 @@ export function extractRequest(event) {
   context.set("amznTraceId", amznTraceId);
   context.set("traceparent", traceparent);
   context.set("correlationId", correlationId);
+  const loggedPath = loggedPathOf(event);
+  context.set("loggedPath", loggedPath || undefined);
   if (event.headers) {
     try {
       let baseRequestUrl;
@@ -349,7 +353,7 @@ export function extractRequest(event) {
       }
       logger.info({
         message: "Processing request with event",
-        request: sanitiseString(request.toString()),
+        request: sanitiseString(`${request.origin}${loggedPath}${loggedQueryOf(request.searchParams)}`),
         event: describeEventWithoutBody(event),
       });
     } catch (err) {

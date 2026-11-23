@@ -231,6 +231,11 @@
     {
       "table": "practice-clients",
       "sortKey": "clientId"
+    },
+    {
+      "table": "due-list",
+      "sortKey": "sk",
+      "recountedItems": ["count"]
     }
   ],
   "rowTables": [
@@ -261,5 +266,5 @@
       "reason": "Sessions, HMRC grants, Companies House grants and codes entries expire within 24 hours. A client whose session no longer matches opens a new one."
     }
   ],
-  "noHashTables": ["bundle-capacity", "alarm-issue-locks", "integration-calls", "trusted-events"]
+  "noHashTables": ["bundle-capacity", "alarm-issue-locks", "integration-calls", "trusted-events", "companies-house-cache"]
 }

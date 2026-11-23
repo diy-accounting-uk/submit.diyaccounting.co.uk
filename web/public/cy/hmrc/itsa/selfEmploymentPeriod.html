@@ -34,10 +34,14 @@
     </header>
 
     <main id="mainContent">
-      <p data-i18n="itsa-se-period.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
-        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
-        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
-        ddiweddariad yn 2027.
+      <p
+        data-i18n="itsa-se-period.status-production-this-uses-your-real-57175d"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator">
         <span data-i18n="itsa-se-period.synthetic-mode-calls-go-to-hmrc-efa44d"
@@ -165,7 +169,7 @@
             <div class="form-group">
               <label data-i18n="itsa-se-period.turnover-8ecaf1" for="turnover">Trosiant</label>
               <p data-i18n="itsa-se-period.the-takings-fees-sales-or-money-796061" id="turnover-hint" class="hint">
-                Yr enillion, ffioedd, gwerthiannau neu’r arian a enillwyd gan y busnes ar gyfer y cyfnod hwn. Nodwch 0 os nad oes dim.
+                Y derbyniadau, ffioedd, gwerthiannau neu’r arian a enillwyd gan y busnes ar gyfer y cyfnod hwn. Nodwch 0 os nad oes dim.
               </p>
               <p data-i18n="itsa-se-period.for-example-600-or-193-54-59a197" id="turnover-money-hint" class="hint">
                 Er enghraifft, £600 neu £193.54
@@ -333,6 +337,7 @@
     <script src="../../../widgets/pass-redeemer.js"></script>
     <script src="../../../widgets/books-import.js"></script>
     <script src="../../../widgets/submission-cost.js"></script>
+    <script src="../../../lib/hmrc-sandbox-status.js"></script>
     <script src="../../../hmrc/itsa/selfEmploymentPeriod.page.js"></script>
   </body>
 </html>

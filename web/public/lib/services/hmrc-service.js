@@ -825,6 +825,7 @@ export async function getBsasSelfEmployment(
     console.error(message);
     const error = new Error(message);
     error.status = response.status;
+    error.service = "hmrc";
     throw error;
   }
   return responseJson;
@@ -1367,6 +1368,7 @@ export async function getBsasUkProperty(
     console.error(message);
     const error = new Error(message);
     error.status = response.status;
+    error.service = "hmrc";
     throw error;
   }
   return responseJson;
@@ -1765,6 +1767,7 @@ export async function postFinalDeclaration(
       console.warn("Final declaration blocked: token allowance used up");
       const error = new Error("Token limit reached");
       error.status = response.status;
+      error.service = "hmrc";
       error.reason = responseJson.reason;
       error.tokensRemaining = responseJson.tokensRemaining;
       throw error;
@@ -2068,6 +2071,7 @@ if (typeof window !== "undefined") {
 function requestFailure(message, response, responseJson) {
   const error = new Error(message);
   error.status = response.status;
+  error.service = "hmrc";
   error.code = responseJson?.responseBody?.code || responseJson?.code || "";
   error.reason = responseJson?.reason;
   return error;

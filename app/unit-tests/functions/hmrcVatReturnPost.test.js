@@ -53,6 +53,10 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
   chargeTokenOnSuccess: vi.fn().mockResolvedValue({ consumed: true, tokensRemaining: 2, cost: 1 }),
 }));
 
+// The due list row a filed return closes.
+const mockCloseVatReturnRow = vi.fn();
+vi.mock("@app/data/dynamoDbDueListRepository.js", () => ({ closeVatReturnRow: (...args) => mockCloseVatReturnRow(...args) }));
+
 // Defer importing the ingestHandlers until after mocks are defined
 const mockRequestCustomerEmail = vi.fn();
 vi.mock("@app/lib/customerEmailRequest.js", () => ({ requestCustomerEmail: (...args) => mockRequestCustomerEmail(...args) }));
@@ -61,7 +65,12 @@ vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
   (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
 );
 
-import { ingestHandler as hmrcVatReturnPostHandler, extractAndValidateParameters } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import {
+  ingestHandler as hmrcVatReturnPostHandler,
+  extractAndValidateParameters,
+  closeDueListVatRow,
+  DUE_LIST_ROW_CLOSE_LIMIT_MS,
+} from "@app/functions/hmrc/hmrcVatReturnPost.js";
 import { HmrcTimeoutError } from "@app/services/hmrcApi.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -118,6 +127,7 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     });
     // Default: obligations resolve successfully
     mockObligationsSuccess();
+    mockCloseVatReturnRow.mockResolvedValue({ matched: 0, closed: false });
   });
 
   test("HEAD request returns 200 OK", async () => {
@@ -375,6 +385,74 @@ describe("hmrcVatReturnPost ingestHandler", () => {
         data: expect.objectContaining({ receiptId: body.receiptId, receiptKind: "vat-return" }),
       }),
     );
+  });
+
+  describe("the due list row a filed return closes", () => {
+    const receipt = { formBundleNumber: "123456789012", chargeRefNumber: "XM002610011594", processingDate: "2023-01-01T12:00:00.000Z" };
+    const filingEvent = (body = {}) =>
+      buildHmrcEvent({
+        headers: hmrcGrantHeader("test-token"),
+        body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, ...body },
+      });
+
+    async function storedReceipts() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      return mockSend.mock.calls
+        .filter(([cmd]) => cmd instanceof lib.PutCommand && cmd.input.TableName === process.env.RECEIPTS_DYNAMODB_TABLE_NAME)
+        .map(([cmd]) => cmd.input.Item);
+    }
+
+    test("closes the account's row for the period the return covers, after the receipt is stored", async () => {
+      mockHmrcSuccess(mockFetch, receipt);
+
+      const response = await hmrcVatReturnPostHandler(filingEvent());
+
+      expect(response.statusCode).toBe(200);
+      expect(mockCloseVatReturnRow).toHaveBeenCalledTimes(1);
+      expect(mockCloseVatReturnRow).toHaveBeenCalledWith(expect.any(String), TEST_PERIOD_END);
+      expect(await storedReceipts()).toHaveLength(1);
+    });
+
+    test("leaves a practice's own list as it is when the practice files for a client", async () => {
+      await closeDueListVatRow("practice-sub", TEST_PERIOD_END, "client-1");
+      expect(mockCloseVatReturnRow).not.toHaveBeenCalled();
+    });
+
+    test("stops waiting for a row close that does not answer within the limit", async () => {
+      vi.useFakeTimers();
+      try {
+        mockCloseVatReturnRow.mockReturnValue(new Promise(() => {}));
+        let settled = false;
+        const closing = closeDueListVatRow("user-1", TEST_PERIOD_END).then(() => (settled = true));
+
+        await vi.advanceTimersByTimeAsync(DUE_LIST_ROW_CLOSE_LIMIT_MS - 1);
+        expect(settled).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        await closing;
+        expect(settled).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    test("answers the same 200 and stores the same receipt when the row close throws", async () => {
+      mockHmrcSuccess(mockFetch, receipt);
+      const answered = parseResponseBody(await hmrcVatReturnPostHandler(filingEvent()));
+      const firstReceipt = (await storedReceipts())[0];
+      mockSend.mockClear();
+      mockCloseVatReturnRow.mockRejectedValue(new Error("the due list table is not there"));
+      mockHmrcSuccess(mockFetch, receipt);
+
+      const response = await hmrcVatReturnPostHandler(filingEvent());
+
+      expect(response.statusCode).toBe(200);
+      const body = parseResponseBody(response);
+      expect(body.receipt).toEqual(answered.receipt);
+      expect(body.receiptId).toContain(receipt.formBundleNumber);
+      const [stored] = await storedReceipts();
+      expect(stored.receipt).toEqual(firstReceipt.receipt);
+      expect(stored.receiptId).toBe(body.receiptId);
+    });
   });
 
   test("returns 500 on HMRC API error", async () => {

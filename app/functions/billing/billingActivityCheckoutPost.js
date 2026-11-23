@@ -42,19 +42,29 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Resolve the Stripe price ID for an activity's per-filing charge. Env var pattern:
- * STRIPE_[TEST_]PRICE_ID_FILE_CONFIRMATION_STATEMENT for an activity with a single price,
- * same suffix rule as resolveStripePriceId in billingCheckoutPost.js.
+ * The price row a checkout charges: for an activity whose prices carry a key (the change of
+ * name's standard and same-day services), the row whose key the caller names, or null when it
+ * names none of them; otherwise the default row.
+ * @param {object} activity
+ * @param {string} [priceKey]
  */
-function resolveActivityStripePriceId(activity, isSynthetic) {
+function chosenActivityPrice(activity, priceKey) {
   const prices = getActivityPrices(activity);
-  const price = prices.find((p) => p.default) || prices[0];
-  if (!price) {
-    logger.warn({ message: "Activity has no Stripe price", activityId: activity.id });
-    return undefined;
-  }
+  if (prices.some((p) => p.key)) return prices.find((p) => p.key === priceKey) ?? null;
+  return prices.find((p) => p.default) || prices[0] || null;
+}
+
+/**
+ * Resolve the Stripe price ID for an activity's per-filing charge. Env var pattern:
+ * STRIPE_[TEST_]PRICE_ID_FILE_CONFIRMATION_STATEMENT for an activity with a single price, and
+ * STRIPE_[TEST_]PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY for one of several, named by the price's key
+ * (or its interval), the names infra/stripe/stripe-sync.js writes.
+ */
+function resolveActivityStripePriceId(activity, price, isSynthetic) {
+  const prices = getActivityPrices(activity);
   const activitySuffix = activity.id.toUpperCase().replace(/-/g, "_");
-  const suffix = prices.length > 1 ? `_${activitySuffix}_${price.interval.toUpperCase()}` : `_${activitySuffix}`;
+  const priceName = (price.key ?? price.interval).toUpperCase().replace(/-/g, "_");
+  const suffix = prices.length > 1 ? `_${activitySuffix}_${priceName}` : `_${activitySuffix}`;
   const prefix = isSynthetic ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
   const envVar = `${prefix}${suffix}`;
   const priceId = process.env[envVar];
@@ -139,6 +149,15 @@ export async function ingestHandler(event) {
         error: { code: "activity-not-payable" },
       });
     }
+    const price = chosenActivityPrice(activity, body.priceKey);
+    if (!price) {
+      return http400BadRequestResponse({
+        request,
+        headers: responseHeaders,
+        message: "unknown-price",
+        error: { code: "unknown-price", priceKeys: getActivityPrices(activity).map((p) => p.key) },
+      });
+    }
 
     if (await hasPaidCharge(userSub, activityId, subjectKey)) {
       return http409ConflictResponse({
@@ -149,7 +168,7 @@ export async function ingestHandler(event) {
       });
     }
 
-    const priceId = resolveActivityStripePriceId(activity, isSynthetic);
+    const priceId = resolveActivityStripePriceId(activity, price, isSynthetic);
     const returnTo = resolveAllowedReturnTo(body.returnTo);
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
 
@@ -170,7 +189,7 @@ export async function ingestHandler(event) {
       mode: "payment",
       customer_email: userEmail,
       client_reference_id: hashedSub,
-      metadata: { hashedSub, activityId, subjectKey },
+      metadata: { hashedSub, activityId, subjectKey, ...(price.key ? { priceKey: price.key } : {}) },
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: returnTo
         ? `${returnTo}?checkout=success&session_id={CHECKOUT_SESSION_ID}`

@@ -327,6 +327,48 @@ describe("bundleGet ingestHandler", () => {
     expect(updateCmd.input.UpdateExpression).toMatch(/tokensConsumed\s*=\s*:zero/);
   });
 
+  test("a bundle granted with a pass's own tokens refreshes to those tokens on its own interval", async () => {
+    const userId = "user-token-refresh-pass-terms";
+    const token = makeIdToken(userId);
+    const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "500";
+
+    const bundlesTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+    // resident-vat-comp refreshes 100 tokens monthly in the catalogue; the pass set 25 every 7 days.
+    const passGranted = {
+      hashedSub: "hashed-" + userId,
+      bundleId: "resident-vat-comp",
+      tokensGranted: 25,
+      tokensConsumed: 25,
+      tokenRefreshInterval: "P7D",
+      tokenResetAt: "1970-01-01T00:00:00.000Z",
+    };
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand && cmd.input.TableName === bundlesTableName) {
+        return { Items: [passGranted], Count: 1 };
+      }
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      if (cmd instanceof MockGetCommand) {
+        return { Item: undefined };
+      }
+      return {};
+    });
+
+    const before = Date.now();
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const updateCmd = mockSend.mock.calls
+      .map((call) => call[0])
+      .find((cmd) => cmd instanceof MockUpdateCommand && cmd.input.TableName === bundlesTableName);
+    expect(updateCmd.input.ExpressionAttributeValues[":granted"]).toBe(25);
+    const nextReset = new Date(updateCmd.input.ExpressionAttributeValues[":resetAt"]).getTime();
+    expect(Math.abs(nextReset - (before + 7 * 24 * 60 * 60 * 1000))).toBeLessThan(60_000);
+  });
+
   test("a token refresh that finds the bundle item gone leaves the bundle as read and still answers 200", async () => {
     const userId = "user-token-refresh-gone";
     const event = buildEventWithToken(makeIdToken(userId), {});

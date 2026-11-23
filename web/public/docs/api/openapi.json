@@ -21,6 +21,13 @@
     "description" : "DIY Accounting Submit API documentation"
   } ],
   "paths" : {
+    "/account/acquisition" : {
+      "post" : {
+        "summary" : "Record an account's source",
+        "description" : "Publishes an account-acquisition event with the landing fields the authenticated user arrived with, posted once after a sign-in",
+        "operationId" : "recordAccountAcquisition"
+      }
+    },
     "/account/settings" : {
       "put" : {
         "summary" : "Change account settings",
@@ -353,24 +360,31 @@
         }
       }
     },
+    "/companies-house/accounting-reference-date" : {
+      "post" : {
+        "summary" : "Submit a change of accounting reference date",
+        "description" : "Builds the ChangeAccountingReferenceDate body, the change of a company's accounting reference date, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseAccountingReferenceDate"
+      }
+    },
     "/companies-house/accounts" : {
       "post" : {
-        "summary" : "Submit a micro-entity accounts filing",
-        "description" : "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
+        "summary" : "Submit a micro-entity, small company or revised accounts filing",
+        "description" : "Generates the iXBRL for FRS 105 micro-entity or FRS 102 section 1A small company accounts and submits it through the Companies House XML Gateway; a request with a revision files revised accounts that replace accounts already filed for the period",
         "operationId" : "postCompaniesHouseAccounts"
       }
     },
     "/companies-house/accounts/render" : {
       "post" : {
-        "summary" : "Render a micro-entity accounts filing for review",
-        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+        "summary" : "Render a micro-entity, small company or revised accounts filing for review",
+        "description" : "Renders the iXBRL of FRS 105 micro-entity or FRS 102 section 1A small company accounts without submitting it; a request with a revision renders revised micro-entity or small company accounts with their revision page",
         "operationId" : "renderCompaniesHouseAccounts"
       }
     },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
-        "summary" : "Poll a micro-entity accounts filing",
-        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
+        "summary" : "Poll a micro-entity, small company or revised accounts filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted micro-entity, small company or revised accounts filing",
         "operationId" : "getCompaniesHouseAccounts",
         "parameters" : [ {
           "name" : "submissionNumber",
@@ -381,6 +395,20 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/companies-house/allotment-of-shares" : {
+      "post" : {
+        "summary" : "Submit a return of allotment of shares",
+        "description" : "Builds the ReturnofAllotmentShares body, the return of an allotment of shares with the statement of capital after it, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseAllotmentOfShares"
+      }
+    },
+    "/companies-house/change-of-name" : {
+      "post" : {
+        "summary" : "Submit a change of company name",
+        "description" : "Builds the ChangeOfName body, the notice of a change of company name, with any supporting letter, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseChangeOfName"
       }
     },
     "/companies-house/company/{companyNumber}" : {
@@ -399,11 +427,83 @@
         } ]
       }
     },
+    "/companies-house/company/{companyNumber}/filed-accounts" : {
+      "get" : {
+        "summary" : "List a company's filed accounts",
+        "description" : "Lists the sets of accounts Companies House holds for a company: made-up date, filing date, accounts type, whether a set is amended and whether it has an iXBRL document",
+        "operationId" : "getCompanyFiledAccounts",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document" : {
+      "get" : {
+        "summary" : "Get one set of filed accounts as iXBRL",
+        "description" : "Fetches the iXBRL document of one set of accounts from Companies House and answers its text as JSON",
+        "operationId" : "getCompanyFiledAccountsDocument",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The filing history transaction id of the set of accounts",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/company/{companyNumber}/filing-data" : {
       "post" : {
         "summary" : "Read confirmation statement filing data",
         "description" : "Reads the registered details, officers due for confirmation, and whether this period is already paid, that a confirmation statement form is built from",
         "operationId" : "postCompaniesHouseFilingData",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/filing-history" : {
+      "get" : {
+        "summary" : "Get a company's filing history",
+        "description" : "Retrieves every filing on a company's public filing history, every category, newest first",
+        "operationId" : "getCompanyFilingHistory",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/last-accounts" : {
+      "get" : {
+        "summary" : "Get the figures of a company's last filed accounts",
+        "description" : "Reads the newest set of accounts on a company's register, maps its iXBRL document to the figures of its own year for the next accounts' prior year, and says why there are none for accounts filed on paper, without an iXBRL document, over the size limit or unreadable",
+        "operationId" : "getCompanyLastAccounts",
         "parameters" : [ {
           "name" : "companyNumber",
           "in" : "path",
@@ -479,6 +579,30 @@
         } ]
       }
     },
+    "/companies-house/company/{companyNumber}/reports/{report}" : {
+      "get" : {
+        "summary" : "Get a report on a company",
+        "description" : "Builds one report on a company from its Companies House record, read through a shared cache",
+        "operationId" : "getCompanyReport",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "report",
+          "in" : "path",
+          "required" : true,
+          "description" : "The report: filings, people, capital, charges, history or accounts",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/confirmation-statement" : {
       "post" : {
         "summary" : "Submit a confirmation statement filing",
@@ -509,6 +633,30 @@
         } ]
       }
     },
+    "/companies-house/forms/{kind}/{submissionNumber}" : {
+      "get" : {
+        "summary" : "Poll a Companies House form filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a form filed through the shared filing route, by the form's kind",
+        "operationId" : "getCompaniesHouseFormStatus",
+        "parameters" : [ {
+          "name" : "kind",
+          "in" : "path",
+          "required" : true,
+          "description" : "The form's kind, such as psc-cessation",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/grants/{grantId}" : {
       "delete" : {
         "summary" : "End a Companies House grant",
@@ -523,6 +671,62 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/companies-house/officer-appointment" : {
+      "post" : {
+        "summary" : "Submit an officer appointment filing",
+        "description" : "Builds the OfficerAppointment body, the notice that a director or a secretary has been appointed (AP01, AP02, AP03 or AP04), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseOfficerAppointment"
+      }
+    },
+    "/companies-house/officer-change" : {
+      "post" : {
+        "summary" : "Submit an officer change of details filing",
+        "description" : "Builds the OfficerChangeDetails body, the notice that a director's or a secretary's details have changed (CH01, CH02, CH03 or CH04), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseOfficerChange"
+      }
+    },
+    "/companies-house/officer-resignation" : {
+      "post" : {
+        "summary" : "Submit an officer resignation filing",
+        "description" : "Builds the OfficerResignation body, the notice that a director or a secretary no longer holds the appointment (TM01 or TM02), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseOfficerResignation"
+      }
+    },
+    "/companies-house/psc-cessation" : {
+      "post" : {
+        "summary" : "Submit a PSC cessation filing",
+        "description" : "Builds the PSCCessation body, the notice that a person with significant control has ceased to be one, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscCessation"
+      }
+    },
+    "/companies-house/psc-change-details" : {
+      "post" : {
+        "summary" : "Submit a PSC change of details filing",
+        "description" : "Builds the PSCChangeDetails body, the notice that a person with significant control's details have changed, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscChangeDetails"
+      }
+    },
+    "/companies-house/psc-notification" : {
+      "post" : {
+        "summary" : "Submit a PSC notification filing",
+        "description" : "Builds the PSCNotification body, the notice of a new person with significant control, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscNotification"
+      }
+    },
+    "/companies-house/psc-statement-notification" : {
+      "post" : {
+        "summary" : "Submit a PSC statement filing",
+        "description" : "Builds the PSCStatementNotification body, a PSC statement, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscStatementNotification"
+      }
+    },
+    "/companies-house/psc-statement-withdrawal" : {
+      "post" : {
+        "summary" : "Submit a PSC statement withdrawal filing",
+        "description" : "Builds the PSCStatementWithdrawal body, the notice that a PSC statement is no longer true, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscStatementWithdrawal"
       }
     },
     "/companies-house/psc-verification-statement" : {
@@ -546,6 +750,20 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/companies-house/record-location" : {
+      "post" : {
+        "summary" : "Submit a location of company records filing",
+        "description" : "Builds the RecordChangeOfLocation body, the notice that company records have moved to the single alternative inspection location (SAIL) or back to the registered office, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseRecordLocation"
+      }
+    },
+    "/companies-house/sail-address" : {
+      "post" : {
+        "summary" : "Submit a SAIL address filing",
+        "description" : "Builds the SailAddress body, the notice of a company's single alternative inspection location (SAIL), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseSailAddress"
       }
     },
     "/companies-house/search" : {
@@ -828,6 +1046,50 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/due-list" : {
+      "get" : {
+        "summary" : "Get the due list",
+        "description" : "Returns the authenticated user's due list: their businesses and the filing and payment dates due for them",
+        "operationId" : "getDueList"
+      }
+    },
+    "/due-list/businesses/{id}" : {
+      "put" : {
+        "summary" : "Add or replace a due list business",
+        "description" : "Adds a business to the authenticated user's due list, or replaces it",
+        "operationId" : "putDueListBusiness",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The id the page made up for the business; never a VAT number, UTR, National Insurance number or company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Remove a due list business",
+        "description" : "Removes a business and every date due for it from the authenticated user's due list",
+        "operationId" : "deleteDueListBusiness",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The id the page made up for the business; never a VAT number, UTR, National Insurance number or company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/due-list/rows" : {
+      "post" : {
+        "summary" : "Store due list dates read from HMRC",
+        "description" : "Stores the filing dates the page read from HMRC for one business on the due list, replacing that business's earlier HMRC dates",
+        "operationId" : "postDueListRows"
       }
     },
     "/hmrc/ct/return" : {
@@ -4199,6 +4461,13 @@
         "operationId" : "generatePass"
       }
     },
+    "/pass/campaign" : {
+      "get" : {
+        "summary" : "List campaign passes",
+        "description" : "Lists the campaign passes with their redemption window, limits, granted bundles and redemptions so far (operator only)",
+        "operationId" : "listCampaignPasses"
+      }
+    },
     "/pass/delete" : {
       "post" : {
         "summary" : "Delete generated passes",
@@ -4432,6 +4701,22 @@
           "in" : "path",
           "required" : true,
           "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/public/company-register" : {
+      "get" : {
+        "summary" : "Read a company's register for a prefilled package",
+        "description" : "Answers a company's profile, its current officers' names, roles and appointment dates, and its last filed accounts as iXBRL text or a mark, with no sign-in",
+        "operationId" : "getPublicCompanyRegister",
+        "parameters" : [ {
+          "name" : "number",
+          "in" : "query",
+          "required" : true,
+          "description" : "The 8-character company number",
           "schema" : {
             "type" : "string"
           }

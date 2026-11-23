@@ -23,27 +23,16 @@ import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "..
 import { recordFiledReceiptForSubmission } from "./filedReceipt.js";
 import { markReceiptStepDone, clearReceiptStep } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
+import { jointFilingFields, amendedFields, revisesReceiptFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
-import { markChargeUsed } from "./activityCharges.js";
+import { markChargeUsed, refundCharge } from "./activityCharges.js";
+import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
+import { dropCompanyCacheAfterAcceptedFiling } from "./companiesHouseCacheDrop.js";
+import { statusWithoutEchoedValues } from "./companiesHouseEchoedValues.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
 // The activity event each form publishes when Companies House accepts it.
-export const FORM_KINDS = {
-  "accounts": {
-    acceptedEvent: "companies-house-accounts-accepted",
-    acceptedSummary: "Companies House micro-entity accounts accepted",
-  },
-  "confirmation-statement": {
-    acceptedEvent: "companies-house-confirmation-statement-accepted",
-    acceptedSummary: "Companies House confirmation statement accepted",
-  },
-  "psc-verification-statement": {
-    acceptedEvent: "companies-house-psc-verification-statement-accepted",
-    acceptedSummary: "Companies House PSC verification statement accepted",
-  },
-};
 
 const logger = createLogger({ source: "app/services/companiesHouseSubmissionStatus.js" });
 
@@ -65,7 +54,7 @@ export function isGatewayTest() {
  * @param {string} [input.govTestScenario] - forwarded to the gateway call as Gov-Test-Scenario
  * @param {{presenterId: string, presenterCode: string}} [input.ownPresenter] - the customer's own
  *   presenter the submission was filed under; used for this poll only and never recorded
- * @param {string} input.kind - a key of FORM_KINDS
+ * @param {string} input.kind - a key of COMPANIES_HOUSE_FORMS
  * @returns {Promise<{data: object}|{errors: Array, submissionNumber: string}|{notFound: true, submissionNumber: string}>}
  */
 export async function pollSubmission({ userSub, submissionNumber, govTestScenario, ownPresenter, kind, now = new Date() }) {
@@ -74,6 +63,12 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
 
   if (!persistedRequest) {
     logger.warn({ message: "Companies House status poll for a submission this user did not make", submissionNumber });
+    return { notFound: true, submissionNumber };
+  }
+  // A filing is polled as the kind it was filed as, so its outcome is recorded under that kind.
+  const filedKind = persistedRequest.data?.kind;
+  if (filedKind && filedKind !== kind) {
+    logger.warn({ message: "Companies House status poll names another kind than the filing's", submissionNumber, kind, filedKind });
     return { notFound: true, submissionNumber };
   }
 
@@ -219,9 +214,10 @@ function sentRequestData(persistedRequest) {
 
 /**
  * Record a submission's status once Companies House has decided it. REJECT stores "failed" with
- * the reject reasons; ACCEPT writes a receipt, asks for the receipt email, marks a paid
- * confirmation statement fee used, charges its token, stores "completed" and publishes the form's
- * accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
+ * the reject reasons, less any word of a name, an address or the company's name the filing sent;
+ * ACCEPT writes a receipt, asks for the receipt email, marks a paid confirmation statement fee used,
+ * charges its token, drops the company's cached register answers, stores "completed" and publishes
+ * the form's accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
  * a record that fails or stops part-way is retried, and the retry finds the receipt of the
  * submission and runs only the steps the receipt does not show as done, so the receipt, its email
  * and the token charge each happen once. The never-received rejection gives its claim back, so a
@@ -232,10 +228,12 @@ function sentRequestData(persistedRequest) {
  * @param {string} input.submissionNumber
  * @param {object} input.persistedRequest - the filer's async request item, as the submit Lambda wrote it
  * @param {{statusCode: string, submissionNumber: string, companyNumber?: string, rejections: Array}} input.status
- * @param {string} input.kind - a key of FORM_KINDS
+ * @param {string} input.kind - a key of COMPANIES_HOUSE_FORMS
  * @returns {Promise<{data: object, recorded: boolean}>} recorded is false when nothing was written
  */
-export async function recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status, kind }) {
+export async function recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status: gatewayStatus, kind }) {
+  // A rejection's reason can repeat what the filing sent; those words go before it is stored or shown.
+  const status = statusWithoutEchoedValues(gatewayStatus, sentRequestData(persistedRequest).echoedValues, userSub);
   if (status.statusCode !== "REJECT" && status.statusCode !== "ACCEPT") {
     // PENDING or PARKED: leave the request state as-is and hand the current snapshot back so the
     // caller can keep polling.
@@ -272,17 +270,25 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
   const jointFiling = {
     ...jointFilingFields(requestData.jointFilingId),
     ...amendedFields(requestData.amended === true),
+    ...revisesReceiptFields(requestData.revisesReceipt),
   };
 
   if (status.statusCode === "REJECT") {
     // Kept as long as the filing state, so the filings list shows the rejection and its reasons. The
     // never-received rejection also keeps the fields the request was sent with, for a later status.
     const pendingRequest = isNeverReceived(status) ? { pendingRequest: requestData } : {};
+    // Companies House takes no fee for a filing it rejects, so a fee the filer paid us for it goes
+    // back. Before the rejection is stored, so a refund that fails leaves the claim to the next
+    // poll, and a refund already made is not made twice. The never-received rejection is not
+    // Companies House's decision, and a later status replaces it, so it refunds nothing.
+    if (requestData.feeCharge?.refundOnReject && !isNeverReceived(status)) {
+      await refundCharge(userSub, requestData.feeCharge.activityId, requestData.feeCharge.subjectKey);
+    }
     await putAsyncRequest(
       userSub,
       submissionNumber,
       "failed",
-      { ...status, kind, ...jointFiling, ...pendingRequest },
+      { ...status, kind, ...jointFiling, ...(requestData.clientId ? { clientId: requestData.clientId } : {}), ...pendingRequest },
       asyncRequestsTableName,
       FILING_STATE_RETENTION,
     );
@@ -327,9 +333,12 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
       }
     }
   }
+  // The register has changed, so the company's cached answers go before the filing is stored as
+  // completed: a record that stops here is retried and drops them again. It never fails the record.
+  await dropCompanyCacheAfterAcceptedFiling(status.companyNumber ?? requestData.companyNumber);
   const data = { ...status, ...jointFiling, receiptId };
   await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName, FILING_STATE_RETENTION);
-  const { acceptedEvent, acceptedSummary } = FORM_KINDS[kind];
+  const { acceptedEvent, acceptedSummary } = COMPANIES_HOUSE_FORMS[kind];
   await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });
   return data;
 }

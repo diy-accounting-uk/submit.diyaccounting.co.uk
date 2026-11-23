@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.6" id="ChangeOfName">
+	<xs:include schemaLocation="../baseTypes-v2-10.xsd"/>
+	<xs:element name="ChangeOfName" type="ChangeOfNameType"/>
+	<xs:complexType name="ChangeOfNameType">
+		<xs:sequence>
+			<xs:element name="MethodOfChange">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="ARTICLES"/>
+						<xs:enumeration value="RESOLUTION"/>
+						<xs:enumeration value="LLP"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="ProposedCompanyName">
+				<xs:simpleType>
+					<xs:restriction base="companyNameString">
+						<xs:minLength value="3"/>
+						<xs:maxLength value="160"/>
+						<xs:whiteSpace value="preserve"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="MeetingDate" type="xs:date" minOccurs="0"/>
+			<xs:element name="SameDay" type="xs:boolean" nillable="true" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>True to request change of name to be perfomed the same day.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="NoticeGiven">
+				<xs:annotation>
+					<xs:documentation>Indicates that notice of the change of name has been given.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="true"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

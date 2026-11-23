@@ -30,6 +30,16 @@ const dynamoDbModule = {
       this.params = params;
     }
   },
+  QueryCommand: class QueryCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
+  BatchGetCommand: class BatchGetCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
 };
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
   executeDynamoDbCommand: (commandBuilder) => mockSend(commandBuilder(dynamoDbModule)),
@@ -39,7 +49,9 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
 const {
   putReferralClaim,
   deleteReferralClaim,
-  putRedemption,
+  addRedemption,
+  putCampaignPointer,
+  getCampaignPasses,
   redeemPass,
   getReferralClaim,
   getRedemption,
@@ -74,17 +86,87 @@ describe("data/dynamoDbPassRepository - referral claim, redemption record and re
     expect(mockSend.mock.calls[0][0].params.Key).toEqual({ pk: "referral#hash-1" });
   });
 
-  test("putRedemption keys the item by code and redeemer", async () => {
-    mockSend.mockResolvedValue({});
-    await putRedemption({ code: "code-1", hashedSub: "hash-1", issuedBy: "hash-2", passTypeId: "digital-pass", redeemedAt: "t" });
-    expect(mockSend.mock.calls[0][0].params.Item).toEqual({
-      pk: "redemption#code-1#hash-1",
+  test("addRedemption keys the item by code and redeemer and adds one to its count", async () => {
+    mockSend.mockResolvedValue({ Attributes: { redemptions: 2 } });
+    const count = await addRedemption({
       code: "code-1",
-      redeemedBy: "hash-1",
+      hashedSub: "hash-1",
       issuedBy: "hash-2",
       passTypeId: "digital-pass",
       redeemedAt: "t",
     });
+    const params = mockSend.mock.calls[0][0].params;
+    expect(params.Key).toEqual({ pk: "redemption#code-1#hash-1" });
+    expect(params.UpdateExpression).toBe(
+      "SET code = :code, redeemedBy = :by, passTypeId = :type, redeemedAt = :at, issuedBy = :issuer ADD redemptions :one",
+    );
+    expect(params.ExpressionAttributeValues).toEqual({
+      ":code": "code-1",
+      ":by": "hash-1",
+      ":type": "digital-pass",
+      ":at": "t",
+      ":one": 1,
+      ":issuer": "hash-2",
+    });
+    expect(count).toBe(2);
+  });
+
+  test("addRedemption adds to the count only below the limit, and answers null at the limit", async () => {
+    mockSend.mockResolvedValueOnce({ Attributes: { redemptions: 1 } });
+    await addRedemption({ code: "code-1", hashedSub: "hash-1", passTypeId: "custom-campaign", redeemedAt: "t", limit: 2 });
+    const params = mockSend.mock.calls[0][0].params;
+    expect(params.ConditionExpression).toBe("attribute_not_exists(pk) OR redemptions < :limit");
+    expect(params.ExpressionAttributeValues[":limit"]).toBe(2);
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    expect(
+      await addRedemption({ code: "code-1", hashedSub: "hash-1", passTypeId: "custom-campaign", redeemedAt: "t", limit: 2 }),
+    ).toBeNull();
+  });
+
+  test("addRedemption of a pass with no issuer writes no issuedBy", async () => {
+    mockSend.mockResolvedValue({ Attributes: { redemptions: 1 } });
+    await addRedemption({ code: "code-1", hashedSub: "hash-1", passTypeId: "custom-campaign", redeemedAt: "t" });
+    const params = mockSend.mock.calls[0][0].params;
+    expect(params.UpdateExpression).not.toContain("issuedBy");
+    expect(params.ExpressionAttributeValues[":issuer"]).toBeUndefined();
+  });
+
+  test("putCampaignPointer stores a pointer under the campaign index key, never on the pass item", async () => {
+    mockSend.mockResolvedValue({});
+    await putCampaignPointer({ code: "code-1", createdAt: "2026-11-22T10:00:00.000Z", ttl: 123 });
+    expect(mockSend.mock.calls[0][0].params.Item).toEqual({
+      pk: "campaign#code-1",
+      code: "code-1",
+      issuedBy: "campaign",
+      createdAt: "2026-11-22T10:00:00.000Z",
+      ttl: 123,
+    });
+  });
+
+  test("getCampaignPasses queries the campaign index newest first and reads each pass by key", async () => {
+    mockSend.mockResolvedValueOnce({ Items: [{ code: "b" }, { code: "a" }, { code: "gone" }] }).mockResolvedValueOnce({
+      Responses: {
+        "test-passes": [
+          { code: "a", useCount: 1 },
+          { code: "b", useCount: 0 },
+        ],
+      },
+    });
+    process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
+
+    const { items } = await getCampaignPasses();
+
+    const query = mockSend.mock.calls[0][0].params;
+    expect(query.IndexName).toBe("issuedBy-index");
+    expect(query.ExpressionAttributeValues).toEqual({ ":campaign": "campaign" });
+    expect(query.ScanIndexForward).toBe(false);
+    expect(mockSend.mock.calls[1][0].params.RequestItems["test-passes"].Keys).toEqual([
+      { pk: "pass#b" },
+      { pk: "pass#a" },
+      { pk: "pass#gone" },
+    ]);
+    expect(items.map((item) => item.code)).toEqual(["b", "a"]);
   });
 
   test("redeemPass checks maxUses only when set and reviewLimit only when set", async () => {

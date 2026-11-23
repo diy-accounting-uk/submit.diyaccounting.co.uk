@@ -7,7 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   captureOverlayConfig,
   unlistedNavTabSelectors,
-  EXAMPLE_SIGN_IN_ADDRESS,
+  SHOWN_SIGN_IN_ADDRESS,
   TEST_EQUIPMENT_SELECTORS,
 } from "../../../scripts/lib/video/captureOverlayConfig.js";
 
@@ -41,11 +41,15 @@ describe("captureOverlayConfig", () => {
 
   it("swaps the sign-in address for one example address", () => {
     const config = captureOverlayConfig({}, { activities }, "synthetic-video-capture@test.diyaccounting.co.uk");
-    expect(config.replaceText).toEqual({ from: "synthetic-video-capture@test.diyaccounting.co.uk", to: EXAMPLE_SIGN_IN_ADDRESS });
+    expect(config.replaceText).toEqual({ from: "synthetic-video-capture@test.diyaccounting.co.uk", to: SHOWN_SIGN_IN_ADDRESS });
   });
 
   it("hides the Practice tab with the real catalogue", () => {
     const catalog = TOML.parse(fs.readFileSync("web/public/submit.catalogue.toml", "utf8"));
     expect(captureOverlayConfig({}, catalog, null).suppress).toContain('.main-nav a[data-activity="practice"]');
+  });
+
+  it("shows the sign-in address of a person of the simulator's register", () => {
+    expect(SHOWN_SIGN_IN_ADDRESS).toBe("eleanor.bramwell@test.diyaccounting.co.uk");
   });
 });

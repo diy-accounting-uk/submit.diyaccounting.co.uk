@@ -915,10 +915,10 @@
         {
           "action": "click",
           "target": "#declarationTick",
-          "caption": "I confirm this information is correct and complete to the best of my knowledge.",
+          "caption": "I declare that the information and tax return I have submitted are correct and complete.",
           "headline": "Confirm it's correct",
           "keyWord": "correct",
-          "instruction": "Tick I confirm this information is correct and complete to the best of my knowledge."
+          "instruction": "Tick the declaration that the information and tax return you have submitted are (taken together) correct and complete to the best of your knowledge."
         },
         {
           "action": "hold",

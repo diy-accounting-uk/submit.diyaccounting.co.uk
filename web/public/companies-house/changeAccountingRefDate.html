@@ -1,0 +1,251 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Change the accounting reference date - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/changeAccountingRefDate.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changeAccountingRefDate.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeAccountingRefDate.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changeAccountingRefDate.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Change the accounting reference date</h1>
+      <p class="subtitle">Shorten or extend a company's accounting period at Companies House</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="change-accounting-reference-date">
+            Look up the accounting periods
+          </button>
+        </form>
+      </div>
+
+      <!-- Change form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Which period, and its new end date?</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <blockquote class="source-quote">
+          <p>
+            You can shorten your company’s financial year as many times as you like - the minimum period you can shorten it by is 1 day.
+          </p>
+          <p>You cannot change your company’s year end when its accounts are overdue.</p>
+          <footer>
+            Source:
+            <a href="https://www.gov.uk/change-your-companys-year-end" rel="noopener">GOV.UK, Change your company’s year end</a>
+            (checked 22 November 2026)
+          </footer>
+        </blockquote>
+        <blockquote class="source-quote">
+          <p>You cannot extend a period beyond 18 months unless the company is in administration.</p>
+          <p>You may not extend periods more than once in five years unless you fall into one of the following categories.</p>
+          <ul>
+            <li>The company is in administration.</li>
+            <li>You have specific approval from the Secretary of State (please enclose a copy).</li>
+            <li>
+              You are extending the company's accounting reference period to align with that of a parent or subsidiary undertaking
+              established in the United Kingdom.
+            </li>
+            <li>You are submitting the form on behalf of an overseas company.</li>
+          </ul>
+          <footer>
+            Source:
+            <a href="https://assets.publishing.service.gov.uk/media/69f9dd2e097169e6a7a76ff4/AA01_V7.0-final.pdf" rel="noopener"
+              >Companies House, AA01 Change of accounting reference date</a
+            >
+            (checked 22 November 2026)
+          </footer>
+        </blockquote>
+        <form id="changeForm" novalidate>
+          <fieldset class="form-group">
+            <legend>Accounting period to change</legend>
+            <p id="period-hint" class="hint">
+              The current period and the one before it, as Companies House shows them. The form changes one of these two.
+            </p>
+            <div id="periodChoices" aria-describedby="period-hint"></div>
+          </fieldset>
+          <p id="noPeriods" class="hint" style="display: none">The register shows no accounting period for this company.</p>
+          <p id="accountsOverdue" class="hint" style="display: none">
+            The register shows this company's accounts as overdue, and GOV.UK says: “You cannot change your company’s year end when its
+            accounts are overdue.” File the overdue accounts first.
+          </p>
+          <div class="form-group">
+            <label for="newPeriodEnd">New end date of the period</label>
+            <p id="newPeriodEnd-hint" class="hint">An earlier date shortens the period. A later date extends it.</p>
+            <input type="date" id="newPeriodEnd" name="newPeriodEnd" required aria-describedby="newPeriodEnd-hint" />
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="extendedBefore" name="extendedBefore" />
+              <label for="extendedBefore">The company has already extended an accounting period in the last five years</label>
+            </div>
+          </div>
+          <div id="extensionGroundGroup" style="display: none">
+            <div class="form-group">
+              <label for="fiveYearExtensionReason">Why the company may extend again</label>
+              <p id="fiveYearExtensionReason-hint" class="hint">
+                Companies House allows a second extension in five years only on one of these grounds.
+              </p>
+              <select id="fiveYearExtensionReason" name="fiveYearExtensionReason" aria-describedby="fiveYearExtensionReason-hint">
+                <option value="">Choose a ground</option>
+                <option value="administration">The company is in administration</option>
+                <option value="secretary-of-state-approval">The company has specific approval from the Secretary of State</option>
+                <option value="uk-parent-or-subsidiary">
+                  The period is extended to align with that of a parent or subsidiary undertaking established in the United Kingdom
+                </option>
+              </select>
+            </div>
+            <div class="form-group" id="extensionAuthorisedCodeGroup" style="display: none">
+              <label for="extensionAuthorisedCode">Approval code (optional)</label>
+              <p id="extensionAuthorisedCode-hint" class="hint">
+                The 4-character code given with the Secretary of State’s approval. Leave it empty if the approval gives none.
+              </p>
+              <input
+                type="text"
+                id="extensionAuthorisedCode"
+                data-gateway-text="off"
+                class="input--code"
+                autocomplete="off"
+                name="extensionAuthorisedCode"
+                maxlength="4"
+                aria-describedby="extensionAuthorisedCode-hint"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <p id="tooLongWarning" class="error-message" role="alert" style="display: none"></p>
+        <blockquote class="source-quote">
+          <p>
+            You must update your accounting period dates with HM Revenue and Customs (HMRC) if you’ve shortened or lengthened your financial
+            year.
+          </p>
+          <footer>
+            Source:
+            <a href="https://www.gov.uk/change-your-companys-year-end" rel="noopener">GOV.UK, Change your company’s year end</a>
+            (checked 22 November 2026)
+          </footer>
+        </blockquote>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <p id="registerNow" class="hint" style="display: none"></p>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script type="module" src="../lib/companies-house-text-check.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="changeAccountingRefDate.page.js"></script>
+  </body>
+</html>

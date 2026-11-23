@@ -8,7 +8,7 @@ description: Review our Companies House accounts filings as the XML Gateway team
 
 <!-- @capability CH-17 Review accounts filings as the Companies House XML team does
 - **Use when:** accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
-- **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
+- **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip, a revised document for each of the four revised cases. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
 - **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator] [--fixture <cases.json>] [--case <name>]...`
 - **Entry:** `.claude/skills/companies-house-review/SKILL.md`; `scripts/companies-house-review.mjs:main`
 - **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/lib/companiesHouseReviewReconcile.js, scripts/lib/companiesHouseReviewCriteria.js, scripts/lib/companiesHouseReviewPage.js, scripts/fixtures/companies-house-test-service-cases.json
@@ -105,7 +105,7 @@ python3 -I -c 'import re,html;t=open("target/companies-house-review/sources/cont
 grep -n -i -E "mandatory|statement|AccountsType|micro|dormant|abridged" target/companies-house-review/sources/tis-accounts.txt | head -80
 ```
 
-## The four cases and what each should declare
+## The eight cases and what each should declare
 
 The cases are the accounts entries in `scripts/fixtures/companies-house-test-service-cases.json`.
 Each `expectedOutcome.note` holds the submission number and the poll outcome. The script builds each
@@ -118,9 +118,31 @@ document with `extractAndValidateAccountsParameters` and `buildAccountsIxbrl`, a
 | Dormant micro-entity | `FilletedAccounts` | `Micro-entities` | dormant true, `EntityHasNeverTraded` | s480, s476 members, directors' responsibilities, micro-entity provisions, s444(5) |
 | Small full (FRS 102 1A) | `FullAccounts` | `SmallEntities` | `SmallCompaniesRegimeForAccounts` | s477, s476 members, directors' responsibilities, small companies regime |
 | Small filleted (FRS 102 1A) | `FilletedAccounts` | `SmallEntities` | `SmallCompaniesRegimeForAccounts` | s477, s476 members, directors' responsibilities, small companies regime, s444(5), s444(5A) |
+| Revised micro-entity | as micro-entity | as micro-entity | as micro-entity, revised true | as micro-entity, and the six revision facts |
+| Revised dormant micro-entity | as dormant | as dormant | as dormant, revised true | as dormant, and the six revision facts |
+| Revised small full | as small full | as small full | as small full, revised true | as small full, and the six revision facts |
+| Revised small filleted | as small filleted | as small filleted | as small filleted, revised true | as small filleted, and the six revision facts |
 
 Every case also carries the directors' approval line: the date, and the signing director as
 `DirectorSigningFinancialStatements` on that director's `EntityOfficersDimension` member.
+
+A revised case is one of the four originals, its `revision` naming the original's approval date,
+what was wrong with the original accounts and what the revision changes. Its
+`ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse` is `true`, and it carries no
+`SupplementaryNote`, so the accounts specification 6.2 requires all six revision facts, each as
+visible text: the five statements of regulation 4 of SI 2008/373
+(`StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod`,
+`StatementThatThisReportNowStatutoryAccountsForPeriod`,
+`StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport`,
+`StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006`,
+`StatementSignificantAmendmentsToPreviouslyFiledReport`) and `DateApprovalRevisionReport`. In the
+revised documents of the 2026 taxonomy in the 2026-11-21 Accounts Data Product zip, the six sit on
+the current period's duration context and `DateAuthorisationFinancialStatementsForIssue` holds the
+date of the revision, so the balance sheet's approval date is the revision's. The review checks the
+six as visible text, and that the revision is approved on or after the original accounts; the
+reconciliation checks the two texts, the revision date and the original's date in the replacement
+statement against the case's input. An original case's example that carries the six facts is judged
+not carried ("amended filing"); a revised case that lacks one fails.
 
 Where each row comes from:
 
@@ -161,7 +183,10 @@ company file (no LLPs) on the 2026 taxonomy, then the 2025 taxonomy, that matche
 | Micro-entity | `Micro-entities`, `FilletedAccounts`, not dormant |
 | Dormant micro-entity | `Micro-entities`, dormant true |
 | Small full | `SmallEntities`, `FullAccounts`, a tagged `ProfitLoss` |
-| Small filleted | `SmallEntities`, `FilletedAccounts`, the section 444(5A) statement, `TotalInventories` |
+| Small filleted | `SmallEntities`, `FilletedAccounts`, the section 444(5A) statement by its section number or in words, `TotalInventories` |
+| Each revised case | what its original's example carries, and `ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse` true |
+
+An original case's example is never a revised document.
 
 Pair the small filleted case with a filleted example, never an abridged one. An abridged example
 (`AbridgedAccounts`, with the members' section 444(2A) consent) is a different accounts type, and
@@ -193,7 +218,9 @@ Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
    ```bash
    node scripts/companies-house-review.mjs --adp-zip "target/companies-house-review/adp/$ZIP" --date "$(date +%F)" \
      --run micro-entity-accounts=<run id> --run micro-entity-accounts-dormant=<run id> \
-     --run small-company-accounts-full=<run id> --run small-company-accounts-filleted=<run id> 2>&1 | tee target/companies-house-review/run.log
+     --run small-company-accounts-full=<run id> --run small-company-accounts-filleted=<run id> \
+     --run micro-entity-accounts-revised=<run id> --run micro-entity-accounts-dormant-revised=<run id> \
+     --run small-company-accounts-full-revised=<run id> --run small-company-accounts-filleted-revised=<run id> 2>&1 | tee target/companies-house-review/run.log
    ```
    One run writes everything the judge reads: `source/`, `reference/`, `reconciliation.md`, the
    walkthrough lines and `index.html` (with the verdicts from `judge.json` when it is there). A

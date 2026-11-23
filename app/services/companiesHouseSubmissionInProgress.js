@@ -18,7 +18,7 @@ import { putPendingFiling } from "../data/dynamoDbCompaniesHousePendingFilerRepo
  * @param {object} input
  * @param {string} input.userSub
  * @param {string} input.submissionNumber
- * @param {string} input.kind - a key of FORM_KINDS in companiesHouseSubmissionStatus.js
+ * @param {string} input.kind - a key of COMPANIES_HOUSE_FORMS in web/public/lib/companies-house-forms.js
  * @param {object} [input.data] - the fields the final status is recorded from (filed document, charge, language)
  * @param {boolean} input.underOwnPresenter
  */

@@ -23,8 +23,8 @@ const CONFIRMATION_STATEMENT_FEE_DISPLAY = "£61.35";
 // note above - so a return from checkout re-collects them through the normal authView step.
 const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNumber";
 
-// Companies House shows a personal code grouped with hyphens for readability but the XML
-// Gateway takes 11 characters with none - a pasted code needs its hyphens stripped before
+// Companies House shows a personal code in groups for readability but the XML Gateway takes 11
+// characters with no separator - a code typed with hyphens, spaces or slashes needs them stripped before
 // the length or format check runs. A real code is 5 or 6 uppercase letters followed by 6 or
 // 5 digits (e.g. CWMPS832223); the same check runs server side (companiesHouseApi.js's
 // isValidCompaniesHousePersonalCode); it exists here too so a wrongly formatted code (e.g.
@@ -43,11 +43,17 @@ function readOwnPresenterInputs() {
   const id = idInput.value.trim();
   const code = codeInput.value.trim();
   const problems = [];
-  if (!id) problems.push({ input: idInput, message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id") });
+  if (!id)
+    problems.push({
+      input: idInput,
+      message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id"),
+      passes: () => idInput.value.trim() !== "",
+    });
   if (!code)
     problems.push({
       input: codeInput,
       message: window.siteText("ch.accounts.enter-presenter-code", "Enter your presenter authentication code"),
+      passes: () => codeInput.value.trim() !== "",
     });
   return problems.length > 0 ? { problems } : { presenter: { id, code } };
 }
@@ -57,7 +63,10 @@ function syncOwnPresenterFields() {
 }
 
 function normalisePersonalCode(rawValue) {
-  return (rawValue || "").trim().toUpperCase().replace(/-/g, "");
+  return (rawValue || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s/-]/g, "");
 }
 
 function isValidPersonalCode(rawValue) {
@@ -73,6 +82,10 @@ let filingData = null;
 let originalSicCodes = [];
 let originalStatementOfCapital = null;
 let originalShareholdings = [];
+// The register's statement of capital and shareholdings as the form reads them once filled from it,
+// so a review compares like with like: the form reads numbers where the register sends strings.
+let registerStatementOfCapital = null;
+let registerShareholdings = [];
 let originalRegisteredEmailAddress = "";
 let currentDirectors = [];
 let currentOfficers = [];
@@ -232,7 +245,8 @@ function buildShareClassRow(index, share = {}) {
     element("label", { for: `shareClass-${index}` }, window.siteText("ch.cs.share-class", "Share class")),
     textInput(`shareClass-${index}`, share.shareClass),
     element("label", { for: `prescribedParticulars-${index}` }, window.siteText("ch.cs.prescribed-particulars", "Prescribed particulars")),
-    textInput(`prescribedParticulars-${index}`, share.prescribedParticulars),
+    // Prescribed particulars take any text: the schema gives them no character pattern.
+    textInput(`prescribedParticulars-${index}`, share.prescribedParticulars, { "data-gateway-text": "off" }),
     element("label", { for: `numShares-${index}` }, window.siteText("ch.cs.number-of-shares", "Number of shares")),
     element("input", { type: "number", id: `numShares-${index}`, step: "1", min: "0", value: share.numShares || "" }),
     element(
@@ -250,6 +264,7 @@ function buildShareClassRow(index, share = {}) {
       { class: "input-prefix" },
       element("span", { "class": "prefix", "data-share-currency-prefix": "", "style": "display: none" }),
       textInput(`aggregateNominalValue-${index}`, share.aggregateNominalValue, {
+        "data-gateway-text": "off",
         "aria-describedby": `aggregateNominalValue-${index}-money-hint`,
         "inputmode": "decimal",
         "data-money": "pounds-and-pence",
@@ -413,6 +428,12 @@ function addShareholdingRow(holding = {}) {
   });
 }
 
+// A director's month and year of birth, as the public register shows them: never the day.
+function monthOfBirth(dob) {
+  const [year, month] = String(dob || "").split("-");
+  return year && month ? window.companiesHouseLabels.formatMonthYear(month, year) : "";
+}
+
 function buildDirectorRow(index, director) {
   return element(
     "fieldset",
@@ -420,7 +441,7 @@ function buildDirectorRow(index, director) {
     element(
       "legend",
       {},
-      `${director.forename || ""} ${director.surname || ""} (${director.dob || window.siteText("ch.cs.no-dob", "no date of birth on record")})`,
+      `${director.forename || ""} ${director.surname || ""} (${monthOfBirth(director.dob) || window.siteText("ch.cs.no-dob", "no date of birth on record")})`,
     ),
     element("label", { for: `directorOtherForenames-${index}` }, window.siteText("ch.cs.other-forenames", "Other forenames")),
     element(
@@ -433,14 +454,18 @@ function buildDirectorRow(index, director) {
     ),
     textInput(`directorOtherForenames-${index}`, director.otherForenames, { spellcheck: "false" }),
     element("label", { for: `directorPersonalCode-${index}` }, window.siteText("ch.cs.personal-code", "Companies House personal code")),
-    textInput(`directorPersonalCode-${index}`, "", { maxlength: "13", spellcheck: "false" }),
+    textInput(`directorPersonalCode-${index}`, "", {
+      "maxlength": "24",
+      "spellcheck": "false",
+      "data-gateway-text": "off",
+    }),
     element("label", { for: `directorNameMismatchReason-${index}` }, window.siteText("ch.cs.mismatch-reason", "Name mismatch reason")),
     element(
       "p",
       { class: "hint" },
       window.siteText("ch.cs.mismatch-hint", "Only when the name this director verified under differs from the register name above."),
     ),
-    textInput(`directorNameMismatchReason-${index}`, "", { spellcheck: "false" }),
+    textInput(`directorNameMismatchReason-${index}`, "", { "spellcheck": "false", "data-gateway-text": "off" }),
   );
 }
 
@@ -471,6 +496,7 @@ async function handleAuthSubmit(event) {
       {
         input: codeInput,
         message: window.siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code"),
+        passes: () => codeInput.value.trim().length >= 6 && codeInput.value.trim().length <= 8,
       },
     ]);
     return;
@@ -507,7 +533,7 @@ async function handleAuthSubmit(event) {
     originalRegisteredEmailAddress = filingData.registeredEmailAddress || "";
 
     document.getElementById("reviewDate").value = company.confirmationStatementNextMadeUpTo;
-    document.getElementById("reviewDate").max = new Date().toISOString().slice(0, 10);
+    document.getElementById("reviewDate").max = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
     document.getElementById("sicCodes").value = originalSicCodes.join(", ");
     document.getElementById("registeredEmailAddress").value = originalRegisteredEmailAddress;
     document.getElementById("totalAmountUnpaid").value = originalStatementOfCapital?.totalAmountUnpaid || "";
@@ -517,6 +543,8 @@ async function handleAuthSubmit(event) {
     renderShareClasses(originalStatementOfCapital?.shares || []);
     syncShareCurrencyPrefixes();
     renderShareholdings(originalShareholdings);
+    registerStatementOfCapital = readStatementOfCapital();
+    registerShareholdings = readShareholdings();
 
     const currentDirectorOfficers = (filingData.officers || []).filter(
       (officer) => officer.role === "director" && !officer.resignationDate,
@@ -643,7 +671,7 @@ function buildStatementPayload() {
   const payload = {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
-    dateSigned: new Date().toISOString().slice(0, 10),
+    dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
     reviewDate: document.getElementById("reviewDate").value,
     lawfulPurposeStatementAccepted: document.getElementById("lawfulPurposeStatement").checked,
     stateConfirmationAccepted: document.getElementById("stateConfirmation").checked,
@@ -655,7 +683,7 @@ function buildStatementPayload() {
   if (!deepEqual(sicCodes, originalSicCodes)) {
     payload.sicCodes = sicCodes;
   }
-  if (!deepEqual(statementOfCapital, originalStatementOfCapital)) {
+  if (!deepEqual(statementOfCapital, registerStatementOfCapital)) {
     payload.statementOfCapital = statementOfCapital;
   }
   if (registeredEmailAddress && registeredEmailAddress !== originalRegisteredEmailAddress) {
@@ -697,6 +725,15 @@ function validateReviewForm(payload) {
     );
     return false;
   }
+  // A director's title, forename and surname come from the register, not from a box the page checks
+  // when the form is sent, so they are checked here before the preview.
+  for (const [index, director] of currentDirectors.entries()) {
+    const nameProblem = directorNameProblem({ ...director, otherForenames: payload.directors[index]?.otherForenames });
+    if (nameProblem) {
+      showStatus(nameProblem, "error");
+      return false;
+    }
+  }
   return true;
 }
 
@@ -731,7 +768,7 @@ function renderPreviewSummary(payload) {
     [window.siteText("ch.cs.summary-confirmation", "Statement of confirmation"), window.siteText("ch.cs.accepted", "Accepted")],
     [
       window.siteText("ch.cs.summary-directors", "Directors verifying their identity"),
-      payload.directors.map((d) => [d.forename, d.otherForenames, d.surname].filter(Boolean).join(" ")).join(", "),
+      payload.directors.map((d) => window.companiesHouseLabels.personName(d)).join(", "),
     ],
   ];
   if (payload.sicCodes) rows.push([window.siteText("ch.cs.summary-sic", "Nature of business (SIC codes)"), payload.sicCodes.join(", ")]);
@@ -745,15 +782,17 @@ function renderPreviewSummary(payload) {
   if (payload.shareholdings) {
     rows.push([
       window.siteText("ch.cs.summary-shareholders", "Shareholders"),
-      window.siteText("ch.cs.changed", "Changed from the register"),
+      deepEqual(payload.shareholdings, registerShareholdings)
+        ? window.siteText("ch.cs.as-register", "As on the register")
+        : window.siteText("ch.cs.changed", "Changed from the register"),
     ]);
     payload.shareholdings.forEach((holding, index) => {
       const holders = (holding.shareholders || []).map(describeShareholder).join("; ");
       const holdersSuffix = holders ? ": " + holders : "";
       rows.push([
         window.siteText("ch.cs.shareholding-n", "Shareholding {n}", { n: index + 1 }),
-        window.siteText("ch.cs.holding-summary", "{shareClass}, {number} held", {
-          shareClass: holding.shareClass,
+        window.siteText("ch.cs.holding-summary", "{kind}, {number} held", {
+          kind: holding.shareClass,
           number: holding.numberHeld,
         }) + holdersSuffix,
       ]);
@@ -907,7 +946,8 @@ function buildPscFollowUpRow({ director, index, psc }, matches) {
   const input = document.createElement("input");
   input.type = "text";
   input.id = `pscPersonalCode-${index}`;
-  input.maxLength = 11;
+  input.dataset.gatewayText = "off";
+  input.maxLength = 24;
   input.spellcheck = false;
   const buttonGroup = document.createElement("div");
   buttonGroup.className = "button-group";
@@ -958,6 +998,25 @@ function pollPscVerificationUntilSettled(submission) {
   });
 }
 
+// The reason a director's name cannot go to Companies House in the confirmation statement or a PSC
+// verification statement, in the page's language, or null.
+function directorNameProblem(director) {
+  const check = window.companiesHouseTextCheck;
+  if (!check) return null;
+  const who = [director.forename, director.surname].filter(Boolean).join(" ");
+  const parts = [
+    [window.siteText("ch.cs.psc-name-title", "title"), director.title],
+    [window.siteText("ch.cs.psc-name-forename", "forename"), director.forename],
+    [window.siteText("ch.cs.psc-name-other-forenames", "other forenames"), director.otherForenames],
+    [window.siteText("ch.cs.psc-name-surname", "surname"), director.surname],
+  ];
+  for (const [part, value] of parts) {
+    const problem = check.valueProblem(`${who}: ${part}`, value);
+    if (problem) return problem;
+  }
+  return null;
+}
+
 async function handlePscVerificationSubmit(index, matches) {
   const entry = matches.find((candidate) => candidate.index === index);
   if (!entry) {
@@ -979,6 +1038,13 @@ async function handlePscVerificationSubmit(index, matches) {
     );
     return;
   }
+  // The names come from the register, not from a box the page checks when a form is sent, so they are
+  // checked here against the characters the gateway takes before anything is sent.
+  const nameProblem = directorNameProblem(entry.director);
+  if (nameProblem) {
+    resultContainer.replaceChildren(buildParagraph([nameProblem], "error"));
+    return;
+  }
   showLoading();
   try {
     const { director, psc } = entry;
@@ -986,7 +1052,7 @@ async function handlePscVerificationSubmit(index, matches) {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
       companyAuthCode,
-      dateSigned: new Date().toISOString().slice(0, 10),
+      dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
       title: director.title,
       forename: director.forename,
       otherForenames: director.otherForenames,
@@ -1014,10 +1080,13 @@ async function handlePscVerificationSubmit(index, matches) {
     }
     resultContainer.replaceChildren(
       buildParagraph(
-        valueParts(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-          number: outcome.submissionNumber,
-          status: outcome.statusCode,
-        }),
+        valueParts(
+          ...window.companiesHouseGatewayPoll.statusSentence(
+            window.siteText("ch.small.outcome", "Submission {number} was {status}."),
+            outcome.submissionNumber,
+            outcome.statusCode,
+          ),
+        ),
       ),
       ...(outcome.rejections || []).map((rejection) => buildParagraph([window.companiesHouseRejections.rejectionText(rejection)])),
     );
@@ -1047,10 +1116,13 @@ function pollUntilSettled(submission, extraHeaders) {
     pollIntervalSeconds: submission.pollInterval,
     poll: () => window.pollConfirmationStatement(submissionNumber, extraHeaders),
     onPending: (result) =>
-      showSubmissionProgress(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
-        number: submissionNumber,
-        status: result.statusCode,
-      }),
+      showSubmissionProgress(
+        ...window.companiesHouseGatewayPoll.statusSentence(
+          window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
+          submissionNumber,
+          result.statusCode,
+        ),
+      ),
   });
 }
 
@@ -1078,10 +1150,13 @@ async function checkOutcome(submission, headers, payload) {
   if (notReceived) {
     showSubmissionProgress(`${notReceived.title} ${notReceived.detail}`, {});
   } else {
-    showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-      number: outcome.submissionNumber,
-      status: outcome.statusCode,
-    });
+    showSubmissionProgress(
+      ...window.companiesHouseGatewayPoll.statusSentence(
+        window.siteText("ch.small.outcome", "Submission {number} was {status}."),
+        outcome.submissionNumber,
+        outcome.statusCode,
+      ),
+    );
   }
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
@@ -1114,6 +1189,7 @@ async function renderFilingRecord(payload, outcome) {
   const html = confirmationStatementCopyHtml({
     company,
     payload,
+    shareholdingsChanged: !deepEqual(payload.shareholdings, registerShareholdings),
     officers: confirmedOfficers(),
     pscs: confirmedPscs(),
     outcome,

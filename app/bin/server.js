@@ -33,6 +33,9 @@ import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundle
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
 import { apiEndpoint as accountSettingsPutApiEndpoint } from "../functions/account/accountSettingsPut.js";
+import { apiEndpoint as dueListGetApiEndpoint } from "../functions/account/dueListGet.js";
+import { apiEndpoint as dueListBusinessPutApiEndpoint } from "../functions/account/dueListBusinessPut.js";
+import { apiEndpoint as dueListRowsPostApiEndpoint } from "../functions/account/dueListRowsPost.js";
 import { apiEndpoint as practiceClientsListGetApiEndpoint } from "../functions/practice/practiceClientsListGet.js";
 import { apiEndpoint as practiceClientsPostApiEndpoint } from "../functions/practice/practiceClientsPost.js";
 import { apiEndpoint as practiceClientGetApiEndpoint } from "../functions/practice/practiceClientGet.js";
@@ -75,6 +78,7 @@ import { apiEndpoint as hmrcItsaStatusGetApiEndpoint } from "../functions/hmrc/h
 import { apiEndpoint as hmrcItsaBsasTriggerPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { apiEndpoint as hmrcItsaBsasSelfEmploymentGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasSelfEmploymentGet.js";
 import { apiEndpoint as hmrcItsaBsasSelfEmploymentAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
+import { loggedQueryOf, routePatternOf } from "../lib/loggedPath.js";
 import { apiEndpoint as hmrcItsaBsasUkPropertyGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasUkPropertyGet.js";
 import { apiEndpoint as hmrcItsaBsasUkPropertyAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
 import { apiEndpoint as hmrcItsaBsasForeignPropertyGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasForeignPropertyGet.js";
@@ -96,6 +100,7 @@ import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrc
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
 import { apiEndpoint as companiesHousePublicDeadlinesGetApiEndpoint } from "../functions/companies-house/companiesHousePublicDeadlinesGet.js";
+import { apiEndpoint as companiesHousePublicRegisterGetApiEndpoint } from "../functions/companies-house/companiesHousePublicRegisterGet.js";
 import { apiEndpoint as companiesHouseTokenPostApiEndpoint } from "../functions/companies-house/companiesHouseTokenPost.js";
 import { apiEndpoint as companiesHouseTransactionPostApiEndpoint } from "../functions/companies-house/companiesHouseTransactionPost.js";
 import { apiEndpoint as companiesHouseTransactionGetApiEndpoint } from "../functions/companies-house/companiesHouseTransactionGet.js";
@@ -111,12 +116,31 @@ import { apiEndpoint as hmrcCtReturnPreviewPostApiEndpoint } from "../functions/
 import { apiEndpoint as hmrcCtReturnPostApiEndpoint } from "../functions/hmrc/hmrcCtReturnPost.js";
 import { apiEndpoint as hmrcCtReturnGetApiEndpoint } from "../functions/hmrc/hmrcCtReturnGet.js";
 import { apiEndpoint as companiesHouseOfficersGetApiEndpoint } from "../functions/companies-house/companiesHouseOfficersGet.js";
+import { apiEndpoint as companiesHouseCompanyReportGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyReportGet.js";
 import { apiEndpoint as companiesHousePscGetApiEndpoint } from "../functions/companies-house/companiesHousePscGet.js";
+import { apiEndpoint as companiesHouseFilingHistoryGetApiEndpoint } from "../functions/companies-house/companiesHouseFilingHistoryGet.js";
+import { apiEndpoint as companiesHouseFiledAccountsGetApiEndpoint } from "../functions/companies-house/companiesHouseFiledAccountsGet.js";
+import { apiEndpoint as companiesHouseFiledDocumentGetApiEndpoint } from "../functions/companies-house/companiesHouseFiledDocumentGet.js";
+import { apiEndpoint as companiesHouseLastAccountsGetApiEndpoint } from "../functions/companies-house/companiesHouseLastAccountsGet.js";
 import { apiEndpoint as companiesHouseFilingDataPostApiEndpoint } from "../functions/companies-house/companiesHouseFilingDataPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementRenderPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementRenderPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementGetApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementGet.js";
 import { apiEndpoint as companiesHousePscVerificationStatementPostApiEndpoint } from "../functions/companies-house/companiesHousePscVerificationStatementPost.js";
+import { apiEndpoint as companiesHousePscCessationPostApiEndpoint } from "../functions/companies-house/companiesHousePscCessationPost.js";
+import { apiEndpoint as companiesHousePscChangeDetailsPostApiEndpoint } from "../functions/companies-house/companiesHousePscChangeDetailsPost.js";
+import { apiEndpoint as companiesHouseOfficerResignationPostApiEndpoint } from "../functions/companies-house/companiesHouseOfficerResignationPost.js";
+import { apiEndpoint as companiesHouseSailAddressPostApiEndpoint } from "../functions/companies-house/companiesHouseSailAddressPost.js";
+import { apiEndpoint as companiesHouseRecordLocationPostApiEndpoint } from "../functions/companies-house/companiesHouseRecordLocationPost.js";
+import { apiEndpoint as companiesHousePscStatementNotificationPostApiEndpoint } from "../functions/companies-house/companiesHousePscStatementNotificationPost.js";
+import { apiEndpoint as companiesHousePscStatementWithdrawalPostApiEndpoint } from "../functions/companies-house/companiesHousePscStatementWithdrawalPost.js";
+import { apiEndpoint as companiesHousePscNotificationPostApiEndpoint } from "../functions/companies-house/companiesHousePscNotificationPost.js";
+import { apiEndpoint as companiesHouseOfficerAppointmentPostApiEndpoint } from "../functions/companies-house/companiesHouseOfficerAppointmentPost.js";
+import { apiEndpoint as companiesHouseOfficerChangePostApiEndpoint } from "../functions/companies-house/companiesHouseOfficerChangePost.js";
+import { apiEndpoint as companiesHouseAllotmentOfSharesPostApiEndpoint } from "../functions/companies-house/companiesHouseAllotmentOfSharesPost.js";
+import { apiEndpoint as companiesHouseFormStatusGetApiEndpoint } from "../functions/companies-house/companiesHouseFormStatusGet.js";
+import { apiEndpoint as companiesHouseAccountingReferenceDatePostApiEndpoint } from "../functions/companies-house/companiesHouseAccountingReferenceDatePost.js";
+import { apiEndpoint as companiesHouseChangeOfNamePostApiEndpoint } from "../functions/companies-house/companiesHouseChangeOfNamePost.js";
 import { apiEndpoint as companiesHousePscVerificationStatementGetApiEndpoint } from "../functions/companies-house/companiesHousePscVerificationStatementGet.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
@@ -127,6 +151,7 @@ import { apiEndpoint as affiliateGetApiEndpoint } from "../functions/account/aff
 import { apiEndpoint as affiliateApplicationPostApiEndpoint } from "../functions/account/affiliateApplicationPost.js";
 import { apiEndpoint as affiliateApplicationGetApiEndpoint } from "../functions/account/affiliateApplicationGet.js";
 import { apiEndpoint as passHeldGetApiEndpoint } from "../functions/account/passHeldGet.js";
+import { apiEndpoint as passCampaignGetApiEndpoint } from "../functions/account/passCampaignGet.js";
 import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as commissionMineGetApiEndpoint } from "../functions/account/commissionMineGet.js";
@@ -135,6 +160,7 @@ import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/int
 import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
 import { apiEndpoint as sessionSignOutPostApiEndpoint } from "../functions/account/sessionSignOutPost.js";
 import { apiEndpoint as activityStartedPostApiEndpoint } from "../functions/account/activityStartedPost.js";
+import { apiEndpoint as accountAcquisitionPostApiEndpoint } from "../functions/account/accountAcquisitionPost.js";
 import { apiEndpoint as billingActivityCheckoutPostApiEndpoint } from "../functions/billing/billingActivityCheckoutPost.js";
 import { apiEndpoint as billingCheckoutPostApiEndpoint } from "../functions/billing/billingCheckoutPost.js";
 import { apiEndpoint as billingCheckoutSessionGetApiEndpoint } from "../functions/billing/billingCheckoutSessionGet.js";
@@ -179,8 +205,17 @@ app.use((req, res, next) => {
     next();
   });
 });
+// Logged when the answer is sent, once Express knows the route: its pattern names each path
+// parameter, and the query gives its names only. A RegExp route names nothing, so its handler sets
+// res.locals.loggedPath, else it logs as {unmatched}; a file with no route logs its own path.
 app.use((req, res, next) => {
-  logger.info(`HTTP ${req.method} ${req.url}`);
+  res.on("finish", () => {
+    const route = req.route?.path;
+    let path = req.path;
+    if (typeof route === "string") path = `${req.baseUrl}${routePatternOf(route)}`;
+    else if (route) path = res.locals.loggedPath ?? (req.path.startsWith("/api/") ? "/api/{unmatched}" : "/{unmatched}");
+    logger.info(`HTTP ${req.method} ${path}${loggedQueryOf(req.query)} ${res.statusCode}`);
+  });
   next();
 });
 
@@ -336,6 +371,12 @@ mcpHarnessApiEndpoint(app);
 mcpCodesEntryApiEndpoint(app);
 mcpHmrcGrantApiEndpoint(app);
 
+// Every view of the company lookup's drill-down is one page, as the edge's page router serves it.
+app.get(/^\/(cy\/)?companies-house\/company\/./, (req, res) => {
+  res.locals.loggedPath = `${req.params[0] ? "/cy" : ""}/companies-house/company/{companyView}`;
+  res.sendFile(path.join(__dirname, "../../web/public", req.params[0] ? "cy" : "", "companies-house/companySearch.html"));
+});
+
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
 // Register mock OAuth routes in mock/simulator auth environments
@@ -356,6 +397,9 @@ bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
 accountSettingsPutApiEndpoint(app);
+dueListGetApiEndpoint(app);
+dueListBusinessPutApiEndpoint(app);
+dueListRowsPostApiEndpoint(app);
 practiceClientsListGetApiEndpoint(app);
 practiceClientsPostApiEndpoint(app);
 practiceClientGetApiEndpoint(app);
@@ -419,6 +463,7 @@ hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);
 companiesHousePublicDeadlinesGetApiEndpoint(app);
+companiesHousePublicRegisterGetApiEndpoint(app);
 companiesHouseTokenPostApiEndpoint(app);
 companiesHouseTransactionPostApiEndpoint(app);
 companiesHouseTransactionGetApiEndpoint(app);
@@ -434,12 +479,31 @@ hmrcCtReturnPreviewPostApiEndpoint(app);
 hmrcCtReturnPostApiEndpoint(app);
 hmrcCtReturnGetApiEndpoint(app);
 companiesHouseOfficersGetApiEndpoint(app);
+companiesHouseCompanyReportGetApiEndpoint(app);
 companiesHousePscGetApiEndpoint(app);
+companiesHouseFilingHistoryGetApiEndpoint(app);
+companiesHouseFiledAccountsGetApiEndpoint(app);
+companiesHouseFiledDocumentGetApiEndpoint(app);
+companiesHouseLastAccountsGetApiEndpoint(app);
 companiesHouseFilingDataPostApiEndpoint(app);
 companiesHouseConfirmationStatementRenderPostApiEndpoint(app);
 companiesHouseConfirmationStatementPostApiEndpoint(app);
 companiesHouseConfirmationStatementGetApiEndpoint(app);
 companiesHousePscVerificationStatementPostApiEndpoint(app);
+companiesHousePscCessationPostApiEndpoint(app);
+companiesHousePscChangeDetailsPostApiEndpoint(app);
+companiesHouseOfficerResignationPostApiEndpoint(app);
+companiesHouseSailAddressPostApiEndpoint(app);
+companiesHouseRecordLocationPostApiEndpoint(app);
+companiesHousePscStatementNotificationPostApiEndpoint(app);
+companiesHousePscStatementWithdrawalPostApiEndpoint(app);
+companiesHousePscNotificationPostApiEndpoint(app);
+companiesHouseOfficerAppointmentPostApiEndpoint(app);
+companiesHouseOfficerChangePostApiEndpoint(app);
+companiesHouseAllotmentOfSharesPostApiEndpoint(app);
+companiesHouseFormStatusGetApiEndpoint(app);
+companiesHouseAccountingReferenceDatePostApiEndpoint(app);
+companiesHouseChangeOfNamePostApiEndpoint(app);
 companiesHousePscVerificationStatementGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
@@ -450,6 +514,7 @@ affiliateGetApiEndpoint(app);
 affiliateApplicationPostApiEndpoint(app);
 affiliateApplicationGetApiEndpoint(app);
 passHeldGetApiEndpoint(app);
+passCampaignGetApiEndpoint(app);
 passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
 commissionMineGetApiEndpoint(app);
@@ -458,6 +523,7 @@ interestPostApiEndpoint(app);
 sessionBeaconPostApiEndpoint(app);
 sessionSignOutPostApiEndpoint(app);
 activityStartedPostApiEndpoint(app);
+accountAcquisitionPostApiEndpoint(app);
 billingActivityCheckoutPostApiEndpoint(app);
 billingCheckoutPostApiEndpoint(app);
 billingCheckoutSessionGetApiEndpoint(app);

@@ -50,6 +50,7 @@ function getHeader(headers, name) {
   return null;
 }
 import { getHmrcErrorMessage, extractHmrcErrorCode } from "../lib/hmrcValidation.js";
+import { loggedQueryOf, loggedUrlOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
@@ -479,6 +480,13 @@ export async function validateFraudPreventionHeaders(
   }
 }
 
+// The top-level field names of an HMRC answer, for a log line: the answer itself goes only to the
+// audit record, because it holds a customer's figures, periods and references.
+function responseFieldsOf(body) {
+  if (Array.isArray(body)) return ["[array]"];
+  return body && typeof body === "object" ? Object.keys(body) : [];
+}
+
 export async function hmrcHttpGet(
   endpoint,
   hmrcRequestHeaders,
@@ -513,8 +521,8 @@ export async function hmrcHttpGet(
   }
 
   logger.info({
-    message: `Request to GET ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Request to GET ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     ...httpRequest,
     testScenario,
     environment: {
@@ -565,10 +573,10 @@ export async function hmrcHttpGet(
   }
 
   logger.info({
-    message: `Response from GET ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Response from GET ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     status: hmrcResponse.status,
-    hmrcResponseBody,
+    responseFields: responseFieldsOf(hmrcResponseBody),
   });
 
   const httpResponse = {
@@ -650,8 +658,8 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
   }
 
   logger.info({
-    message: `Request to ${method} ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Request to ${method} ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     ...httpRequest,
   });
 
@@ -697,10 +705,10 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
   }
 
   logger.info({
-    message: `Response from ${method} ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Response from ${method} ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     status: hmrcResponse.status,
-    hmrcResponseBody,
+    responseFields: responseFieldsOf(hmrcResponseBody),
   });
 
   const httpResponse = {
@@ -818,7 +826,7 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
     message: "Forbidden - Access token may be invalid, expired, or lack required permissions",
     hmrcAccessTokenData,
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails
@@ -845,12 +853,41 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
   });
 }
 
+// The request of a failed HMRC answer as a log line may print it: the route's pattern, with each path
+// parameter named, and its query's names with no values.
+
+/**
+ * HMRC's error answer as a log line may hold it: its code, and the code and field path of each error
+ * under it. HMRC's message stays out: it can repeat a submitted name or reference in letters alone,
+ * and the codes and paths already say which error it was.
+ * @param {object} body - HMRC's answer, for example { code, message, paths, errors: [{ code, message, path }] }
+ * @returns {{code?: string, paths: string[], errors: {code?: string, path?: string}[], messageOmitted?: boolean}}
+ */
+export function loggedHmrcErrorOf(body) {
+  if (!body || typeof body !== "object") return { paths: [], errors: [] };
+  const errors = (Array.isArray(body.errors) ? body.errors : []).map((error) => ({
+    ...(typeof error?.code === "string" ? { code: error.code } : {}),
+    ...(typeof error?.path === "string" ? { path: error.path } : {}),
+  }));
+  const paths = [
+    ...(Array.isArray(body.paths) ? body.paths.filter((path) => typeof path === "string") : []),
+    ...errors.map((error) => error.path).filter(Boolean),
+  ];
+  const logged = { ...(typeof body.code === "string" ? { code: body.code } : {}), paths: [...new Set(paths)], errors };
+  return typeof body.message === "string" ? { ...logged, messageOmitted: true } : logged;
+}
+
+function loggedRequestOf(request) {
+  if (!(request instanceof URL)) return undefined;
+  return `${request.origin}${context.get("loggedPath") ?? "{path}"}${loggedQueryOf(request.searchParams)}`;
+}
+
 export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Not found for request",
-    request: request?.toString(),
+    request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails ? errorDetails.userMessage : "Not found for the specified query";
@@ -886,9 +923,9 @@ export function buildHmrcRejectionMessage(responseBody, fallbackMessage) {
 export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Bad request rejected by HMRC",
-    request: request?.toString(),
+    request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails ? errorDetails.userMessage : buildHmrcRejectionMessage(hmrcResponse.data, "HMRC rejected the request");
@@ -913,9 +950,9 @@ export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClie
 export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.error({
     message: "HMRC request failed for request",
-    request: request?.toString(),
+    request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails ? errorDetails.userMessage : "HMRC request failed";

@@ -9,7 +9,7 @@
 // every page, and its links open the Welsh copy of a page where one exists.
 
 import { test, expect } from "@playwright/test";
-import { serveRealSite, SITE_ORIGIN } from "./serveRealSite.js";
+import { serveRealSite, SIGNED_IN_EMAIL, SITE_ORIGIN } from "./serveRealSite.js";
 
 const PAIRS = [
   { english: "/index.html", welsh: "/cy/index.html" },
@@ -105,7 +105,7 @@ test("a page with no Welsh copy switches its chrome to Welsh and back, and keeps
   await expect(page.locator("a.login-link")).toHaveText("Mewngofnodi");
   await expect(page.locator("body > .skip-link")).toHaveText("Neidio i’r prif gynnwys");
   await expect(page.locator("footer")).toHaveAttribute("lang", "cy");
-  await expect(page.locator("footer .footer-links")).toContainText("Preifatrwydd (yn Saesneg)");
+  await expect(page.locator("footer .footer-links")).toContainText("Diogelwch (yn Saesneg)");
   await expect(page.locator(".language-switch")).toHaveAttribute("aria-label", "Iaith");
 
   await page.locator(".language-switch").getByRole("link", { name: "English" }).click();
@@ -180,7 +180,7 @@ test("the Welsh header names a signed-in reader and the sign-out link in Welsh",
   await storeWelsh(page);
   await serveRealSite(page, { signedIn: true });
   await page.goto(`${SITE_ORIGIN}/about.html`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".login-status")).toHaveAttribute("aria-label", "Wedi mewngofnodi fel user@example.com");
+  await expect(page.locator(".login-status")).toHaveAttribute("aria-label", `Wedi mewngofnodi fel ${SIGNED_IN_EMAIL}`);
   await expect(page.locator("a.login-link")).toHaveText("Allgofnodi");
   await expect(page.locator(".settings-cog")).toHaveAttribute("aria-label", "Gosodiadau");
 });
@@ -267,7 +267,12 @@ for (const { path, otherName } of [
           expect(item.left, `${item.name} stays inside the account row on the left`).toBeGreaterThanOrEqual(auth.left - 0.5);
           expect(item.right, `${item.name} stays inside the account row on the right`).toBeLessThanOrEqual(auth.right + 0.5);
         }
-        if (width === 375) expect(band.bottom - band.top, "the band keeps its two phone rows").toBeLessThan(100);
+        if (width === 375) {
+          expect(
+            band.bottom - band.top,
+            "the band keeps its three phone rows: the icons, the account row and the account line",
+          ).toBeLessThan(120);
+        }
         expect(switchBox.left, "switch inside the band on the left").toBeGreaterThanOrEqual(band.left);
         expect(switchBox.right, "switch inside the band on the right").toBeLessThanOrEqual(band.right + 0.5);
         expect(switchBox.bottom, "switch inside the band below").toBeLessThanOrEqual(band.bottom);
@@ -293,7 +298,7 @@ test("the Welsh home reads its cookie banner, its cookie dialog and its How to f
   const banner = page.locator("#consent-banner");
   await expect(banner).toHaveAttribute("aria-label", "Caniatâd cwcis");
   await expect(banner).toContainText("Rydym yn defnyddio cwcis");
-  await expect(banner).toContainText("polisi preifatrwydd (yn Saesneg).");
+  await expect(banner).toContainText("Gweler ein polisi preifatrwydd.");
   await banner.getByRole("button", { name: "Gwrthod" }).click();
   await expect(banner).toHaveCount(0);
 

@@ -149,6 +149,7 @@ describe("the server", () => {
       "get_vat_receipt",
       "get_vat_return",
       "invite_client",
+      "list_accounts_receipts",
       "list_books",
       "list_clients",
       "list_vat_liabilities",

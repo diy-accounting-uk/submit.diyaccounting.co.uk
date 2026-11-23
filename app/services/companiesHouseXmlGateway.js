@@ -134,8 +134,10 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
  *   resolves it from configuration. A blank or missing value throws rather than reaching the
  *   gateway, which otherwise answers every case with error 9999 "The package reference '' is
  *   invalid".
- * @param {string} input.formIdentifier - the form's FormIdentifier and GovTalk Class, e.g.
- *   "Accounts" or "ConfirmationAndVerificationStatement"
+ * @param {string} input.gatewayClass - the GovTalk Class the gateway routes the envelope by, from
+ *   the TIS's list of Class values, e.g. "Accounts" or "ReturnOfAllotmentShares"
+ * @param {string} input.formIdentifier - the FormHeader's FormIdentifier, the name of the form's
+ *   root element inside Form, e.g. "ConfirmationAndVerificationStatement" or "ReturnofAllotmentShares"
  * @param {"EN"|"CY"} [input.language] - the FormHeader Language, sent only when given
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the director signed
@@ -157,6 +159,7 @@ export function buildFormSubmission({
   companyName,
   companyAuthenticationCode,
   packageReference,
+  gatewayClass,
   formIdentifier,
   language,
   submissionNumber,
@@ -169,6 +172,7 @@ export function buildFormSubmission({
   if (!packageReference || !packageReference.trim()) {
     throw new Error(`Missing or blank packageReference for FormSubmission ${formIdentifier}`);
   }
+  if (!gatewayClass) throw new Error(`Missing gatewayClass for FormSubmission ${formIdentifier}`);
 
   const documentXml = document
     ? `
@@ -201,7 +205,7 @@ export function buildFormSubmission({
       </Form>${documentXml}
     </FormSubmission>`;
 
-  return buildEnvelopeXml({ requestClass: formIdentifier, transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
+  return buildEnvelopeXml({ requestClass: gatewayClass, transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
 }
 
 /**
@@ -248,6 +252,7 @@ export function buildAccountsSubmission({
     companyName,
     companyAuthenticationCode,
     packageReference,
+    gatewayClass: "Accounts",
     formIdentifier: "Accounts",
     language,
     submissionNumber,
@@ -301,6 +306,7 @@ export function buildConfirmationStatementSubmission({
     companyName,
     companyAuthenticationCode,
     packageReference,
+    gatewayClass: formIdentifier,
     formIdentifier,
     submissionNumber,
     dateSigned,
@@ -351,6 +357,7 @@ export function buildPscVerificationStatementSubmission({
     companyName,
     companyAuthenticationCode,
     packageReference,
+    gatewayClass: "PSCVerificationStatement",
     formIdentifier: "PSCVerificationStatement",
     submissionNumber,
     dateSigned,
@@ -622,10 +629,22 @@ function parseShareClassElement(sharesElement) {
 }
 
 function parseStatementOfCapitalElement(statementOfCapitalElement) {
+  if (!statementOfCapitalElement) {
+    return undefined;
+  }
   const capitalElement = firstElement(statementOfCapitalElement, "Capital");
   if (!capitalElement) {
     return undefined;
   }
+  return parseCapitalElement(capitalElement);
+}
+
+// Every Capital of a statement of capital, one for each currency the company's shares are in.
+function parseStatementsOfCapitalElement(statementOfCapitalElement) {
+  return statementOfCapitalElement ? allElements(statementOfCapitalElement, "Capital").map(parseCapitalElement) : [];
+}
+
+function parseCapitalElement(capitalElement) {
   return {
     totalAmountUnpaid: firstElementText(capitalElement, "TotalAmountUnpaid"),
     totalNumberOfIssuedShares: firstElementText(capitalElement, "TotalNumberOfIssuedShares"),
@@ -705,6 +724,7 @@ export function parseCompanyDataResponse(xml) {
     registeredEmailAddress: firstElementText(companyDataElement, "RegisteredEmailAddress"),
     sicCodes: sicCodesElement ? allElements(sicCodesElement, "SICCode").map((element) => element.textContent) : [],
     statementOfCapital: parseStatementOfCapitalElement(firstElement(companyDataElement, "StatementOfCapital")),
+    statementsOfCapital: parseStatementsOfCapitalElement(firstElement(companyDataElement, "StatementOfCapital")),
     shareholdings: allElements(companyDataElement, "Shareholdings").map(parseShareholdingElement),
     officers: [
       ...allElements(companyDataElement, "Director").map((element) => parseOfficerElement(element, "director")),

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.7" id="ChangeAccRefDate">
+	<xs:include schemaLocation="../baseTypes-v2-10.xsd"/>
+	<xs:element name="ChangeAccountingReferenceDate">
+		<xs:annotation>
+			<xs:documentation>Change of Accounting Reference Date</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="AccountRefDate"/>
+				<xs:element name="ChangeToPeriod">
+					<xs:annotation>
+						<xs:documentation>Period Extended or Shortened</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="SHORT"/>
+							<xs:enumeration value="EXTEND"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="AmendedAccountRefDate" type="xs:date">
+					<xs:annotation>
+						<xs:documentation>New date for Accounting Reference date</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="FiveYearExtensionDetails" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Indicates if AR period increased more than once in 5 years</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="ExtensionReason">
+								<xs:annotation>
+									<xs:documentation>Reason ARD extended more than once in 5 years.</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="ADMIN"/>
+										<xs:enumeration value="STATE"/>
+										<xs:enumeration value="UKPAR"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="ExtensionAuthorisedCode" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Only applicable if ExtensionReason Secretary of State approval selected </xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="4"/>
+										<xs:maxLength value="4"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

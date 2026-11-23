@@ -7,13 +7,14 @@
 // pollStatus, so the route file only has to translate the outcome into a GovTalk envelope.
 
 import { createHash } from "crypto";
+import { parseXmlDocument, allElements } from "../../lib/xmlDom.js";
 
 // Fixed test presenter credentials for the simulator, standing in for the real ones Companies
 // House issues by email. Every caller against the simulator authenticates with these.
 export const SIMULATOR_PRESENTER_ID = "12345678901";
 export const SIMULATOR_PRESENTER_CODE = "SimTest1";
 // A second presenter, standing in for a customer's own presenter with its own credit account.
-export const SIMULATOR_CUSTOMER_PRESENTER_ID = "98765432109";
+export const SIMULATOR_CUSTOMER_PRESENTER_ID = "40418362715";
 export const SIMULATOR_CUSTOMER_PRESENTER_CODE = "CustSim1";
 
 function md5Lowercase(value) {
@@ -67,6 +68,51 @@ const PRESENTER_ID_MISSING_ERROR = {
   type: "fatal",
   text: "No presenter ID supplied",
 };
+
+// The Companies House accounts validator's answer to a revised document that carries neither form
+// of revision (the accounts specification's "Revised Accounts" rule). The gateway's own error number
+// for it is not known, so it takes the 9999 of the route's other Accounts class error.
+export const REVISED_ACCOUNTS_RULE_ERROR = {
+  raisedBy: "Accounts",
+  number: 9999,
+  type: "fatal",
+  text: "For accounts identified as 'amended/revised' either SupplementaryNote must be provided and be non-empty or all relevant statement items and DateApprovalRevisionReport must be present.",
+  location: "",
+};
+
+const REVISED_FLAG_CONCEPT = "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse";
+const SUPPLEMENTARY_NOTE_CONCEPT = "bus:SupplementaryNote";
+
+// A revision by replacement states these five matters and the date its directors approved it.
+export const REVISION_BY_REPLACEMENT_CONCEPTS = [
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport",
+  "bus:DateApprovalRevisionReport",
+];
+
+/**
+ * True when an iXBRL accounts document says it is revised and carries neither a non-empty
+ * supplementary note nor every fact of a revision by replacement. A document the simulator cannot
+ * parse carries no revised fact, so the rule does not reach it.
+ * @param {string} ixbrl - the decoded accounts document
+ * @returns {boolean}
+ */
+export function breaksRevisedAccountsRule(ixbrl) {
+  let document;
+  try {
+    document = parseXmlDocument(ixbrl);
+  } catch {
+    return false;
+  }
+  const facts = allElements(document, "ix:nonNumeric").map((fact) => ({ name: fact.getAttribute("name"), text: fact.textContent.trim() }));
+  if (!facts.some((fact) => fact.name === REVISED_FLAG_CONCEPT && fact.text === "true")) return false;
+  const nonEmptyFacts = new Set(facts.filter((fact) => fact.text !== "").map((fact) => fact.name));
+  if (nonEmptyFacts.has(SUPPLEMENTARY_NOTE_CONCEPT)) return false;
+  return !REVISION_BY_REPLACEMENT_CONCEPTS.every((concept) => nonEmptyFacts.has(concept));
+}
 
 // A presenter poll answers at most this many completed submissions (TIS v5.3, section 2.5).
 const PRESENTER_POLL_MAXIMUM = 20;
@@ -129,9 +175,12 @@ export function isAuthenticated({ senderIdHash, authValueHash }) {
 
 /**
  * Handle a parsed Accounts submission. Returns either { errors: [...] } when the submission never
- * reached Companies House, or { acknowledged: true, gatewayTimestamp, pollInterval }.
+ * reached Companies House, or { acknowledged: true, gatewayTimestamp, pollInterval }. A revised
+ * document that breaks the revised accounts rule is refused and leaves its submission number unused.
+ * @param {object} input
+ * @param {string} [input.ixbrl] - the decoded accounts document
  */
-export function submitAccounts({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario }) {
+export function submitAccounts({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario, ixbrl }) {
   if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
     return { errors: [AUTHORISATION_FAILURE_ERROR] };
   }
@@ -151,6 +200,9 @@ export function submitAccounts({ senderIdHash, authValueHash, submissionNumber, 
   }
   if (usedSubmissionNumbers.has(submissionNumber)) {
     return { errors: [schemaFailureError("SubmissionNumber has already been used", "SubmissionNumber")] };
+  }
+  if (breaksRevisedAccountsRule(ixbrl)) {
+    return { errors: [REVISED_ACCOUNTS_RULE_ERROR] };
   }
 
   usedSubmissionNumbers.add(submissionNumber);

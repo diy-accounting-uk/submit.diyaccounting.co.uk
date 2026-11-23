@@ -1,0 +1,337 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/changeCompanyName.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Newid enw’r cwmni - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeCompanyName.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changeCompanyName.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeCompanyName.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changeCompanyName.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-change-name.change-the-company-name-7e2b5c">Newid enw’r cwmni</h1>
+      <p data-i18n="ch-change-name.give-companies-house-notice-of-a-89fee6" class="subtitle">
+        Rhoi hysbysiad i Dŷ’r Cwmnïau o newid enw cwmni
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-change-name.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-change-name.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-change-name.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-change-name.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-change-name.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-change-name.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-change-name.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-change-name.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-change-name.look-up-the-company-570ac0"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="change-company-name"
+          >
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Change form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-change-name.what-is-the-new-name-41caeb">Beth yw’r enw newydd?</h2>
+        <p data-i18n="ch-change-name.company-3bc806">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+        </p>
+        <blockquote class="source-quote">
+          <p lang="en-GB">Your new name must follow all the rules for company names.</p>
+          <p lang="en-GB">Your company name will not officially change until Companies House registers it.</p>
+          <footer>
+            Ffynhonnell:
+            <a lang="en-GB" hreflang="en" href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+              >GOV.UK, Make changes to your private limited company: Company name</a
+            >
+            (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+          </footer>
+        </blockquote>
+        <form id="changeForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-change-name.new-company-name-8145ac" for="proposedName">Enw newydd y cwmni</label>
+            <p data-i18n="ch-change-name.3-to-160-characters-usually-ending-6ab2e9" id="proposedName-hint" class="hint">
+              3 i 160 nod, fel arfer yn gorffen gyda LIMITED neu LTD; caiff cwmni sydd wedi’i gofrestru yng Nghymru ei orffen gyda
+              CYFYNGEDIG neu CYF yn lle hynny. Mae Tŷ’r Cwmnïau yn cofnodi enwau mewn priflythrennau.
+            </p>
+            <p data-i18n="ch-change-name.this-company-is-registered-in-wales-d01c08" id="walesNote" class="hint" style="display: none">
+              Mae’r cwmni hwn wedi’i gofrestru yng Nghymru, felly caiff ei enw orffen gyda CYFYNGEDIG neu CYF yn lle LIMITED neu LTD.
+            </p>
+            <blockquote class="source-quote">
+              <p lang="en-GB">
+                Your name must usually end in either ‘Limited’ or ‘Ltd’. You can include the Welsh equivalents ‘Cyfyngedig’ and ‘Cyf’
+                instead if you registered the company in Wales.
+              </p>
+              <p lang="en-GB">Your name cannot be the same as another registered company’s name.</p>
+              <footer>
+                Ffynhonnell:
+                <a lang="en-GB" hreflang="en" href="https://www.gov.uk/limited-company-formation/choose-company-name" rel="noopener"
+                  >GOV.UK, Set up a private limited company: choose a company name</a
+                >
+                (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+              </footer>
+            </blockquote>
+            <input
+              type="text"
+              id="proposedName"
+              data-gateway-text="off"
+              name="proposedName"
+              required
+              minlength="3"
+              maxlength="160"
+              autocomplete="off"
+              aria-describedby="proposedName-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group" id="methodGroup">
+            <p data-i18n="ch-change-name.this-files-a-change-of-name-5b1713">
+              Mae hwn yn ffeilio newid enw drwy benderfyniad arbennig. Caiff newid drwy’r erthyglau cymdeithasu ei ffeilio ar bapur, ar
+              ffurflen NM04.
+            </p>
+            <blockquote class="source-quote">
+              <p lang="en-GB">
+                A company can change its name either by: a special resolution; permission given in the company’s articles of association.
+              </p>
+              <p lang="en-GB">You can use the Companies House online service to file changes of name by special resolution only.</p>
+              <footer>
+                Ffynhonnell:
+                <a lang="en-GB" hreflang="en" href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+                  >GOV.UK, Make changes to your private limited company: Company name</a
+                >
+                (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+              </footer>
+            </blockquote>
+          </div>
+          <div class="form-group" id="meetingDateGroup">
+            <label data-i18n="ch-change-name.date-the-resolution-was-passed-7d94ca" for="meetingDate">Dyddiad pasio’r penderfyniad</label>
+            <input type="date" id="meetingDate" name="meetingDate" />
+          </div>
+          <blockquote class="source-quote">
+            <p lang="en-GB">It costs £20 to file a change of name online, or £85 for the same-day service.</p>
+            <footer>
+              Ffynhonnell:
+              <a lang="en-GB" hreflang="en" href="https://www.gov.uk/government/publications/change-a-company-name-nm01" rel="noopener"
+                >GOV.UK, Change a company name (NM01)</a
+              >
+              (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+            </footer>
+          </blockquote>
+          <p data-i18n="ch-change-name.companies-house-charges-the-same-for-027645" id="fee-hint" class="hint">
+            Mae Tŷ’r Cwmnïau yn codi’r un ffi am newid enw a ffeilir gan feddalwedd. Rydych yn talu’r ffi honno a thâl y cerdyn yma cyn
+            anfon y ffeilio: £24.69 am y gwasanaeth safonol, neu £104.12 am y gwasanaeth yr un diwrnod. Os bydd Tŷ’r Cwmnïau yn gwrthod y
+            ffeilio, caiff y taliad ei ad-dalu. Yn yr amgylchedd prawf hwn nid oes dim yn cael ei gofrestru ac ni chodir ffi.
+          </p>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="sameDay" name="sameDay" aria-describedby="fee-hint" />
+              <label data-i18n="ch-change-name.ask-for-the-same-day-service-461c33" for="sameDay"
+                >Gofyn am y gwasanaeth yr un diwrnod (rydych yn talu £104.12 yn lle £24.69)</label
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="needsLetter" name="needsLetter" />
+              <label data-i18n="ch-change-name.the-name-needs-a-supporting-letter-0eec51" for="needsLetter"
+                >Mae angen llythyr ategol ar yr enw</label
+              >
+            </div>
+          </div>
+          <div id="letterGroup" style="display: none">
+            <blockquote class="source-quote">
+              <p lang="en-GB">
+                Your name also cannot contain a ‘sensitive’ word or expression, or suggest a connection with government or local
+                authorities, unless you get permission.
+              </p>
+              <footer>
+                Ffynhonnell:
+                <a lang="en-GB" hreflang="en" href="https://www.gov.uk/limited-company-formation/choose-company-name" rel="noopener"
+                  >GOV.UK, Set up a private limited company: Choose a name</a
+                >
+                (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+              </footer>
+            </blockquote>
+            <fieldset class="form-group" id="letterKind">
+              <legend data-i18n="ch-change-name.what-the-letter-gives-f07710">Yr hyn y mae’r llythyr yn ei roi</legend>
+              <div class="choice">
+                <input type="radio" name="letterKind" id="letterKind-sensitive-word" value="sensitive-word-permission" checked />
+                <label data-i18n="ch-change-name.permission-to-use-a-sensitive-word-915c4f" for="letterKind-sensitive-word"
+                  >Caniatâd i ddefnyddio gair neu ymadrodd sensitif</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" name="letterKind" id="letterKind-same-name" value="same-as-no-objection" />
+                <label data-i18n="ch-change-name.no-objection-from-the-company-or-502fbb" for="letterKind-same-name"
+                  >Dim gwrthwynebiad gan y cwmni neu’r PAC sydd â’r un enw</label
+                >
+              </div>
+            </fieldset>
+            <div class="form-group">
+              <label data-i18n="ch-change-name.the-letter-as-a-pdf-a9c88e" for="letterFile">Y llythyr, fel PDF</label>
+              <p data-i18n="ch-change-name.at-most-3-mb-it-goes-5c8b8c" id="letterFile-hint" class="hint">
+                3 MB ar y mwyaf. Mae’n mynd i Dŷ’r Cwmnïau gyda’r ffurflen ac nid yw’n cael ei gadw ar y wefan hon.
+              </p>
+              <input type="file" id="letterFile" name="letterFile" accept="application/pdf,.pdf" aria-describedby="letterFile-hint" />
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="noticeGiven" name="noticeGiven" />
+              <label data-i18n="ch-change-name.notice-of-the-change-of-name-b5bcc4" for="noticeGiven"
+                >Mae hysbysiad o’r newid enw wedi’i roi</label
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-change-name.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-change-name.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-change-name.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-change-name.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <p id="nameEndingWarning" class="status-message status-warning" role="alert" style="display: none"></p>
+        <blockquote class="source-quote">
+          <p lang="en-GB">Your company name will not officially change until Companies House registers it.</p>
+          <footer>
+            Ffynhonnell:
+            <a lang="en-GB" hreflang="en" href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+              >GOV.UK, Make changes to your private limited company: Company name</a
+            >
+            (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+          </footer>
+        </blockquote>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-change-name.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-change-name.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-change-name.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-change-name.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <p id="registerNow" class="hint" style="display: none"></p>
+        <div class="button-group">
+          <button data-i18n="ch-change-name.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script type="module" src="../../lib/companies-house-company-name.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script type="module" src="../../lib/companies-house-text-check.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/changeCompanyName.page.js"></script>
+  </body>
+</html>

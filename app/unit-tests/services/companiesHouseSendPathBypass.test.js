@@ -18,11 +18,12 @@ const SCANNED_DIRECTORIES = ["app/functions", "app/services", "app/lib"];
 const FETCH_CALL = /\b(fetch|fetchWithTimeout|fetchRetryingNetworkErrors)\s*\(/g;
 const COMPANIES_HOUSE_REFERENCE = /COMPANIES_HOUSE_|companieshouse\.gov\.uk|company-information\.service/;
 
-const SEND_FUNCTION = /\b(sendJsonToCompaniesHouse|sendXmlToCompaniesHouse)\s*\(/g;
+const SEND_FUNCTION = /\b(sendJsonToCompaniesHouse|sendTextToCompaniesHouse|sendXmlToCompaniesHouse)\s*\(/g;
 
 // Each file that sends to Companies House, with the exact number of sends.
 const COMPANIES_HOUSE_SENDS = [
   { file: "app/services/companiesHouseApi.js", sends: 1 },
+  { file: "app/services/companiesHouseDocumentApi.js", sends: 2 },
   { file: "app/services/companiesHouseFilingApi.js", sends: 1 },
   { file: "app/services/companiesHouseXmlGateway.js", sends: 1 },
   { file: "app/functions/companies-house/companiesHouseTokenPost.js", sends: 1 },

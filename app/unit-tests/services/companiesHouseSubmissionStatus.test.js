@@ -73,6 +73,11 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => {
   };
 });
 
+const mockDropCompanyCache = vi.fn();
+vi.mock("@app/services/companiesHouseCacheDrop.js", () => ({
+  dropCompanyCacheAfterAcceptedFiling: (...args) => mockDropCompanyCache(...args),
+}));
+
 import { pollSubmission, hasStoredFinalStatus, isNeverReceived } from "@app/services/companiesHouseSubmissionStatus.js";
 import { initializeSalt } from "@app/services/subHasher.js";
 
@@ -113,7 +118,7 @@ describe("pollSubmission", () => {
   test("polls the gateway and returns the current status while unresolved", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({
@@ -142,10 +147,24 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
+  test("returns notFound without calling the gateway when the poll names another kind than the filing's", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) =>
+      cmd instanceof lib.GetCommand
+        ? { Item: { requestId: "00001A", status: "pending", data: { kind: "psc-verification-statement" } } }
+        : {},
+    );
+
+    const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "psc-cessation" });
+
+    expect(result).toEqual({ notFound: true, submissionNumber: "00001A" });
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("forwards a Gov-Test-Scenario to the gateway call", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await pollSubmission({
@@ -163,7 +182,7 @@ describe("pollSubmission", () => {
   test("polls under the customer's own presenter, without resolving ours or recording it", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await pollSubmission({
@@ -185,7 +204,7 @@ describe("pollSubmission", () => {
   test("writes a receipt and an async request kind on ACCEPT, and publishes the form's accepted event", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({
@@ -207,6 +226,68 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).toHaveBeenCalled();
   });
 
+  test("drops the cached register answers of the company Companies House names when it accepts a filing", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "psc-cessation" });
+    expect(mockDropCompanyCache).toHaveBeenCalledTimes(1);
+    expect(mockDropCompanyCache).toHaveBeenCalledWith("06846849");
+  });
+
+  test("drops the cache of the company the filing was sent for when Companies House's status names none", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) {
+        return {
+          Item: { requestId: cmd.input.Key.requestId, status: "pending", data: { kind: "officer-resignation", companyNumber: "00000001" } },
+        };
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }],
+    });
+    await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "officer-resignation" });
+    expect(mockDropCompanyCache).toHaveBeenCalledWith("00000001");
+  });
+
+  test("an accepted filing is stored as completed even when the cache drop finds nothing to drop", async () => {
+    mockDropCompanyCache.mockResolvedValue(null);
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
+    expect(result.data.statusCode).toBe("ACCEPT");
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const completed = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand)
+      .find((cmd) => cmd.input?.ExpressionAttributeValues?.[":status"] === "completed");
+    expect(completed).toBeDefined();
+  });
+
+  for (const statusCode of ["REJECT", "PENDING", "PARKED"]) {
+    test(`a ${statusCode} drops no cached register answers`, async () => {
+      mockParseGatewayResponse.mockReturnValue({
+        errors: [],
+        statuses: [
+          {
+            statusCode,
+            submissionNumber: "00001A",
+            companyNumber: "06846849",
+            rejections: statusCode === "REJECT" ? [{ rejectCode: "9999", description: "Refused" }] : [],
+          },
+        ],
+      });
+      await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
+      expect(mockDropCompanyCache).not.toHaveBeenCalled();
+    });
+  }
+
   test("keeps the filed accounts document with the receipt, and out of the poll answer", async () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     mockSend.mockImplementation(async (cmd) => {
@@ -217,7 +298,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({
@@ -246,7 +327,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await pollSubmission({
@@ -274,7 +355,7 @@ describe("pollSubmission", () => {
         {
           statusCode: "REJECT",
           submissionNumber: "00001A",
-          companyNumber: "06846849",
+          companyNumber: "00000004",
           rejections: [{ rejectCode: "11686", description: "shareholders required", instanceNumber: "1" }],
         },
       ],
@@ -285,6 +366,35 @@ describe("pollSubmission", () => {
     expect(result.data.statusCode).toBe("REJECT");
     expect(result.data.rejections[0].rejectCode).toBe("11686");
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
+  });
+
+  test("a rejected filing made for a practice client keeps the client on its stored item", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) {
+        return {
+          Item: {
+            requestId: "00001A",
+            status: "pending",
+            createdAt: new Date().toISOString(),
+            data: { kind: "accounts", clientId: "client-1" },
+          },
+        };
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "REJECT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [{ rejectCode: "1" }] }],
+    });
+
+    await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
+
+    const failedWrites = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"] === "failed");
+    expect(failedWrites).toHaveLength(1);
+    expect(failedWrites[0].input.ExpressionAttributeValues[":data"]).toMatchObject({ statusCode: "REJECT", clientId: "client-1" });
   });
 
   test("answers pending, records nothing and sends no email while the presenter poll is still recording the final status", async () => {
@@ -302,7 +412,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
@@ -339,7 +449,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
@@ -418,7 +528,7 @@ describe("pollSubmission", () => {
     });
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000004", rejections: [] }],
     });
 
     await expect(pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" })).rejects.toThrow(

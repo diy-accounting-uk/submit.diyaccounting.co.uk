@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2009 sp1 (http://www.altova.com) by Suzanne Wadden (Companies House) -->
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="3.0" id="AllotmentShares">
+	<xs:include schemaLocation="../baseTypes-v3-1.xsd"/>
+	<xs:element name="ReturnofAllotmentShares">
+		<xs:annotation>
+			<xs:documentation>Allotment of Shares</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="StartPeriodSharesAllotted" type="xs:date"/>
+				<xs:element name="EndPeriodSharesAllotted" type="xs:date" minOccurs="0"/>
+				<xs:element name="StatementOfCapital" type="StatementOfCapitalType"/>
+				<xs:element name="Allotment" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:complexContent>
+							<xs:extension base="AllotmentType">
+								<xs:sequence>
+									<xs:element name="Consideration" minOccurs="0">
+										<xs:simpleType>
+											<xs:restriction base="otherDataString">
+												<xs:maxLength value="2000"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:extension>
+						</xs:complexContent>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

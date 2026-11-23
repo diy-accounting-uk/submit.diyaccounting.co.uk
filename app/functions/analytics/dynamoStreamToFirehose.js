@@ -39,7 +39,7 @@ const REDEMPTION_PK_PREFIX = "redemption#";
 // Items the passes table holds that the app derives from pass items: the held-for-review pointer
 // and the nightly figures, and the family affiliate markers. They are not passes, so they do not
 // leave the table.
-const DERIVED_PASS_PK_PREFIXES = ["held#", "figures#", "family#", "familyemail#"];
+const DERIVED_PASS_PK_PREFIXES = ["held#", "figures#", "family#", "familyemail#", "campaign#"];
 const COMMISSION_PK_PREFIX = "commission#";
 const COMMISSION_LINE_SK_PREFIX = "line#";
 const CALL_PK_PREFIX = "call#";

@@ -13,28 +13,28 @@ import { isCompaniesHouseSimulatorLane } from "./behaviour-companies-house-filin
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
 import { buildChargeKey, deleteActivityCharge } from "@app/data/dynamoDbActivityChargeRepository.js";
 import { verifyFilingAccepted as verifyGatewayFilingOutcome } from "./behaviour-companies-house-accounts-steps.js";
+import { registerCompanies, COMPANY_AUTHENTICATION_CODE } from "@app/http-simulator/fixtures/register.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-confirmation-steps";
 
-// The one company the http-simulator's confirmation statement scenario answers CompanyDataRequest
-// and PaymentPeriodsRequest for (see app/http-simulator/scenarios/confirmation-statement.js).
-// Its public register lookup fixture (app/http-simulator/scenarios/companies.js) answers the same
-// company number, deliberately reusing DIY Accounting Limited's own number so the simulator and
-// real lanes look up the same company.
-const SIMULATOR_COMPANY_NUMBER = "06846849";
-const SIMULATOR_COMPANY_NAME = "EXAMPLE CONFIRMATION STATEMENT LIMITED";
-const SIMULATOR_COMPANY_AUTH_CODE = "SIMCS01";
+// The http-simulator's confirmation statement company: the register's company whose statement is due
+// now (app/http-simulator/fixtures/register.js), which its public register lookup and its XML Gateway
+// company data answer under the same number.
+const SIMULATOR_COMPANY = registerCompanies().find((company) => company.confirmationStatement === "due");
+const SIMULATOR_COMPANY_NUMBER = SIMULATOR_COMPANY.number;
+const SIMULATOR_COMPANY_NAME = SIMULATOR_COMPANY.name;
+const SIMULATOR_COMPANY_AUTH_CODE = COMPANY_AUTHENTICATION_CODE;
 
 /** An 11-character personal code in the letters-and-digits format the review form checks for. */
 export const TEST_DIRECTOR_PERSONAL_CODE = "CWMPS832223";
 
 /** The other forenames value the review form requires per director row before it will preview. */
-export const TEST_DIRECTOR_OTHER_FORENAMES = "MIDDLENAME";
+export const TEST_DIRECTOR_OTHER_FORENAMES = "ANNE";
 
 /**
- * The company the confirmation statement journey looks up. The simulator answers for its fixture
- * company under 06846849; every other lane reads the live public data API, where the record
- * looked up is DIY Accounting Limited's own, at the same number.
+ * The company the confirmation statement journey looks up. The simulator answers for its register's
+ * company whose statement is due now; every other lane reads the live public data API, where
+ * the record looked up is DIY Accounting Limited's own.
  */
 export function confirmationStatementCompanyFixture(envFilePath) {
   if (isCompaniesHouseSimulatorLane(envFilePath)) {
@@ -292,7 +292,7 @@ export async function verifyFilingAccepted(page, screenshotPath = defaultScreens
 
 export async function verifyFilingRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode} after polling to a terminal state`, async () => {
-    await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
+    await expect(page.locator("#filingResult")).toContainText(/\bwas rejected\b/, { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png`, readerView: true });
   });

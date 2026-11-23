@@ -15,8 +15,26 @@
 // Shared HTTP fetch utility with timeout and abort support
 
 import { createLogger } from "./logger.js";
+import { loggedOutboundPathOf } from "./loggedPath.js";
 
 const logger = createLogger({ source: "app/lib/httpFetch.js" });
+
+/**
+ * A URL as this module logs it and puts in an error: the origin and the path, with each company,
+ * transaction, document or agent id in the path named in braces, and no query string or fragment,
+ * because a query can carry a signed credential or an identifier.
+ * @param {string|URL} url
+ * @returns {string}
+ */
+export function urlWithoutQuery(url) {
+  let parsed;
+  try {
+    parsed = new URL(String(url));
+  } catch {
+    return "[unparsable URL]";
+  }
+  return `${parsed.origin}${loggedOutboundPathOf(parsed.pathname)}`;
+}
 
 /**
  * Custom error class for HTTP timeout errors
@@ -65,13 +83,63 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
   } catch (error) {
     if (error.name === "AbortError") {
       const duration = Date.now() - startTime;
+      const loggedUrl = urlWithoutQuery(url);
       logger.warn({
         message: "HTTP request timed out",
-        url,
+        url: loggedUrl,
         timeoutMs,
         duration,
       });
-      throw new HttpTimeoutError(`Request to ${url} timed out after ${timeoutMs}ms`, url, timeoutMs);
+      throw new HttpTimeoutError(`Request to ${loggedUrl} timed out after ${timeoutMs}ms`, loggedUrl, timeoutMs);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Perform an HTTP fetch and read its body as text, with one timeout over the headers and the whole
+ * body, and a limit on the body's bytes as the response stream gives them (after any content
+ * decoding, so a small compressed body that expands past the limit stops too). The read stops at the
+ * limit and the request is aborted, so no more of the body is read.
+ *
+ * @param {string} url
+ * @param {Object} options - fetch options
+ * @param {number} timeoutMs - the time allowed for the headers and the body together
+ * @param {{maxBytes: number}} limits - the most bytes of body read
+ * @returns {Promise<{response: Response, text: string|null, tooLarge: boolean, duration: number}>} text is
+ *   null when the body passed maxBytes
+ * @throws {HttpTimeoutError} If the headers or the body do not arrive in time
+ */
+export async function fetchTextWithTimeout(url, options, timeoutMs, { maxBytes }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const chunks = [];
+    let total = 0;
+    if (response.body) {
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+          controller.abort();
+          return { response, text: null, tooLarge: true, duration: Date.now() - startTime };
+        }
+        chunks.push(value);
+      }
+    }
+    const text = new TextDecoder().decode(Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))));
+    return { response, text, tooLarge: false, duration: Date.now() - startTime };
+  } catch (error) {
+    if (error.name === "AbortError") {
+      const loggedUrl = urlWithoutQuery(url);
+      logger.warn({ message: "HTTP request timed out", url: loggedUrl, timeoutMs, duration: Date.now() - startTime });
+      throw new HttpTimeoutError(`Request to ${loggedUrl} timed out after ${timeoutMs}ms`, loggedUrl, timeoutMs);
     }
     throw error;
   } finally {
@@ -107,7 +175,7 @@ export async function fetchRetryingNetworkErrors(
       if (!(error instanceof TypeError) || attempt >= attempts) throw error;
       logger.warn({
         message: "HTTP request failed at the network layer, retrying",
-        url,
+        url: urlWithoutQuery(url),
         attempt,
         error: error.message,
       });

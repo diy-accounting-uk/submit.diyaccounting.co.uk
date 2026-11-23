@@ -9,14 +9,18 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { TEST_EMAIL_DOMAIN, registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const PRACTICE_EMAIL = `practice@${TEST_EMAIL_DOMAIN}`;
+const CLIENT_NAME = registerCompany("00000008").name;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const CLIENT_A = {
   hashedSub: "practice-hash",
   clientId: "01ABCDEFGHJKMNPQRSTVWXYZ0",
-  displayName: "Example Trading Ltd",
-  identifiers: { vrn: "193054661", nino: null, utr: null, companyNumber: "00000006" },
+  displayName: CLIENT_NAME,
+  identifiers: { vrn: "193054661", nino: null, utr: null, companyNumber: "00000008" },
   authorisations: {},
   createdAt: "2026-01-01T00:00:00.000Z",
   archivedAt: null,
@@ -154,10 +158,10 @@ test.describe("Practice page", () => {
       await page.addInitScript((id) => window.sessionStorage.setItem("practiceHmrcGrantId", id), grantId);
     }
     if (loggedIn) {
-      await page.addInitScript(() => {
+      await page.addInitScript((email) => {
         window.localStorage.setItem("cognitoIdToken", "test-id-token");
-        window.localStorage.setItem("userInfo", JSON.stringify({ sub: "practice-sub", email: "practice@example.com" }));
-      });
+        window.localStorage.setItem("userInfo", JSON.stringify({ sub: "practice-sub", email }));
+      }, PRACTICE_EMAIL);
     }
     await page.goto("http://localhost:3000/practice.html", { waitUntil: "domcontentloaded" });
     await delay(300);
@@ -169,7 +173,7 @@ test.describe("Practice page", () => {
 
     const rows = page.locator("#clientsTableBody tr");
     await expect(rows).toHaveCount(2);
-    await expect(rows.nth(0)).toContainText("Example Trading Ltd");
+    await expect(rows.nth(0)).toContainText(CLIENT_NAME);
     await expect(rows.nth(0)).toContainText("193054661");
     await expect(rows.nth(1)).toContainText("Jane Freelancer");
     await expect(rows.nth(1)).toContainText("Pending");
@@ -315,15 +319,15 @@ test.describe("Practice page", () => {
     });
     await loadPage(page);
 
-    await page.getByRole("button", { name: "Archive Example Trading Ltd" }).click();
-    await expect(page.locator(".archive-confirm")).toContainText("Archive Example Trading Ltd?");
+    await page.getByRole("button", { name: `Archive ${CLIENT_NAME}` }).click();
+    await expect(page.locator(".archive-confirm")).toContainText(`Archive ${CLIENT_NAME}?`);
 
     await page.getByRole("button", { name: "Keep" }).click();
     await expect(page.locator(".archive-confirm")).toHaveCount(0);
     expect(deleted).toBe(0);
     await expect(page.locator("#clientsTableBody tr")).toHaveCount(2);
 
-    await page.getByRole("button", { name: "Archive Example Trading Ltd" }).click();
+    await page.getByRole("button", { name: `Archive ${CLIENT_NAME}` }).click();
     await page.getByRole("button", { name: "Yes, archive" }).click();
     await expect(page.locator("#clientsTableBody tr")).toHaveCount(1);
     expect(deleted).toBe(1);
@@ -445,8 +449,8 @@ test.describe("Practice page", () => {
     await loadPage(page, { grantId: GRANT_ID });
 
     const rowFor = (name) => page.locator("#clientsTableBody tr", { hasText: name });
-    await expect(rowFor("Example Trading Ltd").locator(".check-status-btn")).toHaveCount(0);
-    await expect(rowFor("Example Trading Ltd").locator(".invite-toggle-btn")).toHaveCount(1);
+    await expect(rowFor(CLIENT_NAME).locator(".check-status-btn")).toHaveCount(0);
+    await expect(rowFor(CLIENT_NAME).locator(".invite-toggle-btn")).toHaveCount(1);
     await expect(rowFor("Invited Ltd").locator(".check-status-btn")).toBeEnabled();
     await expect(rowFor("Legacy Ltd").locator(".check-status-btn")).toHaveCount(0);
     await expect(rowFor("Legacy Ltd").locator(".invite-toggle-btn")).toHaveCount(1);

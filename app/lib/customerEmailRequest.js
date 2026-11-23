@@ -36,7 +36,10 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
  * @param {string} [params.to] - Address, only for a caller that has no raw sub (the billing webhook)
  * @param {string} [params.hashedSub] - Hashed sub, for a caller that has no raw sub
  * @param {boolean} [params.synthetic] - True when a test or sandbox flow caused the event
- * @param {Object} [params.data] - Short fields the template reads
+ * @param {Object} [params.data] - Short fields the template reads. A pass-generated request carries the pass's
+ *   code, passTypeId, bundleId, validUntil, maxUses, usesLeft, generatedBy ("user" or "operator"), the
+ *   bundle's passSummary in the email's language, language ("cy" for Welsh), and for an email-restricted
+ *   pass the masked address in restrictedTo; never the full address.
  * @returns {Promise<{requested: boolean}>}
  */
 export async function requestCustomerEmail({ kind, userSub, to, hashedSub, synthetic = false, data }) {

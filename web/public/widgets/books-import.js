@@ -125,6 +125,19 @@
     return `${count} ${singular}${count === 1 ? "" : "s"}`;
   }
 
+  // How many fields or figures a file filled, as the sentence that reports the fill reads it.
+  function fieldCount(count) {
+    return count === 1
+      ? siteText("widget.books-count-field-one", "1 field")
+      : siteText("widget.books-count-fields", "{count} fields", { count });
+  }
+
+  function figureCount(count) {
+    return count === 1
+      ? siteText("widget.books-count-figure-one", "1 figure")
+      : siteText("widget.books-count-figures", "{count} figures", { count });
+  }
+
   function withoutFinalStop(text) {
     let end = String(text).length;
     while (end > 0 && /[.\s]/.test(text[end - 1])) end -= 1;
@@ -272,7 +285,16 @@
     const filledExpenses = fillExpenseFields(period.periodExpenses, period.periodDisallowableExpenses);
     const lacking = figuresTheFormLacks(period);
     const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
-    return `Filled ${2 + filledExpenses} figures from ${fileName} for the period ending ${periodEnd}. Check them, then submit.${lackingText}`;
+    const filledText = siteText(
+      "itsa.books-filled-quarter",
+      "Filled {figures} from {file} for the period ending {end}. Check them, then submit.",
+      {
+        figures: figureCount(2 + filledExpenses),
+        file: fileName,
+        end: periodEnd,
+      },
+    );
+    return `${filledText}${lackingText}`;
   }
 
   const UK_PROPERTY_PERIOD_FIELDS = {
@@ -329,7 +351,17 @@
       .map(([name, value]) => `${name} ${poundsText(value)}`);
     const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
     const warningText = derived.warnings.map((warning) => ` ${upperFirst(withoutFinalStop(warning))}.`).join("");
-    return `Filled ${plural(filled, "figure")} from ${fileName} for the period ${periodStartDate} to ${periodEndDate}. Check them, then submit.${lackingText}${warningText}`;
+    const filledText = siteText(
+      "itsa.books-filled-period",
+      "Filled {figures} from {file} for the period {start} to {end}. Check them, then submit.",
+      {
+        figures: figureCount(filled),
+        file: fileName,
+        start: periodStartDate,
+        end: periodEndDate,
+      },
+    );
+    return `${filledText}${lackingText}${warningText}`;
   }
 
   async function fillUkPropertyAnnual({ bundle, source, fileName, hooks }) {
@@ -401,7 +433,11 @@
     const { formEntriesFromBook, applyFormEntries } = await import("../lib/ct600-fields.js");
     const filled = applyFormEntries(formEntriesFromBook(figures, accounts, microAccounts));
     hooks.onFilled(figures.workingSheet);
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${figures.periodStart} to ${figures.periodEnd}. Check them, add the UTR, the statements and the declaration, then preview.`;
+    return siteText(
+      "ch.books-filled-ct-book",
+      "Filled {fields} from {file} for the period {start} to {end}. Check them, add the UTR, the statements and the declaration, then preview.",
+      { fields: fieldCount(filled), file: fileName, start: figures.periodStart, end: figures.periodEnd },
+    );
   }
 
   // The figures file is derive_company_tax_return's answer: { kind: "ct600", sourceFileName, packageVersion, period, figures }.
@@ -412,7 +448,11 @@
     const { formEntriesFromFigures, applyFormEntries } = await import("../lib/ct600-fields.js");
     const filled = applyFormEntries(formEntriesFromFigures(parsed.figures));
     hooks.onFilled(parsed.figures.workingSheet);
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${parsed.figures.periodStart} to ${parsed.figures.periodEnd}. The file carries the profit and loss account only: fill the balance sheet and the rest of the accounts, then preview.`;
+    return siteText(
+      "ch.books-filled-ct-figures",
+      "Filled {fields} from {file} for the period {start} to {end}. The file carries the profit and loss account only: fill the balance sheet and the rest of the accounts, then preview.",
+      { fields: fieldCount(filled), file: fileName, start: parsed.figures.periodStart, end: parsed.figures.periodEnd },
+    );
   }
 
   // Both accounts pages name the company the customer looked up. A book for another company fills nothing.
@@ -423,6 +463,18 @@
       .toUpperCase();
     if (formNumber && bookNumber && formNumber !== bookNumber) {
       throw new Refusal(`${fileName} is for company ${bookNumber}; this form is for company ${formNumber}. Nothing filled.`);
+    }
+  }
+
+  // While a form revises filed accounts its period is theirs, so a source for another period fills nothing.
+  function refuseOtherPeriod({ periodStart, periodEnd }, fileName) {
+    if (document.getElementById("revisionSection")?.hidden !== false) return;
+    const revisedStart = fieldValue("periodStart");
+    const revisedEnd = fieldValue("periodEnd");
+    if (periodStart !== revisedStart || periodEnd !== revisedEnd) {
+      throw new Refusal(
+        `${siteText("widget.books-other-period", "{file} is for the period {from} to {to}; the accounts being revised are for {start} to {end}.", { file: fileName, from: periodStart, to: periodEnd, start: revisedStart, end: revisedEnd })} ${siteText("widget.books-nothing-filled", "Nothing filled.")}`,
+      );
     }
   }
 
@@ -465,7 +517,7 @@
   function taxonomyText(suite) {
     const family = String(suite.family || "").replace("-", " ");
     const year = suite.date ? suite.date.slice(0, 4) : "";
-    return [family, year && `${year} taxonomy`].filter(Boolean).join(" ");
+    return year ? siteText("widget.books-taxonomy", "{family} {year} taxonomy", { family, year }) : family;
   }
 
   // Reads an iXBRL accounts document for the regime the page takes. A document for another company or
@@ -483,6 +535,27 @@
     }
   }
 
+  // The balance sheet lines the books mapping does not give as the forms file them (the provisions,
+  // creditors after one year without them, the creditor splits), read from the document itself as a
+  // revision reads them, and filled over the mapping's figures.
+  async function fillBalanceSheetLinesFromIxbrl(input) {
+    const { balanceSheetLinesOf } = await import("/lib/accounts-revision.js");
+    const decoder = new TextDecoder();
+    const text = Array.isArray(input) ? input.map((part) => decoder.decode(part.bytes)).join("\n") : decoder.decode(input);
+    let filled = 0;
+    for (const [prefix, lines] of Object.entries(balanceSheetLinesOf(text))) {
+      if (prefix !== "current" && prefix !== "prior") continue;
+      for (const [line, value] of Object.entries(lines)) {
+        const box = document.getElementById(prefix + upperFirst(line));
+        if (!box) continue;
+        // A box the mapping filled was counted with its figures.
+        if (box.value === "") filled += 1;
+        setField(box.id, figureText(value));
+      }
+    }
+    return filled;
+  }
+
   // A set that cannot be read shows one failure message (title, cause, next step) and the card's status line.
   function refusedSet(error) {
     const cause = `${withoutFinalStop(error.message)}.`;
@@ -497,19 +570,47 @@
     return new Refusal(`${cause} Nothing filled.`);
   }
 
-  function ixbrlLeftOutText(mapped, formTakesProfitAndLoss) {
-    const names = [...new Set(mapped.unmapped.map((fact) => fact.concept))];
-    if (mapped.profitAndLoss && !formTakesProfitAndLoss) names.unshift("the profit and loss account");
+  // Statements the accounts forms make themselves, so a document's own copy of them is not left out.
+  const FORM_STATEMENT_CONCEPTS = new Set([
+    "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse",
+    "AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse",
+    "StatementComplianceWithApplicableReportingFramework",
+    "ReportIncludesDetailedProfitLossStatementTruefalse",
+    "EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse",
+    "ControllingPartyUltimateControllingPartyTruefalse",
+  ]);
+
+  // The notes on the document and the profit and loss account a form does not take, as text, and the
+  // names of the other facts the form has no field for.
+  function ixbrlLeftOut(mapped, formTakesProfitAndLoss) {
+    const unplaced = [...new Set(mapped.unmapped.map((fact) => fact.concept))].filter((name) => !FORM_STATEMENT_CONCEPTS.has(name));
     const notes = mapped.notes.map((note) => ` ${withoutFinalStop(note)}.`).join("");
-    const leftOut = names.length > 0 ? ` The document also holds ${namedList(names)}, which this form has no field for.` : "";
-    return notes + leftOut;
+    const profitAndLoss =
+      mapped.profitAndLoss && !formTakesProfitAndLoss
+        ? ` ${siteText("widget.books-ixbrl-profit-and-loss", "The document also holds the profit and loss account, which this form has no field for.")}`
+        : "";
+    let count = "";
+    if (unplaced.length === 1) {
+      count = ` ${siteText("widget.books-ixbrl-unplaced-one", "The document also holds 1 fact this form has no field for.")}`;
+    } else if (unplaced.length > 1) {
+      count = ` ${siteText("widget.books-ixbrl-unplaced", "The document also holds {count} facts this form has no field for.", { count: unplaced.length })}`;
+    }
+    return { text: notes + profitAndLoss + count, unplaced };
   }
 
   function ixbrlStatus(filled, fileName, mapped, advice, formTakesProfitAndLoss) {
-    return (
-      `Filled ${plural(filled, "field")} from ${fileName} (${taxonomyText(mapped.suite)}) for the period ${mapped.period.start} to ${mapped.period.end}.` +
-      `${ixbrlLeftOutText(mapped, formTakesProfitAndLoss)} ${advice}`
-    );
+    const leftOut = ixbrlLeftOut(mapped, formTakesProfitAndLoss);
+    return {
+      text:
+        siteText("widget.books-filled-ixbrl", "Filled {fields} from {file} ({taxonomy}) for the period {start} to {end}.", {
+          fields: fieldCount(filled),
+          file: fileName,
+          taxonomy: taxonomyText(mapped.suite),
+          start: mapped.period.start,
+          end: mapped.period.end,
+        }) + `${leftOut.text} ${advice}`,
+      unplaced: leftOut.unplaced,
+    };
   }
 
   function takesIxbrl(kind) {
@@ -531,7 +632,7 @@
       filled,
       fileName,
       mapped,
-      "Check the figures, add the UTR, the statements and the declaration, then preview.",
+      siteText("ch.books-advice-ct", "Check the figures, add the UTR, the statements and the declaration, then preview."),
       mapped.regime === "small",
     );
   }
@@ -546,6 +647,18 @@
 
   async function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "micro");
+    refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
+    const filled = fillMicroEntityFormFromMapped(mapped) + (await fillBalanceSheetLinesFromIxbrl(source.ixbrl));
+    let advice = siteText("ch.books-advice-micro", "Check them, add the date approved and the statements, then preview.");
+    if (mapped.dormant) {
+      advice = `${siteText("ch.books-advice-dormant", "The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value.")} ${advice}`;
+    }
+    return ixbrlStatus(filled, fileName, mapped, advice, false);
+  }
+
+  // Fills the micro-entity form from mapped iXBRL accounts: the period, both years' balance sheets,
+  // the employees, the director and the dormant facts. Answers how many fields it filled.
+  function fillMicroEntityFormFromMapped(mapped) {
     let filled = 0;
     setField("periodStart", mapped.period.start);
     setField("periodEnd", mapped.period.end);
@@ -562,16 +675,14 @@
       filled += 1;
     }
     setChecked("dormant", mapped.dormant);
-    let advice = "Check them, add the date approved and the statements, then preview.";
     if (mapped.dormant) {
       const status = TRADING_STATUS_OPTION[mapped.tradingStatus];
       const shareClass = SHARE_CLASS_OPTION[mapped.shareNote?.shareClass];
       if (status) setField("dormantTradingStatus", status);
       if (shareClass) setField("shareClass", shareClass);
       if (typeof mapped.shareNote?.nominalValue === "number") setField("nominalValue", figureText(mapped.shareNote.nominalValue));
-      advice = `The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value. ${advice}`;
     }
-    return ixbrlStatus(filled, fileName, mapped, advice, false);
+    return filled;
   }
 
   async function fillMicroEntityAccounts({ bundle, source, fileName }) {
@@ -583,6 +694,7 @@
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
     refuseOtherCompany(accounts, fileName);
+    refuseOtherPeriod(accounts, fileName);
     let filled = 0;
     setField("periodStart", accounts.periodStart);
     setField("periodEnd", accounts.periodEnd);
@@ -600,7 +712,12 @@
     const dormantText = dormant
       ? " The book shows no turnover, no costs and no change in reserves, so the dormant box is ticked: confirm the company was dormant, then choose its trading history, share class and nominal value."
       : "";
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. Check them, add the date approved and the statements, then preview.${dormantText}`;
+    const filledText = siteText(
+      "ch.books-filled-micro",
+      "Filled {fields} from {file} for the period {start} to {end}. Check them, add the date approved and the statements, then preview.",
+      { fields: fieldCount(filled), file: fileName, start: accounts.periodStart, end: accounts.periodEnd },
+    );
+    return `${filledText}${dormantText}`;
   }
 
   const SMALL_PROFIT_AND_LOSS_LINES = {
@@ -657,6 +774,24 @@
 
   async function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "small");
+    refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
+    const filled = fillSmallCompanyFormFromMapped(mapped) + (await fillBalanceSheetLinesFromIxbrl(source.ixbrl));
+    return ixbrlStatus(
+      filled,
+      fileName,
+      mapped,
+      siteText(
+        "ch.books-advice-small",
+        "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
+      ),
+      true,
+    );
+  }
+
+  // Fills the small company form from mapped iXBRL accounts: the period, the copy, the profit and
+  // loss account a full copy holds, both years' balance sheets, the fixed asset note, the employees,
+  // the principal activity and the directors. Answers how many fields it filled.
+  function fillSmallCompanyFormFromMapped(mapped) {
     const { currentYear, priorYear } = mapped.balanceSheet;
     let filled = 0;
     setField("periodStart", mapped.period.start);
@@ -699,13 +834,7 @@
       setField("directorName", mapped.signer);
       filled += 1;
     }
-    return ixbrlStatus(
-      filled,
-      fileName,
-      mapped,
-      "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
-      true,
-    );
+    return filled;
   }
 
   async function fillSmallCompanyAccounts({ bundle, source, fileName }) {
@@ -717,6 +846,7 @@
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
     refuseOtherCompany(accounts, fileName);
+    refuseOtherPeriod(accounts, fileName);
     let filled = 0;
     setField("periodStart", accounts.periodStart);
     setField("periodEnd", accounts.periodEnd);
@@ -725,6 +855,8 @@
     const bookProfitAndLoss = profitAndLossFormat === 2 ? accounts.profitAndLossFormat2 : accounts.profitAndLoss;
     filled += setFigures("current", bookProfitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
     filled += setFigures("current", accounts.balanceSheet.currentYear, SMALL_BALANCE_SHEET_LINES);
+    const prior = fillSmallCompanyPriorYearFromBook(accounts, bookProfitAndLoss, profitAndLossFormat);
+    filled += prior.filled;
     const noteClasses = Object.entries(accounts.fixedAssetNote || {});
     if (noteClasses.length > 0) {
       setChecked("includeFixedAssetNote", true);
@@ -742,7 +874,85 @@
       setField("directorName", accounts.directorName);
       filled += 1;
     }
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. The book holds no prior year profit and loss account, so the prior year is yours to add. Check the figures, add the principal activity, the accounting policies, the date approved and the statements, then preview.`;
+    return [
+      siteText("widget.books-small-filled", "Filled {count} fields from {file} for the period {start} to {end}.", {
+        count: filled,
+        file: fileName,
+        start: accounts.periodStart,
+        end: accounts.periodEnd,
+      }),
+      prior.sentence,
+      siteText(
+        "widget.books-small-next",
+        "Check the figures, add the principal activity, the accounting policies, the date approved and the statements, then preview.",
+      ),
+    ].join(" ");
+  }
+
+  // A prior-year field as the reader finds it in the form's table: its line's name, or for a sub-line
+  // ("Of which, ..."), the line it is part of and its own name.
+  function priorFieldName(input) {
+    const row = input.closest("tr");
+    const heading = row?.querySelector("th");
+    if (!heading) return (document.querySelector(`label[for="${input.id}"]`)?.textContent ?? input.id).trim();
+    const text = (cell) => cell.textContent.replace(/\s+/g, " ").trim();
+    if (!heading.classList.contains("ledger__part")) return text(heading);
+    let lineRow = row.previousElementSibling;
+    while (lineRow && lineRow.querySelector("th")?.classList.contains("ledger__part")) lineRow = lineRow.previousElementSibling;
+    const line = lineRow?.querySelector("th");
+    const part = text(heading).replace(/^[^,]+,\s*/, "");
+    return line ? siteText("widget.books-line-part", "{line}, of which {part}", { line: text(line), part }) : text(heading);
+  }
+
+  // The prior year of the small company form from the book, when the form shows one: the balance
+  // sheet from the book's opening balances, and the profit and loss account where the book holds it.
+  // Answers how many fields it filled and the sentence that names the prior-year fields left for the
+  // reader to type.
+  function fillSmallCompanyPriorYearFromBook(accounts, bookProfitAndLoss, profitAndLossFormat) {
+    if (!document.getElementById("includeComparatives")?.checked) {
+      return {
+        filled: 0,
+        sentence: siteText(
+          "widget.books-small-first-accounts",
+          "These are the company's first accounts, so there is no prior year to fill.",
+        ),
+      };
+    }
+    const balanceSheet = accounts.balanceSheet.priorYear ?? {};
+    const profitAndLoss = bookProfitAndLoss.priorYear ?? {};
+    const filled =
+      setFigures("prior", balanceSheet, SMALL_BALANCE_SHEET_LINES) +
+      setFigures("prior", profitAndLoss, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
+    const filleted = document.getElementById("copyFilleted")?.checked;
+    const unsourcedInputs = [
+      ...SMALL_BALANCE_SHEET_LINES.filter((name) => typeof balanceSheet[name] !== "number"),
+      ...(filleted ? [] : SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat].filter((name) => typeof profitAndLoss[name] !== "number")),
+    ]
+      .map((name) => document.getElementById("prior" + upperFirst(name)))
+      .filter(Boolean);
+    const labelOf = priorFieldName;
+    // A field the book gives nothing for keeps no figure from an earlier fill: it is cleared and named.
+    // A field that still holds the form's own starting value holds no such figure.
+    const cleared = unsourcedInputs.filter((input) => input.value.trim() !== "" && input.value !== input.defaultValue);
+    cleared.forEach((input) => setField(input.id, ""));
+    const unsourced = unsourcedInputs.map(labelOf);
+    const clearedSentence =
+      cleared.length > 0
+        ? siteText("widget.books-small-prior-cleared-lines", "The prior-year figures these held before are cleared: {fields}.", {
+            fields: cleared.map(labelOf).join("; "),
+          })
+        : "";
+    const filledSentence =
+      Object.keys(balanceSheet).length > 0
+        ? siteText("widget.books-small-prior-filled", "The prior year's balance sheet is filled from the book's opening balances.")
+        : "";
+    const typeSentence =
+      unsourced.length > 0
+        ? siteText("widget.books-small-prior-type-lines", "The book holds no prior-year figure for these, so type them: {fields}.", {
+            fields: unsourced.join("; "),
+          })
+        : "";
+    return { filled, sentence: [filledSentence, typeSentence, clearedSentence].filter(Boolean).join(" ") };
   }
 
   const HANDOFF_KEY = "booksHandoff";
@@ -917,10 +1127,16 @@
     const hint = element(
       "p",
       { id: "booksImportHint", class: "hint" },
-      siteText(
-        "widget.books-hint",
-        "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
-      ) +
+      // A Company book saves as a package of several workbooks, so the forms that take one ask for the package zip.
+      (takesIxbrl(kind)
+        ? siteText(
+            "widget.books-hint-company",
+            "Drop your DIYA-GL book or spreadsheets package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
+          )
+        : siteText(
+            "widget.books-hint",
+            "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
+          )) +
         (takesIxbrl(kind)
           ? " " +
             siteText(
@@ -954,6 +1170,13 @@
       "role": "status",
       "aria-live": "polite",
     });
+    const unplacedFacts = element("details", { id: "booksImportUnplaced", class: "hint books-import-unplaced" });
+    unplacedFacts.hidden = true;
+    const unplacedList = element("ul", {});
+    unplacedFacts.append(
+      element("summary", {}, siteText("widget.books-ixbrl-unplaced-names", "The facts this form has no field for")),
+      unplacedList,
+    );
     const section = element("section", { "class": "books-import", "aria-labelledby": "booksImportHeading" });
     const savedBooks = element("div", { id: "savedBooks", class: "form-group" });
     savedBooks.hidden = true;
@@ -969,14 +1192,19 @@
       siteText("widget.books-saved-use", "Fill from this book"),
     );
     savedBooks.append(savedBooksLabel, savedBooksSelect, savedBooksUse);
-    section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine);
+    section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine, unplacedFacts);
     container.replaceChildren(section);
 
     let loaded = null;
     let working = false;
 
-    function say(text) {
+    // A status is text, or text with the names of the facts a document holds that the form has no field for.
+    function say(status) {
+      const { text, unplaced = [] } = typeof status === "string" ? { text: status } : status;
       statusLine.textContent = text;
+      unplacedList.replaceChildren(...unplaced.map((name) => element("li", {}, name)));
+      unplacedFacts.open = false;
+      unplacedFacts.hidden = unplaced.length === 0;
     }
 
     async function fillFromLoaded() {
@@ -1280,5 +1508,13 @@
     return undefined;
   }
 
-  window.booksImport = { mount, parseHandoff, applyPendingHandoff, showSavedBooksFor };
+  window.booksImport = {
+    mount,
+    parseHandoff,
+    applyPendingHandoff,
+    showSavedBooksFor,
+    fillMicroEntityFormFromMapped,
+    fillSmallCompanyFormFromMapped,
+    loadBundle,
+  };
 })();

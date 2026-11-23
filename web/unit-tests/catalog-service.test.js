@@ -11,6 +11,7 @@ import {
   isActivityListedInEnvironment,
   isActivityShown,
   isJointFilingOffered,
+  isRevisedAccountsOffered,
   isBundleShown,
   activityPagePath,
   activityArea,
@@ -274,6 +275,31 @@ describe("isJointFilingOffered", () => {
   });
 });
 
+describe("isRevisedAccountsOffered", () => {
+  const viewer = { preview: false, operatorFeatures: true, account: { passGeneration: true } };
+  const catalog = { activities: [{ id: "file-revised-accounts", bundles: ["resident-ltd"], environments: ["ci"] }] };
+
+  it("offers a revision where its activity is listed", () => {
+    expect(isRevisedAccountsOffered(catalog, "ci", viewer)).toBe(true);
+  });
+
+  it("withholds it where the activity is not listed, until preview features are on", () => {
+    expect(isRevisedAccountsOffered(catalog, "prod", viewer)).toBe(false);
+    expect(isRevisedAccountsOffered(catalog, "prod", { ...viewer, preview: true })).toBe(true);
+  });
+
+  it("withholds it when the catalogue has no revised accounts activity", () => {
+    expect(isRevisedAccountsOffered({ activities: [] }, "ci", viewer)).toBe(false);
+  });
+
+  it("is offered in ci and not in prod by the real catalogue", () => {
+    const real = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf8"));
+    expect(isRevisedAccountsOffered(real, "ci", viewer)).toBe(true);
+    expect(isRevisedAccountsOffered(real, "simulator", viewer)).toBe(true);
+    expect(isRevisedAccountsOffered(real, "prod", viewer)).toBe(false);
+  });
+});
+
 describe("bundlePassSummary", () => {
   const bundle = { id: "resident-vat", passSummary: "submit VAT returns to HMRC", passSummaryCy: "cyflwyno Ffurflenni TAW i CThEF" };
 
@@ -284,6 +310,18 @@ describe("bundlePassSummary", () => {
 
   it("keeps the English phrase for a bundle with no Welsh one", () => {
     expect(bundlePassSummary({ passSummary: "open the operator dashboard" }, "cy")).toBe("open the operator dashboard");
+  });
+
+  it("every catalogue bundle's Welsh name is the one the Welsh pages show", () => {
+    const catalogue = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf-8"));
+    const welsh = parseToml(readFileSync("i18n/cy.toml", "utf-8")).strings;
+    const pageNames = Object.fromEntries(
+      Object.entries(welsh)
+        .filter(([id]) => id.startsWith("chrome.bundle-"))
+        .map(([id, entry]) => [id.slice("chrome.bundle-".length), entry.cy]),
+    );
+    const catalogueNames = Object.fromEntries(catalogue.bundles.filter((entry) => entry.nameCy).map((entry) => [entry.id, entry.nameCy]));
+    expect(catalogueNames).toEqual(pageNames);
   });
 
   it("every catalogue bundle that says what it lets you do says it in Welsh too", () => {

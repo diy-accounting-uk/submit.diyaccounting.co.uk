@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (41)</h2>
+        <h2>Tools (42)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -488,6 +488,29 @@
     &quot;service&quot;,
     &quot;knownFact&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-list_accounts_receipts">
+        <summary><code>list_accounts_receipts</code></summary>
+        <p>The accounts filings of the signed-in account, newest first, over the deployed API. Call it before revising accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their submission number and Companies House's reasons, and have no receipt to revise. A receipt that cannot be read, or whose filed document does not read as accounts, answers problem with the reason and is not revisable. It lists the newest 25 accounts filings; when there are more it answers more true, and older filings are not listed. clientId narrows the list to one of the practice's clients.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>clientId</code></td><td>string</td><td>no</td><td>A practice client's id, to list that client's accounts filings</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;clientId&quot;: {
+      &quot;description&quot;: &quot;A practice client's id, to list that client's accounts filings&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1130,12 +1153,19 @@
       </details>
       <details class="tool" id="tool-render_micro_entity_accounts_sandbox">
         <summary><code>render_micro_entity_accounts_sandbox</code></summary>
-        <p>The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId.</p>
+        <p>The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId. With revision, it renders revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>directorsAdvances</code></td><td>object[]</td><td>no</td><td>One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
+            <tr><td><code>dormant</code></td><td>boolean</td><td>no</td><td>True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below</td></tr>
+            <tr><td><code>dormantTradingStatus</code></td><td>&quot;neverTraded&quot; | &quot;noLongerTrading&quot;</td><td>no</td><td>Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account</td></tr>
+            <tr><td><code>shareClass</code></td><td>&quot;ordinaryShares&quot; | &quot;preferenceShares&quot; | &quot;deferredShares&quot; | &quot;otherShares&quot;</td><td>no</td><td>Required when dormant: the class of the allotted shares, printed in the share capital note</td></tr>
+            <tr><td><code>nominalValue</code></td><td>number</td><td>no</td><td>Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>yes</td><td>The 8-character Companies House company number</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -1198,6 +1228,108 @@
         &quot;accountantsName&quot;,
         &quot;statement&quot;
       ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        },
+        &quot;revisesReceipt&quot;: {
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
+      ]
+    },
+    &quot;directorsAdvances&quot;: {
+      &quot;description&quot;: &quot;One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;name&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+          },
+          &quot;terms&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+          },
+          &quot;balanceAtStart&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+          },
+          &quot;advanced&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+          },
+          &quot;repaid&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+          },
+          &quot;balanceAtEnd&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;name&quot;,
+          &quot;terms&quot;,
+          &quot;balanceAtStart&quot;,
+          &quot;advanced&quot;,
+          &quot;repaid&quot;,
+          &quot;balanceAtEnd&quot;
+        ]
+      }
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
+      ]
+    },
+    &quot;dormant&quot;: {
+      &quot;description&quot;: &quot;True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    },
+    &quot;dormantTradingStatus&quot;: {
+      &quot;description&quot;: &quot;Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;neverTraded&quot;,
+        &quot;noLongerTrading&quot;
+      ]
+    },
+    &quot;shareClass&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: the class of the allotted shares, printed in the share capital note&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;ordinaryShares&quot;,
+        &quot;preferenceShares&quot;,
+        &quot;deferredShares&quot;,
+        &quot;otherShares&quot;
+      ]
+    },
+    &quot;nominalValue&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each&quot;,
+      &quot;type&quot;: &quot;number&quot;
     },
     &quot;companyNumber&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -1357,12 +1489,14 @@
       </details>
       <details class="tool" id="tool-render_small_company_accounts_sandbox">
         <summary><code>render_small_company_accounts_sandbox</code></summary>
-        <p>The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId.</p>
+        <p>The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId. With revision, it renders revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>yes</td><td>The 8-character Companies House company number</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -1424,6 +1558,41 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
+      ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        },
+        &quot;revisesReceipt&quot;: {
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
+      ]
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
       ]
     },
     &quot;companyNumber&quot;: {
@@ -1548,6 +1717,47 @@
           },
           &quot;description&quot;: &quot;Every director's name, at least one&quot;
         },
+        &quot;directorsAdvances&quot;: {
+          &quot;description&quot;: &quot;Inside smallCompany: one row per director who owed the company money in the period, each named as in directors; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+              &quot;name&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+              },
+              &quot;terms&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+              },
+              &quot;balanceAtStart&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+              },
+              &quot;advanced&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+              },
+              &quot;repaid&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+              },
+              &quot;balanceAtEnd&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+              }
+            },
+            &quot;required&quot;: [
+              &quot;name&quot;,
+              &quot;terms&quot;,
+              &quot;balanceAtStart&quot;,
+              &quot;advanced&quot;,
+              &quot;repaid&quot;,
+              &quot;balanceAtEnd&quot;
+            ]
+          }
+        },
         &quot;balanceSheet&quot;: {
           &quot;type&quot;: &quot;object&quot;,
           &quot;properties&quot;: {
@@ -1592,6 +1802,34 @@
                 },
                 &quot;bankLoansAfterOneYear&quot;: {
                   &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tradeDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors; with otherDebtors, amountsOwedByDirectors and prepayments it adds up to debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;otherDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedByDirectors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors owed by directors; smallCompany.directorsAdvances then states each director's advance, closing at this total&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;prepayments&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;provisionsForLiabilities&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of provisions; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToDirectors&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to directors; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToGroupUndertakings&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to group undertakings; 0 when left out&quot;,
                   &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;calledUpShareCapital&quot;: {
@@ -1659,6 +1897,34 @@
                 },
                 &quot;bankLoansAfterOneYear&quot;: {
                   &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tradeDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors; with otherDebtors, amountsOwedByDirectors and prepayments it adds up to debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;otherDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedByDirectors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors owed by directors; smallCompany.directorsAdvances then states each director's advance, closing at this total&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;prepayments&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;provisionsForLiabilities&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of provisions; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToDirectors&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to directors; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToGroupUndertakings&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to group undertakings; 0 when left out&quot;,
                   &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;calledUpShareCapital&quot;: {
@@ -1785,6 +2051,7 @@
           ]
         },
         &quot;fixedAssetNote&quot;: {
+          &quot;description&quot;: &quot;The classes the company holds, each by its name; a class it holds none of is left out&quot;,
           &quot;type&quot;: &quot;object&quot;,
           &quot;propertyNames&quot;: {
             &quot;type&quot;: &quot;string&quot;,
@@ -1826,14 +2093,7 @@
               &quot;depreciationCharge&quot;,
               &quot;depreciationOnDisposals&quot;
             ]
-          },
-          &quot;required&quot;: [
-            &quot;landBuildings&quot;,
-            &quot;plantMachinery&quot;,
-            &quot;furnitureFittings&quot;,
-            &quot;computerEquipment&quot;,
-            &quot;motorVehicles&quot;
-          ]
+          }
         }
       },
       &quot;required&quot;: [
@@ -2502,12 +2762,19 @@
       </details>
       <details class="tool" id="tool-submit_micro_entity_accounts_sandbox">
         <summary><code>submit_micro_entity_accounts_sandbox</code></summary>
-        <p>Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client.</p>
+        <p>Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. With revision, it files revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>directorsAdvances</code></td><td>object[]</td><td>no</td><td>One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
+            <tr><td><code>dormant</code></td><td>boolean</td><td>no</td><td>True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below</td></tr>
+            <tr><td><code>dormantTradingStatus</code></td><td>&quot;neverTraded&quot; | &quot;noLongerTrading&quot;</td><td>no</td><td>Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account</td></tr>
+            <tr><td><code>shareClass</code></td><td>&quot;ordinaryShares&quot; | &quot;preferenceShares&quot; | &quot;deferredShares&quot; | &quot;otherShares&quot;</td><td>no</td><td>Required when dormant: the class of the allotted shares, printed in the share capital note</td></tr>
+            <tr><td><code>nominalValue</code></td><td>number</td><td>no</td><td>Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>no</td><td>Required unless clientId is given</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -2572,6 +2839,108 @@
         &quot;accountantsName&quot;,
         &quot;statement&quot;
       ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        },
+        &quot;revisesReceipt&quot;: {
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
+      ]
+    },
+    &quot;directorsAdvances&quot;: {
+      &quot;description&quot;: &quot;One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;name&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+          },
+          &quot;terms&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+          },
+          &quot;balanceAtStart&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+          },
+          &quot;advanced&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+          },
+          &quot;repaid&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+          },
+          &quot;balanceAtEnd&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;name&quot;,
+          &quot;terms&quot;,
+          &quot;balanceAtStart&quot;,
+          &quot;advanced&quot;,
+          &quot;repaid&quot;,
+          &quot;balanceAtEnd&quot;
+        ]
+      }
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
+      ]
+    },
+    &quot;dormant&quot;: {
+      &quot;description&quot;: &quot;True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    },
+    &quot;dormantTradingStatus&quot;: {
+      &quot;description&quot;: &quot;Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;neverTraded&quot;,
+        &quot;noLongerTrading&quot;
+      ]
+    },
+    &quot;shareClass&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: the class of the allotted shares, printed in the share capital note&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;ordinaryShares&quot;,
+        &quot;preferenceShares&quot;,
+        &quot;deferredShares&quot;,
+        &quot;otherShares&quot;
+      ]
+    },
+    &quot;nominalValue&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each&quot;,
+      &quot;type&quot;: &quot;number&quot;
     },
     &quot;companyNumber&quot;: {
       &quot;description&quot;: &quot;Required unless clientId is given&quot;,
@@ -2739,12 +3108,14 @@
       </details>
       <details class="tool" id="tool-submit_small_company_accounts_sandbox">
         <summary><code>submit_small_company_accounts_sandbox</code></summary>
-        <p>Files confirmed small-company accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. poll_submission with kind accounts reaches the outcome.</p>
+        <p>Files confirmed small-company accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. poll_submission with kind accounts reaches the outcome. With revision, it files revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>no</td><td>Required unless clientId is given</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -2808,6 +3179,41 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
+      ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        },
+        &quot;revisesReceipt&quot;: {
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
+      ]
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
       ]
     },
     &quot;companyNumber&quot;: {
@@ -2932,6 +3338,47 @@
           },
           &quot;description&quot;: &quot;Every director's name, at least one&quot;
         },
+        &quot;directorsAdvances&quot;: {
+          &quot;description&quot;: &quot;Inside smallCompany: one row per director who owed the company money in the period, each named as in directors; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+              &quot;name&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+              },
+              &quot;terms&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+              },
+              &quot;balanceAtStart&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+              },
+              &quot;advanced&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+              },
+              &quot;repaid&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+              },
+              &quot;balanceAtEnd&quot;: {
+                &quot;type&quot;: &quot;number&quot;,
+                &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+              }
+            },
+            &quot;required&quot;: [
+              &quot;name&quot;,
+              &quot;terms&quot;,
+              &quot;balanceAtStart&quot;,
+              &quot;advanced&quot;,
+              &quot;repaid&quot;,
+              &quot;balanceAtEnd&quot;
+            ]
+          }
+        },
         &quot;balanceSheet&quot;: {
           &quot;type&quot;: &quot;object&quot;,
           &quot;properties&quot;: {
@@ -2976,6 +3423,34 @@
                 },
                 &quot;bankLoansAfterOneYear&quot;: {
                   &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tradeDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors; with otherDebtors, amountsOwedByDirectors and prepayments it adds up to debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;otherDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedByDirectors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors owed by directors; smallCompany.directorsAdvances then states each director's advance, closing at this total&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;prepayments&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;provisionsForLiabilities&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of provisions; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToDirectors&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to directors; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToGroupUndertakings&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to group undertakings; 0 when left out&quot;,
                   &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;calledUpShareCapital&quot;: {
@@ -3043,6 +3518,34 @@
                 },
                 &quot;bankLoansAfterOneYear&quot;: {
                   &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to a bank; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;tradeDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors; with otherDebtors, amountsOwedByDirectors and prepayments it adds up to debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;otherDebtors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedByDirectors&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors owed by directors; smallCompany.directorsAdvances then states each director's advance, closing at this total&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;prepayments&quot;: {
+                  &quot;description&quot;: &quot;Part of debtors&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;provisionsForLiabilities&quot;: {
+                  &quot;description&quot;: &quot;Whole pounds of provisions; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToDirectors&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to directors; 0 when left out&quot;,
+                  &quot;type&quot;: &quot;number&quot;
+                },
+                &quot;amountsOwedToGroupUndertakings&quot;: {
+                  &quot;description&quot;: &quot;The part of creditorsAfterOneYear owed to group undertakings; 0 when left out&quot;,
                   &quot;type&quot;: &quot;number&quot;
                 },
                 &quot;calledUpShareCapital&quot;: {
@@ -3169,6 +3672,7 @@
           ]
         },
         &quot;fixedAssetNote&quot;: {
+          &quot;description&quot;: &quot;The classes the company holds, each by its name; a class it holds none of is left out&quot;,
           &quot;type&quot;: &quot;object&quot;,
           &quot;propertyNames&quot;: {
             &quot;type&quot;: &quot;string&quot;,
@@ -3210,14 +3714,7 @@
               &quot;depreciationCharge&quot;,
               &quot;depreciationOnDisposals&quot;
             ]
-          },
-          &quot;required&quot;: [
-            &quot;landBuildings&quot;,
-            &quot;plantMachinery&quot;,
-            &quot;furnitureFittings&quot;,
-            &quot;computerEquipment&quot;,
-            &quot;motorVehicles&quot;
-          ]
+          }
         }
       },
       &quot;required&quot;: [

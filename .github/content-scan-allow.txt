@@ -68,8 +68,7 @@ GB123456123456
 # HMRC's own documented example VRN in the vendored reference/hmrc-txm-fph-validator-api spec.
 107794340
 
-# An all-zero placeholder VRN sentinel in this repository's own prefetch code
-# (web/public/prefetch/prefetch-hmrc-vat-return-get-head.js).
+# An all-zero placeholder VRN sentinel.
 000000000
 
 # The sandbox test VRN and two accessibility-node ids that coincidentally sit near the word

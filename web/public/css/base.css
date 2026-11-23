@@ -187,6 +187,13 @@ summary:focus-visible,
   box-shadow: 0 0 0 5px var(--c-focus-ink);
 }
 
+/* A heading the page focuses by script, so a screen reader reads it, is not a control: no ring. */
+h1[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 /* A focused text link reads as a yellow highlight with an ink underline. */
 main a:not(.btn):focus-visible,
 footer a:focus-visible,

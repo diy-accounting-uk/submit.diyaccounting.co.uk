@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability CH-07 Render micro-entity accounts for review
+// @capability CH-07 Render micro-entity and small company accounts for review
 // - **Use when:** a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
-// - **Does:** companiesHouseAccountsRenderPost.js renders FRS 105 micro-entity iXBRL from the entered balance sheet, using buildMicroEntityAccounts. It never calls the Companies House XML Gateway.
+// - **Does:** companiesHouseAccountsRenderPost.js renders the iXBRL of the entered accounts with buildAccountsIxbrl: FRS 105 micro-entity accounts with buildMicroEntityAccounts, or FRS 102 section 1A small company accounts with buildSmallCompanyAccounts. A request with a revision renders the revised accounts with their revision page. It never calls the Companies House XML Gateway.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/companies-house/companiesHouseAccountsRenderPost.js:ingestHandler`
 // - **Files:** app/functions/companies-house/companiesHouseAccountsRenderPost.js, app/unit-tests/functions/companiesHouseAccountsRenderPost.test.js
-// - **Keywords:** companies house, micro-entity accounts, FRS 105, ixbrl, render, balance sheet
+// - **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, FRS 105, FRS 102, ixbrl, render, balance sheet
 // - **Related:** CH-08, CH-13
 // @end-capability
 
 // app/functions/companies-house/companiesHouseAccountsRenderPost.js
-// Renders the FRS 105 micro-entity iXBRL from the balance sheet the user entered, so the page can
+// Renders the iXBRL of the micro-entity or small company accounts the user entered, so the page can
 // show it before anything reaches the Companies House XML Gateway. Never calls the gateway and
 // never needs the company authentication code.
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
+import { extractRequest, parseRequestBody, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "./companiesHouseAccountsPost.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -50,6 +51,9 @@ export async function ingestHandler(event) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
+  const revisionRefusal = refuseRevisionWhenNotEnabled(event, request, parseRequestBody(event)?.revision != null);
+  if (revisionRefusal) return revisionRefusal;
+
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
@@ -76,7 +80,7 @@ export async function ingestHandler(event) {
 
   await publishActivityEvent({
     event: "companies-house-accounts-rendered",
-    summary: "Companies House micro-entity accounts rendered",
+    summary: `Companies House ${accounts.revision ? "revised " : ""}${accounts.regime === "small-company" ? "small company" : "micro-entity"} accounts rendered`,
     userSub,
   });
 

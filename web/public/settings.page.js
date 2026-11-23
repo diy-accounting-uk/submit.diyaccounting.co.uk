@@ -38,6 +38,22 @@ async function init() {
   passSwitch.checked = ACCOUNT_SETTING_DEFAULTS.passGeneration;
   passSwitch.disabled = true;
   const response = await fetchBundleResponse();
+  // fetchBundleResponse answers null for a visitor who is not signed in too, who sees the sign-in panel.
+  let signedIn;
+  try {
+    signedIn = Boolean(localStorage.getItem("cognitoIdToken"));
+  } catch {
+    signedIn = false;
+  }
+  if (!response && signedIn && window.showStatus) {
+    window.showStatus(
+      window.siteText(
+        "settings.read-failed",
+        "Your account settings could not be read, so they cannot be changed now. Reload the page to try again.",
+      ),
+      "error",
+    );
+  }
   if (response) {
     passSwitch.checked = response.settings?.passGeneration ?? ACCOUNT_SETTING_DEFAULTS.passGeneration;
     passSwitch.disabled = false;

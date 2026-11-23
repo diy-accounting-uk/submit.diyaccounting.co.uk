@@ -48,6 +48,16 @@ final class ApiRoutes {
     private final HttpLambdaAuthorizer customAuthorizer;
     private final Set<String> createdRouteKeys = new LinkedHashSet<>();
     private final Map<String, String> firstCreatorByRoute = new HashMap<>();
+    private final Map<String, FirstRouteOnPath> firstRouteByPath = new HashMap<>();
+
+    // The first route this stack adds on a path. A path's HEAD route takes its construct id,
+    // integration and authorizer, so the HEAD route stays the resource it was when any method on
+    // the path still added one.
+    private record FirstRouteOnPath(
+            String functionName,
+            String keySuffix,
+            HttpLambdaIntegration integration,
+            IHttpRouteAuthorizer authorizer) {}
 
     ApiRoutes(
             Stack stack,
@@ -202,20 +212,23 @@ final class ApiRoutes {
                 "Created route %s %s for function %s",
                 apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
 
-        // A HEAD route for the same path, unless the primary route is HEAD or one exists already.
-        if (apiLambdaProps.httpMethod() != HttpMethod.HEAD) {
+        FirstRouteOnPath firstOnPath = firstRouteByPath.computeIfAbsent(
+                apiLambdaProps.urlPath(),
+                path -> new FirstRouteOnPath(apiLambdaProps.ingestFunctionName(), keySuffix, integration, authorizer));
+
+        // A HEAD route beside each GET route, and on a path whose route asks for one. An HTTP API holds
+        // 300 routes, so any other path served by POST, PUT or DELETE alone gets none.
+        if (apiLambdaProps.httpMethod() == HttpMethod.GET || apiLambdaProps.headRoute()) {
             String headRouteKeyStr = "HEAD " + apiLambdaProps.urlPath();
             if (!createdRouteKeys.contains(headRouteKeyStr)) {
                 createdRouteKeys.add(headRouteKeyStr);
-                firstCreatorByRoute.put(headRouteKeyStr, apiLambdaProps.ingestFunctionName());
+                firstCreatorByRoute.put(headRouteKeyStr, firstOnPath.functionName());
                 addRoute(
-                        apiLambdaProps.ingestFunctionName() + "-Route-HEAD-" + keySuffix,
+                        firstOnPath.functionName() + "-Route-HEAD-" + firstOnPath.keySuffix(),
                         HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.HEAD),
-                        integration,
-                        authorizer);
-                infof(
-                        "Created route HEAD %s for function %s (via auto-HEAD)",
-                        apiLambdaProps.urlPath(), fn.getFunctionName());
+                        firstOnPath.integration(),
+                        firstOnPath.authorizer());
+                infof("Created route HEAD %s for function %s", apiLambdaProps.urlPath(), firstOnPath.functionName());
             }
         }
 

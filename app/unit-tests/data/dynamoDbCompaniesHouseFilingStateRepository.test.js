@@ -6,6 +6,7 @@
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { setupTestEnv } from "@app/test-helpers/mockHelpers.js";
+import { COMPANIES_HOUSE_FORM_KINDS } from "../../../web/public/lib/companies-house-forms.js";
 
 const mockSend = vi.fn();
 
@@ -122,20 +123,62 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     const filings = await listFilingsInProgress("filer-sub-1");
 
     expect(filings).toEqual([
-      { submissionNumber: "00001A", kind: "accounts", status: "pending", submittedAt: "2026-11-18T10:00:00.000Z", rejections: [] },
+      {
+        submissionNumber: "00001A",
+        kind: "accounts",
+        status: "pending",
+        submittedAt: "2026-11-18T10:00:00.000Z",
+        rejections: [],
+        clientId: null,
+      },
       {
         submissionNumber: "00001B",
         kind: "confirmation-statement",
         status: "rejected",
         submittedAt: "2026-11-17T10:00:00.000Z",
         rejections: [{ rejectCode: "1", description: "No" }],
+        clientId: null,
       },
     ]);
     const [[query], [nextPage]] = mockSend.mock.calls;
     expect(query.name).toBe("Query");
     expect(query.input.ExpressionAttributeValues[":hashedSub"]).toBe(hashSub("filer-sub-1"));
     expect(query.input.ProjectionExpression).not.toContain("filedDocument");
-    expect(query.input.FilterExpression).toContain("#data.#kind IN (:accounts, :confirmationStatement, :pscVerificationStatement)");
+    const filteredKinds = query.input.FilterExpression.match(/#data\.#kind IN \(([^)]*)\)/)[1]
+      .split(", ")
+      .map((placeholder) => query.input.ExpressionAttributeValues[placeholder]);
+    expect(filteredKinds).toEqual(COMPANIES_HOUSE_FORM_KINDS);
+    expect(filteredKinds).toEqual(
+      expect.arrayContaining(["accounts", "confirmation-statement", "psc-cessation", "accounting-reference-date"]),
+    );
     expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "00001B" });
+  });
+
+  test("answers a practice client's filings in progress for its id, and the filings made for no client without one", async () => {
+    const items = [
+      { requestId: "00002A", status: "pending", createdAt: "2026-11-18T10:00:00.000Z", data: { kind: "accounts" } },
+      { requestId: "00002B", status: "pending", createdAt: "2026-11-18T11:00:00.000Z", data: { kind: "accounts", clientId: "client-1" } },
+      {
+        requestId: "00002C",
+        status: "failed",
+        createdAt: "2026-11-18T12:00:00.000Z",
+        data: { kind: "accounts", statusCode: "REJECT", rejections: [], clientId: "client-2" },
+      },
+    ];
+    mockSend.mockResolvedValue({ Items: items });
+
+    expect((await listFilingsInProgress("practice-sub")).map((filing) => filing.submissionNumber)).toEqual(["00002A"]);
+    expect((await listFilingsInProgress("practice-sub", "client-1")).map((filing) => filing.submissionNumber)).toEqual(["00002B"]);
+    expect(await listFilingsInProgress("practice-sub", "client-2")).toEqual([
+      {
+        submissionNumber: "00002C",
+        kind: "accounts",
+        status: "rejected",
+        submittedAt: "2026-11-18T12:00:00.000Z",
+        rejections: [],
+        clientId: "client-2",
+      },
+    ]);
+    expect(mockSend.mock.calls[0][0].input.ProjectionExpression).toContain("#data.#clientId");
   });
 });

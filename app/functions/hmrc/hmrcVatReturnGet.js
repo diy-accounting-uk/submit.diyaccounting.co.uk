@@ -6,7 +6,7 @@
 // - **Does:** hmrcVatReturnGet.js's ingestHandler calls getVatReturn to read back a filed HMRC VAT return. viewVatReturn.html displays the result, including a status-clear case.
 // - **Run:** `GET /api/v1/hmrc/vat/return`
 // - **Entry:** `app/functions/hmrc/hmrcVatReturnGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatReturnGet.js:getVatReturn`
-// - **Files:** app/functions/hmrc/hmrcVatReturnGet.js, app/unit-tests/functions/hmrcVatReturnGet.test.js, behaviour-tests/getVatReturn.behaviour.test.js, web/public/hmrc/vat/viewVatReturn.html, web/browser-tests/view-vat-return.browser.test.js, web/browser-tests/viewVatReturn.statusClear.browser.test.js, web/public/prefetch/prefetch-hmrc-vat-return-get-head.js
+// - **Files:** app/functions/hmrc/hmrcVatReturnGet.js, app/unit-tests/functions/hmrcVatReturnGet.test.js, behaviour-tests/getVatReturn.behaviour.test.js, web/public/hmrc/vat/viewVatReturn.html, web/browser-tests/view-vat-return.browser.test.js, web/browser-tests/viewVatReturn.statusClear.browser.test.js
 // - **Keywords:** vat return, view vat return, period key, hmrc vat api, status clear, get vat return
 // - **Related:** HMRC-01, HMRC-03
 // @end-capability

@@ -589,6 +589,46 @@ public class OpsStack extends Stack {
         }
 
         // ============================================================================
+        // Companies House lookup budget refusals
+        // ============================================================================
+        // app/services/companiesHouseLookupLimit.js logs event CompaniesHouseLookupBudgetRefused
+        // each time the budget of all signed-in lookups on the shared Companies House key refuses
+        // a lookup. One metric filter per lookup route's log group counts those lines into one
+        // Submit/Business metric; the alarm on it lives in ObservabilityStack, env-scoped, as the
+        // token charge alarm does.
+        record LookupBudgetSource(String label, String functionName) {}
+        var companiesHouseNames = props.sharedNames().companiesHouse;
+        List<LookupBudgetSource> lookupBudgetSources = List.of(
+                new LookupBudgetSource("Search", companiesHouseNames.companiesHouseSearchGetIngestLambdaFunctionName),
+                new LookupBudgetSource("Company", companiesHouseNames.companiesHouseCompanyGetIngestLambdaFunctionName),
+                new LookupBudgetSource(
+                        "RegisteredOffice",
+                        companiesHouseNames.companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName),
+                new LookupBudgetSource(
+                        "Officers", companiesHouseNames.companiesHouseOfficersGetIngestLambdaFunctionName),
+                new LookupBudgetSource("Psc", companiesHouseNames.companiesHousePscGetIngestLambdaFunctionName),
+                new LookupBudgetSource(
+                        "FilingHistory", companiesHouseNames.companiesHouseFilingHistoryGetIngestLambdaFunctionName),
+                new LookupBudgetSource(
+                        "FiledAccounts", companiesHouseNames.companiesHouseFiledAccountsGetIngestLambdaFunctionName),
+                new LookupBudgetSource(
+                        "FiledDocument", companiesHouseNames.companiesHouseFiledDocumentGetIngestLambdaFunctionName),
+                new LookupBudgetSource(
+                        "LastAccounts", companiesHouseNames.companiesHouseLastAccountsGetIngestLambdaFunctionName));
+        for (LookupBudgetSource source : lookupBudgetSources) {
+            ILogGroup lambdaLogGroup = LogGroup.fromLogGroupName(
+                    this, "LookupBudgetRefused" + source.label() + "LogGroup", "/aws/lambda/" + source.functionName());
+            MetricFilter.Builder.create(this, "LookupBudgetRefused" + source.label() + "MetricFilter")
+                    .logGroup(lambdaLogGroup)
+                    .filterPattern(FilterPattern.literal("{ $.event = \"CompaniesHouseLookupBudgetRefused\" }"))
+                    .metricNamespace("Submit/Business")
+                    .metricName("CompaniesHouseLookupBudgetRefused")
+                    .metricValue("1")
+                    .defaultValue(0)
+                    .build();
+        }
+
+        // ============================================================================
         // Security Detection Alarms - Phase 1.1 & 2.3 (Deferred)
         // ============================================================================
         // NOTE: Authentication failure metric filters for Lambda log groups are NOT created here

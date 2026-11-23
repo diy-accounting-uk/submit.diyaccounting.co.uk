@@ -42,6 +42,7 @@ export function normaliseText(text) {
     .replace(/&amp;/g, "&")
     .replace(/&pound;/g, "£")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
     .replace(/\s+([.,;:])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
@@ -51,7 +52,7 @@ export function quoteAppearsIn(quote, pageHtml) {
   return normaliseText(pageHtml).includes(normaliseText(quote));
 }
 
-/** The title of a GOV.UK page as the page names it, without the site suffix, the entities or the padding. */
+/** The title of a source page as the page names it, without the site suffix, the entities or the padding. */
 export function pageTitle(pageHtml) {
   const raw = (pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i) ?? [])[1];
   if (raw === undefined) return null;
@@ -60,13 +61,24 @@ export function pageTitle(pageHtml) {
     .trim();
 }
 
+// A source is a GOV.UK page or the statute itself on legislation.gov.uk; the footer names the publisher.
+const SOURCE_PUBLISHERS = { "www.gov.uk": "GOV.UK", "www.legislation.gov.uk": "legislation.gov.uk" };
+
+/** The publisher a source url names: GOV.UK or legislation.gov.uk. Throws for any other host. */
+export function sourcePublisher(url) {
+  const parsed = new URL(url);
+  const publisher = parsed.protocol === "https:" ? SOURCE_PUBLISHERS[parsed.hostname] : undefined;
+  if (!publisher) throw new Error(`${url}: a source is a www.gov.uk or www.legislation.gov.uk page`);
+  return publisher;
+}
+
 function sourceFooterHtml(source) {
   if (!source.title) throw new Error(`${source.name ?? source.url}: the source file has no title`);
-  return `<footer>Source: <a href="${escapeHtml(source.url)}" rel="noopener">GOV.UK, ${escapeHtml(source.title)}</a> (checked ${formatIsoDate(source.retrieved)})</footer>`;
+  return `<footer>Source: <a href="${escapeHtml(source.url)}" rel="noopener">${sourcePublisher(source.url)}, ${escapeHtml(source.title)}</a> (checked ${formatIsoDate(source.retrieved)})</footer>`;
 }
 
 /**
- * The sources a section cites, as one block per GOV.UK page: each quote of that page as a paragraph and
+ * The sources a section cites, as one block per source page: each quote of that page as a paragraph and
  * one link line. A page cited by several sources, or twice, prints its link once. A source whose words are
  * a table or a list prints no quote; a page with only such sources prints the link line alone.
  */

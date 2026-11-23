@@ -26,8 +26,8 @@ describe("pages that load the entitlement widget", () => {
 
   it.each(pages.map((file) => [relative(PUBLIC_DIR, file), file]))("%s loads the TOML parser before the widget", (_name, file) => {
     const html = readFileSync(file, "utf8");
-    const parserAt = html.search(/<script src="(\.\.?\/)*lib\/toml-parser\.js"><\/script>/);
-    const widgetAt = html.search(/<script src="(\.\.?\/)*widgets\/entitlement-status\.js"><\/script>/);
+    const parserAt = html.search(/<script src="(\/|(\.\.?\/)*)lib\/toml-parser\.js"><\/script>/);
+    const widgetAt = html.search(/<script src="(\/|(\.\.?\/)*)widgets\/entitlement-status\.js"><\/script>/);
     expect(parserAt).toBeGreaterThan(-1);
     expect(parserAt).toBeLessThan(widgetAt);
   });

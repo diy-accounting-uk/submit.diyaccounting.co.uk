@@ -8,6 +8,10 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, TEST_EMAIL_DOMAIN } from "@app/http-simulator/fixtures/register.js";
+
+const SIGNED_IN_EMAIL = PEOPLE.priyaHaldane.email;
+const OTHER_EMAIL = `accounts@${TEST_EMAIL_DOMAIN}`;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -65,16 +69,16 @@ test.describe("Support form reply address", () => {
   });
 
   test("a signed-in visitor sees the session's address, can change it, and the request carries the new one", async ({ page }) => {
-    await openForm(page, { sub: "u1", email: "pat@example.com" });
+    await openForm(page, { sub: "u1", email: SIGNED_IN_EMAIL });
     const field = page.getByLabel("Your email address");
-    await expect(field).toHaveValue("pat@example.com");
-    await field.fill("work@example.org");
+    await expect(field).toHaveValue(SIGNED_IN_EMAIL);
+    await field.fill(OTHER_EMAIL);
     await page.locator("#support-subject").fill("Question");
     await page.locator("#support-description").fill("Where do I find my receipt?");
     await page.locator("#support-category").selectOption("receipts");
     const request = page.waitForRequest((r) => r.url().endsWith("/api/v1/support/ticket"));
     await page.locator('#support-form button[type="submit"]').click();
-    expect(JSON.parse((await request).postData()).email).toBe("work@example.org");
+    expect(JSON.parse((await request).postData()).email).toBe(OTHER_EMAIL);
   });
 
   test("the dropdown labels are plain and each appears once", async ({ page }) => {

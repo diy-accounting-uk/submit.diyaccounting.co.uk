@@ -40,9 +40,18 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync, gzipSync } from "node:zlib";
-import { GetCommand, PutCommand, QueryCommand, ScanCommand, TransactWriteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  ScanCommand,
+  TransactWriteCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { generatePassphrase } from "../app/lib/passphrase.js";
 import { SALT_CACHE_TTL_MS } from "../app/services/subHasher.js";
+import { COUNT_SETTLE_MS } from "../app/lib/dueListCount.js";
 
 const MANIFEST_PATH = join(dirname(fileURLToPath(import.meta.url)), "salt-rotation-tables.json");
 export const HASH_PATTERN = /\b[0-9a-f]{64}\b/g;
@@ -321,11 +330,42 @@ function tally(report, table, outcome, amount = 1) {
   report[table][outcome] = (report[table][outcome] ?? 0) + amount;
 }
 
+// A recounted item (a table's recountedItems, by sort key) holds a count of the account's items under
+// every salt version, which the writes keep in step and which a write counts again when it finds
+// none. A move would carry an old count onto the new hash, so the rotation deletes the item under
+// the earlier hash instead, and leaves the one under the new hash, which already counts the items it
+// moves. A count moved within COUNT_SETTLE_MS may hold a reservation for rows a write is still
+// writing, which a count of the items would miss, so it is deleted only once it has settled: the
+// rotation waits out the window once and tries again, and reports a count still moving as left.
+export async function deleteSettledRecountedItem(context, tableName, key) {
+  try {
+    await context.doc.send(
+      new DeleteCommand({
+        TableName: tableName,
+        Key: key,
+        ConditionExpression: "attribute_not_exists(countedAt) OR countedAt < :settled",
+        ExpressionAttributeValues: { ":settled": Date.parse(context.now()) - COUNT_SETTLE_MS },
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (isConditionFailure(error)) return false;
+    throw error;
+  }
+}
+
 async function rekeyPartitions(context, manifest, identity, registry, report) {
-  await mapLimit(manifest.partitionTables, TABLE_CONCURRENCY, async ({ table, sortKey }) => {
+  await mapLimit(manifest.partitionTables, TABLE_CONCURRENCY, async ({ table, sortKey, recountedItems = [] }) => {
     const tableName = `${context.envName}-env-${table}`;
+    const unsettled = [];
     for (const { version, hash } of identity.oldHashes) {
       for (const item of await queryPartition(context, tableName, hash)) {
+        if (recountedItems.includes(item[sortKey])) {
+          const key = { hashedSub: hash, [sortKey]: item[sortKey] };
+          if (await deleteSettledRecountedItem(context, tableName, key)) tally(report, table, "recounted");
+          else unsettled.push(key);
+          continue;
+        }
         const outcome = await moveItem(context, {
           tableName,
           partitionKey: "hashedSub",
@@ -337,6 +377,11 @@ async function rekeyPartitions(context, manifest, identity, registry, report) {
         });
         tally(report, table, outcome);
       }
+    }
+    if (unsettled.length === 0) return;
+    await context.sleep(COUNT_SETTLE_MS);
+    for (const key of unsettled) {
+      tally(report, table, (await deleteSettledRecountedItem(context, tableName, key)) ? "recounted" : "recount-left");
     }
   });
 }

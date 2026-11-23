@@ -236,6 +236,7 @@ class DataStackTest {
             dataStack.subscriptionsTable.getTableName(),
             dataStack.activityChargesTable.getTableName(),
             dataStack.practiceClientsTable.getTableName(),
+            dataStack.dueListTable.getTableName(),
             dataStack.commissionsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
@@ -369,8 +370,11 @@ class DataStackTest {
         // still CREATING or UPDATING; DynamoDB then answers ResourceInUseException rather than the
         // ValidationException it gives for an already-ACTIVE index. Both call sites must ignore
         // both codes, or a second deploy within the same index's build window fails the stack.
-        for (String tableName :
-                new String[] {dataStack.bundlesTable.getTableName(), dataStack.passesTable.getTableName()}) {
+        for (String tableName : new String[] {
+            dataStack.bundlesTable.getTableName(),
+            dataStack.passesTable.getTableName(),
+            dataStack.dueListTable.getTableName()
+        }) {
             var resource = template.findResources(
                     "Custom::AWS",
                     Map.of(
@@ -428,6 +432,98 @@ class DataStackTest {
                                         "\"AttributeName\":\"clientId\"",
                                         "\"KeyType\":\"RANGE\""))));
         assertEquals(1, resource.size());
+    }
+
+    @Test
+    void dueListTableIsKeyedByHashedSubAndSkExpiresOnTtlAndIndexesItsJobs() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String tableName = dataStack.dueListTable.getTableName();
+
+        // The account's hashed sub is the partition key, as salt rotation needs, and sk names the item.
+        var table = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "createTable",
+                                        tableName,
+                                        "\"AttributeName\":\"hashedSub\"",
+                                        "\"KeyType\":\"HASH\"",
+                                        "\"AttributeName\":\"sk\"",
+                                        "\"KeyType\":\"RANGE\""))));
+        assertEquals(1, table.size());
+
+        var ttl = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        tableName,
+                                        "\"AttributeName\":\"ttl\"",
+                                        "\"Enabled\":true"))));
+        assertEquals(1, ttl.size());
+
+        // One index finds the items a daily job is due to act on: job, then the date it is due.
+        var index = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTable",
+                                        tableName,
+                                        "job-jobOn-index",
+                                        "\"AttributeName\":\"jobOn\"",
+                                        "\"ProjectionType\":\"ALL\""))));
+        assertEquals(1, index.size());
+    }
+
+    @Test
+    void companiesHouseCacheTableIsKeyedByCompanyNumberAndSkExpiresOnTtlAndHasNoPointInTimeRecovery() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String tableName = dataStack.companiesHouseCacheTable.getTableName();
+
+        var table = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "createTable",
+                                        tableName,
+                                        "\"AttributeName\":\"companyNumber\"",
+                                        "\"KeyType\":\"HASH\"",
+                                        "\"AttributeName\":\"sk\"",
+                                        "\"KeyType\":\"RANGE\""))));
+        assertEquals(1, table.size());
+
+        var ttl = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        tableName,
+                                        "\"AttributeName\":\"ttl\"",
+                                        "\"Enabled\":true"))));
+        assertEquals(1, ttl.size());
+
+        // A cache holds a copy of the public register, so a restore would not need it.
+        assertEquals(
+                0,
+                template.findResources("Custom::EnsurePitr", Map.of("Properties", Map.of("TableName", tableName)))
+                        .size());
     }
 
     @Test

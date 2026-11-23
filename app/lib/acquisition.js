@@ -25,6 +25,30 @@ export function buildAcquisitionMap(source) {
   return Object.keys(acquisition).length > 0 ? acquisition : undefined;
 }
 
+// A tag is a short label and landedAt is the timestamp analytics.js writes. A tag holding markup,
+// a quote, an @ or a control character is dropped, and so is a landedAt in any other form.
+const CHARACTERS_NO_TAG_HOLDS = /[<>"'`@\p{Cc}]/u;
+
+function isTimestampAsAnalyticsWritesIt(value) {
+  const milliseconds = Date.parse(value);
+  return !Number.isNaN(milliseconds) && new Date(milliseconds).toISOString() === value;
+}
+
+function isRecordableValue(key, value) {
+  return key === "landedAt" ? isTimestampAsAnalyticsWritesIt(value) : !CHARACTERS_NO_TAG_HOLDS.test(value);
+}
+
+// The attribution fields of a body that came straight from a browser, for an activity event:
+// buildAcquisitionMap's fields, less every value that is not a plain tag or timestamp.
+export function buildRecordableAttributionMap(source) {
+  const attribution = buildAcquisitionMap(source);
+  if (!attribution) return undefined;
+  for (const [key, value] of Object.entries(attribution)) {
+    if (!isRecordableValue(key, value)) delete attribution[key];
+  }
+  return Object.keys(attribution).length > 0 ? attribution : undefined;
+}
+
 // A record is tagged when it names a source beyond the bare landing time.
 export function isTaggedAcquisition(acquisition) {
   return Boolean(acquisition) && Object.keys(acquisition).some((key) => key !== "landedAt");

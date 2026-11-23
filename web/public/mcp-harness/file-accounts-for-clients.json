@@ -18,7 +18,7 @@
       "id": "beta",
       "role": "tool",
       "tool": "add_client",
-      "arguments": { "displayName": "Beta Ltd", "companyNumber": "00001350" }
+      "arguments": { "displayName": "Beta Ltd", "companyNumber": "00000012" }
     },
     { "id": "clients", "role": "tool", "tool": "list_clients", "arguments": {} },
     {

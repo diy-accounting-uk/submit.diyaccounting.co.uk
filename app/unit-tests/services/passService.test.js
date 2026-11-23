@@ -19,7 +19,10 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getHeldPasses: vi.fn().mockResolvedValue({ items: [] }),
   putReferralClaim: vi.fn().mockResolvedValue(true),
   deleteReferralClaim: vi.fn().mockResolvedValue(undefined),
-  putRedemption: vi.fn().mockResolvedValue(undefined),
+  addRedemption: vi.fn().mockResolvedValue(undefined),
+  getRedemption: vi.fn().mockResolvedValue(null),
+  putCampaignPointer: vi.fn().mockResolvedValue(undefined),
+  getCampaignPasses: vi.fn().mockResolvedValue({ items: [] }),
 }));
 
 const {
@@ -28,11 +31,14 @@ const {
   redeemPass: redeemPassRepo,
   putReferralClaim,
   deleteReferralClaim,
-  putRedemption,
+  addRedemption,
   setReviewLimit,
   putHeldPointer,
   deleteHeldPointer,
   getHeldPasses,
+  getRedemption: getRedemptionRepo,
+  putCampaignPointer,
+  getCampaignPasses,
 } = await import("@app/data/dynamoDbPassRepository.js");
 const {
   buildPassRecord,
@@ -46,6 +52,9 @@ const {
   recordRedemption,
   releasePass,
   listHeldPasses,
+  listCampaignPasses,
+  countRedemptions,
+  usesPerAccountOf,
 } = await import("../../services/passService.js");
 
 describe("passService", () => {
@@ -257,6 +266,55 @@ describe("passService", () => {
 
       expect(pass.actor).toBe("system");
       expect(testPass.actor).toBe("test-user");
+    });
+  });
+
+  describe("campaign passes", () => {
+    const grants = [{ bundleId: "resident-vat-comp", duration: "P1Y" }];
+
+    it("a campaign pass record carries its grants and its redemptions per account", () => {
+      const record = buildPassRecord({ passTypeId: "custom-campaign", bundleId: "resident-vat-comp", grants, usesPerAccount: 2 });
+      expect(record.grants).toEqual(grants);
+      expect(record.usesPerAccount).toBe(2);
+      expect(record.issuedBy).toBeUndefined();
+    });
+
+    it("a pass with no grants or per-account limit carries neither field", () => {
+      const record = buildPassRecord({ passTypeId: "day-guest-pass", bundleId: "day-guest" });
+      expect(record).not.toHaveProperty("grants");
+      expect(record).not.toHaveProperty("usesPerAccount");
+    });
+
+    it("creating a campaign pass stores its pointer with the pass's creation time and ttl", async () => {
+      const pass = await createPass({
+        passTypeId: "custom-campaign",
+        bundleId: "resident-vat-comp",
+        grants,
+        validUntil: "2027-05-22T00:00:00.000Z",
+      });
+      expect(putCampaignPointer).toHaveBeenCalledWith({ code: pass.code, createdAt: pass.createdAt, ttl: pass.ttl });
+    });
+
+    it("creating any other pass stores no pointer", async () => {
+      await createPass({ passTypeId: "day-guest-pass", bundleId: "day-guest" });
+      expect(putCampaignPointer).not.toHaveBeenCalled();
+    });
+
+    it("lists the campaign passes the repository returns", async () => {
+      getCampaignPasses.mockResolvedValueOnce({ items: [{ code: "a" }] });
+      expect(await listCampaignPasses()).toEqual([{ code: "a" }]);
+    });
+
+    it("counts an account's redemptions, one for a record kept before the count, none for no record", async () => {
+      getRedemptionRepo.mockResolvedValueOnce({ redemptions: 3 }).mockResolvedValueOnce({ redeemedAt: "t" }).mockResolvedValueOnce(null);
+      expect(await countRedemptions("c", "h")).toBe(3);
+      expect(await countRedemptions("c", "h")).toBe(1);
+      expect(await countRedemptions("c", "h")).toBe(0);
+    });
+
+    it("allows one redemption per account when a pass names no limit", () => {
+      expect(usesPerAccountOf({})).toBe(1);
+      expect(usesPerAccountOf({ usesPerAccount: 5 })).toBe(5);
     });
   });
 
@@ -586,7 +644,7 @@ describe("passService", () => {
 
     it("recordRedemption stores the code, redeemer, issuer, pass type and time", async () => {
       await recordRedemption({ code: "code-1", hashedSub: "hash-1", issuedBy: "hash-2", passTypeId: "digital-pass" });
-      expect(putRedemption).toHaveBeenCalledWith({
+      expect(addRedemption).toHaveBeenCalledWith({
         code: "code-1",
         hashedSub: "hash-1",
         issuedBy: "hash-2",

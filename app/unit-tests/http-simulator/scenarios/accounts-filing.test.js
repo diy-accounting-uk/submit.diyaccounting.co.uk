@@ -9,6 +9,8 @@ import {
   submitAccounts,
   pollStatus,
   resetAccountsFilings,
+  breaksRevisedAccountsRule,
+  REVISED_ACCOUNTS_RULE_ERROR,
   SIMULATOR_PRESENTER_ID,
   SIMULATOR_PRESENTER_CODE,
 } from "@app/http-simulator/scenarios/accounts-filing.js";
@@ -20,14 +22,92 @@ function md5Lowercase(value) {
 const VALID = { senderIdHash: md5Lowercase(SIMULATOR_PRESENTER_ID), authValueHash: md5Lowercase(SIMULATOR_PRESENTER_CODE) };
 const WRONG_HASH = md5Lowercase("wrong");
 
+const REVISED_FLAG = "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse";
+const REVISION_STATEMENTS = {
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod":
+    "These revised accounts replace the original accounts for the year ended 30 June 2026.",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod": "They are now the statutory accounts of the company for that year.",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport": "They are prepared as at the date of the original accounts.",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006":
+    "The original balance sheet omitted the share capital.",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport": "The share capital is now shown.",
+  "bus:DateApprovalRevisionReport": "1 October 2026",
+};
+
+// A minimal iXBRL accounts document holding the given facts, each as visible text.
+function ixbrlDocument(facts) {
+  const factsXml = Object.entries(facts)
+    .map(([name, text]) => `<p><ix:nonNumeric name="${name}" contextRef="current">${text}</ix:nonNumeric></p>`)
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body>${factsXml}</body></html>`;
+}
+
+const REVISED_BY_REPLACEMENT = ixbrlDocument({ [REVISED_FLAG]: "true", ...REVISION_STATEMENTS });
+const REVISED_BY_SUPPLEMENTARY_NOTE = ixbrlDocument({
+  [REVISED_FLAG]: "true",
+  "bus:SupplementaryNote": "Note 3 omitted the share capital, which is £100.",
+});
+const REVISED_WITH_NEITHER = ixbrlDocument({ [REVISED_FLAG]: "true" });
+const ORIGINAL = ixbrlDocument({ [REVISED_FLAG]: "false" });
+
 describe("http-simulator/scenarios/accounts-filing", () => {
   beforeEach(() => {
     resetAccountsFilings();
   });
 
+  describe("the revised accounts rule", () => {
+    test("acknowledges a revised document that states every fact of a revision by replacement", () => {
+      const result = submitAccounts({ ...VALID, submissionNumber: "REV001", companyNumber: "00000009", ixbrl: REVISED_BY_REPLACEMENT });
+      expect(result.acknowledged).toBe(true);
+    });
+
+    test("acknowledges a revised document with a non-empty supplementary note", () => {
+      const result = submitAccounts({
+        ...VALID,
+        submissionNumber: "REV002",
+        companyNumber: "00000009",
+        ixbrl: REVISED_BY_SUPPLEMENTARY_NOTE,
+      });
+      expect(result.acknowledged).toBe(true);
+    });
+
+    test("refuses a revised document with neither form of revision, with the validator's text", () => {
+      const result = submitAccounts({ ...VALID, submissionNumber: "REV003", companyNumber: "00000009", ixbrl: REVISED_WITH_NEITHER });
+      expect(result.errors).toEqual([REVISED_ACCOUNTS_RULE_ERROR]);
+      expect(result.errors[0]).toMatchObject({ raisedBy: "Accounts", number: 9999, type: "fatal" });
+      expect(result.errors[0].text).toContain("either SupplementaryNote must be provided and be non-empty");
+    });
+
+    test("leaves the submission number of a refused revision free for the corrected document", () => {
+      submitAccounts({ ...VALID, submissionNumber: "REV004", companyNumber: "00000009", ixbrl: REVISED_WITH_NEITHER });
+      const corrected = submitAccounts({ ...VALID, submissionNumber: "REV004", companyNumber: "00000009", ixbrl: REVISED_BY_REPLACEMENT });
+      expect(corrected.acknowledged).toBe(true);
+    });
+
+    test("refuses a revised document that lacks one fact of a revision by replacement", () => {
+      const { "bus:DateApprovalRevisionReport": _date, ...fiveStatements } = REVISION_STATEMENTS;
+      expect(breaksRevisedAccountsRule(ixbrlDocument({ [REVISED_FLAG]: "true", ...fiveStatements }))).toBe(true);
+    });
+
+    test("refuses a revised document whose statements or note are empty", () => {
+      const emptyStatements = Object.fromEntries(Object.keys(REVISION_STATEMENTS).map((name) => [name, " "]));
+      expect(breaksRevisedAccountsRule(ixbrlDocument({ [REVISED_FLAG]: "true", ...emptyStatements }))).toBe(true);
+      expect(breaksRevisedAccountsRule(ixbrlDocument({ [REVISED_FLAG]: "true", "bus:SupplementaryNote": "" }))).toBe(true);
+    });
+
+    test("acknowledges an original document, whether its revised fact is false or absent", () => {
+      expect(submitAccounts({ ...VALID, submissionNumber: "ORI001", companyNumber: "00000009", ixbrl: ORIGINAL }).acknowledged).toBe(true);
+      expect(breaksRevisedAccountsRule(ixbrlDocument({}))).toBe(false);
+    });
+
+    test("does not apply to a document that is not XML", () => {
+      expect(breaksRevisedAccountsRule("not an accounts document")).toBe(false);
+    });
+  });
+
   describe("submitAccounts", () => {
     test("acknowledges a valid submission with a 1 second poll interval", () => {
-      const result = submitAccounts({ ...VALID, submissionNumber: "AAA001", companyNumber: "02706061" });
+      const result = submitAccounts({ ...VALID, submissionNumber: "AAA001", companyNumber: "00000009" });
       expect(result.acknowledged).toBe(true);
       expect(result.pollInterval).toBe(1);
       expect(result.gatewayTimestamp).toBeTruthy();

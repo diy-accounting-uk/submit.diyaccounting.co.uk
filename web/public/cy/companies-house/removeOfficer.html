@@ -1,0 +1,297 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/removeOfficer.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tynnu cyfarwyddwr neu ysgrifennydd - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/removeOfficer.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/removeOfficer.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/removeOfficer.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/removeOfficer.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-remove-officer.remove-a-director-or-secretary-13cd48">Tynnu cyfarwyddwr neu ysgrifennydd</h1>
+      <p data-i18n="ch-remove-officer.tell-companies-house-that-a-director-42c01e" class="subtitle">
+        Dweud wrth Dŷ’r Cwmnïau nad yw cyfarwyddwr neu ysgrifennydd yn dal y penodiad mwyach
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-remove-officer.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-remove-officer.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-remove-officer.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-remove-officer.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-remove-officer.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-remove-officer.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-remove-officer.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-remove-officer.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-remove-officer.look-up-the-directors-and-secretaries-3688b8"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="remove-officer"
+          >
+            Chwilio am y cyfarwyddwyr a’r ysgrifenyddion
+          </button>
+        </form>
+      </div>
+
+      <!-- Officer form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-remove-officer.who-is-leaving-c05865">Pwy sy’n gadael?</h2>
+        <p data-i18n="ch-remove-officer.company-3bc806">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+        </p>
+        <form id="resignationForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-remove-officer.director-or-secretary-7944ee">Cyfarwyddwr neu ysgrifennydd</legend>
+            <p data-i18n="ch-remove-officer.the-directors-and-secretaries-on-the-67901a" id="officer-hint" class="hint">
+              Y cyfarwyddwyr a’r ysgrifenyddion sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.
+            </p>
+            <div id="officerChoices" aria-describedby="officer-hint"></div>
+          </fieldset>
+          <p data-i18n="ch-remove-officer.the-register-lists-no-current-director-a1de3d" id="noOfficers" class="hint" style="display: none">
+            Nid yw’r gofrestr yn rhestru unrhyw gyfarwyddwr neu ysgrifennydd presennol y gall y ffurflen hon ei enwi.
+          </p>
+
+          <fieldset id="personFields" class="form-group" style="display: none">
+            <legend data-i18n="ch-remove-officer.their-name-as-the-register-holds-0c86dc">Eu henw fel y mae’r gofrestr yn ei gadw</legend>
+            <p data-i18n="ch-remove-officer.split-from-the-register-s-name-619879" id="name-hint" class="hint">
+              Wedi’i rannu o’r enw ar y gofrestr. Gwiriwch bob rhan: mae Tŷ’r Cwmnïau yn cymharu’r enw â’r gofrestr.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-remove-officer.title-optional-8280fb" for="officerTitle">Teitl (dewisol)</label>
+              <input type="text" id="officerTitle" name="officerTitle" autocomplete="off" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-remove-officer.first-forename-optional-91a29b" for="officerForename">Enw cyntaf (dewisol)</label>
+              <input type="text" id="officerForename" name="officerForename" autocomplete="off" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-remove-officer.other-forenames-optional-824237" for="officerOtherForenames"
+                >Enwau cyntaf eraill (dewisol)</label
+              >
+              <input type="text" id="officerOtherForenames" name="officerOtherForenames" autocomplete="off" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-remove-officer.surname-f762da" for="officerSurname">Cyfenw</label>
+              <input type="text" id="officerSurname" name="officerSurname" autocomplete="off" maxlength="160" required />
+            </div>
+          </fieldset>
+
+          <div id="corporateFields" class="form-group" style="display: none">
+            <label data-i18n="ch-remove-officer.corporate-name-b5bead" for="corporateName">Enw corfforaethol</label>
+            <p data-i18n="ch-remove-officer.as-the-register-holds-it-companies-3e6aca" id="corporateName-hint" class="hint">
+              Fel y mae’r gofrestr yn ei gadw. Mae Tŷ’r Cwmnïau yn cymharu’r enw â’r gofrestr.
+            </p>
+            <input
+              type="text"
+              id="corporateName"
+              name="corporateName"
+              autocomplete="off"
+              maxlength="160"
+              required
+              aria-describedby="corporateName-hint"
+            />
+          </div>
+
+          <fieldset id="dobFields" class="form-group" style="display: none">
+            <legend data-i18n="ch-remove-officer.date-of-birth-eb4c4e">Dyddiad geni</legend>
+            <p data-i18n="ch-remove-officer.companies-house-s-online-form-needs-8532b8" id="dob-hint" class="hint">
+              Mae ffurflen ar-lein Tŷ’r Cwmnïau angen dyddiad geni llawn cyfarwyddwr. Dim ond y mis a’r flwyddyn y mae’r gofrestr yn eu
+              dangos, ac maent wedi’u llenwi lle mae’n eu rhoi: ychwanegwch y diwrnod.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem" aria-describedby="dob-hint">
+              <div class="form-group">
+                <label data-i18n="ch-remove-officer.day-8f2364" for="dobDay">Diwrnod</label>
+                <input
+                  type="text"
+                  id="dobDay"
+                  data-gateway-text="off"
+                  name="dobDay"
+                  class="input--code"
+                  inputmode="numeric"
+                  maxlength="2"
+                  size="2"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-remove-officer.month-310ca5" for="dobMonth">Mis</label>
+                <input
+                  type="text"
+                  id="dobMonth"
+                  data-gateway-text="off"
+                  name="dobMonth"
+                  class="input--code"
+                  inputmode="numeric"
+                  maxlength="2"
+                  size="2"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-remove-officer.year-89f683" for="dobYear">Blwyddyn</label>
+                <input
+                  type="text"
+                  id="dobYear"
+                  data-gateway-text="off"
+                  name="dobYear"
+                  class="input--code"
+                  inputmode="numeric"
+                  maxlength="4"
+                  size="4"
+                  required
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label data-i18n="ch-remove-officer.date-the-appointment-ended-f8399c" for="resignationDate"
+              >Dyddiad y daeth y penodiad i ben</label
+            >
+            <input type="date" id="resignationDate" name="resignationDate" required />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-remove-officer.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-remove-officer.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <p data-i18n="ch-remove-officer.companies-house-s-paper-form-says-804049" class="hint">
+            Mae ffurflen bapur Tŷ’r Cwmnïau yn dweud y bydd yr holl wybodaeth ar y ffurflen yn ymddangos ar y cofnod cyhoeddus. Dim ond mis
+            a blwyddyn geni y mae’r ffurflen bapur yn gofyn amdanynt.
+            <a href="https://assets.publishing.service.gov.uk/media/6911ece9e9348ac8fb54f483/TM01_v7.0-FINAL.pdf" lang="en"
+              >TM01 Termination of appointment of director</a
+            >
+            <span class="lang-mark">(yn Saesneg)</span> Mae GOV.UK yn cyhoeddi hwn yn Saesneg yn unig.
+          </p>
+          <button data-i18n="ch-remove-officer.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-remove-officer.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-remove-officer.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-remove-officer.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-remove-officer.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-remove-officer.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button data-i18n="ch-remove-officer.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script type="module" src="../../lib/companies-house-text-check.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../lib/companies-house-namesakes.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/removeOfficer.page.js"></script>
+  </body>
+</html>

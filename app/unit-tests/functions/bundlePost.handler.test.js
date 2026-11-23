@@ -61,6 +61,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 // Defer importing the ingestHandler until after mocks are defined
 import { ingestHandler as bundlePostHandler, workerHandler as bundlePostWorker, grantBundle } from "@app/functions/account/bundlePost.js";
 import { hashSub } from "@app/services/subHasher.js";
+import { _clearOperatorsCache } from "@app/lib/operators.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -671,5 +672,119 @@ describe("bundlePost ingestHandler", () => {
     expect(stored).toBeDefined();
     expect(stored.status).toBe("completed");
     expect(stored.data.status).toBe("granted");
+  });
+
+  describe("which bundles a pass may grant", () => {
+    let originalOperatorEmails;
+    beforeEach(() => {
+      originalOperatorEmails = process.env.OPERATOR_EMAILS;
+      process.env.OPERATOR_EMAILS = "operator@example.com";
+      _clearOperatorsCache();
+      mockSend.mockImplementation(async (cmd) => (cmd instanceof MockQueryCommand ? { Items: [], Count: 0 } : {}));
+    });
+    afterEach(() => {
+      process.env.OPERATOR_EMAILS = originalOperatorEmails;
+      _clearOperatorsCache();
+    });
+
+    test("a pass grants the operator bundle to no account whose email is not an operator's", async () => {
+      const result = await grantBundle(
+        "user-not-operator",
+        { bundleId: "operator" },
+        { sub: "user-not-operator", email: "someone@example.com" },
+        null,
+        {
+          skipCapCheck: true,
+          viaPass: true,
+        },
+      );
+      expect(result.status).toBe("not_grantable");
+      expect(mockSend.mock.calls.some((call) => call[0] instanceof MockPutCommand)).toBe(false);
+    });
+
+    test("a pass grants the operator bundle to an operator", async () => {
+      const result = await grantBundle(
+        "user-operator",
+        { bundleId: "operator" },
+        { sub: "user-operator", email: "operator@example.com" },
+        null,
+        {
+          skipCapCheck: true,
+          viaPass: true,
+        },
+      );
+      expect(result.status).toBe("granted");
+    });
+
+    test("a pass grants no bundle whose enable is not on-pass or always", async () => {
+      const result = await grantBundle("user-default", { bundleId: "default" }, { sub: "user-default" }, null, {
+        skipCapCheck: true,
+        viaPass: true,
+      });
+      expect(result.status).toBe("not_grantable");
+    });
+  });
+
+  describe("a grant through a pass that sets its own terms", () => {
+    function storedItemOf(bundleId) {
+      return mockSend.mock.calls.find((call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === bundleId)[0].input
+        .Item;
+    }
+
+    beforeEach(() => {
+      mockSend.mockImplementation(async (cmd) => (cmd instanceof MockQueryCommand ? { Items: [], Count: 0 } : {}));
+    });
+
+    test("the pass's duration sets the expiry in place of the catalogue's timeout", async () => {
+      const before = Date.now();
+      const result = await grantBundle("user-pass-duration", { bundleId: "resident-vat-comp" }, { sub: "user-pass-duration" }, null, {
+        skipCapCheck: true,
+        viaPass: true,
+        duration: "P2M",
+      });
+
+      const expiry = new Date(result.expiry);
+      const twoMonths = new Date(before);
+      twoMonths.setMonth(twoMonths.getMonth() + 2);
+      expect(Math.abs(expiry.getTime() - twoMonths.getTime())).toBeLessThan(60_000);
+    });
+
+    test("with no pass terms the catalogue's timeout, tokens and refresh apply and the item names no interval", async () => {
+      await grantBundle("user-pass-catalogue", { bundleId: "resident-vat-comp" }, { sub: "user-pass-catalogue" }, null, {
+        skipCapCheck: true,
+        viaPass: true,
+      });
+
+      const item = storedItemOf("resident-vat-comp");
+      expect(item.tokensGranted).toBe(100);
+      expect(item.tokenResetAt).toBeTruthy();
+      expect(item).not.toHaveProperty("tokenRefreshInterval");
+    });
+
+    test("the pass's tokens and refresh interval replace the catalogue's and the item keeps its interval", async () => {
+      await grantBundle("user-pass-tokens", { bundleId: "resident-vat-comp" }, { sub: "user-pass-tokens" }, null, {
+        skipCapCheck: true,
+        viaPass: true,
+        tokens: 25,
+        tokenRefreshInterval: "P7D",
+      });
+
+      const item = storedItemOf("resident-vat-comp");
+      expect(item.tokensGranted).toBe(25);
+      expect(item.tokenRefreshInterval).toBe("P7D");
+    });
+
+    test("the pass's tokens with no refresh interval give tokens that do not refresh", async () => {
+      await grantBundle("user-pass-no-refresh", { bundleId: "resident-vat-comp" }, { sub: "user-pass-no-refresh" }, null, {
+        skipCapCheck: true,
+        viaPass: true,
+        tokens: 5,
+      });
+
+      const item = storedItemOf("resident-vat-comp");
+      expect(item.tokensGranted).toBe(5);
+      expect(item.tokenResetAt).toBeNull();
+      expect(item).not.toHaveProperty("tokenRefreshInterval");
+    });
   });
 });

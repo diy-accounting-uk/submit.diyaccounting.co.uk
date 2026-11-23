@@ -110,6 +110,22 @@ export function isJointFilingOffered(catalog, environmentName, viewer) {
   return activity !== undefined && isActivityShown(activity, environmentName, viewer);
 }
 
+/** The activity that decides whether accounts already filed can be revised. */
+export const REVISED_ACCOUNTS_ACTIVITY_ID = "file-revised-accounts";
+
+/**
+ * Whether the pages that file accounts offer a revision of accounts already filed: the revised
+ * accounts activity is shown to this person in this environment.
+ * @param {object} catalog - The parsed catalog
+ * @param {string|null} environmentName - The current environment name
+ * @param {{preview: boolean, operatorFeatures: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
+ * @returns {boolean} True when a revision is offered
+ */
+export function isRevisedAccountsOffered(catalog, environmentName, viewer) {
+  const activity = catalog?.activities?.find((candidate) => candidate.id === REVISED_ACCOUNTS_ACTIVITY_ID);
+  return activity !== undefined && isActivityShown(activity, environmentName, viewer);
+}
+
 /**
  * Whether a bundle or activity serves only operators: every bundle it names is the operator bundle.
  * @param {string[]|undefined} bundleIds - The bundle ids of an activity
@@ -220,7 +236,7 @@ export const STATUS_FEATURES = [
   { activity: "change-registered-office", label: "registered office", labelCy: "swyddfa gofrestredig" },
   { activity: "change-registered-email", label: "registered email", labelCy: "e-bost cofrestredig" },
   { activity: "file-confirmation-statement", label: "Companies House confirmation statement", labelCy: "datganiad cadarnhau Tŷ'r Cwmnïau" },
-  { activity: "file-psc-verification-statement", label: "PSC verification statement", labelCy: "datganiad gwirio PSC" },
+  { activity: "file-psc-verification-statement", label: "PSC verification statement", labelCy: "datganiad gwirio PRhA" },
   { activity: "file-micro-entity-accounts", label: "Companies House accounts", labelCy: "cyfrifon Tŷ'r Cwmnïau" },
   { activity: "file-small-company-accounts", label: "Companies House accounts", labelCy: "cyfrifon Tŷ'r Cwmnïau" },
 ];

@@ -14,6 +14,26 @@ function getIdToken() {
 // Accounts and Company Tax Return filings open on their own page, which draws the filed documents.
 const FILING_KINDS = new Set(["companies-house-accounts", "company-tax-return"]);
 
+// The receipts route's address for the chosen client, or for the reader's own filings.
+function receiptsUrl() {
+  const clientId = document.getElementById("receiptsClient").value;
+  return clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(clientId)}` : "/api/v1/hmrc/receipt";
+}
+
+// A practice chooses whose receipts to see; a reader with no client sees no choice.
+async function showClientChoice() {
+  const response = await window.fetchWithIdToken("/api/v1/practice/clients", {}).catch(() => null);
+  if (!response?.ok) return;
+  const clients = (await response.json())?.clients;
+  if (!Array.isArray(clients)) return;
+  const { clientChoices } = await import("../../lib/ct600-agent.js");
+  const choices = clientChoices(clients);
+  if (choices.length === 0) return;
+  const select = document.getElementById("receiptsClient");
+  select.append(...choices.map(({ clientId, label }) => new Option(label, clientId)));
+  document.getElementById("receiptsClientChoice").hidden = false;
+}
+
 async function fetchReceipts() {
   const idToken = getIdToken();
   const exportControls = document.getElementById("exportControls");
@@ -23,7 +43,10 @@ async function fetchReceipts() {
 
   if (!idToken) return;
 
-  const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  const requestedUrl = receiptsUrl();
+  const res = await window.fetchWithIdToken(requestedUrl, {});
+  // An answer for a choice the reader has since changed is dropped; the later request draws the page.
+  if (requestedUrl !== receiptsUrl()) return;
   if (!res.ok) {
     tbody.innerHTML = "";
     table.style.display = "none";
@@ -80,6 +103,19 @@ const FILING_IN_PROGRESS_TITLES = {
   "accounts": siteText("receipts.kind-accounts", "Accounts"),
   "confirmation-statement": siteText("receipts.kind-confirmation-statement", "Confirmation statement"),
   "psc-verification-statement": siteText("receipts.kind-psc-verification-statement", "PSC verification statement"),
+  "psc-cessation": siteText("receipts.kind-psc-cessation", "PSC cessation"),
+  "psc-change-details": siteText("receipts.kind-psc-change-details", "PSC change of details"),
+  "accounting-reference-date": siteText("receipts.kind-accounting-reference-date", "Change of accounting reference date"),
+  "officer-resignation": siteText("receipts.kind-officer-resignation", "Director or secretary removed"),
+  "sail-address": siteText("receipts.kind-sail-address", "SAIL address"),
+  "record-location": siteText("receipts.kind-record-location", "Location of company records"),
+  "change-of-name": siteText("receipts.kind-change-of-name", "Change of company name"),
+  "psc-statement-notification": siteText("receipts.kind-psc-statement-notification", "PSC statement"),
+  "psc-statement-withdrawal": siteText("receipts.kind-psc-statement-withdrawal", "PSC statement withdrawal"),
+  "psc-notification": siteText("receipts.kind-psc-notification", "New PSC notified"),
+  "officer-appointment": siteText("receipts.kind-officer-appointment", "Director or secretary appointed"),
+  "officer-change": siteText("receipts.kind-officer-change", "Director's or secretary's details changed"),
+  "allotment-of-shares": siteText("receipts.kind-allotment-of-shares", "Return of allotment of shares"),
 };
 
 // A Companies House filing that is not a receipt yet: still waiting for Companies House, which checks
@@ -459,7 +495,7 @@ async function displayReceiptTable(data, name) {
     const row = { ...entry, value, kind: isAmount ? "money" : "text" };
     return box ? { ...row, label: box.label, definition: box.definition, source: box.source } : row;
   });
-  const rows = [{ field: "receiptName", label: siteText("receipts.field-name", "Receipt name"), value: name, kind: "text" }, ...dataRows];
+  const rows = [{ field: "receiptName", label: siteText("receipts.field-file-name", "File name"), value: name, kind: "text" }, ...dataRows];
 
   const showCopy = isVatReceipt(data);
   document.getElementById("receiptHeading").hidden = showCopy;
@@ -499,7 +535,7 @@ function exportCsv(rows) {
 }
 
 document.getElementById("exportCsvBtn").addEventListener("click", async () => {
-  const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  const res = await window.fetchWithIdToken(receiptsUrl(), {});
   if (!res.ok) return alert(siteText("receipts.export-failed", "Failed to export CSV"));
   const json = await res.json();
   const items = Array.isArray(json.receipts) ? json.receipts : [];
@@ -513,9 +549,18 @@ window.addEventListener("focus", () => {
 });
 
 // Initialize page - wait for submit.js module to be ready
+document.getElementById("receiptsClient").addEventListener("change", () => fetchReceipts());
+// A receipt a filing page links to opens as the page loads: ?receipt=<receipt id>.json.
+function openLinkedReceipt() {
+  const name = new URLSearchParams(window.location.search).get("receipt");
+  if (name && /^[\w:.-]+\.json$/.test(name)) viewReceipt(name);
+}
+
 function initPage() {
   checkAuthStatus();
   fetchReceipts();
+  if (getIdToken()) showClientChoice();
+  openLinkedReceipt();
 }
 
 if (window.__submitReady__) {

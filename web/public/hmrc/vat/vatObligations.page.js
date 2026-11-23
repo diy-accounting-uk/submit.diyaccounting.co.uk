@@ -14,7 +14,6 @@ function cancelRequest() {
   sessionStorage.removeItem("hmrcGrantId");
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   // Show form and hide results
@@ -25,23 +24,11 @@ function cancelRequest() {
 }
 
 // Check if we're in synthetic/test mode to show developer options
-function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+async function initializePage() {
+  const hmrcAccount = await window.readHmrcAccount();
 
   // The status line says sandbox when this page's HMRC calls go to HMRC's test service
   window.showHmrcStatusForService(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
-
-  // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-    const testDataLink = document.getElementById("testDataLink");
-    if (testDataLink) {
-      testDataLink.classList.add("visible");
-    }
-  }
 
   // Developer mode is now controlled by the global toggle via developer-mode.js
   // Show developer section based on sessionStorage and listen for changes
@@ -118,7 +105,7 @@ async function continueObligationsRetrieval() {
     };
 
     // Add hmrcAccount header if present in sessionStorage
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     if (hmrcAccount) {
       requestHeaders["hmrcAccount"] = hmrcAccount;
     }
@@ -141,7 +128,7 @@ async function continueObligationsRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
+        showFailure({ status: 401, service: "hmrc" }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
         window.SearchForm.showCriteria("obligationsForm"); // Show form on error
         // Could trigger re-auth here if desired
         return;
@@ -171,7 +158,6 @@ async function continueObligationsRetrieval() {
     sessionStorage.removeItem("hmrcGrantId");
     sessionStorage.removeItem("hmrcTokenScope");
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
     console.log("Obligations retrieval failed, cleared session storage to prevent retry loop");
   } finally {
@@ -217,7 +203,7 @@ async function handleFormSubmission(event) {
         runFraudPreventionHeaderValidation,
       };
 
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const currentActivity = `${location.pathname}`;
 
       sessionStorage.setItem("oauth_state", state);
@@ -274,7 +260,7 @@ async function handleFormSubmission(event) {
       };
 
       // Add hmrcAccount header if present
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       if (hmrcAccount) {
         requestHeaders["hmrcAccount"] = hmrcAccount;
       }
@@ -297,7 +283,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
+          showFailure(
+            { status: 401, service: "hmrc" },
+            siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"),
+          );
           return;
         }
         throw requestError(response, result, "Failed to retrieve obligations");

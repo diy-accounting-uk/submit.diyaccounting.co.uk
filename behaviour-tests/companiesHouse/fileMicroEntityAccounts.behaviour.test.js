@@ -45,8 +45,19 @@ import {
   fillAccountsFormFromBook,
   completeMicroEntityAnswersTheBookLeaves,
   completeSmallCompanyAnswersTheBookLeaves,
+  fillInDormantAnswers,
+  amendFiledAccountsFromCopy,
+  openAmendFormAgain,
+  describeTheRevision,
+  verifyRevisionPreview,
+  verifyRevisionAccepted,
+  verifyRevisionRejected,
+  verifyRevisedAccountsOnRecord,
+  describeTheSmallCompanyRevision,
+  dropCorrectedBookOnTheRevision,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
-import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
+import { companiesHouseLookupFixture, isCompaniesHouseSimulatorLane } from "../steps/behaviour-companies-house-filing-steps.js";
+import { COMPANY_AUTHENTICATION_CODE, PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
@@ -100,7 +111,7 @@ function buildAccounts() {
         currentAssets: 3500,
         creditorsWithinOneYear: 1500,
         calledUpShareCapital: 100,
-        profitAndLossAccount: 1900,
+        profitAndLossAccount: 2800,
       }),
     },
     averageEmployees: 2,
@@ -189,7 +200,16 @@ function buildSmallCompanyAccounts({ withComparatives = false, profitAndLossForm
   };
 }
 
-const companyAuthCode = "AB12CD";
+// The simulator checks the authentication code its register holds; the other lanes file with their own.
+const companyAuthCode = isCompaniesHouseSimulatorLane(envFilePath) ? COMPANY_AUTHENTICATION_CODE : "AB12CD";
+
+const fullName = (person) => `${person.forename} ${person.surname}`;
+// The books' directors and members, named as people of the simulator's register.
+const bookPeople = {
+  "Carol Smith": fullName(PEOPLE.eleanorBramwell),
+  "David Brown": fullName(PEOPLE.marcusTennant),
+  "Emma Wilson": fullName(PEOPLE.priyaHaldane),
+};
 
 let mockOAuth2Process;
 let serverProcess;
@@ -310,6 +330,102 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
 
+// A revision starts from the receipt of accepted accounts. The real gateway answers a filing PENDING
+// while Companies House checks it, so the original has no receipt to revise within a journey.
+const REVISION = {
+  averageEmployees: 3,
+  nonCompliance: "The original accounts gave the average number of employees as 2; it was 3.",
+  amendments: "The average number of employees is now 3. No other figure changes.",
+  dateApproved: "2026-02-10",
+};
+
+function dormantAccounts() {
+  const dormantYear = balancedYear({
+    fixedAssets: 0,
+    currentAssets: 100,
+    creditorsWithinOneYear: 0,
+    calledUpShareCapital: 100,
+    profitAndLossAccount: 0,
+  });
+  return { ...buildAccounts(), balanceSheet: { currentYear: dormantYear, priorYear: dormantYear }, averageEmployees: 0 };
+}
+
+async function fileOriginalAccountsAndOpenTheCopy(page, accounts, { dormant = false } = {}) {
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillInAccountsForm(page, accounts, screenshotPath);
+  if (dormant)
+    await fillInDormantAnswers(page, { tradingStatus: "neverTraded", shareClass: "ordinaryShares", nominalValue: "1" }, screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+  await openFilingCustomerCopy(page, screenshotPath);
+}
+
+test("Click through: file micro-entity accounts, amend them from the receipt and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, buildAccounts());
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  await describeTheRevision(page, REVISION, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file dormant accounts, amend them from the receipt and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, dormantAccounts(), { dormant: true });
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  await expect(page.locator("#dormant")).toBeChecked();
+  await describeTheRevision(page, { ...REVISION, averageEmployees: 1 }, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: Companies House rejects the revised accounts, and the fixed revision is accepted", async ({ page }, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the simulator's reject scenario has no counterpart on the real gateway");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, buildAccounts());
+  const amendHref = await amendFiledAccountsFromCopy(page, screenshotPath);
+  await describeTheRevision(page, REVISION, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await setGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionRejected(page, "1", screenshotPath);
+
+  await openAmendFormAgain(page, amendHref, screenshotPath);
+  await describeTheRevision(page, REVISION, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
 async function signInWithResidentBundle(page, testUrl) {
   await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
   await clickLogIn(page, screenshotPath);
@@ -321,6 +437,36 @@ async function signInWithResidentBundle(page, testUrl) {
     await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
+}
+
+for (const filleted of [false, true]) {
+  test(`Click through: file ${filleted ? "filleted" : "full"} small company accounts, amend them from the receipt and see the revised accounts accepted`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+    addOnPageLogging(page);
+    fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+    const accounts = buildSmallCompanyAccounts({ withComparatives: true });
+
+    await signInWithResidentBundle(page, baseUrl);
+    await goToFileSmallCompanyAccounts(page, screenshotPath);
+    await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+    await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+    await fillInSmallCompanyAccountsForm(page, accounts, { filleted }, screenshotPath);
+    await previewAccounts(page, screenshotPath);
+    await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+    await verifyFilingAccepted(page, screenshotPath);
+    await openFilingCustomerCopy(page, screenshotPath);
+    await amendFiledAccountsFromCopy(page, screenshotPath);
+    await expect(page.locator(filleted ? "#copyFilleted" : "#copyFull")).toBeChecked();
+    await describeTheSmallCompanyRevision(page, { revision: REVISION, accounts, filleted }, screenshotPath);
+    await verifyRevisionPreview(page, screenshotPath);
+    await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+    await verifyRevisionAccepted(page, screenshotPath);
+    await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+    await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+  });
 }
 
 test("Click through: file small company accounts in full with comparatives and see the filing accepted", async ({ page }, testInfo) => {
@@ -395,7 +541,7 @@ test("Click through: file filleted small company accounts and see the filing acc
   await goToFileSmallCompanyAccounts(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
-  await fillInSmallCompanyAccountsForm(page, buildSmallCompanyAccounts(), { filleted: true }, screenshotPath);
+  await fillInSmallCompanyAccountsForm(page, buildSmallCompanyAccounts({ withComparatives: true }), { filleted: true }, screenshotPath);
   await previewAccounts(page, screenshotPath);
   await verifyPreviewContains(
     page,
@@ -413,10 +559,60 @@ test("Click through: file filleted small company accounts and see the filing acc
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
 
+test("Click through: file micro-entity accounts from a book, amend them from a corrected book and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
+  const correctedBookZipFile = await writeFixtureBookZip(
+    "precision-code-ltd-loan",
+    companyNumber,
+    testInfo.outputPath("corrected-books"),
+    bookPeople,
+  );
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillAccountsFormFromBook(
+    page,
+    bookZipFile,
+    "for the period 2025-04-01 to 2026-03-31.",
+    { currentFixedAssets: "208990" },
+    screenshotPath,
+  );
+  await completeMicroEntityAnswersTheBookLeaves(page, "2026-04-15", screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+  await openFilingCustomerCopy(page, screenshotPath);
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  await dropCorrectedBookOnTheRevision(page, correctedBookZipFile, "for the period 2025-04-01 to 2026-03-31.", screenshotPath);
+  await describeTheRevision(
+    page,
+    {
+      averageEmployees: 3,
+      nonCompliance: "The original accounts left out the loan the company took out in the year.",
+      amendments: "The loan is now shown in the creditors, and net assets change with it.",
+      dateApproved: "2026-04-20",
+    },
+    screenshotPath,
+  );
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
 test("Click through: file micro-entity accounts from a book and see the filing accepted", async ({ page }, testInfo) => {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileMicroEntityAccounts(page, screenshotPath);
@@ -439,7 +635,7 @@ test("Click through: file micro-entity accounts from a book and see the filing a
       priorFixedAssets: "182902",
       priorCapitalAndReserves: "180802",
       averageEmployees: "3",
-      directorName: "Carol Smith",
+      directorName: bookPeople["Carol Smith"],
     },
     screenshotPath,
   );
@@ -493,7 +689,7 @@ test("Click through: file micro-entity accounts from an iXBRL accounts document 
 test("Click through: a book with no activity ticks the dormant box on the micro-entity form", async ({ page }, testInfo) => {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("dormant-ltd", companyNumber, testInfo.outputPath("books"));
+  const bookZipFile = await writeFixtureBookZip("dormant-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileMicroEntityAccounts(page, screenshotPath);
@@ -515,7 +711,7 @@ test("Click through: a book with no activity ticks the dormant box on the micro-
 test("Click through: file small company accounts from a book and see the filing accepted", async ({ page }, testInfo) => {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileSmallCompanyAccounts(page, screenshotPath);
@@ -537,8 +733,8 @@ test("Click through: file small company accounts from a book and see the filing 
       currentProfitAndLossAccount: "307928",
       noteLandBuildingsCostAtStart: "200000",
       averageEmployees: "3",
-      directors: "Carol Smith\nDavid Brown\nEmma Wilson",
-      directorName: "Carol Smith",
+      directors: Object.values(bookPeople).join("\n"),
+      directorName: bookPeople["Carol Smith"],
     },
     screenshotPath,
   );

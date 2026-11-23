@@ -35,7 +35,7 @@ const CT600_TOML = join(process.cwd(), "node_modules", "@diy-accounting-uk", "di
 
 const COMPANY = {
   companyName: "Precision Code Ltd",
-  companyNumber: "12345678",
+  companyNumber: "00000007",
   utr: "8596148860",
   companyType: 0,
   declarantName: "Carol Smith",
@@ -91,7 +91,7 @@ describe("boxesFor for a Company book in the marginal relief band", () => {
     expect(periodEnd).toBe("2026-03-31");
     expect(boxes).toEqual({
       1: "Precision Code Ltd",
-      2: "12345678",
+      2: "00000007",
       3: "8596148860",
       4: 0,
       30: "2025-04-01",

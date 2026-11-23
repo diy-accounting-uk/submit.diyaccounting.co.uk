@@ -59,6 +59,32 @@ describe("Welsh text of the site's scripts", () => {
     expect(problems).toContainEqual(expect.stringMatching(/^chrome\.no-such-string: missing/));
   });
 
+  it("every placeholder in a script string is one siteText fills: lowercase letters only", () => {
+    const unfilled = scriptStrings()
+      .filter(({ source }) => /\{[^}]*[^a-z}][^}]*\}/.test(source))
+      .map(({ id, source }) => `${id}: ${source}`);
+    expect(unfilled).toEqual([]);
+  });
+
+  it("a fragment a script joins to a value keeps the spaces its Welsh entry states, and a whole sentence loses them", async () => {
+    const catalogue = {
+      strings: {
+        "x.return-word": { cy: "Ffurflen " },
+        "x.is": { cy: ": " },
+        "x.sentence": { cy: "Elw gros. " },
+      },
+    };
+    const scripts = [
+      { id: "x.return-word", source: "Return ", file: "x.js" },
+      { id: "x.is", source: " is ", file: "x.js" },
+      { id: "x.sentence", source: "Gross profit.", file: "x.js" },
+    ];
+    const built = await renderWelshText(catalogue, scripts, []);
+    expect(built).toContain('"x.return-word": "Ffurflen "');
+    expect(built).toContain('"x.is": ": "');
+    expect(built).toContain('"x.sentence": "Elw gros."');
+  });
+
   it("lib/welsh-text.js is the current build of the catalogue and lists every Welsh copy", async () => {
     const committed = fs.readFileSync(WELSH_TEXT_PATH, "utf-8");
     expect(committed).toBe(await renderWelshText());
@@ -87,7 +113,7 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
 
   it("loads the Welsh text before page-chrome.js", () => {
     expect(welsh).toMatch(
-      /<script src="(\.\.\/)+lib\/welsh-text\.js"><\/script>\s*<script src="(\.\.\/)+widgets\/page-chrome\.js"><\/script>/,
+      /<script src="(\/|(\.\.\/)+)lib\/welsh-text\.js"><\/script>\s*<script src="(\/|(\.\.\/)+)widgets\/page-chrome\.js"><\/script>/,
     );
   });
 
@@ -100,6 +126,20 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
       if (!fs.existsSync(path.join(PUBLIC_DIR, file))) missing.push(url);
     }
     expect(missing).toEqual([]);
+  });
+
+  it("links a page that has a Welsh copy at that copy, unless the link says it opens the English", () => {
+    const welshCopies = new Set(WELSH_PAGES.map((other) => other.en));
+    const english = [];
+    for (const [tag, url] of welsh.matchAll(/<a\s[^>]*href="([^"]*)"[^>]*>/g)) {
+      if (url === "" || /^(#|\$\{|[a-z][a-z0-9+.-]*:)/i.test(url)) continue;
+      if (/\shreflang="en(-GB)?"/.test(tag)) continue;
+      const bare = url.replace(/[?#].*$/, "");
+      const resolved = bare.startsWith("/") ? bare.slice(1) : path.posix.join(path.posix.dirname(page.cy), bare);
+      const file = resolved === "" || resolved.endsWith("/") ? `${resolved}index.html` : resolved;
+      if (!file.startsWith("cy/") && welshCopies.has(file)) english.push(url);
+    }
+    expect(english).toEqual([]);
   });
 
   it("writes the line under each source quote in Welsh and keeps the quote's words marked English", () => {
@@ -164,5 +204,56 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
         expect(entry[1]).toContain(`<xhtml:link rel="alternate" hreflang="${hreflang}" href="${href}" />`);
       }
     }
+  });
+});
+
+describe("Welsh spreadsheets page", () => {
+  it("marks each customer review, quoted in its English words, as English", () => {
+    const html = read("cy/spreadsheets.html");
+    const reviews = html.slice(html.indexOf('<div class="reviews-quotes">'), html.indexOf('<div class="products">'));
+    const quotes = [...reviews.matchAll(/<blockquote\b([^>]*)>/g)];
+    expect(quotes.length).toBeGreaterThan(0);
+    quotes.forEach(([, attributes]) => expect(attributes).toContain('lang="en"'));
+  });
+});
+
+describe("The list of the site's Welsh services", () => {
+  const linkedFiles = (html, from) =>
+    [...html.matchAll(/<a\s[^>]*href="([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((href) => !/^[a-z][a-z0-9+.-]*:/i.test(href))
+      .map((href) => path.posix.join(path.posix.dirname(from), href));
+  const welshCopies = WELSH_PAGES.map((page) => page.cy);
+  const section = (html, pattern) => (html.match(pattern)?.[1] ?? "").replace(/\s+/g, " ");
+
+  const welshList = section(read("cy/index.html"), /<section class="welsh-offer"[^>]*data-welsh-offer[^>]*>([\s\S]*?)<\/section>/);
+  const englishList = section(read("about.html"), /<section class="about-welsh"[^>]*>([\s\S]*?)<\/section>/);
+
+  it("is on the Welsh home page, in Welsh, and links only Welsh copies", () => {
+    expect(welshList).toContain("Submit yn Gymraeg");
+    const files = linkedFiles(welshList, "cy/index.html");
+    expect(files.length).toBeGreaterThan(20);
+    for (const file of files) expect(welshCopies, file).toContain(file);
+  });
+
+  it("is on the About page in English and links the same Welsh copies, with the home page", () => {
+    const files = linkedFiles(englishList, "about.html");
+    expect(files.sort()).toEqual([...linkedFiles(welshList, "cy/index.html"), "cy/index.html"].sort());
+    for (const [link] of englishList.matchAll(/<a\s[^>]*href="cy\/[^>]*>/g)) expect(link).toContain('hreflang="cy"');
+  });
+
+  it("says in both languages that a message in Welsh gets its reply in English for now", () => {
+    expect(welshList).toContain("Rydym yn ateb yn Saesneg am y tro.");
+    expect(englishList).toContain("We reply in English for");
+    const welshLine = englishList
+      .match(/<span lang="cy"\s*>([\s\S]*?)<\/span\s*>/)?.[1]
+      .replace(/\s+/g, " ")
+      .trim();
+    expect(welshLine).toBe("Gallwch ysgrifennu atom yn Gymraeg. Rydym yn ateb yn Saesneg am y tro.");
+  });
+
+  it("is on no other Welsh page", () => {
+    for (const page of WELSH_PAGES.filter((entry) => entry.id !== "index"))
+      expect(read(page.cy), page.cy).not.toContain("data-welsh-offer");
   });
 });

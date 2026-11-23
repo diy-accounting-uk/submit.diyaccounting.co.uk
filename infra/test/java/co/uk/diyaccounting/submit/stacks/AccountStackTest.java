@@ -315,6 +315,50 @@ class AccountStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void theAcquisitionLambdaReadsAUserFromTheOneUserPoolAndNothingElseOfIt() {
+        Template template = Template.fromStack(synthAccountStack(null));
+
+        var acquisitionFunctions = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("account-acquisition-post"))
+                .toList();
+        assertEquals(1, acquisitionFunctions.size(), "expected exactly one account-acquisition-post Lambda");
+        var acquisitionRole = String.valueOf(((List<Object>)
+                        ((Map<String, Object>) acquisitionFunctions.get(0).get("Role")).get("Fn::GetAtt"))
+                .get(0));
+        assertEquals(
+                "eu-west-2_TestPool",
+                ((Map<String, Object>) acquisitionFunctions.get(0).get("Environment"))
+                        .entrySet().stream()
+                                .filter(entry -> entry.getKey().equals("Variables"))
+                                .map(entry -> ((Map<String, Object>) entry.getValue()).get("COGNITO_USER_POOL_ID"))
+                                .map(String::valueOf)
+                                .findFirst()
+                                .orElse(""),
+                "the acquisition Lambda names the one user pool");
+
+        var cognitoStatements = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> String.valueOf(properties.get("Roles")).contains(acquisitionRole))
+                .flatMap(properties -> ((List<Map<String, Object>>)
+                                ((Map<String, Object>) properties.get("PolicyDocument")).get("Statement"))
+                        .stream())
+                .filter(statement -> String.valueOf(statement.get("Action")).contains("cognito-idp:"))
+                .toList();
+        assertEquals(
+                1, cognitoStatements.size(), "one Cognito statement on the acquisition Lambda: " + cognitoStatements);
+        assertEquals(
+                "cognito-idp:AdminGetUser",
+                String.valueOf(cognitoStatements.get(0).get("Action")));
+        assertEquals(
+                "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool",
+                String.valueOf(cognitoStatements.get(0).get("Resource")),
+                "the statement names the one user pool, with no wildcard");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void practiceClientsListGetLambdaCanGetAndQueryThePracticeClientsTable() {
         Template template = Template.fromStack(synthAccountStack(null));
 

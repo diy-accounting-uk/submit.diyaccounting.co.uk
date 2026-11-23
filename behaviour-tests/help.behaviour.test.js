@@ -20,6 +20,7 @@ import {
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
 import { consentToDataCollection } from "./steps/behaviour-steps.js";
+import { TEST_EMAIL_DOMAIN } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -448,7 +449,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
 
     // Fill form fields
     console.log(" Filling form fields...");
-    await emailInput.fill("test@example.com");
+    await emailInput.fill(`help-form@${TEST_EMAIL_DOMAIN}`);
     await subjectInput.fill("Cannot see my VAT obligations");
     await descriptionTextarea.fill(
       "My quarterly VAT obligations list is empty after I connected to HMRC. The page shows no error message.",

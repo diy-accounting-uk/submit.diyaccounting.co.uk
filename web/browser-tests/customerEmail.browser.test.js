@@ -15,8 +15,47 @@ const OUTPUT_DIRECTORY = path.join(process.cwd(), "target", "customer-emails");
 const WIDTHS = [600, 360];
 
 const EXPECTED_TEXT = {
-  "physical-pass": ["Your pass: Day pass", "tiger-happy-mountain-silver", "Open the pass link", "attached as files to print"],
-  "digital-pass": ["Your pass: Day pass", "river-quiet-amber-cloud", "No end date", "Unlimited", "Open the pass link"],
+  "physical-pass": [
+    "A pass to share: Day pass",
+    "You cannot redeem it yourself.",
+    "tiger-happy-mountain-silver",
+    "Open the pass link",
+    "attached as files to print",
+  ],
+  "digital-pass": [
+    "A pass to share: Day pass",
+    "You cannot redeem it yourself.",
+    "river-quiet-amber-cloud",
+    "No end date",
+    "Unlimited",
+    "Open the pass link",
+  ],
+  "operator-restricted-pass": [
+    "A pass to share: Invited Guest",
+    "Only j***@example.com can redeem it.",
+    "For the person who gets this pass",
+    "lantern-brisk-meadow-oak",
+    "Open the pass link",
+  ],
+  "physical-pass-cy": [
+    "Tocyn i’w rannu: Tocyn diwrnod",
+    "Ni allwch ei ddefnyddio eich hun.",
+    "tiger-happy-mountain-silver",
+    "Agor dolen y tocyn",
+  ],
+  "digital-pass-cy": [
+    "Tocyn i’w rannu: Tocyn diwrnod",
+    "Ni allwch ei ddefnyddio eich hun.",
+    "river-quiet-amber-cloud",
+    "Dim terfyn",
+    "Agor dolen y tocyn",
+  ],
+  "operator-restricted-pass-cy": [
+    "Tocyn i’w rannu: Gwestai drwy wahoddiad",
+    "Dim ond j***@example.com all ei ddefnyddio.",
+    "I’r person sy’n cael y tocyn hwn",
+    "lantern-brisk-meadow-oak",
+  ],
   "vat-receipt": [
     "Your receipt: VAT return",
     "Form bundle number",
@@ -58,7 +97,7 @@ test.describe("Customer emails as a reader sees them", () => {
         );
         if (hasQr) {
           expect(images).toHaveLength(1);
-          expect(images[0].alt).toBe("QR code for your pass");
+          expect(images[0].alt).toBe(name.endsWith("-cy") ? "Cod QR y tocyn" : "QR code for the pass");
           expect(images[0].loaded, "the QR image loads").toBe(true);
           expect(images[0].width).toBeGreaterThanOrEqual(150);
         } else {

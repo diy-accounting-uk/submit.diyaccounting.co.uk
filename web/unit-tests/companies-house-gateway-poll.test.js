@@ -75,4 +75,22 @@ describe("companies-house-gateway-poll", () => {
     expect(gatewayPoll.pendingNote({ submissionNumber: "000001", pollInterval: 0 })).not.toContain("Check again");
     expect(gatewayPoll.pendingNote({ submissionNumber: "000001", pollInterval: 0 })).toContain("000001");
   });
+
+  test("a code with a word reads in the page's sentence", () => {
+    expect(gatewayPoll.statusText("Submission {number} was {status}.", "000001", "ACCEPT")).toBe("Submission 000001 was accepted.");
+    expect(gatewayPoll.statusText("Submission {number} is {status}.", "000001", "PARKED")).toBe(
+      "Submission 000001 is held for a check by hand.",
+    );
+  });
+
+  test("a code with no word is its own sentence with the code, never waiting to be checked", () => {
+    const text = gatewayPoll.statusText("Submission {number} is {status}. Checking again...", "000001", "INTERNAL_FAILURE");
+    expect(text).toBe("Companies House answered INTERNAL_FAILURE for submission 000001.");
+    expect(gatewayPoll.statusWord("INTERNAL_FAILURE")).toBeNull();
+    expect(gatewayPoll.unknownStatusText("000001", "INTERNAL_FAILURE")).toBe(text);
+    expect(gatewayPoll.statusSentence("Submission {number} was {status}.", "000001", "INTERNAL_FAILURE")).toEqual([
+      "Companies House answered {code} for submission {number}.",
+      { number: "000001", code: "INTERNAL_FAILURE" },
+    ]);
+  });
 });

@@ -104,12 +104,21 @@ const KINDS = {
     statements: ["section477", "membersNoAudit", "directorsResponsibilities", "smallCompaniesRegime", "section444-5", "section444-5A"],
   },
 };
+// A revised case is judged as its original kind is, and holds the revision's facts besides.
+for (const kind of Object.keys(KINDS)) {
+  KINDS[`${kind}-revised`] = {
+    ...KINDS[kind],
+    title: `Revised ${KINDS[kind].title.replace(/^\w/, (letter) => letter.toLowerCase())}`,
+    revised: true,
+  };
+}
 
 // Facts an example carries that ours leaves out on purpose, by reason. The reasons are the judgements
 // in the triage record's section "Example facts not carried, and why"; a missing fact named here is
 // reported as judged, and any other missing fact is a fail.
+const AMENDED_FILING = "amended filing";
 const NOT_CARRIED_REASONS = {
-  "amended filing": [
+  [AMENDED_FILING]: [
     "DateApprovalRevisionReport",
     "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
     "StatementSignificantAmendmentsToPreviouslyFiledReport",
@@ -151,12 +160,46 @@ const NOT_CARRIED_REASONS = {
     "NameEntityAccountants",
     "StatementOnScopeAccountantsReport",
   ],
-  "an auditor's statement; the accounts are unaudited and audit exempt": ["DirectorsReportConsistentWithAccountsTruefalse"],
+  "an auditor's statement; the accounts are unaudited and audit exempt": [
+    "DirectorsReportConsistentWithAccountsTruefalse",
+    "DirectorsReportConsistentWithRevisedAccountsTruefalse",
+  ],
   "directors' report date, and a filleted set has no directors' report": ["DateSigningDirectorsReport"],
 };
 const NOT_CARRIED = new Map(
   Object.entries(NOT_CARRIED_REASONS).flatMap(([reason, concepts]) => concepts.map((concept) => [concept, reason])),
 );
+
+// Facts an example carries that ours leaves out on purpose for some kinds of accounts only: each
+// reason holds for the kinds it names, and the same fact missing from any other kind is a fail.
+const SMALL_KINDS = ["small-full", "small-full-revised", "small-filleted", "small-filleted-revised"];
+const NOT_CARRIED_FOR_KINDS = [
+  {
+    reason:
+      "a disclosure dormant accounts do not need: the accounts specification's unaudited dormant accounts section asks for neither, and FRS 105 asks a micro-entity for neither",
+    kinds: ["dormant", "dormant-revised"],
+    concepts: ["FinancialStatementsArePreparedOnGoing-concernBasisTruefalse", "ControllingPartyUltimateControllingPartyTruefalse"],
+  },
+  {
+    reason: "a flag the example's software writes as false; the company has no such commitment, plan or investment entity status",
+    kinds: SMALL_KINDS,
+    concepts: [
+      "CompanyHasPublishedCommitmentToUKEffectiveStewardshipCodeTruefalse",
+      "DefinedBenefitPlanMulti-employerPlanTruefalse",
+      "InvestmentEntityRequiredToApplyExceptionFromConsolidationTruefalse",
+    ],
+  },
+  {
+    reason: "the example company's own accounting policy; the company has no deferred tax",
+    kinds: SMALL_KINDS,
+    concepts: ["DeferredTaxPolicy"],
+  },
+  {
+    reason: "the prior year is stated by the comparative contexts and the prior year's column",
+    kinds: Object.keys(KINDS),
+    concepts: ["StartDateForPriorPeriod", "EndDateForPriorPeriod"],
+  },
+];
 
 // Section 444(5): the balance sheet of a small company that does not deliver its profit and loss
 // account or directors' report says the accounts were delivered under the small companies regime.
@@ -164,7 +207,7 @@ const NOT_CARRIED = new Map(
 // 444(5C) lifts 444(5A) for accounts prepared under the micro-entity provisions.
 const SECTION_444_5 = /delivered in accordance with the provisions applicable to companies subject to the small companies regime/i;
 const SECTION_444_5A =
-  /444\s*\(5A\)|profit and loss account (has|have) not been delivered|not to deliver (a copy of )?the (company's )?profit and loss account/i;
+  /444\s*\(5A\)|profit and loss account (has|have) not been delivered|not to deliver (to the registrar )?(a copy of )?the (company's )?profit and loss account/i;
 const APPROVAL_LINE = /approved by the (board|directors)/i;
 
 // The same sentences in a Welsh document, as the builder writes them from the TIS's Welsh phrases.
@@ -198,13 +241,22 @@ const EXAMPLE_RULES = {
   "small-filleted": [
     /AccountingStandardsDimension[^>]*>\s*[\w-]*:?SmallEntities/,
     /AccountsTypeDimension[^>]*>\s*[\w-]*:?FilletedAccounts/,
-    /444\s*\(5A\)/,
+    SECTION_444_5A,
     /:TotalInventories"/,
   ],
 };
+const REVISED_FACT = /ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse"[^>]*>\s*true/;
+// The example of a revised case is a revised document of the same kind; an original case's example is not revised.
+for (const kind of Object.keys(EXAMPLE_RULES)) EXAMPLE_RULES[`${kind}-revised`] = [...EXAMPLE_RULES[kind], REVISED_FACT];
 const EXAMPLE_COMMON = [/(2025|2026)-01-01/, /NameProductionSoftware/];
 const EXAMPLE_EXCLUDE_ALL = [/LimitedLiabilityPartnershipLLP/];
-const EXAMPLE_EXCLUDE = { micro: [/EntityDormantTruefalse[^>]*>\s*true/] };
+const EXAMPLE_EXCLUDE = {
+  "micro": [/EntityDormantTruefalse[^>]*>\s*true/, REVISED_FACT],
+  "micro-revised": [/EntityDormantTruefalse[^>]*>\s*true/],
+  "dormant": [REVISED_FACT],
+  "small-full": [REVISED_FACT],
+  "small-filleted": [REVISED_FACT],
+};
 // LLP, Scottish LLP and Northern Irish LLP company numbers.
 const LLP_ENTRY = /_(OC|SO|NC)\d+_/;
 
@@ -234,9 +286,15 @@ function parseArgs(argv) {
   return args;
 }
 
-function kindOf(testCase) {
-  if (testCase.smallCompany) return testCase.smallCompany.filleted ? "small-filleted" : "small-full";
-  return testCase.dormant ? "dormant" : "micro";
+export function kindOf(testCase) {
+  const kind = testCase.smallCompany
+    ? testCase.smallCompany.filleted
+      ? "small-filleted"
+      : "small-full"
+    : testCase.dormant
+      ? "dormant"
+      : "micro";
+  return testCase.revision ? `${kind}-revised` : kind;
 }
 
 // A zip reader for the Accounts Data Product: central directory, then stored or deflated entries.
@@ -267,6 +325,11 @@ function readZipEntries(zipPath) {
   return { entries, read };
 }
 
+/** Whether a filed document can be the example of a case of this kind. */
+export function exampleMatches(kind, text) {
+  return EXAMPLE_RULES[kind].every((pattern) => pattern.test(text)) && !(EXAMPLE_EXCLUDE[kind] ?? []).some((pattern) => pattern.test(text));
+}
+
 function pickExamples(zipPath, kinds) {
   const { entries, read } = readZipEntries(zipPath);
   const best = {};
@@ -276,9 +339,7 @@ function pickExamples(zipPath, kinds) {
     const text = read(entry);
     if (!EXAMPLE_COMMON.every((pattern) => pattern.test(text)) || EXAMPLE_EXCLUDE_ALL.some((pattern) => pattern.test(text))) continue;
     for (const kind of kinds) {
-      const matches = EXAMPLE_RULES[kind].every((pattern) => pattern.test(text));
-      const excluded = (EXAMPLE_EXCLUDE[kind] ?? []).some((pattern) => pattern.test(text));
-      if (matches && !excluded && (!best[kind] || rank(text) < rank(best[kind].text))) best[kind] = { name: entry.name, text };
+      if (exampleMatches(kind, text) && (!best[kind] || rank(text) < rank(best[kind].text))) best[kind] = { name: entry.name, text };
     }
   }
   return best;
@@ -539,8 +600,14 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
 }
 
 // Why an example fact is not carried: a standing judgement, or a part of the company the input does not have.
-function notCarriedReason(concept, input) {
-  return NOT_CARRIED.get(concept) ?? notCarriedFromInput(concept, input);
+// A revised case carries the revision's facts, so their absence is a fail there.
+export function notCarriedReason(concept, input) {
+  const kind = kindOf(input);
+  const forKind = NOT_CARRIED_FOR_KINDS.find((entry) => entry.kinds.includes(kind) && entry.concepts.includes(concept));
+  if (forKind) return forKind.reason;
+  const reason = NOT_CARRIED.get(concept);
+  if (reason === AMENDED_FILING && input.revision) return notCarriedFromInput(concept, input);
+  return reason ?? notCarriedFromInput(concept, input);
 }
 
 function factComparison(ours, example, exampleSource, input) {
@@ -827,7 +894,9 @@ async function main() {
   console.log(`Evidence: ${relative(REPOSITORY_ROOT, args.outDir)}/index.html`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

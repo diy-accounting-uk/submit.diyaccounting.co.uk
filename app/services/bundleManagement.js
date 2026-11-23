@@ -14,6 +14,7 @@
 // app/services/bundleEnforcement.js
 
 import { createLogger } from "../lib/logger.js";
+import { loggedPathOf } from "../lib/loggedPath.js";
 import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCatalog.js";
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
@@ -134,7 +135,7 @@ export async function removeBundles(userId, bundlesToRemove) {
 }
 
 export async function enforceBundles(event, options = {}) {
-  const { hmrcBase = process.env.HMRC_BASE_URI, clientId } = options;
+  const { hmrcBase = process.env.HMRC_BASE_URI, clientId, activityId } = options;
 
   logger.info({
     message: "enforceBundles called",
@@ -144,9 +145,18 @@ export async function enforceBundles(event, options = {}) {
   const { sub: userSub, email: userEmail } = extractUserInfo(event);
   const { request } = extractRequest(event);
   const requestPath = request?.pathname || "";
+  const loggedPath = loggedPathOf(event);
   const catalog = loadCatalogFromRoot();
   const environmentName = process.env.ENVIRONMENT_NAME;
-  const pathActivities = findMatchingActivitiesForUrlPath(catalog, requestPath);
+  // A route whose path serves several things names the activity of the one it checks.
+  const pathActivities = activityId
+    ? (catalog.activities || []).filter((activity) => activity.id === activityId)
+    : findMatchingActivitiesForUrlPath(catalog, requestPath);
+  if (activityId && pathActivities.length === 0) {
+    const message = `Forbidden: ${activityId} is not an activity in the catalogue`;
+    logger.warn({ message, code: "ACTIVITY_NOT_IN_CATALOGUE", activityId });
+    throw new BundleEntitlementError(message, { code: "ACTIVITY_NOT_IN_CATALOGUE", activityId });
+  }
   const listedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
   const matchedActivities =
     listedActivities.length === 0 && previewRunsAgainstSandbox(event, requestPath) ? pathActivities : listedActivities;
@@ -157,7 +167,7 @@ export async function enforceBundles(event, options = {}) {
       activityId: environmentRestrictedActivity.id,
       environments: environmentRestrictedActivity.environments,
       environmentName,
-      path: requestPath,
+      path: loggedPath,
     };
     const message = `Forbidden: ${environmentRestrictedActivity.id} is not available in the ${environmentName || "current"} environment`;
     logger.warn({ message, ...errorDetails });
@@ -166,7 +176,7 @@ export async function enforceBundles(event, options = {}) {
 
   const requiredBundleIds = requiredBundleIdsFromActivities(matchedActivities);
   if (requiredBundleIds.length === 0) {
-    logger.info({ message: "No required bundles for request path - unrestricted", requestPath });
+    logger.info({ message: "No required bundles for request path - unrestricted", path: loggedPath });
   }
 
   // Automatic bundles that everyone has implicitly
@@ -181,7 +191,7 @@ export async function enforceBundles(event, options = {}) {
   logger.info({
     message: "Checking bundle entitlements",
     userSub,
-    path: requestPath,
+    path: loggedPath,
     requiredBundleIds: requiredBundleIds,
     currentBundleIds: currentBundleIds,
   });
@@ -193,7 +203,7 @@ export async function enforceBundles(event, options = {}) {
       requiredBundleIds,
       currentBundleIds,
       userSub,
-      path: requestPath,
+      path: loggedPath,
     };
 
     const message = `Forbidden: Activity requires ${requiredBundleIds.join(" or ")} bundle`;
@@ -207,7 +217,7 @@ export async function enforceBundles(event, options = {}) {
   logger.info({
     message: "Bundle entitlement check passed",
     userSub,
-    path: requestPath,
+    path: loggedPath,
     matchedBundleIds,
   });
 
@@ -216,7 +226,7 @@ export async function enforceBundles(event, options = {}) {
   let client = null;
   if (clientId) {
     if (!holdsPracticeLicence(subscribedBundles)) {
-      const errorDetails = { code: "CLIENT_SCOPE_FORBIDDEN", clientId, userSub, path: requestPath };
+      const errorDetails = { code: "CLIENT_SCOPE_FORBIDDEN", clientId, userSub, path: loggedPath };
       const message = "Forbidden: a client-scoped request requires an active resident-tax-agent subscription";
       logger.warn({ message, ...errorDetails });
       throw new BundleEntitlementError(message, errorDetails);
@@ -224,7 +234,7 @@ export async function enforceBundles(event, options = {}) {
 
     client = await getClient(userSub, clientId);
     if (!client || client.archivedAt) {
-      const errorDetails = { code: "CLIENT_NOT_FOUND", clientId, userSub, path: requestPath };
+      const errorDetails = { code: "CLIENT_NOT_FOUND", clientId, userSub, path: loggedPath };
       const message = "Forbidden: client not found for this practice";
       logger.warn({ message, ...errorDetails });
       throw new BundleEntitlementError(message, errorDetails);

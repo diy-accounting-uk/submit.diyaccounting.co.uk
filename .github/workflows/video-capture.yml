@@ -53,6 +53,7 @@ on:
           - 'tokens'
           - 'subscription-management'
           - 'company-lookup'
+          - 'company-watch-list'
           - 'change-registered-office'
           - 'change-registered-email'
           - 'my-receipts'

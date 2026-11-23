@@ -146,7 +146,7 @@ async function servePage(page, target) {
   await page.addInitScript(
     ({ pendingKey, pending }) => {
       if (sessionStorage.getItem("hmrcGrantId")) return;
-      sessionStorage.setItem("hmrcGrantId", "00000000-0000-4000-8000-000000000001");
+      sessionStorage.setItem("hmrcGrantId", "6b1f0c2e-8d4a-4f3b-9e7c-2a5d8f1b3c47");
       sessionStorage.setItem(pendingKey, JSON.stringify(pending));
       sessionStorage.setItem("currentActivity", window.location.pathname);
       localStorage.setItem("cognitoIdToken", "test-id-token");

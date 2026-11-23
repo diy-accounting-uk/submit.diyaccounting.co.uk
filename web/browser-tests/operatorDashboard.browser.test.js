@@ -29,6 +29,7 @@ import {
   FIXTURE_CONSOLE_INDEX,
   FORBIDDEN_BODY,
 } from "./operatorDashboardFixtures.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -122,10 +123,10 @@ test.describe("Operator Dashboard", () => {
 
   async function loadDashboard(page, { loggedIn = false } = {}) {
     if (loggedIn) {
-      await page.addInitScript(() => {
-        window.localStorage.setItem("userInfo", JSON.stringify({ given_name: "Operator", email: "operator@example.com", sub: "op-sub" }));
+      await page.addInitScript((email) => {
+        window.localStorage.setItem("userInfo", JSON.stringify({ given_name: "Operator", email, sub: "op-sub" }));
         window.localStorage.setItem("cognitoIdToken", "test-id-token");
-      });
+      }, PEOPLE.priyaHaldane.email);
     }
     await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "domcontentloaded" });
     await delay(200);
@@ -814,12 +815,13 @@ test.describe("Operator Dashboard", () => {
     expect(panelIds.slice(-4)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel", "awsLinksPanel"]);
 
     await expect(page.locator("#operatorsBody tr")).toHaveCount(2);
-    await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText("boss@example.com");
+    await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText(FIXTURE_AFFILIATE_SECTIONS.operators.emails[0]);
 
-    const generated = page.locator('#familyAffiliatesPassesGeneratedBody tr[data-affiliate-email="sister@example.com"]');
+    const firstAffiliate = FIXTURE_AFFILIATE_SECTIONS.familyAffiliates.affiliates[0].email;
+    const generated = page.locator(`#familyAffiliatesPassesGeneratedBody tr[data-affiliate-email="${firstAffiliate}"]`);
     await expect(generated.locator("td").nth(1)).toHaveText("3");
     await expect(page.locator("#familyAffiliatesLinkClicksBody tr")).toHaveCount(2);
-    await expect(page.locator('#familyAffiliatesPassesConvertedBody tr[data-affiliate-email="sister@example.com"] td').nth(1)).toHaveText(
+    await expect(page.locator(`#familyAffiliatesPassesConvertedBody tr[data-affiliate-email="${firstAffiliate}"] td`).nth(1)).toHaveText(
       "1",
     );
     await expect(page.locator("#familyAffiliatesPassesGeneratedTable thead th")).toContainText(["Today", "Previous day", "Last 7 days"]);

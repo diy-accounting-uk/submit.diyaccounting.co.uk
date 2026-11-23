@@ -45,6 +45,7 @@ describe("passAdminPost", () => {
       passTypeId: params.passTypeId,
       testPass: params.testPass,
       maxUses: params.maxUses,
+      ...(params.grants ? { grants: params.grants, usesPerAccount: params.usesPerAccount } : {}),
     }));
     process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
     process.env.OPERATOR_EMAILS = operatorEmail;
@@ -73,14 +74,57 @@ describe("passAdminPost", () => {
     const result = await ingestHandler(
       buildEventWithToken(
         tokenFor(operatorEmail),
-        passBody({ passTypeId: "operator", bundleId: "operator", restrictedToEmail: "a@b.com" }),
+        passBody({ passTypeId: "operator", bundleId: "operator", restrictedToEmail: operatorEmail }),
       ),
     );
     expect(result.statusCode).toBe(200);
     const params = mockCreatePass.mock.calls[0][0];
     expect(params.bundleId).toBe("operator");
     expect(params.testPass).toBeUndefined();
-    expect(params.restrictedToEmail).toBe("a@b.com");
+    expect(params.restrictedToEmail).toBe(operatorEmail);
+  });
+
+  test.each([
+    ["restricted to an email that is not an operator's", { restrictedToEmail: "a@b.com" }],
+    ["restricted to no email", {}],
+  ])("refuses an operator pass %s", async (_label, restriction) => {
+    const result = await ingestHandler(
+      buildEventWithToken(tokenFor(operatorEmail), passBody({ passTypeId: "operator", bundleId: "operator", ...restriction })),
+    );
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).message).toBe("A pass for the bundle 'operator' must be restricted to an operator's email");
+    expect(mockCreatePass).not.toHaveBeenCalled();
+  });
+
+  test("refuses a campaign grant of the operator bundle unless the pass is restricted to an operator's email", async () => {
+    const body = {
+      passTypeId: "custom-campaign",
+      validFrom: "2026-11-22T00:00:00.000Z",
+      grants: [{ bundleId: "operator" }],
+    };
+    const refused = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { ...body, restrictedToEmail: "a@b.com" }));
+    expect(refused.statusCode).toBe(400);
+    expect(JSON.parse(refused.body).message).toBe("A pass for the bundle 'operator' must be restricted to an operator's email");
+    const admitted = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { ...body, restrictedToEmail: operatorEmail }));
+    expect(admitted.statusCode).toBe(200);
+  });
+
+  test("refuses a pass for a bundle a pass may not grant, as the admin bundleId and as a campaign grant", async () => {
+    const plain = await ingestHandler(
+      buildEventWithToken(tokenFor(operatorEmail), passBody({ passTypeId: "day-guest-pass", bundleId: "default" })),
+    );
+    expect(plain.statusCode).toBe(400);
+    expect(JSON.parse(plain.body).message).toBe("Bundle 'default' cannot be granted by a pass");
+    const campaign = await ingestHandler(
+      buildEventWithToken(tokenFor(operatorEmail), {
+        passTypeId: "custom-campaign",
+        validFrom: "2026-11-22T00:00:00.000Z",
+        grants: [{ bundleId: "default" }],
+      }),
+    );
+    expect(campaign.statusCode).toBe(400);
+    expect(JSON.parse(campaign.body).message).toBe("Bundle 'default' cannot be granted by a pass");
+    expect(mockCreatePass).not.toHaveBeenCalled();
   });
 
   test.each(["day-guest", "invited-guest", "resident-vat", "resident-ltd", "resident-pro", "resident-tax-agent"])(
@@ -128,8 +172,23 @@ describe("passAdminPost", () => {
           bundleId: "day-guest",
           validUntil: null,
           maxUses: 1,
+          usesLeft: 1,
+          generatedBy: "operator",
+          restrictedTo: null,
+          passSummary: "submit VAT returns to HMRC",
         },
       });
+    });
+
+    test("an email-restricted operator pass sends the masked address and never the full one", async () => {
+      await ingestHandler(
+        buildEventWithToken(tokenFor(operatorEmail), passBody({ testPass: false, restrictedToEmail: "jane.doe@example.com" })),
+      );
+
+      const request = mockRequestCustomerEmail.mock.calls[0][0];
+      expect(request.data.restrictedTo).toMatch(/^j.*@example\.com$/);
+      expect(request.data.restrictedTo).not.toBe("jane.doe@example.com");
+      expect(JSON.stringify(request)).not.toContain("jane.doe@example.com");
     });
 
     test("a test pass marks the request synthetic", async () => {
@@ -151,6 +210,90 @@ describe("passAdminPost", () => {
 
       expect(result.statusCode).toBe(200);
       expect(JSON.parse(result.body).code).toBe("tiger-happy-mountain-silver");
+    });
+  });
+
+  describe("a campaign pass", () => {
+    const campaignBody = (overrides = {}) => ({
+      passTypeId: "custom-campaign",
+      validFrom: "2026-11-22T00:00:00.000Z",
+      validUntil: "2027-05-22T00:00:00.000Z",
+      maxUses: 1000,
+      usesPerAccount: 1,
+      grants: [{ bundleId: "resident-vat-comp", duration: "P1Y" }],
+      ...overrides,
+    });
+
+    test("stores its grants and per-account limit, and names its first bundle as the pass's bundle", async () => {
+      const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), campaignBody()));
+
+      expect(result.statusCode).toBe(200);
+      expect(mockCreatePass.mock.calls[0][0]).toMatchObject({
+        passTypeId: "custom-campaign",
+        bundleId: "resident-vat-comp",
+        maxUses: 1000,
+        usesPerAccount: 1,
+        grants: [{ bundleId: "resident-vat-comp", duration: "P1Y" }],
+      });
+    });
+
+    test("sends each grant's terms and its bundle summary to the email", async () => {
+      await ingestHandler(
+        buildEventWithToken(
+          tokenFor(operatorEmail),
+          campaignBody({ grants: [{ bundleId: "resident-vat-comp", duration: "P1Y", tokens: 50, tokenRefreshInterval: "P1M" }] }),
+        ),
+      );
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].data.grants).toEqual([
+        {
+          bundleId: "resident-vat-comp",
+          duration: "P1Y",
+          tokens: 50,
+          tokenRefreshInterval: "P1M",
+          summary: "submit VAT returns to HMRC and make pass links for other people",
+        },
+      ]);
+    });
+
+    test("admits a duration of exactly 100 years", async () => {
+      const result = await ingestHandler(
+        buildEventWithToken(tokenFor(operatorEmail), campaignBody({ grants: [{ bundleId: "resident-vat-comp", duration: "P100Y" }] })),
+      );
+      expect(result.statusCode).toBe(200);
+    });
+
+    test("refuses a synthetic test user", async () => {
+      const result = await ingestHandler(buildEventWithToken(tokenFor(syntheticEmail), campaignBody()));
+      expect(result.statusCode).toBe(403);
+      expect(mockCreatePass).not.toHaveBeenCalled();
+    });
+
+    test.each([
+      [{ grants: [] }, "grants must list at least one bundle"],
+      [{ grants: [{ bundleId: "no-such-bundle" }] }, "Bundle 'no-such-bundle' is not in the catalogue"],
+      [{ grants: [{ bundleId: "resident-vat" }] }, "Bundle 'resident-vat' is sold by subscription: grant 'resident-vat-comp' instead"],
+      [{ grants: [{ bundleId: "resident-vat-comp", duration: "one year" }] }, "duration 'one year' is not an ISO duration"],
+      [{ grants: [{ bundleId: "resident-vat-comp", duration: "P101Y" }] }, "duration 'P101Y' is longer than 100 years"],
+      [{ grants: [{ bundleId: "resident-vat-comp", duration: "P300000Y" }] }, "duration 'P300000Y' does not end on a valid date"],
+      [
+        { grants: [{ bundleId: "resident-vat-comp", tokens: 5, tokenRefreshInterval: "P1300M" }] },
+        "tokenRefreshInterval 'P1300M' is longer than 100 years",
+      ],
+      [
+        { grants: [{ bundleId: "resident-vat-comp", tokens: 5, tokenRefreshInterval: "P99999999D" }] },
+        "tokenRefreshInterval 'P99999999D' does not end on a valid date",
+      ],
+      [{ grants: [{ bundleId: "resident-vat-comp", tokens: 0 }] }, 'tokens must be a positive whole number or "unlimited"'],
+      [{ grants: [{ bundleId: "resident-vat-comp", tokenRefreshInterval: "P1M" }] }, "tokenRefreshInterval needs tokens"],
+      [{ usesPerAccount: 0 }, "usesPerAccount must be a positive whole number"],
+      [{ bundleId: "resident-vat-comp" }, "A campaign pass names its bundles in grants, not bundleId"],
+    ])("refuses %j with its reason", async (overrides, message) => {
+      const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), campaignBody(overrides)));
+
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).message).toBe(message);
+      expect(mockCreatePass).not.toHaveBeenCalled();
     });
   });
 });

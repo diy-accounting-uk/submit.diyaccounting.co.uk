@@ -35,7 +35,7 @@ const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 
 const EXAMPLES = [
   { name: "BrickWork Pro Ltd", dir: "brickwork-pro-ltd-vat", companyNumber: "87654321", director: "Mike Brown", employees: 2 },
-  { name: "Precision Code Ltd", dir: "precision-code-ltd-full", companyNumber: "12345678", director: "Carol Smith", employees: 3 },
+  { name: "Precision Code Ltd", dir: "precision-code-ltd-full", companyNumber: "00000007", director: "Carol Smith", employees: 3 },
 ];
 
 const netAssetsOf = (year) => year.fixedAssets + year.currentAssets - year.creditorsWithinOneYear - year.creditorsAfterOneYear;

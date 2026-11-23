@@ -15,6 +15,10 @@ import {
   serveFilingResultAssets,
   serveSubmissionRecordAssets,
 } from "./submissionRecordAssets.js";
+import { addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const OFFICE = registerCompany("00000008").address;
+const OFFICE_LINE = `${addressLine1(OFFICE)}, ${OFFICE.locality} ${OFFICE.postalCode}`;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -40,9 +44,9 @@ const registeredChange = (filings) => `
 import { registeredChangeCopyHtml } from "/lib/filing-result-record.js";
 document.body.innerHTML = registeredChangeCopyHtml({
   title: "Change of registered office address",
-  companyNumber: "00000006",
+  companyNumber: "00000008",
   transaction: { transactionId: "000123-456789", filings: ${JSON.stringify(filings)} },
-  details: [["Address", "1 Example Street"]],
+  details: [["Address", ${JSON.stringify(OFFICE_LINE)}]],
   dateText: "24 October 2026",
 });
 `;

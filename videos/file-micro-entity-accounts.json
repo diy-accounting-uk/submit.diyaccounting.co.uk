@@ -145,7 +145,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "06846849",
+          "text": "00000004",
           "clear": true,
           "caption": "Type the company number.",
           "instruction": "Enter your company number.",
@@ -181,13 +181,13 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{yearsAgo:1}}",
+          "value": "{{register:00000004:periodStart}}",
           "caption": "Set the accounting period.",
           "instruction": "Enter the first and last day of the accounting period as Period start and Period end.",
           "headline": "Set the accounting period",
           "keyWord": "period"
         },
-        { "action": "fill", "target": "#periodEnd", "value": "{{daysAgo:1}}" },
+        { "action": "fill", "target": "#periodEnd", "value": "{{register:00000004:periodEnd}}" },
         {
           "action": "fill",
           "target": "#currentFixedAssets",
@@ -215,13 +215,13 @@
         { "action": "fill", "target": "#priorCurrentAssets", "value": "3500" },
         { "action": "fill", "target": "#priorCreditorsWithinOneYear", "value": "1500" },
         { "action": "fill", "target": "#priorCalledUpShareCapital", "value": "100" },
-        { "action": "fill", "target": "#priorProfitAndLossAccount", "value": "1900" },
+        { "action": "fill", "target": "#priorProfitAndLossAccount", "value": "2800" },
         { "action": "fill", "target": "#priorCapitalAndReserves", "value": "2900" },
         { "action": "fill", "target": "#averageEmployees", "value": "2" },
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Joanna Hale",
+          "text": "Eleanor Bramwell",
           "scrollTo": { "role": "heading", "name": "Employees and director" }
         },
         {
@@ -285,7 +285,7 @@
         {
           "action": "type",
           "target": "#companyAuthCode",
-          "text": "AB12CD",
+          "text": "SIMCS01",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Companies House authentication code.",
@@ -324,7 +324,7 @@
         },
         {
           "action": "point",
-          "target": "#filingResult",
+          "target": { "role": "heading", "name": "Filing result" },
           "caption": "Companies House has the filing and reports the outcome here.",
           "instruction": "Read the status that Companies House reports for the filing.",
           "headline": "Companies House has the filing",
@@ -343,6 +343,7 @@
         },
         { "action": "await", "until": "#filingContent iframe.filed-document", "label": "Loading your copy" },
         { "action": "hold", "ms": 1500 },
+        { "action": "point", "target": "#printFilingBtn", "dwellMs": 200 },
         {
           "action": "scroll",
           "scrollTo": { "role": "heading", "name": "Your copy of the accounts filed at Companies House" },

@@ -137,9 +137,9 @@
       }
       tokenBalanceEl.style.display = "inline-flex";
     } catch (err) {
+      // An unread balance is not a balance of 0: nothing is shown until a read succeeds.
       console.warn("Failed to fetch token balance:", err);
-      tokenCountEl.textContent = tokenCountText(0);
-      tokenBalanceEl.style.display = "inline-flex";
+      tokenBalanceEl.style.display = "none";
     }
   }
 

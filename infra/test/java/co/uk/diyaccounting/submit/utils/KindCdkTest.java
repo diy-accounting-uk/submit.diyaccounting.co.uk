@@ -51,6 +51,38 @@ class KindCdkTest {
     }
 
     @Test
+    void ensureTableWithoutPointInTimeRecoveryWaitsForTheTableToBeActiveBeforeItsTtl() {
+        App app = new App();
+        Stack stack = new Stack(app, "TestStack");
+
+        KindCdk.ensureTableWithoutPointInTimeRecovery(stack, "Cache", "test-env-cache", "pk", "sk");
+        KindCdk.ensureTimeToLive(stack, "CacheTTL", "test-env-cache", "ttl");
+
+        Template template = Template.fromStack(stack);
+        template.resourceCountIs("Custom::AWS", 2);
+        template.resourceCountIs("Custom::EnsurePitr", 0);
+        template.resourceCountIs("Custom::EnsureTableActive", 1);
+        template.hasResourceProperties(
+                "Custom::EnsureTableActive", Map.of("TableName", "test-env-cache", "Wait", "TableActive"));
+
+        String activeWaitId = template.findResources("Custom::EnsureTableActive")
+                .keySet()
+                .iterator()
+                .next();
+        Map<String, Map<String, Object>> customAws = template.findResources("Custom::AWS");
+        String ttlId = customAws.entrySet().stream()
+                .filter(entry ->
+                        String.valueOf(entry.getValue().get("Properties")).contains("updateTimeToLive"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+        @SuppressWarnings("unchecked")
+        java.util.List<String> ttlDependsOn =
+                (java.util.List<String>) customAws.get(ttlId).get("DependsOn");
+        assertTrue(ttlDependsOn.contains(activeWaitId), "the TTL call waits for the table to be ACTIVE");
+    }
+
+    @Test
     void ensureStreamEnablesNewAndOldImagesWithTablePhysicalResourceId() {
         App app = new App();
         Stack stack = new Stack(app, "TestStack");

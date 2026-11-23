@@ -297,6 +297,42 @@ export function sameBalanceSheetDateCriterion(reviews, review) {
   );
 }
 
+// The six facts revised accounts by replacement carry when they hold no supplementary note: the five
+// statements of regulation 4 and the date the directors approved the revision.
+export const REVISION_CONCEPTS = [
+  "StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod",
+  "StatementThatThisReportNowStatutoryAccountsForPeriod",
+  "StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  "StatementSignificantAmendmentsToPreviouslyFiledReport",
+  "DateApprovalRevisionReport",
+];
+
+export function revisionFactsCriterion(ours) {
+  const absent = REVISION_CONCEPTS.filter(
+    (concept) => !ours.facts.some((fact) => fact.concept === concept && fact.visible !== false && !fact.hidden && squash(fact.text) !== ""),
+  );
+  return row(
+    "A revised case shows the six revision facts as visible text",
+    absent.length === 0 ? "pass" : "fail",
+    absent.length === 0
+      ? "the five statements and DateApprovalRevisionReport are tagged in the visible page"
+      : `not visible: ${absent.join(", ")}`,
+    "facts.json",
+  );
+}
+
+export function revisionDateCriterion(input) {
+  const original = input.revision.originalDateOfApproval;
+  const revised = input.director.dateApproved;
+  return row(
+    "The revision is approved on or after the original accounts",
+    revised >= original ? "pass" : "fail",
+    `original approved ${longDate(original)}, revision approved ${longDate(revised)}`,
+    "source/case-input.json",
+  );
+}
+
 // The substance checks for one case, in the order the page lists them.
 export function substanceCriteria({ kind, input, ours, today }) {
   return [
@@ -304,8 +340,9 @@ export function substanceCriteria({ kind, input, ours, today }) {
     companyInformationCriterion(input, ours),
     periodCriterion(input, today),
     hiddenNarrativeCriterion(ours),
-    ...(kind === "dormant" ? [neverTradedCriterion(ours)] : []),
+    ...(kind.startsWith("dormant") ? [neverTradedCriterion(ours)] : []),
     placeholderCriterion(input, ours),
     taxNoteBracketsCriterion(ours),
+    ...(input.revision ? [revisionFactsCriterion(ours), revisionDateCriterion(input)] : []),
   ];
 }

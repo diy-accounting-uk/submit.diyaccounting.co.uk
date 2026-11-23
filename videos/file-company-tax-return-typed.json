@@ -230,7 +230,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "2025-04-01"
+          "value": "{{register:00000001:periodStart}}"
         },
         {
           "action": "fill",
@@ -239,7 +239,7 @@
             "role": "heading",
             "name": "Period"
           },
-          "value": "2026-03-31",
+          "value": "{{register:00000001:periodEnd}}",
           "caption": "Set the accounting period.",
           "headline": "Set the accounting period",
           "keyWord": "period",
@@ -374,6 +374,59 @@
       "still": true,
       "steps": [
         {
+          "action": "point",
+          "target": "#includeComparatives",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Accounts"
+          },
+          "caption": "These are not the first accounts, so last year's figures go beside this year's.",
+          "headline": "Last year beside this year",
+          "keyWord": "last",
+          "instruction": "Check that Include last year's figures is ticked: accounts that are not the company's first show last year's figures.",
+          "dwellMs": 500
+        },
+        {
+          "action": "fill",
+          "target": "#priorTurnover",
+          "value": "20000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCostOfSales",
+          "value": "8000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorAdministrativeExpenses",
+          "value": "12000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorInterestReceivable",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#priorTax",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCashAtBank",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorProfitAndLossAccount",
+          "value": "0"
+        },
+        {
           "action": "type",
           "target": "#principalActivity",
           "text": "Software consultancy",
@@ -387,7 +440,7 @@
         {
           "action": "fill",
           "target": "#directors",
-          "value": "Carol Smith"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
@@ -397,17 +450,17 @@
         {
           "action": "fill",
           "target": "#directorName",
-          "value": "Carol Smith"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "fill",
           "target": "#directorDateApproved",
-          "value": "2026-06-01"
+          "value": "{{daysAgo:7}}"
         },
         {
           "action": "fill",
           "target": "#declarantName",
-          "value": "Carol Smith"
+          "value": "Eleanor Bramwell"
         },
         {
           "action": "hold",
@@ -510,7 +563,7 @@
         {
           "action": "type",
           "target": "#gatewayUserId",
-          "text": "dummy-gateway-user",
+          "text": "584203917461",
           "clear": true,
           "secret": true,
           "caption": "Type the company's Government Gateway user ID.",

@@ -36,7 +36,8 @@ import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncReques
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
-import { warmOperators } from "../../lib/operators.js";
+import { warmOperators, isOperatorEmail } from "../../lib/operators.js";
+import { passMayGrantBundle, passGrantsOnlyToOperators } from "../../services/passGrantRule.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { buildAcquisitionMap, isTaggedAcquisition } from "../../lib/acquisition.js";
 import { corsOriginHeaders } from "../../lib/corsOrigins.js";
@@ -289,7 +290,7 @@ export async function grantBundle(
   requestBody,
   decodedToken,
   requestId = null,
-  { skipCapCheck = false, grantQualifiers, viaPass = false } = {},
+  { skipCapCheck = false, grantQualifiers, viaPass = false, duration, tokens, tokenRefreshInterval } = {},
 ) {
   logger.info({
     message: "grantBundle entry",
@@ -299,6 +300,9 @@ export async function grantBundle(
     skipCapCheck,
     grantQualifiers,
     viaPass,
+    duration,
+    tokens,
+    tokenRefreshInterval,
   });
 
   const requestedBundle = requestBody.bundleId;
@@ -319,6 +323,20 @@ export async function grantBundle(
       message: `Bundle '${requestedBundle}' not found in catalog`,
       statusCode: 404,
     };
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      await putAsyncRequest(userId, requestId, "failed", result);
+    }
+    return result;
+  }
+
+  // A pass grants only a bundle a pass may grant, and the operator bundle only to an operator, so a
+  // pass record that already exists cannot give either to anyone else.
+  if (
+    viaPass &&
+    (!passMayGrantBundle(catalogBundle) || (passGrantsOnlyToOperators(requestedBundle) && !(await isOperatorEmail(decodedToken?.email))))
+  ) {
+    logger.warn({ message: "[Catalog bundle] A pass cannot grant this bundle to this account:", requestedBundle });
+    const result = { status: "not_grantable", error: "not_grantable", statusCode: 403 };
     if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
       await putAsyncRequest(userId, requestId, "failed", result);
     }
@@ -422,8 +440,11 @@ export async function grantBundle(
   }
 
   logger.info({ message: "Granting bundle to user:", userId, requestedBundle });
-  const expiry = catalogBundle.timeout
-    ? parseIsoDurationToDate(new Date(), catalogBundle.timeout, {
+  // A pass may set how long its grant lasts (duration) and the tokens it adds; otherwise the
+  // catalogue's timeout and tokensGranted apply.
+  const effectiveTimeout = duration ?? catalogBundle.timeout;
+  const expiry = effectiveTimeout
+    ? parseIsoDurationToDate(new Date(), effectiveTimeout, {
         onUnsupported: (iso) => logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso }),
       })
     : null;
@@ -450,18 +471,21 @@ export async function grantBundle(
     newBundle.acquisition = acquisition;
   }
 
-  // Token tracking: set token fields from catalogue
-  const tokensGranted = catalogBundle.tokensGranted ?? undefined;
+  // Token tracking: the pass's tokens and refresh interval when it sets tokens, else the catalogue's
+  const tokensGranted = tokens ?? catalogBundle.tokensGranted ?? undefined;
+  const refreshInterval = tokens === undefined ? catalogBundle.tokenRefreshInterval : tokenRefreshInterval;
   if (tokensGranted !== undefined) {
     newBundle.tokensGranted = tokensGranted;
     newBundle.tokensConsumed = 0;
-    if (catalogBundle.tokenRefreshInterval && expiry) {
-      newBundle.tokenResetAt = parseIsoDurationToDate(new Date(), catalogBundle.tokenRefreshInterval, {
+    if (refreshInterval && expiry) {
+      newBundle.tokenResetAt = parseIsoDurationToDate(new Date(), refreshInterval, {
         onUnsupported: (iso) => logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso }),
       }).toISOString();
     } else {
       newBundle.tokenResetAt = null;
     }
+    // A pass that sets its own tokens keeps them at each refresh: the item names its own interval.
+    if (tokens !== undefined && refreshInterval) newBundle.tokenRefreshInterval = refreshInterval;
   }
 
   logger.info({ message: "New bundle details:", newBundle });

@@ -4,10 +4,11 @@
 // app/http-simulator/scenarios/filings.js
 // Fixture state for the Companies House filing simulator: an in-memory transaction store keyed
 // by transaction id, plus per-company registered office address and registered email eligibility
-// answers. Seeded from the companies companies.js already serves, so the read-only lookup fixture
-// and the filing fixture agree on the same company.
+// answers. The registered offices come from fixtures/register.js, so the public register lookup and
+// the filing fixture agree on the same company.
 
-import { randomUUID } from "crypto";
+import { randomInt } from "crypto";
+import { registerCompany, addressLine1 } from "../fixtures/register.js";
 
 // Deliberately fails the transaction close with a 422 validation error naming the postcode, so
 // the behaviour and system tests can exercise the validation-error rendering.
@@ -18,59 +19,29 @@ const VALIDATION_ERROR_COMPANY_NUMBER = "00000422";
 // so the page's eligibility stop can be exercised.
 export const NO_REGISTERED_EMAIL_COMPANY_NUMBER = "00000003";
 
+const officeOf = (company) => ({
+  etag: `simulator-etag-${company.number.toLowerCase()}`,
+  premises: company.address.premises,
+  address_line_1: addressLine1(company.address),
+  address_line_2: "",
+  locality: company.address.locality,
+  region: "",
+  postal_code: company.address.postalCode,
+  country: company.address.country,
+});
+
 const registeredOfficeAddresses = new Map([
-  [
-    "00000001",
-    {
-      etag: "simulator-etag-00000001",
-      premises: "1",
-      address_line_1: "1 Example Street",
-      address_line_2: "",
-      locality: "Cardiff",
-      region: "",
-      postal_code: "CF14 3UZ",
-      country: "Wales",
-    },
-  ],
-  [
-    "SC000000",
-    {
-      etag: "simulator-etag-sc000000",
-      premises: "1",
-      address_line_1: "1 Simulator Street",
-      address_line_2: "",
-      locality: "Edinburgh",
-      region: "",
-      postal_code: "EH1 1AA",
-      country: "United Kingdom",
-    },
-  ],
+  ...["00000001", "SC000001", "00000004"].map((number) => [number, officeOf(registerCompany(number))]),
   [
     VALIDATION_ERROR_COMPANY_NUMBER,
     {
       etag: "simulator-etag-00000422",
-      premises: "1",
-      address_line_1: "1 Validation Street",
+      premises: "41",
+      address_line_1: "41 Westgate",
       address_line_2: "",
-      locality: "London",
+      locality: "Grantham",
       region: "",
-      postal_code: "EC1A 1AA",
-      country: "United Kingdom",
-    },
-  ],
-  [
-    // Matches companies.js's own "06846849" entry, the number the confirmation statement
-    // journey's public register lookup and its XML Gateway fixture already share, so the
-    // registered office and registered email address journeys can look the same company up.
-    "06846849",
-    {
-      etag: "simulator-etag-06846849",
-      premises: "1",
-      address_line_1: "1 Example Street",
-      address_line_2: "",
-      locality: "London",
-      region: "",
-      postal_code: "AB1 2CD",
+      postal_code: "NG31 6LF",
       country: "England",
     },
   ],
@@ -89,8 +60,13 @@ export function getEligibilityStatusCode(companyNumber) {
   return "COMPANY_VALID_FOR_SERVICE";
 }
 
+// A transaction or submission id in the shape Companies House gives one: three groups of six digits.
+function companiesHouseId() {
+  return Array.from({ length: 3 }, () => String(randomInt(0, 1000000)).padStart(6, "0")).join("-");
+}
+
 export function openTransaction({ companyNumber, description, reference }) {
-  const id = randomUUID().replace(/-/g, "");
+  const id = companiesHouseId();
   const transaction = {
     id,
     status: "open",
@@ -150,7 +126,7 @@ export function closeTransaction(transactionId) {
 
   transaction.status = "closed";
   transaction.closed_at = new Date().toISOString();
-  const submissionId = randomUUID().replace(/-/g, "");
+  const submissionId = companiesHouseId();
   transaction.filings = {
     [submissionId]: {
       type: Object.keys(transaction.resources)[0] || "unknown",

@@ -102,3 +102,47 @@ for (const [fileName, formId, submitId] of FORMS) {
     });
   });
 }
+
+test.describe("Form errors - a line follows its field's rule", () => {
+  test("a filled field takes its own line out of the summary, the other lines stay, and the removal is announced", async ({ page }) => {
+    await openPage(page, "selfEmploymentPeriod.html");
+    await page.locator("#submitBtn").click();
+    const summary = page.locator("#form-error-summary");
+    const ninoLine = summary.locator('a[href="#nino"]');
+    const ninoMessage = await ninoLine.textContent();
+    const lines = await summary.locator("li").count();
+    expect(lines).toBeGreaterThan(1);
+
+    await page.fill("#nino", "AB123456C");
+    await expect(ninoLine).toHaveCount(0);
+    await expect(page.locator("#nino-error")).toHaveCount(0);
+    await expect(summary.locator("li")).toHaveCount(lines - 1);
+    await expect(page.locator("#form-error-announcer")).toHaveText(`Fixed: ${ninoMessage}`);
+    await expect(page.locator("#form-error-announcer")).toHaveAttribute("aria-live", "polite");
+  });
+
+  test("a field emptied again keeps its line until it is filled", async ({ page }) => {
+    await openPage(page, "selfEmploymentPeriod.html");
+    await page.locator("#submitBtn").click();
+    await page.fill("#nino", "   ");
+    await expect(page.locator('#form-error-summary a[href="#nino"]')).toHaveCount(1);
+    await expect(page.locator("#nino-error")).toBeVisible();
+  });
+
+  test("a line with no rule leaves the summary at its field's first change, unannounced", async ({ page }) => {
+    await openPage(page, "selfEmploymentPeriod.html");
+    await page.evaluate(() =>
+      window.formErrors.showFormErrors([
+        { input: document.getElementById("nino"), message: "HMRC does not know this National Insurance number" },
+        { input: document.getElementById("businessId"), message: "HMRC does not know this business" },
+      ]),
+    );
+    await page.fill("#nino", "AB123456C");
+    await expect(page.locator("#form-error-summary")).not.toContainText("HMRC does not know this National Insurance number");
+    await expect(page.locator("#nino-error")).toHaveCount(0);
+    await expect(page.locator("#form-error-summary")).toContainText("HMRC does not know this business");
+    await expect(page.locator("#form-error-announcer")).toHaveCount(0);
+    await page.fill("#businessId", "XAIS12345678901");
+    await expect(page.locator("#form-error-summary")).toHaveCount(0);
+  });
+});

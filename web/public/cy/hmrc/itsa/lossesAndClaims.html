@@ -35,10 +35,14 @@
     </header>
 
     <main id="mainContent">
-      <p data-i18n="itsa-losses.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
-        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
-        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
-        ddiweddariad yn 2027.
+      <p
+        data-i18n="itsa-losses.status-production-this-uses-your-real-57175d"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator">
         <span data-i18n="itsa-losses.synthetic-mode-calls-go-to-hmrc-efa44d"
@@ -99,7 +103,7 @@
               <option data-i18n="itsa-losses.self-employment-sole-trade-dc8719" value="self-employment">
                 Hunangyflogaeth (unig fasnach)
               </option>
-              <option data-i18n="itsa-losses.uk-property-e6602b" value="uk-property">eiddo yn y DU</option>
+              <option data-i18n="itsa-losses.uk-property-e6602b" value="uk-property">Eiddo yn y DU</option>
               <option data-i18n="itsa-losses.foreign-property-8a5245" value="foreign-property">Eiddo tramor</option>
             </select>
           </div>
@@ -378,6 +382,7 @@
     <script src="../../../widgets/signed-out-panel.js"></script>
     <script src="../../../widgets/pass-redeemer.js"></script>
     <script src="../../../widgets/submission-cost.js"></script>
+    <script src="../../../lib/hmrc-sandbox-status.js"></script>
     <script src="../../../hmrc/itsa/lossesAndClaims.page.js"></script>
   </body>
 </html>

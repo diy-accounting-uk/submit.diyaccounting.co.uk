@@ -19,10 +19,12 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
-  companiesHouseHttpGet,
-  httpResponseFromCompaniesHouseResponse,
-  http403ForbiddenFromBundleEnforcement,
-} from "../../services/companiesHouseApi.js";
+  LOOKUP_CALLS,
+  lookupFailureResponse,
+  lookupLimitResponse,
+  lookupRefusalSeconds,
+} from "../../services/companiesHouseLookupLimit.js";
+import { companiesHouseHttpGet, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -94,10 +96,13 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  const refusalSeconds = await lookupRefusalSeconds(userSub, LOOKUP_CALLS.search);
+  if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
+
   const { chResponse, results } = await searchCompanies(q, { itemsPerPage, startIndex });
 
   if (!chResponse.ok) {
-    return httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders);
+    return lookupFailureResponse(request, chResponse, responseHeaders);
   }
 
   await publishActivityEvent({

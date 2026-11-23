@@ -1,0 +1,437 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tell Companies House a PSC's details have changed - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/changePscDetails.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changePscDetails.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changePscDetails.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changePscDetails.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Tell Companies House a PSC's details have changed</h1>
+      <p class="subtitle">Give notice of a change to how a person with significant control controls the company, or to their address</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              data-gateway-text="off"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="change-psc-details">
+            Look up the persons with significant control
+          </button>
+        </form>
+      </div>
+
+      <!-- Change form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Whose details have changed?</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <form id="changeForm" novalidate>
+          <fieldset class="form-group">
+            <legend>Person with significant control</legend>
+            <p id="psc-hint" class="hint">The persons with significant control on the register now, as Companies House shows them.</p>
+            <div id="pscChoices" aria-describedby="psc-hint"></div>
+          </fieldset>
+          <p id="noPscs" class="hint" style="display: none">
+            The register lists no current person with significant control that this form can name.
+          </p>
+          <fieldset class="form-group">
+            <legend>What has changed?</legend>
+            <div class="choice">
+              <input type="checkbox" id="changeControl" name="changeControl" /><label for="changeControl"
+                >How they control the company</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="changeAddress" name="changeAddress" /><label for="changeAddress">Their address</label>
+            </div>
+            <div class="choice"><input type="checkbox" id="changeName" name="changeName" /><label for="changeName">Their name</label></div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeResidence" name="changeResidence" /><label for="changeResidence"
+                >Their usual residential address</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeNationality" name="changeNationality" /><label for="changeNationality"
+                >Their nationality</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeCountryOfResidence" name="changeCountryOfResidence" /><label for="changeCountryOfResidence"
+                >Their country or state of residence</label
+              >
+            </div>
+            <div class="choice" data-for="entity">
+              <input type="checkbox" id="changeLegal" name="changeLegal" /><label for="changeLegal"
+                >Their legal form or governing law</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="controlSection" class="form-group" style="display: none">
+            <legend>How they control the company</legend>
+            <p id="control-hint" class="hint">
+              Tick any new conditions that apply, as well as any which continue to apply. The register's present answers are ticked.
+            </p>
+            <fieldset class="form-group" aria-describedby="control-hint">
+              <legend>Ownership of shares</legend>
+              <div class="choice">
+                <input type="radio" id="shares-none" name="shares" value="" checked /><label for="shares-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-25" name="shares" value="25TO50PERCENT" /><label for="shares-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-50" name="shares" value="50TO75PERCENT" /><label for="shares-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-75" name="shares" value="75TO100PERCENT" /><label for="shares-75">75% or more</label>
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>Ownership of voting rights</legend>
+              <div class="choice">
+                <input type="radio" id="votes-none" name="votes" value="" checked /><label for="votes-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-25" name="votes" value="25TO50PERCENT" /><label for="votes-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-50" name="votes" value="50TO75PERCENT" /><label for="votes-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-75" name="votes" value="75TO100PERCENT" /><label for="votes-75">75% or more</label>
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors" name="directors" /><label for="directors"
+                >The right to appoint or remove a majority of the board of directors</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence" name="influence" /><label for="influence"
+                >Significant influence or control (only if none of the above apply)</label
+              >
+            </div>
+            <p id="heldOther" class="hint" style="display: none"></p>
+          </fieldset>
+
+          <fieldset id="addressSection" class="form-group" style="display: none">
+            <legend id="addressLegend">The new address</legend>
+            <p id="address-hint" class="hint">This is the address that will appear on the public record.</p>
+            <div class="form-group">
+              <label for="premise">Building name or number</label>
+              <input type="text" id="premise" name="premise" maxlength="50" aria-describedby="address-hint" />
+            </div>
+            <div class="form-group">
+              <label for="street">Street</label>
+              <input type="text" id="street" name="street" maxlength="50" autocomplete="address-line1" />
+            </div>
+            <div class="form-group">
+              <label for="thoroughfare">Address line 2</label>
+              <input type="text" id="thoroughfare" name="thoroughfare" maxlength="50" autocomplete="address-line2" />
+            </div>
+            <div class="form-group">
+              <label for="postTown">Post town</label>
+              <input type="text" id="postTown" name="postTown" maxlength="50" autocomplete="address-level2" />
+            </div>
+            <div class="form-group">
+              <label for="county">County or region</label>
+              <input type="text" id="county" name="county" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label for="postcode">Postcode</label>
+              <input type="text" id="postcode" name="postcode" maxlength="15" spellcheck="false" autocomplete="postal-code" />
+            </div>
+            <div class="form-group">
+              <label for="country">Country</label>
+              <select id="country" name="country">
+                <option value="GB-ENG">England</option>
+                <option value="GB-WLS">Wales</option>
+                <option value="GB-SCT">Scotland</option>
+                <option value="GB-NIR">Northern Ireland</option>
+                <option value="GBR" selected>United Kingdom</option>
+                <option value="OTHER">Another country</option>
+              </select>
+            </div>
+            <div class="form-group" id="otherCountryGroup" style="display: none">
+              <label for="otherForeignCountry">Which country?</label>
+              <input type="text" id="otherForeignCountry" name="otherForeignCountry" maxlength="50" autocomplete="country-name" />
+            </div>
+          </fieldset>
+
+          <fieldset id="nameSection" class="form-group" style="display: none">
+            <legend>The new name</legend>
+            <div id="individualName">
+              <div class="form-group">
+                <label for="newTitle">Title (optional)</label>
+                <input type="text" id="newTitle" name="newTitle" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="newForename">First name (optional)</label>
+                <input type="text" id="newForename" name="newForename" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="newOtherForenames">Other first names (optional)</label>
+                <input type="text" id="newOtherForenames" name="newOtherForenames" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="newSurname">Surname</label>
+                <input type="text" id="newSurname" name="newSurname" maxlength="160" autocomplete="off" />
+              </div>
+            </div>
+            <div id="entityName">
+              <div class="form-group">
+                <label for="newEntityName">Name</label>
+                <input type="text" id="newEntityName" name="newEntityName" maxlength="160" autocomplete="off" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="residenceSection" class="form-group" style="display: none">
+            <legend>The new usual residential address</legend>
+            <p id="residence-hint" class="hint">
+              The person's home address. It is not on the public register: Companies House keeps it on a private register and gives it only
+              to credit reference agencies and specified public authorities, such as the police. This page does not keep it after the
+              filing.
+            </p>
+            <div class="choice">
+              <input type="checkbox" id="sameAsService" name="sameAsService" aria-describedby="residence-hint" /><label for="sameAsService"
+                >The same as the service address (not if the service address is the company's registered office)</label
+              >
+            </div>
+            <div id="residenceFields">
+              <div class="form-group">
+                <label for="resPremise">Building name or number</label>
+                <input type="text" id="resPremise" name="resPremise" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resStreet">Street</label>
+                <input type="text" id="resStreet" name="resStreet" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resThoroughfare">Address line 2</label>
+                <input type="text" id="resThoroughfare" name="resThoroughfare" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resPostTown">Post town</label>
+                <input type="text" id="resPostTown" name="resPostTown" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resCounty">County or region</label>
+                <input type="text" id="resCounty" name="resCounty" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resPostcode">Postcode</label>
+                <input type="text" id="resPostcode" name="resPostcode" maxlength="15" autocomplete="off" spellcheck="false" />
+              </div>
+              <div class="form-group">
+                <label for="resCountry">Country</label>
+                <select id="resCountry" name="resCountry">
+                  <option value="GB-ENG">England</option>
+                  <option value="GB-WLS">Wales</option>
+                  <option value="GB-SCT">Scotland</option>
+                  <option value="GB-NIR">Northern Ireland</option>
+                  <option value="GBR" selected>United Kingdom</option>
+                  <option value="OTHER">Another country</option>
+                </select>
+              </div>
+              <div class="form-group" id="resOtherCountryGroup" style="display: none">
+                <label for="resOtherForeignCountry">Which country?</label>
+                <input type="text" id="resOtherForeignCountry" name="resOtherForeignCountry" maxlength="50" autocomplete="off" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="nationalitySection" class="form-group" style="display: none">
+            <legend>The new nationality</legend>
+            <div class="form-group">
+              <label for="newNationality">Nationality</label>
+              <input type="text" id="newNationality" name="newNationality" maxlength="50" />
+            </div>
+          </fieldset>
+
+          <fieldset id="countryOfResidenceSection" class="form-group" style="display: none">
+            <legend>The new country or state of residence</legend>
+            <div class="form-group">
+              <label for="newCountryOfResidence">Country or state</label>
+              <input type="text" id="newCountryOfResidence" name="newCountryOfResidence" maxlength="50" />
+            </div>
+          </fieldset>
+
+          <fieldset id="legalSection" class="form-group" style="display: none">
+            <legend>The new legal form and governing law</legend>
+            <div class="form-group">
+              <label for="legalForm">Legal form</label>
+              <input type="text" id="legalForm" name="legalForm" maxlength="160" />
+            </div>
+            <div class="form-group">
+              <label for="lawGoverned">Governing law</label>
+              <input type="text" id="lawGoverned" name="lawGoverned" maxlength="160" />
+            </div>
+            <div id="registerFields">
+              <p id="register-hint" class="hint">
+                If it is entered in a register, give the register, its country or state and the registration number in it.
+              </p>
+              <div class="form-group">
+                <label for="placeRegistered">Register (optional)</label>
+                <input type="text" id="placeRegistered" name="placeRegistered" maxlength="160" aria-describedby="register-hint" />
+              </div>
+              <div class="form-group">
+                <label for="countryOrState">Country or state of the register (optional)</label>
+                <input type="text" id="countryOrState" name="countryOrState" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="registrationNumber">Registration number (optional)</label>
+                <input type="text" id="registrationNumber" name="registrationNumber" maxlength="160" />
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label for="dateOfChange">Date of change</label>
+            <p id="dateOfChange-hint" class="hint">
+              The date the change occurred. Give all the changes that occurred on this date. If there is more than one date, file once for
+              each date.
+            </p>
+            <input type="date" id="dateOfChange" name="dateOfChange" required aria-describedby="dateOfChange-hint" />
+          </div>
+          <div class="form-group">
+            <label for="confirmationDate">Date of confirmation</label>
+            <p id="confirmationDate-hint" class="hint">
+              The date the company had confirmation of there being a change in details, how the details had changed and the date of the
+              change. Companies House must be told within 14 days of confirming the change.
+            </p>
+            <input type="date" id="confirmationDate" name="confirmationDate" required aria-describedby="confirmationDate-hint" />
+          </div>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              data-gateway-text="off"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script type="module" src="../lib/companies-house-text-check.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../lib/companies-house-namesakes.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="changePscDetails.page.js"></script>
+  </body>
+</html>

@@ -2,12 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability CH-08 File micro-entity accounts to Companies House
-// - **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
-// - **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book.
+// - **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway, or revised accounts that replace accounts it has filed.
+// - **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book. A request carrying a revision section (read by readRevision in jointFiling.js: the original approval date, what was wrong with the original accounts and what the revised accounts change) files revised accounts under section 454 of the Companies Act 2006, which replace accounts already filed for the period; refuseRevisionWhenNotEnabled refuses it where the file-revised-accounts activity is not listed and the request is not a sandbox preview. A revision that names no receipt is checked against the register where the filing goes to the live gateway (refuseRevisionWithNothingToReplace in revisedAccountsRegister.js): the company must be on it with accounts made up to the period's end.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/companies-house/companiesHouseAccountsPost.js:ingestHandler`; `app/functions/companies-house/companiesHouseAccountsGet.js:ingestHandler`
-// - **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js
-// - **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
+// - **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/services/revisedAccountsRegister.js, web/public/lib/accounts-revision-register.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js
+// - **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, amended accounts, section 454, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 // - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
 // @end-capability
 
@@ -38,12 +38,9 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
-import {
-  buildMicroEntityAccounts,
-  DORMANT_TRADING_STATUSES,
-  SHARE_CLASSES,
-  sharesIssuedFor,
-} from "../../services/microEntityAccountsIxbrl.js";
+import { buildMicroEntityAccounts, DORMANT_TRADING_STATUSES } from "../../services/microEntityAccountsIxbrl.js";
+import { SHARE_CLASSES, sharesIssuedFor } from "../../../web/public/lib/accounts-notes-check.js";
+import { comparativesFinding, endsWithinFirstFinancialYear, isFirstAccountsPeriod } from "../../../web/public/lib/first-accounts.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
@@ -58,8 +55,10 @@ import {
   gatewayRequestNotDelivered,
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
+import { withoutRequestValues } from "../../services/companiesHouseErrorText.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
+import { echoedValuesOf } from "../../services/companiesHouseEchoedValues.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
@@ -70,10 +69,18 @@ import {
   jointFilingFields,
   readRevision,
   amendedFields,
+  revisesReceiptFields,
   sanitiseFormRequest,
   formRequestFields,
 } from "../../services/jointFiling.js";
 import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
+import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
+import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../../web/public/lib/balance-sheet-check.js";
+import { isApprovedAfterToday, approvalDateAfterTodayMessage } from "../../../web/public/lib/approval-date-check.js";
+import { refusalOf as revisedReceiptRefusal } from "../../../web/public/lib/accounts-revision.js";
+import { refuseRevisionWithNothingToReplace } from "../../services/revisedAccountsRegister.js";
+import { LOOKUP_CALLS, limitedLookup, lookupFailureResponse } from "../../services/companiesHouseLookupLimit.js";
+import { getReceipt } from "../../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -180,6 +187,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     smallCompany,
     directorsAdvances,
     documentLanguage,
+    dateOfIncorporation,
   } = parsedBody;
 
   // A client-scoped request resolves its company number from the client row instead, so the
@@ -222,15 +230,9 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("A dormant company files micro-entity accounts: dormant cannot be combined with smallCompany");
   }
 
-  let currentYear;
-  let priorYear;
-  if (!isSmallCompany) {
-    currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
-    priorYear = extractAndValidateBalanceSheetYear(balanceSheet?.priorYear, "priorYear", errorMessages);
-
-    validateBalanceSheetAddsUp(currentYear, "currentYear", errorMessages);
-    validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
-  }
+  const { currentYear, priorYear } = isSmallCompany
+    ? {}
+    : readMicroBalanceSheet(balanceSheet, { dateOfIncorporation, periodStart }, errorMessages);
 
   const numericAverageEmployees = Number(averageEmployees);
   if (
@@ -249,13 +251,15 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const dateApproved = director?.dateApproved;
   if (!dateApproved || !isValidIsoDate(dateApproved)) {
     errorMessages.push("Invalid or missing director.dateApproved - must be YYYY-MM-DD");
+  } else if (isApprovedAfterToday(dateApproved, new Date())) {
+    errorMessages.push(approvalDateAfterTodayMessage(dateApproved));
   }
 
   const revision = readRevision(parsedBody, dateApproved, errorMessages);
   const revisionField = revision ? { revision } : {};
 
   if (isSmallCompany) {
-    const small = extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages);
+    const small = extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages, periodStart);
     return {
       regime: "small-company",
       companyNumber: normalisedCompanyNumber,
@@ -274,7 +278,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     };
   }
 
-  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages);
+  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages, { signerName: directorName });
   const isDormant = dormant === true;
   const numericNominalValue = Number(nominalValue);
   if (isDormant) {
@@ -303,7 +307,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     periodStart,
     periodEnd,
     // buildMicroEntityAccounts() names the two years current/prior, not currentYear/priorYear.
-    balanceSheet: { current: currentYear, prior: priorYear },
+    balanceSheet: { current: currentYear, ...(priorYear ? { prior: priorYear } : {}) },
+    ...(dateOfIncorporation && !priorYear ? { dateOfIncorporation } : {}),
     averageNumberOfEmployees: numericAverageEmployees,
     directorName,
     dateOfApproval: dateApproved,
@@ -313,6 +318,56 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     ...(validDirectorsAdvances?.length ? { directorsAdvances: validDirectorsAdvances } : {}),
     ...(isDormant ? { dormant: true, dormantTradingStatus, shareClass, nominalValue: numericNominalValue } : {}),
   };
+}
+
+// Accounts that give a date of incorporation leave out the prior year as the company's first, so the
+// register must agree: the company was incorporated on that date, which is the period's start, and
+// it holds no accounts but, on a revision, these. A request cannot make an established company's
+// accounts one year by naming its period's start as the incorporation date.
+function refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, profile) {
+  if (
+    profile?.dateOfCreation === accounts.dateOfIncorporation &&
+    isFirstAccountsPeriod(profile, accounts.periodStart) &&
+    endsWithinFirstFinancialYear(accounts.periodStart, accounts.periodEnd)
+  ) {
+    return undefined;
+  }
+  return buildValidationError(
+    request,
+    [
+      "Companies House does not hold these as the company's first accounts: it was incorporated on " +
+        `${profile?.dateOfCreation ?? "a date the register does not give"}, it has filed accounts before, or the period runs longer than a first financial year can, so these accounts must show the prior year`,
+    ],
+    responseHeaders,
+  );
+}
+
+// The micro-entity balance sheet: this year, and the prior year unless the accounts are the first.
+function readMicroBalanceSheet(balanceSheet, { dateOfIncorporation, periodStart }, errorMessages) {
+  const currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
+  validateBalanceSheetAddsUp(currentYear, "currentYear", errorMessages);
+  if (readMicroFirstAccounts(dateOfIncorporation, periodStart, balanceSheet?.priorYear, errorMessages)) return { currentYear };
+  const priorYear = extractAndValidateBalanceSheetYear(balanceSheet?.priorYear, "priorYear", errorMessages);
+  validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
+  return { currentYear, priorYear };
+}
+
+// Micro-entity accounts show the prior year's balance sheet unless they are the company's first,
+// which give the date of incorporation: it must be the period's start, and the accounts carry no
+// prior year. Answers whether the request is first accounts.
+function readMicroFirstAccounts(dateOfIncorporation, periodStart, priorYearValues, errorMessages) {
+  if (dateOfIncorporation === undefined || dateOfIncorporation === null) return false;
+  if (typeof dateOfIncorporation !== "string" || !isValidIsoDate(dateOfIncorporation)) {
+    errorMessages.push("Invalid dateOfIncorporation - must be YYYY-MM-DD");
+    return false;
+  }
+  const finding = comparativesFinding({ periodStart, dateOfIncorporation, hasPriorYear: Boolean(priorYearValues) });
+  if (finding === "first-accounts-start-on-incorporation") {
+    errorMessages.push("dateOfIncorporation must equal periodStart: a company's first accounts start on the day it was incorporated");
+  } else if (finding === "first-accounts-have-no-prior-year") {
+    errorMessages.push("dateOfIncorporation marks first accounts, which have no preceding year: leave out balanceSheet.priorYear");
+  }
+  return true;
 }
 
 // A dormant company had no significant accounting transaction in the period, so its profit and
@@ -345,7 +400,7 @@ function validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, s
   }
   if (
     Number.isFinite(currentYear.profitAndLossAccount) &&
-    Number.isFinite(priorYear.profitAndLossAccount) &&
+    Number.isFinite(priorYear?.profitAndLossAccount) &&
     currentYear.profitAndLossAccount !== priorYear.profitAndLossAccount
   ) {
     errorMessages.push("A dormant company cannot report a profit or loss: profitAndLossAccount must equal the prior year");
@@ -391,6 +446,8 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   if (netAssets !== year.capitalAndReserves) {
     errorMessages.push(`balanceSheet.${yearLabel}.capitalAndReserves does not equal net assets (${netAssets})`);
   }
+  const mismatch = capitalAndReservesMismatch(year);
+  if (mismatch) errorMessages.push(capitalAndReservesMessage(mismatch, YEAR_NAMES[yearLabel]));
 }
 
 // The envelope left, so Companies House may have it. The filing stays pending with its request
@@ -417,6 +474,76 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
     clientId,
     detail,
   });
+}
+
+// The register's profile gives the registered office a request leaves out, the jurisdiction Welsh
+// accounts need and whether accounts that give a date of incorporation are the company's first. A
+// filing reads it once, as one of the limited lookups. Answers {failure} with the
+// JSON error of a read that was refused, failed or could not be made, and otherwise {profile}, which
+// is null for a company the register does not hold.
+async function readFilingProfile({ request, responseHeaders, userSub, companyNumber }) {
+  const { answer, failure } = await limitedLookup({
+    request,
+    headers: responseHeaders,
+    userSub,
+    calls: LOOKUP_CALLS.profile,
+    read: () => getCompanyProfile(companyNumber),
+    notRead: {
+      message: "The Companies House register could not be read, so the accounts were not filed. Try again later.",
+      reason: "company-profile-not-read",
+    },
+  });
+  if (failure) return { failure };
+  // No company is a company with no profile; any other failed read is its own JSON error.
+  if (!answer.profile && answer.chResponse && answer.chResponse.status !== 404) {
+    return { failure: await lookupFailureResponse(request, answer.chResponse, responseHeaders) };
+  }
+  return { profile: answer.profile ?? null };
+}
+
+// The checks of the accounts against the register and the user's own receipts, in order: the one
+// limited read of the company's profile (the registered office fill, the Welsh check and first
+// accounts take it), a revision against the receipt it names, then the register's checks. Answers
+// the response that refuses the filing, or undefined.
+async function refuseAgainstTheRegister({ request, responseHeaders, userSub, accounts, errorMessages }) {
+  let filingProfile = null;
+  if (!accounts.registeredOffice?.addressLine1 || accounts.documentLanguage === "cy" || accounts.dateOfIncorporation) {
+    const read = await readFilingProfile({ request, responseHeaders, userSub, companyNumber: accounts.companyNumber });
+    if (read.failure) return read.failure;
+    filingProfile = read.profile;
+    await fillRegisteredOffice(accounts, errorMessages, { readProfile: async () => ({ profile: read.profile }) });
+    if (accounts.documentLanguage === "cy") checkWelshCompany(read.profile?.jurisdiction, errorMessages);
+  }
+  // Revised accounts that name the receipt of the accounts they revise are checked against it, under
+  // the signed-in user's own receipts, by the rules the page applies.
+  const revisesReceipt = accounts.revision?.revisesReceipt;
+  if (revisesReceipt) {
+    const revisedReceipt = (await getReceipt(userSub, revisesReceipt.replace(/\.json$/, ""))) ?? null;
+    const refusal = revisedReceiptRefusal(revisedReceipt, accounts.companyNumber, {
+      periodStart: accounts.periodStart,
+      periodEnd: accounts.periodEnd,
+    });
+    if (refusal) errorMessages.push(refusal);
+  }
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, errorMessages, responseHeaders);
+  }
+  // Revised accounts that name no receipt replace accounts filed another way, which the register holds.
+  if (accounts.revision && !revisesReceipt) {
+    const revisionRefusal = await refuseRevisionWithNothingToReplace({
+      request,
+      headers: responseHeaders,
+      userSub,
+      companyNumber: accounts.companyNumber,
+      periodEnd: accounts.periodEnd,
+    });
+    if (revisionRefusal) return revisionRefusal;
+  }
+  if (accounts.dateOfIncorporation) {
+    const notFirst = refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, filingProfile);
+    if (notFirst) return notFirst;
+  }
+  return undefined;
 }
 
 async function refuseClientNotAuthorised({ request, responseHeaders, userSub, clientId }) {
@@ -454,6 +581,9 @@ export async function ingestHandler(event) {
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
+
+  const revisionRefusal = refuseRevisionWhenNotEnabled(event, request, parseRequestBody(event)?.revision != null);
+  if (revisionRefusal) return revisionRefusal;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
@@ -495,14 +625,8 @@ export async function ingestHandler(event) {
   if (clientId) {
     accounts.companyNumber = client.identifiers?.companyNumber;
   }
-  await fillRegisteredOffice(accounts, errorMessages);
-  if (accounts.documentLanguage === "cy") {
-    const { profile } = await getCompanyProfile(accounts.companyNumber);
-    checkWelshCompany(profile?.jurisdiction, errorMessages);
-  }
-  if (errorMessages.length > 0) {
-    return buildValidationError(request, errorMessages, responseHeaders);
-  }
+  const registerRefusal = await refuseAgainstTheRegister({ request, responseHeaders, userSub, accounts, errorMessages });
+  if (registerRefusal) return registerRefusal;
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
@@ -542,11 +666,18 @@ export async function ingestHandler(event) {
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
+    const echoedValues = echoedValuesOf(accounts, userSub);
     inProgressData = {
+      // The company whose cached register answers accepted accounts drop.
+      companyNumber: accounts.companyNumber,
       filedDocument: ixbrl,
       chargeActivityId,
+      // The keyed hashes of the names and addresses the accounts send, so a rejection read later can
+      // be stripped of them.
+      ...(echoedValues ? { echoedValues } : {}),
       ...jointFilingFields(jointFilingId),
       ...amendedFields(Boolean(accounts.revision)),
+      ...revisesReceiptFields(accounts.revision?.revisesReceipt),
       ...formRequestFields(formRequest),
       // The document's own language, which the filing keeps; it does not follow the page language.
       ...(accounts.documentLanguage === "cy" ? { documentLanguage: "cy" } : {}),
@@ -582,18 +713,20 @@ export async function ingestHandler(event) {
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
+      // What is kept and answered of a rejection: its texts with any value the request sent taken out.
+      const answered = withoutRequestValues(parsed, { ...accounts, ownPresenter });
       await putAsyncRequest(
         userSub,
         submissionNumber,
         "failed",
-        { ...parsed, ...jointFilingFields(jointFilingId), ...amendedFields(Boolean(accounts.revision)) },
+        { ...answered, ...jointFilingFields(jointFilingId), ...amendedFields(Boolean(accounts.revision)) },
         asyncRequestsTableName,
       );
       await recordSubmissionFailure({
         failure: "gateway-rejected-envelope",
         summary: "Companies House accounts submission rejected by the gateway",
         userSub,
-        detail: { errors: parsed.errors },
+        detail: { errors: answered.errors },
         clientId,
       });
       if (hasInvalidCompanyAuthenticationCodeError(parsed.errors)) {
@@ -601,14 +734,14 @@ export async function ingestHandler(event) {
           request,
           headers: { ...responseHeaders },
           message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
-          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: parsed.errors },
+          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: answered.errors },
         });
       }
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
         message: "Companies House rejected the accounts submission envelope",
-        error: { submissionNumber, errors: parsed.errors },
+        error: { submissionNumber, errors: answered.errors },
       });
     }
 

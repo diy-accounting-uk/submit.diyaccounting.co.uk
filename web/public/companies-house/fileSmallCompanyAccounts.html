@@ -31,7 +31,7 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway">
+      <p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway" hidden>
         <strong>Status: production.</strong> Accounts you file here reach the live Companies House register.
       </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
@@ -74,10 +74,60 @@
         <h2>Small company accounts</h2>
         <p>
           Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
-          <a href="#" id="changeCompanyLink">Change company</a>.
+          <span id="changeCompanyLine"><a href="#" id="changeCompanyLink">Change company</a>.</span>
         </p>
+        <div id="revisionBanner" class="outcome" role="note" hidden>
+          <p><strong>You are revising the accounts filed at Companies House</strong></p>
+          <p>The original accounts stay on the public register, and the revised accounts are filed beside them.</p>
+        </div>
+        <div id="priorYearNote" class="outcome" role="status" hidden></div>
         <div id="booksImport"></div>
         <form id="accountsForm" novalidate>
+          <section id="revisionSection" class="form-section" hidden>
+            <h3>The revision</h3>
+            <p>A revision corrects what was wrong with the original accounts, and what has to change because of it, and nothing else.</p>
+            <p>The directors must deliver the revised accounts to Companies House within 28 days of approving them.</p>
+            <div class="form-group">
+              <label for="revisionOriginalDate">Date the original accounts were approved</label>
+              <input type="date" id="revisionOriginalDate" name="revisionOriginalDate" readonly />
+            </div>
+            <p id="revisionTexts-hint" class="hint">Companies House prints both texts on the revised accounts, on the public register.</p>
+            <div class="form-group">
+              <label for="revisionNonCompliance">What was wrong with the original accounts?</label>
+              <textarea
+                id="revisionNonCompliance"
+                name="revisionNonCompliance"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionTexts-hint"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="revisionAmendments">What do the revised accounts change?</label>
+              <textarea
+                id="revisionAmendments"
+                name="revisionAmendments"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionTexts-hint"
+              ></textarea>
+            </div>
+            <p id="revisionCopyNote" class="hint" hidden>
+              <span id="revisionCopyFull"
+                >The accounts filed were a full copy. You can file the revision as a full or a filleted copy below.</span
+              >
+              <span id="revisionCopyFilleted"
+                >The accounts filed were a filleted copy, which holds no profit and loss account. You can file the revision as a full or a
+                filleted copy below: for a full copy, type the profit and loss lines of both years, or drop the company's book on the card
+                above.</span
+              >
+            </p>
+            <p id="revisionAccountantsNote" class="hint" hidden>
+              The accounts filed have an accountants' report this page could not read. Enter the accountants' report again below.
+            </p>
+            <p id="revisionNotesNote" class="hint" hidden></p>
+            <div id="revisionDownloads"></div>
+          </section>
           <section id="documentLanguageSection" class="form-section" hidden>
             <h3>Language of the accounts</h3>
             <p id="documentLanguage-hint" class="hint">
@@ -148,6 +198,7 @@
               <label for="officeCountry">Country (optional)</label>
               <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
             </div>
+            <p id="officeDiffersHint" class="hint" hidden></p>
           </section>
           <section class="form-section">
             <h3>What Companies House receives</h3>
@@ -908,9 +959,9 @@
                 /><label for="includeComparatives">Include prior-year comparatives</label>
               </div>
               <p id="includeComparatives-hint" class="hint">
-                Fill in the prior year only when you have its figures. Nothing is filled in for you, and a prior year left out is left out
-                of the accounts.
+                Accounts show the prior year's figures beside this year's, unless they are the company's first accounts.
               </p>
+              <p id="firstAccountsLine" class="hint" aria-live="polite"></p>
             </div>
             <div id="comparativeFields" class="form-section" style="display: none">
               <h3>Prior year</h3>
@@ -2517,6 +2568,10 @@
             <div class="form-group">
               <label for="directorDateApproved">Date approved</label>
               <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+              <p id="revisionLateNote" class="hint" hidden>
+                The date approved is more than 28 days ago. Deliver the revised accounts now: the law gives the directors 28 days from
+                approving them.
+              </p>
             </div>
           </section>
           <section class="form-section">
@@ -2552,76 +2607,103 @@ In accordance with your instructions, we have compiled these unaudited financial
             <p class="hint">
               Fill this in when the balance sheet shows amounts owed by directors. Section 413 of the Companies Act 2006 requires the note.
             </p>
-            <div class="form-group">
-              <label for="directorsAdvanceName">Director who owes the company money</label>
-              <input type="text" id="directorsAdvanceName" name="directorsAdvanceName" />
+            <div id="directorsAdvanceRows">
+              <div class="directors-advance-row">
+                <div class="form-group">
+                  <label for="directorsAdvanceName">Director who owes the company money</label>
+                  <input type="text" id="directorsAdvanceName" data-advance-field="name" name="directorsAdvanceName" />
+                </div>
+                <div class="form-group">
+                  <label for="directorsAdvanceTerms">Interest rate and main conditions of the advance</label>
+                  <input type="text" id="directorsAdvanceTerms" data-advance-field="terms" name="directorsAdvanceTerms" />
+                </div>
+                <p id="ledgerHintAdvances" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+                <table class="ledger ledger--one-year">
+                  <thead>
+                    <tr>
+                      <th scope="col">Line</th>
+                      <th scope="col" class="ledger__figure">Amount (£)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Owed by that director at the start of the year</th>
+                      <td class="ledger__figure">
+                        <label for="directorsAdvanceAtStart" class="visually-hidden">Owed by that director at the start of the year</label>
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceAtStart"
+                            data-advance-field="balanceAtStart"
+                            name="directorsAdvanceAtStart"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Advanced to that director in the year</th>
+                      <td class="ledger__figure">
+                        <label for="directorsAdvanceMade" class="visually-hidden">Advanced to that director in the year</label>
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceMade"
+                            data-advance-field="advanced"
+                            name="directorsAdvanceMade"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Repaid by that director in the year</th>
+                      <td class="ledger__figure">
+                        <label for="directorsAdvanceRepaid" class="visually-hidden">Repaid by that director in the year</label>
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceRepaid"
+                            data-advance-field="repaid"
+                            name="directorsAdvanceRepaid"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Owed by that director at the end of the year</th>
+                      <td class="ledger__figure">
+                        <label for="directorsAdvanceAtEnd" class="visually-hidden">Owed by that director at the end of the year</label>
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceAtEnd"
+                            data-advance-field="balanceAtEnd"
+                            name="directorsAdvanceAtEnd"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="directorsAdvanceTerms">Interest rate and main conditions of the advance</label>
-              <input type="text" id="directorsAdvanceTerms" name="directorsAdvanceTerms" />
-            </div>
-            <p id="ledgerHintAdvances" class="hint">Whole pounds. For example, £600 or £1,200.</p>
-            <table class="ledger ledger--one-year">
-              <thead>
-                <tr>
-                  <th scope="col">Line</th>
-                  <th scope="col" class="ledger__figure">Amount (£)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">Owed by that director at the start of the year</th>
-                  <td class="ledger__figure">
-                    <label for="directorsAdvanceAtStart" class="visually-hidden">Owed by that director at the start of the year</label>
-                    <div class="input-prefix input-prefix--amount">
-                      <span class="prefix" aria-hidden="true">£</span
-                      ><input
-                        aria-describedby="ledgerHintAdvances"
-                        type="text"
-                        id="directorsAdvanceAtStart"
-                        name="directorsAdvanceAtStart"
-                        inputmode="decimal"
-                        data-money="whole-pounds"
-                      />
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">Advanced to that director in the year</th>
-                  <td class="ledger__figure">
-                    <label for="directorsAdvanceMade" class="visually-hidden">Advanced to that director in the year</label>
-                    <div class="input-prefix input-prefix--amount">
-                      <span class="prefix" aria-hidden="true">£</span
-                      ><input
-                        aria-describedby="ledgerHintAdvances"
-                        type="text"
-                        id="directorsAdvanceMade"
-                        name="directorsAdvanceMade"
-                        inputmode="decimal"
-                        data-money="whole-pounds"
-                      />
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">Repaid by that director in the year</th>
-                  <td class="ledger__figure">
-                    <label for="directorsAdvanceRepaid" class="visually-hidden">Repaid by that director in the year</label>
-                    <div class="input-prefix input-prefix--amount">
-                      <span class="prefix" aria-hidden="true">£</span
-                      ><input
-                        aria-describedby="ledgerHintAdvances"
-                        type="text"
-                        id="directorsAdvanceRepaid"
-                        name="directorsAdvanceRepaid"
-                        inputmode="decimal"
-                        data-money="whole-pounds"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <p class="hint">The amounts owed at the end of the year add up to the amounts owed by directors on the balance sheet.</p>
+            <button type="button" id="addDirectorsAdvance" class="secondary-button">Add another director's advance</button>
           </section>
           <section class="form-section">
             <h3>Controlling party</h3>
@@ -2660,6 +2742,48 @@ In accordance with your instructions, we have compiled these unaudited financial
                     >This party is the ultimate controlling party</label
                   >
                 </div>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Called up share capital</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeShareCapitalNote"
+                  name="includeShareCapitalNote"
+                  aria-describedby="includeShareCapitalNote-hint"
+                /><label for="includeShareCapitalNote">Add a note on the shares allotted</label>
+              </div>
+              <p id="includeShareCapitalNote-hint" class="hint">
+                The note states the number of shares, their class and their nominal value. The number is the called up share capital divided
+                by the nominal value.
+              </p>
+            </div>
+            <div id="shareCapitalNoteFields" hidden>
+              <div class="form-group">
+                <label for="shareCapitalClass">Share class</label>
+                <select id="shareCapitalClass" name="shareCapitalClass">
+                  <option value="ordinaryShares">Ordinary</option>
+                  <option value="preferenceShares">Preference</option>
+                  <option value="deferredShares">Deferred</option>
+                  <option value="otherShares">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="shareCapitalNominalValue">Nominal value of each share, in pounds</label>
+                <div class="input-prefix">
+                  <span class="prefix">£</span>
+                  <input
+                    type="text"
+                    id="shareCapitalNominalValue"
+                    name="shareCapitalNominalValue"
+                    inputmode="decimal"
+                    aria-describedby="shareCapitalNominalValue-hint"
+                  />
+                </div>
+                <p id="shareCapitalNominalValue-hint" class="hint">For example, 1 or 0.01.</p>
               </div>
             </div>
           </section>
@@ -2724,7 +2848,12 @@ In accordance with your instructions, we have compiled these unaudited financial
       <div id="previewView" class="results-container" style="display: none">
         <h2>Preview</h2>
         <p>These are the accounts as they will be filed. Nothing has been submitted to Companies House yet.</p>
-        <iframe id="previewRendered" class="accounts-preview-frame" title="The accounts as they will be filed" sandbox=""></iframe>
+        <iframe
+          id="previewRendered"
+          class="accounts-preview-frame"
+          title="The accounts as they will be filed"
+          sandbox="allow-same-origin"
+        ></iframe>
         <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
         <div class="send-step">
           <h3>Send to Companies House</h3>
@@ -2790,8 +2919,11 @@ In accordance with your instructions, we have compiled these unaudited financial
     <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/hmrc-display-format.js"></script>
     <script src="../lib/accounts-form-sections.js"></script>
     <script src="../widgets/books-import.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script type="module" src="../lib/prior-year-fill.js"></script>
     <script src="fileSmallCompanyAccounts.page.js"></script>
   </body>
 </html>

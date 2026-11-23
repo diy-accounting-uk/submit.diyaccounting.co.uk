@@ -48,6 +48,27 @@ COPY app/lib app/lib
 COPY app/functions app/functions
 COPY app/data app/data
 COPY app/services app/services
+# The accounts route and the accounts form share the balance sheet's arithmetic, the approval date rule and the revised receipt rules from here.
+COPY web/public/lib/balance-sheet-check.js web/public/lib/balance-sheet-check.js
+COPY web/public/lib/approval-date-check.js web/public/lib/approval-date-check.js
+COPY web/public/lib/accounts-revision.js web/public/lib/accounts-revision.js
+COPY web/public/lib/accounts-notes-check.js web/public/lib/accounts-notes-check.js
+COPY web/public/lib/first-accounts.js web/public/lib/first-accounts.js
+# The long date the first accounts line prints, which first-accounts.js imports.
+COPY web/public/lib/long-period.js web/public/lib/long-period.js
+# The Companies House forms table: the filing route, the status poll, the presenter poll and the receipt emails read it.
+COPY web/public/lib/companies-house-forms.js web/public/lib/companies-house-forms.js
+# The gateway's character rule the form routes and the confirmation statement route share with the pages.
+COPY web/public/lib/companies-house-gateway-text.js web/public/lib/companies-house-gateway-text.js
+# The company name rule the change of name route shares with its page.
+COPY web/public/lib/companies-house-company-name.js web/public/lib/companies-house-company-name.js
+# The share capital arithmetic the return of allotment route shares with its page.
+COPY web/public/lib/share-capital.js web/public/lib/share-capital.js
+# The register check of a revision that names no receipt, shared by the accounts route and its page.
+COPY web/public/lib/accounts-revision-register.js web/public/lib/accounts-revision-register.js
+# The due list's business id rule and row types, which the due list routes share with the page.
+COPY web/public/lib/due/due-business-id.js web/public/lib/due/due-business-id.js
+COPY web/public/lib/due/due-row-types.js web/public/lib/due/due-row-types.js
 COPY mcp/package.json mcp/package.json
 COPY mcp/lib mcp/lib
 COPY mcp/bin mcp/bin

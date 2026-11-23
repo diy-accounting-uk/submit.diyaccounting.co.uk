@@ -217,27 +217,47 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
                 List.of(
                         "companies-house",
+                        "companies-house-accounting-reference-date-post",
                         "companies-house-accounts-get",
                         "companies-house-accounts-post",
+                        "companies-house-allotment-of-shares-post",
+                        "companies-house-change-of-name-post",
                         "companies-house-company-get",
+                        "companies-house-company-report-get",
                         "companies-house-confirmation-statement-get",
                         "companies-house-confirmation-statement-post",
                         "companies-house-email-address-post",
                         "companies-house-email-eligibility-get",
+                        "companies-house-filed-accounts-get",
+                        "companies-house-filed-document-get",
                         "companies-house-filing-data-post",
+                        "companies-house-filing-history-get",
+                        "companies-house-form-status-get",
+                        "companies-house-last-accounts-get",
                         "companies-house-office-address-get",
                         "companies-house-office-address-post",
+                        "companies-house-officer-appointment-post",
+                        "companies-house-officer-change-post",
+                        "companies-house-officer-resignation-post",
                         "companies-house-officers-get",
+                        "companies-house-psc-cessation-post",
+                        "companies-house-psc-change-details-post",
+                        "companies-house-psc-statement-notification-post",
+                        "companies-house-psc-statement-withdrawal-post",
                         "companies-house-psc-get",
+                        "companies-house-psc-notification-post",
                         "companies-house-psc-verification-statement-get",
                         "companies-house-psc-verification-statement-post",
                         "companies-house-public-deadlines-get",
+                        "companies-house-public-register-get",
+                        "companies-house-record-location-post",
+                        "companies-house-sail-address-post",
                         "companies-house-search-get",
                         "companies-house-submission-status-poll",
                         "companies-house-token-post",
@@ -268,23 +288,25 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 36 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
+        // 41 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1), passReleasePost(1),
         // affiliatePost(1), affiliateGet(1), affiliateApplicationPost(1), affiliateApplicationGet(1),
-        // passHeldGet(1), passGeneratePost(1), passMyPassesGet(1), passDeletePost(1), bundleCapacityReconcile(1),
+        // passHeldGet(1), passCampaignGet(1), passGeneratePost(1), passMyPassesGet(1), passDeletePost(1),
+        // bundleCapacityReconcile(1),
         // commissionRelease(1), commissionMineGet(1),
         // commissionCreditPayout(1), commissionCashPayout(1),
         // sessionBeaconPost(1),
-        // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
+        // sessionSignOutPost(1), activityStartedPost(1), accountAcquisitionPost(1), accountSettingsPut(1),
+        // dueListGet(1), dueListBusinessPut(1), dueListRowsPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 41);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
-                        "account-settings-put",
+                        "account",
                         "activity-started-post",
                         "affiliate",
                         "bundle",
@@ -293,6 +315,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "commission-credit-payout",
                         "commission-mine-get",
                         "commission-release",
+                        "due-list",
                         "interest-post",
                         "operator",
                         "pass",
@@ -325,10 +348,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 bundleGetUpdateItemPolicies);
 
         // Scan and BatchGetItem read a whole table at once, so they are the cheapest way to walk off
-        // with customer data. Two functions use BatchGetItem by key: bundleGet reads several capacity
-        // counters at once, and passMyPassesGet reads the figures item of each of the caller's own
-        // passes. Any other role holding either action has been granted more than it calls.
-        List<String> rolesThatReadInBulk = List.of("bundle-get", "pass-my-passes-get");
+        // with customer data. Three functions use BatchGetItem by key: bundleGet reads several capacity
+        // counters at once, passMyPassesGet reads the figures item of each of the caller's own
+        // passes, and passCampaignGet reads each campaign pass and its figures item for an operator.
+        // Any other role holding either action has been granted more than it calls.
+        List<String> rolesThatReadInBulk = List.of("bundle-get", "pass-my-passes-get", "pass-campaign-get");
         List<String> unexpectedBulkReaders = findRolesGrantedBulkReads(accountStackTemplate, rolesThatReadInBulk);
         if (!unexpectedBulkReaders.isEmpty()) {
             dumpIamPolicies(accountStackTemplate);
@@ -428,6 +452,9 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/search"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-deadlines"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-register"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /api/v1/public/company-deadlines"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /api/v1/public/company-register"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/token"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/companies-house/grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
@@ -466,6 +493,17 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "GET /api/v1/companies-house/company/{companyNumber}/persons-with-significant-control"));
         assertApiRoute(
                 apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/company/{companyNumber}/filing-data"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/filing-history"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/filed-accounts"));
+        assertApiRoute(
+                apiTemplates,
+                Map.of(
+                        "RouteKey",
+                        "GET /api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/last-accounts"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/render"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
         assertApiRoute(
@@ -488,69 +526,36 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
 
-        // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
-        // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
-        // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
-        // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
-        // sharing), for 77 + 4 + 3 + 3 = 87. GET /api/v1/operator/snapshot adds its own route
-        // plus its automatic HEAD route, since no other route shares that path. GET and PUT
-        // /api/v1/hmrc/itsa/self-employment/annual add their own two routes plus one shared
-        // auto-HEAD route for the path, bringing the total to 96. GET
-        // /api/v1/hmrc/itsa/obligations/crystallisation and GET /api/v1/hmrc/itsa/status each add
-        // their own route plus their own automatic HEAD route, since neither path is shared with
-        // another method, for 96 + 2 + 2 = 100. POST /api/v1/hmrc/itsa/bsas/trigger, GET
-        // /api/v1/hmrc/itsa/bsas/self-employment and POST
-        // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
-        // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106,
-        // and the earlier count of 112 (106 plus the WAF-explored figure above). Each of the four
-        // DIYA-GL storage routes also answers on /api/v1/books, its permanent second path: the
-        // same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
-        // another 10 routes, bringing the total to 112 + 10 = 122.
-        // GET, PUT and DELETE /api/v1/hmrc/itsa/losses-and-claims share one path: three method
-        // routes plus one auto-HEAD route for the GET. The same shape repeats for
-        // /api/v1/hmrc/itsa/tax-liability-adjustments, for another 4 + 4 = 8 routes, bringing the
-        // total to 135 + 8 = 143. GET and POST /api/v1/practice/clients share one path (2 method
-        // routes + 1 auto-HEAD), and GET and DELETE /api/v1/practice/clients/{clientId} share
-        // another (2 + 1), for another 3 + 3 = 6 routes, bringing the total to 143 + 6 = 149. GET
-        // /api/v1/practice/clients/{clientId}/authorisation adds its own route plus its own
-        // auto-HEAD route, since no other method shares that path, for 149 + 2 = 151. POST and
-        // DELETE /api/v1/practice/clients/{clientId}/authorisation/invitations share one path (2
-        // method routes + 1 auto-HEAD, since auto-HEAD is added once per path regardless of which
-        // method registers it first), for another 3 routes, bringing the total to 151 + 3 = 154.
-        // POST /api/v1/practice/clients/{clientId}/books/{bookId}/move adds its own route plus
-        // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156. The
-        // six confirmation statement routes (officers, PSCs, filing-data, preview, submit, poll)
-        // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
-        // routes, for 156 + 12 = 168. POST /api/v1/billing/activity-checkout adds its own route
-        // plus its own auto-HEAD route, since no other method shares that path, for 168 + 2 = 170.
-        // POST /api/v1/session/sign-out adds its own route, its own auto-HEAD route, and an
-        // unauthenticated OPTIONS preflight route (every Cognito app client's origin needs the
-        // cross-origin browser preflight to reach a route with no authoriser, the same reason
-        // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
-        // route plus its own auto-HEAD route, for 173 + 2 = 175. The three Company Tax Return routes
-        // each sit on their own unshared path, adding three primary routes and three auto-HEAD
-        // routes, for 187 + 6 = 193. GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/details
-        // share one path, adding three primary routes and one auto-HEAD route, for 193 + 4 = 197.
-        // GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/period share one path and add the
-        // same four, for 197 + 4 = 201. GET and PUT /api/v1/hmrc/itsa/foreign-property/annual share one
-        // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204. GET
-        // /api/v1/hmrc/itsa/bsas/foreign-property and POST its /adjust path each sit on their own
-        // unshared path, adding two primary routes and two auto-HEAD routes, for 204 + 4 = 208. PUT
-        // /api/v1/account/settings sits on its own unshared path, adding its primary route and its
-        // auto-HEAD route, for 208 + 2 = 210. POST /api/v1/pass/release sits on its own unshared path,
-        // adding its primary route and its auto-HEAD route, for 210 + 2 = 212. GET and POST /api/v1/affiliate
-        // share one path and add two primary routes and one auto-HEAD route, for 212 + 3 = 215. GET /api/v1/pass/held
-        // sits on its own unshared path and adds
-        // a primary route and an auto-HEAD route, for 217. GET and POST /api/v1/affiliate/application share
-        // one path and add two primary routes and one auto-HEAD route, for 220. GET
-        // /api/v1/operator/console-image sits on its own unshared path and adds a primary route and
-        // an auto-HEAD route, for 222. POST /api/v1/pass/delete sits on its own unshared path and adds a
-        // primary route and an auto-HEAD route, for 224. GET /api/v1/commission/mine sits on its own unshared
-        // path and adds a primary route and an auto-HEAD route, for 226. GET /api/v1/public/company-deadlines sits
-        // on its own unshared path with no authorizer and adds a primary route and an auto-HEAD route, which
-        // raise the total by 2 over the figure the tests held before it.
+        // A HEAD route sits only on a path that has a GET route, and on the two token paths whose
+        // pages warm their Lambdas with a HEAD request.
+        var headWithoutGet = java.util.Set.of("/api/v1/cognito/token", "/api/v1/hmrc/token");
+        var methodsByPath = new java.util.HashMap<String, java.util.Set<String>>();
+        for (Template template : apiTemplates) {
+            for (Object route :
+                    template.findResources("AWS::ApiGatewayV2::Route").values()) {
+                @SuppressWarnings("unchecked")
+                var properties = (Map<String, Object>) ((Map<String, Object>) route).get("Properties");
+                String[] routeKey = ((String) properties.get("RouteKey")).split(" ", 2);
+                methodsByPath
+                        .computeIfAbsent(routeKey[1], path -> new java.util.HashSet<>())
+                        .add(routeKey[0]);
+            }
+        }
+        methodsByPath.forEach((path, methods) -> {
+            if (methods.contains("HEAD")) {
+                org.junit.jupiter.api.Assertions.assertTrue(
+                        methods.contains("GET") || headWithoutGet.contains(path), "HEAD " + path + " has no GET route");
+            }
+        });
+        headWithoutGet.forEach(path -> {
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    java.util.Set.of("POST", "HEAD"), methodsByPath.get(path), "the routes on " + path);
+        });
+
+        // Every route the two API stacks build: one per method on a path, a HEAD route beside each GET
+        // route and on the two token paths, and an OPTIONS preflight route per books path.
         assertEquals(
-                230,
+                225,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

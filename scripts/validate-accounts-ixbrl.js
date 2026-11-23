@@ -10,7 +10,8 @@
  *
  * Usage:
  *   node scripts/validate-accounts-ixbrl.js <path-to-ixbrl-file>
- *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, small full and small filleted samples
+ *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, micro first accounts, small full, small filleted and small first accounts samples,
+ *                                                        and revised micro, dormant, small full and small filleted samples
  *
  * The validator (https://test-validator.companieshouse.gov.uk/xbrl_validate) has no JSON API: it
  * is a session-cookie-backed upload flow (POST the file, poll progress, fetch an HTML result
@@ -20,13 +21,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { buildMicroEntityAccounts } from "../app/services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../app/services/smallCompanyAccountsIxbrl.js";
 
 const VALIDATOR_BASE_URI = "https://test-validator.companieshouse.gov.uk";
 
 const SAMPLE_INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST MICRO LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
@@ -57,7 +59,7 @@ const SAMPLE_INPUT = {
 };
 
 const SMALL_COMPANY_SAMPLE_INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST SMALL LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
@@ -83,17 +85,17 @@ const SMALL_COMPANY_SAMPLE_INPUT = {
       capitalAndReserves: 10000,
     },
     prior: {
-      fixedAssets: 8000,
+      fixedAssets: 9500,
       stocks: 400,
       debtors: 2000,
       cashAtBank: 1600,
       tradeCreditors: 900,
       corporationTax: 1000,
       otherCreditors: 600,
-      creditorsAfterOneYear: 1500,
+      creditorsAfterOneYear: 5100,
       calledUpShareCapital: 100,
-      profitAndLossAccount: 7900,
-      capitalAndReserves: 8000,
+      profitAndLossAccount: 5800,
+      capitalAndReserves: 5900,
     },
   },
   profitAndLoss: {
@@ -250,19 +252,67 @@ async function validate(filePath) {
   return false;
 }
 
+// Revised accounts that replace accounts approved on 1 September 2026, approved again on 20 October.
+const REVISION = {
+  originalDateOfApproval: "2026-09-01",
+  nonCompliance: "The original accounts left out a liability that existed at the balance sheet date.",
+  amendments: "Creditors falling due within one year are restated to include a late invoice.",
+};
+const REVISED_APPROVAL = { revision: REVISION, dateOfApproval: "2026-10-20" };
+
+const DORMANT_SAMPLE_INPUT = {
+  ...SAMPLE_INPUT,
+  dormant: true,
+  dormantTradingStatus: "noLongerTrading",
+  shareClass: "ordinaryShares",
+  nominalValue: 0.5,
+  balanceSheet: {
+    current: { ...SAMPLE_INPUT.balanceSheet.prior, calledUpShareCapital: 100, profitAndLossAccount: 7900 },
+    prior: SAMPLE_INPUT.balanceSheet.prior,
+  },
+};
+
+// Micro-entity first accounts: incorporated on the period's first day, with no prior year.
+function microFirstAccountsOf(input) {
+  return { ...input, dateOfIncorporation: input.periodStart, balanceSheet: { current: input.balanceSheet.current } };
+}
+
+// The company's first accounts: incorporated on the period's first day, with no prior year.
+function firstAccountsOf(input) {
+  return {
+    ...input,
+    dateOfIncorporation: input.periodStart,
+    balanceSheet: { current: input.balanceSheet.current },
+    profitAndLoss: { current: input.profitAndLoss.current },
+  };
+}
+
+/**
+ * The built-in samples, each as its label and its built document.
+ * @returns {[string, string][]}
+ */
+export function validationSamples() {
+  return [
+    ["micro", buildMicroEntityAccounts(SAMPLE_INPUT)],
+    ["micro-first-accounts", buildMicroEntityAccounts(microFirstAccountsOf(SAMPLE_INPUT))],
+    ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
+    ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
+    ["small-first-accounts", buildSmallCompanyAccounts(firstAccountsOf(SMALL_COMPANY_SAMPLE_INPUT))],
+    ["revised-micro", buildMicroEntityAccounts({ ...SAMPLE_INPUT, ...REVISED_APPROVAL })],
+    ["revised-dormant", buildMicroEntityAccounts({ ...DORMANT_SAMPLE_INPUT, ...REVISED_APPROVAL })],
+    ["revised-small-full", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, ...REVISED_APPROVAL })],
+    ["revised-small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true, ...REVISED_APPROVAL })],
+  ];
+}
+
 async function main() {
   const filePathArg = process.argv[2];
   if (filePathArg) {
     process.exitCode = (await validate(filePathArg)) ? 0 : 1;
     return;
   }
-  const samples = [
-    ["micro", buildMicroEntityAccounts(SAMPLE_INPUT)],
-    ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
-    ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
-  ];
   const verdicts = [];
-  for (const [label, xhtml] of samples) {
+  for (const [label, xhtml] of validationSamples()) {
     const samplePath = join(tmpdir(), `sample-${label}-accounts-ixbrl.html`);
     writeFileSync(samplePath, xhtml);
     console.log(`=== ${label} ===`);
@@ -274,7 +324,9 @@ async function main() {
   process.exitCode = verdicts.every(([, isValid]) => isValid) ? 0 : 1;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

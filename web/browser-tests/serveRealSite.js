@@ -7,6 +7,7 @@
 
 import fs from "fs";
 import path from "path";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -23,22 +24,24 @@ const CONTENT_TYPES = {
 };
 
 export const SITE_ORIGIN = "http://localhost:3000";
+export const SIGNED_IN_EMAIL = PEOPLE.samPatel.email;
 
 // apiHandler(url, request) returns an object to send as JSON, or undefined for an empty object.
-export async function serveRealSite(page, { signedIn = false, apiHandler = () => undefined } = {}) {
+// origin is the address the site is served at, for a page that shows its own address to the reader.
+export async function serveRealSite(page, { signedIn = false, apiHandler = () => undefined, origin = SITE_ORIGIN } = {}) {
   if (signedIn) {
-    await page.addInitScript(() => {
+    await page.addInitScript((email) => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       } catch {}
-    });
+    }, SIGNED_IN_EMAIL);
   }
 
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (url.hostname !== "localhost") {
+    if (url.origin !== origin) {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
       return;
     }
@@ -60,7 +63,7 @@ export async function serveRealSite(page, { signedIn = false, apiHandler = () =>
 }
 
 // Records the consent answer as declined and removes the banner and dialog, so a capture shows the page.
-async function declineConsent(page) {
+export async function declineConsent(page) {
   await page.evaluate(() => {
     try {
       localStorage.setItem("consent.rum", "declined");

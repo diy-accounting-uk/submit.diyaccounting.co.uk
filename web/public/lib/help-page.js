@@ -14,6 +14,27 @@ import { fetchCatalogText, fetchCurrentEnvironmentName } from "./services/catalo
 import { renderFaqItem, renderFaqGroups } from "./faq-markdown.js";
 import { bundlePriceList, fillBundlePrices } from "./bundle-listing.js";
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
+// The Welsh copy of the page holds its questions and answers in Welsh in its own markup, and
+// faqs.toml holds the English. Each entry keeps the id, category, keywords and priority of its
+// English entry and takes the question, the category label and the answer the page shows.
+function faqsWrittenOnPage(faqList, englishFaqs) {
+  const englishById = new Map(englishFaqs.map((faq) => [faq.id, faq]));
+  return [...faqList.querySelectorAll(".faq-item")]
+    .filter((item) => englishById.has(item.dataset.id))
+    .map((item) => ({
+      ...englishById.get(item.dataset.id),
+      question: item.querySelector(".faq-question-text").textContent.trim(),
+      categoryLabel: item.querySelector(".faq-category-badge").textContent.trim(),
+      answerHtml: item.querySelector(".faq-answer").innerHTML,
+    }));
+}
+
 /**
  * The address of the signed-in visitor, or an empty string when nobody is signed in.
  * @returns {string}
@@ -54,9 +75,10 @@ class HelpPage {
       const tomlText = await response.text();
       const isListed = await fetchActivityListing();
       const priceList = bundlePriceList(window.TOML.parse(await fetchCatalogText()), await fetchCurrentEnvironmentName());
-      const faqs = window.TOML.parse(tomlText)
+      const englishFaqs = window.TOML.parse(tomlText)
         .faq.filter((faq) => isListed(faq.activity))
         .map((faq) => fillBundlePrices(faq, priceList));
+      const faqs = document.documentElement.lang === "cy" ? faqsWrittenOnPage(this.faqList, englishFaqs) : englishFaqs;
       this.faqSearch = new FAQSearch(faqs);
 
       // Initial render lists every question by category; a #<faq-id> link opens that entry
@@ -72,7 +94,12 @@ class HelpPage {
       }
     } catch (error) {
       console.error("Error loading FAQs:", error);
-      this.faqList.innerHTML = '<div class="no-results"><p>Unable to load FAQs. Please refresh the page.</p></div>';
+      const failure = document.createElement("p");
+      failure.textContent = siteText("help.load-failed", "Unable to load FAQs. Please refresh the page.");
+      const block = document.createElement("div");
+      block.className = "no-results";
+      block.append(failure);
+      this.faqList.replaceChildren(block);
       return;
     }
 
@@ -85,6 +112,8 @@ class HelpPage {
     }, 150);
 
     this.searchInput.addEventListener("input", handleSearch);
+
+    this.showWelshMessagesLine();
 
     // Support modal handlers
     const openSupportBtn = document.getElementById("open-support-form");
@@ -121,17 +150,38 @@ class HelpPage {
   }
 
   /**
+   * A reader in Welsh sees, beside the ways to reach support, the language of our replies.
+   */
+  showWelshMessagesLine() {
+    const options = document.querySelector(".support-section .support-options");
+    if (!options || window.siteLanguage?.chrome() !== "cy") return;
+    const [before, after] = siteText(
+      "chrome.welsh-messages",
+      "You can write to us in Welsh at {email}. We reply in English for now.",
+    ).split("{email}");
+    const link = document.createElement("a");
+    link.href = "mailto:support@diyaccounting.co.uk";
+    link.textContent = "support@diyaccounting.co.uk";
+    const line = document.createElement("p");
+    line.id = "welsh-messages-line";
+    line.append(before, link, after ?? "");
+    options.after(line);
+  }
+
+  /**
    * Update the search hint text
    * @param {string} query - Current search query
    * @param {number} count - Number of results
    */
   updateHint(query, count) {
     if (!query.trim()) {
-      this.searchHint.textContent = "Showing every question";
+      this.searchHint.textContent = siteText("help.hint-every-question", "Showing every question");
     } else if (count === 0) {
-      this.searchHint.textContent = "No questions match your search";
+      this.searchHint.textContent = siteText("help.hint-no-match", "No questions match your search");
+    } else if (count === 1) {
+      this.searchHint.textContent = siteText("help.hint-one-result", "1 result");
     } else {
-      this.searchHint.textContent = `${count} result${count === 1 ? "" : "s"}`;
+      this.searchHint.textContent = siteText("help.hint-results", "{count} results", { count });
     }
   }
 
@@ -142,13 +192,31 @@ class HelpPage {
    */
   render(faqs, query) {
     if (faqs.length === 0) {
-      this.faqList.innerHTML = `
-        <div class="no-results">
-          <p>No questions match your search.</p>
-          <p>Try different keywords, or <button type="button" class="link-button" id="clear-search">list every question</button>.</p>
-          <p><button type="button" class="support-button primary" id="no-results-support">Submit a support request</button></p>
-        </div>
-      `;
+      const paragraph = (...children) => {
+        const element = document.createElement("p");
+        element.append(...children);
+        return element;
+      };
+      const button = (id, className, text) => {
+        const element = document.createElement("button");
+        element.type = "button";
+        element.id = id;
+        element.className = className;
+        element.textContent = text;
+        return element;
+      };
+      const block = document.createElement("div");
+      block.className = "no-results";
+      block.append(
+        paragraph(siteText("help.no-match", "No questions match your search.")),
+        paragraph(
+          `${siteText("help.try-other-keywords", "Try different keywords, or")} `,
+          button("clear-search", "link-button", siteText("help.list-every-question", "list every question")),
+          ".",
+        ),
+        paragraph(button("no-results-support", "support-button primary", siteText("help.support-request", "Submit a support request"))),
+      );
+      this.faqList.replaceChildren(block);
       document.getElementById("clear-search").addEventListener("click", () => {
         this.searchInput.value = "";
         const all = this.faqSearch.search("");
@@ -232,28 +300,34 @@ class HelpPage {
 
     const submitBtn = this.supportForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
-    submitBtn.textContent = "Submitting...";
+    submitBtn.textContent = siteText("help.submitting", "Submitting...");
 
     try {
       const result = await submitSupportTicket({ subject, description, category, email });
       if (!result.success) {
         if (window.StatusMessages) {
-          window.StatusMessages.showError(`${result.error} You can also email support@diyaccounting.co.uk.`);
+          window.StatusMessages.showError(
+            siteText("help.also-email", "{error} You can also email support@diyaccounting.co.uk.", { error: result.error }),
+          );
         }
         return;
       }
       this.closeModal();
       if (window.StatusMessages) {
-        window.StatusMessages.showSuccess(`We have your request. We reply by email to ${email}.`);
+        window.StatusMessages.showSuccess(
+          siteText("help.request-received", "We have your request. We reply by email to {email}.", { email }),
+        );
       }
     } catch (err) {
       console.error("Support submission error:", err);
       if (window.StatusMessages) {
-        window.StatusMessages.showError("Failed to submit request. Please email support@diyaccounting.co.uk instead.");
+        window.StatusMessages.showError(
+          siteText("help.request-failed", "Failed to submit request. Please email support@diyaccounting.co.uk instead."),
+        );
       }
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = "Submit";
+      submitBtn.textContent = siteText("help.submit", "Submit");
     }
   }
 }

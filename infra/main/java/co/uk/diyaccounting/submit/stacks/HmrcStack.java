@@ -441,6 +441,7 @@ public class HmrcStack extends Stack {
                         .urlPath(props.sharedNames().hmrc.hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrc.hmrcTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrc.hmrcTokenPostLambdaCustomAuthorizer)
+                        .headRoute(true)
                         .environment(exchangeHmrcTokenLambdaEnv)
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
@@ -502,6 +503,12 @@ public class HmrcStack extends Stack {
                 .resources(List.of(activityBusArn))
                 .build());
 
+        // A filed return closes the account's due list row for its period.
+        ITable dueListTable = Table.fromTableName(
+                this,
+                "ImportedDueListTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.dueListTableName);
+
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -511,6 +518,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().data.receiptsTableName)
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with("DUE_LIST_DYNAMODB_TABLE_NAME", dueListTable.getTableName())
                 .with(
                         "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcVatReturnPostAsyncRequestsTable.getTableName())
@@ -576,6 +584,8 @@ public class HmrcStack extends Stack {
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcVatReturnPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    // A filed return reads the account's due list and closes its row for the period.
+                    dueListTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());

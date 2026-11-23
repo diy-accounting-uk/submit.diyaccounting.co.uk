@@ -105,15 +105,22 @@
 
   const SIC_TEXT = {
     "01110": "Growing of cereals, leguminous crops and oil seeds",
+    "10710": "Manufacture of bread; manufacture of fresh pastry goods and cakes",
+    "10890": "Manufacture of other food products not elsewhere classified",
+    "16230": "Manufacture of other builders' carpentry and joinery",
+    "18129": "Printing not elsewhere classified",
+    "28290": "Manufacture of other general-purpose machinery not elsewhere classified",
     "41100": "Development of building projects",
     "41202": "Construction of domestic buildings",
     "43210": "Electrical installation",
     "43220": "Plumbing, heat and air-conditioning installation",
+    "43320": "Joinery installation",
     "43390": "Other building completion and finishing",
     "43999": "Other specialised construction activities not elsewhere classified",
     "45200": "Maintenance and repair of motor vehicles",
     "46900": "Non-specialised wholesale trade",
     "47110": "Retail sale in non-specialised stores with food, beverages or tobacco predominating",
+    "47190": "Other retail sale in non-specialised stores",
     "47910": "Retail sale via mail order houses or via Internet",
     "47990": "Other retail sale not in stores, stalls or markets",
     "49410": "Freight transport by road",
@@ -143,10 +150,12 @@
     "71122": "Engineering related scientific and technical consulting activities",
     "73110": "Advertising agencies",
     "74100": "Specialised design activities",
+    "74201": "Portrait photographic activities",
     "74909": "Other professional, scientific and technical activities not elsewhere classified",
     "78200": "Temporary employment agency activities",
     "82990": "Other business support service activities not elsewhere classified",
     "85590": "Other education not elsewhere classified",
+    "86230": "Dental practice activities",
     "86900": "Other human health activities",
     "90030": "Artistic creation",
     "93110": "Operation of sports facilities",
@@ -174,6 +183,17 @@
     return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   }
 
+  // A month and year, such as a director's month of birth as the register shows it: "March 1970".
+  function formatMonthYear(month, year) {
+    if (!month || !year) return "";
+    if (welshChrome()) return `${WELSH_MONTHS[Number(month) - 1]} ${year}`;
+    return new Date(Date.UTC(Number(year), Number(month) - 1, 1)).toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  }
+
   function formatSicCode(code) {
     const text = SIC_TEXT[code];
     return text ? `${code} - ${text}` : String(code);
@@ -183,8 +203,26 @@
     return (codes || []).map(formatSicCode).join("; ");
   }
 
+  // Today's date where Companies House keeps its register, as YYYY-MM-DD: a form's date of an event
+  // that has happened is not after it.
+  function todayInTheUnitedKingdom() {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(
+      new Date(),
+    );
+  }
+
+  // A person's name as the register writes it: the title as given, then every forename and the
+  // surname in capitals.
+  function personName({ title, forename, otherForenames, surname }) {
+    const names = [forename, otherForenames, surname].filter(Boolean).join(" ").toUpperCase();
+    return [title, names].filter(Boolean).join(" ");
+  }
+
   window.companiesHouseLabels = {
+    personName,
     formatCompanyDate,
+    todayInTheUnitedKingdom,
+    formatMonthYear,
     companyStatusLabel: (value) => labelFrom(companyStatuses(), value),
     companyTypeLabel: (value) => labelFrom(companyTypes(), value),
     jurisdictionLabel: (value) => labelFrom(jurisdictions(), value),

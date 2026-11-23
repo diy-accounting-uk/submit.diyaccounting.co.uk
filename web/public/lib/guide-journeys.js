@@ -54,6 +54,7 @@ export const GROUPS = [
       { video: "file-confirmation-statement" },
       { video: "file-micro-entity-accounts" },
       { video: "file-small-company-accounts" },
+      { video: "amend-company-accounts" },
       { video: "file-psc-verification-statement" },
     ],
   },

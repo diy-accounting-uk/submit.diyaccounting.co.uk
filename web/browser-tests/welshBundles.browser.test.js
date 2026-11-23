@@ -62,7 +62,7 @@ test.describe("Welsh Bundles page", () => {
     const text = await page.locator("main").innerText();
     expect(text).toContain("Tanysgrifio £9.99 y flwyddyn — Resident VAT");
     expect(text).toContain("neu £0.99 y mis");
-    expect(text).toContain("Cyflwyno Ffurflenni TAW i CThEF. £9.99/yr / £0.99/mo, canslo unrhyw bryd.");
+    expect(text).toContain("Cyflwyno Ffurflenni TAW i CThEF. £9.99 y flwyddyn / £0.99 y mis, canslo unrhyw bryd.");
     expect(text).toContain("100 credyd (tokens) bob mis.");
     expect(text).toContain("Un diwrnod, dim cerdyn.");
     for (const english of ["Subscribe £", "or £0.99/month", "tokens each month", "One day, no card", "cancel anytime"]) {

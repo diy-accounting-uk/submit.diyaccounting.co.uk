@@ -11,6 +11,8 @@ import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveHmrcFieldTableAssets, expectCleanFigures, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { serveSubmissionRecordAssets, recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -256,7 +258,7 @@ test.describe("Receipts page - receipt details", () => {
   });
 
   test("lists the revised accounts and the amended Company Tax Return under the filing they amend, marked as amended", async ({ page }) => {
-    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT, { styled: true });
     const jointFilingId = "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10";
     await page.evaluate(async (id) => {
       localStorage.setItem("cognitoIdToken", "token");
@@ -305,6 +307,7 @@ test.describe("Receipts page - receipt details", () => {
     await expect(entries.nth(1)).toContainText("Revised accounts: ACC2");
     await expect(entries.nth(2)).toContainText("Company Tax Return: CT1");
     await expect(entries.nth(3)).toContainText("Accounts: ACC1");
+    await screenshotAtBothWidths(page, "receipts-revised-listed");
   });
 
   test("shows a VAT receipt as a record inside the customer copy", async ({ page }) => {
@@ -519,4 +522,146 @@ test.describe("Receipts page - receipt details", () => {
     const names = (await page.locator("#receiptContent .field-name").allTextContents()).join(" | ");
     expectCleanFigures(expect, names);
   });
+});
+
+test.describe("Receipts page - a practice's clients", () => {
+  const BAKERY = registerCompany("00000003");
+  const PROPERTIES = registerCompany("00000005");
+  const PRACTICE_CLIENTS = [
+    { clientId: "client-1", displayName: BAKERY.name, identifiers: { companyNumber: BAKERY.number } },
+    { clientId: "client-2", displayName: PROPERTIES.name, identifiers: { companyNumber: PROPERTIES.number } },
+    { clientId: "client-3", displayName: "Old Mill Ltd", archivedAt: "2026-10-01T00:00:00.000Z" },
+  ];
+  const OWN_FILING = {
+    submissionNumber: "00003A",
+    kind: "accounts",
+    status: "pending",
+    submittedAt: "2026-11-20T10:00:00.000Z",
+    rejections: [],
+  };
+  const CLIENT_FILING = {
+    submissionNumber: "00003B",
+    kind: "accounts",
+    status: "rejected",
+    submittedAt: "2026-11-21T10:00:00.000Z",
+    rejections: [{ rejectCode: "9999", description: "The company authentication code is wrong" }],
+    clientId: "client-1",
+  };
+
+  async function openReceipts(page, { clients, welsh = false }) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.route("**/*.js", async (route) => {
+      if (route.request().resourceType() === "script")
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      else await route.continue();
+    });
+    await servePageScripts(page);
+    await serveHmrcFieldTableAssets(page);
+    await serveSubmissionRecordAssets(page);
+    await serveSiteStyles(page);
+    // The Welsh page's script text comes through page-chrome.js's siteText, from lib/welsh-text.js.
+    for (const file of welsh ? ["widgets/page-chrome.js", "lib/welsh-text.js"] : []) {
+      await page.route(`**/${file}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public", file)),
+        }),
+      );
+    }
+    const pagePath = welsh ? "web/public/cy/hmrc/receipt/receipts.html" : "web/public/hmrc/receipt/receipts.html";
+    const base = welsh ? "http://localhost:3000/cy/hmrc/receipt/" : "http://localhost:3000/hmrc/receipt/";
+    const html = fs.readFileSync(path.join(process.cwd(), pagePath), "utf-8").replace("<head>", `<head><base href="${base}">`);
+    await page.route("**/receipts.html", (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+    await page.goto(`${base}receipts.html`, { waitUntil: "domcontentloaded" });
+    await delay(200);
+    await page.evaluate(
+      async ({ clientList, own, forClient }) => {
+        localStorage.setItem("cognitoIdToken", "token");
+        window.requestedUrls = [];
+        window.fetchWithIdToken = async (url) => {
+          window.requestedUrls.push(url);
+          if (url === "/api/v1/practice/clients") {
+            return clientList
+              ? { ok: true, json: async () => ({ clients: clientList }) }
+              : { ok: false, status: 403, json: async () => ({}) };
+          }
+          const clientId = new URL(url, "http://localhost").searchParams.get("clientId");
+          const filingsInProgress = clientId === "client-1" ? [forClient] : clientId ? [] : [own];
+          return { ok: true, json: async () => ({ receipts: [], filingsInProgress }) };
+        };
+        await window.showClientChoice();
+        await window.fetchReceipts();
+      },
+      { clientList: clients, own: OWN_FILING, forClient: CLIENT_FILING },
+    );
+  }
+
+  test("a practice chooses whose receipts to see, and a client's rejected filing shows under that client", async ({ page }) => {
+    await openReceipts(page, { clients: PRACTICE_CLIENTS });
+
+    const choice = page.locator("#receiptsClient");
+    await expect(page.locator("#receiptsClientChoice")).toBeVisible();
+    await expect(page.getByLabel("Show the receipts of")).toBeVisible();
+    await expect(choice.locator("option")).toHaveText([
+      "My own filings",
+      `${BAKERY.name} (${BAKERY.number})`,
+      `${PROPERTIES.name} (${PROPERTIES.number})`,
+    ]);
+    await expect(page.locator("#filingsInProgress")).toContainText("00003A");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("00003B");
+
+    await choice.selectOption("client-1");
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#filingsInProgress")).toContainText("The company authentication code is wrong");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("00003A");
+    expect(await page.evaluate(() => window.requestedUrls.at(-1))).toBe("/api/v1/hmrc/receipt?clientId=client-1");
+
+    fs.mkdirSync("target/prc1", { recursive: true });
+    await page.screenshot({ path: "target/prc1/receipts-practice-client-en.png", fullPage: true });
+  });
+
+  test("a slow answer for the reader's own list does not replace the list of the client chosen since", async ({ page }) => {
+    await openReceipts(page, { clients: PRACTICE_CLIENTS });
+    await page.evaluate(() => {
+      const answer = window.fetchWithIdToken;
+      window.fetchWithIdToken = async (url) => {
+        if (url === "/api/v1/hmrc/receipt") await new Promise((resolve) => setTimeout(resolve, 400));
+        return answer(url);
+      };
+      window.ownListDrawn = window.fetchReceipts();
+    });
+
+    await page.locator("#receiptsClient").selectOption("client-1");
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await page.evaluate(() => window.ownListDrawn);
+
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("00003A");
+  });
+
+  test("the Welsh page offers the same choice in Welsh", async ({ page }) => {
+    await openReceipts(page, { clients: PRACTICE_CLIENTS, welsh: true });
+    await expect(page.locator("#receiptsClientChoice")).toBeVisible();
+    await expect(page.locator("#receiptsClient option").first()).not.toHaveText("My own filings");
+    await page.locator("#receiptsClient").selectOption("client-1");
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("Companies House filings not accepted yet");
+    fs.mkdirSync("target/prc1", { recursive: true });
+    await page.screenshot({ path: "target/prc1/receipts-practice-client-cy.png", fullPage: true });
+  });
+
+  for (const [label, clients] of [
+    ["a reader whose practice has no clients", []],
+    ["a reader with no practice", null],
+  ]) {
+    test(`${label} sees no client choice and their own filings`, async ({ page }) => {
+      await openReceipts(page, { clients });
+      await expect(page.locator("#receiptsClientChoice")).toBeHidden();
+      await expect(page.locator("#filingsInProgress")).toContainText("00003A");
+      expect(await page.evaluate(() => window.requestedUrls.filter((url) => url.startsWith("/api/v1/hmrc/receipt")))).toEqual([
+        "/api/v1/hmrc/receipt",
+      ]);
+    });
+  }
 });

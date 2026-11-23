@@ -25,7 +25,6 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <script src="../../../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <!--script async src="../../../prefetch/prefetch-hmrc-vat-return-get-head.js"></script-->
   </head>
   <body>
     <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
@@ -38,7 +37,13 @@
     </header>
 
     <main id="mainContent">
-      <p data-i18n="vat-view-return.status-production-this-reads-your-real-8ae5ea" class="hint" data-feature-status="production">
+      <p
+        data-i18n="vat-view-return.status-production-this-reads-your-real-8ae5ea"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
         <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator">
@@ -81,7 +86,7 @@
         data-i18n-data-sign-in-title="vat-view-return.sign-in-to-view-a-vat-02396d"
         data-i18n-data-sign-in-text="vat-view-return.sign-in-to-view-a-vat-6b0303"
       >
-        <h2 data-i18n="vat-view-return.retrieve-vat-return-aad595">Cael Ffurflen TAW</h2>
+        <h2 data-i18n="vat-view-return.retrieve-vat-return-aad595">Adalw Ffurflen TAW</h2>
         <form id="vatReturnForm" novalidate>
           <div class="form-group">
             <label data-i18n="vat-view-return.vat-registration-number-873ba7" for="vrn">Rhif cofrestru TAW</label>

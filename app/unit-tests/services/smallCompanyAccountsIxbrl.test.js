@@ -97,7 +97,7 @@ const FIXED_ASSET_NOTE = {
 };
 
 const SAMPLE_INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST SMALL LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
@@ -150,6 +150,26 @@ const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../../package.json",
 function hiddenText(xhtml, name) {
   const hidden = parseXmlDocument(xhtml).getElementsByTagName("ix:hidden")[0];
   return Array.from(hidden.getElementsByTagName("ix:nonNumeric")).find((fact) => fact.getAttribute("name") === name)?.textContent;
+}
+
+const REVISION_FACTS = [
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport",
+  "bus:DateApprovalRevisionReport",
+];
+
+// The facts of this name in the body of the document, outside the hidden section.
+function visibleFacts(xhtml, name) {
+  const facts = Array.from(parseXmlDocument(xhtml).getElementsByTagName("ix:nonNumeric")).filter(
+    (fact) => fact.getAttribute("name") === name,
+  );
+  return facts.filter((fact) => {
+    for (let node = fact.parentNode; node; node = node.parentNode) if (node.nodeName === "ix:hidden") return false;
+    return true;
+  });
 }
 
 describe("services/smallCompanyAccountsIxbrl", () => {
@@ -1046,6 +1066,27 @@ describe("the debtors, directors' loan, group and provisions lines of a small co
     expect(xhtml).not.toContain("core:PrepaymentsAccruedIncome");
   });
 
+  test("a year that states debtors with no split shows the total alone in the debtors note, with no line of 0", () => {
+    const xhtml = buildSmallCompanyAccounts(withYears(split, PRIOR_BALANCE_SHEET));
+    const note = xhtml.slice(xhtml.search(/<h3>\d+\. Debtors<\/h3>/));
+    const row = (label) => note.match(new RegExp(`<tr[^>]*><td class="label">${label}</td>(.*?)</tr>`))[1];
+    expect(row("Trade debtors")).toMatch(/core:TradeDebtorsTradeReceivables" contextRef="e2026"[^>]*>1,800<.*<td class="figure"><\/td>$/);
+    expect(row("Other debtors")).toMatch(/<td class="figure"><\/td>$/);
+    expect(row("Total debtors")).toMatch(/>2,500<.*>2,000<\/td>$/);
+    expect(nonFractionValue(xhtml, "core:Debtors", "e2025")).toBe(PRIOR_BALANCE_SHEET.debtors);
+    for (const name of ["TradeDebtorsTradeReceivables", "OtherDebtors", "PrepaymentsAccruedIncome"]) {
+      expect(xhtml).not.toMatch(new RegExp(`core:${name}" contextRef="e2025"`));
+    }
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("a year with no debtors at all keeps its lines of 0 beside the other year's split", () => {
+    const xhtml = buildSmallCompanyAccounts(
+      withYears(split, { ...PRIOR_BALANCE_SHEET, debtors: 0, cashAtBank: PRIOR_BALANCE_SHEET.cashAtBank + PRIOR_BALANCE_SHEET.debtors }),
+    );
+    expect(nonFractionValue(xhtml, "core:TradeDebtorsTradeReceivables", "e2025")).toBe(0);
+  });
+
   test("refuses a debtors split that does not add up to the debtors", () => {
     expect(() =>
       buildSmallCompanyAccounts({ ...SAMPLE_INPUT, balanceSheet: { current: { ...CURRENT_BALANCE_SHEET, tradeDebtors: 1000 } } }),
@@ -1094,26 +1135,38 @@ describe("the debtors, directors' loan, group and provisions lines of a small co
 describe("services/smallCompanyAccountsIxbrl revised accounts", () => {
   const REVISION = {
     originalDateOfApproval: "2026-09-01",
-    differences: "Creditors falling due within one year are restated to include a late invoice.",
+    nonCompliance: "The original accounts left out a liability that existed at the balance sheet date.",
+    amendments: "Creditors falling due within one year are restated to include a late invoice.",
   };
 
-  test("flags the report as revised, states the replacement and names what changed", () => {
+  test("flags the report as revised, states the replacement, what was wrong and what changed", () => {
     const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
     expect(xhtml).toContain("These are revised accounts. They replace the original accounts of the company");
     expect(xhtml).toContain("which were approved on 1 September 2026");
-    expect(xhtml).toContain("Creditors falling due within one year are restated to include a late invoice.");
+    expect(xhtml).toContain(REVISION.nonCompliance);
+    expect(xhtml).toContain(REVISION.amendments);
   });
 
-  test("a filleted revision is flagged the same way", () => {
-    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, filleted: true, revision: REVISION, dateOfApproval: "2026-10-20" });
+  test.each([
+    ["full", {}],
+    ["filleted", { filleted: true }],
+  ])("%s accounts tag each of the six revision facts once, visible and not empty", (label, kind) => {
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, ...kind, revision: REVISION, dateOfApproval: "2026-10-20" });
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
+    for (const name of REVISION_FACTS) {
+      const facts = visibleFacts(xhtml, name);
+      expect(facts, name).toHaveLength(1);
+      expect(facts[0].textContent.trim(), name).not.toBe("");
+    }
+    expect(visibleFacts(xhtml, "bus:DateApprovalRevisionReport")[0].textContent).toBe("20 October 2026");
   });
 
   test("an original filing carries no revision page", () => {
     const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
     expect(xhtml).not.toContain("These are revised accounts");
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+    for (const name of REVISION_FACTS) expect(visibleFacts(xhtml, name), name).toHaveLength(0);
   });
 });
 
@@ -1172,5 +1225,27 @@ describe("the advances to directors note of a small company", () => {
     const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
     expect(xhtml).not.toContain("Advances and credits to directors");
     expect(xhtml).not.toContain("AmountsOwedByDirectors");
+  });
+});
+
+describe("the first accounts of a small company", () => {
+  const firstAccounts = {
+    ...SAMPLE_INPUT,
+    dateOfIncorporation: SAMPLE_INPUT.periodStart,
+    balanceSheet: { current: SAMPLE_INPUT.balanceSheet.current },
+    profitAndLoss: { current: SAMPLE_INPUT.profitAndLoss.current },
+  };
+
+  test("the cover page says they are the first, with the date of incorporation tagged on the period's start instant", () => {
+    const xhtml = buildSmallCompanyAccounts(firstAccounts);
+    expect(xhtml).toContain(
+      `The company's first accounts, from its incorporation on <ix:nonNumeric name="bus:DateFormationOrIncorporation" contextRef="p2026" format="ixt2:datedaymonthyearen">1 July 2025</ix:nonNumeric>`,
+    );
+    expect(xhtml).toContain('<ix:nonNumeric name="bus:StartDateForPeriodCoveredByReport" contextRef="p2026"');
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("accounts that are not the first carry no date of incorporation", () => {
+    expect(buildSmallCompanyAccounts(SAMPLE_INPUT)).not.toContain("DateFormationOrIncorporation");
   });
 });

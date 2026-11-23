@@ -190,18 +190,34 @@
               aria-describedby="companyAuthCode-hint"
             />
           </div>
-          <div class="form-group" id="revisionGroup" style="display: none">
-            <label for="revisionDifferences">What do the revised accounts change?</label>
-            <p id="revisionDifferences-hint" class="hint">
-              Companies House prints this in the revised accounts, under the statement that they replace the accounts it holds.
-            </p>
-            <textarea
-              id="revisionDifferences"
-              name="revisionDifferences"
-              rows="4"
-              maxlength="2000"
-              aria-describedby="revisionDifferences-hint"
-            ></textarea>
+          <div id="revisionGroup" style="display: none">
+            <div class="form-group">
+              <label for="revisionNonCompliance">What was wrong with the original accounts?</label>
+              <p id="revisionNonCompliance-hint" class="hint">
+                Say how the original accounts did not comply with the Companies Act 2006. Companies House prints this in the revised
+                accounts.
+              </p>
+              <textarea
+                id="revisionNonCompliance"
+                name="revisionNonCompliance"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionNonCompliance-hint"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="revisionAmendments">What do the revised accounts change?</label>
+              <p id="revisionAmendments-hint" class="hint">
+                Companies House prints this in the revised accounts, under the statement that they replace the accounts it holds.
+              </p>
+              <textarea
+                id="revisionAmendments"
+                name="revisionAmendments"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionAmendments-hint"
+              ></textarea>
+            </div>
           </div>
           <p class="hint">
             <span id="gatewayWhose"
@@ -305,6 +321,7 @@
     <script src="../lib/env-loader.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
     <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
     <script src="../lib/form-errors.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>
@@ -316,6 +333,7 @@
     <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/books-import.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
     <script type="module" src="fileCompanyTaxReturn.page.js"></script>
   </body>
 </html>

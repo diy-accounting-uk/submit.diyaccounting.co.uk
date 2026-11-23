@@ -169,7 +169,7 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, ADD_CLIENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await addClient(session, { displayName: "Brickwork Pro Ltd", vrn: "983238295", companyNumber: "12345678" });
+      const result = await addClient(session, { displayName: "Brickwork Pro Ltd", vrn: "983238295", companyNumber: "00000007" });
 
       expect(result).toEqual(ADD_CLIENT_RESPONSE);
       expect(result.client.clientId).toBe(ADD_CLIENT_RESPONSE.client.clientId);
@@ -179,7 +179,7 @@ describe("practice-tools client tools", () => {
       const body = JSON.parse(init.body);
       expect(body.displayName).toBe("Brickwork Pro Ltd");
       expect(body.vrn).toBe("983238295");
-      expect(body.companyNumber).toBe("12345678");
+      expect(body.companyNumber).toBe("00000007");
     });
 
     it("requires displayName", async () => {

@@ -121,7 +121,7 @@
         {
           "action": "type",
           "target": "#companyQuery",
-          "text": "06846849",
+          "text": "00000001",
           "clear": true,
           "caption": "Type a company name or number.",
           "headline": "Search by name or number",

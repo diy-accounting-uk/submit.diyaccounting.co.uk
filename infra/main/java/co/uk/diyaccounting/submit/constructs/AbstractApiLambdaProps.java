@@ -54,4 +54,11 @@ public interface AbstractApiLambdaProps extends AbstractLambdaProps {
     default boolean optionsPreflightRoute() {
         return false;
     }
+
+    /** True to also create a HEAD route on the same path when the primary route is not GET, for a
+     * page that warms this Lambda with a HEAD request. A GET route gets its HEAD route regardless. */
+    @Value.Default
+    default boolean headRoute() {
+        return false;
+    }
 }

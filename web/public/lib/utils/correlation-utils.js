@@ -257,7 +257,7 @@ export function installCorrelationInterceptor() {
  * @param {object} opts - Fetch options
  * @returns {Promise<Response>} Fetch response
  */
-export function fetchWithId(url, opts = {}) {
+export async function fetchWithId(url, opts = {}) {
   const headers = opts.headers instanceof Headers ? opts.headers : new Headers(opts.headers || {});
   try {
     let rid;
@@ -280,8 +280,10 @@ export function fetchWithId(url, opts = {}) {
     console.warn("Failed to generate X-Client-Request-Id:", error);
   }
 
-  // Add hmrcAccount header if present in sessionStorage
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  // An HMRC call names the account the bundle read chose; sessionStorage can hold another tab's
+  // account until that read answers.
+  const decidesAccount = typeof window !== "undefined" && window.readHmrcAccount && String(url).includes("/api/v1/hmrc/");
+  const hmrcAccount = decidesAccount ? await window.readHmrcAccount() : sessionStorage.getItem("hmrcAccount");
   if (hmrcAccount) {
     headers.set("hmrcAccount", hmrcAccount);
   }

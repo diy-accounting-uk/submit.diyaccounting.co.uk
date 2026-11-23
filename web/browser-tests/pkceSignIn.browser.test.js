@@ -10,6 +10,7 @@ import { test, expect } from "@playwright/test";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -231,7 +232,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
     await serveSite(page);
     await page.route("**/api/v1/cognito/token", async (route) => {
       const nonce = new URL(authorizeUrlSeen).searchParams.get("nonce");
-      const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: "person@example.com", nonce })).toString("base64url");
+      const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: PEOPLE.samPatel.email, nonce })).toString("base64url");
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -256,7 +257,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
 
   test("an ID token without the sent nonce stores no tokens, shows the error and logs the provider", async ({ page }) => {
     await serveSite(page);
-    const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: "person@example.com" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: PEOPLE.samPatel.email })).toString("base64url");
     await page.route("**/api/v1/cognito/token", async (route) => {
       await route.fulfill({
         status: 200,
@@ -292,7 +293,7 @@ test.describe("PKCE on the Cognito sign-in", () => {
     const payload = Buffer.from(
       JSON.stringify({
         sub: "sub-1",
-        email: "person@example.com",
+        email: PEOPLE.samPatel.email,
         identities: [
           { providerName: "Google", userId: "1" },
           { providerName: "Microsoft", userId: "2" },

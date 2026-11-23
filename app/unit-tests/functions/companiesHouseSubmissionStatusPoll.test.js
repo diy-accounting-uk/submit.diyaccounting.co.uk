@@ -187,7 +187,7 @@ async function sendAccountsEnvelope(submissionNumber, { scenario } = {}) {
   const envelope = buildAccountsSubmission({
     presenterId: SIMULATOR_PRESENTER_ID,
     presenterCode: SIMULATOR_PRESENTER_CODE,
-    companyNumber: "02706061",
+    companyNumber: "00000009",
     companyName: "TEST COMPANY LIMITED",
     companyAuthenticationCode: "ABC123",
     packageReference: "0012",
@@ -344,7 +344,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     const envelope = buildConfirmationStatementSubmission({
       presenterId: SIMULATOR_PRESENTER_ID,
       presenterCode: SIMULATOR_PRESENTER_CODE,
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",
@@ -464,7 +464,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
   });
 
   test("a confirmation statement accepted after its envelope got no answer marks its paid fee used once", async () => {
-    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "06846849:2026-06-01" };
+    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "00000004:2026-06-01" };
     activityCharges.set(`${USER_SUB}/${feeCharge.activityId}/${feeCharge.subjectKey}`, "paid");
     await recordSubmissionInProgress({
       userSub: USER_SUB,
@@ -477,7 +477,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     const envelope = buildConfirmationStatementSubmission({
       presenterId: SIMULATOR_PRESENTER_ID,
       presenterCode: SIMULATOR_PRESENTER_CODE,
-      companyNumber: "06846849",
+      companyNumber: "00000004",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",

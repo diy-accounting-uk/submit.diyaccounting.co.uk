@@ -44,6 +44,34 @@ caption {
   border-bottom: 1px solid var(--c-rule-subtle);
 }
 
+/* A table of many narrow columns, such as the watch list: half the space between columns, so it
+   fits a card at desktop width. */
+.data-table--compact th,
+.data-table--compact td {
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+/* A cell of text from outside the site, such as a company name or address on the register: a long
+   word breaks where it must, so the table never grows wider than its container. A short value that
+   reads as one unit, such as a company number or a date, stays on one line. */
+.data-table .cell-wrap {
+  overflow-wrap: anywhere;
+}
+
+.data-table .cell-nowrap {
+  white-space: nowrap;
+}
+
+/* The company search results: the name and the address take most of the width. */
+.data-table .search-column-name {
+  width: 32%;
+}
+
+.data-table .search-column-address {
+  width: 24%;
+}
+
 .data-table .receipt-nowrap {
   white-space: nowrap;
 }
@@ -107,10 +135,19 @@ caption {
   min-height: var(--control-height);
 }
 
+/* A totals row is set apart by one rule above all its cells. */
+.results-table tfoot th,
+.results-table tfoot td,
+.results-table tr.after-totals > td {
+  border-top: 2px solid var(--c-rule);
+  border-bottom: none;
+}
+
 /* Under 40rem a row is a block of label and value pairs, so no column sits out of sight. */
 @media (max-width: 40rem) {
   .results-table:not(.review-table),
-  .results-table:not(.review-table) tbody {
+  .results-table:not(.review-table) tbody,
+  .results-table:not(.review-table) tfoot {
     display: block;
     overflow: visible;
     background: none;
@@ -138,6 +175,16 @@ caption {
     border: 0;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .results-table:not(.review-table) tfoot th {
+    display: block;
+    padding: var(--space-1) 0;
+    border: 0;
+  }
+
+  .results-table:not(.review-table) tfoot td {
+    border-top: 0;
   }
 
   .results-table:not(.review-table) td[data-label]::before {

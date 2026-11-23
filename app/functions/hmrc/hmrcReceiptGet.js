@@ -117,9 +117,10 @@ export async function ingestHandler(event) {
   // A practice narrowing the list to one of its clients (queryStringParameters only, never
   // a path segment) - unrelated to the single-receipt name/key branch below.
   const clientId = event.queryStringParameters?.clientId || undefined;
-  if (clientId) {
-    const client = await getClient(userSub, clientId);
-    if (!client) {
+
+  // Processing
+  try {
+    if (clientId && !(await getClient(userSub, clientId))) {
       return http403ForbiddenResponse({
         request,
         headers: { ...responseHeaders },
@@ -127,10 +128,6 @@ export async function ingestHandler(event) {
         error: { code: "client-not-found" },
       });
     }
-  }
-
-  // Processing
-  try {
     if (hasNameOrKey) {
       logger.info({ message: "Retrieving single receipt", receiptId, key: Key });
       const receipt = await getReceiptByReceiptId(userSub, receiptId);
@@ -142,9 +139,9 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Listing user receipts", userSub, clientId });
       const receipts = await listUserReceipts(userSub, clientId);
-      // The caller's own Companies House filings that Companies House has not accepted yet. A
-      // practice's list for one client holds receipts only.
-      const filingsInProgress = clientId ? [] : await listFilingsInProgress(userSub);
+      // The Companies House filings that Companies House has not accepted yet, narrowed to the client
+      // as the receipts are: the client's for a clientId, the caller's own otherwise.
+      const filingsInProgress = await listFilingsInProgress(userSub, clientId);
       await publishActivityEvent({
         event: "receipts-viewed",
         summary: "Receipts viewed",

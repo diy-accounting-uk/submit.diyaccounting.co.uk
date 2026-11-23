@@ -16,6 +16,7 @@
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
+  getHeader,
   http200OkResponse,
   http400BadRequestResponse,
   http401UnauthorizedResponse,
@@ -192,7 +193,13 @@ export async function ingestHandler(event) {
       mode: "subscription",
       ...customerParams,
       client_reference_id: hashedSub,
-      metadata: { hashedSub, bundleId, ...acquisitionMetadata },
+      // The reader's language, "cy" or "en", so the subscription started email is sent in it.
+      metadata: {
+        hashedSub,
+        bundleId,
+        language: getHeader(event.headers || {}, "X-Site-Language") === "cy" ? "cy" : "en",
+        ...acquisitionMetadata,
+      },
       subscription_data: {
         metadata: { hashedSub, bundleId, actor: classifyActor(userEmail) },
       },

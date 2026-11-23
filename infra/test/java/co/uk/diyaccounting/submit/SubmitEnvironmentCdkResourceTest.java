@@ -136,13 +136,16 @@ class SubmitEnvironmentCdkResourceTest {
         // a Provider-backed custom resource, for idempotent deployments, including
         // hmrcItsaBusinessDetailsGetAsyncRequests
         // PITR: every table (Custom::EnsurePitr, not Custom::AWS - see KindCdk.ensurePitrProvider)
-        // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
+        // GSIs: passes issuedBy-index, bundles bundleId-expiry-index, due list job-jobOn-index
         // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls, HMRC
         //      API requests, practice clients, activity charges, MCP sessions
         //      (one UpdateTable to enable, one DescribeTable to read the stream ARN)
-        // TTL: passes and subscriptions join the tables that already had it
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 152);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 67);
+        // TTL: passes, subscriptions, the due list and the Companies House cache join the tables that
+        //      already had it; the cache has no PITR
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 157);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 68);
+        // The Companies House cache has no PITR, so a wait holds its TTL until the table is ACTIVE.
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsureTableActive", 1);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -196,12 +199,12 @@ class SubmitEnvironmentCdkResourceTest {
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
-        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
-        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm,
-        // IntegrationCallRecordFailedAlarm, CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm,
-        // that's 13 alarms, and the trusted event function's two checks make 15 (its composite is
-        // the one composite).
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 15);
+        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm,
+        // CompaniesHouseLookupBudgetRefusedAlarm, PublicCompaniesHouseBudgetSpentAlarm and
+        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm, IntegrationCallRecordFailedAlarm,
+        // CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm, that's 15 alarms, and the trusted
+        // event function's two checks make 17 (its composite is the one composite).
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 17);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
         observability.resourceCountIs("AWS::IAM::Role", 8);
@@ -284,6 +287,35 @@ class SubmitEnvironmentCdkResourceTest {
                         "AlarmName", "test-env-token-charge-unpaid",
                         "Namespace", "Submit/Business",
                         "MetricName", "TokenChargeUnpaid",
+                        "Period", 300,
+                        "Statistic", "Sum",
+                        "Threshold", 1,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
+
+        // Companies House lookup budget alarm: any refusal by the budget of all signed-in lookups
+        // in the limit's five-minute window, counted by every deployment's OpsStack metric filters.
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-companies-house-lookup-budget-refused",
+                        "Namespace", "Submit/Business",
+                        "MetricName", "CompaniesHouseLookupBudgetRefused",
+                        "Period", 300,
+                        "Statistic", "Sum",
+                        "Threshold", 1,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
+
+        // Public Companies House budget alarm: any refusal by the budget of all public lookups.
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-public-companies-house-budget-spent",
+                        "Namespace", "Submit/Business",
+                        "MetricName", "PublicCompaniesHouseBudgetSpent",
                         "Period", 300,
                         "Statistic", "Sum",
                         "Threshold", 1,

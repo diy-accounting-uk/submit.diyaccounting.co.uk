@@ -57,6 +57,7 @@
             <input
               type="text"
               id="companyNumber"
+              data-gateway-text="off"
               name="companyNumber"
               class="input--code"
               required
@@ -112,6 +113,7 @@
             <input
               type="text"
               id="companyAuthCode"
+              data-gateway-text="off"
               class="input--code"
               autocomplete="off"
               name="companyAuthCode"
@@ -141,6 +143,7 @@
               <input
                 type="text"
                 id="ownPresenterId"
+                data-gateway-text="off"
                 class="input--code"
                 name="ownPresenterId"
                 autocomplete="off"
@@ -183,7 +186,14 @@
             <div class="form-group">
               <label for="sicCodes">SIC codes</label>
               <p id="sicCodes-hint" class="hint">Enter up to four codes separated by commas.</p>
-              <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" aria-describedby="sicCodes-hint" />
+              <input
+                type="text"
+                id="sicCodes"
+                data-gateway-text="off"
+                name="sicCodes"
+                spellcheck="false"
+                aria-describedby="sicCodes-hint"
+              />
             </div>
           </section>
           <section class="form-section">
@@ -197,6 +207,7 @@
                 <input
                   type="text"
                   id="totalAmountUnpaid"
+                  data-gateway-text="off"
                   name="totalAmountUnpaid"
                   aria-describedby="totalAmountUnpaid-money-hint"
                   inputmode="decimal"
@@ -211,7 +222,7 @@
             </div>
             <div class="form-group">
               <label for="shareCurrency">Share currency</label>
-              <input type="text" id="shareCurrency" name="shareCurrency" spellcheck="false" />
+              <input type="text" id="shareCurrency" data-gateway-text="off" name="shareCurrency" spellcheck="false" />
             </div>
             <div class="form-group">
               <label for="totalAggregateNominalValue">Total aggregate nominal value</label>
@@ -221,6 +232,7 @@
                 <input
                   type="text"
                   id="totalAggregateNominalValue"
+                  data-gateway-text="off"
                   name="totalAggregateNominalValue"
                   aria-describedby="totalAggregateNominalValue-money-hint"
                   inputmode="decimal"
@@ -334,6 +346,7 @@
     <script src="../lib/companies-house-rejections.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
     <script type="module" src="../submit.js"></script>
+    <script type="module" src="../lib/companies-house-text-check.js"></script>
     <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
@@ -344,6 +357,7 @@
     <script src="../lib/companies-house-labels.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
     <script src="fileConfirmationStatement.page.js"></script>
   </body>
 </html>

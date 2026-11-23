@@ -12,6 +12,7 @@
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { TEST_EMAIL_DOMAIN } from "@app/http-simulator/fixtures/register.js";
 import { createSession } from "../mcp/lib/book-tools.js";
 import { callHarnessTool } from "../mcp/lib/harness.js";
 import {
@@ -73,7 +74,7 @@ test.afterAll(async () => {
 function unsignedJwt(sub) {
   const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
   const issuedAt = Math.floor(Date.now() / 1000);
-  const claims = { sub, email: `${sub}@example.com`, iat: issuedAt, exp: issuedAt + 3600 };
+  const claims = { sub, email: `${sub}@${TEST_EMAIL_DOMAIN}`, iat: issuedAt, exp: issuedAt + 3600 };
   return [encode({ alg: "none", typ: "JWT" }), encode(claims), ""].join(".");
 }
 
