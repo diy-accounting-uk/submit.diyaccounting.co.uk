@@ -92,7 +92,24 @@ const PAGES = {
       registrationNumber: "identification.*",
     },
   },
-  fileConfirmationStatement: { kinds: ["confirmation-statement", "psc-verification-statement"], fields: {} },
+  fileConfirmationStatement: {
+    kinds: ["confirmation-statement", "psc-verification-statement"],
+    fields: {},
+    scriptFields: {
+      shareClass: "statementOfCapital.shares[].shareClass",
+      holdingShareClass: "shareholdings[].shareClass",
+      holderSurname: "shareholdings[].shareholders[].surname",
+      holderForename: "shareholdings[].shareholders[].forename",
+      holderAmalgamatedName: "shareholdings[].shareholders[].amalgamatedName",
+      ...Object.fromEntries(
+        ["Premise", "Street", "Thoroughfare", "PostTown", "County", "Postcode", "Country"].map((part) => [
+          `holder${part}`,
+          "shareholdings[].shareholders[].address.*",
+        ]),
+      ),
+      directorOtherForenames: "directors[].otherForenames",
+    },
+  },
   notifyPsc: {
     kinds: ["psc-notification"],
     fields: {
@@ -148,7 +165,92 @@ function textBoxes(html) {
     .filter((box) => box.id !== "govTestScenario");
 }
 
+// The source of one call: from the opening bracket after its name to the bracket that closes it.
+function callText(source, start) {
+  let depth = 0;
+  for (let index = source.indexOf("(", start); index < source.length; index += 1) {
+    if (source[index] === "(") depth += 1;
+    if (source[index] === ")" && --depth === 0) return source.slice(start, index + 1);
+  }
+  return source.slice(start);
+}
+
+// Every text box a page's script builds, by the part of its id before the first hyphen, and whether
+// it is marked off: a textInput call, an element("input") of type text, and a createElement("input")
+// left as text. An id built from a list (`${idPrefix}-...`) stands for each id the list names.
+function scriptTextBoxes(source) {
+  const boxes = [];
+  const listedIds = [...source.matchAll(/\[\s*"([a-zA-Z]+)",\s*window\.siteText/g)].map(([, id]) => id);
+  for (const match of source.matchAll(/\btextInput\(|\belement\("(input|textarea)",/g)) {
+    if (source.slice(Math.max(0, match.index - 9), match.index) === "function ") continue;
+    const call = callText(source, match.index);
+    if (match[1] === "input" && !/type:\s*"text"/.test(call)) continue;
+    // The helper's own body passes its id through as a variable; its callers are read instead.
+    if (match[1] && /\bid,/.test(call)) continue;
+    const off = /"data-gateway-text":\s*"off"/.test(call);
+    const id = call.match(/^[^(]*\(\s*(?:"input",\s*\{[^}]*?\bid:\s*)?[`"]([^`"$-]*)/)?.[1] ?? "";
+    const ids = id === "" && /\$\{idPrefix\}/.test(call) ? listedIds : [id];
+    for (const each of ids) boxes.push({ id: each, off });
+  }
+  for (const match of source.matchAll(/document\.createElement\("(input|textarea)"\)/g)) {
+    // The statements after it, up to the next box the script builds.
+    const rest = source.slice(match.index + match[0].length, match.index + 600);
+    const nextBox = rest.search(/createElement\(/);
+    const following = (nextBox === -1 ? rest : rest.slice(0, nextBox)).split(";").slice(0, 8).join(";");
+    const type = following.match(/\.type = "([a-z]+)"/)?.[1] ?? "text";
+    if (match[1] === "input" && type !== "text") continue;
+    boxes.push({
+      id: following.match(/\.id = [`"]([^`"$-]*)/)?.[1] ?? "",
+      off: /dataset\.gatewayText = "off"/.test(following),
+    });
+  }
+  return boxes;
+}
+
 describe("the text boxes of each Companies House gateway form page", () => {
+  test("every form on the shared route lists its textFields, so its page's boxes are checked", () => {
+    const without = Object.entries(COMPANIES_HOUSE_FORMS)
+      .filter(([, row]) => row.sharedPoll && !(row.textFields && typeof row.textFields === "object"))
+      .map(([kind]) => kind);
+    expect(without).toEqual([]);
+  });
+
+  describe.each(Object.entries(PAGES))("%s script", (name, { kinds, scriptFields = {} }) => {
+    test("each text box the page's script builds is sent under one of its rows' textFields, or marked off", () => {
+      const source = fs.readFileSync(path.join(PAGES_DIR, `${name}.page.js`), "utf-8");
+      const unaccounted = scriptTextBoxes(source)
+        .filter((box) => !box.off)
+        .filter(
+          (box) => !scriptFields[box.id] || !kinds.some((kind) => sends(COMPANIES_HOUSE_FORMS[kind].textFields, scriptFields[box.id])),
+        )
+        .map((box) => box.id || "(an id the test cannot read)");
+      expect(unaccounted).toEqual([]);
+    });
+  });
+
+  test("reads the boxes a script builds in each of its ways", () => {
+    const source = [
+      "textInput(`shareClass-${index}`, value),",
+      'textInput(`prescribedParticulars-${index}`, value, { "data-gateway-text": "off" }),',
+      'element("input", { type: "text", id: `plainBox-${index}` }),',
+      'element("input", { type: "number", id: `numberBox-${index}` }),',
+      '["holderSurname", window.siteText("a", "b"), x], ["holderPostcode", window.siteText("c", "d"), y]',
+      "textInput(`${idPrefix}-${suffix}`, value),",
+      'const input = document.createElement("input"); input.id = `pscPersonalCode-${index}`; input.dataset.gatewayText = "off";',
+      'const radio = document.createElement("input"); radio.type = "radio"; radio.id = "choice";',
+      'const box = document.createElement("input"); box.id = `freeText-${index}`;',
+    ].join("\n");
+    expect(scriptTextBoxes(source)).toEqual([
+      { id: "shareClass", off: false },
+      { id: "prescribedParticulars", off: true },
+      { id: "plainBox", off: false },
+      { id: "holderSurname", off: false },
+      { id: "holderPostcode", off: false },
+      { id: "pscPersonalCode", off: true },
+      { id: "freeText", off: false },
+    ]);
+  });
+
   test("the table names a page for every kind on the shared route and the confirmation statement", () => {
     const covered = Object.values(PAGES).flatMap((page) => page.kinds);
     const textChecked = Object.entries(COMPANIES_HOUSE_FORMS)

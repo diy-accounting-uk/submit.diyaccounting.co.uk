@@ -713,6 +713,15 @@ function validateReviewForm(payload) {
     );
     return false;
   }
+  // A director's title, forename and surname come from the register, not from a box the page checks
+  // when the form is sent, so they are checked here before the preview.
+  for (const [index, director] of currentDirectors.entries()) {
+    const nameProblem = directorNameProblem({ ...director, otherForenames: payload.directors[index]?.otherForenames });
+    if (nameProblem) {
+      showStatus(nameProblem, "error");
+      return false;
+    }
+  }
   return true;
 }
 
@@ -975,8 +984,9 @@ function pollPscVerificationUntilSettled(submission) {
   });
 }
 
-// The reason a director's name cannot go in a PSC verification statement, in the page's language, or null.
-function pscVerificationNameProblem(director) {
+// The reason a director's name cannot go to Companies House in the confirmation statement or a PSC
+// verification statement, in the page's language, or null.
+function directorNameProblem(director) {
   const check = window.companiesHouseTextCheck;
   if (!check) return null;
   const who = [director.forename, director.surname].filter(Boolean).join(" ");
@@ -1016,7 +1026,7 @@ async function handlePscVerificationSubmit(index, matches) {
   }
   // The names come from the register, not from a box the page checks when a form is sent, so they are
   // checked here against the characters the gateway takes before anything is sent.
-  const nameProblem = pscVerificationNameProblem(entry.director);
+  const nameProblem = directorNameProblem(entry.director);
   if (nameProblem) {
     resultContainer.replaceChildren(buildParagraph([nameProblem], "error"));
     return;
