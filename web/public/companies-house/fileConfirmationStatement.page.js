@@ -523,7 +523,7 @@ async function handleAuthSubmit(event) {
     originalRegisteredEmailAddress = filingData.registeredEmailAddress || "";
 
     document.getElementById("reviewDate").value = company.confirmationStatementNextMadeUpTo;
-    document.getElementById("reviewDate").max = new Date().toISOString().slice(0, 10);
+    document.getElementById("reviewDate").max = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
     document.getElementById("sicCodes").value = originalSicCodes.join(", ");
     document.getElementById("registeredEmailAddress").value = originalRegisteredEmailAddress;
     document.getElementById("totalAmountUnpaid").value = originalStatementOfCapital?.totalAmountUnpaid || "";
@@ -659,7 +659,7 @@ function buildStatementPayload() {
   const payload = {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
-    dateSigned: new Date().toISOString().slice(0, 10),
+    dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
     reviewDate: document.getElementById("reviewDate").value,
     lawfulPurposeStatementAccepted: document.getElementById("lawfulPurposeStatement").checked,
     stateConfirmationAccepted: document.getElementById("stateConfirmation").checked,
@@ -1038,7 +1038,7 @@ async function handlePscVerificationSubmit(index, matches) {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
       companyAuthCode,
-      dateSigned: new Date().toISOString().slice(0, 10),
+      dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
       title: director.title,
       forename: director.forename,
       otherForenames: director.otherForenames,

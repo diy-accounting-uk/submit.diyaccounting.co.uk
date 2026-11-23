@@ -175,6 +175,23 @@ describe("companiesHousePscChangeDetailsPost ingestHandler", () => {
     expect(submissionArgs.formXml).not.toContain("<Surname>");
   });
 
+  test("names its date refusals by the change page's own ids, so the page words them in the reader's language", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-20T12:00:00Z"), toFake: ["Date"] });
+    try {
+      const future = await ingestHandler(
+        buildEvent({ body: buildChangeBody({ dateOfChange: "2026-11-21", confirmationDate: "2026-11-22" }) }),
+      );
+      expect(future.statusCode).toBe(400);
+      expect(parseResponseBody(future).messageIds).toEqual(["ch.change-psc.future-change", "ch.change-psc.future-confirmation"]);
+      const before = await ingestHandler(
+        buildEvent({ body: buildChangeBody({ dateOfChange: "2026-11-03", confirmationDate: "2026-11-01" }) }),
+      );
+      expect(parseResponseBody(before).messageIds).toEqual(["ch.change-psc.confirmation-before"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("records the filing in progress as psc-change-details", async () => {
     await ingestHandler(buildEvent());
     const lib = await import("@aws-sdk/lib-dynamodb");

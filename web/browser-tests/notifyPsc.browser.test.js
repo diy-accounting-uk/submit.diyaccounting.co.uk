@@ -322,6 +322,37 @@ test("what PSC01 refuses is refused before anything is sent", async ({ page }) =
   expect(filings).toHaveLength(0);
 });
 
+test("a date after today is refused before anything is sent, and the date fields stop at today", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T12:00:00Z"));
+  const filings = [];
+  await serveSite(page, { filings });
+  await openForm(page);
+  await expect(page.locator("#notificationDate")).toHaveAttribute("max", "2026-11-20");
+  await expect(page.locator("#confirmationDate")).toHaveAttribute("max", "2026-11-20");
+  const status = page.locator("#statusMessagesContainer");
+  const next = () => page.getByRole("button", { name: "Continue" }).click();
+  await fillIndividual(page);
+  await page.getByLabel("Give the address").check();
+  await page.locator("#directors").check();
+
+  await fillDates(page, "2026-11-21", "2026-11-21");
+  await next();
+  await expect(status).toContainText("The date they became a person with significant control cannot be after today.");
+
+  await fillDates(page, "2026-11-19", "2026-11-21");
+  await next();
+  await expect(status).toContainText("The date of confirmation cannot be after today.");
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
+});
+
+test("the Welsh page's date fields stop at today", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T12:00:00Z"));
+  await serveSite(page, {});
+  await openForm(page, { welsh: true });
+  await expect(page.locator("#notificationDate")).toHaveAttribute("max", "2026-11-20");
+});
+
 test("a rejection shows Companies House's reason", async ({ page }) => {
   await serveSite(page, {
     outcome: { statusCode: "REJECT", rejections: [{ rejectCode: "9998", description: "The nationality is not on the standard list." }] },

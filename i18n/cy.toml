@@ -27084,15 +27084,7 @@ hash = "3e82daa75f16"
 cy = '''Mae’r gofrestr yn dangos person â rheolaeth arwyddocaol nad yw wedi peidio â bod yn un: {names}. Dywedwch wrth Dŷ’r Cwmnïau eu bod wedi peidio cyn i chi ddatgan nad oes gan y cwmni un.'''
 
 
-# == A date after today, refused on the PSC change of details and statements pages: ch.change-psc.*-after-today, ch.psc-statements.date-after-today ==
-
-[strings."ch.change-psc.change-after-today"]
-hash = "7b9fdc803f29"
-cy = '''Ni all dyddiad y newid fod ar ôl heddiw.'''
-
-[strings."ch.change-psc.confirmation-after-today"]
-hash = "24e74cfc4d09"
-cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
+# == A date after today, refused on the PSC statements page: ch.psc-statements.date-after-today ==
 
 [strings."ch.psc-statements.date-after-today"]
 hash = "da09116b461a"
@@ -27412,3 +27404,21 @@ cy = '''Mae Submit yn cymharu’r ffurflen hon â chofrestr Tŷ’r Cwmnïau fel
 [strings."ch.allot.late-return-period"]
 hash = "b1c074660dcb"
 cy = '''Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad cyntaf, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.'''
+
+# == The PSC change and new PSC pages refuse a date after today, as their routes do ==
+
+[strings."ch.change-psc.future-change"]
+hash = "7b9fdc803f29"
+cy = '''Ni all dyddiad y newid fod ar ôl heddiw.'''
+
+[strings."ch.change-psc.future-confirmation"]
+hash = "24e74cfc4d09"
+cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
+
+[strings."ch.notify-psc.future-notification"]
+hash = "c643d1a31a46"
+cy = '''Ni all y dyddiad y daethant yn berson â rheolaeth arwyddocaol fod ar ôl heddiw.'''
+
+[strings."ch.notify-psc.future-confirmation"]
+hash = "24e74cfc4d09"
+cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''

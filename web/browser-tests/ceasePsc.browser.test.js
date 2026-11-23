@@ -316,6 +316,25 @@ for (const [language, prefix, lookUp, cont, refusal] of [
   });
 }
 
+test("the filing is signed on today's date in the UK, also in the hour after midnight in summer", async ({ page }) => {
+  // 23:30 UTC on 10 June is 00:30 on 11 June in London.
+  await page.clock.setFixedTime(new Date("2026-06-10T23:30:00Z"));
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
+  await expect(page.locator("#cessationDate")).toHaveAttribute("max", "2026-06-11");
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
+  await page.getByLabel("Eleanor Bramwell (Individual)").check();
+  await page.locator("#cessationDate").fill("2026-06-11");
+  await page.locator("#confirmationDate").fill("2026-06-11");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0]).toMatchObject({ cessationDate: "2026-06-11", dateSigned: "2026-06-11" });
+});
+
 test("a refusal the route names by id shows in the page's language", async ({ page }) => {
   await serveSite(page, {
     filingAnswer: {

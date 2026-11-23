@@ -294,6 +294,37 @@ test("significant influence beside another control, no change, or a confirmation
   expect(filings).toHaveLength(0);
 });
 
+for (const [language, prefix, lookUp, cont, refusal] of [
+  ["English", "", LOOK_UP, "Continue", "The date of change cannot be after today."],
+  ["Welsh", "/cy", "Chwilio am y personau â rheolaeth arwyddocaol", "Parhau", "Ni all dyddiad y newid fod ar ôl heddiw."],
+]) {
+  test(`a date of change after today is refused in ${language} before anything is sent`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-11-20T12:00:00Z"));
+    const filings = [];
+    await serveSite(page, { filings });
+    await page.goto(`${SITE}${prefix}/companies-house/changePscDetails.html`, { waitUntil: "networkidle" });
+    await expect(page.locator("#dateOfChange")).toHaveAttribute("max", "2026-11-20");
+    await expect(page.locator("#confirmationDate")).toHaveAttribute("max", "2026-11-20");
+    await page.locator("#companyNumber").fill("00000001");
+    await page.getByRole("button", { name: lookUp }).click();
+    await page.locator("#pscChoices input").first().check();
+    await page.locator("#changeAddress").check();
+    await page.locator("#premise").fill("7");
+    await page.locator("#street").fill("Mill Lane");
+    await page.locator("#postTown").fill("Leeds");
+    await page.locator("#postcode").fill("LS12 3AB");
+    await page.locator("#country").selectOption("GB-ENG");
+    await page.locator("#dateOfChange").fill("2026-11-21");
+    await page.locator("#confirmationDate").fill("2026-11-21");
+    await page.locator("#companyAuthCode").fill("SIMCS01");
+    await page.getByRole("button", { name: cont }).click();
+
+    await expect(page.locator("#statusMessagesContainer")).toContainText(refusal);
+    await expect(page.locator("#formView")).toBeVisible();
+    expect(filings).toHaveLength(0);
+  });
+}
+
 test("a rejection shows Companies House's reason", async ({ page }) => {
   await serveSite(page, {
     outcome: { statusCode: "REJECT", rejections: [{ rejectCode: "9998", description: "The person named does not match the register." }] },

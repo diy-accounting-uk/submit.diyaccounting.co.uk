@@ -250,20 +250,16 @@ function handleNotifySubmit(event) {
     );
     return;
   }
-  if (confirmationDate < notificationDate) {
-    showError(
-      window.siteText(
-        "ch.notify-psc.confirmation-before",
-        "The date of confirmation cannot be before the date they became a person with significant control.",
-      ),
-    );
+  const refusal = dateRefusal(notificationDate, confirmationDate);
+  if (refusal) {
+    showError(DATE_MESSAGES[refusal]());
     return;
   }
   filing = {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
     companyAuthCode: value("companyAuthCode"),
-    dateSigned: new Date().toISOString().slice(0, 10),
+    dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
     ...Object.fromEntries(Object.entries(fields).filter(([, part]) => part !== "")),
     naturesOfControl,
     notificationDate,
@@ -406,6 +402,35 @@ function updateGovTestScenarioVisibility() {
   field("govTestScenarioGroup").style.display = developerModeEnabled ? "block" : "none";
 }
 
+// The refusals of the dates, in the reader's words; the route names them by these ids.
+const DATE_MESSAGES = {
+  "ch.notify-psc.future-notification": () =>
+    window.siteText("ch.notify-psc.future-notification", "The date they became a person with significant control cannot be after today."),
+  "ch.notify-psc.future-confirmation": () =>
+    window.siteText("ch.notify-psc.future-confirmation", "The date of confirmation cannot be after today."),
+  "ch.notify-psc.confirmation-before": () =>
+    window.siteText(
+      "ch.notify-psc.confirmation-before",
+      "The date of confirmation cannot be before the date they became a person with significant control.",
+    ),
+};
+window.companiesHouseFormPage.registerMessages(DATE_MESSAGES);
+
+// Today in the United Kingdom, as YYYY-MM-DD, the latest date either field may hold.
+function todayInUk() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+}
+
+// The first refusal of the two dates, by its id, or null: the route's rule for them.
+function dateRefusal(notificationDate, confirmationDate) {
+  const today = todayInUk();
+  if (notificationDate > today) return "ch.notify-psc.future-notification";
+  if (confirmationDate < notificationDate) return "ch.notify-psc.confirmation-before";
+  if (confirmationDate > today) return "ch.notify-psc.future-confirmation";
+  return null;
+}
+
+["notificationDate", "confirmationDate"].forEach((id) => document.getElementById(id).setAttribute("max", todayInUk()));
 field("companyForm").addEventListener("submit", handleCompanySubmit);
 field("notifyForm").addEventListener("submit", handleNotifySubmit);
 field("notifyForm").addEventListener("change", showSections);

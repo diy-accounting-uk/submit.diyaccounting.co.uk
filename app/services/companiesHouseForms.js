@@ -189,7 +189,11 @@ function extractPscChangeDetails(body, errorMessages) {
   return {
     ...particulars,
     ...changes,
-    ...extractEventAndConfirmationDates(body, "dateOfChange", errorMessages),
+    ...extractEventAndConfirmationDates(body, "dateOfChange", errorMessages, {
+      futureEvent: "ch.change-psc.future-change",
+      confirmationBefore: "ch.change-psc.confirmation-before",
+      futureConfirmation: "ch.change-psc.future-confirmation",
+    }),
   };
 }
 
@@ -485,7 +489,11 @@ function extractPscNotification(body, errorMessages) {
     entityProblems(form, elementName === "Corporate").forEach((problem) => errorMessages.push(`Invalid particulars - ${problem}`));
   }
   natureOfControlProblems(naturesOfControl).forEach((problem) => errorMessages.push(`Invalid naturesOfControl - ${problem}`));
-  const dates = extractEventAndConfirmationDates(body, "notificationDate", errorMessages);
+  const dates = extractEventAndConfirmationDates(body, "notificationDate", errorMessages, {
+    futureEvent: "ch.notify-psc.future-notification",
+    confirmationBefore: "ch.notify-psc.confirmation-before",
+    futureConfirmation: "ch.notify-psc.future-confirmation",
+  });
   if (isValidIsoDate(dates.notificationDate ?? "") && dates.notificationDate < FIRST_NOTIFICATION_DATE) {
     errorMessages.push(`Invalid notificationDate - must not be before ${FIRST_NOTIFICATION_DATE}`);
   }

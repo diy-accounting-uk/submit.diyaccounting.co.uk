@@ -248,7 +248,7 @@ function handleResignationSubmit(event) {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
       companyAuthCode: document.getElementById("companyAuthCode").value.trim(),
-      dateSigned: new Date().toISOString().slice(0, 10),
+      dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
       ...fields,
       resignationDate,
     },

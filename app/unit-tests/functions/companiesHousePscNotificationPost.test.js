@@ -156,6 +156,23 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-11-20T10:00:00Z", pollInterval: 1 });
   });
 
+  test("names its date refusals by the notify page's own ids, so the page words them in the reader's language", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-20T12:00:00Z"), toFake: ["Date"] });
+    try {
+      const future = await ingestHandler(
+        buildEvent({ body: buildNotificationBody({ notificationDate: "2026-11-21", confirmationDate: "2026-11-22" }) }),
+      );
+      expect(future.statusCode).toBe(400);
+      expect(parseResponseBody(future).messageIds).toEqual(["ch.notify-psc.future-notification", "ch.notify-psc.future-confirmation"]);
+      const before = await ingestHandler(
+        buildEvent({ body: buildNotificationBody({ notificationDate: "2026-10-28", confirmationDate: "2026-10-27" }) }),
+      );
+      expect(parseResponseBody(before).messageIds).toEqual(["ch.notify-psc.confirmation-before"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("an individual's notice is built as PSCNotification and sent in a PSCNotification envelope", async () => {
     const response = await ingestHandler(buildEvent());
 

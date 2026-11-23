@@ -364,17 +364,9 @@ function handleChangeSubmit(event) {
   if (!window.formErrors.requireFields(["dateOfChange", "confirmationDate", "companyAuthCode"])) return;
   const dateOfChange = document.getElementById("dateOfChange").value;
   const confirmationDate = document.getElementById("confirmationDate").value;
-  const today = window.companiesHouseLabels.todayInTheUnitedKingdom();
-  if (dateOfChange > today) {
-    showError(window.siteText("ch.change-psc.change-after-today", "The date of change cannot be after today."));
-    return;
-  }
-  if (confirmationDate > today) {
-    showError(window.siteText("ch.change-psc.confirmation-after-today", "The date of confirmation cannot be after today."));
-    return;
-  }
-  if (confirmationDate < dateOfChange) {
-    showError(window.siteText("ch.change-psc.confirmation-before", "The date of confirmation cannot be before the date of change."));
+  const refusal = dateRefusal(dateOfChange, confirmationDate);
+  if (refusal) {
+    showError(DATE_MESSAGES[refusal]());
     return;
   }
   filing = {
@@ -383,7 +375,7 @@ function handleChangeSubmit(event) {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
       companyAuthCode: document.getElementById("companyAuthCode").value.trim(),
-      dateSigned: new Date().toISOString().slice(0, 10),
+      dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
       ...pscFields(psc),
       ...changes,
       dateOfChange,
@@ -563,6 +555,31 @@ function updateGovTestScenarioVisibility() {
   document.getElementById("govTestScenarioGroup").style.display = developerModeEnabled ? "block" : "none";
 }
 
+// The refusals of the dates, in the reader's words; the route names them by these ids.
+const DATE_MESSAGES = {
+  "ch.change-psc.future-change": () => window.siteText("ch.change-psc.future-change", "The date of change cannot be after today."),
+  "ch.change-psc.future-confirmation": () =>
+    window.siteText("ch.change-psc.future-confirmation", "The date of confirmation cannot be after today."),
+  "ch.change-psc.confirmation-before": () =>
+    window.siteText("ch.change-psc.confirmation-before", "The date of confirmation cannot be before the date of change."),
+};
+window.companiesHouseFormPage.registerMessages(DATE_MESSAGES);
+
+// Today in the United Kingdom, as YYYY-MM-DD, the latest date either field may hold.
+function todayInUk() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+}
+
+// The first refusal of the two dates, by its id, or null: the route's rule for them.
+function dateRefusal(dateOfChange, confirmationDate) {
+  const today = todayInUk();
+  if (dateOfChange > today) return "ch.change-psc.future-change";
+  if (confirmationDate < dateOfChange) return "ch.change-psc.confirmation-before";
+  if (confirmationDate > today) return "ch.change-psc.future-confirmation";
+  return null;
+}
+
+["dateOfChange", "confirmationDate"].forEach((id) => document.getElementById(id).setAttribute("max", todayInUk()));
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("changeForm").addEventListener("submit", handleChangeSubmit);
 document.getElementById("changeForm").addEventListener("change", showSections);

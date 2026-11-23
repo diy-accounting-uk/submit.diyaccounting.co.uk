@@ -566,7 +566,7 @@ function handleAllotmentSubmit(event) {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
       companyAuthCode: company.companyAuthCode,
-      dateSigned: new Date().toISOString().slice(0, 10),
+      dateSigned: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()),
       startDate,
       ...(endDate ? { endDate } : {}),
       allotments: allotments.map(({ row, consideration, ...allotment }) => ({
