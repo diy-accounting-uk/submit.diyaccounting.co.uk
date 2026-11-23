@@ -175,6 +175,7 @@ const pscOf = (psc) => ({
   naturesOfControl: psc.naturesOfControl || [],
   notifiedOn: psc.notifiedOn,
   ceasedOn: psc.ceasedOn,
+  // The month and year of birth, which tells two PSCs of one name apart.
   dateOfBirth: psc.dateOfBirth,
 });
 
@@ -1391,7 +1392,12 @@ async function renderPscs(container, companyNumber) {
         window.siteText("ch.drill.column-control", "Nature of control"),
         window.siteText("ch.drill.column-notified", "Notified"),
       ],
-      pscs.map((psc) => [psc.name, psc.naturesOfControl.map(natureText).join("; "), labels().formatCompanyDate(psc.notifiedOn)]),
+      // Two PSCs of one name are told apart by month and year of birth; the Notified column dates each.
+      pscs.map((psc) => [
+        window.companiesHouseNamesakes.namedApart(psc, pscs),
+        psc.naturesOfControl.map(natureText).join("; "),
+        labels().formatCompanyDate(psc.notifiedOn),
+      ]),
     ),
   );
   await appendPscLinks(container, companyNumber, pscs, {

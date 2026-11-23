@@ -1010,6 +1010,29 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     await shoot(page, "officer-remove-links");
   });
 
+  test("the PSC table tells two PSCs of one name apart by month and year of birth, in English and Welsh", async ({ page }) => {
+    const namesakes = {
+      ...PSCS,
+      activeCount: 2,
+      pscs: [{ ...PSCS.pscs[0] }, { ...PSCS.pscs[0], notifiedOn: "2024-05-01", dateOfBirth: { month: 8, year: 1996 } }],
+    };
+    await serveSite(page, { pscs: namesakes });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    const nameCells = page.locator("#drillView table tbody tr td:first-child");
+    await expect(nameCells).toHaveText(["Eleanor Bramwell (born January 1970)", "Eleanor Bramwell (born August 1996)"], { timeout: 15000 });
+
+    await page.goto(`${BASE}/cy/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(nameCells).toHaveText(["Eleanor Bramwell (ganwyd Ionawr 1970)", "Eleanor Bramwell (ganwyd Awst 1996)"], {
+      timeout: 15000,
+    });
+  });
+
+  test("the PSC table names a PSC with no namesake by name alone", async ({ page }) => {
+    await serveSite(page, {});
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView table tbody tr td:first-child")).toHaveText(["Eleanor Bramwell"], { timeout: 15000 });
+  });
+
   test("two current officers of one name get links told apart by birth month", async ({ page }) => {
     const namesakes = {
       ...OFFICERS,
