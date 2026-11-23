@@ -154,7 +154,8 @@ replace the rules above where they differ:
   method" and the ones the brief names) in place of this repository's. Read the `CONTEXT_*.md` file
   of the product the row touches.
 - The gate is `npm test`, the router `scripts/test-scope.mjs`. Do not run `npm run bundle`. Run
-  `npm test 2>&1 | tee target/npm-test.log`. Before it, commit and push with
+  `npm test 2>&1 | tee /tmp/npm-test.log`, outside `target/`, because the infra tier's
+  `./mvnw clean verify` deletes `target/`. Before it, commit and push with
   `Collab-Status: wip`, because the router can run for most of an hour.
 - Copy the router's `VERDICT` line into the report as it stands. `Collab-Status: done` needs a
   `PASS` verdict, unless the brief accepts another.
