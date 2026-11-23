@@ -430,7 +430,7 @@ for (const width of [1280, 390]) {
   });
 }
 
-test("significant influence through a firm beside another firm control is refused, and beside a direct control is allowed", async ({
+test("significant influence through a firm or a trust may stand beside other controls held the same way, and held directly may not", async ({
   page,
 }) => {
   const filings = [];
@@ -438,19 +438,44 @@ test("significant influence through a firm beside another firm control is refuse
   await openForm(page);
   await fillIndividual(page);
   await fillDates(page);
-  await page.locator("#influence-firm").check();
-  await page.locator("#directors-firm").check();
+  await page.locator("#influence").check();
+  await page.locator("#directors").check();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText(
     "Choose significant influence or control only if none of the other ways in the same section applies.",
   );
-  await page.locator("#directors-firm").uncheck();
-  await page.locator("#directors").check();
+  await page.locator("#influence").uncheck();
+  await page.locator("#directors").uncheck();
+  await page.locator("#influence-firm").check();
+  await page.locator("#directors-firm").check();
+  await page.locator('#trustControls input[name="shares-trust"][value="25TO50PERCENT"]').check();
+  await page.locator("#influence-trust").check();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#reviewView")).toBeVisible();
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
-  expect(filings[0].naturesOfControl).toEqual(["RIGHTTOAPPOINTANDREMOVEDIRECTORS", "SIGINFLUENCECONTROL_AS_FIRM"]);
+  expect(filings[0].naturesOfControl).toEqual([
+    "RIGHTTOAPPOINTANDREMOVEDIRECTORS_AS_FIRM",
+    "SIGINFLUENCECONTROL_AS_FIRM",
+    "OWNERSHIPOFSHARES_25TO50PERCENT_AS_TRUST",
+    "SIGINFLUENCECONTROL_AS_TRUST",
+  ]);
+});
+
+test("a personal code typed in its printed groups with spaces or a slash is taken and sent as eleven characters", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await openForm(page);
+  await fillIndividual(page);
+  await page.getByLabel("The person notified as a PSC has verified their identity in accordance with the Companies Act 2006").check();
+  await page.locator("#personalCode").fill("abcd e123/456");
+  await page.locator("#influence").check();
+  await fillDates(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("ABCDE123456");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  expect(filings[0].personalCode).toBe("ABCDE123456");
 });
 
 test("an individual's Welsh surname with a lower-case ŷ is stopped before sending, naming the box", async ({ page }) => {
@@ -468,20 +493,4 @@ test("an individual's Welsh surname with a lower-case ŷ is stopped before sendi
   await expect(status).toContainText("Surname has characters Companies House does not accept: ŷ");
   await expect(status).not.toContainText("Prŷs");
   expect(filings).toHaveLength(0);
-});
-
-test("a personal code typed in its printed groups with spaces or a slash is taken and sent as eleven characters", async ({ page }) => {
-  const filings = [];
-  await serveSite(page, { filings });
-  await openForm(page);
-  await fillIndividual(page);
-  await page.getByLabel("The person notified as a PSC has verified their identity in accordance with the Companies Act 2006").check();
-  await page.locator("#personalCode").fill("abcd e123/456");
-  await page.locator("#influence").check();
-  await fillDates(page);
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#reviewList")).toContainText("ABCDE123456");
-  await page.getByRole("button", { name: "File with Companies House" }).click();
-  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
-  expect(filings[0].personalCode).toBe("ABCDE123456");
 });

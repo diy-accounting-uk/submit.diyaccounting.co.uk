@@ -43,10 +43,10 @@ export const UK_COUNTRY_CODES = ["GB-ENG", "GB-WLS", "GB-SCT", "GB-NIR", "GBR"];
 const holdingOf = (code) => HOLDINGS.find((holding) => holding && code.endsWith(holding)) || "";
 
 /**
- * The reasons a set of natures of control cannot be filed, or [] when it can. PSC04 asks for one
- * band of shares and one of voting rights within each way of holding (directly, through a trust,
- * through a firm). It asks for the individual's own significant influence or control only when none
- * of the other direct statements applies; its sections for a firm and a trust set no such limit.
+ * The reasons a set of natures of control cannot be filed, or [] when it can. PSC01 and PSC04 ask for
+ * one band of shares and one of voting rights within each way of holding (directly, through a trust,
+ * through a firm). Significant influence or control held directly is "Only tick if none of the above
+ * apply"; held through a firm or a trust it is one of "Tick each that apply".
  * @param {string[]} codes
  * @returns {string[]}
  */

@@ -121,12 +121,13 @@ function controlsHeld({ fields, code }) {
 
 const chosenControls = () => HOLDINGS.flatMap(controlsHeld);
 
-// Significant influence or control is chosen beside another control held the same way.
-const influenceNotAlone = () =>
-  HOLDINGS.some((holding) => {
-    const held = controlsHeld(holding);
-    return held.includes(`SIGINFLUENCECONTROL${holding.code}`) && held.length > 1;
-  });
+// Significant influence or control held directly is chosen beside another control held directly.
+// PSC01 asks for it "Only tick if none of the above apply" in its direct section only; through a firm
+// or a trust it is one of "Tick each that apply".
+const influenceNotAlone = () => {
+  const held = controlsHeld(HOLDINGS[0]);
+  return held.includes("SIGINFLUENCECONTROL") && held.length > 1;
+};
 
 // The particulars of the chosen kind, as the filing route reads them, and the reason they cannot
 // go on in the reader's words, or null.
@@ -174,7 +175,7 @@ function particulars(kind) {
         "ch.notify-psc.home-needed",
         "Give the usual residential address's building name or number, its post town and its country.",
       );
-    } else if (field("verified").checked && !/^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/.test(fields.personalCode.replace(/-/g, ""))) {
+    } else if (field("verified").checked && !/^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/.test(fields.personalCode)) {
       problem = window.siteText("ch.notify-psc.code-needed", "A Companies House personal code is 11 characters: letters, then numbers.");
     }
     return { fields, problem };
