@@ -505,7 +505,7 @@ public class KindCdk {
      */
     public static ITable ensureTable(
             Stack stack, String id, String tableName, String partitionKeyName, String sortKeyName) {
-        ITable table = ensureTableWithoutPointInTimeRecovery(stack, id, tableName, partitionKeyName, sortKeyName);
+        ITable table = createTable(stack, id, tableName, partitionKeyName, sortKeyName);
         ensurePointInTimeRecovery(
                 stack, id, tableName, TABLE_CREATION_RESOURCES.get(stack).get(tableName));
         return table;
@@ -514,8 +514,21 @@ public class KindCdk {
     /**
      * Creates a table as {@link #ensureTable} does, without point-in-time recovery: for a table that
      * holds only a copy of data kept elsewhere, such as a cache, which a restore would not need.
+     *
+     * <p>CreateTable returns while the new table is CREATING, and DynamoDB refuses a TTL, GSI or
+     * stream change until it is ACTIVE ("Attempt to change a resource which is still in use"). An
+     * {@link #ensureTable} table's PITR wait holds those calls back; this table has no such wait, so
+     * {@link #ensureTableActive} adds one that completes when the table is ACTIVE.
      */
     public static ITable ensureTableWithoutPointInTimeRecovery(
+            Stack stack, String id, String tableName, String partitionKeyName, String sortKeyName) {
+        ITable table = createTable(stack, id, tableName, partitionKeyName, sortKeyName);
+        ensureTableActive(
+                stack, id, tableName, TABLE_CREATION_RESOURCES.get(stack).get(tableName));
+        return table;
+    }
+
+    private static ITable createTable(
             Stack stack, String id, String tableName, String partitionKeyName, String sortKeyName) {
         // Build attribute definitions
         List<Map<String, String>> attributeDefinitions = new java.util.ArrayList<>();
@@ -603,7 +616,43 @@ public class KindCdk {
 
         ensurePitrResource.getNode().addDependency(pitrGrant);
         ensurePitrResource.getNode().addDependency(ensureTableResource);
-        recordTablePitr(stack, tableName, ensurePitrResource);
+        recordTableWait(stack, tableName, ensurePitrResource);
+    }
+
+    /**
+     * Waits until a newly created table is ACTIVE, so the TTL, GSI and stream calls that
+     * {@link #dependOnTableCreation} chains after this wait never reach a CREATING table.
+     *
+     * <p>It runs on the stack's {@link #ensurePitrProvider}: its onEvent does nothing for this kind
+     * of wait and its isComplete polls DescribeTable until TableStatus is ACTIVE. Sharing that
+     * provider adds one custom resource per table, where a provider of its own would add two more
+     * Lambdas, their log groups and a role to the stack.
+     *
+     * @param stack The stack holding the table
+     * @param id The construct ID prefix, matching the one passed to ensureTableWithoutPointInTimeRecovery
+     * @param tableName The name of the table
+     * @param ensureTableResource The CreateTable custom resource this wait must follow
+     */
+    private static void ensureTableActive(
+            Stack stack, String id, String tableName, AwsCustomResource ensureTableResource) {
+        Provider provider = ensurePitrProvider(stack);
+
+        Policy describeGrant = grantToPitrProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:DescribeTable"))
+                        .resources(List.of(dynamoTableArn(stack, tableName)))
+                        .build()));
+
+        CustomResource activeWait = CustomResource.Builder.create(stack, id + "-EnsureTableActiveWait")
+                .serviceToken(provider.getServiceToken())
+                .resourceType("Custom::EnsureTableActive")
+                .properties(Map.of("TableName", tableName, "Wait", "TableActive"))
+                .build();
+
+        activeWait.getNode().addDependency(describeGrant);
+        activeWait.getNode().addDependency(ensureTableResource);
+        recordTableWait(stack, tableName, activeWait);
     }
 
     /**
@@ -839,20 +888,20 @@ public class KindCdk {
     }
 
     /**
-     * The EnsurePITR custom resource for each table {@link #ensureTable} has turned on point-in-time
-     * recovery for.
+     * The wait that follows each table's creation: the EnsurePITR resource of an
+     * {@link #ensureTable} table, or the EnsureTableActive resource of a table without PITR.
      *
-     * <p>DynamoDB allows only one control-plane change per table at a time. Since {@link #ensureTable}
-     * always fires the PITR update right after CreateTable, a TTL, GSI, or stream call that races it
-     * fails with "Attempt to change a resource which is still in use" — CloudFormation infers no
-     * ordering between custom resources that never reference each other. Recording the EnsurePITR
-     * resource here lets {@link #dependOnTableCreation} chain those calls after it too.
+     * <p>DynamoDB allows only one control-plane change per table at a time, and none while the
+     * table is CREATING. A TTL, GSI, or stream call that runs before the wait completes fails with
+     * "Attempt to change a resource which is still in use" — CloudFormation infers no ordering
+     * between custom resources that never reference each other. Recording the wait here lets
+     * {@link #dependOnTableCreation} chain those calls after it.
      */
-    private static final Map<Stack, Map<String, Construct>> TABLE_PITR_RESOURCES =
+    private static final Map<Stack, Map<String, Construct>> TABLE_WAIT_RESOURCES =
             java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
 
-    private static void recordTablePitr(Stack stack, String tableName, Construct resource) {
-        TABLE_PITR_RESOURCES
+    private static void recordTableWait(Stack stack, String tableName, Construct resource) {
+        TABLE_WAIT_RESOURCES
                 .computeIfAbsent(stack, ignored -> new java.util.HashMap<>())
                 .put(tableName, resource);
     }
@@ -866,10 +915,10 @@ public class KindCdk {
         }
         dependent.getNode().addDependency(tableCreation);
 
-        Map<String, Construct> pitrByTableName = TABLE_PITR_RESOURCES.get(stack);
-        Construct tablePitr = pitrByTableName == null ? null : pitrByTableName.get(tableName);
-        if (tablePitr != null) {
-            dependent.getNode().addDependency(tablePitr);
+        Map<String, Construct> waitByTableName = TABLE_WAIT_RESOURCES.get(stack);
+        Construct tableWait = waitByTableName == null ? null : waitByTableName.get(tableName);
+        if (tableWait != null) {
+            dependent.getNode().addDependency(tableWait);
         }
     }
 }

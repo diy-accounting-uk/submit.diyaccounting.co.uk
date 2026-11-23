@@ -23,7 +23,12 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
       this.input = input;
     }
   }
-  return { DynamoDBClient, UpdateContinuousBackupsCommand, DescribeContinuousBackupsCommand };
+  class DescribeTableCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  return { DynamoDBClient, UpdateContinuousBackupsCommand, DescribeContinuousBackupsCommand, DescribeTableCommand };
 });
 
 const { onEvent, isComplete } = await import("@app/functions/infra/ensurePitr.mjs");
@@ -133,6 +138,40 @@ describe("ensurePitr isComplete", () => {
     });
 
     expect(result.IsComplete).toBe(true);
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+});
+
+describe("a table-active wait", () => {
+  const activeWait = (RequestType) => ({ RequestType, ResourceProperties: { TableName: "ci-env-cache", Wait: "TableActive" } });
+
+  test("onEvent changes nothing on the table and names the wait", async () => {
+    const result = await onEvent(activeWait("Create"));
+
+    expect(mockSend).not.toHaveBeenCalled();
+    expect(result.PhysicalResourceId).toBe("ci-env-cache-active");
+  });
+
+  test("isComplete is false while DescribeTable reports the table CREATING", async () => {
+    mockSend.mockResolvedValueOnce({ Table: { TableStatus: "CREATING" } });
+
+    const result = await isComplete(activeWait("Create"));
+
+    expect(mockSend.mock.calls[0][0].input).toEqual({ TableName: "ci-env-cache" });
+    expect(result).toEqual({ IsComplete: false });
+  });
+
+  test("isComplete is true once DescribeTable reports the table ACTIVE", async () => {
+    mockSend.mockResolvedValueOnce({ Table: { TableStatus: "ACTIVE" } });
+
+    expect(await isComplete(activeWait("Update"))).toEqual({ IsComplete: true });
+  });
+
+  test("Delete completes at once without a call", async () => {
+    expect(await onEvent({ ...activeWait("Delete"), PhysicalResourceId: "ci-env-cache-active" })).toEqual({
+      PhysicalResourceId: "ci-env-cache-active",
+    });
+    expect(await isComplete(activeWait("Delete"))).toEqual({ IsComplete: true });
     expect(mockSend).not.toHaveBeenCalled();
   });
 });

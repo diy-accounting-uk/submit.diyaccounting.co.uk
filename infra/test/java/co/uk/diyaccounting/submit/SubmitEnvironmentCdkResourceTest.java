@@ -144,6 +144,8 @@ class SubmitEnvironmentCdkResourceTest {
         //      already had it; the cache has no PITR
         Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 157);
         Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 68);
+        // The Companies House cache has no PITR, so a wait holds its TTL until the table is ACTIVE.
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsureTableActive", 1);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.

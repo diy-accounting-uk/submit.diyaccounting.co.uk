@@ -2811,11 +2811,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-132 Enable DynamoDB PITR on deploy
 
 - **Use when:** a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
-- **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time.
+- **Does:** ensurePitr.mjs is a CloudFormation custom resource that calls DescribeTable and UpdateContinuousBackups to turn on PITR for a table, idempotently, at deploy time. With Wait "TableActive" it instead waits until a new table without PITR is ACTIVE, so its TTL, index and stream calls do not reach a CREATING table.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/infra/ensurePitr.mjs:onEvent`; `app/functions/infra/ensurePitr.mjs:isComplete`
 - **Files:** app/functions/infra/ensurePitr.mjs, app/unit-tests/functions/ensurePitr.test.js
-- **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups
+- **Keywords:** pitr, point-in-time recovery, dynamodb backup, custom resource, continuous backups, table active, creating
 - **Related:** OPS-113
 
 #### OPS-133 Serve the root-domain holding page
@@ -7856,6 +7856,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - create_in_progress: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - createinvitation: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access)
 - createpass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass)
+- creating: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - creation order: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - creationtime: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - credential leak: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
@@ -9829,6 +9830,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - synthetics runtime: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - system test: [DEV-01](#dev-01-run-the-http-simulator-server)
 - system tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
+- table active: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - table change: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - table name lookup: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - tagging: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
