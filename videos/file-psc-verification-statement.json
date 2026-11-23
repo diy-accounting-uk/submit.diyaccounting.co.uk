@@ -157,7 +157,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "06846849",
+          "text": "00000004",
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",

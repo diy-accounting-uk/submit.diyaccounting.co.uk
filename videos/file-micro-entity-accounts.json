@@ -145,7 +145,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "06846849",
+          "text": "00000004",
           "clear": true,
           "caption": "Type the company number.",
           "instruction": "Enter your company number.",
@@ -215,7 +215,7 @@
         { "action": "fill", "target": "#priorCurrentAssets", "value": "3500" },
         { "action": "fill", "target": "#priorCreditorsWithinOneYear", "value": "1500" },
         { "action": "fill", "target": "#priorCalledUpShareCapital", "value": "100" },
-        { "action": "fill", "target": "#priorProfitAndLossAccount", "value": "1900" },
+        { "action": "fill", "target": "#priorProfitAndLossAccount", "value": "2800" },
         { "action": "fill", "target": "#priorCapitalAndReserves", "value": "2900" },
         { "action": "fill", "target": "#averageEmployees", "value": "2" },
         {
