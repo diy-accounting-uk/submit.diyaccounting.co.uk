@@ -217,9 +217,9 @@ export default Ajv2020Stub;`,
   };
 }
 
-// The bundle's public surface: the engine read, the three derivations, the CT600 figures
+// The bundle's public surface: the engine read, the book writers (a JSON file, book.toml and lines.jsonl text, the provenance stamps), the three derivations, the CT600 figures
 // model (ct600Figures.js and ct600LongPeriod.js, the modules the server works the boxes with), the two accounts derivations, and the schemas
-// registered so the read validates with no further setup.
+// registered so the read validates and the writers order their keys with no further setup.
 const ENTRY_SOURCE = `
 ${SCHEMA_VERSIONS.flatMap((version) =>
   ["book", "lines"].map(
@@ -228,7 +228,10 @@ ${SCHEMA_VERSIONS.flatMap((version) =>
   ),
 ).join("\n")}
 import { useSchemas } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
-useSchemas({ ${SCHEMA_VERSIONS.map((version) => `${version}: { book: bookSchema${version.toUpperCase()}, lines: linesSchema${version.toUpperCase()} }`).join(", ")} });
+import { useSchemas as useCanonicalSchemas } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-canonical.js";
+const SCHEMAS = { ${SCHEMA_VERSIONS.map((version) => `${version}: { book: bookSchema${version.toUpperCase()}, lines: linesSchema${version.toUpperCase()} }`).join(", ")} };
+useSchemas(SCHEMAS);
+useCanonicalSchemas(SCHEMAS);
 import { readBookSource as readBookSourceWith, readBookSources as readBookSourcesWith } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 export const readBookSource = (bytes, name) => readBookSourceWith(bytes, name, { products: PRODUCTS });
@@ -243,6 +246,9 @@ import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount 
 import { smallCompanyAccountsFromResults } from "./app/services/smallCompanyAccountsFromResults.js";
 import { microEntityAccountsFromResults } from "./app/services/microEntityAccountsFromResults.js";
 export { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
+export { writeBookJson } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+export { canonicalBookToml, canonicalLinesJsonl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-canonical.js";
+export { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 export { annualInvestmentAllowanceMaximum, deriveCt600FromFigures, validateCt600Figures, section455RateChangeDate } from "./app/services/ct600Figures.js";
 export { accountingPeriodsOf, deriveLongPeriodReturns, splitLongPeriodFigures } from "./app/services/ct600LongPeriod.js";
 export async function ltdTaxData(financialYear) {

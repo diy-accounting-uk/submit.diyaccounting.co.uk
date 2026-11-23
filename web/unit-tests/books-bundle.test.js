@@ -11,11 +11,13 @@ const LANDLORD_DIRECTORY = path.join(process.cwd(), "mcp/test/fixtures/landlord-
 const bundleUrl = pathToFileURL(path.join(process.cwd(), "web/public/lib/books-bundle.js")).href;
 
 describe("books-bundle.js", () => {
-  it("exposes the book reader, the five filing derivations, the CT600 figures and long period model and the two accounts derivations", async () => {
+  it("exposes the book reader, the book writers, the five filing derivations, the CT600 figures and long period model and the two accounts derivations", async () => {
     const bundle = await import(bundleUrl);
     expect(Object.keys(bundle).sort()).toEqual([
       "accountingPeriodsOf",
       "annualInvestmentAllowanceMaximum",
+      "canonicalBookToml",
+      "canonicalLinesJsonl",
       "ct600FiguresFromBook",
       "deriveCt600FromFigures",
       "deriveItsaAnnualSubmission",
@@ -32,11 +34,43 @@ describe("books-bundle.js", () => {
       "section455RateChangeDate",
       "smallCompanyAccountsFromBook",
       "splitLongPeriodFigures",
+      "stampBook",
       "validateCt600Figures",
+      "writeBookJson",
     ]);
     for (const name of Object.keys(bundle)) {
       expect(typeof bundle[name]).toBe("function");
     }
+  });
+
+  it("reads a filed micro-entity accounts document as a book, and writes it as a JSON file the reader reads back", async () => {
+    const bundle = await import(bundleUrl);
+    const document = fs.readFileSync(
+      path.join(process.cwd(), "app/unit-tests/fixtures/filed-accounts/builder-micro-entity-both-years.xhtml"),
+    );
+    const read = await bundle.readBookSource(new Uint8Array(document), "accounts.xhtml");
+    expect(read.product).toBe("ltd");
+    expect(read.lines.length).toBeGreaterThan(0);
+    expect(Array.isArray(read.differences)).toBe(true);
+
+    const json = bundle.writeBookJson(read.book, read.lines);
+    const again = await bundle.readBookSource(new TextEncoder().encode(json), "book.json");
+    expect(again.kind).toBe("json");
+    expect(again.lines).toHaveLength(read.lines.length);
+    expect(again.book.entityInformation).toEqual(bundle.stampBook(read.book).entityInformation);
+  });
+
+  it("writes a book as the book.toml and lines.jsonl text a book link carries", async () => {
+    const bundle = await import(bundleUrl);
+    const document = fs.readFileSync(
+      path.join(process.cwd(), "app/unit-tests/fixtures/filed-accounts/builder-micro-entity-both-years.xhtml"),
+    );
+    const { book, lines } = await bundle.readBookSource(new Uint8Array(document), "accounts.xhtml");
+    const stamped = bundle.stampBook(book);
+    const toml = bundle.canonicalBookToml(stamped);
+    const jsonl = bundle.canonicalLinesJsonl(lines, stamped);
+    expect(toml).toContain("[entityInformation]");
+    expect(jsonl.trim().split("\n")).toHaveLength(lines.length);
   });
 
   it("rejects bytes that are not a book with the reader's own error", async () => {

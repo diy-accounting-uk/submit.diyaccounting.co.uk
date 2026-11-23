@@ -618,6 +618,7 @@ async function openAmend(
   await page.addInitScript(
     ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails, companyName, registeredOffice }) => {
       window.__submitReady__ = true;
+      window.envReady = Promise.resolve({ DIYA_GL_BASE_URL: "https://ci.diya-gl.co.uk/" });
       localStorage.setItem("cognitoIdToken", "token");
       window.sentAccounts = [];
       window.fetchWithIdToken = async () => ({ ok: true, json: async () => receiptBody });
@@ -669,6 +670,8 @@ async function openAmend(
   await serveFile(page, "**/widgets/books-import.js", "widgets/books-import.js");
   await serveFile(page, "**/lib/books-bundle.js", "lib/books-bundle.js");
   await serveFile(page, "**/lib/accounts-revision.js", "lib/accounts-revision.js");
+  await serveFile(page, "**/lib/revision-downloads.js", "lib/revision-downloads.js");
+  await serveFile(page, "**/lib/diya-gl-link.js", "lib/diya-gl-link.js");
   await serveFile(page, "**/lib/approval-date-check.js", "lib/approval-date-check.js");
   await page.route("**/lib/companies-house-gateway-poll.js", (route) =>
     route.fulfill({
@@ -732,7 +735,7 @@ test.describe("File small company accounts page - revising accounts from a recei
         "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
       );
       expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe(`Company ${REVISED_COMPANY.name} (04549236).`);
-      await expect(page.locator("#revisionDownloads")).toBeEmpty();
+      await expect(page.locator("#revisionDownloads")).toContainText("Download the accounts being amended");
       await screenshot(page, "small-amend-banner-and-revision-section", width);
     });
   }
@@ -747,6 +750,11 @@ test.describe("File small company accounts page - revising accounts from a recei
     expect(statement).not.toContain("were a full copy");
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
+    await expect(page.locator("#revisionDownloads")).toContainText(
+      "The filed copy is filleted and holds no profit and loss account, so the book has one line for the year's profit.",
+    );
+    await expect(page.locator("#revisionDownloadBook")).toBeVisible();
+    await expect(page.locator("#revisionDownloadPackage")).toHaveAttribute("href", /\?download=package#book=/);
     // The filed tax note fills the tax line; with it emptied the profit and loss account holds no figure.
     await expect(page.locator("#currentTax")).not.toHaveValue("");
     await page.fill("#currentTax", "");

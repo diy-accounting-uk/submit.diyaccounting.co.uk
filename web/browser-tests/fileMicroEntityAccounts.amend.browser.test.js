@@ -17,6 +17,9 @@ import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 import { addressLine1, PEOPLE, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+import { pathToFileURL } from "node:url";
+import { decodeBookFragment } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-link.js";
+import { parse as parseToml } from "smol-toml";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -25,6 +28,8 @@ const PAGE_PATH = "companies-house/fileMicroEntityAccounts.html";
 const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/browser-test-results/revised-accounts");
 const WIDTHS = { desktop: 1280, phone: 390 };
+const DIYA_GL_BASE_URL = "https://ci.diya-gl.co.uk/";
+const BOOKS_BUNDLE_URL = pathToFileURL(path.join(PUBLIC_DIR, "lib/books-bundle.js")).href;
 
 const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
 const JOINERY_OFFICE = `${addressLine1(JOINERY.address)}, ${JOINERY.address.locality}, ${JOINERY.address.postalCode}`;
@@ -87,8 +92,9 @@ async function openAmend(
 ) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
-    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails, profile }) => {
+    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails, profile, diyaGlBaseUrl }) => {
       window.__submitReady__ = true;
+      window.envReady = Promise.resolve({ DIYA_GL_BASE_URL: diyaGlBaseUrl });
       window.profileFails = lookupFails;
       localStorage.setItem("cognitoIdToken", "token");
       window.sentAccounts = [];
@@ -125,6 +131,7 @@ async function openAmend(
     },
     {
       receiptBody: receipt,
+      diyaGlBaseUrl: DIYA_GL_BASE_URL,
       outcomeCode: outcome,
       companyJurisdiction: jurisdiction,
       lookupFails: profileFails,
@@ -148,6 +155,8 @@ async function openAmend(
   await serveFile(page, "**/widgets/books-import.js", "widgets/books-import.js");
   await serveFile(page, "**/lib/books-bundle.js", "lib/books-bundle.js");
   await serveFile(page, "**/lib/accounts-revision.js", "lib/accounts-revision.js");
+  await serveFile(page, "**/lib/revision-downloads.js", "lib/revision-downloads.js");
+  await serveFile(page, "**/lib/diya-gl-link.js", "lib/diya-gl-link.js");
   await page.route("**/lib/companies-house-gateway-poll.js", (route) =>
     route.fulfill({
       status: 200,
@@ -196,6 +205,54 @@ async function fillRevisionTexts(page) {
 }
 
 test.describe("File micro-entity accounts page - revising accounts from a receipt", () => {
+  test("downloads the accounts being amended as a DIYA-GL book that holds the filed balance sheet as its opening and closing figures", async ({
+    page,
+  }) => {
+    const filed = microInputFromTestServiceCase(MICRO_TEST_CASE);
+    await openAmend(page, accountsReceipt(microDocument()));
+    await expect(page.locator("#revisionDownloads")).toContainText(
+      "The book is a summary of the filed accounts: the opening balances and one line for each filed figure.",
+    );
+    await expect(page.locator("#revisionDownloads")).toContainText("Nothing is uploaded");
+    const [download] = await Promise.all([page.waitForEvent("download"), page.click("#revisionDownloadBook")]);
+    expect(download.suggestedFilename()).toBe(`${filed.companyNumber}-${filed.periodEnd}-diya-gl-book.json`);
+
+    const bundle = await import(BOOKS_BUNDLE_URL);
+    const book = await bundle.readBookSource(new Uint8Array(fs.readFileSync(await download.path())), "book.json");
+    const { balanceSheet } = await bundle.microEntityAccountsFromBook(book.book, book.lines);
+    for (const [year, filedYear] of [
+      ["currentYear", filed.balanceSheet.current],
+      ["priorYear", filed.balanceSheet.prior],
+    ]) {
+      for (const [line, figure] of Object.entries(balanceSheet[year])) expect([line, figure]).toEqual([line, filedYear[line]]);
+    }
+    await screenshotAtBothWidths(page, "revision-downloads");
+  });
+
+  test("opens the same book in the DIYA-GL app, or as a spreadsheet package, from the address alone", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microDocument()));
+    const packageLink = page.locator("#revisionDownloadPackage");
+    const openLink = page.locator("#revisionOpenInDiyaGl");
+    await expect(packageLink).toHaveAttribute("href", /^https:\/\/ci\.diya-gl\.co\.uk\/ltd\.html\?download=package#book=[A-Za-z0-9_-]+$/);
+    await expect(openLink).toHaveAttribute("href", /^https:\/\/ci\.diya-gl\.co\.uk\/ltd\.html#book=[A-Za-z0-9_-]+$/);
+    await expect(packageLink).toHaveAttribute("target", "_blank");
+
+    const [download] = await Promise.all([page.waitForEvent("download"), page.click("#revisionDownloadBook")]);
+    const json = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
+    for (const link of [packageLink, openLink]) {
+      const { toml, lines } = decodeBookFragment((await link.getAttribute("href")).split("#book=")[1]);
+      const book = parseToml(toml);
+      expect(book.entityInformation).toEqual(json.book.entityInformation);
+      expect(book.openingBalances).toEqual(json.book.openingBalances);
+      expect(
+        lines
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line).amount),
+      ).toEqual(json.lines.map((line) => line.amount));
+    }
+  });
+
   test("opens with the registered office the filed accounts state, which the customer can change", async ({ page }) => {
     await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#revisionSection")).toBeVisible();
@@ -249,7 +306,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
         `Company ${JOINERY.name} (${MICRO_TEST_CASE.companyNumber}).`,
       );
       await expect(page.locator("#revisionDownloads")).toBeAttached();
-      await expect(page.locator("#revisionDownloads")).toBeEmpty();
+      await expect(page.locator("#revisionDownloads")).toContainText("Download the accounts being amended");
       await screenshot(page, "amend-banner-and-revision-section", width);
     });
   }

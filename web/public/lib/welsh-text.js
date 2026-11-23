@@ -1838,6 +1838,18 @@ window.WELSH_TEXT = {
     "Mae’r cyfrifon a ffeiliwyd yn cynnwys {filed} rhes o flaensymiau i gyfarwyddwyr ac mae’r ffurflen hon yn cymryd {taken}, felly nid yw’r rhesi ar ôl rhes {taken} wedi’u llenwi.",
   "ch.revision.date-before-original":
     "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",
+  "ch.revision.downloads-book": "Lawrlwytho fel llyfr DIYA-GL",
+  "ch.revision.downloads-differences": "Lle mae’r llyfr yn wahanol i’r cyfrifon a ffeiliwyd:",
+  "ch.revision.downloads-filleted":
+    "Mae’r copi a ffeiliwyd wedi’i dalfyrru ac nid yw’n cynnwys cyfrif elw a cholled, felly mae gan y llyfr un llinell ar gyfer elw’r flwyddyn.",
+  "ch.revision.downloads-heading": "Lawrlwytho’r cyfrifon sy’n cael eu diwygio",
+  "ch.revision.downloads-nothing-uploaded":
+    "Nid oes dim yn cael ei uwchlwytho: caiff y llyfr ei wneud yn y porwr hwn, ac mae dolenni DIYA-GL yn ei gario y tu mewn i’r cyfeiriad.",
+  "ch.revision.downloads-open": "Agor yn DIYA-GL",
+  "ch.revision.downloads-package": "Lawrlwytho fel pecyn taenlen",
+  "ch.revision.downloads-summary":
+    "Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.",
+  "ch.revision.downloads-unavailable": "Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.",
   "ch.revision.line-accruals": "croniadau",
   "ch.revision.line-accruals-deferred-income": "croniadau ac incwm gohiriedig",
   "ch.revision.line-amounts-owed-to-directors": "symiau sy’n ddyledus i gyfarwyddwyr",

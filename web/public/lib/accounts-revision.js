@@ -807,6 +807,7 @@ export function showRevisionProblems(elements, dateApproved) {
  */
 export function hideRevisionSection({ section, originalDate, nonCompliance, amendments }) {
   for (const id of ["periodStart", "periodEnd"]) document.getElementById(id).readOnly = false;
+  document.getElementById("revisionDownloads")?.replaceChildren();
   section.hidden = true;
   nonCompliance.required = false;
   amendments.required = false;

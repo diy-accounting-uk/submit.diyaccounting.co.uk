@@ -27534,3 +27534,41 @@ cy = '''Nid oedd modd cwblhau’r cais.'''
 [strings."widget.failure-refused"]
 hash = "ade9ebdb9506"
 cy = '''Gwrthodwyd y cais.'''
+
+# == The accounts being amended, downloaded as a DIYA-GL book (lib/revision-downloads.js), ids ch.revision.downloads-* ==
+
+[strings."ch.revision.downloads-heading"]
+hash = "037461a2223c"
+cy = '''Lawrlwytho’r cyfrifon sy’n cael eu diwygio'''
+
+[strings."ch.revision.downloads-unavailable"]
+hash = "fd7096790558"
+cy = '''Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.'''
+
+[strings."ch.revision.downloads-summary"]
+hash = "d7a6d715c90a"
+cy = '''Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.'''
+
+[strings."ch.revision.downloads-filleted"]
+hash = "4d1d3cdca563"
+cy = '''Mae’r copi a ffeiliwyd wedi’i dalfyrru ac nid yw’n cynnwys cyfrif elw a cholled, felly mae gan y llyfr un llinell ar gyfer elw’r flwyddyn.'''
+
+[strings."ch.revision.downloads-differences"]
+hash = "18510737a53f"
+cy = '''Lle mae’r llyfr yn wahanol i’r cyfrifon a ffeiliwyd:'''
+
+[strings."ch.revision.downloads-nothing-uploaded"]
+hash = "dd7348727716"
+cy = '''Nid oes dim yn cael ei uwchlwytho: caiff y llyfr ei wneud yn y porwr hwn, ac mae dolenni DIYA-GL yn ei gario y tu mewn i’r cyfeiriad.'''
+
+[strings."ch.revision.downloads-book"]
+hash = "da987165aee5"
+cy = '''Lawrlwytho fel llyfr DIYA-GL'''
+
+[strings."ch.revision.downloads-package"]
+hash = "1ca20d871bee"
+cy = '''Lawrlwytho fel pecyn taenlen'''
+
+[strings."ch.revision.downloads-open"]
+hash = "01062a3963f8"
+cy = '''Agor yn DIYA-GL'''

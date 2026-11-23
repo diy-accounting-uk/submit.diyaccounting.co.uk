@@ -515,6 +515,22 @@ export async function describeTheSmallCompanyRevision(
 }
 
 // A corrected book dropped on the amend form replaces the figures and leaves the revision in place.
+export async function downloadTheBookAndChangeOneLine(page, directory, screenshotPath = defaultScreenshotPath) {
+  return test.step("The user downloads the accounts being amended as a DIYA-GL book and raises the year's sales by 500", async () => {
+    await expect(page.locator("#revisionDownloadBook")).toBeVisible({ timeout: 60_000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-downloads.png`, readerView: true });
+    const [download] = await Promise.all([page.waitForEvent("download"), page.click("#revisionDownloadBook")]);
+    const book = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
+    const sales = book.lines.find((line) => line.accountMainID === "4000");
+    expect(sales, "the book holds a line for the year's sales").toBeDefined();
+    sales.amount = Math.round((sales.amount + 500) * 100) / 100;
+    fs.mkdirSync(directory, { recursive: true });
+    const file = path.join(directory, download.suggestedFilename());
+    fs.writeFileSync(file, `${JSON.stringify(book, null, 2)}\n`);
+    return file;
+  });
+}
+
 export async function dropCorrectedBookOnTheRevision(page, bookZipFile, expectedStatus, screenshotPath = defaultScreenshotPath) {
   await test.step("The user drops the corrected book and the figures change while the revision stays", async () => {
     const originalDate = await page.locator("#revisionOriginalDate").inputValue();

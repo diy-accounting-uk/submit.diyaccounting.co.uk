@@ -710,6 +710,9 @@ async function startRevision(receiptName) {
     applyFirstAccountsRule();
     revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
+    import("../lib/revision-downloads.js")
+      .then((downloads) => downloads.fillRevisionDownloads(read.source, { loadBundle: window.booksImport.loadBundle }))
+      .catch((error) => console.error("Failed to offer the accounts being amended as a DIYA-GL book:", error));
     document.getElementById("revisionBanner").hidden = false;
     document.getElementById("changeCompanyLine").hidden = true;
     showRevisionLateNote();

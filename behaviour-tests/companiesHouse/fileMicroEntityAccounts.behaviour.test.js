@@ -55,6 +55,7 @@ import {
   verifyRevisedAccountsOnRecord,
   describeTheSmallCompanyRevision,
   dropCorrectedBookOnTheRevision,
+  downloadTheBookAndChangeOneLine,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
 import { companiesHouseLookupFixture, isCompaniesHouseSimulatorLane } from "../steps/behaviour-companies-house-filing-steps.js";
 import { COMPANY_AUTHENTICATION_CODE, PEOPLE } from "@app/http-simulator/fixtures/register.js";
@@ -555,6 +556,41 @@ test("Click through: file filleted small company accounts and see the filing acc
   );
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: amend micro-entity accounts from the receipt, download them as a DIYA-GL book, change one line, drop it back and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const accounts = buildAccounts();
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, accounts);
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  const changedBook = await downloadTheBookAndChangeOneLine(page, testInfo.outputPath("downloaded-books"), screenshotPath);
+  await dropCorrectedBookOnTheRevision(
+    page,
+    changedBook,
+    `for the period ${accounts.periodStart} to ${accounts.periodEnd}.`,
+    screenshotPath,
+  );
+  await describeTheRevision(
+    page,
+    {
+      ...REVISION,
+      nonCompliance: "The original accounts left out sales of 500 made in the year.",
+      amendments: "The sales of 500 are now in the debtors, with the Corporation Tax on them in the creditors.",
+    },
+    screenshotPath,
+  );
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

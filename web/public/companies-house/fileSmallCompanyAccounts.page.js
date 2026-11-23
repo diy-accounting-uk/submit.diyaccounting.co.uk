@@ -1007,6 +1007,9 @@ async function startRevision(receiptName) {
     renderTotals();
     revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
+    import("../lib/revision-downloads.js")
+      .then((downloads) => downloads.fillRevisionDownloads(read.source, { loadBundle: window.booksImport.loadBundle }))
+      .catch((error) => console.error("Failed to offer the accounts being amended as a DIYA-GL book:", error));
     document.getElementById("revisionCopyNote").hidden = false;
     document.getElementById("revisionCopyFull").hidden = read.source.mapped.filleted;
     document.getElementById("revisionCopyFilleted").hidden = !read.source.mapped.filleted;
