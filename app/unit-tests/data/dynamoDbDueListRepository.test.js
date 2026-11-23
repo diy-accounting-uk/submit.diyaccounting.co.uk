@@ -577,6 +577,28 @@ describe("data/dynamoDbDueListRepository limits", () => {
     expect(countUpdates().map((update) => update.ExpressionAttributeValues[":change"])).toEqual([2, -2]);
   });
 
+  test("putRows for a business removed after the write began takes back a row it replaced too, with no count for it", async () => {
+    const business = { hashedSub: "hashed-user-1", sk: "business#b1", businessId: "b1", kind: "vat" };
+    const replaced = { ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), dueDate: "2026-11-01" };
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") return { Items: [business, replaced] };
+      if (command.name === "Update" && command.params.Key.sk === "business#b1") throw new ConditionalCheckFailedException("removed");
+      if (command.name === "Delete") return { Attributes: { sk: command.params.Key.sk } };
+      return {};
+    });
+
+    await expect(
+      putRows("user-1", [VAT_ROW, { ...VAT_ROW, periodEnd: "2026-12-31" }], () => false, {
+        forBusiness: { id: "b1", set: { hmrcReadAt: VAT_ROW.readAt } },
+      }),
+    ).rejects.toMatchObject({ name: "DueListBusinessMissingError" });
+    expect(sent("Delete").map((command) => command.params.Key.sk)).toEqual([
+      "row#b1#vat-return#2026-09-30",
+      "row#b1#vat-return#2026-12-31",
+    ]);
+    expect(countUpdates().map((update) => update.ExpressionAttributeValues[":change"])).toEqual([1, -1]);
+  });
+
   test("putBusiness reserves a new business before writing it, only where none is stored", async () => {
     storeHolds([]);
 

@@ -453,9 +453,13 @@ export async function putRows(userSub, rows, replace = () => false, { forBusines
   await adjustCount(userSub, "rows", added - removed - reserved);
 
   if (business && !(await updateBusiness({ hashedSub: business.hashedSub, sk: business.sk }, forBusiness.set))) {
+    // Every row this write put goes back out. A row it added was counted here, so its removal moves
+    // the count. A row it replaced was counted before, and the business's removal took that count
+    // away when it removed the row, so a put that brought the row back is removed with no count.
     let takenBack = 0;
-    for (const put of writtenPuts.filter((written) => written.isNew)) {
-      if (await removeItem({ hashedSub: put.request.PutRequest.Item.hashedSub, sk: put.request.PutRequest.Item.sk })) takenBack += 1;
+    for (const put of writtenPuts) {
+      const removedNow = await removeItem({ hashedSub: put.request.PutRequest.Item.hashedSub, sk: put.request.PutRequest.Item.sk });
+      if (removedNow && put.isNew) takenBack += 1;
     }
     await adjustCount(userSub, "rows", -takenBack);
     throw new DueListBusinessMissingError();
