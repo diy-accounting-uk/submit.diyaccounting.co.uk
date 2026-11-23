@@ -279,7 +279,7 @@ export function computeEnvUpdates(mode, results) {
   const updates = { ".env.ci": {}, ".env.prod": {} };
   for (const { bundleId, priceId, interval } of results) {
     const bundleSuffix = bundleId.toUpperCase().replace(/-/g, "_");
-    const suffix = interval ? `_${bundleSuffix}_${interval.toUpperCase()}` : `_${bundleSuffix}`;
+    const suffix = interval ? `_${bundleSuffix}_${interval.toUpperCase().replace(/-/g, "_")}` : `_${bundleSuffix}`;
     if (mode === "test") {
       updates[".env.ci"][`STRIPE_TEST_PRICE_ID${suffix}`] = priceId;
       updates[".env.ci"][`STRIPE_PRICE_ID${suffix}`] = priceId;
@@ -345,7 +345,7 @@ export async function findOrCreateProduct(stripe, bundleId, name, description, a
 // A price with interval = "submission" is a one-off per-filing charge, not a subscription:
 // it lists and creates as a Stripe "one_time" price with no recurring block, rather than
 // "recurring" on the named interval.
-async function findOrCreatePrice(stripe, productId, bundleId, unitAmount, currency, interval, apply) {
+async function findOrCreatePrice(stripe, productId, bundleId, unitAmount, currency, interval, apply, key) {
   const isOneOff = interval === "submission";
   const label = isOneOff ? `${unitAmount} ${currency} one-off` : `${unitAmount} ${currency}/${interval}`;
 
@@ -372,7 +372,7 @@ async function findOrCreatePrice(stripe, productId, bundleId, unitAmount, curren
     unit_amount: unitAmount,
     currency,
     ...(isOneOff ? {} : { recurring: { interval } }),
-    metadata: { bundleId },
+    metadata: { bundleId, ...(key ? { priceKey: key } : {}) },
   });
   console.log(`    created ${price.id}`);
   return price;
@@ -394,9 +394,10 @@ async function syncProducts(stripe, opts) {
       product = await findOrCreateProduct(stripe, p.bundleId, p.name, p.description, opts.apply);
       productsByBundleId.set(p.bundleId, product);
     }
-    const price = await findOrCreatePrice(stripe, product.id, p.bundleId, p.priceAmount, p.currency, p.interval, opts.apply);
+    const price = await findOrCreatePrice(stripe, product.id, p.bundleId, p.priceAmount, p.currency, p.interval, opts.apply, p.key);
     if (price.id !== "(plan, not created)") {
-      results.push({ bundleId: p.bundleId, priceId: price.id, interval: p.multiPrice ? p.interval : undefined });
+      // A price with a key (two one-off prices of one product) is named by its key, not its interval.
+      results.push({ bundleId: p.bundleId, priceId: price.id, interval: p.multiPrice ? (p.key ?? p.interval) : undefined });
     }
   }
   return results;

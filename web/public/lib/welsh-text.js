@@ -1498,6 +1498,11 @@ window.WELSH_TEXT = {
     "Rhaid i’r enw newydd fod rhwng 3 a 160 nod, gan ddefnyddio llythrennau, rhifau, bylchau a’r atalnodi y mae Tŷ’r Cwmnïau yn ei ganiatáu mewn enw cwmni yn unig.",
   "ch.name.no-letter": "Dim",
   "ch.name.notice-missing": "Cadarnhewch fod hysbysiad o’r newid enw wedi’i roi.",
+  "ch.name.paying": "Yn mynd â chi i dalu’r ffi cyn anfon y ffeilio...",
+  "ch.name.payment-failed": "Methu dechrau’r taliad: {reason}",
+  "ch.name.payment-not-completed": "Ni chwblhawyd y taliad. Ni ffeiliwyd dim.",
+  "ch.name.payment-received":
+    "Cafwyd y taliad am y newid enw hwn. Rhowch god dilysu’r cwmni eto, a’r llythyr os oes angen un ar yr enw, yna ffeiliwch.",
   "ch.name.register-not-yet":
     "Mae’r gofrestr yn dal i ddangos y cwmni fel {name}. Mae’r enw’n newid pan fydd Tŷ’r Cwmnïau yn ei gofrestru, felly edrychwch ar y cwmni eto yn nes ymlaen.",
   "ch.name.register-now": "Mae’r gofrestr bellach yn dangos y cwmni fel {name}.",
@@ -1512,8 +1517,8 @@ window.WELSH_TEXT = {
     "Mae Tŷ’r Cwmnïau yn rhestru {name} ({number}) gyda’r enw hwn. Dim ond gyda chadarnhad ysgrifenedig y cwmni hwnnw nad oes ganddo wrthwynebiad y caiff cwmni gymryd enw sydd gan gwmni arall: atodwch y llythyr hwnnw, neu dewiswch enw arall.",
   "ch.name.same-name": "Yr enw newydd yw’r enw sydd gan y cwmni eisoes.",
   "ch.name.see-company": "Gweld y cwmni ar y gofrestr",
-  "ch.name.service-same-day": "Gwasanaeth yr un diwrnod, £{fee}",
-  "ch.name.service-standard": "Gwasanaeth safonol, £{fee}",
+  "ch.name.service-same-day-paid": "Gwasanaeth yr un diwrnod: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {price}",
+  "ch.name.service-standard-paid": "Gwasanaeth safonol: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {price}",
   "ch.namesake.appointed": "penodwyd {date}",
   "ch.namesake.born": "ganwyd {month}",
   "ch.namesake.named-with-note": "{name}, {note} ({described})",

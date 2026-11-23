@@ -415,6 +415,10 @@ async function handleActivityChargeComplete(session) {
     stripePaymentIntentId: session.payment_intent || null,
     amount: session.amount_total ?? null,
     currency: session.currency ?? null,
+    // Which of an activity's keyed prices was paid, and in which Stripe mode: a route checks the
+    // price against the service it files, and a refund goes to the same mode's account.
+    priceKey: session.metadata?.priceKey ?? null,
+    stripeLivemode: session.livemode === true,
   });
 
   const customerEmail = session.customer_email || session.customer_details?.email || "";

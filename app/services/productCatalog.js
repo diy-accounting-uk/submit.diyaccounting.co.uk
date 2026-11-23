@@ -98,7 +98,13 @@ function parsePriceRows(prices) {
   if (!Array.isArray(prices) || prices.length === 0) return [];
   return prices
     .filter((p) => Number.isFinite(p.amount) && typeof p.currency === "string" && typeof p.interval === "string")
-    .map((p) => ({ interval: p.interval, amount: p.amount, currency: p.currency, default: p.default === true }));
+    .map((p) => ({
+      interval: p.interval,
+      amount: p.amount,
+      currency: p.currency,
+      default: p.default === true,
+      ...(typeof p.key === "string" ? { key: p.key } : {}),
+    }));
 }
 
 // A bundle's Stripe prices from its `[[bundles.prices]]` table.

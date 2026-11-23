@@ -49,6 +49,7 @@ import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-form
 import { gatewayFieldProblems } from "../../web/public/lib/companies-house-gateway-text.js";
 import { withoutRequestValues } from "./companiesHouseErrorText.js";
 import { GATEWAY_FORM_BUILDERS } from "./companiesHouseForms.js";
+import { paidCharge, markChargeUsed } from "./activityCharges.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseFormFiling.js" });
 
@@ -175,17 +176,26 @@ export async function fileCompaniesHouseForm(event, kind) {
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
-  // Companies House charges a form's fee to the credit account behind the presenter. This site has
-  // no way yet to take that fee from the filer, so a form with a fee is sent only where the fee is
-  // not ours to recover: under the filer's own presenter, or as a test submission, which registers
-  // nothing.
+  // Companies House charges a form's fee to the credit account behind the presenter. Under our
+  // presenter the filer pays it first, through a Stripe checkout for the service the form asks for
+  // (feeChoice in companiesHouseForms.js); the route sends the filing only with that charge paid,
+  // marks it used once the gateway takes the filing, and the poll refunds it if Companies House
+  // rejects the filing. Under the filer's own presenter the fee lands on their own account, and a
+  // test submission registers nothing, so neither takes a payment here.
+  let feeCharge;
   if (fee && !ownPresenter && !gatewayTest) {
-    return http402PaymentRequiredResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: `Companies House charges a fee for a ${label}, and this site cannot take that fee yet, so it has not filed it`,
-      error: { code: "fee-path-not-wired", fee },
-    });
+    const { activityId } = COMPANIES_HOUSE_FORMS[kind];
+    const { priceKey, subjectKey } = GATEWAY_FORM_BUILDERS[kind].feeChoice(form);
+    const charge = await paidCharge(userSub, activityId, subjectKey);
+    if (!charge || charge.priceKey !== priceKey) {
+      return http402PaymentRequiredResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: `Companies House charges a fee for a ${label}: pay it before filing`,
+        error: { code: "fee-due", activityId, subjectKey, priceKey, fee },
+      });
+    }
+    feeCharge = { activityId, subjectKey, refundOnReject: true };
   }
   const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
@@ -221,7 +231,7 @@ export async function fileCompaniesHouseForm(event, kind) {
       submissionNumber,
       kind,
       underOwnPresenter: Boolean(ownPresenter),
-      data: { companyNumber: form.companyNumber, ...inProgressData },
+      data: { companyNumber: form.companyNumber, ...inProgressData, ...(feeCharge ? { feeCharge } : {}) },
     });
 
     const submissionXml = buildFormSubmission({
@@ -271,6 +281,9 @@ export async function fileCompaniesHouseForm(event, kind) {
       });
     }
 
+    // The gateway took the filing, so the payment is spent on it; a rejection refunds it.
+    if (feeCharge) await markChargeUsed(userSub, feeCharge.activityId, feeCharge.subjectKey);
+
     await publishActivityEvent({
       event: `companies-house-${kind}-submitted`,
       summary: `Companies House ${label} submitted`,
@@ -287,7 +300,12 @@ export async function fileCompaniesHouseForm(event, kind) {
     if (envelopeSent && !gatewayRequestNotDelivered(error)) {
       // The envelope left, so Companies House may have it. The filing stays pending, the page
       // polls it by number, and a late ACCEPT still gets its receipt and email.
-      await recordOutcomeUnknown({ userSub, submissionNumber, kind, data: { companyNumber: form.companyNumber, ...inProgressData } });
+      await recordOutcomeUnknown({
+        userSub,
+        submissionNumber,
+        kind,
+        data: { companyNumber: form.companyNumber, ...inProgressData, ...(feeCharge ? { feeCharge } : {}) },
+      });
       await recordSubmissionFailure({
         kind,
         failure: "gateway-outcome-unknown",

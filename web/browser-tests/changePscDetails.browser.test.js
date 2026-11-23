@@ -342,7 +342,7 @@ test("a corporate PSC's register and number without the register's country or st
   await page.locator("#legalForm").fill("Private company limited by shares");
   await page.locator("#lawGoverned").fill("Companies Act 2006");
   await page.locator("#placeRegistered").fill("Companies House");
-  await page.locator("#registrationNumber").fill("09876543");
+  await page.locator("#registrationNumber").fill("00000006");
   await page.locator("#dateOfChange").fill("2026-11-01");
   await page.locator("#confirmationDate").fill("2026-11-03");
   await page.locator("#companyAuthCode").fill("SIMCS01");

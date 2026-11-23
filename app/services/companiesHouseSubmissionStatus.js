@@ -25,7 +25,7 @@ import { markReceiptStepDone, clearReceiptStep } from "../data/dynamoDbReceiptRe
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, revisesReceiptFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
-import { markChargeUsed } from "./activityCharges.js";
+import { markChargeUsed, refundCharge } from "./activityCharges.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
 import { dropCompanyCacheAfterAcceptedFiling } from "./companiesHouseCacheDrop.js";
 import { statusWithoutEchoedValues } from "./companiesHouseEchoedValues.js";
@@ -277,6 +277,13 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
     // Kept as long as the filing state, so the filings list shows the rejection and its reasons. The
     // never-received rejection also keeps the fields the request was sent with, for a later status.
     const pendingRequest = isNeverReceived(status) ? { pendingRequest: requestData } : {};
+    // Companies House takes no fee for a filing it rejects, so a fee the filer paid us for it goes
+    // back. Before the rejection is stored, so a refund that fails leaves the claim to the next
+    // poll, and a refund already made is not made twice. The never-received rejection is not
+    // Companies House's decision, and a later status replaces it, so it refunds nothing.
+    if (requestData.feeCharge?.refundOnReject && !isNeverReceived(status)) {
+      await refundCharge(userSub, requestData.feeCharge.activityId, requestData.feeCharge.subjectKey);
+    }
     await putAsyncRequest(
       userSub,
       submissionNumber,

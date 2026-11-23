@@ -24209,13 +24209,7 @@ cy = '''Enw newydd y cwmni'''
 hash = "7d94ca2e1676"
 cy = '''Dyddiad pasio’r penderfyniad'''
 
-[strings."ch-change-name.companies-house-charges-the-same-for-da1980"]
-hash = "da19803bd9ea"
-cy = '''Mae Tŷ’r Cwmnïau yn codi’r un ffi am newid enw a ffeilir drwy feddalwedd. Yn yr amgylchedd prawf hwn nid oes dim yn cael ei gofrestru ac ni chodir ffi. Nid yw’r wefan hon yn ffeilio newid enw go iawn nes y gall gymryd y ffi.'''
 
-[strings."ch-change-name.ask-for-the-same-day-service-3fea5a"]
-hash = "3fea5a5d3712"
-cy = '''Gofyn am y gwasanaeth yr un diwrnod (£85 yn lle £20)'''
 
 [strings."ch-change-name.the-name-needs-a-supporting-letter-0eec51"]
 hash = "0eec51147574"
@@ -24342,13 +24336,7 @@ cy = '''Dyddiad pasio’r penderfyniad'''
 hash = "de06c21426db"
 cy = '''Y gwasanaeth a ffi Tŷ’r Cwmnïau'''
 
-[strings."ch.name.service-same-day"]
-hash = "15f3f2620269"
-cy = '''Gwasanaeth yr un diwrnod, £{fee}'''
 
-[strings."ch.name.service-standard"]
-hash = "0ee4367bfd94"
-cy = '''Gwasanaeth safonol, £{fee}'''
 
 [strings."ch.name.review-letter"]
 hash = "ab8d99383fb9"
@@ -27428,3 +27416,37 @@ cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
 [strings."ch.change-psc.country-or-state-needed"]
 hash = "9395383055df"
 cy = '''Rhowch wlad neu dalaith y gofrestr a enwyd.'''
+
+# == The change of company name's fee: the price paid, the checkout and its return ==
+
+[strings."ch-change-name.companies-house-charges-the-same-for-027645"]
+hash = "027645b60f3f"
+cy = '''Mae Tŷ’r Cwmnïau yn codi’r un ffi am newid enw a ffeilir gan feddalwedd. Rydych yn talu’r ffi honno a thâl y cerdyn yma cyn anfon y ffeilio: £24.69 am y gwasanaeth safonol, neu £104.12 am y gwasanaeth yr un diwrnod. Os bydd Tŷ’r Cwmnïau yn gwrthod y ffeilio, caiff y taliad ei ad-dalu. Yn yr amgylchedd prawf hwn nid oes dim yn cael ei gofrestru ac ni chodir ffi.'''
+
+[strings."ch-change-name.ask-for-the-same-day-service-461c33"]
+hash = "461c3335b923"
+cy = '''Gofyn am y gwasanaeth yr un diwrnod (rydych yn talu £104.12 yn lle £24.69)'''
+
+[strings."ch.name.service-same-day-paid"]
+hash = "351476d1e5e5"
+cy = '''Gwasanaeth yr un diwrnod: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {price}'''
+
+[strings."ch.name.service-standard-paid"]
+hash = "4ec0440be989"
+cy = '''Gwasanaeth safonol: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {price}'''
+
+[strings."ch.name.paying"]
+hash = "f7a8c9f6cce7"
+cy = '''Yn mynd â chi i dalu’r ffi cyn anfon y ffeilio...'''
+
+[strings."ch.name.payment-failed"]
+hash = "2df1cb37c483"
+cy = '''Methu dechrau’r taliad: {reason}'''
+
+[strings."ch.name.payment-not-completed"]
+hash = "5b10e061153d"
+cy = '''Ni chwblhawyd y taliad. Ni ffeiliwyd dim.'''
+
+[strings."ch.name.payment-received"]
+hash = "07679b6a9a0d"
+cy = '''Cafwyd y taliad am y newid enw hwn. Rhowch god dilysu’r cwmni eto, a’r llythyr os oes angen un ar yr enw, yna ffeiliwch.'''

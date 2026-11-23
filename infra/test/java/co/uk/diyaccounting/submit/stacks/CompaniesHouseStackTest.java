@@ -98,6 +98,43 @@ class CompaniesHouseStackTest {
                         .build());
     }
 
+    // synthCompaniesHouseStack()'s defaults, with the Stripe keys a poll refunds a fee with.
+    private static CompaniesHouseStack synthCompaniesHouseStackWithStripe(
+            String stripeSecretKeyArn, String stripeTestSecretKeyArn) {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+        return new CompaniesHouseStack(
+                app,
+                "TestCompaniesHouseStack",
+                CompaniesHouseStack.CompaniesHouseStackProps.builder()
+                        .env(Environment.builder()
+                                .account("111111111111")
+                                .region("eu-west-2")
+                                .build())
+                        .crossRegionReferences(false)
+                        .envName("docs")
+                        .deploymentName("docs")
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled("false")
+                        .sharedNames(sharedNames)
+                        .baseImageTag("latest")
+                        .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseDocumentBaseUri("https://document-api.company-information.service.gov.uk")
+                        .companiesHouseApiKeyArn("")
+                        .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseFilingApiKeyArn("")
+                        .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
+                        .companiesHouseClientId("test-companies-house-client-id")
+                        .companiesHouseClientSecretArn("")
+                        .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
+                        .companiesHousePresenterIdArn("")
+                        .companiesHousePresenterCodeArn("")
+                        .companiesHouseCsFeeWaivedCompanyNumbers("")
+                        .stripeSecretKeyArn(stripeSecretKeyArn)
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn)
+                        .build());
+    }
+
     // Only envName varies here: everything else matches synthCompaniesHouseStack()'s defaults, so
     // this isolates what changes in the accounts Lambdas' environment between deployment
     // environments.
@@ -399,7 +436,10 @@ class CompaniesHouseStackTest {
             assertTrue(
                     fileActions.contains("dynamodb:UpdateItem"),
                     fileName + ": the filing route allocates the number and writes the filing");
-            assertTrue(!fileActions.contains("dynamodb:GetItem"), fileName + ": the filing route reads no item back");
+            String filingTable = SubmitSharedNames.forDocs().data.companiesHouseAccountsAsyncRequestsTableName;
+            assertTrue(
+                    !actionsOnRoleFor(template, fileName, filingTable).contains("dynamodb:GetItem"),
+                    fileName + ": the filing route reads no item back from the filing table");
             assertTrue(
                     !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, fileName),
                     fileName + ": the filing route charges no token");
@@ -413,13 +453,36 @@ class CompaniesHouseStackTest {
         assertTrue(
                 !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, pollName),
                 "a shared-route filing stores no token charge, so its poll charges none");
-        assertTrue(!roleCanUpdateActivityCharges(template, pollName), "a shared-route filing stores no fee");
-        var environment =
-                (Map<String, Object>) propertiesOfFunction(template, pollName).get("Environment");
         assertTrue(
-                !((Map<String, Object>) environment.get("Variables"))
-                        .containsKey("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME"),
-                "the poll of a shared-route filing never reads the activity charges");
+                roleCanUpdateActivityCharges(template, pollName),
+                "the poll refunds the fee of a change of company name that Companies House rejects");
+        assertHasEnvironmentVariable(template, pollName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theChangeOfNameFeeIsCheckedBeforeFilingAndRefundedByEitherPoll() {
+        CompaniesHouseStack stack = synthCompaniesHouseStackWithStripe(
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:stripe-live",
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:stripe-test");
+        Template template = Template.fromStack(stack);
+
+        String fileName = stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName();
+        assertTrue(
+                roleCanUpdateActivityCharges(template, fileName),
+                "the change of name route marks the paid charge used");
+        assertHasEnvironmentVariable(template, fileName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+
+        for (String pollName :
+                List.of(stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(), pollFunctionName())) {
+            assertTrue(roleCanUpdateActivityCharges(template, pollName), pollName + " marks a refunded charge");
+            assertHasEnvironmentVariable(template, pollName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+            assertHasEnvironmentVariable(template, pollName, "STRIPE_SECRET_KEY_ARN");
+            assertHasEnvironmentVariable(template, pollName, "STRIPE_TEST_SECRET_KEY_ARN");
+            String policies = String.valueOf(template.findResources("AWS::IAM::Policy"));
+            assertTrue(policies.contains("secret:stripe-live-*"), "a poll reads the live Stripe key");
+            assertTrue(policies.contains("secret:stripe-test-*"), "a poll reads the test Stripe key");
+        }
     }
 
     @Test

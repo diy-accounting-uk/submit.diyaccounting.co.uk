@@ -33,11 +33,13 @@ function stripeProductEntries(items, getPrices, bundleId) {
       const prices = getPrices(item);
       return prices.map((price) => ({
         bundleId: item.id,
-        name: stripeProductName(item.name),
+        // An item may name its Stripe product; otherwise the product takes the display name.
+        name: item.stripeProductName ?? stripeProductName(item.name),
         description: item.description,
         priceAmount: price.amount,
         currency: price.currency,
         interval: price.interval,
+        ...(price.key ? { key: price.key } : {}),
         multiPrice: prices.length > 1,
       }));
     });

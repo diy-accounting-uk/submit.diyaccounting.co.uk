@@ -131,6 +131,10 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentTaxAgentMonth;
         public String stripePriceIdFileConfirmationStatement;
         public String stripeTestPriceIdFileConfirmationStatement;
+        public String stripePriceIdChangeCompanyNameStandard;
+        public String stripeTestPriceIdChangeCompanyNameStandard;
+        public String stripePriceIdChangeCompanyNameSameDay;
+        public String stripeTestPriceIdChangeCompanyNameSameDay;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String githubAppId;
@@ -387,6 +391,22 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT",
                 appProps.stripeTestPriceIdFileConfirmationStatement,
                 "(from stripeTestPriceIdFileConfirmationStatement in cdk.json)");
+        var stripePriceIdChangeCompanyNameStandard = envOr(
+                "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                appProps.stripePriceIdChangeCompanyNameStandard,
+                "(from stripePriceIdChangeCompanyNameStandard in cdk.json)");
+        var stripeTestPriceIdChangeCompanyNameStandard = envOr(
+                "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                appProps.stripeTestPriceIdChangeCompanyNameStandard,
+                "(from stripeTestPriceIdChangeCompanyNameStandard in cdk.json)");
+        var stripePriceIdChangeCompanyNameSameDay = envOr(
+                "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY",
+                appProps.stripePriceIdChangeCompanyNameSameDay,
+                "(from stripePriceIdChangeCompanyNameSameDay in cdk.json)");
+        var stripeTestPriceIdChangeCompanyNameSameDay = envOr(
+                "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY",
+                appProps.stripeTestPriceIdChangeCompanyNameSameDay,
+                "(from stripeTestPriceIdChangeCompanyNameSameDay in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -553,6 +573,8 @@ public class SubmitApplication {
                                 companiesHouseCsFeeWaivedCompanyNumbers != null
                                         ? companiesHouseCsFeeWaivedCompanyNumbers
                                         : "")
+                        .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .build());
 
         // Create the AccountStack
@@ -652,6 +674,22 @@ public class SubmitApplication {
                         .stripeTestPriceIdFileConfirmationStatement(
                                 stripeTestPriceIdFileConfirmationStatement != null
                                         ? stripeTestPriceIdFileConfirmationStatement
+                                        : "")
+                        .stripePriceIdChangeCompanyNameStandard(
+                                stripePriceIdChangeCompanyNameStandard != null
+                                        ? stripePriceIdChangeCompanyNameStandard
+                                        : "")
+                        .stripeTestPriceIdChangeCompanyNameStandard(
+                                stripeTestPriceIdChangeCompanyNameStandard != null
+                                        ? stripeTestPriceIdChangeCompanyNameStandard
+                                        : "")
+                        .stripePriceIdChangeCompanyNameSameDay(
+                                stripePriceIdChangeCompanyNameSameDay != null
+                                        ? stripePriceIdChangeCompanyNameSameDay
+                                        : "")
+                        .stripeTestPriceIdChangeCompanyNameSameDay(
+                                stripeTestPriceIdChangeCompanyNameSameDay != null
+                                        ? stripeTestPriceIdChangeCompanyNameSameDay
                                         : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .billingReturnUrlOrigins(billingReturnUrlOrigins)

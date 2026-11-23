@@ -17,6 +17,14 @@ const FORM_KIND = "change-of-name";
 const MAX_LETTER_BYTES = 3000000;
 // Companies House's fee by software, in pounds.
 const FEE = { standard: 20, sameDay: 85 };
+// What the filer pays this site for each service, before the filing is sent: the change-company-name
+// activity's [[activities.prices]] amounts in submit.catalogue.toml (Companies House's fee and the
+// card charge). Keep both in step with those rows.
+const PRICE = { standard: "£24.69", sameDay: "£104.12" };
+// The non-secret parts of a filing a return from the Stripe checkout resumes: the company, the new
+// name, the resolution date and the service. The authentication code and the letter are never stored,
+// so the reader gives them again.
+const CHECKOUT_RESUME_KEY = "companiesHouseChangeOfNameResume";
 
 let company = null;
 let filing = null;
@@ -247,8 +255,14 @@ function renderReview() {
   rows.push([
     window.siteText("ch.name.review-service", "Service and Companies House's fee"),
     filing.form.sameDay
-      ? window.siteText("ch.name.service-same-day", "Same-day service, £{fee}", { fee: FEE.sameDay })
-      : window.siteText("ch.name.service-standard", "Standard service, £{fee}", { fee: FEE.standard }),
+      ? window.siteText("ch.name.service-same-day-paid", "Same-day service: Companies House's fee £{fee}, you pay {price}", {
+          fee: FEE.sameDay,
+          price: PRICE.sameDay,
+        })
+      : window.siteText("ch.name.service-standard-paid", "Standard service: Companies House's fee £{fee}, you pay {price}", {
+          fee: FEE.standard,
+          price: PRICE.standard,
+        }),
   ]);
   rows.push([
     window.siteText("ch.name.review-letter", "Supporting letter"),
@@ -310,10 +324,84 @@ async function handleFile() {
       form,
       result: document.getElementById("filingResult"),
       headers,
+      onPaymentRequired: (due) => startCheckout(due, form),
     });
     if (outcome?.statusCode === "ACCEPT") await showRegisterNow();
   } finally {
     hideLoading();
+  }
+}
+
+// Opens the Stripe checkout for the fee of the service the filing asks for. The checkout is a full
+// page navigation, so the filing's non-secret parts go into session storage for the return.
+async function startCheckout(due, form) {
+  const result = document.getElementById("filingResult");
+  try {
+    const response = await window.fetchWithIdToken("/api/v1/billing/activity-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        activityId: due.activityId,
+        subjectKey: due.subjectKey,
+        priceKey: due.priceKey,
+        returnTo: `${window.location.origin}${window.location.pathname}`,
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body.checkoutUrl) throw new Error(body.message || `status ${response.status}`);
+    sessionStorage.setItem(
+      CHECKOUT_RESUME_KEY,
+      JSON.stringify({
+        companyNumber: form.companyNumber,
+        proposedName: form.proposedName,
+        meetingDate: form.meetingDate || "",
+        sameDay: form.sameDay === true,
+      }),
+    );
+    result.replaceChildren(window.siteText("ch.name.paying", "Taking you to pay the fee before the filing is sent..."));
+    window.location.href = body.checkoutUrl;
+  } catch (error) {
+    console.error("Could not start the payment for the change of name:", error);
+    const p = document.createElement("p");
+    p.className = "error-message";
+    p.textContent = window.siteText("ch.name.payment-failed", "Could not start the payment: {reason}", { reason: error.message });
+    result.replaceChildren(p);
+  }
+}
+
+// A return from the Stripe checkout lands here as a fresh page load: it looks the company up again
+// and puts back the new name, the date and the service, for the reader to give the code (and the
+// letter, where the name needs one) and file.
+async function resumeAfterCheckout() {
+  const params = new URLSearchParams(window.location.search);
+  const checkoutResult = params.get("checkout");
+  if (!checkoutResult) return;
+  const url = new URL(window.location);
+  url.searchParams.delete("checkout");
+  url.searchParams.delete("session_id");
+  window.history.replaceState({}, "", url);
+  const saved = sessionStorage.getItem(CHECKOUT_RESUME_KEY);
+  sessionStorage.removeItem(CHECKOUT_RESUME_KEY);
+  if (checkoutResult !== "success") {
+    showError(window.siteText("ch.name.payment-not-completed", "The payment was not completed. Nothing was filed."));
+    return;
+  }
+  if (!saved) return;
+  const resumed = JSON.parse(saved);
+  document.getElementById("companyNumber").value = resumed.companyNumber;
+  await handleCompanySubmit(new Event("submit"));
+  if (!company) return;
+  document.getElementById("proposedName").value = resumed.proposedName;
+  document.getElementById("meetingDate").value = resumed.meetingDate;
+  document.getElementById("sameDay").checked = resumed.sameDay;
+  if (window.showStatus) {
+    window.showStatus(
+      window.siteText(
+        "ch.name.payment-received",
+        "Payment received for this change of name. Give the company authentication code again, and the letter if the name needs one, then file.",
+      ),
+      "success",
+    );
   }
 }
 
@@ -340,3 +428,8 @@ document.getElementById("changeBtn").addEventListener("click", () => showView("f
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
+if (window.__submitReady__) {
+  resumeAfterCheckout();
+} else {
+  document.addEventListener("submit-ready", resumeAfterCheckout, { once: true });
+}

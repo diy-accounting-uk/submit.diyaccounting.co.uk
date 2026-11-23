@@ -311,6 +311,17 @@ public class CompaniesHouseStack extends Stack {
 
         String companiesHouseCsFeeWaivedCompanyNumbers();
 
+        // The Stripe keys a poll refunds a rejected filing's fee with (live, and test for synthetic charges).
+        @Value.Default
+        default String stripeSecretKeyArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestSecretKeyArn() {
+            return "";
+        }
+
         @Override
         SubmitSharedNames sharedNames();
 
@@ -2875,6 +2886,8 @@ public class CompaniesHouseStack extends Stack {
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withPresenterSecretArns(companiesHouseChangeOfNamePostLambdaEnv, props);
         withFilerSealKeyEnv(companiesHouseChangeOfNamePostLambdaEnv, codesSealKeySecret);
+        companiesHouseChangeOfNamePostLambdaEnv.with(
+                "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName());
         if (xmlGatewayPackageReference(props) != null) {
             companiesHouseChangeOfNamePostLambdaEnv.with(
                     "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
@@ -2923,6 +2936,9 @@ public class CompaniesHouseStack extends Stack {
         // The filing route writes with UpdateItem and reads nothing back.
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseChangeOfNamePostLambda, "dynamodb:UpdateItem");
+        // Reads the filer's paid charge for the service chosen, and marks it used once the gateway takes the filing.
+        activityChargesTable.grant(
+                this.companiesHouseChangeOfNamePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         // Seals the filer's sub into the filing state the presenter poll reads.
         codesSealKeySecret.grantRead(this.companiesHouseChangeOfNamePostLambda);
 
@@ -3226,6 +3242,24 @@ public class CompaniesHouseStack extends Stack {
                     "COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME", companiesHouseCacheTable.getTableName());
             companiesHouseCacheTable.grant(
                     recordsAcceptedFiling, "dynamodb:Query", "dynamodb:DeleteItem", "dynamodb:PutItem");
+        }
+
+        // A poll that records Companies House's rejection of a filing whose fee the filer paid through
+        // Stripe (a change of company name) refunds that payment: it reads the charge, asks Stripe for
+        // the refund with the key of the mode it was paid in, and marks the charge refunded.
+        for (Function refundsRejectedFee :
+                List.of(this.companiesHouseFormStatusGetLambda, this.companiesHouseSubmissionStatusPollLambda)) {
+            refundsRejectedFee.addEnvironment(
+                    "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName());
+            activityChargesTable.grant(refundsRejectedFee, "dynamodb:GetItem", "dynamodb:UpdateItem");
+            if (!props.stripeSecretKeyArn().isBlank()) {
+                refundsRejectedFee.addEnvironment("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+                grantSecretRead(refundsRejectedFee, props.stripeSecretKeyArn());
+            }
+            if (!props.stripeTestSecretKeyArn().isBlank()) {
+                refundsRejectedFee.addEnvironment("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+                grantSecretRead(refundsRejectedFee, props.stripeTestSecretKeyArn());
+            }
         }
 
         // Each signed-in lookup on the shared Companies House API key charges the account's counter in

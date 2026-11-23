@@ -1011,6 +1011,12 @@ export const GATEWAY_FORM_BUILDERS = {
     buildFormXml: (form) => buildChangeOfNameBody(form),
     buildDocument: (form) =>
       form.supportingDocument ? supportingDocumentFor({ ...form.supportingDocument, date: form.dateSigned }) : undefined,
+    // The price of the service asked for, and the one filing the payment covers: the company, the
+    // service and the new name, so a later change of the same company's name is paid for afresh.
+    feeChoice: (form) => {
+      const priceKey = form.sameDay ? "same-day" : "standard";
+      return { priceKey, subjectKey: `${form.companyNumber}:${priceKey}:${form.proposedName}` };
+    },
   },
   "psc-statement-notification": {
     extractAndValidate: extractPscStatementNotification,

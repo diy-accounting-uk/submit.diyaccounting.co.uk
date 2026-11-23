@@ -111,6 +111,7 @@ describe("companiesHouseChangeOfNamePost ingestHandler", () => {
         COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: "test-companies-house-accounts-async-requests-table",
         COMPANIES_HOUSE_PACKAGE_REFERENCE: "0012",
         COMPANIES_HOUSE_GATEWAY_TEST: "true",
+        ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME: "test-activity-charges-table",
         ENVIRONMENT_NAME: "test",
       }),
     );
@@ -243,19 +244,95 @@ describe("companiesHouseChangeOfNamePost ingestHandler", () => {
   });
 
   describe("the fee", () => {
-    test("on a live gateway under our presenter the filing is refused with 402 and nothing is sent or recorded", async () => {
-      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
-      const response = await ingestHandler(buildEvent());
+    const STANDARD_KEY = "charge#change-company-name#00000001:standard:BRAMWELL TENNANT TRADING LIMITED";
+    const SAME_DAY_KEY = "charge#change-company-name#00000001:same-day:BRAMWELL TENNANT TRADING LIMITED";
 
-      expect(response.statusCode).toBe(402);
-      expect(response.headers["Content-Type"]).toBe("application/json");
-      expect(parseResponseBody(response)).toMatchObject({ code: "fee-path-not-wired", fee: { standard: 20, sameDay: 85 } });
-      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+    // The filer's activity charges, by charge key, as the table holds them.
+    function chargesHeld(charges) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand && cmd.input.Key?.chargeKey) return { Item: charges[cmd.input.Key.chargeKey] };
+        return {};
+      });
+    }
+
+    const writes = async () => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      return mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+    };
+
+    test.each([
+      [false, "standard", "00000001:standard:BRAMWELL TENNANT TRADING LIMITED"],
+      [true, "same-day", "00000001:same-day:BRAMWELL TENNANT TRADING LIMITED"],
+    ])(
+      "on a live gateway under our presenter, unpaid, the same-day service %s answers 402 fee-due naming the %s price",
+      async (sameDay, priceKey, subjectKey) => {
+        delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+        chargesHeld({});
+        const response = await ingestHandler(buildEvent({ body: buildNameBody({ sameDay }) }));
+
+        expect(response.statusCode).toBe(402);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+        expect(parseResponseBody(response)).toMatchObject({
+          code: "fee-due",
+          activityId: "change-company-name",
+          priceKey,
+          subjectKey,
+          fee: { standard: 20, sameDay: 85 },
+        });
+        expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      },
+    );
+
+    test.each([
+      [false, STANDARD_KEY, "standard"],
+      [true, SAME_DAY_KEY, "same-day"],
+    ])(
+      "paid for the service asked (same day %s), the filing is sent, keeps the charge for a refund, and marks it used",
+      async (sameDay, chargeKey, priceKey) => {
+        delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+        chargesHeld({ [chargeKey]: { status: "paid", priceKey, stripePaymentIntentId: "pi_1" } });
+        const response = await ingestHandler(buildEvent({ body: buildNameBody({ sameDay }) }));
+
+        expect(response.statusCode).toBe(201);
+        expect(submission().formXml).toContain(`<SameDay>${sameDay}</SameDay>`);
+        const updates = await writes();
+        const pending = updates.find((cmd) => cmd.input.ExpressionAttributeValues?.[":status"] === "pending");
+        expect(pending.input.ExpressionAttributeValues[":data"].feeCharge).toEqual({
+          activityId: "change-company-name",
+          subjectKey: chargeKey.replace("charge#change-company-name#", ""),
+          refundOnReject: true,
+        });
+        const used = updates.find((cmd) => cmd.input.Key?.chargeKey === chargeKey);
+        expect(used.input.ExpressionAttributeValues[":used"]).toBe("used");
+      },
+    );
+
+    test("a payment for the standard service does not file the same-day service, and a used payment files nothing", async () => {
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      chargesHeld({ [STANDARD_KEY]: { status: "paid", priceKey: "standard" } });
+      expect((await ingestHandler(buildEvent({ body: buildNameBody({ sameDay: true }) }))).statusCode).toBe(402);
+
+      chargesHeld({ [STANDARD_KEY]: { status: "used", priceKey: "standard" } });
+      expect((await ingestHandler(buildEvent({ body: buildNameBody({ sameDay: false }) }))).statusCode).toBe(402);
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
-    test("on a live gateway no request field or header turns the refusal into a test submission", async () => {
+    test("a payment the gateway refuses at the envelope stays paid for the next attempt", async () => {
       delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      chargesHeld({ [STANDARD_KEY]: { status: "paid", priceKey: "standard" } });
+      mockParseGatewayResponse.mockReturnValue({ errors: [{ number: "604", text: "Invalid Request" }], statuses: [] });
+      const response = await ingestHandler(buildEvent());
+
+      expect(response.statusCode).toBe(500);
+      expect((await writes()).some((cmd) => cmd.input.Key?.chargeKey === STANDARD_KEY)).toBe(false);
+    });
+
+    test("on a live gateway no request field or header turns the fee into a test submission", async () => {
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      chargesHeld({});
       for (const [overrides, headers] of [
         [{ gatewayTest: true, GatewayTest: "1", testFlag: "1", COMPANIES_HOUSE_GATEWAY_TEST: "true" }, {}],
         [{ sameDay: false }, { "Gov-Test-Scenario": "ACCEPT" }],
@@ -271,6 +348,7 @@ describe("companiesHouseChangeOfNamePost ingestHandler", () => {
 
     test("on a live gateway under the filer's own presenter, whose credit account pays the fee, the filing is sent", async () => {
       delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      chargesHeld({});
       const response = await ingestHandler(buildEvent({ body: buildNameBody({ ownPresenter: { id: "66666666000", code: "OWNCODE1" } }) }));
 
       expect(response.statusCode).toBe(201);

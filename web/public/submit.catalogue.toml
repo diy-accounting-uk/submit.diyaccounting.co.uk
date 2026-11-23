@@ -766,9 +766,35 @@ nameCy = "Newid enw'r cwmni (Tŷ'r Cwmnïau, amgylchedd prawf)"
 display = "on-entitlement"
 bundles = ["resident-ltd"]
 metered = false
-# Not listed for prod: the XML team has not approved the ChangeOfName form type for this presenter, and the fee has no payment path.
+# Not listed for prod: the XML team has not approved the ChangeOfName form type for this presenter.
 paths = ["companies-house/changeCompanyName.html", "^/api/v1/companies-house/change-of-name.*", "^/api/v1/companies-house/forms/change-of-name/.*"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
+
+# The name the Stripe product, and so the customer's checkout and receipt, carries.
+stripeProductName = "Change of company name"
+
+# prices
+# ======
+# Two one-off prices for one Stripe product, "Change of company name": the standard service and
+# the same-day service. key names each price for the checkout and for its env var,
+# STRIPE_[TEST_]PRICE_ID_CHANGE_COMPANY_NAME_STANDARD and ..._SAME_DAY. Each is worked out as
+# the confirmation statement's is: (Companies House fee + Stripe fee) x 1.2, where Stripe's
+# standard UK card rate is 1.5% + 20p charged on the price itself, so P = 1.2 x (fee + 20) / 0.982,
+# rounded up to the penny. Change an amount here when either fee changes.
+[[activities.prices]]
+key = "standard"
+interval = "submission"
+amount = 2469
+currency = "gbp"
+default = true
+# Companies House fee £20 (2000p): P = 1.2 x 2020 / 0.982 = 2468.43, so 2469 (£24.69).
+
+[[activities.prices]]
+key = "same-day"
+interval = "submission"
+amount = 10412
+currency = "gbp"
+# Companies House fee £85 (8500p): P = 1.2 x 8520 / 0.982 = 10411.41, so 10412 (£104.12).
 
 [[activities]]
 id = "psc-statements"

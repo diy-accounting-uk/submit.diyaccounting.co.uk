@@ -204,6 +204,27 @@ public class BillingStack extends Stack {
             return "";
         }
 
+        // The change of company name's two keyed prices, the standard and the same-day service.
+        @Value.Default
+        default String stripePriceIdChangeCompanyNameStandard() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdChangeCompanyNameStandard() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdChangeCompanyNameSameDay() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdChangeCompanyNameSameDay() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -448,6 +469,28 @@ public class BillingStack extends Stack {
             billingActivityCheckoutPostLambdaEnv.with(
                     "STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT",
                     props.stripeTestPriceIdFileConfirmationStatement());
+        }
+        if (props.stripePriceIdChangeCompanyNameStandard() != null
+                && !props.stripePriceIdChangeCompanyNameStandard().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD", props.stripePriceIdChangeCompanyNameStandard());
+        }
+        if (props.stripeTestPriceIdChangeCompanyNameStandard() != null
+                && !props.stripeTestPriceIdChangeCompanyNameStandard().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_STANDARD",
+                    props.stripeTestPriceIdChangeCompanyNameStandard());
+        }
+        if (props.stripePriceIdChangeCompanyNameSameDay() != null
+                && !props.stripePriceIdChangeCompanyNameSameDay().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY", props.stripePriceIdChangeCompanyNameSameDay());
+        }
+        if (props.stripeTestPriceIdChangeCompanyNameSameDay() != null
+                && !props.stripeTestPriceIdChangeCompanyNameSameDay().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_CHANGE_COMPANY_NAME_SAME_DAY",
+                    props.stripeTestPriceIdChangeCompanyNameSameDay());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingActivityCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
