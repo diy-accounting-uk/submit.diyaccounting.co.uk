@@ -27339,7 +27339,7 @@ hash = "ee2a089c9e10"
 cy = '''Ysgrifennydd enwebai corfforaethol'''
 
 [strings."ch.drill.role-cic-manager"]
-hash = "5942b329891e"
+hash = "a1db7e79de70"
 cy = '''Rheolwr CBC'''
 
 [strings."ch.drill.role-judicial-factor"]
@@ -27359,3 +27359,41 @@ cy = '''Ni all y cyfrannau fod wedi’u clustnodi ar ôl heddiw. Rhowch y dyddia
 [strings."ch.allot.late-return"]
 hash = "016903e7a011"
 cy = '''Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.'''
+
+# == The drill-down's officer roles of a UK Societas and of an overseas company's UK establishment ==
+
+[strings."ch.drill.role-management-organ"]
+hash = "1fc23c86b7dc"
+cy = '''Aelod o organ reoli'''
+
+[strings."ch.drill.role-corporate-management-organ"]
+hash = "7aeb92f7f8a0"
+cy = '''Aelod corfforaethol o organ reoli'''
+
+[strings."ch.drill.role-supervisory-organ"]
+hash = "a1bf1e8e91dc"
+cy = '''Aelod o organ oruchwylio'''
+
+[strings."ch.drill.role-corporate-supervisory-organ"]
+hash = "c1c8cb1a655f"
+cy = '''Aelod corfforaethol o organ oruchwylio'''
+
+[strings."ch.drill.role-administrative-organ"]
+hash = "4a2996a6d4b1"
+cy = '''Aelod o organ weinyddol'''
+
+[strings."ch.drill.role-corporate-administrative-organ"]
+hash = "681b176641dc"
+cy = '''Aelod corfforaethol o organ weinyddol'''
+
+[strings."ch.drill.role-authorised-to-accept"]
+hash = "a80c78c8404c"
+cy = '''Person awdurdodedig i dderbyn'''
+
+[strings."ch.drill.role-authorised-to-represent"]
+hash = "17965dec85be"
+cy = '''Person awdurdodedig i gynrychioli'''
+
+[strings."ch.drill.role-authorised-to-represent-and-accept"]
+hash = "be7cadc1b1dd"
+cy = '''Person awdurdodedig i gynrychioli ac i dderbyn'''

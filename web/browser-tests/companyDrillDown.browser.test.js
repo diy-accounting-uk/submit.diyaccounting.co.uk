@@ -1037,6 +1037,35 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     });
   });
 
+  test("each PSC link names its PSC as the table does, for two PSCs of one name and a corporate PSC beside them", async ({ page }) => {
+    const [eleanor] = PSCS.pscs;
+    const pscs = {
+      ...PSCS,
+      activeCount: 3,
+      pscs: [
+        { ...eleanor },
+        { ...eleanor, notifiedOn: "2024-05-01", dateOfBirth: { month: 8, year: 1996 } },
+        {
+          name: "Eleanor Bramwell",
+          kind: "corporate-entity-person-with-significant-control",
+          naturesOfControl: [],
+          notifiedOn: "2020-01-01",
+        },
+      ],
+    };
+    await serveSite(page, { bundles: ["resident-ltd"], pscs });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    const names = [
+      "Eleanor Bramwell (born January 1970)",
+      "Eleanor Bramwell (born August 1996)",
+      "Eleanor Bramwell (notified 1 January 2020)",
+    ];
+    await expect(page.locator("#drillView table tbody tr td:first-child")).toHaveText(names, { timeout: 15000 });
+    await expect(page.locator("#drillView .cease-psc-links a")).toHaveText(
+      names.map((name) => `Tell Companies House ${name} has ceased to be a PSC`),
+    );
+  });
+
   test("the PSC table names a PSC with no namesake by name alone", async ({ page }) => {
     await serveSite(page, {});
     await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
@@ -1082,6 +1111,38 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     await expect(table).not.toContainText("Corporate secretary");
     await expect(page.locator("#drillView .remove-officer-links a").first()).toHaveText("Tynnu BRAMWELL, Eleanor (Cyfarwyddwr)");
     await shootAtWidths(page, "cy-officer-roles");
+  });
+
+  test("the officers table words a CIC's manager, a UK Societas's organ members and an overseas company's authorised persons", async ({
+    page,
+  }) => {
+    const roles = [
+      ["cic-manager", "CIC manager", "Rheolwr CBC"],
+      ["member-of-a-management-organ", "Member of a management organ", "Aelod o organ reoli"],
+      ["corporate-member-of-a-supervisory-organ", "Corporate member of a supervisory organ", "Aelod corfforaethol o organ oruchwylio"],
+      [
+        "person-authorised-to-represent-and-accept",
+        "Person authorised to represent and accept",
+        "Person awdurdodedig i gynrychioli ac i dderbyn",
+      ],
+    ];
+    const officers = {
+      ...OFFICERS,
+      activeCount: roles.length,
+      officers: roles.map(([officerRole], index) => ({ name: `OFFICER, Number ${index + 1}`, officerRole, appointedOn: "2016-02-01" })),
+    };
+    await serveSite(page, { officers });
+    const roleCells = page.locator("#drillView table tbody tr td:nth-child(2)");
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+    await expect(roleCells).toHaveText(
+      roles.map(([, english]) => english),
+      { timeout: 15000 },
+    );
+    await page.goto(`${BASE}/cy/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+    await expect(roleCells).toHaveText(
+      roles.map(([, , welsh]) => welsh),
+      { timeout: 15000 },
+    );
   });
 
   test("the English officers table keeps the register's role words", async ({ page }) => {

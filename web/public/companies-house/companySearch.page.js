@@ -836,9 +836,24 @@ const COMPANY_OFFICER_ROLES = {
   "corporate-secretary": () => window.siteText("ch.drill.role-corporate-secretary", "Corporate secretary"),
   "nominee-secretary": () => window.siteText("ch.drill.role-nominee-secretary", "Nominee secretary"),
   "corporate-nominee-secretary": () => window.siteText("ch.drill.role-corporate-nominee-secretary", "Corporate nominee secretary"),
-  "cic-manager": () => window.siteText("ch.drill.role-cic-manager", "Cic manager"),
+  "cic-manager": () => window.siteText("ch.drill.role-cic-manager", "CIC manager"),
   "judicial-factor": () => window.siteText("ch.drill.role-judicial-factor", "Judicial factor"),
   "receiver-and-manager": () => window.siteText("ch.drill.role-receiver-and-manager", "Receiver and manager"),
+  // A UK Societas's organs.
+  "member-of-a-management-organ": () => window.siteText("ch.drill.role-management-organ", "Member of a management organ"),
+  "corporate-member-of-a-management-organ": () =>
+    window.siteText("ch.drill.role-corporate-management-organ", "Corporate member of a management organ"),
+  "member-of-a-supervisory-organ": () => window.siteText("ch.drill.role-supervisory-organ", "Member of a supervisory organ"),
+  "corporate-member-of-a-supervisory-organ": () =>
+    window.siteText("ch.drill.role-corporate-supervisory-organ", "Corporate member of a supervisory organ"),
+  "member-of-an-administrative-organ": () => window.siteText("ch.drill.role-administrative-organ", "Member of an administrative organ"),
+  "corporate-member-of-an-administrative-organ": () =>
+    window.siteText("ch.drill.role-corporate-administrative-organ", "Corporate member of an administrative organ"),
+  // The persons an overseas company names for its UK establishment.
+  "person-authorised-to-accept": () => window.siteText("ch.drill.role-authorised-to-accept", "Person authorised to accept"),
+  "person-authorised-to-represent": () => window.siteText("ch.drill.role-authorised-to-represent", "Person authorised to represent"),
+  "person-authorised-to-represent-and-accept": () =>
+    window.siteText("ch.drill.role-authorised-to-represent-and-accept", "Person authorised to represent and accept"),
 };
 
 // An officer's role in the reader's language.
@@ -1483,7 +1498,7 @@ const NAMEABLE_PSC_KINDS = [
 ];
 
 // For an account that holds a PSC form's activity, a link for each current PSC the form can name,
-// which opens the form with that PSC chosen.
+// which opens the form with that PSC chosen. Each link names its PSC as the table above it does.
 async function appendPscLinks(container, companyNumber, pscs, { activityId, page, className, linkText, chooser }) {
   const current = pscs.filter((psc) => !psc.ceasedOn && NAMEABLE_PSC_KINDS.includes(psc.kind));
   if (current.length === 0 || !localStorage.getItem("cognitoIdToken")) return;
@@ -1502,7 +1517,7 @@ async function appendPscLinks(container, companyNumber, pscs, { activityId, page
     const link = document.createElement("a");
     const query = new URLSearchParams({ companyNumber, ...chooser(psc) });
     link.href = `${pagePrefix()}/companies-house/${page}?${query}`;
-    link.textContent = linkText(window.companiesHouseNamesakes.namedApart(psc, current));
+    link.textContent = linkText(window.companiesHouseNamesakes.namedApart(psc, pscs));
     item.appendChild(link);
     list.appendChild(item);
   });
