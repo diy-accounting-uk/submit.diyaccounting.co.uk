@@ -20,10 +20,10 @@ let company = null;
 let filing = null;
 let shareCapital = null;
 let allotmentDates = null;
+let approvalDateCheck = null;
 
-// Today's date in the UK, as YYYY-MM-DD.
-const todayInLondon = () =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+// Today's date in the UK, as YYYY-MM-DD, by the rule the route applies.
+const todayInLondon = () => approvalDateCheck.todayInLondon(new Date());
 // The rights typed for each class the allotment starts, by its currency and its class in lower case.
 const newClassRights = new Map();
 const rightsKey = (currency, shareClass) => `${currency} ${shareClass.toLowerCase()}`;
@@ -418,6 +418,7 @@ async function handleCompanySubmit(event) {
   try {
     shareCapital = shareCapital || (await import("/lib/share-capital.js"));
     allotmentDates = allotmentDates || (await import("/lib/allotment-dates.js"));
+    approvalDateCheck = approvalDateCheck || (await import("/lib/approval-date-check.js"));
     const profile = await window.getCompanyProfile(companyNumber);
     company = { companyNumber, companyName: profile.companyName, companyAuthCode };
     let registerCapitals = [];
@@ -664,12 +665,11 @@ function renderReview() {
   renderLateNote();
 }
 
-// A return filed more than one month after the last allotment is late. Companies House still takes
-// it; the review says so, with the date it was due.
+// A return filed more than one month after the first allotment it returns is late. Companies House
+// still takes it; the review says so, with the date the first allotment set.
 function renderLateNote() {
   document.getElementById("lateReturn")?.remove();
-  const lastAllotment = filing.form.endDate || filing.form.startDate;
-  if (!allotmentDates.isLateReturn(lastAllotment, todayInLondon())) return;
+  if (!allotmentDates.isLateReturn(filing.form, todayInLondon())) return;
   const note = document.createElement("p");
   note.id = "lateReturn";
   note.className = "hint";
@@ -677,7 +677,7 @@ function renderLateNote() {
   note.textContent = window.siteText(
     "ch.allot.late-return",
     "This return is late. The law asks for it within one month of the allotment, by {date}. Companies House still takes it, and a fine can follow.",
-    { date: window.companiesHouseLabels.formatCompanyDate(allotmentDates.returnDueDate(lastAllotment)) },
+    { date: window.companiesHouseLabels.formatCompanyDate(allotmentDates.returnDueDateFor(filing.form)) },
   );
   document.getElementById("reviewList").after(note);
 }

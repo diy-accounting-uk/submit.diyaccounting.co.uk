@@ -670,9 +670,10 @@ const CAPITAL_REFUSAL = {
   ],
 };
 
-async function reviewACashAllotment(page, { lookUpButton, continueButton }) {
+async function reviewACashAllotment(page, { lookUpButton, continueButton, startDate = "2026-11-02", endDate }) {
   await lookUp(page, lookUpButton ? { button: lookUpButton } : {});
-  await page.locator("#startDate").fill("2026-11-02");
+  await page.locator("#startDate").fill(startDate);
+  if (endDate) await page.locator("#endDate").fill(endDate);
   await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
   await page.getByRole("button", { name: continueButton }).click();
   await expect(page.locator("#reviewView")).toBeVisible();
@@ -854,6 +855,16 @@ test.describe("the allotment dates against today", () => {
     await page.getByRole("button", { name: "File with Companies House" }).click();
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
     expect(filings.at(-1).capitalDifferenceConfirmed).toBe(true);
+  });
+
+  test("a return for a period is late one month after its first allotment, and says the date that allotment set", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-03-15T12:00:00Z"));
+    await serveSite(page);
+    await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await reviewACashAllotment(page, { continueButton: "Continue", startDate: "2026-01-01", endDate: "2026-02-20" });
+    await expect(page.locator("#lateReturn")).toHaveText(
+      "This return is late. The law asks for it within one month of the allotment, by 1 February 2026. Companies House still takes it, and a fine can follow.",
+    );
   });
 
   test("a late return says so in Welsh on the Welsh page", async ({ page }) => {
