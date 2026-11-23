@@ -260,6 +260,7 @@ function buildShareClassRow(index, share = {}) {
       { class: "input-prefix" },
       element("span", { "class": "prefix", "data-share-currency-prefix": "", "style": "display: none" }),
       textInput(`aggregateNominalValue-${index}`, share.aggregateNominalValue, {
+        "data-gateway-text": "off",
         "aria-describedby": `aggregateNominalValue-${index}-money-hint`,
         "inputmode": "decimal",
         "data-money": "pounds-and-pence",
@@ -444,8 +445,9 @@ function buildDirectorRow(index, director) {
     textInput(`directorOtherForenames-${index}`, director.otherForenames, { spellcheck: "false" }),
     element("label", { for: `directorPersonalCode-${index}` }, window.siteText("ch.cs.personal-code", "Companies House personal code")),
     textInput(`directorPersonalCode-${index}`, "", {
-      maxlength: "16",
-      spellcheck: "false",
+      "maxlength": "16",
+      "spellcheck": "false",
+      "data-gateway-text": "off",
     }),
     element("label", { for: `directorNameMismatchReason-${index}` }, window.siteText("ch.cs.mismatch-reason", "Name mismatch reason")),
     element(
@@ -453,7 +455,7 @@ function buildDirectorRow(index, director) {
       { class: "hint" },
       window.siteText("ch.cs.mismatch-hint", "Only when the name this director verified under differs from the register name above."),
     ),
-    textInput(`directorNameMismatchReason-${index}`, "", { spellcheck: "false" }),
+    textInput(`directorNameMismatchReason-${index}`, "", { "spellcheck": "false", "data-gateway-text": "off" }),
   );
 }
 
@@ -921,6 +923,7 @@ function buildPscFollowUpRow({ director, index, psc }, matches) {
   const input = document.createElement("input");
   input.type = "text";
   input.id = `pscPersonalCode-${index}`;
+  input.dataset.gatewayText = "off";
   input.maxLength = 16;
   input.spellcheck = false;
   const buttonGroup = document.createElement("div");
@@ -972,6 +975,24 @@ function pollPscVerificationUntilSettled(submission) {
   });
 }
 
+// The reason a director's name cannot go in a PSC verification statement, in the page's language, or null.
+function pscVerificationNameProblem(director) {
+  const check = window.companiesHouseTextCheck;
+  if (!check) return null;
+  const who = [director.forename, director.surname].filter(Boolean).join(" ");
+  const parts = [
+    [window.siteText("ch.cs.psc-name-title", "title"), director.title],
+    [window.siteText("ch.cs.psc-name-forename", "forename"), director.forename],
+    [window.siteText("ch.cs.psc-name-other-forenames", "other forenames"), director.otherForenames],
+    [window.siteText("ch.cs.psc-name-surname", "surname"), director.surname],
+  ];
+  for (const [part, value] of parts) {
+    const problem = check.valueProblem(`${who}: ${part}`, value);
+    if (problem) return problem;
+  }
+  return null;
+}
+
 async function handlePscVerificationSubmit(index, matches) {
   const entry = matches.find((candidate) => candidate.index === index);
   if (!entry) {
@@ -991,6 +1012,13 @@ async function handlePscVerificationSubmit(index, matches) {
         "error",
       ),
     );
+    return;
+  }
+  // The names come from the register, not from a box the page checks when a form is sent, so they are
+  // checked here against the characters the gateway takes before anything is sent.
+  const nameProblem = pscVerificationNameProblem(entry.director);
+  if (nameProblem) {
+    resultContainer.replaceChildren(buildParagraph([nameProblem], "error"));
     return;
   }
   showLoading();

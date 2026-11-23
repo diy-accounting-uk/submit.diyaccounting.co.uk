@@ -639,6 +639,54 @@ test.describe("File Confirmation Statement page", () => {
     });
   });
 
+  test("a director's name from the register with a character the gateway refuses stops the PSC verification statement before it is sent", async ({
+    page,
+  }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      filingData: { ...FILING_DATA, officers: [{ role: "director", type: "person", forename: "Jane", surname: "Dŵr", dob: "1980-01-01" }] },
+    });
+    for (const script of ["lib/companies-house-gateway-text.js", "lib/companies-house-text-check.js"]) {
+      await page.route(`**/${script}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public", script), "utf-8"),
+        }),
+      );
+    }
+    await page.addInitScript(() => {
+      window.getPscs = () =>
+        Promise.resolve({
+          pscs: [
+            {
+              name: "Jane Dŵr",
+              kind: "individual-person-with-significant-control",
+              naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+              notifiedOn: "2020-01-01",
+              dateOfBirth: { month: 1, year: 1980 },
+            },
+          ],
+        });
+    });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+    await delay(300);
+    await expect(page.locator('[data-psc-follow-up-row="0"]')).toBeVisible();
+
+    await page.fill("#pscPersonalCode-0", "CWMPS832223");
+    await page.click('[data-psc-verify-index="0"]');
+    await expect(page.locator("#pscVerifyResult-0")).toContainText("Jane Dŵr: surname has characters Companies House does not accept: ŵ");
+    expect(await page.evaluate(() => window.__pscVerificationSubmitCalls)).toHaveLength(0);
+  });
+
   async function submitWithGateway(page, { pollInterval, statuses }) {
     await page.addInitScript(
       ({ pollIntervalArg, statusesArg }) => {

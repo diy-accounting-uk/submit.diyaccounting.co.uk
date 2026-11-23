@@ -70,6 +70,7 @@
             <input
               type="text"
               id="companyNumber"
+              data-gateway-text="off"
               name="companyNumber"
               class="input--code"
               required
@@ -160,15 +161,45 @@
             <div style="display: flex; flex-wrap: wrap; gap: 1rem" aria-describedby="dob-hint">
               <div class="form-group">
                 <label data-i18n="ch-change-officer.day-8f2364" for="dobDay">Diwrnod</label>
-                <input type="text" id="dobDay" name="dobDay" class="input--code" inputmode="numeric" maxlength="2" size="2" required />
+                <input
+                  type="text"
+                  id="dobDay"
+                  data-gateway-text="off"
+                  name="dobDay"
+                  class="input--code"
+                  inputmode="numeric"
+                  maxlength="2"
+                  size="2"
+                  required
+                />
               </div>
               <div class="form-group">
                 <label data-i18n="ch-change-officer.month-310ca5" for="dobMonth">Mis</label>
-                <input type="text" id="dobMonth" name="dobMonth" class="input--code" inputmode="numeric" maxlength="2" size="2" required />
+                <input
+                  type="text"
+                  id="dobMonth"
+                  data-gateway-text="off"
+                  name="dobMonth"
+                  class="input--code"
+                  inputmode="numeric"
+                  maxlength="2"
+                  size="2"
+                  required
+                />
               </div>
               <div class="form-group">
                 <label data-i18n="ch-change-officer.year-89f683" for="dobYear">Blwyddyn</label>
-                <input type="text" id="dobYear" name="dobYear" class="input--code" inputmode="numeric" maxlength="4" size="4" required />
+                <input
+                  type="text"
+                  id="dobYear"
+                  data-gateway-text="off"
+                  name="dobYear"
+                  class="input--code"
+                  inputmode="numeric"
+                  maxlength="4"
+                  size="4"
+                  required
+                />
               </div>
             </div>
           </fieldset>
@@ -406,7 +437,7 @@
             <label data-i18n="ch-change-officer.new-country-where-they-usually-live-f7acf6" for="countryOfResidence"
               >Y wlad newydd lle maent yn byw fel arfer</label
             >
-            <input type="text" id="countryOfResidence" name="countryOfResidence" maxlength="50" required />
+            <input type="text" id="countryOfResidence" name="countryOfResidence" maxlength="50" required data-gateway-text="off" />
           </div>
 
           <div id="newCorporateNameFields" class="form-group" style="display: none">
@@ -531,6 +562,7 @@
             <input
               type="text"
               id="companyAuthCode"
+              data-gateway-text="off"
               class="input--code"
               autocomplete="off"
               name="companyAuthCode"

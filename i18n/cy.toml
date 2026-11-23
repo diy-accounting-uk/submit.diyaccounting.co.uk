@@ -27234,3 +27234,21 @@ cy = '''Cyfrannau {currency} {name} cyn y clustnodiad: {returnnumber} o gyfranna
 [strings."ch.allot.confirm-capital"]
 hash = "5ac73210b73e"
 cy = '''Ticiwch y cadarnhad mai’r cyfalaf y mae’r ffurflen hon yn ei ddatgan yw cyfalaf y cwmni ar y dyddiad y mae’r ffurflen wedi’i gwneud hyd ato.'''
+
+# == The parts of a director's name a PSC verification statement sends, named when the gateway would refuse a character: ch.cs.psc-name-* ==
+
+[strings."ch.cs.psc-name-title"]
+hash = "aaf232064610"
+cy = '''teitl'''
+
+[strings."ch.cs.psc-name-forename"]
+hash = "bd43eb38eae1"
+cy = '''enw cyntaf'''
+
+[strings."ch.cs.psc-name-other-forenames"]
+hash = "42ee2b0f9763"
+cy = '''enwau cyntaf eraill'''
+
+[strings."ch.cs.psc-name-surname"]
+hash = "655c32fb8455"
+cy = '''cyfenw'''

@@ -70,6 +70,7 @@
             <input
               type="text"
               id="companyNumber"
+              data-gateway-text="off"
               name="companyNumber"
               class="input--code"
               required
@@ -130,6 +131,7 @@
             <input
               type="text"
               id="companyAuthCode"
+              data-gateway-text="off"
               class="input--code"
               autocomplete="off"
               name="companyAuthCode"
@@ -160,6 +162,7 @@
               <input
                 type="text"
                 id="ownPresenterId"
+                data-gateway-text="off"
                 class="input--code"
                 name="ownPresenterId"
                 autocomplete="off"
@@ -210,7 +213,14 @@
               <p data-i18n="ch-confirmation-statement.enter-up-to-four-codes-separated-9a0a01" id="sicCodes-hint" class="hint">
                 Rhowch hyd at bedwar cod wedi’u gwahanu gan gomas.
               </p>
-              <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" aria-describedby="sicCodes-hint" />
+              <input
+                type="text"
+                id="sicCodes"
+                data-gateway-text="off"
+                name="sicCodes"
+                spellcheck="false"
+                aria-describedby="sicCodes-hint"
+              />
             </div>
           </section>
           <section class="form-section">
@@ -230,6 +240,7 @@
                 <input
                   type="text"
                   id="totalAmountUnpaid"
+                  data-gateway-text="off"
                   name="totalAmountUnpaid"
                   aria-describedby="totalAmountUnpaid-money-hint"
                   inputmode="decimal"
@@ -246,7 +257,7 @@
             </div>
             <div class="form-group">
               <label data-i18n="ch-confirmation-statement.share-currency-b4500c" for="shareCurrency">Arian cyfred y cyfrannau</label>
-              <input type="text" id="shareCurrency" name="shareCurrency" spellcheck="false" />
+              <input type="text" id="shareCurrency" data-gateway-text="off" name="shareCurrency" spellcheck="false" />
             </div>
             <div class="form-group">
               <label data-i18n="ch-confirmation-statement.total-aggregate-nominal-value-858417" for="totalAggregateNominalValue"
@@ -264,6 +275,7 @@
                 <input
                   type="text"
                   id="totalAggregateNominalValue"
+                  data-gateway-text="off"
                   name="totalAggregateNominalValue"
                   aria-describedby="totalAggregateNominalValue-money-hint"
                   inputmode="decimal"

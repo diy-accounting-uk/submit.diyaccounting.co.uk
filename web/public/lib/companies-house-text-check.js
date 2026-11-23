@@ -49,6 +49,24 @@ export function textBoxProblem(form) {
   return null;
 }
 
+/**
+ * The reason one value cannot go to the gateway, in the page's language, or null: for text a page
+ * sends that no box holds, such as a name read from the register.
+ * @param {string} field - the words the reason names the value by
+ * @param {string|undefined|null} value
+ * @returns {string|null}
+ */
+export function valueProblem(field, value) {
+  const refused = refusedCharacters(value);
+  if (!refused.length) return null;
+  return siteText("ch.form.gateway-text", "{field} has characters Companies House does not accept: {characters}", {
+    field,
+    characters: refused.join(" "),
+  });
+}
+
+window.companiesHouseTextCheck = { valueProblem };
+
 // Runs before the page's own handler, which listens on the form itself.
 document.addEventListener(
   "submit",
