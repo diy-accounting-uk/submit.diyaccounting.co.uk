@@ -192,9 +192,10 @@ for (const width of [1280, 390]) {
     await page.getByLabel("Eu henw").check();
     await page.locator("#newEntityName").fill(NEW_ENTITY_NAME);
     await page.getByLabel("Eu ffurf gyfreithiol neu’r gyfraith sy’n eu llywodraethu").check();
+    // The gateway takes few lower-case accented letters, so the register and the Act go in under the names Companies House gives them.
     await page.locator("#legalForm").fill("Cwmni preifat cyfyngedig");
-    await page.locator("#lawGoverned").fill("DEDDF CWMNÏAU 2006");
-    await page.locator("#placeRegistered").fill("TŶ’R CWMNÏAU");
+    await page.locator("#lawGoverned").fill("Companies Act 2006");
+    await page.locator("#placeRegistered").fill("Companies House");
     await page.locator("#countryOrState").fill("Cymru a Lloegr");
     await page.locator("#registrationNumber").fill(CORPORATE_PSC_NUMBER);
     await dates(page);
@@ -217,8 +218,8 @@ for (const width of [1280, 390]) {
       newName: NEW_ENTITY_NAME,
       identification: {
         legalForm: "Cwmni preifat cyfyngedig",
-        lawGoverned: "DEDDF CWMNÏAU 2006",
-        placeRegistered: "TŶ’R CWMNÏAU",
+        lawGoverned: "Companies Act 2006",
+        placeRegistered: "Companies House",
         countryOrState: "Cymru a Lloegr",
         registrationNumber: CORPORATE_PSC_NUMBER,
       },
