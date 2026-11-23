@@ -1,18 +1,18 @@
 ---
 name: collaborate
-description: Run this Claude Code cloud session as a worker for the local coordinator. Checks the VM's tools, then on each task message fetches the named base branch from its own work repository (diy-accounting-uk/submit-cloud-<codename>), builds the row on claude/<codename>-<row>, runs the gates the brief names, and pushes the branch with the report in the last commit's body. Git is the reply. Invoke in the cloud session as /collaborate <codename>, or /collaborate <codename> --loop for the polling fallback.
+description: Run this Claude Code cloud session as a worker for the local coordinator. Checks the VM's tools, then on each task message fetches the named base branch from its own work repository (diy-accounting-uk/submit-cloud-<codename> or spreadsheets-cloud-<codename>), builds the row on claude/<codename>-<row>, runs the gates the brief names, and pushes the branch with the report in the last commit's body. Git is the reply. Invoke in the cloud session as /collaborate <codename>, or /collaborate <codename> --loop for the polling fallback.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
 <!-- @capability DEV-66 Work rows as a cloud worker for the coordinator
-- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
+- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> or spreadsheets-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
 - **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. It makes an ssh-ed25519 key pair once per VM and pushes the public key to .collab/<codename>.pub on the collab branch, so the coordinator can hand it AWS credentials. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
 - **Run:** `/collaborate <codename>`; `/collaborate <codename> --loop`
 - **Entry:** `.claude/skills/collaborate/SKILL.md`
 - **Files:** .claude/skills/collaborate/SKILL.md
-- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
+- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, spreadsheets-cloud, npm test router, verdict, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
 - **Related:** DEV-65
 @end-capability -->
 
@@ -28,9 +28,11 @@ each message needs the operator's approval (operator, 2026-11-17).
 
 - **Worker name:** the code name in the command, `<codename>` (`/collaborate anvil` makes you
   `anvil`).
-- **Repository:** `diy-accounting-uk/submit-cloud-<codename>`, the only repository of this
-  session. `git remote get-url origin` ends with that name (the GitHub proxy rewrites the host).
-  Stop and say so when it does not.
+- **Repository:** `diy-accounting-uk/submit-cloud-<codename>` or
+  `diy-accounting-uk/spreadsheets-cloud-<codename>`, the only repository of this session.
+  `git remote get-url origin` ends with one of those names (the GitHub proxy rewrites the host).
+  Stop and say so when it does not. A `spreadsheets-cloud-` repository is a spreadsheets clone:
+  follow "In a spreadsheets clone", below, where it differs from this file.
 - **Branches you push:** `claude/<codename>-<row>` only, where `<row>` is the row id in lowercase
   (`claude/anvil-ops12`).
 
@@ -113,13 +115,55 @@ On a task:
 6. Commit with the report in the last commit's body (below), then
    `git push origin claude/<codename>-<row>`. Then send the one-line reply of step 7 to the
    coordinator by the relay ("Report by the relay", below).
-7. Reply in one line: the branch, the SHA, `done` or `not-done`. End the turn. The next message
-   starts the next task.
+7. Reply in one line: the branch, the SHA, `done` or `not-done`. When the task file or message
+   holds a further task (below), start it now. End the turn only when no task is left. The next
+   message starts the next task.
+
+**A queue of tasks.** A message, or `.collab/<codename>.md` on `collab`, may hold several tasks,
+each starting with `task:`, separated by a line `---`. Do them in order, each on its own branch.
+After the push and the relay line of one task, run `git fetch origin collab` and read the file
+again, because the coordinator appends tasks to it; a task whose branch is already on `origin`
+with `Collab-Status: done` is done. A base named `claude/<codename>-<row>` is your own branch of
+an earlier task.
+
+**An integration task** (`task: integrate-<row>`) builds no row. Merge the named branch onto the
+base with one merge commit (`git merge --no-ff`), never taking a `.collab/` file. In a registry
+file (`i18n/cy.toml`, the catalogue, `app/bin/server.js`, a Java names class) keep both sides.
+Rebuild a generated file with its generator and never merge it by hand. Set each count in
+`infra/test/java` from a run of `./mvnw clean verify`, and name it "from -> to". For a conflict
+in any other file, resolve it only when the tests of both rows then pass; otherwise push
+`not-done` and name the two rows and the file. The report lists each conflict and how it was
+resolved. With no task left, run the wave's gate on your newest head, as the brief of your first
+integration task names it.
 
 When you cannot do the task (a missing tool, a brief that needs AWS with no credentials for you, a
 gate that cannot run here),
 push the branch with one commit (`git commit --allow-empty` when nothing changed) whose body says
 why, with `Collab-Status: not-done`.
+
+## In a spreadsheets clone
+
+A `spreadsheets-cloud-<codename>` repository holds the spreadsheets repository. These rules
+replace the rules above where they differ:
+
+- At the start, check `node --version`, `node_modules`, the Playwright Chromium and
+  `soffice --version`. JDK 25 and `mcp/node_modules` are not needed. Without `soffice` the router's
+  calc tier does not run and its verdict is `PARTIAL`: take no task whose gate needs a `PASS`, and
+  give the setup-script line that installs LibreOffice (`environment-setup.sh`).
+- On a task, read that repository's own `CLAUDE.md` (sections "Testing", "Reconciliation-bug
+  method" and the ones the brief names) in place of this repository's. Read the `CONTEXT_*.md` file
+  of the product the row touches.
+- The gate is `npm test`, the router `scripts/test-scope.mjs`. Do not run `npm run bundle`. Run
+  `npm test 2>&1 | tee /tmp/npm-test.log`, outside `target/`, because the infra tier's
+  `./mvnw clean verify` deletes `target/`. Before it, commit and push with
+  `Collab-Status: wip`, because the router can run for most of an hour.
+- Copy the router's `VERDICT` line into the report as it stands. `Collab-Status: done` needs a
+  `PASS` verdict, unless the brief accepts another.
+- The repository's `.githooks/pre-push` runs the router again over what the push adds. When the
+  router has already given its verdict on the commit you push, push with `SKIP_PUSH_TESTS=1`, which
+  runs the hook's gates tier only. Say so in the report.
+- The relay needs `.collab/coordinator.pub` on that repository's `main`. When it is missing, the
+  push is the reply ("Report by the relay").
 
 ## Report by the relay
 
@@ -205,7 +249,8 @@ Claude-Session: <this session's claude.ai/code URL>
 ```
 
 Every command line gives the exact command and its counts. A gate that did not run says so on its
-line, with the reason.
+line, with the reason. Keep the body under 60 lines; longer detail goes in `docs-out/<task>.md` on
+the branch, and the body names the file.
 
 The three trailers are exact, in this order, on every commit you make: `Co-Authored-By: Claude
 <noreply@anthropic.com>` (never a model name in it), `Claude-Model: <your exact model id>`, and

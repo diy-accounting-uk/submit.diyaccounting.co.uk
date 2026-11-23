@@ -4,7 +4,9 @@
 #
 # The setup script of the claude.ai/code cloud environment "DIY Accounting Submit", which holds the
 # submit-cloud-<codename> work repositories (../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_CLOUD_COLLABORATION.md). It is pasted into the
-# environment's "Setup script" box; this copy is the record. The environment also sets:
+# environment's "Setup script" box; this copy is the record. The same script serves an environment that
+# holds spreadsheets-cloud-<codename> work repositories: each section runs for the checkouts it names.
+# The environment also sets:
 #   BASH_DEFAULT_TIMEOUT_MS=3600000
 #   BASH_MAX_TIMEOUT_MS=3600000
 #   JAVA_HOME=/opt/jdk25
@@ -54,5 +56,17 @@ aws --version
 for d in submit-cloud-*/; do
 if [ -f "$d/package-lock.json" ]; then
 (cd "$d" && npm ci && (cd mcp && npm ci) && npx playwright install --with-deps chromium)
+fi
+done
+# A spreadsheets-cloud-<codename> checkout: the npm test router's calc tier recalculates the workbooks
+# with LibreOffice (without it the verdict is PARTIAL), and its browser tier needs the Playwright
+# Chromium. Neither is installed for a submit checkout alone.
+for d in spreadsheets-cloud-*/; do
+if [ -f "$d/package-lock.json" ]; then
+if ! command -v soffice >/dev/null 2>&1; then
+apt-get update -qq && apt-get install -y -qq --no-install-recommends libreoffice-calc
+fi
+soffice --version
+(cd "$d" && npm ci && npx playwright install --with-deps chromium)
 fi
 done

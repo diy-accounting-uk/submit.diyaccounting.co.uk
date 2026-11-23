@@ -1,6 +1,6 @@
 ---
 name: new-cloud-session
-description: Lease a work repository (diy-accounting-uk/submit-cloud-<codename>) from the pool, or create the next one when none is free, re-sync it from origin/main (and a base branch), and start or link a Claude Code cloud session on it that runs /collaborate <codename>. Prints the worker, the repository, the base, the session start, the Monitor command and the release command. Invoke as /new-cloud-session [codename] [--base <branch>], or when the operator asks for a new cloud session, a cloud worker, or another web Claude to hand rows to.
+description: Lease a work repository (diy-accounting-uk/submit-cloud-<codename>, or spreadsheets-cloud-<codename> with --repo spreadsheets) from its pool, or create the next one when none is free, re-sync it from origin/main (and a base branch), and start or link a Claude Code cloud session on it that runs /collaborate <codename>. Prints the worker, the repository, the base, the session start, the Monitor command and the release command. Invoke as /new-cloud-session [codename] [--base <branch>] [--repo spreadsheets], or when the operator asks for a new cloud session, a cloud worker, or another web Claude to hand rows to.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -8,11 +8,11 @@ description: Lease a work repository (diy-accounting-uk/submit-cloud-<codename>)
 
 <!-- @capability DEV-65 Lease a cloud work repository and start a worker session
 - **Use when:** the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
-- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
-- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
+- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. With --repo spreadsheets it does the same for the spreadsheets-cloud-<codename> pool, synced from the spreadsheets checkout. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
+- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--repo submit|spreadsheets] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
 - **Entry:** `.claude/skills/new-cloud-session/SKILL.md`; `.claude/skills/new-cloud-session/new-cloud-session.sh:cmd_start`
-- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java
-- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
+- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/pool-spreadsheets.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java
+- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, spreadsheets-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
 - **Related:** DEV-66, DEV-27, DEV-30
 @end-capability -->
 
@@ -29,8 +29,9 @@ bash .claude/skills/new-cloud-session/new-cloud-session.sh --dry-run            
 bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>]
 ```
 
-Run it from the primary checkout or from a worktree. Show the operator its output in full. The
-other subcommands:
+Run it from the primary checkout or from a worktree. Show the operator its output in full. Every
+subcommand takes `--repo submit|spreadsheets` (default `submit`); "The spreadsheets pool", below,
+says what changes. The other subcommands:
 
 | Subcommand | What it does |
 | --- | --- |
@@ -113,7 +114,7 @@ When the stack or `.collab/coordinator.pub` is missing, `watch <codename>` stays
 
 ## The pool
 
-`pool.txt` holds one code name a line (today `anvil`). Each name is the repository
+`pool.txt` holds one code name a line (16 on 2026-11-22). A session's display name is `submit <codename>`: method a sets it with `--name`; after method b or c, type `/rename submit <codename>` in the session (the link has no name parameter). Each name is the repository
 `diy-accounting-uk/submit-cloud-<codename>`, and the worker name is the same code name. The
 operator adds each repository to the Claude GitHub app once, so a leased repository needs no
 permission step.
@@ -173,6 +174,36 @@ After the lease, the script pushes by URL:
 Both pushes are fast-forward only. A rejected push stops the script with the lease held, and
 prints the release command.
 
+## The spreadsheets pool
+
+`--repo spreadsheets` selects a second pool. Use it to give a cloud worker a spreadsheets row.
+
+| | `--repo submit` | `--repo spreadsheets` |
+| --- | --- | --- |
+| Work repository | `diy-accounting-uk/submit-cloud-<codename>` | `diy-accounting-uk/spreadsheets-cloud-<codename>` |
+| Pool file | `pool.txt` | `pool-spreadsheets.txt` |
+| Synced from | this checkout | `../spreadsheets.diyaccounting.co.uk` beside the primary checkout (`SPREADSHEETS_CHECKOUT` names another) |
+| Clone | `cloud-sessions/<codename>` | `cloud-sessions/spreadsheets-<codename>` |
+| Session name | `submit <codename>` | `spreadsheets <codename>` |
+
+The rules:
+
+- The re-sync, the lease, the release, `post`, `watch`, `creds` and the relay work the same for
+  both pools.
+- `--base <branch>` names a local branch of the spreadsheets checkout. The script pushes it from
+  there.
+- The script stops when the spreadsheets checkout is missing or its `origin` is not
+  `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`.
+- A code name is in one pool only. The relay names a worker by its code name alone. The script
+  skips the other pool's names when it chooses a name, and stops when you give one of them.
+- The printed `watch`, `post` and `release` commands carry `--repo spreadsheets`. The printed
+  `remote add` and land commands name the spreadsheets checkout.
+- A new spreadsheets worker can read `/collaborate` only when spreadsheets `main` holds
+  `.claude/skills/collaborate/SKILL.md`. The relay works only when spreadsheets `main` holds
+  `.collab/coordinator.pub`. The re-sync copies `main` as it is and adds neither file.
+- The environment's setup script (`environment-setup.sh`) installs LibreOffice and the Playwright
+  Chromium for a `spreadsheets-cloud-*` checkout, and for no other checkout.
+
 ## The session
 
 The script keeps a clone of each work repository in
@@ -184,7 +215,7 @@ applies, and prints the method it used:
 
 | Method | When | What happens |
 | --- | --- | --- |
-| a. `claude --cloud "/collaborate <codename>"` from the clone | stdin and stdout are a terminal, no `--no-launch`, no `--dry-run` | The CLI clones the current directory's GitHub remote at the current branch. It shows a live checklist while the VM starts, so it needs a terminal. |
+| a. `claude --name "submit <codename>" --cloud "/collaborate <codename>"` from the clone | stdin and stdout are a terminal, no `--no-launch`, no `--dry-run` | The CLI clones the current directory's GitHub remote at the current branch. It shows a live checklist while the VM starts, so it needs a terminal. |
 | b. The link `https://claude.ai/code/new?q=%2Fcollaborate%20<codename>&repo=diy-accounting-uk%2Fsubmit-cloud-<codename>&branch=main` | no terminal, which is the case under the Bash tool | The link opens the new-session form with the prompt, repository and branch filled in. The operator checks the environment and presses send. |
 | c. The steps | always printed | Open https://claude.ai/code, choose the repository and branch `main`, choose the work environment, type `/collaborate <codename>`. |
 
@@ -203,6 +234,19 @@ Facts behind the table, read on 2026-11-17:
 - To find the work environment's id: in a local `claude` session run `/remote-env` and pick the
   work environment, then `jq -r .remote.defaultEnvironmentId ~/.claude/settings.json`. Write that
   id to `environment.txt`, or keep the `/remote-env` pick as it is.
+- A worker session runs on Opus 5.5 at medium effort (operator, 2026-11-22), whatever model and
+  effort the coordinator session uses. A `claude --cloud` start with no `--model` gives the session
+  the coordinator's own default (eleven workers started on Fable 5.2 that way), and one with no
+  `--effort` takes the effort saved in `~/.claude/settings.json`. The script passes
+  `--model claude-opus-5-5 --effort medium --permission-mode auto`; `CLOUD_WORKER_MODEL` and
+  `CLOUD_WORKER_EFFORT` change the first two. A model in `--settings`, in the branch's
+  `.claude/settings.json`, in `ANTHROPIC_MODEL` or on the start link does not set a cloud session's
+  model (mechanical-librarian's `new-cloud-session` skill, "The model", tried 2026-11-20). Without
+  `--permission-mode auto` a CLI start shows "Accept edits" where a form start shows "Auto".
+- The link of method b and the steps of method c set no model: in the new-session form choose
+  **Opus 5.5** and **medium** before sending. In a session that has started, send
+  `/model claude-opus-5-5`, confirm **Switch model**, then send `/effort medium`. The model and the
+  effort show beside the message box; check both before the first task.
 
 The session URL is the address of the new session in the browser and in the claude.ai/code
 sidebar. In method a the CLI shows it.

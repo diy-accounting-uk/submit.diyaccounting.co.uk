@@ -396,19 +396,32 @@ test.describe("An account the bundle read has not decided", () => {
     });
   }
 
-  test("a bundle read the server refuses sends the reader to sign in, with no HMRC request and no synthetic account", async ({ page }) => {
-    const requests = [];
-    await holdHmrcGrant(page);
-    await openVatPage(page, "viewVatReturn.html", {
-      synthetic: false,
-      storedAccount: "synthetic",
-      bundleStatus: () => 401,
-      query: PERIOD_QUERY,
-      onApiRequest: (request) => requests.push(request),
+  // The refusal decides the account as not synthetic, and a separate bundle read sends the reader to
+  // sign in. The page may send its HMRC request before that redirect, which the server refuses for
+  // the same sign-in; it never carries the synthetic account. authorizedFetch marks its requests
+  // with x-initial-request, so the read that sends the reader to sign in can answer after the
+  // page's own request.
+  for (const [order, bundleAnswerMs] of [
+    ["answering together", () => 300],
+    ["with the read that sends to sign in answering last", (request) => (request.headers()["x-initial-request"] ? 3000 : 300)],
+  ]) {
+    test(`a bundle read the server refuses sends the reader to sign in with no synthetic account, ${order}`, async ({ page }) => {
+      const requests = [];
+      await holdHmrcGrant(page);
+      await openVatPage(page, "viewVatReturn.html", {
+        synthetic: false,
+        storedAccount: "synthetic",
+        bundleStatus: () => 401,
+        bundleAnswerMs,
+        query: PERIOD_QUERY,
+        onApiRequest: (request) => requests.push(request),
+      });
+      await page.waitForURL("**/auth/login.html**", { timeout: 15_000 });
+      for (const request of hmrcRequestsOf(requests)) {
+        expect(request.headers()["hmrcaccount"]).toBeUndefined();
+      }
     });
-    await page.waitForURL("**/auth/login.html**");
-    expect(hmrcRequestsOf(requests)).toHaveLength(0);
-  });
+  }
 
   for (const pageName of VAT_PAGES) {
     test(`${pageName} says the account is not decided and sends nothing when developer-mode.js does not load`, async ({ page }) => {

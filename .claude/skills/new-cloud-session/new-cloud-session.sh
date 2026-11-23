@@ -12,14 +12,16 @@
 #   new-cloud-session.sh creds <codename> [--dry-run]
 #   new-cloud-session.sh relay-key | relay-url | relay-register <codename> | relay-send <codename|coordinator> <file>
 #   new-cloud-session.sh relay-open [frame-file] | relay-ack <id>...
+#   Every form takes --repo submit|spreadsheets (default submit): the pool of submit-cloud-<codename> work
+#   repositories, synced from this checkout, or the pool of spreadsheets-cloud-<codename>, synced from the
+#   spreadsheets checkout beside it (SPREADSHEETS_CHECKOUT names another).
 #
 # --dry-run runs every read and prints every write (repository create, push, clone, file append, workflow dispatch)
-# in its place.
+# in its place. Bash 3.2 (macOS): no associative arrays, no mapfile, no ${var,,}.
 
 set -euo pipefail
 
 ORG=diy-accounting-uk
-PREFIX=submit-cloud-
 MAIN_REPO=$ORG/submit.diyaccounting.co.uk
 CREDS_WORKFLOW=cloud-credentials.yml
 LEASE_MAX_AGE=86400
@@ -27,8 +29,11 @@ SKILL_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(git -C "$SKILL_DIR" rev-parse --show-toplevel)
 MAIN_CHECKOUT=$(dirname "$(git -C "$SKILL_DIR" rev-parse --path-format=absolute --git-common-dir)")
 SESSIONS_DIR=${CLOUD_SESSIONS_DIR:-$(dirname "$MAIN_CHECKOUT")/cloud-sessions}
-POOL_FILE=$SKILL_DIR/pool.txt
 ENV_FILE=$SKILL_DIR/environment.txt
+# A worker session runs on Opus 5.5 at medium effort (operator, 2026-11-22). Both go on the command line: a start that
+# leaves them out takes the coordinator's own model and the effort saved in ~/.claude/settings.json.
+WORKER_MODEL=${CLOUD_WORKER_MODEL:-claude-opus-5-5}
+WORKER_EFFORT=${CLOUD_WORKER_EFFORT:-medium}
 CODENAMES=$REPO_ROOT/CODENAMES.txt
 # The relay: ci-env-CollabRelayStack, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_CLOUD_COLLABORATION.md "Signed and encrypted messages without polling".
 RELAY_STACK=ci-env-CollabRelayStack
@@ -42,13 +47,55 @@ NEW=0
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
+# --repo is taken out of the arguments wherever it stands; the rest go to the subcommand.
+REPO_KIND=submit
+ARGS=()
+while [ $# -gt 0 ]; do
+  case $1 in
+    --repo) REPO_KIND=${2:?--repo needs submit or spreadsheets}; shift 2 ;;
+    --repo=*) REPO_KIND=${1#--repo=}; shift ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+set -- ${ARGS[@]+"${ARGS[@]}"}
+
+# Per pool: the work repository prefix, the pool file, the checkout the pool is synced from, the clone folder
+# prefix, and the flag that the printed commands carry.
+SUBMIT_POOL_FILE=$SKILL_DIR/pool.txt
+SPREADSHEETS_POOL_FILE=$SKILL_DIR/pool-spreadsheets.txt
+case $REPO_KIND in
+  submit)
+    PREFIX=submit-cloud-
+    PRODUCT=submit.diyaccounting.co.uk
+    POOL_FILE=$SUBMIT_POOL_FILE
+    OTHER_POOL_FILE=$SPREADSHEETS_POOL_FILE
+    SOURCE_ROOT=$REPO_ROOT
+    CLONE_PREFIX=
+    REPO_FLAG=
+    ;;
+  spreadsheets)
+    PREFIX=spreadsheets-cloud-
+    PRODUCT=spreadsheets.diyaccounting.co.uk
+    POOL_FILE=$SPREADSHEETS_POOL_FILE
+    OTHER_POOL_FILE=$SUBMIT_POOL_FILE
+    SOURCE_ROOT=${SPREADSHEETS_CHECKOUT:-$(dirname "$MAIN_CHECKOUT")/spreadsheets.diyaccounting.co.uk}
+    CLONE_PREFIX=spreadsheets-
+    REPO_FLAG=" --repo spreadsheets"
+    ;;
+  *)
+    echo "new-cloud-session: --repo is submit or spreadsheets, not '$REPO_KIND'" >&2
+    exit 2
+    ;;
+esac
+SELF="bash $SKILL_DIR/new-cloud-session.sh$REPO_FLAG"
+
 die() {
   echo "new-cloud-session: $*" >&2
   exit 1
 }
 
 usage() {
-  sed -n '8,14p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2
+  sed -n '8,17p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2
   exit 2
 }
 
@@ -77,7 +124,27 @@ valid_codename() {
 
 read_pool() {
   [ -f "$POOL_FILE" ] || die "no pool file at $POOL_FILE"
-  grep -v '^#' "$POOL_FILE" | awk 'NF { print $1 }'
+  awk '!/^#/ && NF { print $1 }' "$POOL_FILE"
+}
+
+# The code names of the other pool. The relay names a worker by its code name alone, so no name is in both.
+read_other_pool() {
+  [ -f "$OTHER_POOL_FILE" ] || return 0
+  awk '!/^#/ && NF { print $1 }' "$OTHER_POOL_FILE"
+}
+
+# Stops unless the spreadsheets checkout the pool is synced from is a git repository whose origin is that
+# product. The submit pool is synced from the checkout this script is in.
+source_ready() {
+  local origin
+  [ "$REPO_KIND" = spreadsheets ] || return 0
+  git -C "$SOURCE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
+    die "no checkout of $PRODUCT at $SOURCE_ROOT; set SPREADSHEETS_CHECKOUT to the checkout"
+  origin=$(git -C "$SOURCE_ROOT" remote get-url origin 2>/dev/null) || die "$SOURCE_ROOT has no origin remote"
+  case $origin in
+    *"$ORG/$PRODUCT"*) ;;
+    *) die "$SOURCE_ROOT origin is $origin, not $ORG/$PRODUCT" ;;
+  esac
 }
 
 repo_exists() {
@@ -141,6 +208,7 @@ next_codename() {
     names=()
     for name in $(sed -n "${line}p" "$CODENAMES" | tr ' ' '\n'); do
       read_pool | grep -qx "$name" && continue
+      read_other_pool | grep -qx "$name" && continue
       repo_exists "$name" && continue
       names+=("$name")
     done
@@ -183,14 +251,15 @@ collab_commit() {
   tree=$(GIT_INDEX_FILE=$TMP/collab.index git -C "$g" write-tree)
   commit=$(git -C "$g" commit-tree "$tree" ${parent:+-p "$parent"} -m "$message" \
     -m "Co-Authored-By: Claude <noreply@anthropic.com>")
-  run git -C "$g" push -q "$url" "$commit:refs/heads/collab"
+  # --no-verify: a push to a work repository runs no pre-push hook, not even one a global core.hooksPath names.
+  run git -C "$g" push -q --no-verify "$url" "$commit:refs/heads/collab"
 }
 
 create_repository() {
   local cn=$1 repo
   repo=$(repo_of "$cn")
   echo "creating $repo (Actions off before the first push)"
-  run gh repo create "$repo" --private --disable-wiki --description "Work repository for one Claude Code cloud session on submit.diyaccounting.co.uk"
+  run gh repo create "$repo" --private --disable-wiki --description "Work repository for one Claude Code cloud session on $PRODUCT"
   run gh api -X PUT "repos/$repo/actions/permissions" -F enabled=false
   if [ "$DRY" = 0 ]; then
     [ "$(gh api "repos/$repo/actions/permissions" --jq .enabled)" = false ] || die "Actions is still on in $repo; nothing pushed"
@@ -204,16 +273,17 @@ create_repository() {
 sync_repository() {
   local cn=$1 base=$2 url
   url=$(url_of "$cn")
-  run git -C "$REPO_ROOT" push -q "$url" "refs/remotes/origin/main:refs/heads/main" || return 1
+  # --no-verify: the checkout's pre-push hook guards pushes to its own origin, not to a work repository.
+  run git -C "$SOURCE_ROOT" push -q --no-verify "$url" "refs/remotes/origin/main:refs/heads/main" || return 1
   if [ "$base" != main ]; then
-    run git -C "$REPO_ROOT" push -q "$url" "refs/heads/$base:refs/heads/$base" || return 1
+    run git -C "$SOURCE_ROOT" push -q --no-verify "$url" "refs/heads/$base:refs/heads/$base" || return 1
   fi
 }
 
 prepare_clone() {
   local cn=$1 url dir
   url=$(url_of "$cn")
-  dir=$SESSIONS_DIR/$cn
+  dir=$SESSIONS_DIR/$CLONE_PREFIX$cn
   if git -C "$SESSIONS_DIR" rev-parse --git-dir >/dev/null 2>&1 && [ ! -d "$dir/.git" ]; then
     die "$SESSIONS_DIR is inside a git repository; set CLOUD_SESSIONS_DIR to a folder outside every repository"
   fi
@@ -236,7 +306,7 @@ claude_app_page() {
 }
 
 cmd_start() {
-  local cn="" base=main coordinator="" no_launch=0 state env_id="" env_note prompt deep_link dir repo url
+  local cn="" base=main coordinator="" no_launch=0 state env_id="" env_note prompt deep_link dir repo url session_name source_main
   while [ $# -gt 0 ]; do
     case $1 in
       --base) base=${2:?--base needs a branch}; shift 2 ;;
@@ -252,14 +322,16 @@ cmd_start() {
     coordinator=${coordinator:-unknown}
   fi
   [ "$base" != collab ] || die "collab is the channel branch, not a base"
+  source_ready
+  source_main=$(dirname "$(git -C "$SOURCE_ROOT" rev-parse --path-format=absolute --git-common-dir)")
   if [ "$base" != main ]; then
-    git -C "$REPO_ROOT" rev-parse --verify -q "refs/heads/$base" >/dev/null || die "no local branch $base to push as the base"
+    git -C "$SOURCE_ROOT" rev-parse --verify -q "refs/heads/$base" >/dev/null || die "no local branch $base in $SOURCE_ROOT to push as the base"
   fi
 
   if [ "$DRY" = 0 ]; then
-    git -C "$REPO_ROOT" fetch -q origin main
+    git -C "$SOURCE_ROOT" fetch -q origin main
   fi
-  echo "origin/main is $(git -C "$REPO_ROOT" rev-parse --short refs/remotes/origin/main)"
+  echo "$PRODUCT origin/main is $(git -C "$SOURCE_ROOT" rev-parse --short refs/remotes/origin/main)"
 
   echo "pool ($POOL_FILE):"
   if [ -n "$cn" ]; then
@@ -269,9 +341,10 @@ cmd_start() {
       state=$(lease_state "$cn")
       echo "  $cn: $state"
       case $state in
-        busy*) die "$cn is leased (${state#busy }); release it with: bash $SKILL_DIR/new-cloud-session.sh release $cn" ;;
+        busy*) die "$cn is leased (${state#busy }); release it with: $SELF release $cn" ;;
       esac
     else
+      read_other_pool | grep -qx "$cn" && die "$cn is in the other pool ($OTHER_POOL_FILE); the relay names a worker by its code name alone"
       repo_exists "$cn" && die "$(repo_of "$cn") exists but is not in the pool; add it to $POOL_FILE first"
       create_repository "$cn"
     fi
@@ -292,7 +365,7 @@ cmd_start() {
   fi
   repo=$(repo_of "$cn")
   url=$(url_of "$cn")
-  dir=$SESSIONS_DIR/$cn
+  dir=$SESSIONS_DIR/$CLONE_PREFIX$cn
 
   printf 'worker: %s\nleased: %s\ncoordinator: %s\nbase: %s\n' "$cn" "$(now_iso)" "$coordinator" "$base" >"$TMP/lease"
   if [ "$NEW" = 1 ]; then
@@ -300,7 +373,7 @@ cmd_start() {
     collab_commit "$cn" "Lease $cn for $coordinator" .collab/lease "$TMP/lease"
   else
     collab_commit "$cn" "Lease $cn for $coordinator" .collab/lease "$TMP/lease"
-    sync_repository "$cn" "$base" || die "the re-sync of $repo failed; the lease is held; release it with: bash $SKILL_DIR/new-cloud-session.sh release $cn"
+    sync_repository "$cn" "$base" || die "the re-sync of $repo failed; the lease is held; release it with: $SELF release $cn"
   fi
   prepare_clone "$cn"
 
@@ -314,28 +387,31 @@ cmd_start() {
     env_note=${env_note:-the CLI fallback, the Anthropic-hosted Default environment (no environment.txt, no /remote-env pick)}
   fi
   prompt="/collaborate $cn"
-  local -a launch=(claude)
+  local -a launch=(claude --model "$WORKER_MODEL" --effort "$WORKER_EFFORT" --permission-mode auto)
   [ -z "$env_id" ] || launch+=(--settings "{\"remote\":{\"defaultEnvironmentId\":\"$env_id\"}}")
-  launch+=(--cloud "$prompt")
+  session_name="$REPO_KIND $cn"
+  launch+=(--name "$session_name" --cloud "$prompt")
   deep_link="https://claude.ai/code/new?q=%2Fcollaborate%20$cn&repo=$ORG%2F$PREFIX$cn&branch=main"
 
   echo
   echo "worker:       $cn"
+  echo "session name: $session_name"
   echo "repository:   https://github.com/$repo"
   echo "base branch:  $base"
   echo "coordinator:  $coordinator"
   echo "clone:        $dir"
   echo "environment:  $env_note"
-  echo "monitor:      bash $SKILL_DIR/new-cloud-session.sh watch $cn"
-  echo "task file:    bash $SKILL_DIR/new-cloud-session.sh post $cn <file>"
-  echo "land a row:   git fetch $url claude/$cn-<row> && git merge --squash FETCH_HEAD"
-  echo "release:      bash $SKILL_DIR/new-cloud-session.sh release $cn"
+  echo "model:        $WORKER_MODEL, effort $WORKER_EFFORT"
+  echo "monitor:      $SELF watch $cn"
+  echo "task file:    $SELF post $cn <file>"
+  echo "land a row:   git -C $SOURCE_ROOT fetch $url claude/$cn-<row> && git -C $SOURCE_ROOT merge --squash FETCH_HEAD"
+  echo "release:      $SELF release $cn"
   if [ "$NEW" = 1 ]; then
     echo
     echo "one-time steps for the operator, before the first session on $repo:"
     echo "  1. Open $(claude_app_page), under 'Repository access' add $PREFIX$cn, and click Save."
     echo "  2. Run in a terminal:"
-    echo "     ! git -C $MAIN_CHECKOUT remote add cloud-$cn $url"
+    echo "     ! git -C $source_main remote add cloud-$cn $url"
     echo "the coordinator commits $POOL_FILE to main (a docs commit)."
   fi
   echo
@@ -347,11 +423,12 @@ cmd_start() {
   echo "session: no terminal here, so the link is the start (method b)"
   echo "  b. Open this link, check that the environment is the work environment, and press send:"
   echo "     $deep_link"
+  echo "     The link sets no name and no model: before you press send, choose $WORKER_MODEL and effort $WORKER_EFFORT in the model picker; then type /rename $session_name as the session's next prompt."
   echo "  a. Or, in a terminal:"
   printf '     cd %q &&' "$dir"
   printf ' %q' "${launch[@]}"
   printf '\n'
-  echo "  c. Or open https://claude.ai/code, choose $repo and branch main, choose the work environment, and type: $prompt"
+  echo "  c. Or open https://claude.ai/code, choose $repo and branch main, choose the work environment, choose $WORKER_MODEL and effort $WORKER_EFFORT in the model picker, and type: $prompt, then /rename $session_name"
   echo "the session URL is the address of the new session in the browser, and in the claude.ai/code sidebar."
 }
 

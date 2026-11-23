@@ -581,7 +581,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now: use when the operator asks whether a /clear or a restart of Claude Code is safe, and at the end of every /board render.
     - [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery: use when the operator wants the board delivered as one pull request per repository, built and tested locally first.
     - [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session: use when the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
-    - [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator: use when a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
+    - [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator: use when a Claude Code cloud session on a submit-cloud-<codename> or spreadsheets-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
     - [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute) Run the delivery loop with the cloud workers doing the compute: use when the operator says collab loop, offload to the cloud, keep the laptop light, or starts or resumes /iterate with cloud sessions running.
     - [DEV-68](#dev-68-check-that-each-aws-sso-profile-is-live-for-the-cli-and-the-sdk) Check that each AWS SSO profile is live for the CLI and the SDK: use when a skill or session is about to call AWS, or must decide whether to ask the operator for an SSO login.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
@@ -6470,21 +6470,21 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-65 Lease a cloud work repository and start a worker session
 
 - **Use when:** the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
-- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
-- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
+- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. With --repo spreadsheets it does the same for the spreadsheets-cloud-<codename> pool, synced from the spreadsheets checkout. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
+- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--repo submit|spreadsheets] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
 - **Entry:** `.claude/skills/new-cloud-session/SKILL.md`; `.claude/skills/new-cloud-session/new-cloud-session.sh:cmd_start`
-- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java
-- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
+- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/pool-spreadsheets.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java
+- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, spreadsheets-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
 - **Related:** DEV-66, DEV-27, DEV-30
 
 #### DEV-66 Work rows as a cloud worker for the coordinator
 
-- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
+- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> or spreadsheets-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
 - **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. It makes an ssh-ed25519 key pair once per VM and pushes the public key to .collab/<codename>.pub on the collab branch, so the coordinator can hand it AWS credentials. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
 - **Run:** `/collaborate <codename>`; `/collaborate <codename> --loop`
 - **Entry:** `.claude/skills/collaborate/SKILL.md`
 - **Files:** .claude/skills/collaborate/SKILL.md
-- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
+- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, spreadsheets-cloud, npm test router, verdict, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
 - **Related:** DEV-65
 
 #### DEV-67 Run the delivery loop with the cloud workers doing the compute
@@ -6494,7 +6494,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Run:** `/collab-loop [<wave set>]`
 - **Entry:** `.claude/skills/collab-loop/SKILL.md`
 - **Files:** .claude/skills/collab-loop/SKILL.md, .claude/skills/collab-loop/collab-loop.sh
-- **Keywords:** collab loop, cloud offload, cloud workers, submit-cloud, collaborate, iterate, wave set, idempotent loop, laptop load, setup currency, reload skills
+- **Keywords:** collab loop, cloud offload, cloud workers, submit-cloud, spreadsheets-cloud, spreadsheets rows, collaborate, iterate, wave set, idempotent loop, laptop load, setup currency, reload skills
 - **Related:** DEV-30, DEV-65, DEV-66
 
 #### DEV-68 Check that each AWS SSO profile is live for the CLI and the SDK
@@ -8943,6 +8943,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - npm ci: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - npm package: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
 - npm publish: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
+- npm test router: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - npm-check-updates: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - npx diya-gl: [SS-05](#ss-05-run-the-diya-gl-cli)
 - null-tolerant map: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
@@ -9688,6 +9689,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spreadsheets homepage: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - spreadsheets mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - spreadsheets product: [SITE-11](#site-11-promote-sibling-products-and-partners)
+- spreadsheets rows: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
+- spreadsheets-cloud: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - spreadsheets_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - spreadsheetsbehaviour: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - spreadsheetsstack: [SS-35](#ss-35-cdk-spreadsheetsstack)
@@ -10044,7 +10047,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vendor ip ranges: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - vendor price: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
-- verdict: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- verdict: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator), [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - verdict line: [SS-42](#ss-42-route-tests-by-blast-radius)
 - verification: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - verification field: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)

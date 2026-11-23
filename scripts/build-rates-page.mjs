@@ -187,6 +187,7 @@ export const RATE_TABLES = [
     rows: [
       { label: "Registration threshold", fact: "vat-registration-threshold", engine: "vat.registration_threshold", format: "gbp" },
       { label: "Standard rate", fact: "vat-standard-rate", engine: "vat.standard_rate", format: "percent" },
+      { label: "Reduced rate", fact: "vat-reduced-rate", value: 0.05, format: "percent" },
       { label: "Flat Rate Scheme joining limit", fact: "vat-flat-rate-joining-limit", value: 150000, format: "gbp" },
       { label: "Flat Rate Scheme leaving limit", fact: "vat-flat-rate-leaving-limit", value: 230000, format: "gbp" },
       {

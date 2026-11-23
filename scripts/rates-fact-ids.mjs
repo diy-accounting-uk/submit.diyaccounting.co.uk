@@ -31,6 +31,7 @@ export const TAX_YEAR_FACT_SLUGS = [
   "cis-deduction-gross",
   "vat-registration-threshold",
   "vat-standard-rate",
+  "vat-reduced-rate",
   "vat-flat-rate-joining-limit",
   "vat-flat-rate-leaving-limit",
   "vat-flat-rate-limited-cost-trader",

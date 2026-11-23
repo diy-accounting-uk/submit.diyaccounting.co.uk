@@ -5,8 +5,11 @@
 
 HMRC Corporation Tax filing in Submit: the CT600 and its computations through HMRC's Transaction Engine,
 the proofs on HMRC's test services (TPVS, then ETS), the approval steps with HMRC, and the prod launch
-that follows them, including the joint accounts and CT600 filing on prod (UH8). Companies House
+that follows them, including the joint accounts and CT600 filing on prod (CT38 for the operator, UH7
+for the public). Companies House
 filing and the Companies House forms' unhide on prod (UH4) are live; their plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
+
+Status (2026-11-23): CT34, CT35, CT36, CT38 and CT39 can start. The CT600 and the joint filing are not on prod. The public opening (UH7) depends on one question: can the operator file DIY Accounting Limited's own accounts through Submit (OCT8, then OCT9)? Recognition (CT34 to CT37, OCT7, CT25, CT26) is its own track and does not block it (operator, 2026-11-23).
 
 ## User assertions
 
@@ -18,27 +21,63 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
-| UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | UH7 |
-| CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's reply to the request of 2026-11-11 |
+| CT35 | One record of the specifications and the customers' obligations at `main`'s head, with no requirement open (condition 1) | 1, and 2 in private | Opus | — |
+| CT34 | Every kind of return that the product files goes through ETS, from the script and from the page, with the rejections and a DATA_REQUEST; `ETS_RECORD.md` (condition 2) | ~6 | Sonnet | — |
+| CT36 | The site says which Company Tax Returns Submit files and which it does not (conditions 1 and 3) | ~8 | Sonnet | — |
+| CT37 | One record of our own tests and of ETS on the release commit; `RELEASE_RECORD_<date>.md` (conditions 2 and 3) | 0, and 1 in private | Sonnet | CT34, CT35, CT36 |
+| OCT7 | The operator confirms to SDST that the product is ready and asks for the pack; every sentence has its evidence | 0 | Opus (email draft) | CT37 |
+| CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's pack, which follows OCT7 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
-| UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71); the operator approved the unhide on 2026-11-22 |
+| CT38 | The CT600 and the joint filing on prod, live, only for a user with `resident-ltd` (by any bundle that includes it), preview features on in the stored account settings, and on the operator list; the "preview" mark on every HMRC company filing not live for the public; the calendar says "preview (operator only)" | ~24 | Opus (design), Sonnet (build) | — |
+| CT39 | DIY Accounting Limited's book for the year to 31 March 2026, by the `company-book` skill | 0 | Sonnet | — |
+| CT40 | A test-in-live submission (`HMRC-CT-CT600-TIL`) of the company's return from the script, which files nothing | ~3 | Sonnet | CT39 |
+| OCT8 | The operator files DIY Accounting Limited's accounts and CT600 for the period ending 31 March 2026 through Submit on prod | 0 | none | CT38 on prod, CT39, CT40 |
+| OCT9 | The operator decides to open the CT600 and the joint filing to the public | 0 | none | OCT8 |
+| UH7 | Open the CT600 and the joint filing to the public: `prod` on both activities, CT38's operator gate and the "preview" marks removed, the terms (C86) and the calendar say production | ~10 | Sonnet | OCT9 |
 
 ### The approval path
 
-`../private.diyaccounting.co.uk/hmrc/ct/CT600_APPROVAL_CHECKLIST.md` gives each check a basis (Required, Recommended, Optional, Our practice) and its primary source. The legal root is HMRC's Corporation Tax electronic communications direction (§5, https://www.gov.uk/government/publications/directions-under-regulations-3-and-10-of-the-income-and-corporation-taxes-electronic-communications-regulations-2003-si-2003282/income-and-corporation-taxes-electronic-communications-direction): a compulsory return goes through "commercial products that have been successfully tested by HMRC". So recognition comes before UH7.
+`../private.diyaccounting.co.uk/hmrc/ct/CT600_APPROVAL_CHECKLIST.md` gives each check a basis (Required, Recommended, Optional, Our practice) and its primary source. The legal root is HMRC's Corporation Tax electronic communications direction (§5, https://www.gov.uk/government/publications/directions-under-regulations-3-and-10-of-the-income-and-corporation-taxes-electronic-communications-regulations-2003-si-2003282/income-and-corporation-taxes-electronic-communications-direction): a compulsory return goes through "commercial products that have been successfully tested by HMRC". The operator decided on 2026-11-23 that the public opening (UH7) depends only on OCT8's outcome, through OCT9, and that recognition does not block it; this replaces his decision earlier that day that the CT600 opens on prod after recognition.
+
+SDST answered the request for the new applicant's pack on 2026-11-23. Recognition is optional. An application waits until three conditions hold, and SDST sends the pack when the operator confirms that the product is ready:
+
+| Condition | SDST asks for | On record on 2026-11-23 | Row |
+|---|---|---|---|
+| 1 | The specifications and the customers' obligations fully researched; the product meets them | `SPEC_READING_EVIDENCE.md` (2026-11-03) and the checklist (2026-11-11), both older than CT33 and CT29; no public page lists the product's scope | CT35, CT36 |
+| 2 | Extensive use of HMRC's test services, ETS included | ETS: four submissions on 2026-11-11 (runs 43031071769 and 43072995143). TPVS accepted nine kinds of return from 2026-10-23 to 2026-11-12 | CT34 |
+| 2 | Our own thorough product testing | 435 unit tests pass at `ce4482b9f`; no one record of every suite on one commit | CT37 |
+| 3 | The commercial product fully matured and ready for release | The CT600 activity is not listed for prod; the site says "preview" and "You cannot file Company Tax Return (CT600) with Submit yet" | CT36, CT37 |
+
+The reply to SDST, the evidence for each of its sentences and the review of both are in `../private.diyaccounting.co.uk/hmrc/ct/DRAFT_SDST_CT_RECOGNITION_READINESS_2026-11-23.md`. The release commit is the commit of `main` on which CT34, CT35 and CT36 are merged and no row that changes the Corporation Tax code is open.
 
 The Required checks still open, in order:
 
 | Order | Checks | What | Row |
 |---|---|---|---|
-| 4 | C69 | Pass the pack's scenarios on the test service each names | CT25 |
-| 5 | C70 | Send SDST the scenario XML | CT26 |
-| 6 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
-| 7 | C86, C88 | Terms describe CT600 filing as live; no recognition claim before step 6 (Developer Hub terms of use) | UH7 |
+| 1 | — | The evidence for the three conditions | CT34, CT35, CT36, CT37 |
+| 2 | C68 | The readiness confirmation and the request for the pack | OCT7 |
+| 3 | C69 | Pass the pack's scenarios on the test service each names | CT25 |
+| 4 | C70 | Send SDST the scenario XML | CT26 |
+| 5 | C71 | SDST's recognition and the supplier listing | CT26 (SDST) |
+| with UH7 | C86, C88 | Terms describe CT600 filing as live when UH7 opens it; no recognition claim before C71 (Developer Hub terms of use) | UH7 |
 
 RIM V1.994 is live and C1 to C8 are done. The other Required checks pass or are fixed on `main`.
 
 Our-practice checks not worth keeping: C84 (a pack statement that the CT channel carries no fraud prevention headers). The Developer Hub terms of use scope fraud prevention data to the MTD VAT and Income Tax APIs; answer from them if the pack asks.
+
+### Machine-only
+
+The briefs are on `NEXT.md`; each row's evidence target is below.
+
+- [ ] **CT35. The record of the specifications and the customers' obligations, as the product stands.** Evidence target: one record in `../private.diyaccounting.co.uk/hmrc/ct/` at `main`'s head: each source with its version and the date read, each requirement with its code and test, the obligations on the company with what the product does, refuses or leaves to the company, the draft CT600 (2027) forms read, and no requirement open. **Owner**: Claude Code. **Model**: Opus.
+
+- [ ] **CT34. Every kind of return that the product files goes through the External Test Service.** Evidence target: `../private.diyaccounting.co.uk/hmrc/ct/ETS_RECORD.md` (case, date, run, correlation ID, IRmark, final qualifier, the answer to the delete) and one folder of masked transcripts per run; the matrix run from `main` on three separate days. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **CT36. The site says which Company Tax Returns Submit files and which it does not.** Evidence target: the scope on the CT600 page, the guide and `hmrc-company-tax-return-service-closed.html` from one list in code, a unit test that ties the list to the refusals, and a screenshot of each page in `../private.diyaccounting.co.uk/hmrc/ct/evidence/CT36-scope/`. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **CT38. The CT600 and the joint filing on prod, live, for an operator who turns preview features on.** The brief, with the call sites, is on `NEXT.md`. Done when, on prod, both activities reach the live services only for a user who holds `resident-ltd` by any bundle that includes it, has the stored `previewFeatures` setting on and is on the operator list; every other user sees and reaches neither; PRV1 is fixed; the "preview" marks and the calendar's "preview (operator only)" are in place. Opus writes the design under Designs first. **Owner**: Claude Code. **Model**: Opus (design), Sonnet (build).
+
+- [ ] **CT39. DIY Accounting Limited's book for the year to 31 March 2026.** Evidence target: `../staging/2025-2026/book/` with `VERIFICATION.md` (a residual of 0 for each source and month), never committed; the book loads in the CT600 page and the TPVS script with no refusal. **Owner**: Claude Code. **Model**: Sonnet.
 
 ### Human-driven
 
@@ -46,27 +85,53 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 ### Blocked
 
-- [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's reply to the request of 2026-11-11.
+- [ ] **CT37. One record of our own tests and of ETS on the release commit.** Evidence target: `../private.diyaccounting.co.uk/hmrc/ct/RELEASE_RECORD_<date>.md` with the commit and, for each suite (unit, system, browser, behaviour on the simulator and on ci, `compliance.yml`, CT34's matrix), the command or run id, the counts and the result. Blocked on CT34, CT35 and CT36. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **UH8. The joint accounts and CT600 filing on prod.** `prod` on CT29's activity and the availability table on `web/public/mtd-calendar.html`. Blocked on UH7; the operator approved it on 2026-11-22. **Source**: operator, 2026-11-11 (replaces DF2b). **Owner**: Claude Code (build), operator (approval). **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **OCT7. Confirm to SDST that the product is ready, and ask for the pack.** Email 2 of the draft, brought up to date from CT34 to CT37, stating the CT600's state on prod on the day it is sent (operator only under CT38, or open to customers under UH7); no sentence stays without its evidence. The operator chose on 2026-11-23 to send no reply to SDST until Email 2 is true. Blocked on CT37. **Owner**: Claude Code (draft), Operator (send). **Model**: Opus.
 
-- [ ] **UH7. Unhide the CT600 filing form on prod.** HIDE1 hid it with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: HMRC's Corporation Tax recognition (CT26's outcome, checklist C71); B34g2b's ETS filing from the page; the activity in a bundle sold on prod. The operator approved the unhide on 2026-11-22. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
+- [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's pack, which follows OCT7.
+
+- [ ] **CT40. A test-in-live submission of DIY Accounting Limited's return, which files nothing.** `--til` in `scripts/hmrc-tpvs-ct600.js` posts the return from CT39's book to the live Transaction Engine as `HMRC-CT-CT600-TIL`, with the operator's Government Gateway credentials typed at a prompt. Evidence target: `../private.diyaccounting.co.uk/hmrc/ct/til-<date>/`, masked. Blocked on CT39. **Owner**: Claude Code, Operator (credentials). **Model**: Sonnet.
+
+- [ ] **OCT8. The operator files DIY Accounting Limited's accounts and Company Tax Return for the period ending 31 March 2026, through Submit on prod.** One joint filing or the two filings, with his own Government Gateway and Companies House credentials. The receipts and the acknowledgements go to `../private.diyaccounting.co.uk/hmrc/ct/own-filing-2026-03-31/` and `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/`. The accounts are due by 31 December 2026 and the return by 31 March 2027. Blocked on CT38 on prod, CT39 and CT40. **Owner**: Operator (files), Claude Code (the record). **Model**: none.
+
+- [ ] **OCT9. The operator decides to open the CT600 and the joint filing to the public.** The one question is OCT8's outcome: can the operator file DIY Accounting Limited's own accounts through Submit? Recognition does not decide it. The decision and its date go into this plan. Blocked on OCT8. **Owner**: Operator. **Model**: none.
+
+- [ ] **UH7. Open the CT600 and the joint filing to the public on prod.** OCT9's machine part: `prod` on both activities, CT38's operator gate removed, the "preview" marks off in English and Welsh, the terms describe CT600 filing as live (C86), and the availability table on `web/public/mtd-calendar.html` says production, in one change. Its gate is OCT8's outcome, through OCT9; recognition (OCT7, CT25, CT26, CT34 to CT37) is its own track (operator, 2026-11-23). The page guard reads the catalogue, so it needs no edit. Agent filing stays behind the `practice` activity (UH1). Blocked on OCT9. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan; operator, 2026-11-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
 
 ## Dependency graph
 
 ```mermaid
 flowchart LR
-    SDST["SDST's reply to the request of 2026-11-11"] --> CT25
+    subgraph Recognition
+    CT34 --> CT37
+    CT35 --> CT37
+    CT36 --> CT37
+    CT37 --> OCT7
+    OCT7 --> SDST["SDST's new applicant's pack"]
+    SDST --> CT25
     CT25 --> CT26
     CT26 --> REC["HMRC's CT recognition"]
-    REC --> UH7
-    UH7 --> UH8
+    end
+    subgraph Opening
+    CT38 --> OCT8
+    CT39 --> CT40
+    CT39 --> OCT8
+    CT40 --> OCT8
+    OCT8 --> OCT9
+    OCT9 --> UH7
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
+    end
 ```
 
-- UH8: blocked by UH7
-- CT25: blocked by SDST's reply to the request of 2026-11-11; CT26 by CT25
-- UH7: blocked by HMRC's Corporation Tax recognition (CT26)
+- CT34, CT35, CT36, CT38, CT39: nothing blocks them
+- CT37: blocked by CT34, CT35 and CT36 (the release commit)
+- OCT7: blocked by CT37
+- CT25: blocked by SDST's pack, which follows OCT7; CT26 by CT25
+- CT40: blocked by CT39
+- OCT8: blocked by CT38 on prod, CT39 and CT40
+- OCT9: blocked by OCT8; UH7 by OCT9
+- Recognition does not block the opening (operator, 2026-11-23)
 
 ## Designs
 
@@ -119,7 +184,7 @@ The answers B34g1 builds to, from HMRC's published specifications (read 2026-10-
 | Size | 25MB per message, attachments included (1614) | validation rules |
 | TPVS | Open with no credentials at `https://www.tpvs.hmrc.gov.uk/HMRC/CT600`; validates the body (schema, business rules, iXBRL, IRmark) and not the GovTalk header | "How to use the test service" v1.4a; a malformed post answered a GovTalk error on 2026-10-05 |
 | Next RIM | V1.995 (25 September 2026) awaits implementation in the test services and live; V1.994 is what they run | gov.uk CT600 RIM artefacts page |
-| Recognition before live | A compulsory return goes through "commercial products that have been successfully tested by HMRC"; the accounts and computations go as separate iXBRL instance documents; the computations follow HMRC's format | HMRC's Income and Corporation Taxes (Electronic Communications) direction §5 to §7 (published 8 July 2026), under SI 2003/282 reg 3(2A) |
+| Tested by HMRC | A compulsory return goes through "commercial products that have been successfully tested by HMRC"; SDST said on 2026-11-23 that recognition is optional; the accounts and computations go as separate iXBRL instance documents; the computations follow HMRC's format | HMRC's Income and Corporation Taxes (Electronic Communications) direction §5 to §7 (published 8 July 2026), under SI 2003/282 reg 3(2A) |
 | Vendor ID | 9873 in `ChannelRouting/Channel/URI` on every submission, test and live; the product name in `Product` | SDST email of 2026-11-11 |
 
 The boxes B34g1 fills (`app/services/ct600Xml.js`), and the books it refuses. Typed on the page:
@@ -209,7 +274,7 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 
 | # | Question | Answer from | Blocks |
 |---|---|---|---|
-| 9 | CT recognition criteria for the software list | SDST's new applicant's pack (requested 2026-11-11) | UH7 |
+| 9 | CT recognition criteria for the software list | SDST's new applicant's pack (requested 2026-11-11) | CT25 |
 
 ### Design: the CT600 without a book (CT2)
 
@@ -466,7 +531,7 @@ Ranked, most harm to the reader first:
 | 11 | The `h1` is in Title Case, against the site rule (DS 1.11) and its sibling "File micro-entity accounts" | Page | "File a Company Tax Return" [consistency] |
 | 12 | The review answers are nine separate tables, each with its own header row and its own column widths, so the Answer columns do not line up | Review | One column plan for every answers table (fixed layout, set widths) [consistency] |
 
-The joint filing's open row is UH8 on this plan's board.
+The joint filing's open rows are CT38 (operator only) and UH7 (the public) on this plan's board.
 
 ### Design: supplementary page CT600A, loans to participators (CT8a)
 

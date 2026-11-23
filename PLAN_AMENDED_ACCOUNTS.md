@@ -227,11 +227,11 @@ The six concepts are in `fixtures/frc-taxonomy/frs-102-2026-concepts.json`:
 | Candidate | Finding | Task |
 | --- | --- | --- |
 | A new submission type or flag on the XML Gateway | None. The form stays `Accounts` and the envelope does not change | none |
-| Test submissions and a review before live | Open. The live package covers the form types tested, and a new release of a covered type is tested again | AA9, OAA1, then AA10 to AA13 and OAA2 |
+| Test submissions and a review before live | None. A revision is filed as the `Accounts` form, and the XML team's email of 2026-11-02, which issued the live package, says: "This covers the filing of the form type you have tested to date. If you wish to increase your filing options, you will have to test them via me." The form type has not changed, so the operator decided on 2026-11-22 to treat revised accounts as covered. AA12 files the four revised cases on the test service as Submit's own check | AA10 to AA12 |
 | A new REST API scope or application | None. The REST filing API covers transactions, the registered office, the registered email and insolvency | none |
 | Reading the filed accounts of a company | No approval. The filing history and the Document API take the API key that the company lookup uses | AA23 |
 | Reading the register to build books | No approval. The profile and the officers take the API key. `CompanyDataRequest` is a request that the live package already sends | AA29, AA31 |
-| A change to the live package's form list | Open, same question as the review | AA9, OAA1 |
+| A change to the live package's form list | None. The form stays `Accounts` | none |
 | The finder listing | Companies House lists a supplier after three consecutive months of live filings on its own presenter ID and credit account (the XML team, 2026-11-13). The operator raises the listing | none |
 
 The live package record is `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md`. The mail mirror holds no statement from the XML team on revised or amended accounts (searched 2026-11-12).
@@ -240,12 +240,16 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 
 | Id | Question | Blocks |
 | --- | --- | --- |
-| Q1 | Must revised accounts under the `Accounts` form pass test submissions and a review before the live package files them? If yes, how many for each accounts type? | OAA2, AA18 |
+| Q1 | Must revised accounts under the `Accounts` form pass test submissions and a review before the live package files them? If yes, how many for each accounts type? | AA18 |
 | Q2 | Does the gateway accept revised accounts by software when the original accounts came by paper, WebFiling or other software? | AA15 |
 | Q3 | What does the gateway answer when a second set of accounts arrives for a period and the revised fact is `false`? What does it answer when the fact is `true` and it holds no accounts for the period? | AA15, AA2 |
 | Q4 | Does the gateway refuse revised accounts for a period after some time? | AA4 copy |
+| Q5 | A `CompanyDataRequest` takes a `MadeUpDate`. Are the shareholdings and the statement of capital in the answer the register as at that date, or as at the last confirmation statement? What does the answer hold when the `MadeUpDate` is before the last confirmation statement, or after today? Does it state shareholdings for every private company limited by shares? | AA31 copy (section 11.4, point 5) |
+| Q6 | In revised accounts by replacement, does `core:DateAuthorisationFinancialStatementsForIssue` hold the date the directors approved the revised accounts (as `bus:DateApprovalRevisionReport` does), or the date they approved the original accounts? Four revised documents on the 2026 taxonomy in the Accounts Data Product daily file of 2026-11-21 hold the revision date there, equal to `bus:DateApprovalRevisionReport`. One revised small company document on the 2025 taxonomy in the daily file of 2026-11-20 holds the original approval date there and dates the revision later. Until the answer, Submit follows the 2026 taxonomy examples and puts the revision date there | AA1 |
 
-One point is settled from examples before any question. AA1 reads amended examples in the Accounts Data Product to see which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. It becomes a question only when the examples disagree.
+No question is sent (operator, 2026-11-22). Q1 is answered by the XML team's email of 2026-11-02 quoted in section 2.2's table: the live package covers the form type tested, a revision is the same `Accounts` form, and the operator treats revised accounts as covered, so no review is requested. Q2 is read from the register in AA15's first step. Q3 matters to AA15 only, and the simulator's answers stay until a live filing shows the gateway's. Q4: the page's copy follows GOV.UK. Q5 is tested with the business's own company when AA31 is built. Q6: Submit follows the four examples on the 2026 taxonomy.
+
+The examples in the Accounts Data Product disagree on which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision, so that point is Q6.
 
 Until Q2 has an answer, Submit offers a revision only for accounts that it filed. AA23 and AA24 read the sets that the register holds, so that a revision can start from accounts filed another way when Q2 allows it. A customer whose accounts went another way reads the paper route on the GOV.UK page.
 
@@ -286,7 +290,7 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 - The code that builds a book is in the diya-gl package, so the DIYA-GL app, both MCP servers and Submit's page share one builder.
 - The pages that call Companies House are on Submit. The customer is signed in there, holds the bundle there and types the authentication code there.
 - The DIYA-GL app writes the spreadsheet package. It has the engine and the template workbooks on its own site. Submit hands it the book by a book link.
-- Rejected: a "new book from Companies House" form inside the DIYA-GL app. That app works with no account. The form would need a sign-in, a bundle check, cross-origin access to the Companies House routes and the authentication code on a second site.
+- A new book from a company is built inside the DIYA-GL app (board row SY3). It needs no sign-in, no bundle check and no authentication code, because it reads public data only, through Submit's public register route, whose CloudFront CORS policy allows the DIYA-GL origins. So that book has no shareholders. A book with the members register still needs the authentication code, and that journey stays on Submit (AA31).
 - Rejected: the package written inside Submit's page. It needs the 4.2 MB template set on Submit, or a cross-origin fetch. The fetch needs a change to the content security policy and to the template site's headers.
 - Rejected: the package written by a Submit Lambda. It sends the customer's figures through the server for work that a browser does, and it fetches templates from another site at run time.
 
@@ -306,7 +310,7 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 | MCP package readme | `mcp/README.md` | The four tool rows | AA7 |
 | API description | `infra/main/java/co/uk/diyaccounting/submit/names/CompaniesHouseNames.java`, `web/public/docs/api/openapi.json` | The summary names small company and revised accounts | AA16 |
 | Catalogue | `web/public/submit.catalogue.toml` | The activity `file-revised-accounts`; its name at launch | AA3, AA18 |
-| Capability index | `REPORT_CAPABILITIES.md`, `_developers/capabilities/skeleton.md` | CH-08's text; a new entry CH-20 | AA4, AA16 |
+| Capability index | `REPORT_CAPABILITIES.md`, `_developers/capabilities/skeleton.md` | CH-08's text; a new entry CH-24 | AA4, AA16 |
 | Terms | `web/public/terms.html` | Two sentences name revised accounts | AA18 |
 | Customer copy and receipts | `web/public/lib/filing-record.js`, `web/public/hmrc/receipt/receipts.page.js` | The title and the amend link | AA4 |
 | Filing landing pages | `scripts/build-filing-pages.mjs` | A section on each accounts page | AA21 |
@@ -363,14 +367,9 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 
 | Label | Task | Delivers | Verified by | Class |
 | --- | --- | --- | --- | --- |
-| AA9 | Draft the questions for the XML team | One draft with Q1 to Q4 | The `email-draft` skill's facts pass | machine-only |
-| OAA1 | Send the questions | The email to the XML team | The send date is in this plan | human-driven |
-| AA22 | Record the XML team's answers | The reply on record; each answer in section 2.3 | Section 2.3 holds an answer for Q1 to Q4 | machine-only |
 | AA10 | Revised cases for the review | Four fixture cases; the review script judges a revision | Unit tests of the review script | machine-only |
 | AA11 | Review and judge the four cases | A review folder with the judge's verdicts | The judge passes all four | machine-only |
 | AA12 | File the four cases on the test service | Four submission numbers | The gateway acknowledges each | machine-only |
-| AA13 | Draft the review request | One draft with the four numbers | The `email-draft` skill's facts pass | machine-only |
-| OAA2 | Send the review request | The email, then the XML team's verdict | The verdict is in the correspondence folder | human-driven |
 | AA14 | Prove a revision through the Submit API | One revised filing from MCP to the test service | The proof script's transcript | machine-only |
 | AA15 | A revision with no receipt | The form's own revised option; a change of regime | Simulator behaviour tests | machine-only |
 | AA23 | The company's filed accounts from the register | Two Submit API routes: the list and one document | Unit, simulator and system tests | machine-only |
@@ -426,7 +425,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Reader.** In `app/services/jointFiling.js`, `readRevision` requires both texts and applies `MAX_REVISION_DIFFERENCES_LENGTH` to each. Rename that constant to match.
 - **Document.** In `app/services/accountsIxbrlCommon.js`, add the six concepts of section 2.1 to `CONCEPTS`, beside `reportAmendedRevisedVersion`. In `revisionPage`, tag each of the three fixed sentences and the two customer texts with `renderTextFact`. Add one visible sentence with the date the directors approved the revised accounts, tagged `bus:DateApprovalRevisionReport` with `renderDateFact`. Every tagged statement is visible text. The page headings become "What was wrong with the original accounts" and "What the revised accounts change".
 - **Callers of the page.** `app/services/microEntityAccountsIxbrl.js` (`const revisionHtml = input.revision`) and `app/services/smallCompanyAccountsIxbrl.js` (`if (input.revision) {`) pass the context reference and the approval date that `revisionPage` now needs.
-- **The balance sheet date.** Read three amended examples of the 2026 taxonomy in an Accounts Data Product zip (the `companies-house-review` skill gives the download). See which date `core:DateAuthorisationFinancialStatementsForIssue` holds. Follow the examples and state the finding in the pull request. When the examples disagree, add the question to AA9's draft.
+- **The balance sheet date.** Read three amended examples of the 2026 taxonomy in an Accounts Data Product zip (the `companies-house-review` skill gives the download). See which date `core:DateAuthorisationFinancialStatementsForIssue` holds. Follow the examples and state the finding in the pull request. When the examples disagree, follow the newer taxonomy's examples and say so in the pull request.
 - **Joint filing page.** `web/public/companies-house/fileCompanyTaxReturn.html` (`revisionGroup`) gets two text areas in place of `revisionDifferences`. `web/public/companies-house/fileCompanyTaxReturn.page.js` (`revisionDifferencesProblem`, `sending.revision`) sends both, on the accounts request and on the Company Tax Return request.
 - **Tests.** Extend `describe("revised accounts"` in `app/unit-tests/services/microEntityAccountsIxbrl.test.js`: each of the six facts is present, non-empty and visible. Add the same block to `app/unit-tests/services/smallCompanyAccountsIxbrl.test.js` for full and filleted accounts, and a dormant case to the micro-entity file. Update `app/unit-tests/services/jointFiling.test.js`, `app/unit-tests/functions/companiesHouseAccountsPost.test.js`, `web/browser-tests/fileCompanyTaxReturn.browser.test.js`, `describeTheRevisionAndSend` in `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js` and `REVISION_DIFFERENCES` in `behaviour-tests/companyTaxReturn.behaviour.test.js`.
 - **Validator.** Add four revised samples to the `samples` list in `scripts/validate-accounts-ixbrl.js`. `npm run validate:accounts-ixbrl` prints `RESULT: valid` for each. The script reaches the network, so it runs on demand and stays out of the test suite.
@@ -505,28 +504,6 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Run.** `npm run build:mtd-calendar`; `npx vitest run web/unit-tests/mtdCalendar.test.js`.
 - **Waits on**: nothing. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: 3 files.
 
-#### AA9. Draft the questions for the XML team
-
-- **Goal.** One short email that asks Q1 to Q4 of section 2.3.
-- **How.** Use the `email-draft` skill on Opus. It reads the thread and the operator's sent mail from corpus-loom. The email is a reply on the XML team's accounts testing thread, which `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` names.
-- **Facts the draft may state.** Submit files micro-entity, small company and dormant accounts under its live package. It builds revised accounts by replacement with the six facts of the accounts specification's "Revised Accounts" section. GOV.UK says software can file an amendment "if you used it to file your annual accounts".
-- **Rules.** Four questions, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines. The operator sent the listing request of board row OOS22 under a subject of its own; the draft's header offers one for this email too.
-- **Output.** `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_REVISED_ACCOUNTS.md`, committed in the private repository.
-- **Waits on**: nothing. AA1's date question joins the draft when it arises before the send. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
-
-#### OAA1. Send the questions
-
-- The operator reads AA9's draft and sends it from his own address to the XML team.
-- A session renames the draft to `EMAIL_XMLGW_REVISED_ACCOUNTS.md`, adds the `Sent:` line and writes the send date here.
-- **Waits on**: AA9. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-#### AA22. Record the XML team's answers
-
-- **Goal.** The reply to OAA1 is on record, and section 2.3 of this plan holds each answer.
-- **How.** Find the reply in the mail mirror with the `corpus-loom` `search` tool (source `mail-antony`, the subject of OAA1's email). Write it beside the sent email as `EMAIL_XMLGW_REVISED_ACCOUNTS_REPLY.md` in `../private.diyaccounting.co.uk/companies-house/correspondence/`, in the form of `EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` there. Write each answer into section 2.3 in one sentence, with no name and no quoted text.
-- **What the answers start.** The answer to Q1 decides OAA2: test submissions and a review, or neither. The answers to Q2 and Q3 start AA15. The answer to Q4 gives AA4's copy its time limit, or removes the sentence.
-- **Waits on**: the reply to OAA1. **Class**: machine-only. **Repository**: private, submit. **Model**: Sonnet. **Size**: 2 files.
-
 #### AA10. Revised cases for the review
 
 - **Goal.** The review tooling builds, files and judges four revised cases.
@@ -541,7 +518,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 - **Goal.** A review folder in which the judge passes the four revised cases.
 - **How.** Run `/companies-house-review` with no `--run` for the revised cases. Fix each fail in AA1's files and run again. Then run `/companies-house-judge` on the folder. The folder is `target/companies-house-review/<date>/` and is never committed.
-- **After AA12.** Run the review again with `--run <case>=<run id>` for each revised case, so that the folder holds the gateway exchanges. The judge runs on that folder before AA13 cites it.
+- **After AA12.** Run the review again with `--run <case>=<run id>` for each revised case, so that the folder holds the gateway exchanges. The judge runs on that folder.
 - **Waits on**: AA10. **Class**: machine-only. **Repository**: submit. **Model**: Opus. **Size**: 0 committed files, or the fixes.
 
 #### AA12. File the four cases on the test service
@@ -549,22 +526,8 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Goal.** Four submission numbers on the Companies House test service.
 - **How.** The operator gave the go on 2026-11-22. Dispatch `.github/workflows/companies-house-test-service.yml` once for each revised case: `gh workflow run companies-house-test-service.yml --ref main -f case=<case name>`. The run builds each request with the route's own functions and sets `GatewayTest`. Its artifact holds the redacted exchanges.
 - **Proof.** The gateway acknowledges each submission. It parses the iXBRL at submit, so an acknowledgement shows that the document passed its rules. Each poll answers pending until the XML team reviews.
-- **Record.** Write the run id and the date into each case's `expectedOutcome.note` in the fixture. Use the form of the other cases ("Observed OK on the test service, run <run id> (<date>)."). The four submission numbers go into AA13's draft in the private repository.
+- **Record.** Write the run id and the date into each case's `expectedOutcome.note` in the fixture. Use the form of the other cases ("Observed OK on the test service, run <run id> (<date>).").
 - **Waits on**: AA11, and AA10 on `main`. **Class**: machine-only (the operator gave the go for the four test submissions on 2026-11-22). **Repository**: submit. **Model**: Haiku. **Size**: 1 file.
-
-#### AA13. Draft the review request
-
-- **Goal.** One email that gives the XML team the four submission numbers and asks for a review.
-- **How.** The `email-draft` skill on Opus, after AA11's second judge run passes. One line for each case: the number and the accounts type. One sentence says that all four pass the test validator.
-- **Output.** `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_REVISED_ACCOUNTS_REVIEW.md`.
-- **Waits on**: AA12. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
-
-#### OAA2. Send the review request
-
-- The operator sends AA13's draft when the answer to Q1 (AA22) asks for test submissions.
-- When that answer says that no test is needed, this task closes with nothing sent.
-- A session records the XML team's verdict in the correspondence folder. A fail goes back to AA1 and AA11.
-- **Waits on**: AA22, AA13. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### AA14. Prove a revision through the Submit API
 
@@ -578,10 +541,10 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 - **Goal.** A customer files revised accounts when Submit holds no receipt for the original, or when the revision changes regime.
 - **Design.** Both accounts forms get a choice at the top: "These accounts replace accounts already filed". It opens the revision section of `web/public/lib/accounts-revision.js`. The customer types the original approval date, or drops the filed iXBRL document on the books card, which gives `approvalDate`.
-- **Shaped by the answers.** Q2 decides whether the choice is offered for accounts first filed another way. Q3 gives the gateway's answers for a second original and for a revision with no original. The page words its errors from them, and AA2's simulator returns them.
+- **First step.** Read the register for Q2: in an Accounts Data Product daily file, find revised accounts filed by software, and read each company's filing history for an original marked as filed on paper. Offer the choice for accounts first filed another way only when such a filing exists; name the companies checked in the pull request. The simulator's answers for a second original and for a revision with no original stay as AA2 built them, and the page words its errors from them, until a live filing shows the gateway's.
 - **Until then.** The amend link on a receipt is the one way in. The page names the paper route on https://www.gov.uk/annual-accounts/corrections-and-amendments for other accounts.
 - **Tests.** Browser tests of the choice on both forms; two behaviour journeys; simulator unit tests for the Q3 answers.
-- **Waits on**: AA22, AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### AA23. The company's filed accounts from the register
 
@@ -636,7 +599,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA18. Launch on prod
 
-- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The answers to OAA1 are on record (AA22). When Q1's answer asked for test submissions, the XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approved the launch on 2026-11-22.
+- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14.  OAA3 said go. The operator approved the launch on 2026-11-22.
 - **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `file-revised-accounts` and drop "preview" from its name. In `scripts/build-mtd-calendar.mjs`, set the revised row's cells to `production` where the accounts row says production, and add the row's `video` id. Run `npm run build:mtd-calendar`. Run `npm run build:static-content`, which now writes the FAQ entry of AA16 into `web/public/help.html` and the journey of AA17 into `web/public/guide.html`, because the activity lists `prod`.
 - **Terms.** In `web/public/terms.html`, two sentences name what Submit files. One holds "micro-entity accounts, small company accounts and confirmation statements". The other starts "Companies House accounts and confirmation statements:". Add revised accounts to both.
 - **Video.** Flip the video public by the `video-publish` skill.
@@ -753,6 +716,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Tests.** Create `web/browser-tests/startCompanyBooks.browser.test.js`: each step; the step without the code; a PDF set; no accounts yet; the answer's dates of birth and addresses are in no output. Add one journey to `behaviour-tests/companiesHouse.behaviour.test.js`: build the book, download it, and drop it on the micro-entity form's books card for the same period end. Update the tests that list activities (`app/unit-tests/services/prodSurface.test.js`, `web/unit-tests/catalogue-names.test.js`, `web/unit-tests/catalog-paths.test.js`).
 - **Run.** `npm run bundle`; `npx playwright test --project=browser-tests web/browser-tests/startCompanyBooks.browser.test.js`; `lockf -k /tmp/submit-simulator.lock npm run test:companiesHouseBehaviour-simulator`.
 - **Visual definition of done.** A new page. Run the `visual-review` skill on the passing run's screenshots.
+- **Capital in more than one currency.** `parseCompanyDataResponse` in `app/services/companiesHouseXmlGateway.js` reads the first `Capital` element only, and the schema allows one for each currency. Read every element here; until then the builder writes a `capital-currency` entry (section 11).
 - **Waits on**: AA23, AA28, AA29, AA30. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~18 files.
 
 #### AA32. MCP tools for the filed accounts and the book
@@ -816,17 +780,11 @@ graph TD
   AA5 --> AA6
   AA1 --> AA7
   AA3 --> AA7
-  AA9 --> OAA1
-  OAA1 --> AA22
   AA1 --> AA10
   AA10 --> AA11
   AA11 --> AA12
-  AA12 --> AA13
-  AA13 --> OAA2
-  AA22 --> OAA2
   AA7 --> AA14
   AA10 --> AA14
-  AA22 --> AA15
   AA5 --> AA15
   AA3 --> AA23
   AA23 --> AA24
@@ -840,8 +798,6 @@ graph TD
   AA12 --> AA18
   AA14 --> AA18
   AA16 --> AA18
-  AA22 --> AA18
-  OAA2 --> AA18
   OAA3 --> AA18
   AA18 --> AA20
   AA18 --> AA21
@@ -869,17 +825,16 @@ graph TD
 - AA1: its merge follows AA3, or shares its pull request.
 - AA2, AA4, AA7, AA10: blocked by AA1. AA4 also by AA2 and AA3. AA7 also by AA3.
 - AA5, AA16 and AA17: blocked by AA4. AA6: blocked by AA5.
-- AA11: blocked by AA10. AA12: blocked by AA11. AA13: blocked by AA12.
+- AA11: blocked by AA10. AA12: blocked by AA11.
 - AA14: blocked by AA7 and AA10.
-- OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
-- AA15: blocked by AA22 and AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
-- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, and OAA3.
+- AA15: blocked by AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
+- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16 and OAA3.
 - AA20 and AA21: blocked by AA18.
 - AA28: blocked by AA4, and by AA27 on the DIYA-GL prod site for its package action.
 - AA26: blocked by AA25. AA30: blocked by AA26 and its publish to npm. So the order across the two repositories is AA26, the release, AA30.
 - AA31: blocked by AA23, AA28, AA29 and AA30. AA32: blocked by AA23, AA29, AA30 and AA31.
 - AA33: blocked by AA31. OAA5: blocked by AA33. AA34: blocked by AA27, AA31, AA33 and OAA5. AA35: blocked by AA34.
-- AA8, AA9, AA25, AA27 and AA29 wait on nothing.
+- AA8, AA25, AA27 and AA29 wait on nothing.
 
 ## 7. Shared facts
 
@@ -903,22 +858,20 @@ graph TD
 
 ## 8. Order of delivery
 
-**Before any answer from Companies House.** These land behind the activity's environment rule, with simulator and validator proofs:
+**Before the launch.** These land behind the activity's environment rule, with simulator and validator proofs:
 
-1. AA9, then OAA1. The questions go first, because the reply takes the longest.
-2. AA3 with AA1, then AA2.
-3. AA4, then AA5, then AA6. AA7 and AA8 run beside them.
-4. AA10, then AA11. AA23 runs beside them after AA3.
-5. AA16 and AA17 after AA4, then OAA3.
+1. AA3 with AA1, then AA2.
+2. AA4, then AA5, then AA6. AA7 and AA8 run beside them.
+3. AA10, then AA11. AA23 runs beside them after AA3.
+4. AA16 and AA17 after AA4, then OAA3.
 
-**With no answer needed (the operator gave the go on 2026-11-22).** AA12 files four test submissions. AA14 files one. AA13 drafts the review request.
+**With no answer needed (the operator gave the go on 2026-11-22).** AA12 files four test submissions. AA14 files one.
 
-**After the reply to OAA1.**
+**The launch.**
 
-1. AA22 records the answers. Then OAA2, when Q1's answer asks for test submissions.
-2. AA15, from the answers to Q2 and Q3, then AA24.
-3. AA18, the launch. It is the one change that offers a revision on prod.
-4. AA20 and AA21.
+1. AA18, the launch. It is the one change that offers a revision on prod.
+2. AA20 and AA21.
+3. AA15, from its read of the register, then AA24.
 
 **The two book features.** They wait on no answer from Companies House.
 
@@ -933,14 +886,11 @@ graph TD
 
 ## 9. Not confirmed
 
-- Q1 to Q4 of section 2.3.
+- Q1 to Q6 of section 2.3.
 - The error number that the real gateway gives a revised document that fails rule 2. AA2 uses the validator's text.
 - Which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. AA1 reads the examples.
 - Whether a spreadsheets workbook or a package zip fills the accounts forms. AA6 tests it.
 - Whether the Document API offers the iXBRL of every software-filed set of accounts. AA23 reads the metadata first.
-- As at which date a `CompanyDataRequest` states the shareholdings, and whether it states them for every private company. AA25 reads the schema and one test answer.
-- What a `MembersRegisterDataRequest` answers. AA25 reads its schema.
-- What a Company book states for a period that is not twelve months. AA25 decides it.
 - Whether the DIYA-GL app opens a dropped iXBRL document in a browser. The code path exists; AA27 adds the test.
 - Whether each new bundle export runs under the bundle's stubs in a browser. AA28 proves each in a unit test first.
 
@@ -967,3 +917,148 @@ graph TD
 | Filing history descriptions | https://github.com/companieshouse/api-enumerations/blob/master/filing_history_descriptions.yml |
 | The XML team's review process and the live package | `../private.diyaccounting.co.uk/companies-house/correspondence/`, `.claude/skills/companies-house-review/SKILL.md` |
 | The joint filing's path to prod | `PLAN_HMRC_CT_APPROVAL.md` |
+
+## 11. Design: the book from the register
+
+AA25's output. It replaces the draft contract and the draft field map of the AA25 brief. AA26 builds it. AA31, AA32, CL3, SY2 and SY3 call it.
+
+- "The book schema" is `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json`.
+- A path that starts `app/lib/` is in `../spreadsheets.diyaccounting.co.uk/`. A path that starts `app/services/` or `app/functions/` is in this repository.
+- Line numbers are those of spreadsheets `24547a929` and submit `60ab98a8f`.
+
+### 11.1 The function contract
+
+```js
+// app/lib/diya-gl-register-book.js, re-exported from app/lib/diya-gl-engine.js
+export async function buildBookFromRegister(
+  { profile, officers = [], capital, shareholdings, capitalDate, lastAccounts, periodEnd },
+  deps = {},
+) // resolves to { book, lines, differences }
+```
+
+The function reads no file except through `deps.resources`, and it calls no network.
+
+**Inputs.**
+
+| Input | Fields the builder reads | Source route | Given |
+| --- | --- | --- | --- |
+| `profile` | `companyNumber`, `companyName`, `dateOfCreation`, `registeredOffice` (`addressLine1`, `addressLine2`, `addressLine3`, `cityOrTown`, `postalCode`), `accountsNextPeriodStart`, `accountsNextPeriodEnd`, `accountsLastPeriodEnd` | `GET /api/v1/companies-house/company/{companyNumber}` with AA29's fields; SY2's public route answers the same names | always |
+| `officers` | each `name`, `officerRole`, `appointedOn`, `resignedOn` | `GET .../officers`, its `officers` array | when known |
+| `capital` | `shareCurrency`, `totalAggregateNominalValue`, `shares[]` of `shareClass`, `numShares`, `aggregateNominalValue`, all strings | `POST .../filing-data`, its `statementOfCapital` | with the authentication code |
+| `shareholdings` | each `shareClass`, `numberHeld`, `shareholders[]` of `forename` and `surname`, or `amalgamatedName` | `POST .../filing-data`, its `shareholdings` | with `capital` |
+| `capitalDate` | `YYYY-MM-DD` | `POST .../filing-data`, its `madeUpDate` | with `capital` |
+| `lastAccounts` | the result of `mapIxbrlAccounts(text, { companyNumber, periodEnd: profile.accountsLastPeriodEnd, regime: "any", firstAccounts })` (`app/lib/ixbrl-accounts.js:734`); `firstAccounts` is true when the set starts on `profile.dateOfCreation` | AA23's document route; SY2's public route | when the last set has an iXBRL document |
+| `periodEnd` | `YYYY-MM-DD`, on or after `profile.accountsNextPeriodEnd` | the year end the reader chose (SY2) | optional |
+| `deps.resources` | a loader that reads `data/ltd-*.toml` | default `nodeResourceLoader()`, which also serves Submit's bundle through its embedded files (`EMBEDDED_RESOURCE_DIRS` in `scripts/build-books-bundle.mjs`); `browserResourceLoader()` in the DIYA-GL app | optional |
+
+**Steps.**
+
+1. The period. The start is `accountsNextPeriodStart`, else the day after `accountsLastPeriodEnd`, else `dateOfCreation`. The end is `periodEnd`, else `accountsNextPeriodEnd`.
+2. The rate data. Call `loadTaxDataForBook` (`app/lib/product-workbook.js:133`) on a probe book with that period, as `loadTaxData` does (`app/lib/ixbrl-summary-book.js:411`).
+3. With `lastAccounts`, and an end equal to `accountsNextPeriodEnd`: call `buildIxbrlSummaryBooks(lastAccounts, { resources })`, then `rollForward(summary.book, summary.lines, rateData)`. Set `documentInfo.periodCoveredEnd` to the end of step 1. The start already agrees, because `rollForward` starts the day after the filed end (`app/lib/diya-gl-roll-forward.js:487`). So the opening lines keep their date.
+4. In every other case: call `buildNewBook({ product: "ltd", businessName: profile.companyName, yearEnd: end, vatRegistered: false }, rateData)` (`app/lib/diya-gl-new-book.js:167`). Set `periodCoveredStart` to the start of step 1. `lines` is `[]`.
+5. Write the company and the people by the field map (11.2). They replace the names that the summary book took from the filed document (`app/lib/ixbrl-summary-book.js:402`).
+6. Run the checks of 11.4 into `differences`.
+7. Run `validateBook(book)` and `validateLines(lines, book)`. A failure throws.
+
+**Result.**
+
+- `book` passes `validateBook`.
+- `lines` holds the opening entries that `rollForward` writes, or `[]`.
+- `differences` is an array of `{ code, text }`. The text is one plain sentence that the page shows as it is.
+
+| Code | When |
+| --- | --- |
+| `filed-accounts` | One for each entry of the summary books' `differences` (section 1.9) |
+| `period` | The period is not twelve whole months |
+| `no-figures` | The register holds a last set and no iXBRL of it reached the builder; the text names its period end |
+| `first-period` | The company has filed no accounts yet |
+| `periods-between` | `periodEnd` is after `accountsNextPeriodEnd`, so the periods between are not on the register |
+| `capital` | The filed called up share capital and the statement of capital differ by more than 50p |
+| `capital-currency` | The statement of capital is not in GBP |
+| `no-members` | No shareholdings reached the builder |
+| `shareholders-date` | Always with members: the date the shareholdings are stated as at (`capitalDate`) |
+| `share-classes` | The company has more than one share class |
+| `holding-left-out` | A holding the book does not carry, with its class, its holder and its number of shares |
+| `shareholdings-total` | The holdings of a class do not add up to its `numShares` |
+| `officers-left-out` | An officer of a role that the book does not hold, or an officer past the seventh |
+
+**Errors.** The function throws `RegisterBookError`, exported beside it, with a `field` and a message. The page shows the message.
+
+| `field` | When |
+| --- | --- |
+| `profile` | `profile`, its `companyNumber` or its `companyName` is missing |
+| `period` | Step 1 finds no end or no start, or the start is after the end |
+| `periodEnd` | `periodEnd` is before `accountsNextPeriodEnd` |
+| `lastAccounts` | Its company number is not the profile's, or its period does not end the day before the start of step 1 |
+| `taxYear` | `loadTaxDataForBook` finds no rate data for the period; the message names the year end |
+
+An `IxbrlError` of `mapIxbrlAccounts` belongs to the caller, which runs it first. A book or lines that fail step 7 throw `InvalidDiyaGlBookError` (`app/lib/diya-gl-interchange.js:376`); that is a defect in the builder.
+
+**Two further changes in AA26.**
+
+- Export `isTwelveWholeMonths(start, end)` from `app/lib/product-workbook.js`, and make `refuseUnlessTwelveWholeMonths` (line 111) use it. A period is twelve whole months when it starts on the first of a month and ends on the last day of the twelfth month. Consumers call it to decide whether to offer the package.
+- Widen the pattern of `diya-gl:companyNumber` (book schema line 169) from `^([0-9]{8})?$` to `^([0-9]{8}|[A-Z]{2}[0-9]{6})?$`. A Scottish or Northern Ireland number such as `SC123456` fails it today. The summary books write the filed number there (`app/lib/ixbrl-summary-book.js:382`), and `readBookSource` validates them, so it refuses such a company's filed set now. Add a test with an `SC` number.
+
+### 11.2 The field map
+
+| Register field | Book field | Defined at | Rule |
+| --- | --- | --- | --- |
+| `profile.companyName` | `entityInformation.organizationIdentifier` | book schema line 108 | As given. The package prints it in `OpenAccounts!E2` (`app/lib/xlsx-exporter.js:1805`) |
+| `profile.companyNumber` | `entityInformation."diya-gl:companyNumber"` | line 167 | As given; `OpenAccounts!E3` |
+| `registeredOffice.addressLine1` to `addressLine3` | `entityInformation.organizationAddressLine` | line 116 | The lines that exist, joined with ", "; `OpenAccounts!J3` |
+| `registeredOffice.cityOrTown` | `entityInformation.organizationTown` | line 120 | As given; `OpenAccounts!J4` |
+| `registeredOffice.postalCode` | `entityInformation.organizationPostcode` | line 124 | As given; `OpenAccounts!N6` |
+| The first director in the book's `directors[]` | `entityInformation."diya-gl:companiesHouseName"` | line 177 | The schema defines this field as the first director's name as filed. So the company name does not go here |
+| `lastAccounts.principalActivity` | `entityInformation.organizationDescription` | line 112 | The summary book sets it, and `rollForward` keeps it |
+| The period of 11.1 step 1 | `documentInfo.periodCoveredStart`, `documentInfo.periodCoveredEnd` | lines 46, 51 | As step 1 gives them |
+| Each officer whose `officerRole` is `director`, `corporate-director`, `secretary` or `corporate-secretary`, and whose `resignedOn` is absent or on or after the period start | one entry of `directors[]` | line 188 | Register order. At most seven, the rows of `Directors&Secretary` (`app/lib/xlsx-exporter.js:1860`); the rest go to `officers-left-out` |
+| `officer.name` | `directors[].name` | line 196 | "SURNAME, Forenames" becomes "Forenames SURNAME". The spelling and case stay as the register gives them |
+| `officer.officerRole` | `directors[].role` | line 200 | "Director" for the two director roles; "Company Secretary" for the two secretary roles |
+| `officer.appointedOn` | `directors[].appointed` | line 209 | As given |
+| `officer.resignedOn` | `directors[].resigned` | line 214 | When present |
+| The shares of the member with the same name | `directors[].shares` | line 204 | Names compare with case and spaces ignored. The sum over every class the book carries |
+| Each entry of `shareholdings` that the book carries | one entry of `members[]` | line 610 | Register order. At most 17, the rows of the register of members (`app/lib/xlsx-exporter.js:1849`; `buildCompanySecretary` drops the rest, `app/lib/calculators/ltd.js:1349`); the rest go to `holding-left-out` |
+| The entry's place in that order | `members[].memberID` | line 618 | `M1`, `M2` and on, as the workbook reader numbers them (`app/lib/xlsx-exporter.js:2431`) |
+| `shareholders[]` | `members[].name` | line 622 | "Forename Surname", or `amalgamatedName` as given. Joint holders are joined with " and " |
+| `numberHeld` | `members[].shares` | line 625 | A whole number. A fraction goes to `holding-left-out` |
+| The class's `aggregateNominalValue` ÷ `numShares` in `capital` | `members[].nominalValue` | line 629 | Pounds per share, rounded to six places |
+| (none) | `members[].acquiredDate` | line 634 | Left out. The answer holds no date per holding |
+| The closing balance sheet of `lastAccounts` | `openingBalances` and the `OB-001` lines | line 345 | `rollForward`, by the table of section 1.9. Called up share capital lands on `3000`, which the package prints in `OpenAccounts!E33` (`app/products/ltd/layout.js:158`) |
+
+The book takes nothing else. Left out: `sicCodes`, the company status and type, `dateOfCreation` (it sets the period only), the statement's `prescribedParticulars` and `totalAmountUnpaid`, and `capitalDate` (it appears in a text only). The `filing-data` answer's officers and registered office are not read: the officers route and the profile give them.
+
+### 11.3 The cases
+
+| Case | Inputs | Book | Lines | `differences` |
+| --- | --- | --- | --- | --- |
+| Full register with shareholders (AA31 with the code, AA32 with `codesEntryId`, CL3) | All | The roll forward of the last set, with directors and members | The opening entries | `filed-accounts`, `shareholders-date`, and any check of 11.4 that fails |
+| Public data only (SY2, SY3, AA31 without the code) | `profile`, `officers`, `lastAccounts` | The roll forward, with directors and no `members` | The opening entries | `no-members`, `filed-accounts` |
+| The last set is a PDF | `profile` with `accountsLastPeriodEnd`, no `lastAccounts` | `buildNewBook` for the next period, with the company and the people | `[]` | `no-figures`, which says to type the opening balances from the filed PDF |
+| A first period, no accounts yet | `profile` with no `accountsLastPeriodEnd` | `buildNewBook`, from `accountsNextPeriodStart` (the date of incorporation) to `accountsNextPeriodEnd` | `[]` | `first-period`; usually `period`; with `capital`, a `first-period` text that names the share capital issued, which the customer posts on the incorporation date |
+| A period that is not twelve whole months | Any | The register's period, as stated | As the other cases | `period`. The consumer offers the DIYA-GL book file and withholds the package (11.4, point 1) |
+| Two share classes | `capital` and `shareholdings` with two classes | Members by the rule of 11.4, point 2 | As the other cases | `share-classes`, and `holding-left-out` when the nominal values differ |
+
+### 11.4 The open points
+
+| Point | Answer | Evidence | Status |
+| --- | --- | --- | --- |
+| 1. The period | The book states the register's period. A period of twelve whole months gets a package. Any other period gets `period`, and the consumer offers the book file only | `periodFromYearEnd` gives twelve months (`app/lib/diya-gl-new-book.js:136`); `rollForward` always rolls twelve months (`app/lib/diya-gl-roll-forward.js:487`); the package refuses any other period (`refuseUnlessTwelveWholeMonths`, `app/lib/product-workbook.js:111`); the Company calculator works in twelve month columns (`app/lib/calculators/ltd.js:1770`) | Settled |
+| 2. Share classes | One nominal value for every class: one member for each holding of each class. Different nominal values: the members of the class with the largest total nominal value; each holding of the other classes goes to `holding-left-out` | `members[].nominalValue` holds one figure for the book (book schema line 629); `registerNominalValue` throws on two (`app/lib/share-nominal.js:45`); the register sheet has no class column (`MEMBER_COLUMNS`, `app/lib/xlsx-exporter.js:1850`); the recorded test answer holds two classes at £1 a share | Settled |
+| 3. Capital | `3000` takes the filed called up share capital, so the opening balance sheet equals the filed one. The builder compares it with `totalAggregateNominalValue` and writes `capital` when they differ by more than 50p. The text says that shares issued or bought back after the year end are a line in the new period | The statement is as at `capitalDate`, after the filed year end; the summary book posts the filed figure to `3000` (`app/lib/ixbrl-summary-book.js:313`) | Settled |
+| 4. `MembersRegisterDataRequest` | Not used. Submit keeps `CompanyDataRequest` | Its schema documents it as the elected members' register held on the public record (`MembersRegisterData-v1-0.xsd`); the schema page lists the elect, withdraw and update forms as retired on 18/11/2025; `CompanyDataRequest` gives shareholdings for any company with a confirmation statement (General specification 5.3, section 2.3). Its one gain is a date registered for each member | Settled |
+| 5. The date of the shareholder list | Working rule: the page sends the profile's `confirmationStatementNextMadeUpTo`, as AA31 step 3 says. The builder states the members as at the answer's `madeUpDate` in `shareholders-date`, and leaves `acquiredDate` out | The schema says only "Date information made up to" (`baseTypes-v3-7.xsd`, element `MadeUpDate`). The recorded test answer echoes the date that was sent, for a company other than the one asked for, so it shows no effect of the date. The simulator answers a fixed `madeUpDate` (`app/http-simulator/scenarios/confirmation-statement.js:82`) | Q5 in section 2.3 |
+| 6. A PDF set and a first period | Both get `buildNewBook` for the next period, with the company and the people and no lines (11.3) | A PDF holds no figures (section 1.9); the profile has no last accounts for a new company (AA29) | Settled |
+
+Facts of the recorded test answer (run 36264617953, case `company-data-request`) that the builder relies on:
+
+- The answer gives `shareClass`, `numShares` and `aggregateNominalValue` for each class. It also gives `AmountPaidDuePerShare` and `AmountUnpaidPerShare`, which the parser does not read, and it holds no `PrescribedParticulars` and no `TotalAmountUnpaid`. So the builder requires none of those.
+- A shareholder can be a company, named in one name field.
+- `parseCompanyDataResponse` reads the first `Capital` element only (`parseStatementOfCapitalElement`, `app/services/companiesHouseXmlGateway.js:624`). The schema allows one for each currency. Until the parser reads them all, a statement in another currency gives `capital-currency`.
+
+### 11.5 Privacy
+
+- The book holds the names, roles, appointment and resignation dates, shareholdings and the registered office (Rules of this plan).
+- The builder copies by the field map and never spreads an input object. The caller drops every other field before the call (AA31 step 4).
+- These fields reach no book, line or `differences` text: a date of birth (`dob`, `dateOfBirth`), a nationality, a country of residence, an occupation, identity verification details, a service or residential address, and a shareholder's address.
+- AA26's tests pass inputs that hold each of those fields. They assert that no value of them appears in the JSON of the book, the lines or `differences`. AA31's browser test asserts the same of the page's outputs.

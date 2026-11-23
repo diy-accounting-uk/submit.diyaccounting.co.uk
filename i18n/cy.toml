@@ -2577,6 +2577,10 @@ cy = '''Trothwy cofrestru'''
 hash = "a2e81394e1a8"
 cy = '''Cyfradd safonol'''
 
+[strings."rates.reduced-rate-df4565"]
+hash = "df45652fd0d3"
+cy = '''Cyfradd is'''
+
 [strings."rates.flat-rate-scheme-joining-limit-58da93"]
 hash = "58da93248890"
 cy = '''Terfyn ymuno â’r Cynllun Cyfradd Unffurf'''
