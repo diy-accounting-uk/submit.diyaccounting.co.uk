@@ -53,34 +53,49 @@ describe("derive_vat_return", () => {
         results = await engineResults(session);
       });
 
-      it("answers the five quarters the package's return forms are filled for, box by box", async () => {
+      it("answers the five quarters the package's return forms are filled for, box by box, as the workbook's boxes", async () => {
         for (const { periodEnd, form } of quarterForms(results)) {
           const answer = await deriveVatReturn(session, { periodEnd });
           expect(answer.periodEnd).toBe(periodEnd);
           expect(answer).not.toHaveProperty("dueDate");
-          expect(answer.boxes.box1).toBe(pence(form.G9));
-          expect(answer.boxes.box2).toBe(0);
-          expect(answer.boxes.box3).toBe(pence(form.G13));
-          expect(answer.boxes.box4).toBe(pence(form.G15));
-          expect(Math.abs(answer.boxes.box5 - form.G17)).toBeLessThan(0.011);
-          expect(answer.boxes.box6).toBe(Math.round(form.G21));
-          expect(answer.boxes.box7).toBe(Math.round(form.G23));
-          expect(answer.boxes.box8).toBe(0);
-          expect(answer.boxes.box9).toBe(0);
+          expect(answer.workbookBoxes.box1).toBe(pence(form.G9));
+          expect(answer.workbookBoxes.box2).toBe(0);
+          expect(answer.workbookBoxes.box3).toBe(pence(form.G13));
+          expect(answer.workbookBoxes.box4).toBe(pence(form.G15));
+          expect(Math.abs(answer.workbookBoxes.box5 - form.G17)).toBeLessThan(0.011);
+          expect(answer.workbookBoxes.box6).toBe(Math.round(form.G21));
+          expect(answer.workbookBoxes.box7).toBe(Math.round(form.G23));
+          expect(answer.workbookBoxes.box8).toBe(0);
+          expect(answer.workbookBoxes.box9).toBe(0);
         }
       });
 
-      it("answers every in-year month end, equal to the interface row's quarter columns", async () => {
+      it("answers every in-year month end, with the workbook's boxes equal to the interface row's quarter columns", async () => {
         const rows = interfaceRows(results).filter((r) => r.quarter);
         expect(rows).toHaveLength(15);
         for (const row of rows) {
           const answer = await deriveVatReturn(session, { periodEnd: row.periodEnd });
-          expect(answer.boxes.box1).toBe(pence(row.quarter.salesVat));
-          expect(answer.boxes.box4).toBe(pence(row.quarter.purchasesVat));
-          expect(answer.boxes.box6).toBe(Math.round(row.quarter.salesNet));
-          expect(answer.boxes.box7).toBe(Math.round(row.quarter.purchasesNet));
+          expect(answer.workbookBoxes.box1).toBe(pence(row.quarter.salesVat));
+          expect(answer.workbookBoxes.box4).toBe(pence(row.quarter.purchasesVat));
+          expect(answer.workbookBoxes.box6).toBe(Math.round(row.quarter.salesNet));
+          expect(answer.workbookBoxes.box7).toBe(Math.round(row.quarter.purchasesNet));
           expect(answer.months).toHaveLength(3);
           expect(answer.months[2].periodEnd).toBe(row.periodEnd);
+        }
+      });
+
+      it("answers the workbook's boxes for a quarter of standard-rated lines, and otherwise the boxes each line's tax code gives, naming how they differ", async () => {
+        const rows = interfaceRows(results).filter((r) => r.quarter);
+        for (const row of rows) {
+          const answer = await deriveVatReturn(session, { periodEnd: row.periodEnd });
+          if (!answer.followsTaxCodes) {
+            expect(answer.boxes).toEqual(answer.workbookBoxes);
+            expect(answer.workbookDifference).toBeNull();
+          } else if (JSON.stringify(answer.boxes) !== JSON.stringify(answer.workbookBoxes)) {
+            expect(answer.workbookDifference).toEqual(expect.stringContaining("differ from the workbook's VAT return"));
+          }
+          expect(answer.hmrc.vatDueSales).toBe(answer.boxes.box1);
+          expect(answer.hmrc.vatReclaimedCurrPeriod).toBe(answer.boxes.box4);
         }
       });
 

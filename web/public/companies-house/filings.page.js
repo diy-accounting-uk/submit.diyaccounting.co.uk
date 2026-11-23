@@ -53,17 +53,11 @@ async function amendHrefOf(receipt, receiptName) {
   } catch (error) {
     console.warn("These accounts cannot be revised here because the filed document could not be read:", error);
     if (filedWithoutComparatives(receipt, bundle)) {
-      const { marksFirstAccounts } = await import("../lib/first-accounts.js");
       showNotice(
-        marksFirstAccounts(receipt.filedDocument)
-          ? window.siteText(
-              "ch.filing.first-accounts-one-year",
-              "These are the company's first accounts, so they have no previous year. This site cannot yet read back accounts with one year, so they cannot be amended here yet.",
-            )
-          : window.siteText(
-              "ch.filing.no-comparatives-why",
-              "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
-            ),
+        window.siteText(
+          "ch.filing.no-comparatives-why",
+          "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
+        ),
       );
     }
     return null;

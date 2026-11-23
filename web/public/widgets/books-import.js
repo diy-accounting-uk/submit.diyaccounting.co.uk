@@ -77,12 +77,21 @@
   let drivePickerPromise = null;
   let mountedCard = null;
 
+  // The heading fold the small company form's fill needs, loaded with the bundle: a fill always reads
+  // accounts the bundle mapped, so it is there by the time one runs.
+  let foldBalanceSheetHeadings = null;
+
   function loadBundle() {
     if (!bundlePromise) {
-      bundlePromise = import("../lib/books-bundle.js").catch((error) => {
-        bundlePromise = null;
-        throw error;
-      });
+      bundlePromise = Promise.all([import("../lib/books-bundle.js"), import("../lib/balance-sheet-headings.js")])
+        .then(([bundle, headings]) => {
+          foldBalanceSheetHeadings = headings.foldBalanceSheetHeadings;
+          return bundle;
+        })
+        .catch((error) => {
+          bundlePromise = null;
+          throw error;
+        });
     }
     return bundlePromise;
   }
@@ -792,7 +801,8 @@
   // loss account a full copy holds, both years' balance sheets, the fixed asset note, the employees,
   // the principal activity and the directors. Answers how many fields it filled.
   function fillSmallCompanyFormFromMapped(mapped) {
-    const { currentYear, priorYear } = mapped.balanceSheet;
+    const currentYear = foldBalanceSheetHeadings(mapped.balanceSheet.currentYear, SMALL_BALANCE_SHEET_LINES);
+    const priorYear = foldBalanceSheetHeadings(mapped.balanceSheet.priorYear, SMALL_BALANCE_SHEET_LINES);
     let filled = 0;
     setField("periodStart", mapped.period.start);
     setField("periodEnd", mapped.period.end);

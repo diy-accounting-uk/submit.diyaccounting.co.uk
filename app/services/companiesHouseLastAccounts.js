@@ -22,6 +22,13 @@ function unreadable(set, reason) {
   return { outcome: "unreadable", set, reason: reason.length > MAX_REASON_LENGTH ? `${reason.slice(0, MAX_REASON_LENGTH)}…` : reason };
 }
 
+// A balance sheet's net assets are its capital and reserves, so a document that states only one of
+// the two totals gives both.
+function withBothTotals(balanceSheet) {
+  const total = balanceSheet.netAssets ?? balanceSheet.capitalAndReserves;
+  return total === undefined ? balanceSheet : { ...balanceSheet, netAssets: total, capitalAndReserves: total };
+}
+
 /**
  * One filed iXBRL document mapped to the figures of its own year. Either regime is read, and a
  * document without a prior year (a company's first accounts) maps as well, because the fill reads
@@ -38,7 +45,7 @@ export function mapLastAccounts(document) {
     regime: mapped.regime,
     period: mapped.period,
     approvalDate: mapped.approvalDate,
-    balanceSheet: mapped.balanceSheet.currentYear,
+    balanceSheet: withBothTotals(mapped.balanceSheet.currentYear),
     profitAndLoss: mapped.profitAndLoss ? { format: mapped.profitAndLoss.format, figures: mapped.profitAndLoss.currentYear } : null,
     filleted: mapped.filleted,
     dormant: mapped.dormant,

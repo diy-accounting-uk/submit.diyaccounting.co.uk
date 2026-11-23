@@ -24,15 +24,29 @@ import { build } from "esbuild";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateStandaloneValidatorSource } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
+import { generateStandaloneValidatorSource, STANDALONE_VALIDATOR_NAMES } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
+import { SCHEMA_VERSIONS } from "@diy-accounting-uk/diya-gl/dist/app/lib/app-resources.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKAGE_DIR = resolve(ROOT, "node_modules", "@diy-accounting-uk", "diya-gl");
 const SCHEMA_DIR = resolve(PACKAGE_DIR, "dist", "web", "spreadsheets.diyaccounting.co.uk", "public", "schema");
 export const BUNDLE_FILE = resolve(ROOT, "web", "public", "lib", "books-bundle.js");
 
-const BOOK_SCHEMA_ID = "https://spreadsheets.diyaccounting.co.uk/schema/diya-gl-book-v2.schema.json";
-const LINES_SCHEMA_ID = "https://spreadsheets.diyaccounting.co.uk/schema/diya-gl-lines-v2.schema.json";
+// Each schema version's book and lines schema: its file name and the $id it publishes.
+const SCHEMA_FILES = Object.fromEntries(
+  SCHEMA_VERSIONS.map((version) => [
+    version,
+    Object.fromEntries(
+      ["book", "lines"].map((kind) => [
+        kind,
+        {
+          file: `diya-gl-${kind}-${version}.schema.json`,
+          id: `https://spreadsheets.diyaccounting.co.uk/schema/diya-gl-${kind}-${version}.schema.json`,
+        },
+      ]),
+    ),
+  ]),
+);
 
 const LICENCE_COMMENT = "/*!\n * SPDX-License-Identifier: Apache-2.0\n * Copyright (C) 2006-2026 DIY Accounting Limited\n */";
 
@@ -169,12 +183,16 @@ function ajvAbsentPlugin(generatedSource) {
   const stubbed = new Set(["ajv/dist/2020.js", "ajv-formats", "ajv/dist/standalone/index.js"]);
   const stubSources = {
     "ajv/dist/2020.js": `${generatedSource}
+const VALIDATORS_BY_ID = {
+${SCHEMA_VERSIONS.flatMap((version) =>
+  ["book", "lines"].map((kind) => `  ${JSON.stringify(SCHEMA_FILES[version][kind].id)}: ${STANDALONE_VALIDATOR_NAMES[version][kind]},`),
+).join("\n")}
+};
 class Ajv2020Stub {
   compile(schema) {
     const id = schema && schema.$id;
-    if (id === "${BOOK_SCHEMA_ID}") return validateBook;
-    if (id === "${LINES_SCHEMA_ID}") return validateLines;
-    throw new Error("Ajv2020.compile(): the books bundle carries only the two published diya-gl schemas precompiled, got $id " + id);
+    if (VALIDATORS_BY_ID[id]) return VALIDATORS_BY_ID[id];
+    throw new Error("Ajv2020.compile(): the books bundle carries only the published diya-gl schemas precompiled, got $id " + id);
   }
 }
 export default Ajv2020Stub;`,
@@ -203,10 +221,14 @@ export default Ajv2020Stub;`,
 // model (ct600Figures.js and ct600LongPeriod.js, the modules the server works the boxes with), the two accounts derivations, and the schemas
 // registered so the read validates with no further setup.
 const ENTRY_SOURCE = `
-import bookSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json";
-import linesSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json";
+${SCHEMA_VERSIONS.flatMap((version) =>
+  ["book", "lines"].map(
+    (kind) =>
+      `import ${kind}Schema${version.toUpperCase()} from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/${SCHEMA_FILES[version][kind].file}";`,
+  ),
+).join("\n")}
 import { useSchemas } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
-useSchemas(bookSchema, linesSchema);
+useSchemas({ ${SCHEMA_VERSIONS.map((version) => `${version}: { book: bookSchema${version.toUpperCase()}, lines: linesSchema${version.toUpperCase()} }`).join(", ")} });
 import { readBookSource as readBookSourceWith, readBookSources as readBookSourcesWith } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 export const readBookSource = (bytes, name) => readBookSourceWith(bytes, name, { products: PRODUCTS });
@@ -249,12 +271,20 @@ export async function microEntityAccountsFromBook(book, lines) {
 `;
 
 async function main() {
-  const bookSchema = JSON.parse(readFileSync(resolve(SCHEMA_DIR, "diya-gl-book-v2.schema.json"), "utf8"));
-  const linesSchema = JSON.parse(readFileSync(resolve(SCHEMA_DIR, "diya-gl-lines-v2.schema.json"), "utf8"));
-  if (bookSchema.$id !== BOOK_SCHEMA_ID || linesSchema.$id !== LINES_SCHEMA_ID) {
-    throw new Error("the published schemas' $id fields moved; update BOOK_SCHEMA_ID and LINES_SCHEMA_ID to match");
-  }
-  const generatedSource = generateStandaloneValidatorSource(bookSchema, linesSchema).replaceAll(
+  const schemas = Object.fromEntries(
+    SCHEMA_VERSIONS.map((version) => [
+      version,
+      Object.fromEntries(
+        ["book", "lines"].map((kind) => {
+          const { file, id } = SCHEMA_FILES[version][kind];
+          const schema = JSON.parse(readFileSync(resolve(SCHEMA_DIR, file), "utf8"));
+          if (schema.$id !== id) throw new Error(`${file}'s $id is ${schema.$id}, not ${id}; update SCHEMA_FILES to match`);
+          return [kind, schema];
+        }),
+      ),
+    ]),
+  );
+  const generatedSource = generateStandaloneValidatorSource(schemas).replaceAll(
     JSON.stringify({ _items: ['require("ajv-formats/dist/formats").', { str: "fullFormats" }, ""] }),
     'require("ajv-formats/dist/formats").fullFormats',
   );

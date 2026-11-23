@@ -84,27 +84,57 @@
     "dormant": false
   },
   "register-micro-entity-filing-tool-both-years.xhtml": {
-    "unreadable": {
-      "message": "The current-year balance sheet does not balance: fixed assets plus current assets less creditors is 10046, the file states net assets of 8606.",
-      "gap": "Accruals and deferred income due after one year (AccruedLiabilitiesDeferredIncome, 1,440) is not read, so the reader finds 10,046 where the document states net assets of 8,606 (29,615 + 1,590 - 21,159 - 1,440)."
+    "regime": "micro",
+    "period": {
+      "end": "2025-01-31"
+    },
+    "balanceSheet": {
+      "fixedAssets": 29615,
+      "currentAssets": 1590,
+      "creditorsWithinOneYear": 21159,
+      "accrualsDeferredIncome": 1440,
+      "netAssets": 8606,
+      "capitalAndReserves": 8606
     }
   },
   "register-small-company-filleted-iris-both-years.xhtml": {
-    "unreadable": {
-      "message": "The current-year net current assets are stated as 115925; current assets less creditors within one year give 304337.",
-      "gap": "Creditors tagged with the CurrentFinancialInstruments member (188,412) are not read as creditors within one year, so the reader finds none where the document states net current assets of 115,925 (304,337 - 188,412)."
+    "regime": "small",
+    "period": {
+      "end": "2025-10-31"
+    },
+    "balanceSheet": {
+      "currentAssets": 304337,
+      "creditorsWithinOneYear": 188412,
+      "netCurrentAssets": 115925,
+      "netAssets": 120759,
+      "capitalAndReserves": 120759
     }
   },
   "register-small-company-filleted-acorah-both-years.xhtml": {
-    "unreadable": {
-      "message": "The current-year net current assets are stated as -9009; current assets less creditors within one year give 4850.",
-      "gap": "Creditors tagged with no maturity member (13,859) are not read as creditors within one year, so the reader finds none where the document states net current assets of -9,009 (4,850 - 13,859)."
+    "regime": "small",
+    "period": {
+      "end": "2026-01-31"
+    },
+    "balanceSheet": {
+      "currentAssets": 4850,
+      "creditorsWithinOneYear": 13859,
+      "netCurrentAssets": -9009,
+      "netAssets": -9009,
+      "capitalAndReserves": -9009
     }
   },
   "register-micro-entity-filleted-digita-current-year-only.xhtml": {
-    "unreadable": {
-      "message": "The current-year net current assets are stated as 12386; current assets less creditors within one year give 39842.",
-      "gap": "Creditors tagged with the CurrentFinancialInstruments member (26,256 within one year) and the Non-currentFinancialInstruments member (17,087 after one year) are not read, so the reader finds none where the document states net current assets of 12,386 (38,642 - 26,256)."
+    "regime": "micro",
+    "period": {
+      "end": "2025-12-31"
+    },
+    "balanceSheet": {
+      "creditorsWithinOneYear": 26256,
+      "creditorsAfterOneYear": 17087,
+      "accrualsDeferredIncome": 1200,
+      "netCurrentAssets": 12386,
+      "netAssets": 22661,
+      "capitalAndReserves": 22661
     }
   }
 }

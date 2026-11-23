@@ -16,6 +16,8 @@
 // the company. Each form loads this module and calls window.priorYearFill.fill when its company
 // lookup has shown the form.
 
+import { foldBalanceSheetHeadings } from "./balance-sheet-headings.js";
+
 // page-chrome.js gives the text in the chosen language; without it the English stands.
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
@@ -77,10 +79,13 @@ const isUntouched = (input) => input.value.trim() === "" || input.value === inpu
  * @returns {string[]} the ids of the fields filled
  */
 export function placeFigures(accounts, doc) {
-  const figures = { ...(accounts.profitAndLoss?.figures || {}), ...accounts.balanceSheet };
+  const fields = shownPriorFields(doc);
+  const lineOf = (input) => input.id.charAt(5).toLowerCase() + input.id.slice(6);
+  const balanceSheet = foldBalanceSheetHeadings(accounts.balanceSheet, fields.map(lineOf));
+  const figures = { ...(accounts.profitAndLoss?.figures || {}), ...balanceSheet };
   const placed = [];
-  shownPriorFields(doc).forEach((input) => {
-    const value = figures[input.id.charAt(5).toLowerCase() + input.id.slice(6)];
+  fields.forEach((input) => {
+    const value = figures[lineOf(input)];
     if (typeof value !== "number" || !isUntouched(input)) return;
     input.value = figureText(value);
     input.dispatchEvent(new Event("input", { bubbles: true }));

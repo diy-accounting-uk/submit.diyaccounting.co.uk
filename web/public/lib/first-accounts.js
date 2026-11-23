@@ -121,17 +121,3 @@ export function comparativesFinding({ periodStart, dateOfIncorporation, hasPrior
   if (dateOfIncorporation !== periodStart) return "first-accounts-start-on-incorporation";
   return hasPriorYear ? "first-accounts-have-no-prior-year" : null;
 }
-
-/**
- * Whether a filed accounts document marks itself as the company's first accounts: it tags the date
- * of incorporation (bus:DateFormationOrIncorporation), and that date reads the same as the period's
- * start date (bus:StartDateForPeriodCoveredByReport).
- * @param {string} document - the filed iXBRL
- * @returns {boolean}
- */
-export function marksFirstAccounts(document) {
-  const factText = (name) =>
-    new RegExp(`<ix:nonNumeric name="bus:${name}" contextRef="[^"]*"[^>]*>([^<]*)</ix:nonNumeric>`).exec(document)?.[1]?.trim();
-  const incorporated = factText("DateFormationOrIncorporation");
-  return Boolean(incorporated) && incorporated === factText("StartDateForPeriodCoveredByReport");
-}

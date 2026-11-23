@@ -1441,8 +1441,6 @@ window.WELSH_TEXT = {
   "ch.email.status-blocks": "Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.",
   "ch.email.type-not-covered": "Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.",
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
-  "ch.filing.first-accounts-one-year":
-    "Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol. Ni all y wefan hon ddarllen yn ôl gyfrifon ag un flwyddyn eto, felly ni ellir eu diwygio yma eto.",
   "ch.filing.load-failed": "Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.",
   "ch.filing.no-comparatives-why":
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
@@ -1888,8 +1886,6 @@ window.WELSH_TEXT = {
     "Mae’r cyfrifon y mae’r dderbynneb yn eu henwi ar gyfer y cyfnod {from} i {to}, felly ni all cyfrifon diwygiedig ar gyfer {start} i {end} gymryd eu lle.",
   "ch.revision.refuse-period-not-on-register":
     "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at {end}, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
-  "ch.revision.refuse-unread-heading":
-    "Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.",
   "ch.revision.refused-title": "Ni ellir diwygio’r cyfrifon hyn yma",
   "ch.revision.rejected": "Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.",
   "ch.revision.status-not-production":

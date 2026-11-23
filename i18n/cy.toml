@@ -18420,10 +18420,6 @@ cy = '''Eu diwygio ar dudalen cyfrifon cwmni bach'''
 hash = "c87e46cde010"
 cy = '''Eu diwygio ar dudalen cyfrifon micro-endid'''
 
-[strings."ch.revision.refuse-unread-heading"]
-hash = "ebadaa8100f0"
-cy = '''Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.'''
-
 [strings."ch.gateway.status-accept"]
 hash = "070c160a6299"
 cy = '''wedi’i dderbyn'''
@@ -23890,10 +23886,6 @@ cy = '''Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y c
 [strings."ch.first-accounts.prior-year-shown"]
 hash = "cf6d0bca4819"
 cy = '''Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.'''
-
-[strings."ch.filing.first-accounts-one-year"]
-hash = "868cdf709abd"
-cy = '''Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol. Ni all y wefan hon ddarllen yn ôl gyfrifon ag un flwyddyn eto, felly ni ellir eu diwygio yma eto.'''
 
 [strings."ch.filing.no-comparatives-why"]
 hash = "503f3e5ce5ba"

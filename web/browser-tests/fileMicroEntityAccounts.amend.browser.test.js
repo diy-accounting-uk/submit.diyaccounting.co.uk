@@ -517,20 +517,15 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     });
   }
 
-  test("says why accounts that state a heading this site cannot yet read back cannot be revised", async ({ page }) => {
+  test("opens accounts that state prepayments and accrued income with that heading filled as filed", async ({ page }) => {
     const filedSheet = microInputFromTestServiceCase(MICRO_TEST_CASE).balanceSheet;
     const withPrepayments = (year) => ({ ...year, prepaymentsAccruedIncome: 200, currentAssets: year.currentAssets - 200 });
     const balanceSheet = { current: withPrepayments(filedSheet.current), prior: withPrepayments(filedSheet.prior) };
     await openAmend(page, accountsReceipt(microDocument({ balanceSheet })));
-    const status = page.locator("#statusMessagesContainer .status-error");
-    await expect(status.locator(".status-message-cause")).toHaveText(
-      "These accounts carry prepayments and accrued income, which this site cannot yet read back, so they cannot be revised here yet.",
-    );
-    await expect(status.locator(".status-message-next")).toHaveAttribute(
-      "href",
-      `filings.html?receipt=${encodeURIComponent(RECEIPT_NAME)}`,
-    );
-    await expect(page.locator("#formView")).toBeHidden();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#currentPrepaymentsAccruedIncome")).toHaveValue("200");
+    await expect(page.locator("#priorPrepaymentsAccruedIncome")).toHaveValue("200");
+    await expect(page.locator("#currentCurrentAssets")).toHaveValue(String(filedSheet.current.currentAssets - 200));
   });
 
   test("shows its own sentence, and no technical message, when the accounts cannot be opened", async ({ page }) => {

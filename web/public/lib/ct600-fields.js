@@ -10,6 +10,7 @@
 
 import { accountingPeriodDates } from "./long-period.js";
 import { dateOfIncorporationFor } from "./first-accounts.js";
+import { foldBalanceSheetHeadings } from "./balance-sheet-headings.js";
 
 // page-chrome.js gives the text in the chosen language; without it (under Node, or a test that stubs
 // the chrome) the English stands.
@@ -2160,7 +2161,9 @@ function figureEntries(idOf, year, fields, figures) {
  */
 export function formEntriesFromIxbrl(mapped) {
   const micro = mapped.regime === "micro";
-  const { currentYear, priorYear } = mapped.balanceSheet;
+  const lines = (micro ? MICRO_BALANCE_SHEET_FIELDS : BALANCE_SHEET_FIELDS).map(([field]) => field);
+  const currentYear = foldBalanceSheetHeadings(mapped.balanceSheet.currentYear, lines);
+  const priorYear = foldBalanceSheetHeadings(mapped.balanceSheet.priorYear, lines);
   const entries = [
     ["periodStart", mapped.period.start],
     ["periodEnd", mapped.period.end],
