@@ -129,7 +129,6 @@ describe("preview features against the environment gate", () => {
 
     expect(previewRunsAgainstSandbox(event, "/api/v1/companies-house/psc-verification-statement")).toBe(false);
     expect(previewRunsAgainstSandbox(event, "/api/v1/companies-house/transaction")).toBe(false);
-    expect(previewRunsAgainstSandbox(event, "/api/v1/hmrc/ct/return")).toBe(true);
   });
 
   test.each([
@@ -181,29 +180,19 @@ describe("preview features against the environment gate", () => {
     expect(previewRunsAgainstSandbox(practiceEvent({ "x-preview-features": "on" }), "/api/v1/hmrc/itsa/business-details")).toBe(false);
   });
 
-  test("a preview request with the synthetic HMRC account for a Corporation Tax path is refused while the Transaction Engine is the live service", async () => {
-    process.env.HMRC_CT_GATEWAY_TEST = "false";
+  test("a preview request with the synthetic HMRC account for a Corporation Tax path is refused whatever the gateway setting holds", () => {
     const headers = { "x-preview-features": "on", "hmrcAccount": "synthetic" };
 
-    for (const path of ["/api/v1/hmrc/ct/return", "/api/v1/hmrc/ct/return/preview", "/api/v1/hmrc/ct/return/abc-123"]) {
-      expect(previewRunsAgainstSandbox(practiceEvent(headers), path), path).toBe(false);
+    for (const setting of [undefined, "false", "true"]) {
+      if (setting === undefined) delete process.env.HMRC_CT_GATEWAY_TEST;
+      else process.env.HMRC_CT_GATEWAY_TEST = setting;
+      for (const path of ["/api/v1/hmrc/ct/return", "/api/v1/hmrc/ct/return/preview", "/api/v1/hmrc/ct/return/abc-123"]) {
+        expect(previewRunsAgainstSandbox(practiceEvent(headers), path), `${setting} ${path}`).toBe(false);
+      }
     }
-    delete process.env.HMRC_CT_GATEWAY_TEST;
-    expect(previewRunsAgainstSandbox(practiceEvent(headers), "/api/v1/hmrc/ct/return")).toBe(false);
   });
 
-  test("a preview request for a Corporation Tax path runs where the Transaction Engine is the test service", () => {
-    process.env.HMRC_CT_GATEWAY_TEST = "true";
-
-    for (const headers of [{ "x-preview-features": "on" }, { "x-preview-features": "on", "hmrcAccount": "synthetic" }]) {
-      expect(previewRunsAgainstSandbox(practiceEvent(headers), "/api/v1/hmrc/ct/return")).toBe(true);
-    }
-    expect(previewRunsAgainstSandbox(practiceEvent({}), "/api/v1/hmrc/ct/return")).toBe(false);
-  });
-
-  test("the Corporation Tax test service does not admit other HMRC paths without the synthetic account", () => {
-    process.env.HMRC_CT_GATEWAY_TEST = "true";
-
+  test("a preview request without the synthetic HMRC account for another HMRC path is refused", () => {
     expect(previewRunsAgainstSandbox(practiceEvent({ "x-preview-features": "on" }), "/api/v1/hmrc/itsa/business-details")).toBe(false);
   });
 });

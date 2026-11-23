@@ -15,10 +15,6 @@ const COMPANIES_HOUSE_PATH_PREFIX = "/api/v1/companies-house/";
 
 const CORPORATION_TAX_PATH_PREFIX = "/api/v1/hmrc/ct/";
 
-function corporationTaxGatewayIsTestService() {
-  return process.env.HMRC_CT_GATEWAY_TEST === "true";
-}
-
 function companiesHouseFilingIsSandbox() {
   const base = String(process.env.COMPANIES_HOUSE_FILING_BASE_URI || "");
   return base.includes("sandbox");
@@ -39,8 +35,9 @@ const XML_GATEWAY_PATH_PATTERN = new RegExp(
  * features, and the service it reaches is a test service: for a Companies House path, the XML
  * gateway's test service (each form in web/public/lib/companies-house-forms.js, the shared form
  * poll, filing data) or the sandbox filing API (every other Companies House path), whatever the HMRC account;
- * for a Corporation Tax path, the Transaction Engine's test service, which the environment chooses and the
- * HMRC account header does not; for any other path, the synthetic HMRC account.
+ * for a Corporation Tax path, never, because the catalogue lists those activities wherever the Transaction
+ * Engine is the test service and the HMRC account header does not choose the service; for any other path, the
+ * synthetic HMRC account.
  * @param {object} event - The Lambda event
  * @param {string} requestPath - The request path
  * @returns {boolean} True when the request may run against the sandbox
@@ -51,6 +48,6 @@ export function previewRunsAgainstSandbox(event, requestPath) {
   if (path.startsWith(COMPANIES_HOUSE_PATH_PREFIX)) {
     return XML_GATEWAY_PATH_PATTERN.test(path) ? companiesHouseGatewayIsTestService() : companiesHouseFilingIsSandbox();
   }
-  if (path.startsWith(CORPORATION_TAX_PATH_PREFIX)) return corporationTaxGatewayIsTestService();
+  if (path.startsWith(CORPORATION_TAX_PATH_PREFIX)) return false;
   return String(getHeader(event?.headers, "hmrcAccount") || "").toLowerCase() === "synthetic";
 }
