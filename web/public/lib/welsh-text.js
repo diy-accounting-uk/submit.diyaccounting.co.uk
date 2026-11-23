@@ -465,6 +465,7 @@ window.WELSH_TEXT = {
   "ch.change-psc.choose-psc": "Dewiswch y person â rheolaeth arwyddocaol y mae ei fanylion wedi newid.",
   "ch.change-psc.confirmation-before": "Ni all y dyddiad cadarnhau fod cyn dyddiad y newid.",
   "ch.change-psc.control-needed": "Dewiswch o leiaf un ffordd y mae’r person yn rheoli’r cwmni.",
+  "ch.change-psc.country-or-state-needed": "Rhowch wlad neu dalaith y gofrestr a enwyd.",
   "ch.change-psc.directors": "Yr hawl i benodi neu ddiswyddo mwyafrif bwrdd y cyfarwyddwyr",
   "ch.change-psc.future-change": "Ni all dyddiad y newid fod ar ôl heddiw.",
   "ch.change-psc.future-confirmation": "Ni all y dyddiad cadarnhau fod ar ôl heddiw.",

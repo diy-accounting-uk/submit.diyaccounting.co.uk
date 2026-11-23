@@ -27422,3 +27422,9 @@ cy = '''Ni all y dyddiad y daethant yn berson â rheolaeth arwyddocaol fod ar ô
 [strings."ch.notify-psc.future-confirmation"]
 hash = "24e74cfc4d09"
 cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
+
+# == The country or state of the register named on a change of a relevant legal entity's details ==
+
+[strings."ch.change-psc.country-or-state-needed"]
+hash = "9395383055df"
+cy = '''Rhowch wlad neu dalaith y gofrestr a enwyd.'''

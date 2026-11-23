@@ -329,6 +329,34 @@ for (const [language, prefix, lookUp, cont, refusal] of [
   });
 }
 
+test("a corporate PSC's register and number without the register's country or state is refused before anything is sent", async ({
+  page,
+}) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/changePscDetails.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: LOOK_UP }).click();
+  await page.getByLabel(`${CORPORATE_PSC} (Legal entity or other registrable person)`).check();
+  await page.getByLabel("Their legal form or governing law").check();
+  await page.locator("#legalForm").fill("Private company limited by shares");
+  await page.locator("#lawGoverned").fill("Companies Act 2006");
+  await page.locator("#placeRegistered").fill("Companies House");
+  await page.locator("#registrationNumber").fill("09876543");
+  await page.locator("#dateOfChange").fill("2026-11-01");
+  await page.locator("#confirmationDate").fill("2026-11-03");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Give the country or state of the register named.");
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
+
+  await page.locator("#countryOrState").fill("UNITED KINGDOM");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("UNITED KINGDOM");
+});
+
 test("a rejection shows Companies House's reason", async ({ page }) => {
   await serveSite(page, {
     outcome: { statusCode: "REJECT", rejections: [{ rejectCode: "9998", description: "The person named does not match the register." }] },

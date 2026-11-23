@@ -115,6 +115,15 @@ function identificationProblems(identification, elementName) {
   if (elementName === "Corporate" && identification.placeRegistered && !identification.registrationNumber) {
     problems.push("a register named needs the registration number in it");
   }
+  // The gateway refuses PSCRegistrationNumber and PSCPlaceRegistered without CountryOrState.
+  if (
+    elementName === "Corporate" &&
+    identification.placeRegistered &&
+    identification.registrationNumber &&
+    !identification.countryOrState
+  ) {
+    problems.push("a register named and the number in it need the register's country or state");
+  }
   for (const [field, max] of [
     ["legalForm", 160],
     ["lawGoverned", 160],

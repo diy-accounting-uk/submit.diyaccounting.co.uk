@@ -261,6 +261,12 @@ describe("companiesHousePscChangeDetailsXml, the other changes PSC04, PSC05 and 
     expect(
       changeDetailsProblems({ ...HOLDCO, identification: { legalForm: "Ltd", lawGoverned: "UK", placeRegistered: "Companies House" } }),
     ).toEqual(["a register named needs the registration number in it"]);
+    expect(
+      changeDetailsProblems({
+        ...HOLDCO,
+        identification: { legalForm: "Ltd", lawGoverned: "UK", placeRegistered: "Companies House", registrationNumber: "09876543" },
+      }),
+    ).toEqual(["a register named and the number in it need the register's country or state"]);
     expect(changeDetailsProblems({ ...FOUNDATION, identification: { legalForm: "x", lawGoverned: "y", registrationNumber: "1" } })).toEqual(
       ["a legal person is entered in no register on this form"],
     );

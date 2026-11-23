@@ -313,6 +313,9 @@ function legalProblem(identification) {
   if (identification.placeRegistered && !identification.registrationNumber) {
     return window.siteText("ch.change-psc.registration-needed", "Give the registration number in the register named.");
   }
+  if (identification.placeRegistered && identification.registrationNumber && !identification.countryOrState) {
+    return window.siteText("ch.change-psc.country-or-state-needed", "Give the country or state of the register named.");
+  }
   return null;
 }
 
