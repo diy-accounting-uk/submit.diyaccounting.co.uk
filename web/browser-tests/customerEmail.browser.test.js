@@ -38,20 +38,20 @@ const EXPECTED_TEXT = {
     "Open the pass link",
   ],
   "physical-pass-cy": [
-    "Tocyn i’w rannu: Day pass",
+    "Tocyn i’w rannu: Tocyn diwrnod",
     "Ni allwch ei ddefnyddio eich hun.",
     "tiger-happy-mountain-silver",
     "Agor dolen y tocyn",
   ],
   "digital-pass-cy": [
-    "Tocyn i’w rannu: Day pass",
+    "Tocyn i’w rannu: Tocyn diwrnod",
     "Ni allwch ei ddefnyddio eich hun.",
     "river-quiet-amber-cloud",
     "Dim terfyn",
     "Agor dolen y tocyn",
   ],
   "operator-restricted-pass-cy": [
-    "Tocyn i’w rannu: Invited Guest",
+    "Tocyn i’w rannu: Gwestai drwy wahoddiad",
     "Dim ond j***@example.com all ei ddefnyddio.",
     "I’r person sy’n cael y tocyn hwn",
     "lantern-brisk-meadow-oak",
