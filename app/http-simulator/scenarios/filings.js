@@ -59,12 +59,12 @@ const registeredOfficeAddresses = new Map([
     },
   ],
   [
-    // Matches companies.js's own "06846849" entry, the number the confirmation statement
+    // Matches companies.js's own "00000004" entry, the number the confirmation statement
     // journey's public register lookup and its XML Gateway fixture already share, so the
     // registered office and registered email address journeys can look the same company up.
-    "06846849",
+    "00000004",
     {
-      etag: "simulator-etag-06846849",
+      etag: "simulator-etag-00000004",
       premises: "1",
       address_line_1: "1 Example Street",
       address_line_2: "",

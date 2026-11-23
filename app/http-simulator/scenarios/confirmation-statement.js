@@ -65,11 +65,11 @@ const PRESENTER_ID_MISSING_ERROR = {
   text: "No presenter ID supplied",
 };
 
-// The one company this simulator answers CompanyDataRequest and PaymentPeriodsRequest for: two
-// directors (each also a PSC, as DIY Accounting Limited's own three directors are), one share
-// class, matching the shape CS-9's sandbox proof carries without any real company's authentication
-// code or personal codes.
-export const FIXTURE_COMPANY_NUMBER = "06846849";
+// The confirmation statement journey's company: two directors, each also a PSC, and one share class,
+// under a test number that is not on the live register (companies.js names the test numbers).
+export const FIXTURE_COMPANY_NUMBER = "00000004";
+// The authentication code of every company this simulator answers CompanyDataRequest and
+// PaymentPeriodsRequest for.
 export const FIXTURE_COMPANY_AUTHENTICATION_CODE = "SIMCS01";
 
 export const FIXTURE_COMPANY = {
@@ -107,6 +107,106 @@ export const FIXTURE_COMPANY = {
   ],
 };
 
+const ONE_VOTE_A_SHARE = "One vote a share. Each share takes part equally in dividends and in a distribution of capital. Not redeemable.";
+
+// What a test company's company data carries beside its own particulars.
+const testCompanyData = (particulars) => ({
+  companyCategory: "PRI",
+  jurisdiction: "EW",
+  tradingOnMarket: false,
+  dtr5Applies: false,
+  madeUpDate: "2098-12-01",
+  nextDueDate: "2098-12-15",
+  sicCodes: ["62020"],
+  shareholdings: [],
+  ...particulars,
+});
+
+// The company data of each test company the simulator's public register (companies.js) holds, with
+// its statement of capital. 00000003's shares are in two currencies. A dissolved company has none.
+export const TEST_COMPANY_DATA = {
+  "00000001": testCompanyData({
+    companyNumber: "00000001",
+    companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+    registeredOfficeAddress: { premise: "1", street: "Example Street", postTown: "London", country: "GB-ENG", postcode: "AB1 2CD" },
+    registeredEmailAddress: "office@simulator-example.example",
+    officers: [
+      { role: "director", forename: "ELEANOR", surname: "BRAMWELL", dob: "1970-01-01", appointmentDate: "2016-01-01" },
+      { role: "director", forename: "MARCUS", surname: "TENNANT", dob: "1975-02-01", appointmentDate: "2015-01-01" },
+    ],
+    statementOfCapital: {
+      totalAmountUnpaid: "0",
+      totalNumberOfIssuedShares: "100",
+      shareCurrency: "GBP",
+      totalAggregateNominalValue: "100",
+      shares: [{ shareClass: "Ordinary", prescribedParticulars: ONE_VOTE_A_SHARE, numShares: "100", aggregateNominalValue: "100" }],
+    },
+    shareholdings: [
+      { shareClass: "Ordinary", numberHeld: "60", shareholders: [{ surname: "BRAMWELL", forename: "ELEANOR" }] },
+      { shareClass: "Ordinary", numberHeld: "40", shareholders: [{ surname: "TENNANT", forename: "MARCUS" }] },
+    ],
+  }),
+  "SC000000": testCompanyData({
+    companyNumber: "SC000000",
+    companyName: "SIMULATOR TEST COMPANY (SCOTLAND) LIMITED",
+    jurisdiction: "SC",
+    registeredOfficeAddress: { premise: "1", street: "Example Street", postTown: "Edinburgh", country: "GB-SCT", postcode: "EH1 1AA" },
+    registeredEmailAddress: "office@simulator-scotland.example",
+    officers: [{ role: "director", forename: "ISLA", surname: "MACLEOD", dob: "1982-06-01", appointmentDate: "2018-03-01" }],
+    statementOfCapital: {
+      totalAmountUnpaid: "0",
+      totalNumberOfIssuedShares: "1",
+      shareCurrency: "GBP",
+      totalAggregateNominalValue: "1",
+      shares: [{ shareClass: "Ordinary", prescribedParticulars: ONE_VOTE_A_SHARE, numShares: "1", aggregateNominalValue: "1" }],
+    },
+  }),
+  "00000003": testCompanyData({
+    companyNumber: "00000003",
+    companyName: "EXAMPLE TRADING LIMITED",
+    registeredOfficeAddress: { premise: "3", street: "Example Street", postTown: "Cardiff", country: "GB-WLS", postcode: "CF10 1AA" },
+    registeredEmailAddress: "office@example-trading.example",
+    officers: [{ role: "director", forename: "RHYS", surname: "PRICE", dob: "1979-09-01", appointmentDate: "2019-04-01" }],
+    statementOfCapital: [
+      {
+        totalAmountUnpaid: "0",
+        totalNumberOfIssuedShares: "1000",
+        shareCurrency: "GBP",
+        totalAggregateNominalValue: "1000",
+        shares: [{ shareClass: "Ordinary", prescribedParticulars: ONE_VOTE_A_SHARE, numShares: "1000", aggregateNominalValue: "1000" }],
+      },
+      {
+        totalAmountUnpaid: "50",
+        totalNumberOfIssuedShares: "500",
+        shareCurrency: "EUR",
+        totalAggregateNominalValue: "250",
+        shares: [
+          {
+            shareClass: "A Preference",
+            prescribedParticulars: "No vote. A fixed dividend of 6 cents a share each year, paid before any ordinary dividend.",
+            numShares: "500",
+            aggregateNominalValue: "250",
+          },
+        ],
+      },
+    ],
+  }),
+  "12345678": testCompanyData({
+    companyNumber: "12345678",
+    companyName: "PRECISION CODE LTD",
+    registeredOfficeAddress: { premise: "12", street: "Example Street", postTown: "Manchester", country: "GB-ENG", postcode: "M1 1AA" },
+    registeredEmailAddress: "office@precision-code.example",
+    officers: [{ role: "director", forename: "SAM", surname: "PATEL", dob: "1988-04-01", appointmentDate: "2020-02-01" }],
+    statementOfCapital: {
+      totalAmountUnpaid: "0",
+      totalNumberOfIssuedShares: "100",
+      shareCurrency: "GBP",
+      totalAggregateNominalValue: "100",
+      shares: [{ shareClass: "Ordinary", prescribedParticulars: ONE_VOTE_A_SHARE, numShares: "100", aggregateNominalValue: "100" }],
+    },
+  }),
+};
+
 let submissions = new Map();
 let usedSubmissionNumbers = new Set();
 
@@ -119,12 +219,16 @@ export function resetConfirmationStatementFilings() {
   usedSubmissionNumbers = new Set();
 }
 
-function isFixtureCompany({ companyNumber, companyAuthenticationCode }) {
-  return companyNumber === FIXTURE_COMPANY_NUMBER && companyAuthenticationCode === FIXTURE_COMPANY_AUTHENTICATION_CODE;
+// The company data of the company this request names, when its authentication code is the simulator's.
+function companyDataFor({ companyNumber, companyAuthenticationCode }) {
+  if (companyAuthenticationCode !== FIXTURE_COMPANY_AUTHENTICATION_CODE) return null;
+  if (companyNumber === FIXTURE_COMPANY_NUMBER) return FIXTURE_COMPANY;
+  return TEST_COMPANY_DATA[companyNumber] ?? null;
 }
 
 /**
- * Handle a parsed CompanyDataRequest. Returns either { errors: [...] } or { company: FIXTURE_COMPANY }.
+ * Handle a parsed CompanyDataRequest. Returns either { errors: [...] } or { company } with the named
+ * company's data.
  */
 export function requestCompanyData({ senderIdHash, authValueHash, companyNumber, companyAuthenticationCode, scenario }) {
   if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
@@ -139,12 +243,13 @@ export function requestCompanyData({ senderIdHash, authValueHash, companyNumber,
   if (scenario === "AUTH_CODE_INVALID") {
     return { errors: [AUTH_CODE_INVALID_ERROR] };
   }
-  if (!isFixtureCompany({ companyNumber, companyAuthenticationCode })) {
+  const company = companyDataFor({ companyNumber, companyAuthenticationCode });
+  if (!company) {
     return {
       errors: [schemaFailureError("Company Authentication Code and Company Number combination did not match", "CompanyAuthenticationCode")],
     };
   }
-  return { company: FIXTURE_COMPANY };
+  return { company };
 }
 
 /**
@@ -164,7 +269,7 @@ export function requestPaymentPeriods({ senderIdHash, authValueHash, companyNumb
   if (scenario === "AUTH_CODE_INVALID") {
     return { errors: [AUTH_CODE_INVALID_ERROR] };
   }
-  if (!isFixtureCompany({ companyNumber, companyAuthenticationCode })) {
+  if (!companyDataFor({ companyNumber, companyAuthenticationCode })) {
     return {
       errors: [schemaFailureError("Company Authentication Code and Company Number combination did not match", "CompanyAuthenticationCode")],
     };

@@ -26,7 +26,7 @@ describe("http-simulator/scenarios/psc-verification-statement", () => {
 
   describe("submitPscVerificationStatement", () => {
     test("acknowledges a valid submission with a 1 second poll interval", () => {
-      const result = submitPscVerificationStatement({ ...VALID, submissionNumber: "VS0001", companyNumber: "06846849" });
+      const result = submitPscVerificationStatement({ ...VALID, submissionNumber: "VS0001", companyNumber: "00000004" });
       expect(result.acknowledged).toBe(true);
       expect(result.pollInterval).toBe(1);
       expect(result.gatewayTimestamp).toBeTruthy();
@@ -75,7 +75,7 @@ describe("http-simulator/scenarios/psc-verification-statement", () => {
 
   describe("pollPscVerificationStatement", () => {
     test("answers PENDING on the first poll and ACCEPT on every poll after that", () => {
-      submitPscVerificationStatement({ ...VALID, submissionNumber: "VS0004", companyNumber: "06846849" });
+      submitPscVerificationStatement({ ...VALID, submissionNumber: "VS0004", companyNumber: "00000004" });
       expect(pollPscVerificationStatement({ ...VALID, submissionNumber: "VS0004" }).statusCode).toBe("PENDING");
       expect(pollPscVerificationStatement({ ...VALID, submissionNumber: "VS0004" }).statusCode).toBe("ACCEPT");
       expect(pollPscVerificationStatement({ ...VALID, submissionNumber: "VS0004" }).statusCode).toBe("ACCEPT");

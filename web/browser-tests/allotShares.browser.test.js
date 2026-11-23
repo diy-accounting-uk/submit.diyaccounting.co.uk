@@ -10,6 +10,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { TEST_COMPANY_DATA } from "@app/http-simulator/scenarios/confirmation-statement.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -27,14 +28,10 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
 };
 
-const RIGHTS = "Each share has one vote, and ranks equally for dividends and on a return of capital. The shares are not redeemable.";
-const REGISTER_CAPITAL = {
-  totalAmountUnpaid: "0",
-  totalNumberOfIssuedShares: "100",
-  shareCurrency: "GBP",
-  totalAggregateNominalValue: "100",
-  shares: [{ shareClass: "Ordinary", prescribedParticulars: RIGHTS, numShares: "100", aggregateNominalValue: "100" }],
-};
+// The capital the simulator's register holds for the test company 00000001, so these tests and the
+// simulator read the same company.
+const REGISTER_CAPITAL = TEST_COMPANY_DATA["00000001"].statementOfCapital;
+const RIGHTS = REGISTER_CAPITAL.shares[0].prescribedParticulars;
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body and each filing-data read's body is recorded.
@@ -513,6 +510,22 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   const result = page.locator("#filingResult");
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The statement of capital does not match the register.");
+});
+
+test("a test company whose shares are in two currencies starts with a capital table for each", async ({ page }) => {
+  await serveSite(page, { capitals: TEST_COMPANY_DATA["00000003"].statementOfCapital });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await expect(page.locator("#beforeTables .capital-table")).toHaveCount(2);
+  await expect(page.locator("#beforeTables .capital-table select").nth(0)).toHaveValue("GBP");
+  await expect(page.locator("#beforeTables .capital-table select").nth(1)).toHaveValue("EUR");
+  const classes = page.locator('#beforeTables input[id^="before-class-"]');
+  const numbers = page.locator('#beforeTables input[id^="before-number-"]');
+  await expect(classes).toHaveCount(2);
+  await expect(classes.nth(0)).toHaveValue("Ordinary");
+  await expect(classes.nth(1)).toHaveValue("A Preference");
+  await expect(numbers.nth(0)).toHaveValue("1000");
+  await expect(numbers.nth(1)).toHaveValue("500");
 });
 
 const USD_CAPITAL = {

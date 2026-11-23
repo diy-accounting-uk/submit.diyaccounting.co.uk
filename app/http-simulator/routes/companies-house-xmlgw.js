@@ -152,8 +152,8 @@ function buildOfficerXml(officer) {
   }</DOB></Person><AppointmentDate>${officer.appointmentDate}</AppointmentDate></${tag}>`;
 }
 
-function buildStatementOfCapitalXml(statementOfCapital) {
-  const sharesXml = (statementOfCapital.shares || [])
+function buildCapitalXml(capital) {
+  const sharesXml = (capital.shares || [])
     .map(
       (share) =>
         `<Shares><ShareClass>${escapeXmlText(share.shareClass)}</ShareClass><PrescribedParticulars>${escapeXmlText(
@@ -163,11 +163,17 @@ function buildStatementOfCapitalXml(statementOfCapital) {
         }</AggregateNominalValue></Shares>`,
     )
     .join("");
-  return `<StatementOfCapital><Capital><TotalAmountUnpaid>${statementOfCapital.totalAmountUnpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>${
-    statementOfCapital.totalNumberOfIssuedShares
-  }</TotalNumberOfIssuedShares><ShareCurrency>${escapeXmlText(
-    statementOfCapital.shareCurrency,
-  )}</ShareCurrency><TotalAggregateNominalValue>${statementOfCapital.totalAggregateNominalValue}</TotalAggregateNominalValue>${sharesXml}</Capital></StatementOfCapital>`;
+  return `<Capital><TotalAmountUnpaid>${capital.totalAmountUnpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>${
+    capital.totalNumberOfIssuedShares
+  }</TotalNumberOfIssuedShares><ShareCurrency>${escapeXmlText(capital.shareCurrency)}</ShareCurrency><TotalAggregateNominalValue>${
+    capital.totalAggregateNominalValue
+  }</TotalAggregateNominalValue>${sharesXml}</Capital>`;
+}
+
+// A statement of capital holds one Capital for each currency the company's shares are in; a company
+// whose shares are in one currency gives one capital, a company in more gives a list.
+function buildStatementOfCapitalXml(statementOfCapital) {
+  return `<StatementOfCapital>${[].concat(statementOfCapital).map(buildCapitalXml).join("")}</StatementOfCapital>`;
 }
 
 function buildShareholdingXml(shareholding) {

@@ -6,9 +6,9 @@
 // House's own filing API guide uses in its scope examples
 // (developer-specs.company-information.service.gov.uk, "Manipulate Company Data (API Filing)"),
 // and it is not on the live register. Dates sit far in the future so a fixture never expires
-// into a failing assertion. 06846849 reuses DIY Accounting Limited's own company number so the
-// confirmation statement journey's public register lookup (this file) and its XML Gateway
-// fixture (confirmation-statement.js's FIXTURE_COMPANY) answer for the same company number.
+// into a failing assertion. 00000004 is the confirmation statement journey's company, so its public
+// register lookup (this file) and its XML Gateway fixture (confirmation-statement.js's
+// FIXTURE_COMPANY) answer for the same company number. No company here has a live company's number.
 // 00000003 is a trading company for the simulator's accounts filing demos, named as a plain
 // example so a recording of a filed accounts document reads as one. 12345678 is the company of the
 // Precision Code Ltd book (mcp/test/fixtures/precision-code-ltd-full/book.toml), with the book's
@@ -209,9 +209,9 @@ const companies = {
       next_made_up_to: "2099-01-01",
     },
   },
-  "06846849": {
+  "00000004": {
     company_name: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
-    company_number: "06846849",
+    company_number: "00000004",
     company_status: "active",
     type: "ltd",
     date_of_creation: "2009-01-01",
@@ -350,7 +350,7 @@ const officersByCompanyNumber = {
       },
     ],
   },
-  "06846849": {
+  "00000004": {
     active_count: 2,
     resigned_count: 0,
     items: [
@@ -419,7 +419,7 @@ const pscsByCompanyNumber = {
       },
     ],
   },
-  "06846849": {
+  "00000004": {
     active_count: 2,
     ceased_count: 0,
     items: [

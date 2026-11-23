@@ -16,7 +16,7 @@ import {
 } from "@app/http-simulator/scenarios/confirmation-statement.js";
 import { resetPscVerificationStatementFilings } from "@app/http-simulator/scenarios/psc-verification-statement.js";
 import { resetGatewayFormFilings } from "@app/http-simulator/scenarios/gateway-forms.js";
-import { buildFormSubmission } from "@app/services/companiesHouseXmlGateway.js";
+import { buildFormSubmission, parseCompanyDataResponse } from "@app/services/companiesHouseXmlGateway.js";
 import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
 import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChangeDetailsXml.js";
 import { buildAccountingReferenceDateBody } from "@app/services/companiesHouseAccountingReferenceDateXml.js";
@@ -720,6 +720,59 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       expect(firstElementText(document, "CompanyNumber")).toBe(FIXTURE_COMPANY_NUMBER);
       expect(allElements(document, "Director")).toHaveLength(2);
       expect(allElements(document, "SICCode").map((el) => el.textContent)).toEqual(["69201", "69202"]);
+    });
+
+    const companyData = async (companyNumber) =>
+      (await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(companyDataRequestEnvelope({ companyNumber }))).text;
+
+    test("answers each test company's statement of capital, one capital for each currency", async () => {
+      for (const companyNumber of ["00000001", "SC000000", "12345678", FIXTURE_COMPANY_NUMBER]) {
+        const capitals = parseCompanyDataResponse(await companyData(companyNumber)).statementsOfCapital;
+        expect(
+          capitals.map((capital) => capital.shareCurrency),
+          companyNumber,
+        ).toEqual(["GBP"]);
+        expect(capitals[0].shares.length, companyNumber).toBeGreaterThan(0);
+      }
+      expect(parseCompanyDataResponse(await companyData("00000001")).statementsOfCapital).toEqual([
+        {
+          totalAmountUnpaid: "0",
+          totalNumberOfIssuedShares: "100",
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: "100",
+          shares: [
+            {
+              shareClass: "Ordinary",
+              prescribedParticulars:
+                "One vote a share. Each share takes part equally in dividends and in a distribution of capital. Not redeemable.",
+              numShares: "100",
+              aggregateNominalValue: "100",
+            },
+          ],
+        },
+      ]);
+    });
+
+    test("answers a test company whose shares are in two currencies with a capital for each", async () => {
+      const capitals = parseCompanyDataResponse(await companyData("00000003")).statementsOfCapital;
+      expect(
+        capitals.map(({ shareCurrency, totalNumberOfIssuedShares, totalAggregateNominalValue, totalAmountUnpaid }) => [
+          shareCurrency,
+          totalNumberOfIssuedShares,
+          totalAggregateNominalValue,
+          totalAmountUnpaid,
+        ]),
+      ).toEqual([
+        ["GBP", "1000", "1000", "0"],
+        ["EUR", "500", "250", "50"],
+      ]);
+      expect(capitals[1].shares.map((share) => share.shareClass)).toEqual(["A Preference"]);
+    });
+
+    test("holds no company data for a live company's number", async () => {
+      const document = parseXmlDocument(await companyData("06846849"));
+      expect(firstElementText(document, "Number")).toBe("604");
+      expect(allElements(document, "StatementOfCapital")).toHaveLength(0);
     });
 
     test("rejects a company authentication code that does not match the fixture", async () => {

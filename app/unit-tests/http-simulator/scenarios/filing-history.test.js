@@ -67,7 +67,7 @@ describe("simulator filing history", () => {
   });
 
   test("another known company holds its incorporation, and an unknown one has no history", () => {
-    expect(getFilingHistory("06846849").items.map((item) => item.type)).toEqual(["NEWINC"]);
+    expect(getFilingHistory("00000004").items.map((item) => item.type)).toEqual(["NEWINC"]);
     expect(getFilingHistory("99999999")).toBeNull();
     expect(getFilingHistory("42942942")).toBeNull();
   });

@@ -265,7 +265,7 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("public register marks a company with no accounts filed", async () => {
-    const body = parseResponseBody(await companiesHousePublicRegisterGetHandler(registerEvent("06846849")));
+    const body = parseResponseBody(await companiesHousePublicRegisterGetHandler(registerEvent("00000004")));
     expect(body.filedAccounts).toEqual({ status: "none" });
     expect(body.officers.length).toBeGreaterThan(0);
   });

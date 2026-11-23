@@ -16,12 +16,10 @@ import { verifyFilingAccepted as verifyGatewayFilingOutcome } from "./behaviour-
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-confirmation-steps";
 
-// The one company the http-simulator's confirmation statement scenario answers CompanyDataRequest
-// and PaymentPeriodsRequest for (see app/http-simulator/scenarios/confirmation-statement.js).
-// Its public register lookup fixture (app/http-simulator/scenarios/companies.js) answers the same
-// company number, deliberately reusing DIY Accounting Limited's own number so the simulator and
-// real lanes look up the same company.
-const SIMULATOR_COMPANY_NUMBER = "06846849";
+// The http-simulator's confirmation statement company (app/http-simulator/scenarios/confirmation-statement.js),
+// which its public register lookup fixture (app/http-simulator/scenarios/companies.js) answers
+// under the same test company number.
+const SIMULATOR_COMPANY_NUMBER = "00000004";
 const SIMULATOR_COMPANY_NAME = "EXAMPLE CONFIRMATION STATEMENT LIMITED";
 const SIMULATOR_COMPANY_AUTH_CODE = "SIMCS01";
 
@@ -33,8 +31,8 @@ export const TEST_DIRECTOR_OTHER_FORENAMES = "MIDDLENAME";
 
 /**
  * The company the confirmation statement journey looks up. The simulator answers for its fixture
- * company under 06846849; every other lane reads the live public data API, where the record
- * looked up is DIY Accounting Limited's own, at the same number.
+ * company under the test number 00000004; every other lane reads the live public data API, where
+ * the record looked up is DIY Accounting Limited's own.
  */
 export function confirmationStatementCompanyFixture(envFilePath) {
   if (isCompaniesHouseSimulatorLane(envFilePath)) {
