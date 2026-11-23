@@ -26,6 +26,21 @@ export function refusedCharacters(value) {
   return [...new Set([...String(value)].filter((character) => !GATEWAY_CHARACTER.test(character)))];
 }
 
+// A line break is invisible where a reason lists the characters, so it is named in words.
+const LINE_BREAKS = ["\n", "\r"];
+
+/**
+ * The refused characters as a reason lists them, with a line break, or a carriage return, named in
+ * words once, where it first appears.
+ * @param {string[]} refused - from refusedCharacters
+ * @param {string} [lineBreakName] - the words for a line break, in the page's language
+ * @returns {string[]}
+ */
+export function namedCharacters(refused, lineBreakName = "a line break") {
+  const named = refused.map((character) => (LINE_BREAKS.includes(character) ? lineBreakName : character));
+  return [...new Set(named)];
+}
+
 /**
  * The reason a value cannot go in a gateway text element, or null when it can.
  * @param {string} field - the name the reason gives the value
@@ -34,7 +49,7 @@ export function refusedCharacters(value) {
  */
 export function gatewayTextProblem(field, value) {
   const refused = refusedCharacters(value);
-  return refused.length ? `${field} has characters Companies House does not accept: ${refused.join(" ")}` : null;
+  return refused.length ? `${field} has characters Companies House does not accept: ${namedCharacters(refused).join(" ")}` : null;
 }
 
 // Each string a path names in a value, with the field name a reason gives it. A path is dotted keys;

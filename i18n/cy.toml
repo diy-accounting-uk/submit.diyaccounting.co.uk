@@ -27450,3 +27450,9 @@ cy = '''Ni chwblhawyd y taliad. Ni ffeiliwyd dim.'''
 [strings."ch.name.payment-received"]
 hash = "07679b6a9a0d"
 cy = '''Cafwyd y taliad am y newid enw hwn. Rhowch god dilysu’r cwmni eto, a’r llythyr os oes angen un ar yr enw, yna ffeiliwch.'''
+
+# == The gateway's character check names a refused line break in words ==
+
+[strings."ch.form.line-break"]
+hash = "6f8b6cb4c0b9"
+cy = '''toriad llinell'''

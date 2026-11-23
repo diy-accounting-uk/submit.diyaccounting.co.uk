@@ -1433,6 +1433,7 @@ window.WELSH_TEXT = {
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
   "ch.form.gateway-text": "Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}",
+  "ch.form.line-break": "toriad llinell",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.form.receipt-link": "Gweld y dderbynneb ar gyfer y ffeilio hwn",
   "ch.form.sent": "Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...",

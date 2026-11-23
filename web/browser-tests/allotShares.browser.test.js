@@ -446,6 +446,32 @@ for (const [language, prefix, cont, sentence] of [
   });
 }
 
+for (const [language, prefix, cont, sentence] of [
+  ["English", "", "Continue", "has characters Companies House does not accept: a line break"],
+  ["Welsh", "/cy", "Parhau", "nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: toriad llinell"],
+]) {
+  test(`a line break in a consideration is named in words, in ${language}`, async ({ page }) => {
+    const filings = [];
+    await serveSite(page, { filings });
+    await page.goto(`${SITE}${prefix}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await page.locator("#companyNumber").fill("00000001");
+    await page.locator("#companyAuthCode").fill("SIMCS01");
+    await page.locator("#companyForm button[type=submit]").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await page.locator("#startDate").fill("2026-11-02");
+    await fillAllotment(page, {
+      shareClass: "Ordinary",
+      number: "50",
+      nominal: "1",
+      paid: "2.5",
+      consideration: "A delivery van\nvalued at 125 pounds.",
+    });
+    await page.getByRole("button", { name: cont }).click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText(sentence);
+    expect(filings).toHaveLength(0);
+  });
+}
+
 test("rights attached to shares take any text, a lower-case ŵ and a line break among it", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings });

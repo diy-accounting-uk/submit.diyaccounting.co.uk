@@ -402,3 +402,21 @@ test("a company whose accounts are overdue is told it cannot change its year end
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
   expect(filings).toHaveLength(0);
 });
+
+test("the page offers the periods the shared rule gives, the rule the simulator applies too", async ({ page }) => {
+  await serveSite(page);
+  // The shared module with its rule answering one period of its own, so the periods shown can only come from it.
+  const shared = fs.readFileSync(path.join(PUBLIC_ROOT, "lib/accounting-reference-period.js"), "utf-8");
+  const stubbed = shared.replace(
+    "export function changeablePeriods(",
+    'export function changeablePeriods() {\n  return { overdue: false, periods: [{ start: "2098-02-01", end: "2099-01-31", current: true }] };\n}\nfunction realChangeablePeriods(',
+  );
+  expect(stubbed).not.toBe(shared);
+  await page.route("**/lib/accounting-reference-period.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: stubbed }),
+  );
+  await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: "Look up the accounting periods" }).click();
+  await expect(page.locator("#periodChoices label")).toHaveText(["1 February 2098 to 31 January 2099 (the current period)"]);
+});

@@ -41,6 +41,12 @@ describe("companies-house-gateway-text", () => {
 
   test("passes Welsh in capitals, punctuation and an empty value", () => {
     expect(gatewayTextProblem("street", "HEOL Y BŴL")).toBeNull();
+    expect(gatewayTextProblem("consideration", "A van\nand a trailer")).toBe(
+      "consideration has characters Companies House does not accept: a line break",
+    );
+    expect(gatewayTextProblem("consideration", "A van\r\nand ŵ\nmore")).toBe(
+      "consideration has characters Companies House does not accept: a line break ŵ",
+    );
     expect(gatewayTextProblem("name", "Jones & Daughters (Holdings) Ltd, £5 'A' “B” [C] {D} <E> 50% #1 a/b\\c")).toBeNull();
     expect(gatewayTextProblem("county", "")).toBeNull();
     expect(gatewayTextProblem("county", undefined)).toBeNull();

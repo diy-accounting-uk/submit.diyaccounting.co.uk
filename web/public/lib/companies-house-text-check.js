@@ -10,7 +10,7 @@
 // makes the same check. A box whose value the gateway checks against another pattern says so with
 // data-gateway-text="off"; the developer-mode Gov-Test-Scenario box is never sent as form text.
 
-import { refusedCharacters } from "./companies-house-gateway-text.js";
+import { namedCharacters, refusedCharacters } from "./companies-house-gateway-text.js";
 
 function siteText(id, english, values) {
   if (window.siteText) return window.siteText(id, english, values);
@@ -42,7 +42,7 @@ export function textBoxProblem(form) {
     if (refused.length) {
       return siteText("ch.form.gateway-text", "{field} has characters Companies House does not accept: {characters}", {
         field: boxName(box),
-        characters: refused.join(" "),
+        characters: namedCharacters(refused, siteText("ch.form.line-break", "a line break")).join(" "),
       });
     }
   }
