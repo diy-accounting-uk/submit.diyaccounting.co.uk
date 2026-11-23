@@ -11,13 +11,15 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const PAGE_PATH = "companies-house/fileMicroEntityAccounts.html";
-const FIRST_ACCOUNTS_COMPANY = { companyNumber: "00000001", companyName: "EXAMPLE TRADING LIMITED", dateOfCreation: "2025-01-01" };
+const COMPANY = registerCompany("00000001");
+const FIRST_ACCOUNTS_COMPANY = { companyNumber: COMPANY.number, companyName: COMPANY.name, dateOfCreation: "2025-01-01" };
 const ESTABLISHED_COMPANY = { ...FIRST_ACCOUNTS_COMPANY, dateOfCreation: "2019-01-01", accountsLastPeriodStart: "2024-01-01" };
 const CURRENT_YEAR = {
   fixedAssets: 1000,

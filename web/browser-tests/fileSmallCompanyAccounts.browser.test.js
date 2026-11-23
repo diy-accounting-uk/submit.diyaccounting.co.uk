@@ -19,6 +19,7 @@ import { notesOf } from "../public/lib/accounts-revision.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { readSubmitCss } from "./submitCss.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
+import { NOT_HELD_COMPANY_NUMBER, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -569,6 +570,12 @@ test.describe("File small company accounts page", () => {
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
+const REVISED_COMPANY = registerCompany("00000003");
+const REVISED_COMPANY_OFFICE = {
+  addressLine1: `${REVISED_COMPANY.address.premises} ${REVISED_COMPANY.address.street}`,
+  cityOrTown: REVISED_COMPANY.address.locality,
+  postalCode: REVISED_COMPANY.address.postalCode,
+};
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/browser-test-results/revised-accounts");
 const documentCases = accountsDocumentCases();
 const fullCase = documentCases.find((candidate) => candidate.name === "small-company-accounts");
@@ -608,7 +615,7 @@ async function openAmend(
 ) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
-    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails }) => {
+    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails, companyName, registeredOffice }) => {
       window.__submitReady__ = true;
       localStorage.setItem("cognitoIdToken", "token");
       window.sentAccounts = [];
@@ -626,9 +633,9 @@ async function openAmend(
         if (lookupFails) throw new TypeError("Cannot read properties of undefined (reading 'companyNumber')");
         return {
           companyNumber,
-          companyName: "EXAMPLE SMALL COMPANY LIMITED",
+          companyName,
           jurisdiction: companyJurisdiction,
-          registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+          registeredOffice,
         };
       };
       window.submitMicroEntityAccounts = async (accounts) => {
@@ -642,7 +649,14 @@ async function openAmend(
         rejections: [],
       });
     },
-    { receiptBody: receipt, outcomeCode: outcome, companyJurisdiction: jurisdiction, lookupFails: profileFails },
+    {
+      receiptBody: receipt,
+      outcomeCode: outcome,
+      companyJurisdiction: jurisdiction,
+      lookupFails: profileFails,
+      companyName: REVISED_COMPANY.name,
+      registeredOffice: REVISED_COMPANY_OFFICE,
+    },
   );
   await page.route("**/*.js", async (route) => {
     if (route.request().resourceType() === "script") await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
@@ -717,7 +731,7 @@ test.describe("File small company accounts page - revising accounts from a recei
         "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
       );
       expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe(
-        "Company EXAMPLE SMALL COMPANY LIMITED (04549236).",
+        `Company ${REVISED_COMPANY.name} (04549236).`,
       );
       await expect(page.locator("#revisionDownloads")).toBeEmpty();
       await screenshot(page, "small-amend-banner-and-revision-section", width);
@@ -1034,13 +1048,13 @@ test.describe("File small company accounts page - revising accounts from a recei
       "the company",
       "English",
       "revision-company-not-on-register",
-      "Companies House holds no company with the number 00000009, so there are no accounts to revise.",
+      `Companies House holds no company with the number ${NOT_HELD_COMPANY_NUMBER}, so there are no accounts to revise.`,
     ],
     [
       "the company",
       "Welsh",
       "revision-company-not-on-register",
-      "Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif 00000009, felly nid oes cyfrifon i’w diwygio.",
+      `Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif ${NOT_HELD_COMPANY_NUMBER}, felly nid oes cyfrifon i’w diwygio.`,
     ],
     [
       "accounts for the period",
@@ -1063,17 +1077,17 @@ test.describe("File small company accounts page - revising accounts from a recei
       await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
       await page.fill("#revisionAmendments", "Stocks are now shown, and the profit and loss reserve rises by the same amount.");
       await page.fill("#directorDateApproved", "2026-11-20");
-      await page.evaluate((refusalReason) => {
+      await page.evaluate(({ refusalReason, notHeldCompanyNumber }) => {
         window.submitMicroEntityAccounts = async () => {
           const error = new Error("the route's English sentence");
           error.status = 400;
           error.reason = refusalReason;
-          error.body = { reason: error.reason, companyNumber: "00000009", periodEnd: "2026-03-31" };
+          error.body = { reason: error.reason, companyNumber: notHeldCompanyNumber, periodEnd: "2026-03-31" };
           throw error;
         };
         document.getElementById("companyAuthCode").value = "ABC123";
         return handleSubmitFiling();
-      }, reason);
+      }, { refusalReason: reason, notHeldCompanyNumber: NOT_HELD_COMPANY_NUMBER });
       await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(sentence);
     });
   }

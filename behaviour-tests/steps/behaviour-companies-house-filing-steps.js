@@ -10,6 +10,7 @@ import { expect, test } from "@playwright/test";
 import { TOTP, Secret } from "otpauth";
 import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 import { createTestCompany, deleteTestCompany } from "../../scripts/companies-house-test-company.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-filing-steps";
 
@@ -33,12 +34,12 @@ export function isCompaniesHouseSimulatorLane(envFilePath) {
 /**
  * The company the read-only lookup journeys look up. The simulator serves an invented company
  * under 00000001, the number Companies House's own filing API guide uses in its examples (see
- * app/http-simulator/scenarios/companies.js). Every other lane reads the live public data API,
+ * app/http-simulator/fixtures/register.js). Every other lane reads the live public data API,
  * where the record looked up is DIY Accounting Limited's own.
  */
 export function companiesHouseLookupFixture(envFilePath) {
   if (isCompaniesHouseSimulatorLane(envFilePath)) {
-    return { searchTerm: "Simulator Example", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED", companyNumber: "00000001" };
+    return { searchTerm: "Harbour Lane", companyName: registerCompany("00000001").name, companyNumber: "00000001" };
   }
   return { searchTerm: "DIY Accounting", companyName: "DIY ACCOUNTING LIMITED", companyNumber: "06846849" };
 }

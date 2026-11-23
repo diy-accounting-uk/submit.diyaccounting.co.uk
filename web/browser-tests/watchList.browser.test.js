@@ -36,10 +36,7 @@ const COMPANIES = {
   "00000002": { name: "SIMULATOR DISSOLVED COMPANY LIMITED", status: "dissolved", accounts: "2099-01-31", confirmation: "2099-04-30" },
 };
 
-// The register's companies, with any a test adds for its own account alone.
-const companiesOf = (account) => ({ ...COMPANIES, ...account.companies });
-
-function profileOf(companies, companyNumber) {
+function profileOf(companyNumber, companies = COMPANIES) {
   const company = companies[companyNumber];
   return {
     companyNumber,
@@ -125,9 +122,9 @@ async function serveSite(page, account) {
       if (account.rateLimitAfter !== undefined && account.profileReads.length > account.rateLimitAfter) {
         return json(route, 429, { message: "Companies House is rate limiting our lookups" }, { "Retry-After": "300" });
       }
-      const companies = companiesOf(account);
+      const companies = { ...COMPANIES, ...account.profiles };
       if (!companies[company[1]]) return json(route, 404, { message: "Not found for the specified query" });
-      return json(route, 200, profileOf(companies, company[1]));
+      return json(route, 200, profileOf(company[1], companies));
     }
     if (pathname.startsWith("/api/")) return json(route, 200, {});
     if (pathname === "/submit.environment-name.txt") return route.fulfill({ status: 200, contentType: "text/plain", body: "ci" });
@@ -394,12 +391,12 @@ test.describe("Company watch list", () => {
   });
 });
 
-// The full list's fifty companies all answer with a profile, for this account alone.
+// The full list's fifty companies all answer with a profile, for this account only.
 function profilesForEveryWatchedCompany(account) {
-  account.companies = {};
+  account.profiles = {};
   for (const companyNumber of account.watchedCompanies) {
     if (!COMPANIES[companyNumber])
-      account.companies[companyNumber] = {
+      account.profiles[companyNumber] = {
         name: `WATCHED COMPANY ${companyNumber} LIMITED`,
         status: "active",
         accounts: "2099-01-31",

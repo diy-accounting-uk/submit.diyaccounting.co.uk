@@ -10,9 +10,12 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
+const COMPANY = registerCompany("00000001");
+const SIGNED_IN_EMAIL = PEOPLE.eleanorBramwell.email;
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/off1");
 
 const CONTENT_TYPES = {
@@ -30,13 +33,13 @@ const CONTENT_TYPES = {
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, SIGNED_IN_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -45,7 +48,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
     if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
+      return json({ companyNumber: "00000001", companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/officer-appointment" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
@@ -152,7 +155,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
     expect(filings[0]).toMatchObject({
       companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyName: COMPANY.name,
       companyAuthCode: "SIMCS01",
       officerRole: "director",
       corporate: false,
@@ -279,7 +282,7 @@ test("a corporate secretary registered outside the UK is filed with its legal fo
   await page.locator("#legalForm").fill("Besloten vennootschap");
   await page.locator("#lawGoverned").fill("Netherlands");
   await page.locator("#placeRegistered").fill("Netherlands Chamber of Commerce");
-  await page.locator("#nonUkRegistrationNumber").fill("12345678");
+  await page.locator("#nonUkRegistrationNumber").fill("34298765");
   await finishAndReview(page, "Continue");
   await expect(page.locator("#reviewList")).toContainText("Besloten vennootschap");
   await page.getByRole("button", { name: "File with Companies House" }).click();
@@ -292,7 +295,7 @@ test("a corporate secretary registered outside the UK is filed with its legal fo
     companyIdentification: {
       nonUk: {
         placeRegistered: "Netherlands Chamber of Commerce",
-        registrationNumber: "12345678",
+        registrationNumber: "34298765",
         lawGoverned: "Netherlands",
         legalForm: "Besloten vennootschap",
       },

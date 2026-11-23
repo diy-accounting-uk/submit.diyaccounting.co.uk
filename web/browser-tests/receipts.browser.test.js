@@ -12,6 +12,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveHmrcFieldTableAssets, expectCleanFigures, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { serveSubmissionRecordAssets, recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -524,9 +525,11 @@ test.describe("Receipts page - receipt details", () => {
 });
 
 test.describe("Receipts page - a practice's clients", () => {
+  const BAKERY = registerCompany("00000003");
+  const PROPERTIES = registerCompany("00000005");
   const PRACTICE_CLIENTS = [
-    { clientId: "client-1", displayName: "Bright Tiles Ltd", identifiers: { companyNumber: "12345678" } },
-    { clientId: "client-2", displayName: "North Wharf Ltd", identifiers: { companyNumber: "87654321" } },
+    { clientId: "client-1", displayName: BAKERY.name, identifiers: { companyNumber: BAKERY.number } },
+    { clientId: "client-2", displayName: PROPERTIES.name, identifiers: { companyNumber: PROPERTIES.number } },
     { clientId: "client-3", displayName: "Old Mill Ltd", archivedAt: "2026-10-01T00:00:00.000Z" },
   ];
   const OWN_FILING = {
@@ -600,7 +603,7 @@ test.describe("Receipts page - a practice's clients", () => {
     const choice = page.locator("#receiptsClient");
     await expect(page.locator("#receiptsClientChoice")).toBeVisible();
     await expect(page.getByLabel("Show the receipts of")).toBeVisible();
-    await expect(choice.locator("option")).toHaveText(["My own filings", "Bright Tiles Ltd (12345678)", "North Wharf Ltd (87654321)"]);
+    await expect(choice.locator("option")).toHaveText(["My own filings", `${BAKERY.name} (${BAKERY.number})`, `${PROPERTIES.name} (${PROPERTIES.number})`]);
     await expect(page.locator("#filingsInProgress")).toContainText("00003A");
     await expect(page.locator("#filingsInProgress")).not.toContainText("00003B");
 

@@ -2,267 +2,57 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/http-simulator/scenarios/companies.js
-// Fixture companies for the Companies House simulator. 00000001 is the company number Companies
-// House's own filing API guide uses in its scope examples
-// (developer-specs.company-information.service.gov.uk, "Manipulate Company Data (API Filing)"),
-// and it is not on the live register. Dates sit far in the future so a fixture never expires
-// into a failing assertion. 00000004 is the confirmation statement journey's company, so its public
-// register lookup (this file) and its XML Gateway fixture (confirmation-statement.js's
-// FIXTURE_COMPANY) answer for the same company number. No company here has a live company's number.
-// 00000003 is a trading company for the simulator's accounts filing demos, named as a plain
-// example so a recording of a filed accounts document reads as one. 00000007 is the company of the
-// Precision Code Ltd book (mcp/test/fixtures/precision-code-ltd-full/book.toml), with the book's
-// address as its registered office, so the MCP harness files that book's accounts for it.
+// The Companies House simulator's public register: each company of fixtures/register.js as the
+// public data API gives it, with its officers and persons with significant control. The numbers are
+// ones Companies House does not issue; the dates are computed from the day the simulator starts.
+// 00000004 is the confirmation statement journey's company, so its public register lookup (this
+// file) and its XML Gateway company data (confirmation-statement.js) answer for the same company.
+// 00000007 is the company of the Precision Code Ltd book (mcp/test/fixtures/precision-code-ltd-full/
+// book.toml), with the book's address as its registered office, so the MCP harness files that
+// book's accounts for it.
 
 import { accountsDueNineMonthsAfter } from "../../../web/public/lib/accounting-reference-period.js";
+import { registerCompanies, addressLine1 } from "../fixtures/register.js";
 
-// A company whose next accounts' period ended two months ago and is not yet filed, so its current
-// period is the one running after it: its dates follow today, so the case stays reachable.
-function yearEndedCompanyAccounts(now = new Date()) {
-  const iso = (date) => date.toISOString().slice(0, 10);
-  const nextEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 0));
-  const nextStart = new Date(Date.UTC(nextEnd.getUTCFullYear() - 1, nextEnd.getUTCMonth() + 1, 1));
-  const lastEnd = new Date(Date.UTC(nextStart.getUTCFullYear(), nextStart.getUTCMonth(), 0));
-  const lastStart = new Date(Date.UTC(lastEnd.getUTCFullYear() - 1, lastEnd.getUTCMonth() + 1, 1));
+const REGISTER = registerCompanies();
+
+function profileOf(company) {
   return {
-    accounting_reference_date: {
-      day: String(nextEnd.getUTCDate()).padStart(2, "0"),
-      month: String(nextEnd.getUTCMonth() + 1).padStart(2, "0"),
+    company_name: company.name,
+    company_number: company.number,
+    company_status: company.status,
+    type: "ltd",
+    date_of_creation: company.incorporatedOn,
+    jurisdiction: company.jurisdiction,
+    registered_office_address: {
+      address_line_1: addressLine1(company.address),
+      locality: company.address.locality,
+      postal_code: company.address.postalCode,
+      country: company.address.country,
     },
-    next_accounts: {
-      due_on: accountsDueNineMonthsAfter(iso(nextEnd)),
-      period_start_on: iso(nextStart),
-      period_end_on: iso(nextEnd),
+    sic_codes: company.sicCodes,
+    accounts: {
+      accounting_reference_date: company.accounts.accountingReferenceDate,
+      next_accounts: {
+        due_on: company.accounts.next.due,
+        period_start_on: company.accounts.next.start,
+        period_end_on: company.accounts.next.end,
+      },
+      last_accounts: {
+        made_up_to: company.accounts.last.end,
+        period_start_on: company.accounts.last.start,
+        period_end_on: company.accounts.last.end,
+        type: company.accounts.last.type,
+      },
     },
-    last_accounts: {
-      made_up_to: iso(lastEnd),
-      period_start_on: iso(lastStart),
-      period_end_on: iso(lastEnd),
-      type: "micro-entity",
+    confirmation_statement: {
+      next_due: company.confirmationStatementDates.due,
+      next_made_up_to: company.confirmationStatementDates.madeUpTo,
     },
   };
 }
 
-const companies = {
-  "00000001": {
-    company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
-    company_number: "00000001",
-    company_status: "active",
-    type: "ltd",
-    date_of_creation: "2009-04-16",
-    jurisdiction: "england-wales",
-    registered_office_address: {
-      address_line_1: "1 Example Street",
-      locality: "Cardiff",
-      postal_code: "CF14 3UZ",
-      country: "Wales",
-    },
-    sic_codes: ["62012", "69201"],
-    accounts: {
-      accounting_reference_date: { day: "30", month: "04" },
-      next_accounts: {
-        due_on: "2099-01-31",
-        period_start_on: "2098-05-01",
-        period_end_on: "2099-04-30",
-      },
-      last_accounts: {
-        made_up_to: "2098-04-30",
-        period_start_on: "2097-05-01",
-        period_end_on: "2098-04-30",
-        type: "micro-entity",
-      },
-    },
-    confirmation_statement: {
-      next_due: "2099-04-30",
-      next_made_up_to: "2099-04-16",
-    },
-  },
-  "SC000000": {
-    company_name: "SIMULATOR TEST COMPANY (SCOTLAND) LIMITED",
-    company_number: "SC000000",
-    company_status: "active",
-    type: "ltd",
-    date_of_creation: "2015-06-01",
-    jurisdiction: "scotland",
-    registered_office_address: {
-      address_line_1: "1 Simulator Street",
-      locality: "Edinburgh",
-      postal_code: "EH1 1AA",
-      country: "United Kingdom",
-    },
-    sic_codes: ["62020"],
-    accounts: {
-      accounting_reference_date: { day: "30", month: "09" },
-      next_accounts: {
-        due_on: "2099-06-30",
-        period_start_on: "2098-10-01",
-        period_end_on: "2099-09-30",
-      },
-      last_accounts: {
-        made_up_to: "2098-09-30",
-        period_start_on: "2097-10-01",
-        period_end_on: "2098-09-30",
-        type: "total-exemption-full",
-      },
-    },
-    confirmation_statement: {
-      next_due: "2099-09-30",
-      next_made_up_to: "2099-09-16",
-    },
-  },
-  "00000002": {
-    company_name: "SIMULATOR DISSOLVED COMPANY LIMITED",
-    company_number: "00000002",
-    company_status: "dissolved",
-    type: "ltd",
-    date_of_creation: "1990-01-01",
-    jurisdiction: "england-wales",
-    registered_office_address: {
-      address_line_1: "2 Simulator Street",
-      locality: "London",
-      postal_code: "EC1A 1AA",
-      country: "United Kingdom",
-    },
-    sic_codes: ["62090"],
-    accounts: {
-      accounting_reference_date: { day: "30", month: "04" },
-      next_accounts: {
-        due_on: "2099-01-31",
-        period_start_on: "2098-05-01",
-        period_end_on: "2099-04-30",
-      },
-      last_accounts: {
-        made_up_to: "2098-04-30",
-        period_start_on: "2097-05-01",
-        period_end_on: "2098-04-30",
-        type: "micro-entity",
-      },
-    },
-    confirmation_statement: {
-      next_due: "2099-04-30",
-      next_made_up_to: "2099-04-16",
-    },
-  },
-  "00000003": {
-    company_name: "EXAMPLE TRADING LIMITED",
-    company_number: "00000003",
-    company_status: "active",
-    type: "ltd",
-    date_of_creation: "2018-03-12",
-    jurisdiction: "england-wales",
-    registered_office_address: {
-      address_line_1: "3 Example Street",
-      locality: "Bristol",
-      postal_code: "BS1 4ND",
-      country: "England",
-    },
-    sic_codes: ["47910"],
-    accounts: {
-      accounting_reference_date: { day: "31", month: "03" },
-      next_accounts: {
-        due_on: "2099-12-31",
-        period_start_on: "2098-04-01",
-        period_end_on: "2099-03-31",
-      },
-      last_accounts: {
-        made_up_to: "2098-03-31",
-        period_start_on: "2097-04-01",
-        period_end_on: "2098-03-31",
-        type: "micro-entity",
-      },
-    },
-    confirmation_statement: {
-      next_due: "2099-03-26",
-      next_made_up_to: "2099-03-12",
-    },
-  },
-  "00000007": {
-    company_name: "PRECISION CODE LTD",
-    company_number: "00000007",
-    company_status: "active",
-    type: "ltd",
-    date_of_creation: "2020-01-01",
-    jurisdiction: "england-wales",
-    registered_office_address: {
-      address_line_1: "123 High Street",
-      locality: "Manchester",
-      postal_code: "M1 1AA",
-      country: "England",
-    },
-    sic_codes: ["62020"],
-    accounts: {
-      accounting_reference_date: { day: "31", month: "03" },
-      next_accounts: {
-        due_on: "2099-12-31",
-        period_start_on: "2098-04-01",
-        period_end_on: "2099-03-31",
-      },
-      last_accounts: {
-        made_up_to: "2098-03-31",
-        period_start_on: "2097-04-01",
-        period_end_on: "2098-03-31",
-        type: "total-exemption-full",
-      },
-    },
-    confirmation_statement: {
-      next_due: "2099-01-15",
-      next_made_up_to: "2099-01-01",
-    },
-  },
-  "00000004": {
-    company_name: "EXAMPLE CONFIRMATION STATEMENT LIMITED",
-    company_number: "00000004",
-    company_status: "active",
-    type: "ltd",
-    date_of_creation: "2009-01-01",
-    jurisdiction: "england-wales",
-    registered_office_address: {
-      address_line_1: "1 Example Street",
-      locality: "London",
-      postal_code: "AB1 2CD",
-      country: "England",
-    },
-    sic_codes: ["69201", "69202"],
-    accounts: {
-      accounting_reference_date: { day: "30", month: "04" },
-      next_accounts: {
-        due_on: "2099-01-31",
-        period_start_on: "2098-05-01",
-        period_end_on: "2099-04-30",
-      },
-      last_accounts: {
-        made_up_to: "2098-04-30",
-        period_start_on: "2097-05-01",
-        period_end_on: "2098-04-30",
-        type: "micro-entity",
-      },
-    },
-    confirmation_statement: {
-      next_due: "2026-10-05",
-      next_made_up_to: "2025-09-21",
-    },
-  },
-  "00000005": {
-    company_name: "SIMULATOR YEAR ENDED LIMITED",
-    company_number: "00000005",
-    company_status: "active",
-    type: "ltd",
-    date_of_creation: "2015-03-02",
-    jurisdiction: "england-wales",
-    registered_office_address: {
-      address_line_1: "5 Example Street",
-      locality: "Cardiff",
-      postal_code: "CF14 3UZ",
-      country: "Wales",
-    },
-    sic_codes: ["62012"],
-    accounts: yearEndedCompanyAccounts(),
-    confirmation_statement: {
-      next_due: "2099-03-16",
-      next_made_up_to: "2099-03-02",
-    },
-  },
-};
+const companies = Object.fromEntries(REGISTER.map((company) => [company.number, profileOf(company)]));
 
 const RATE_LIMITED_COMPANY_NUMBER = "42942942";
 
@@ -321,135 +111,69 @@ export function setNextAccountingPeriodEnd(companyNumber, periodEnd) {
   accounts.next_accounts = { ...accounts.next_accounts, period_end_on: periodEnd, due_on: accountsDueNineMonthsAfter(periodEnd) };
 }
 
-const officersByCompanyNumber = {
-  "00000001": {
-    active_count: 3,
-    resigned_count: 0,
-    items: [
-      {
-        name: "BRAMWELL, Eleanor",
-        officer_role: "director",
-        appointed_on: "2015-01-01",
-        date_of_birth: { month: 1, year: 1970 },
-        nationality: "British",
-        country_of_residence: "England",
-        identity_verification_details: {
-          appointment_verification_end_on: "9999-12-31",
-          appointment_verification_start_on: "2025-11-18",
-          verification_statement_due_on: null,
-        },
-      },
-      {
-        name: "TENNANT, Marcus",
-        officer_role: "director",
-        appointed_on: "2015-01-01",
-        date_of_birth: { month: 2, year: 1975 },
-        nationality: "British",
-        country_of_residence: "England",
-        identity_verification_details: null,
-      },
-    ],
-  },
-  "00000004": {
-    active_count: 2,
-    resigned_count: 0,
-    items: [
-      {
-        name: "BRAMWELL, Eleanor",
-        officer_role: "director",
-        appointed_on: "2015-01-01",
-        date_of_birth: { month: 1, year: 1970 },
-        nationality: "British",
-        country_of_residence: "England",
-        identity_verification_details: null,
-      },
-      {
-        name: "TENNANT, Marcus",
-        officer_role: "director",
-        appointed_on: "2015-01-01",
-        date_of_birth: { month: 2, year: 1975 },
-        nationality: "British",
-        country_of_residence: "England",
-        identity_verification_details: null,
-      },
-    ],
-  },
-};
+const verification = (verified) =>
+  verified
+    ? {
+        appointment_verification_end_on: "9999-12-31",
+        appointment_verification_start_on: "2025-11-18",
+        verification_statement_due_on: null,
+      }
+    : null;
 
-const pscsByCompanyNumber = {
-  "00000001": {
-    active_count: 2,
+function officersOf(company) {
+  if (company.officers.length === 0) return null;
+  return {
+    active_count: company.officersActiveCount ?? company.officers.length,
+    resigned_count: 0,
+    items: company.officers.map((officer) => ({
+      name: `${officer.surname.toUpperCase()}, ${officer.forename}`,
+      officer_role: officer.role,
+      appointed_on: officer.appointedOn,
+      date_of_birth: { month: officer.dateOfBirth.month, year: officer.dateOfBirth.year },
+      nationality: officer.nationality,
+      country_of_residence: officer.countryOfResidence,
+      identity_verification_details: verification(officer.verified),
+    })),
+  };
+}
+
+function pscsOf(company) {
+  if (company.pscs.length === 0) return null;
+  return {
+    active_count: company.pscs.filter((psc) => psc.kind.startsWith("individual")).length,
     ceased_count: 0,
-    items: [
-      {
-        name: "Eleanor Bramwell",
-        name_elements: { title: "Mrs", forename: "Eleanor", surname: "Bramwell" },
-        kind: "individual-person-with-significant-control",
-        links: { self: "/company/00000001/persons-with-significant-control/individual/sim-psc-bramwell-0001" },
-        natures_of_control: ["ownership-of-shares-50-to-75-percent", "voting-rights-50-to-75-percent"],
-        notified_on: "2016-04-06",
+    items: company.pscs.map((psc, index) => {
+      const id = `sim-psc-${company.number.toLowerCase()}-${index + 1}`;
+      if (psc.kind.startsWith("corporate")) {
+        return {
+          name: psc.name,
+          kind: psc.kind,
+          links: { self: `/company/${company.number}/persons-with-significant-control/corporate-entity/${id}` },
+          natures_of_control: psc.naturesOfControl,
+          notified_on: psc.notifiedOn,
+          ceased_on: null,
+        };
+      }
+      return {
+        name: `${psc.forename} ${psc.surname}`,
+        name_elements: { title: psc.title, forename: psc.forename, surname: psc.surname },
+        kind: psc.kind,
+        links: { self: `/company/${company.number}/persons-with-significant-control/individual/${id}` },
+        natures_of_control: psc.naturesOfControl,
+        notified_on: psc.notifiedOn,
         ceased_on: null,
-        date_of_birth: { month: 1, year: 1970 },
-        nationality: "British",
-        identity_verification_details: {
-          appointment_verification_end_on: "9999-12-31",
-          appointment_verification_start_on: "2025-11-18",
-          verification_statement_due_on: null,
-        },
-      },
-      {
-        name: "Marcus Tennant",
-        name_elements: { title: "Mr", forename: "Marcus", surname: "Tennant" },
-        kind: "individual-person-with-significant-control",
-        links: { self: "/company/00000001/persons-with-significant-control/individual/sim-psc-tennant-0001" },
-        natures_of_control: ["ownership-of-shares-25-to-50-percent", "voting-rights-25-to-50-percent"],
-        notified_on: "2016-04-06",
-        ceased_on: null,
-        date_of_birth: { month: 2, year: 1975 },
-        nationality: "British",
-        identity_verification_details: null,
-      },
-      {
-        name: "SIMULATOR HOLDINGS LIMITED",
-        kind: "corporate-entity-person-with-significant-control",
-        links: { self: "/company/00000001/persons-with-significant-control/corporate-entity/sim-psc-holdings-0001" },
-        natures_of_control: ["ownership-of-shares-25-to-50-percent"],
-        notified_on: "2019-06-01",
-        ceased_on: null,
-      },
-    ],
-  },
-  "00000004": {
-    active_count: 2,
-    ceased_count: 0,
-    items: [
-      {
-        name: "Eleanor Bramwell",
-        name_elements: { title: "Mrs", forename: "Eleanor", surname: "Bramwell" },
-        kind: "individual-person-with-significant-control",
-        links: { self: "/company/06846849/persons-with-significant-control/individual/sim-psc-bramwell-6849" },
-        natures_of_control: ["ownership-of-shares-50-to-75-percent", "voting-rights-50-to-75-percent"],
-        notified_on: "2016-04-06",
-        ceased_on: null,
-        date_of_birth: { month: 1, year: 1970 },
-        nationality: "British",
-        identity_verification_details: null,
-      },
-      {
-        name: "Marcus Tennant",
-        name_elements: { title: "Mr", forename: "Marcus", surname: "Tennant" },
-        kind: "individual-person-with-significant-control",
-        links: { self: "/company/06846849/persons-with-significant-control/individual/sim-psc-tennant-6849" },
-        natures_of_control: ["ownership-of-shares-25-to-50-percent", "voting-rights-25-to-50-percent"],
-        notified_on: "2016-04-06",
-        ceased_on: null,
-        date_of_birth: { month: 2, year: 1975 },
-        nationality: "British",
-        identity_verification_details: null,
-      },
-    ],
-  },
-};
+        date_of_birth: { month: psc.dateOfBirth.month, year: psc.dateOfBirth.year },
+        nationality: psc.nationality,
+        identity_verification_details: verification(psc.verified),
+      };
+    }),
+  };
+}
+
+const officersByCompanyNumber = Object.fromEntries(
+  REGISTER.map((company) => [company.number, officersOf(company)]).filter(([, officers]) => officers),
+);
+const pscsByCompanyNumber = Object.fromEntries(REGISTER.map((company) => [company.number, pscsOf(company)]).filter(([, pscs]) => pscs));
 
 /**
  * Get a company's officers fixture. Returns null for an unknown company number so the caller can

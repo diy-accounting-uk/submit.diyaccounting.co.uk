@@ -814,12 +814,13 @@ test.describe("Operator Dashboard", () => {
     expect(panelIds.slice(-4)).toEqual(["operatorsPanel", "familyAffiliatesPanel", "affiliateGroupsPanel", "awsLinksPanel"]);
 
     await expect(page.locator("#operatorsBody tr")).toHaveCount(2);
-    await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText("boss@example.com");
+    await expect(page.locator("#operatorsBody tr").nth(0)).toHaveText(FIXTURE_AFFILIATE_SECTIONS.operators.emails[0]);
 
-    const generated = page.locator('#familyAffiliatesPassesGeneratedBody tr[data-affiliate-email="sister@example.com"]');
+    const firstAffiliate = FIXTURE_AFFILIATE_SECTIONS.familyAffiliates.affiliates[0].email;
+    const generated = page.locator(`#familyAffiliatesPassesGeneratedBody tr[data-affiliate-email="${firstAffiliate}"]`);
     await expect(generated.locator("td").nth(1)).toHaveText("3");
     await expect(page.locator("#familyAffiliatesLinkClicksBody tr")).toHaveCount(2);
-    await expect(page.locator('#familyAffiliatesPassesConvertedBody tr[data-affiliate-email="sister@example.com"] td').nth(1)).toHaveText(
+    await expect(page.locator(`#familyAffiliatesPassesConvertedBody tr[data-affiliate-email="${firstAffiliate}"] td`).nth(1)).toHaveText(
       "1",
     );
     await expect(page.locator("#familyAffiliatesPassesGeneratedTable thead th")).toContainText(["Today", "Previous day", "Last 7 days"]);

@@ -8,6 +8,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -47,7 +48,7 @@ async function serveSignIn(page, { acquisitionAnswers = ["first"] } = {}) {
       return;
     }
     if (url.pathname === "/api/v1/cognito/token") {
-      const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: "person@example.com", nonce: "nonce-1" })).toString("base64url");
+      const payload = Buffer.from(JSON.stringify({ sub: "sub-1", email: PEOPLE.samPatel.email, nonce: "nonce-1" })).toString("base64url");
       await route.fulfill({
         status: 200,
         contentType: "application/json",

@@ -9,6 +9,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -27,15 +28,24 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
 };
 
-const PROFILE = (companyNumber, companyName) => ({
-  companyNumber,
-  companyName,
-  companyStatus: "active",
+const FIRST = registerCompany("00000001");
+const SECOND = registerCompany("00000006");
+const SIGNED_IN_EMAIL = PEOPLE.owenPrys.email;
+
+const PROFILE = (company) => ({
+  companyNumber: company.number,
+  companyName: company.name,
+  companyStatus: company.status,
   companyType: "ltd",
-  dateOfCreation: "2009-04-16",
-  jurisdiction: "england-wales",
-  registeredOfficeAddress: { address_line_1: "1 Example Street", locality: "Cardiff", postal_code: "CF14 3UZ", country: "Wales" },
-  sicCodes: ["62012"],
+  dateOfCreation: company.incorporatedOn,
+  jurisdiction: company.jurisdiction,
+  registeredOfficeAddress: {
+    address_line_1: addressLine1(company.address),
+    locality: company.address.locality,
+    postal_code: company.address.postalCode,
+    country: company.address.country,
+  },
+  sicCodes: company.sicCodes,
 });
 
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -43,15 +53,15 @@ const json = (route, body, status = 200) => route.fulfill({ status, contentType:
 // The real site from disk, signed in, with the API answered here. Each purchase lookup the GA4
 // purchase event makes is recorded.
 async function serveSite(page, { purchaseLookups = [], language = null, generatedPasses = [PASS_CODE] } = {}) {
-  await page.addInitScript((chosen) => {
+  await page.addInitScript(({ chosen, email }) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       if (chosen) localStorage.setItem("siteLanguage", chosen);
     } catch {}
     window.gtag = function () {};
-  }, language);
+  }, { chosen: language, email: SIGNED_IN_EMAIL });
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -69,12 +79,12 @@ async function serveSite(page, { purchaseLookups = [], language = null, generate
       }
       if (pathname === "/api/v1/companies-house/search") {
         return json(route, {
-          items: [{ title: "SECOND EXAMPLE LIMITED", companyNumber: "00000002", companyStatus: "active", dateOfCreation: "2012-01-01" }],
+          items: [{ title: SECOND.name, companyNumber: SECOND.number, companyStatus: SECOND.status, dateOfCreation: SECOND.incorporatedOn }],
           totalResults: 1,
         });
       }
       const company = pathname.match(/^\/api\/v1\/companies-house\/company\/([^/]+)$/);
-      if (company) return json(route, PROFILE(company[1], company[1] === "00000002" ? "SECOND EXAMPLE LIMITED" : "FIRST EXAMPLE LIMITED"));
+      if (company) return json(route, PROFILE(company[1] === SECOND.number ? SECOND : FIRST));
       return json(route, {});
     }
     const drill = pathname.match(/^(\/cy)?\/companies-house\/company\//);
@@ -163,18 +173,18 @@ test("the language notice carries the pass code to the copy in the reader's lang
 
 test("after a drill-down to a second company the switch opens that company in Welsh, and back", async ({ page }) => {
   await serveSite(page);
-  await page.goto(`${SITE}/companies-house/companySearch.html?companyNumber=00000001`, { waitUntil: "networkidle" });
-  await expect(page).toHaveURL(`${SITE}/companies-house/company/00000001`);
-  expect(await switchAddressOnFocus(page, "Cymraeg")).toBe("/cy/companies-house/company/00000001");
+  await page.goto(`${SITE}/companies-house/companySearch.html?companyNumber=${FIRST.number}`, { waitUntil: "networkidle" });
+  await expect(page).toHaveURL(`${SITE}/companies-house/company/${FIRST.number}`);
+  expect(await switchAddressOnFocus(page, "Cymraeg")).toBe(`/cy/companies-house/company/${FIRST.number}`);
 
   await page.locator("#newSearchBtn").click();
-  await page.locator("#companyQuery").fill("second example");
+  await page.locator("#companyQuery").fill("teifi valley");
   await page.locator("#companySearchForm button[type=submit]").click();
-  await page.getByRole("button", { name: "SECOND EXAMPLE LIMITED" }).click();
-  await expect(page).toHaveURL(`${SITE}/companies-house/company/00000002`);
+  await page.getByRole("button", { name: SECOND.name }).click();
+  await expect(page).toHaveURL(`${SITE}/companies-house/company/${SECOND.number}`);
 
   await page.locator(".language-switch").getByRole("link", { name: "Cymraeg" }).click();
-  await expect(page).toHaveURL(`${SITE}/cy/companies-house/company/00000002`);
+  await expect(page).toHaveURL(`${SITE}/cy/companies-house/company/${SECOND.number}`);
   await page.locator(".language-switch").getByRole("link", { name: "English" }).click();
-  await expect(page).toHaveURL(`${SITE}/companies-house/company/00000002`);
+  await expect(page).toHaveURL(`${SITE}/companies-house/company/${SECOND.number}`);
 });

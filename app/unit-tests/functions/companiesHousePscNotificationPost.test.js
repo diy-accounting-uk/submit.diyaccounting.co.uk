@@ -114,7 +114,7 @@ const ENTITY = {
   legalForm: "Private company limited by shares",
   lawGoverned: "Companies Act 2006",
   placeRegistered: "Companies House",
-  registrationNumber: "00000008",
+  registrationNumber: "00000006",
   countryOrState: "UNITED KINGDOM",
 };
 

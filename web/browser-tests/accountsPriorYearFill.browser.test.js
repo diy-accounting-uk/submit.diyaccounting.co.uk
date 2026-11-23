@@ -11,6 +11,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { addDays, registerCompany, registerDates } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/screenshots/accounts-prior-year");
@@ -28,24 +29,34 @@ const CONTENT_TYPES = {
   ".woff2": "font/woff2",
 };
 
+const DATES = registerDates();
+
+const longDate = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
 // accountsNextPeriodStart is the day after the last accounts' made-up date, as the register states it,
 // unless a test gives the company a gap.
-function profile(companyNumber, companyName, accountsNextPeriodStart) {
+function profile(companyNumber, accountsNextPeriodStart) {
+  const company = registerCompany(companyNumber);
   return {
     companyNumber,
-    companyName,
+    companyName: company.name,
     ...(accountsNextPeriodStart ? { accountsNextPeriodStart } : {}),
-    companyStatus: "active",
+    companyStatus: company.status,
     companyType: "ltd",
-    jurisdiction: "england-wales",
-    registeredOffice: { addressLine1: "1 Example Street", cityOrTown: "Cardiff", postalCode: "CF14 3UZ", country: "Wales" },
+    jurisdiction: company.jurisdiction,
+    registeredOffice: {
+      addressLine1: `${company.address.premises} ${company.address.street}`,
+      cityOrTown: company.address.locality,
+      postalCode: company.address.postalCode,
+      country: company.address.country,
+    },
   };
 }
 
 const MICRO_ACCOUNTS = {
   regime: "micro",
-  period: { start: "2097-05-01", end: "2098-04-30" },
-  approvalDate: "2098-10-20",
+  period: { start: DATES.filed.start, end: DATES.filed.end },
+  approvalDate: DATES.filed.approvedOn,
   balanceSheet: {
     fixedAssets: 10000,
     currentAssets: 5000,
@@ -63,8 +74,8 @@ const MICRO_ACCOUNTS = {
 
 const SMALL_ACCOUNTS = {
   regime: "small",
-  period: { start: "2097-10-01", end: "2098-09-30" },
-  approvalDate: "2099-02-20",
+  period: { start: DATES.filed.start, end: DATES.filed.end },
+  approvalDate: addDays(DATES.filed.approvedOn, 14),
   balanceSheet: {
     fixedAssets: 8000,
     stocks: 600,
@@ -95,36 +106,39 @@ const RESERVES_ACCOUNTS = {
   balanceSheet: { ...MICRO_ACCOUNTS.balanceSheet, profitAndLossAccount: 7900 },
 };
 
+// The missed year's company filed the accounts of the year before last and nothing since.
+const EARLIER_MICRO_ACCOUNTS = { ...MICRO_ACCOUNTS, period: { start: DATES.earlier.start, end: DATES.earlier.end } };
+
 const COMPANIES = {
   "00000001": {
-    profile: profile("00000001", "SIMULATOR EXAMPLE COMPANY LIMITED", "2098-05-01"),
-    lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: "2098-04-30" },
+    profile: profile("00000001", DATES.next.start),
+    lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: DATES.filed.end, filedOn: DATES.filed.filedOn },
   },
-  "SC000000": {
-    profile: profile("SC000000", "SIMULATOR TEST COMPANY (SCOTLAND) LIMITED", "2098-10-01"),
-    lastAccounts: { outcome: "mapped", accounts: SMALL_ACCOUNTS, madeUpDate: "2098-09-30" },
+  SC000001: {
+    profile: profile("SC000001", DATES.next.start),
+    lastAccounts: { outcome: "mapped", accounts: SMALL_ACCOUNTS, madeUpDate: DATES.filed.end, filedOn: DATES.filed.filedOn },
   },
   "00000003": {
-    profile: profile("00000003", "EXAMPLE TRADING LIMITED"),
-    lastAccounts: { outcome: "paper", madeUpDate: "2098-03-31", paperFiled: true },
+    profile: profile("00000003"),
+    lastAccounts: { outcome: "paper", madeUpDate: DATES.filed.end, filedOn: DATES.filed.filedOn, paperFiled: true },
   },
-  "00000007": { profile: profile("00000007", "PRECISION CODE LTD"), lastAccounts: { outcome: "none" } },
+  "00000007": { profile: profile("00000007"), lastAccounts: { outcome: "none" } },
   "00000008": {
-    profile: profile("00000008", "RESERVES EXAMPLE LIMITED", "2098-05-01"),
-    lastAccounts: { outcome: "mapped", accounts: RESERVES_ACCOUNTS, madeUpDate: "2098-04-30" },
+    profile: profile("00000008", DATES.next.start),
+    lastAccounts: { outcome: "mapped", accounts: RESERVES_ACCOUNTS, madeUpDate: DATES.filed.end, filedOn: DATES.filed.filedOn },
   },
   "00000005": {
-    profile: profile("00000005", "MISSED YEAR LIMITED", "2099-05-01"),
-    lastAccounts: { outcome: "mapped", accounts: MICRO_ACCOUNTS, madeUpDate: "2098-04-30" },
+    profile: profile("00000005", DATES.next.start),
+    lastAccounts: { outcome: "mapped", accounts: EARLIER_MICRO_ACCOUNTS, madeUpDate: DATES.earlier.end, filedOn: DATES.earlier.filedOn },
   },
 };
 
 function lastAccountsAnswer(companyNumber) {
-  const { outcome, accounts, madeUpDate, paperFiled = false } = COMPANIES[companyNumber].lastAccounts;
+  const { outcome, accounts, madeUpDate, filedOn, paperFiled = false } = COMPANIES[companyNumber].lastAccounts;
   return {
     companyNumber,
     outcome,
-    ...(madeUpDate ? { set: { transactionId: `TX${companyNumber}`, madeUpDate, filedOn: "2099-01-10", paperFiled } } : {}),
+    ...(madeUpDate ? { set: { transactionId: `TX${companyNumber}`, madeUpDate, filedOn, paperFiled } } : {}),
     ...(accounts ? { accounts } : {}),
   };
 }
@@ -198,7 +212,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
       await expect(page.locator("#priorCapitalAndReserves")).toHaveValue("10000");
       await expect(page.locator("#currentFixedAssets")).toHaveValue("");
       await expect(page.locator("#priorYearNote")).toContainText(
-        "7 prior-year figures are filled in from the company's last accounts, made up to 30 April 2098 and approved on 20 October 2098.",
+        `7 prior-year figures are filled in from the company's last accounts, made up to ${longDate(DATES.filed.end)} and approved on ${longDate(DATES.filed.approvedOn)}.`,
       );
       await expect(page.locator("#priorYearNote")).toContainText(
         "Left empty, with no figure in those accounts: Called up share capital not paid",
@@ -210,13 +224,15 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     test(`the small company form shows its comparatives and fills the prior year at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page);
-      await lookUp(page, "fileSmallCompanyAccounts", "SC000000");
+      await lookUp(page, "fileSmallCompanyAccounts", "SC000001");
       await expect(page.locator("#includeComparatives")).toBeChecked();
       await expect(page.locator("#priorStocks")).toHaveValue("600");
       await expect(page.locator("#priorCashAtBank")).toHaveValue("9000");
       await expect(page.locator("#priorTurnover")).toHaveValue("60000");
       await expect(page.locator("#priorTax")).toHaveValue("1000");
-      await expect(page.locator("#priorYearNote")).toContainText("made up to 30 September 2098 and approved on 20 February 2099");
+      await expect(page.locator("#priorYearNote")).toContainText(
+        `made up to ${longDate(DATES.filed.end)} and approved on ${longDate(SMALL_ACCOUNTS.approvalDate)}`,
+      );
       expect(await scrollsSideways(page)).toBe(false);
       await shoot(page, "small-company-filled");
     });
@@ -226,12 +242,12 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page);
-      await lookUp(page, "fileMicroEntityAccounts", "SC000000");
+      await lookUp(page, "fileMicroEntityAccounts", "SC000001");
       const note = page.locator("#priorYearNote");
       await expect(note).toContainText(
         "The company's last accounts were small company accounts: file this year's on the small company accounts form.",
       );
-      await expect(note.locator("a")).toHaveAttribute("href", "/companies-house/fileSmallCompanyAccounts.html?companyNumber=SC000000");
+      await expect(note.locator("a")).toHaveAttribute("href", "/companies-house/fileSmallCompanyAccounts.html?companyNumber=SC000001");
       await expect(page.locator("#priorFixedAssets")).toHaveValue("8000");
       await expect(page.locator("#priorCurrentAssets")).toHaveValue("13000");
       await shoot(page, "other-form-note");
@@ -242,7 +258,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
       await serveSite(page);
       await lookUp(page, "fileMicroEntityAccounts", "00000003");
       await expect(page.locator("#priorYearNote")).toHaveText(
-        "The company's last accounts, made up to 31 March 2098, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left empty: type it from those accounts.",
+        `The company's last accounts, made up to ${longDate(DATES.filed.end)}, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left empty: type it from those accounts.`,
       );
       await expect(page.locator("#priorFixedAssets")).toHaveValue("");
       await shoot(page, "paper-note");
@@ -264,7 +280,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     await serveSite(page);
     await lookUp(page, "fileMicroEntityAccounts", "00000005");
     await expect(page.locator("#priorYearNote")).toContainText(
-      "The last accounts filed were made up to 30 April 2098, and this period starts on 1 May 2099, so the year between is not on the register and the prior year is left empty. See the company's filing history.",
+      `The last accounts filed were made up to ${longDate(DATES.earlier.end)}, and this period starts on ${longDate(DATES.next.start)}, so the year between is not on the register and the prior year is left empty. See the company's filing history.`,
     );
     await expect(page.locator("#priorYearNote a")).toHaveAttribute("href", "/companies-house/company/00000005/filing-history");
     await expect(page.locator("#priorFixedAssets")).toHaveValue("");
@@ -307,7 +323,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
   test("each form reads the company's profile once, and the fill uses that profile", async ({ page }) => {
     for (const [form, companyNumber] of [
       ["fileMicroEntityAccounts", "00000001"],
-      ["fileSmallCompanyAccounts", "SC000000"],
+      ["fileSmallCompanyAccounts", "SC000001"],
     ]) {
       const apiRequests = [];
       await page.unrouteAll({ behavior: "ignoreErrors" });

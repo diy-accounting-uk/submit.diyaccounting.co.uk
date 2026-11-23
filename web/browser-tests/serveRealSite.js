@@ -7,6 +7,7 @@
 
 import fs from "fs";
 import path from "path";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -23,16 +24,17 @@ const CONTENT_TYPES = {
 };
 
 export const SITE_ORIGIN = "http://localhost:3000";
+export const SIGNED_IN_EMAIL = PEOPLE.samPatel.email;
 
 // apiHandler(url, request) returns an object to send as JSON, or undefined for an empty object.
 export async function serveRealSite(page, { signedIn = false, apiHandler = () => undefined } = {}) {
   if (signedIn) {
-    await page.addInitScript(() => {
+    await page.addInitScript((email) => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       } catch {}
-    });
+    }, SIGNED_IN_EMAIL);
   }
 
   await page.route("**/*", async (route) => {

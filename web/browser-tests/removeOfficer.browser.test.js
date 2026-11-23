@@ -10,6 +10,11 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000001");
+const CORPORATE_SECRETARY = registerCompany("00000009").name;
+const SIGNED_IN_EMAIL = PEOPLE.eleanorBramwell.email;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -35,7 +40,7 @@ const OFFICERS = [
     dateOfBirth: { month: 2, year: 1975 },
   },
   {
-    name: "SIMULATOR SECRETARIES LIMITED",
+    name: CORPORATE_SECRETARY,
     officerRole: "corporate-secretary",
     appointedOn: "2018-03-01",
   },
@@ -56,13 +61,13 @@ const OFFICERS = [
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, officers = OFFICERS } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, SIGNED_IN_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -70,8 +75,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const pathname = decodeURIComponent(url.pathname);
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
-    if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
+    if (pathname === "/api/v1/companies-house/company/00000001") return json({ companyNumber: "00000001", companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/company/00000001/officers") return json({ officers });
     if (pathname === "/api/v1/companies-house/officer-resignation" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
@@ -118,7 +122,7 @@ for (const width of [1280, 390]) {
 
     await expect(page.locator("#officerChoices label")).toHaveText([
       "TENNANT, Marcus John (Director)",
-      "SIMULATOR SECRETARIES LIMITED (Corporate secretary)",
+      `${CORPORATE_SECRETARY} (Corporate secretary)`,
       "BRAMWELL, Eleanor (Secretary)",
     ]);
     await page.getByLabel("TENNANT, Marcus John (Director)").check();
@@ -147,7 +151,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
     expect(filings[0]).toMatchObject({
       companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyName: COMPANY.name,
       companyAuthCode: "SIMCS01",
       officerRole: "director",
       corporate: false,
@@ -179,8 +183,8 @@ for (const width of [1280, 390]) {
     await expect(page.locator("h1")).toHaveText("Tynnu cyfarwyddwr neu ysgrifennydd");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Statws: amgylchedd prawf (sandbox).");
     await lookUp(page, "Chwilio am y cyfarwyddwyr a’r ysgrifenyddion");
-    await page.getByLabel("SIMULATOR SECRETARIES LIMITED (Ysgrifennydd corfforaethol)").check();
-    await expect(page.locator("#corporateName")).toHaveValue("SIMULATOR SECRETARIES LIMITED");
+    await page.getByLabel(`${CORPORATE_SECRETARY} (Ysgrifennydd corfforaethol)`).check();
+    await expect(page.locator("#corporateName")).toHaveValue(CORPORATE_SECRETARY);
     await expect(page.locator("#personFields")).toBeHidden();
     await expect(page.locator("#dobFields")).toBeHidden();
     await page.locator("#resignationDate").fill("2026-11-01");
@@ -195,7 +199,7 @@ for (const width of [1280, 390]) {
 
     await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
     await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
-    expect(filings[0]).toMatchObject({ officerRole: "secretary", corporate: true, corporateName: "SIMULATOR SECRETARIES LIMITED" });
+    expect(filings[0]).toMatchObject({ officerRole: "secretary", corporate: true, corporateName: CORPORATE_SECRETARY });
     expect(filings[0]).not.toHaveProperty("surname");
     expect(filings[0]).not.toHaveProperty("dateOfBirth");
     expect(await noSideScroll(page)).toBe(true);
@@ -274,7 +278,7 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   });
   await page.goto(`${SITE}/companies-house/removeOfficer.html`, { waitUntil: "networkidle" });
   await lookUp(page, "Look up the directors and secretaries");
-  await page.getByLabel("SIMULATOR SECRETARIES LIMITED (Corporate secretary)").check();
+  await page.getByLabel(`${CORPORATE_SECRETARY} (Corporate secretary)`).check();
   await page.locator("#resignationDate").fill("2026-11-01");
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();

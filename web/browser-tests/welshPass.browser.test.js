@@ -8,6 +8,8 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
+const USER_EMAIL = PEOPLE.samPatel.email;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -29,13 +31,13 @@ const CONTENT_TYPES = {
 // Serves the real site from disk, signed in, with the pass API answered from the options. Each
 // redeem request's headers are recorded.
 async function serveSite(page, { redeem = { redeemed: true, bundleId: "resident-pro", expiry: null }, redeemRequests = [] } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, USER_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -86,7 +88,7 @@ for (const width of [1280, 390]) {
     await expect(message).toContainText("Mae’r tocyn hwn yn ychwanegu Resident Pro at eich cyfrif DIY Accounting Submit.");
     await expect(message).toContainText("Gydag ef gallwch gyflwyno Ffurflenni TAW i CThEF");
     await expect(page.locator("#passRedeemBtn")).toHaveText("Defnyddio’r tocyn");
-    await expect(page.locator("#passAfterAction")).toHaveText("Rydych wedi mewngofnodi fel pat@example.com.");
+    await expect(page.locator("#passAfterAction")).toHaveText(`Rydych wedi mewngofnodi fel ${USER_EMAIL}.`);
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "valid");
   });

@@ -52,8 +52,8 @@ describe("System: Companies House Filing Simulator", () => {
     });
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.locality).toBe("Cardiff");
-    expect(body.postal_code).toBe("CF14 3UZ");
+    expect(body.locality).toBe("Whitby");
+    expect(body.postal_code).toBe("YO21 1DN");
     expect(body.etag).toBeTruthy();
   });
 

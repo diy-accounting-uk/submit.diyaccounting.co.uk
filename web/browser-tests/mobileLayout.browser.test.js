@@ -14,6 +14,8 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
+const USER_EMAIL = PEOPLE.samPatel.email;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -32,12 +34,12 @@ const CONTENT_TYPES = {
 };
 
 async function serveRealSite(page) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, USER_EMAIL);
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());

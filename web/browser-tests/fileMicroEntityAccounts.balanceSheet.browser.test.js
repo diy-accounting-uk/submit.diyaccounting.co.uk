@@ -13,6 +13,9 @@ import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldT
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 import { notesOf } from "../public/lib/accounts-revision.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000001");
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -88,10 +91,10 @@ async function openFormView(page) {
   const html = fs.readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8");
   await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => {
-    company = { companyNumber: "00000001", companyName: "EXAMPLE TRADING LIMITED" };
+  await page.evaluate((companyName) => {
+    company = { companyNumber: "00000001", companyName };
     showView("formView");
-  });
+  }, COMPANY.name);
 }
 
 function upperFirst(text) {

@@ -69,7 +69,7 @@ function generateTestUser(serviceNames) {
     userId: generateUserId(),
     password: generatePassword(),
     userFullName: `${firstName} ${lastName}`,
-    emailAddress: `test.user.${Date.now()}@example.com`,
+    emailAddress: `test.user.${Date.now()}@test.diyaccounting.co.uk`,
     organisationDetails: {
       name: "Test Organisation Ltd",
       address: {
@@ -110,7 +110,7 @@ function generateTestAgent() {
     userId: generateUserId(),
     password: generatePassword(),
     userFullName: "Test Agent",
-    emailAddress: `test.agent.${Date.now()}@example.com`,
+    emailAddress: `test.agent.${Date.now()}@test.diyaccounting.co.uk`,
     agentServicesAccountNumber: `TARN${arnDigits}`,
   };
 }

@@ -14,6 +14,8 @@ import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveRealSite } from "./serveRealSite.js";
 import { FIXTURE_CONSOLE_INDEX, FIXTURE_DAILY_CHARTS, PIXEL_PNG, fullShapeSnapshot } from "./operatorDashboardFixtures.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
+const USER_EMAIL = PEOPLE.samPatel.email;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -46,11 +48,11 @@ async function serveRealSiteWithSlowData(
     const session = await page.context().newCDPSession(page);
     await session.send("Emulation.setCPUThrottlingRate", { rate: cpuSlowdown });
   }
-  await page.addInitScript((extraStorage) => {
+  await page.addInitScript(({ extraStorage, email }) => {
     try {
       for (const [key, value] of Object.entries(extraStorage)) localStorage.setItem(key, value);
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
     window.__cumulativeLayoutShift = 0;
     window.__shiftEntries = [];
@@ -70,7 +72,7 @@ async function serveRealSiteWithSlowData(
         });
       }
     }).observe({ type: "layout-shift", buffered: true });
-  }, storage);
+  }, { extraStorage: storage, email: USER_EMAIL });
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());

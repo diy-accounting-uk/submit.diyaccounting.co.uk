@@ -9,7 +9,7 @@
 // every page, and its links open the Welsh copy of a page where one exists.
 
 import { test, expect } from "@playwright/test";
-import { serveRealSite, SITE_ORIGIN } from "./serveRealSite.js";
+import { serveRealSite, SIGNED_IN_EMAIL, SITE_ORIGIN } from "./serveRealSite.js";
 
 const PAIRS = [
   { english: "/index.html", welsh: "/cy/index.html" },
@@ -180,7 +180,7 @@ test("the Welsh header names a signed-in reader and the sign-out link in Welsh",
   await storeWelsh(page);
   await serveRealSite(page, { signedIn: true });
   await page.goto(`${SITE_ORIGIN}/about.html`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".login-status")).toHaveAttribute("aria-label", "Wedi mewngofnodi fel user@example.com");
+  await expect(page.locator(".login-status")).toHaveAttribute("aria-label", `Wedi mewngofnodi fel ${SIGNED_IN_EMAIL}`);
   await expect(page.locator("a.login-link")).toHaveText("Allgofnodi");
   await expect(page.locator(".settings-cog")).toHaveAttribute("aria-label", "Gosodiadau");
 });

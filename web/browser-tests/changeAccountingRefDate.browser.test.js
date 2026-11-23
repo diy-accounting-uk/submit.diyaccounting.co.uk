@@ -11,6 +11,18 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { accountsDueNineMonthsAfter } from "../public/lib/accounting-reference-period.js";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const USER_EMAIL = PEOPLE.samPatel.email;
+const COMPANY = registerCompany("00000001");
+
+// The company's accounting periods end on 30 April. The current period is the one running today,
+// so a shortened, an extended and an over-long period are all ahead of today.
+const TODAY = new Date().toISOString().slice(0, 10);
+const YEAR = TODAY > `${TODAY.slice(0, 4)}-04-30` ? Number(TODAY.slice(0, 4)) + 1 : Number(TODAY.slice(0, 4));
+const PREVIOUS_YEAR = YEAR - 1;
+const EARLIER_YEAR = YEAR - 2;
+const NEXT_YEAR = YEAR + 1;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -30,12 +42,12 @@ const CONTENT_TYPES = {
 
 const PROFILE = {
   companyNumber: "00000001",
-  companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
-  accountsNextPeriodStart: "2098-05-01",
-  accountsNextPeriodEnd: "2099-04-30",
-  accountsNextDue: "2100-01-31",
-  accountsLastPeriodStart: "2097-05-01",
-  accountsLastPeriodEnd: "2098-04-30",
+  companyName: COMPANY.name,
+  accountsNextPeriodStart: `${PREVIOUS_YEAR}-05-01`,
+  accountsNextPeriodEnd: `${YEAR}-04-30`,
+  accountsNextDue: `${NEXT_YEAR}-01-31`,
+  accountsLastPeriodStart: `${EARLIER_YEAR}-05-01`,
+  accountsLastPeriodEnd: `${PREVIOUS_YEAR}-04-30`,
 };
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
@@ -43,13 +55,13 @@ const PROFILE = {
 // period moves that period's end in the profile the next read answers.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, profile = PROFILE } = {}) {
   let registerProfile = { ...profile };
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, USER_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -113,11 +125,11 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Look up the accounting periods" }).click();
 
     await expect(page.locator("#periodChoices label")).toHaveText([
-      "1 May 2098 to 30 April 2099 (the current period)",
-      "1 May 2097 to 30 April 2098 (the previous period)",
+      `1 May ${PREVIOUS_YEAR} to 30 April ${YEAR} (the current period)`,
+      `1 May ${EARLIER_YEAR} to 30 April ${PREVIOUS_YEAR} (the previous period)`,
     ]);
-    await expect(page.getByLabel("1 May 2098 to 30 April 2099 (the current period)")).toBeChecked();
-    await expect(page.locator("#formView")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.getByLabel(`1 May ${PREVIOUS_YEAR} to 30 April ${YEAR} (the current period)`)).toBeChecked();
+    await expect(page.locator("#formView")).toContainText(COMPANY.name);
     await expect(page.locator("#formView")).toContainText(
       "You cannot extend a period beyond 18 months unless the company is in administration.",
     );
@@ -125,14 +137,14 @@ for (const width of [1280, 390]) {
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "form");
 
-    await page.locator("#newPeriodEnd").fill("2099-03-31");
+    await page.locator("#newPeriodEnd").fill(`${YEAR}-03-31`);
     await page.locator("#companyAuthCode").fill("SIMCS01");
     await page.getByRole("button", { name: "Continue" }).click();
 
     const review = page.locator("#reviewList");
-    await expect(review).toContainText("1 May 2098 to 30 April 2099");
-    await expect(review).toContainText("Shortened so as to end on 31 March 2099");
-    await expect(review).toContainText("1 May 2098 to 31 March 2099");
+    await expect(review).toContainText(`1 May ${PREVIOUS_YEAR} to 30 April ${YEAR}`);
+    await expect(review).toContainText(`Shortened so as to end on 31 March ${YEAR}`);
+    await expect(review).toContainText(`1 May ${PREVIOUS_YEAR} to 31 March ${YEAR}`);
     await expect(page.locator("#tooLongWarning")).toBeHidden();
     await expect(page.locator("#reviewView")).toContainText("You must update your accounting period dates with HM Revenue and Customs");
     expect(await noSideScroll(page)).toBe(true);
@@ -141,15 +153,15 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "File with Companies House" }).click();
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
     await expect(page.locator("#registerNow")).toContainText(
-      "The register now shows the accounting period 1 May 2098 to 31 March 2099, with its accounts due by 31 December 2099.",
+      `The register now shows the accounting period 1 May ${PREVIOUS_YEAR} to 31 March ${YEAR}, with its accounts due by 31 December ${YEAR}.`,
     );
     await expect(page.locator("#registerNow a")).toHaveAttribute("href", "companySearch.html?companyNumber=00000001");
     expect(filings[0]).toMatchObject({
       companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyName: COMPANY.name,
       companyAuthCode: "SIMCS01",
-      currentPeriodEnd: "2099-04-30",
-      newPeriodEnd: "2099-03-31",
+      currentPeriodEnd: `${YEAR}-04-30`,
+      newPeriodEnd: `${YEAR}-03-31`,
     });
     expect(filings[0]).not.toHaveProperty("fiveYearExtensionReason");
     expect(await noSideScroll(page)).toBe(true);
@@ -165,14 +177,14 @@ for (const width of [1280, 390]) {
     await expect(page.locator("html")).toHaveAttribute("lang", "cy");
     await expect(page.locator("h1")).toHaveText("Newid y dyddiad cyfeirnod cyfrifyddu");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Statws: amgylchedd prawf (sandbox).");
-    await lookUpAndFill(page, { lookUp: "Chwilio am y cyfnodau cyfrifyddu", newPeriodEnd: "2099-09-30" });
-    await expect(page.locator("#periodChoices label").first()).toHaveText("1 Mai 2098 i 30 Ebrill 2099 (y cyfnod presennol)");
+    await lookUpAndFill(page, { lookUp: "Chwilio am y cyfnodau cyfrifyddu", newPeriodEnd: `${YEAR}-09-30` });
+    await expect(page.locator("#periodChoices label").first()).toHaveText(`1 Mai ${PREVIOUS_YEAR} i 30 Ebrill ${YEAR} (y cyfnod presennol)`);
     await expect(page.locator("#formView blockquote p").first()).toHaveAttribute("lang", "en-GB");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "form-cy");
 
     await page.getByRole("button", { name: "Parhau" }).click();
-    await expect(page.locator("#reviewList")).toContainText("Wedi’i ymestyn i orffen ar 30 Medi 2099");
+    await expect(page.locator("#reviewList")).toContainText(`Wedi’i ymestyn i orffen ar 30 Medi ${YEAR}`);
     await expect(page.locator("#tooLongWarning")).toBeHidden();
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "review-cy");
@@ -180,9 +192,9 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
     await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
     await expect(page.locator("#registerNow")).toContainText(
-      "Mae’r gofrestr bellach yn dangos y cyfnod cyfrifyddu 1 Mai 2098 i 30 Medi 2099",
+      `Mae’r gofrestr bellach yn dangos y cyfnod cyfrifyddu 1 Mai ${PREVIOUS_YEAR} i 30 Medi ${YEAR}`,
     );
-    expect(filings[0]).toMatchObject({ currentPeriodEnd: "2099-04-30", newPeriodEnd: "2099-09-30" });
+    expect(filings[0]).toMatchObject({ currentPeriodEnd: `${YEAR}-04-30`, newPeriodEnd: `${YEAR}-09-30` });
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "accepted-cy");
   });
@@ -203,10 +215,10 @@ for (const width of [1280, 390]) {
       },
     });
     await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
-    await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: "2099-12-31" });
+    await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: `${YEAR}-12-31` });
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await expect(page.locator("#reviewList")).toContainText("Extended so as to end on 31 December 2099");
+    await expect(page.locator("#reviewList")).toContainText(`Extended so as to end on 31 December ${YEAR}`);
     await expect(page.locator("#tooLongWarning")).toContainText("This makes the period longer than 18 months.");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "too-long-review");
@@ -216,7 +228,7 @@ for (const width of [1280, 390]) {
     await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
     await expect(result).toContainText("9997: The accounting reference period cannot be extended beyond 18 months");
     await expect(page.locator("#registerNow")).toBeHidden();
-    expect(filings[0]).toMatchObject({ currentPeriodEnd: "2099-04-30", newPeriodEnd: "2099-12-31" });
+    expect(filings[0]).toMatchObject({ currentPeriodEnd: `${YEAR}-04-30`, newPeriodEnd: `${YEAR}-12-31` });
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "too-long-rejected");
   });
@@ -243,9 +255,9 @@ for (const [language, address] of [
 test("the last day within 18 months carries no warning", async ({ page }) => {
   await serveSite(page);
   await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
-  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: "2099-10-31" });
+  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: `${YEAR}-10-31` });
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#reviewList")).toContainText("Extended so as to end on 31 October 2099");
+  await expect(page.locator("#reviewList")).toContainText(`Extended so as to end on 31 October ${YEAR}`);
   await expect(page.locator("#tooLongWarning")).toBeHidden();
 });
 
@@ -253,7 +265,7 @@ test("a second extension in five years sends its ground, and the Secretary of St
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
-  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: "2099-09-30" });
+  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: `${YEAR}-09-30` });
   await page.getByLabel("The company has already extended an accounting period in the last five years").check();
   await expect(page.locator("#extensionAuthorisedCodeGroup")).toBeHidden();
 
@@ -271,7 +283,7 @@ test("a second extension in five years sends its ground, and the Secretary of St
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0]).toMatchObject({
-    newPeriodEnd: "2099-09-30",
+    newPeriodEnd: `${YEAR}-09-30`,
     fiveYearExtensionReason: "secretary-of-state-approval",
     extensionAuthorisedCode: "AB12",
   });
@@ -281,7 +293,7 @@ test("a company in administration extends past 18 months with no warning", async
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
-  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: "2099-12-31" });
+  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: `${YEAR}-12-31` });
   await page.getByLabel("The company has already extended an accounting period in the last five years").check();
   await page.locator("#fiveYearExtensionReason").selectOption("administration");
   await page.getByRole("button", { name: "Continue" }).click();
@@ -292,19 +304,19 @@ test("a company in administration extends past 18 months with no warning", async
 test("a link from the company lookup chooses its period, and the previous period is filed by its own end date", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings });
-  await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2098-04-30`, {
+  await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=${PREVIOUS_YEAR}-04-30`, {
     waitUntil: "networkidle",
   });
   await expect(page.locator("#companyNumber")).toHaveValue("00000001");
   await page.getByRole("button", { name: "Look up the accounting periods" }).click();
-  await expect(page.getByLabel("1 May 2097 to 30 April 2098 (the previous period)")).toBeChecked();
+  await expect(page.getByLabel(`1 May ${EARLIER_YEAR} to 30 April ${PREVIOUS_YEAR} (the previous period)`)).toBeChecked();
 
-  await page.locator("#newPeriodEnd").fill("2098-03-31");
+  await page.locator("#newPeriodEnd").fill(`${PREVIOUS_YEAR}-03-31`);
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
-  expect(filings[0]).toMatchObject({ currentPeriodEnd: "2098-04-30", newPeriodEnd: "2098-03-31" });
+  expect(filings[0]).toMatchObject({ currentPeriodEnd: `${PREVIOUS_YEAR}-04-30`, newPeriodEnd: `${PREVIOUS_YEAR}-03-31` });
   await expect(page.locator("#registerNow")).toContainText("The register does not show the new date yet.");
 });
 
@@ -316,15 +328,15 @@ test("an unchanged date, a date before the period starts and a ground on a short
   await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
   const messages = page.locator("#statusMessagesContainer");
 
-  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: "2099-04-30" });
+  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: `${YEAR}-04-30` });
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(messages).toContainText("The new end date is the date the period already ends on.");
 
-  await page.locator("#newPeriodEnd").fill("2098-04-30");
+  await page.locator("#newPeriodEnd").fill(`${PREVIOUS_YEAR}-04-30`);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(messages).toContainText("The new end date must be after the date the period starts.");
 
-  await page.locator("#newPeriodEnd").fill("2099-03-31");
+  await page.locator("#newPeriodEnd").fill(`${YEAR}-03-31`);
   await page.getByLabel("The company has already extended an accounting period in the last five years").check();
   await page.locator("#fiveYearExtensionReason").selectOption("administration");
   await page.getByRole("button", { name: "Continue" }).click();
@@ -335,7 +347,7 @@ test("an unchanged date, a date before the period starts and a ground on a short
 });
 
 test("a company with no accounting period on the register cannot continue", async ({ page }) => {
-  await serveSite(page, { profile: { companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" } });
+  await serveSite(page, { profile: { companyNumber: "00000001", companyName: COMPANY.name } });
   await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
   await page.locator("#companyNumber").fill("00000001");
   await page.getByRole("button", { name: "Look up the accounting periods" }).click();
@@ -348,7 +360,7 @@ test("a company with no accounting period on the register cannot continue", asyn
 // runs to 31 March 2027.
 const ENDED_PERIOD_PROFILE = {
   companyNumber: "00000001",
-  companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+  companyName: COMPANY.name,
   accountingReferenceDate: { day: "31", month: "03" },
   accountsNextPeriodStart: "2025-04-01",
   accountsNextPeriodEnd: "2026-03-31",

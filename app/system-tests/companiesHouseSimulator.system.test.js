@@ -16,6 +16,12 @@ import { ingestHandler as companiesHouseLastAccountsGetHandler } from "../functi
 import { ingestHandler as companiesHousePublicRegisterGetHandler } from "../functions/companies-house/companiesHousePublicRegisterGet.js";
 import { buildHmrcEvent } from "../test-helpers/eventBuilders.js";
 import { parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { registerDates, registerCompany, addDays, NOT_HELD_COMPANY_NUMBER } from "../http-simulator/fixtures/register.js";
+
+const DATES = registerDates();
+const HARBOUR_LANE_NAME = registerCompany("00000001").name;
+const FILED = `SIMTX00000001AA${DATES.filed.end.slice(0, 4)}`;
+const EARLIER = `SIMTX00000001AA${DATES.earlier.end.slice(0, 4)}`;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -80,15 +86,15 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("search returns the fixture company for a name fragment", async () => {
-    const response = await companiesHouseSearchGetHandler(searchEvent("Simulator Example"));
+    const response = await companiesHouseSearchGetHandler(searchEvent("Harbour Lane"));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.items.some((item) => item.companyNumber === "00000001")).toBe(true);
-    expect(body.items.some((item) => item.title === "SIMULATOR EXAMPLE COMPANY LIMITED")).toBe(true);
+    expect(body.items.some((item) => item.title === HARBOUR_LANE_NAME)).toBe(true);
   });
 
   it("search paginates with start index and items per page", async () => {
-    const response = await companiesHouseSearchGetHandler(searchEvent("SIMULATOR", { itemsPerPage: "1", startIndex: "1" }));
+    const response = await companiesHouseSearchGetHandler(searchEvent("LIMITED", { itemsPerPage: "1", startIndex: "1" }));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.items).toHaveLength(1);
@@ -96,16 +102,16 @@ describe("System: Companies House Simulator", () => {
     expect(body.itemsPerPage).toBe(1);
   });
 
-  it("profile returns the example company for 00000001", async () => {
+  it("profile returns the register's company for 00000001", async () => {
     const response = await companiesHouseCompanyGetHandler(companyEvent("00000001"));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.companyName).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
+    expect(body.companyName).toBe(HARBOUR_LANE_NAME);
     expect(body.companyStatus).toBe("active");
   });
 
   it("profile returns 404 for an unknown company number", async () => {
-    const response = await companiesHouseCompanyGetHandler(companyEvent("99999999"));
+    const response = await companiesHouseCompanyGetHandler(companyEvent(NOT_HELD_COMPANY_NUMBER));
     expect(response.statusCode).toBe(404);
   });
 
@@ -117,10 +123,10 @@ describe("System: Companies House Simulator", () => {
 
   it("profile answers the accounting reference date, the next period start and the last accounts", async () => {
     const body = parseResponseBody(await companiesHouseCompanyGetHandler(companyEvent("00000001")));
-    expect(body.accountingReferenceDate).toEqual({ day: "30", month: "04" });
-    expect(body.accountsNextPeriodStart).toBe("2098-05-01");
-    expect(body.accountsLastPeriodStart).toBe("2097-05-01");
-    expect(body.accountsLastPeriodEnd).toBe("2098-04-30");
+    expect(body.accountingReferenceDate).toEqual({ day: "31", month: "03" });
+    expect(body.accountsNextPeriodStart).toBe(DATES.next.start);
+    expect(body.accountsLastPeriodStart).toBe(DATES.filed.start);
+    expect(body.accountsLastPeriodEnd).toBe(DATES.filed.end);
     expect(body.accountsLastType).toBe("micro-entity");
   });
 
@@ -141,11 +147,11 @@ describe("System: Companies House Simulator", () => {
     expect(body.totalCount).toBe(621);
     expect(body.truncated).toBe(true);
     expect(body.filings).toHaveLength(500);
-    expect(body.filings[0].date).toBe("2098-12-31");
+    expect(body.filings[0].date).toBe(DATES.filed.end);
   });
 
   it("filing history returns 404 for an unknown company number", async () => {
-    const response = await companiesHouseFilingHistoryGetHandler(companyEvent("99999999"));
+    const response = await companiesHouseFilingHistoryGetHandler(companyEvent(NOT_HELD_COMPANY_NUMBER));
     expect(response.statusCode).toBe(404);
   });
 
@@ -155,14 +161,14 @@ describe("System: Companies House Simulator", () => {
     const body = parseResponseBody(response);
     expect(body.filedAccounts).toEqual([
       expect.objectContaining({
-        transactionId: "SIMTX00000001AA2098",
-        madeUpDate: "2098-04-30",
+        transactionId: FILED,
+        madeUpDate: DATES.filed.end,
         accountsType: "micro-entity",
         ixbrl: true,
       }),
       expect.objectContaining({
-        transactionId: "SIMTX00000001AA2097",
-        madeUpDate: "2097-04-30",
+        transactionId: EARLIER,
+        madeUpDate: DATES.earlier.end,
         accountsType: "total-exemption-full",
         paperFiled: true,
         ixbrl: false,
@@ -171,16 +177,16 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("filed accounts document answers the iXBRL text of a software-filed set", async () => {
-    const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: "SIMTX00000001AA2098" }));
+    const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: FILED }));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.contentType).toBe("application/xhtml+xml");
-    expect(body.document).toContain("SIMULATOR EXAMPLE COMPANY LIMITED");
+    expect(body.document).toContain(HARBOUR_LANE_NAME);
     expect(body.document).toContain("ix:nonNumeric");
   });
 
   it("filed accounts document answers a JSON 404 for a paper-filed set", async () => {
-    const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: "SIMTX00000001AA2097" }));
+    const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: EARLIER }));
     expect(response.statusCode).toBe(404);
     expect(parseResponseBody(response).code).toBe("NO_IXBRL_DOCUMENT");
   });
@@ -190,18 +196,18 @@ describe("System: Companies House Simulator", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.outcome).toBe("mapped");
-    expect(body.set).toEqual(expect.objectContaining({ transactionId: "SIMTX00000001AA2098", madeUpDate: "2098-04-30" }));
+    expect(body.set).toEqual(expect.objectContaining({ transactionId: FILED, madeUpDate: DATES.filed.end }));
     expect(body.accounts).toEqual(
       expect.objectContaining({
         regime: "micro",
-        approvalDate: "2098-10-20",
+        approvalDate: DATES.filed.approvedOn,
         balanceSheet: expect.objectContaining({ fixedAssets: 10000, profitAndLossAccount: 9900, capitalAndReserves: 10000 }),
       }),
     );
   });
 
-  it("last accounts answers the small company figures and profit and loss account of SC000000's set", async () => {
-    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("SC000000")));
+  it("last accounts answers the small company figures and profit and loss account of SC000001's set", async () => {
+    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("SC000001")));
     expect(body.outcome).toBe("mapped");
     expect(body.accounts.regime).toBe("small");
     expect(body.accounts.balanceSheet).toEqual(
@@ -213,7 +219,7 @@ describe("System: Companies House Simulator", () => {
   it("last accounts answers paper for 00000003, whose last set was filed on paper", async () => {
     const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("00000003")));
     expect(body.outcome).toBe("paper");
-    expect(body.set.madeUpDate).toBe("2098-03-31");
+    expect(body.set.madeUpDate).toBe(DATES.filed.end);
     expect(body.accounts).toBeUndefined();
   });
 
@@ -223,7 +229,7 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("last accounts answers a JSON 404 for an unknown company", async () => {
-    const response = await companiesHouseLastAccountsGetHandler(companyEvent("99999999"));
+    const response = await companiesHouseLastAccountsGetHandler(companyEvent(NOT_HELD_COMPANY_NUMBER));
     expect(response.statusCode).toBe(404);
     expect(response.headers["Content-Type"]).toBe("application/json");
   });
@@ -241,9 +247,9 @@ describe("System: Companies House Simulator", () => {
     expect(body.profile).toEqual(
       expect.objectContaining({
         companyNumber: "00000001",
-        accountsNextPeriodStart: "2098-05-01",
-        accountsLastPeriodStart: "2097-05-01",
-        accountsLastPeriodEnd: "2098-04-30",
+        accountsNextPeriodStart: DATES.next.start,
+        accountsLastPeriodStart: DATES.filed.start,
+        accountsLastPeriodEnd: DATES.filed.end,
         accountsLastType: "micro-entity",
       }),
     );
@@ -252,7 +258,7 @@ describe("System: Companies House Simulator", () => {
     );
     expect(body.officers[0]).toEqual({ name: "BRAMWELL, Eleanor", officerRole: "director", appointedOn: "2015-01-01" });
     expect(body.filedAccounts).toEqual(
-      expect.objectContaining({ status: "ixbrl", madeUpDate: "2098-04-30", accountsType: "micro-entity" }),
+      expect.objectContaining({ status: "ixbrl", madeUpDate: DATES.filed.end, accountsType: "micro-entity" }),
     );
     expect(body.filedAccounts.ixbrl).toContain("ix:nonNumeric");
     expect(response.body).not.toContain("1970");
@@ -261,7 +267,12 @@ describe("System: Companies House Simulator", () => {
 
   it("public register marks a last set filed as a PDF only", async () => {
     const body = parseResponseBody(await companiesHousePublicRegisterGetHandler(registerEvent("00000003")));
-    expect(body.filedAccounts).toEqual({ status: "pdf", madeUpDate: "2098-03-31", accountsType: "micro-entity", filedOn: "2098-10-14" });
+    expect(body.filedAccounts).toEqual({
+      status: "pdf",
+      madeUpDate: DATES.filed.end,
+      accountsType: "micro-entity",
+      filedOn: addDays(DATES.filed.filedOn, -19),
+    });
   });
 
   it("public register marks a company with no accounts filed", async () => {
@@ -271,7 +282,7 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("public register answers a JSON 404 for an unknown company and a JSON 429 for the throttled fixture", async () => {
-    expect((await companiesHousePublicRegisterGetHandler(registerEvent("99999999"))).statusCode).toBe(404);
+    expect((await companiesHousePublicRegisterGetHandler(registerEvent(NOT_HELD_COMPANY_NUMBER))).statusCode).toBe(404);
     const throttled = await companiesHousePublicRegisterGetHandler(registerEvent("42942942"));
     expect(throttled.statusCode).toBe(429);
     expect(throttled.headers["Retry-After"]).toBe("300");

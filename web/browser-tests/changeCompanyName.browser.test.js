@@ -10,6 +10,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -27,7 +28,9 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
 };
 
-const PROFILE = { companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" };
+const COMPANY = registerCompany("00000001");
+const PROFILE = { companyNumber: COMPANY.number, companyName: COMPANY.name };
+const SIGNED_IN_EMAIL = PEOPLE.eleanorBramwell.email;
 const LETTER = {
   name: "permission-letter.pdf",
   mimeType: "application/pdf",
@@ -49,13 +52,13 @@ async function serveSite(
   } = {},
 ) {
   let registerProfile = { ...profile };
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, SIGNED_IN_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -120,7 +123,7 @@ for (const width of [1280, 390]) {
     await page.locator("#companyNumber").fill("00000001");
     await page.getByRole("button", { name: "Look up the company" }).click();
 
-    await expect(page.locator("#formView")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#formView")).toContainText(COMPANY.name);
     await expect(page.locator("#formView")).toContainText(
       "Your company name will not officially change until Companies House registers it.",
     );
@@ -152,7 +155,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#registerNow a")).toHaveAttribute("href", "companySearch.html?companyNumber=00000001");
     expect(filings[0]).toMatchObject({
       companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyName: COMPANY.name,
       companyAuthCode: "SIMCS01",
       method: "resolution",
       proposedName: "BRAMWELL TENNANT TRADING LIMITED",
@@ -261,7 +264,7 @@ test("a letter of no objection to a same-as name is sent as that kind", async ({
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
-  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "SIMULATOR TEST COMPANY (SCOTLAND) LIMITED" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "GLENMORE ENGINEERING (SCOTLAND) LIMITED" });
   await page.getByLabel("The name needs a supporting letter").check();
   await page.locator("#letterKind").selectOption("same-as-no-objection");
   await page.locator("#letterFile").setInputFiles(LETTER);
@@ -302,7 +305,7 @@ test("the present name, a missing or future resolution date, a letter that is no
   await page.getByRole("button", { name: "Look up the company" }).click();
   await page.locator("#companyAuthCode").fill("SIMCS01");
 
-  await page.locator("#proposedName").fill("simulator example company limited");
+  await page.locator("#proposedName").fill(COMPANY.name.toLowerCase());
   await proceed.click();
   await expect(messages).toContainText("The new name is the name the company already has.");
 
@@ -345,7 +348,7 @@ test("once the filing is sent the page holds the letter and the authentication c
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
-  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "ROYAL EXAMPLE TRADING LIMITED" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "ROYAL HARBOUR JOINERY LIMITED" });
   await page.getByLabel("The name needs a supporting letter").check();
   await page.locator("#letterFile").setInputFiles(LETTER);
   await page.getByRole("button", { name: "Continue" }).click();

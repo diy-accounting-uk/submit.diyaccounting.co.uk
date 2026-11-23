@@ -11,6 +11,7 @@ import {
   betterDirection,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
 import { shapeDataSection } from "@app/lib/operatorSnapshot/dataSection.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 export const FIXTURE_SNAPSHOT = {
   generatedAt: "2026-09-08T03:15:00.000Z",
@@ -1295,7 +1296,7 @@ export const sampleWindows = (value) => ({
 });
 
 export const FIXTURE_AFFILIATE_SECTIONS = {
-  operators: { emails: ["boss@example.com", "second@example.com"] },
+  operators: { emails: [PEOPLE.eleanorBramwell.email, PEOPLE.marcusTennant.email] },
   familyAffiliates: {
     measures: [
       { key: "passesGenerated", label: "Passes generated" },
@@ -1305,7 +1306,7 @@ export const FIXTURE_AFFILIATE_SECTIONS = {
     ],
     affiliates: [
       {
-        email: "sister@example.com",
+        email: PEOPLE.priyaHaldane.email,
         issuerFound: true,
         passesGenerated: sampleWindows(3),
         linkClicks: sampleWindows(8),
@@ -1313,7 +1314,7 @@ export const FIXTURE_AFFILIATE_SECTIONS = {
         passesConverted: sampleWindows(1),
       },
       {
-        email: "brother@example.com",
+        email: PEOPLE.owenPrys.email,
         issuerFound: false,
         passesGenerated: sampleWindows(0),
         linkClicks: sampleWindows(0),

@@ -11,6 +11,9 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000003");
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 
@@ -47,7 +50,7 @@ const CT_RECEIPT = {
   successMessage: "The submission was successfully received.",
   filed: {
     boxes: {
-      1: "Example Trading Limited",
+      1: COMPANY.name,
       2: "00000003",
       3: "8596148860",
       30: "2025-04-01",

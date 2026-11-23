@@ -10,6 +10,10 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
+const USER_EMAIL = PEOPLE.samPatel.email;
+const COMPANY = registerCompany("00000001");
+const CORPORATE_PSC_NAME = COMPANY.pscs.find((psc) => psc.kind === "corporate-entity-person-with-significant-control").name;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -42,7 +46,7 @@ const PSCS = [
     dateOfBirth: { month: 1, year: 1970 },
   },
   {
-    name: "SIMULATOR HOLDINGS LIMITED",
+    name: CORPORATE_PSC_NAME,
     kind: "corporate-entity-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2019-06-01",
@@ -61,13 +65,13 @@ const PSCS = [
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, pscs = PSCS } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, USER_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -75,8 +79,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const pathname = decodeURIComponent(url.pathname);
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
-    if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
+    if (pathname === "/api/v1/companies-house/company/00000001") return json({ companyNumber: COMPANY.number, companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs });
     const filed = pathname.match(/^\/api\/v1\/companies-house\/(psc-statement-notification|psc-statement-withdrawal)$/);
     if (filed && request.method() === "POST") {
@@ -232,7 +235,7 @@ test("a statement that a PSC failed to comply with a section 790E notice names t
   await expect(page.locator("#pscSection")).toBeVisible();
   await expect(page.locator("#pscChoices label")).toHaveText([
     "Eleanor Bramwell (Individual)",
-    "SIMULATOR HOLDINGS LIMITED (Legal entity or other registrable person)",
+    `${CORPORATE_PSC_NAME} (Legal entity or other registrable person)`,
   ]);
   await dateAndCode(page, "2026-11-01");
   await page.getByRole("button", { name: "Continue" }).click();
@@ -317,7 +320,7 @@ test("a statement that the company has no PSC is refused while the register show
   await dateAndCode(page, "2026-11-01");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText(
-    "The register shows a person with significant control who has not ceased: Eleanor Bramwell; SIMULATOR HOLDINGS LIMITED.",
+    `The register shows a person with significant control who has not ceased: Eleanor Bramwell; ${CORPORATE_PSC_NAME}.`,
   );
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);

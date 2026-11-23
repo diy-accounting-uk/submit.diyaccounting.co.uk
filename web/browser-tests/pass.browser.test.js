@@ -9,6 +9,9 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
+
+const SIGNED_IN_EMAIL = PEOPLE.priyaHaldane.email;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -46,15 +49,15 @@ async function serveRealSite(
   } = {},
 ) {
   const calls = { check: 0, redeem: 0, bundle: 0 };
-  await page.addInitScript((isSignedIn) => {
+  await page.addInitScript(({ isSignedIn, email }) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       if (isSignedIn) {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       }
     } catch {}
-  }, signedIn);
+  }, { isSignedIn: signedIn, email: SIGNED_IN_EMAIL });
 
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -156,7 +159,7 @@ for (const width of WIDTHS) {
         "With it you can submit VAT returns to HMRC, file accounts with Companies House, and make pass links for other people.",
       );
       await expect(message).toContainText("It comes with 100 tokens. A VAT return uses 1 token.");
-      await expect(page.locator("#passAfterAction")).toHaveText("You are signed in as pat@example.com.");
+      await expect(page.locator("#passAfterAction")).toHaveText(`You are signed in as ${SIGNED_IN_EMAIL}.`);
       await expect(page.getByRole("button", { name: "Redeem pass" })).toBeEnabled();
       expect(calls.redeem).toBe(0);
       await expectNoSideScroll(page);
@@ -369,7 +372,7 @@ for (const width of WIDTHS) {
       await serveRealSite(page, { redeem: { redeemed: false, reason: "wrong_email" } });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
-      await expect(page.getByRole("alert")).toHaveText("This pass is for a different email address. You are signed in as pat@example.com.");
+      await expect(page.getByRole("alert")).toHaveText(`This pass is for a different email address. You are signed in as ${SIGNED_IN_EMAIL}.`);
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Sign out and use another account" })).not.toHaveAttribute("data-activity-start");
       await shot(page, "error-wrong-email", width);

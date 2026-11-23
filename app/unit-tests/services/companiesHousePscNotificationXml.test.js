@@ -41,7 +41,7 @@ const HOLDING = {
   legalForm: "Private company limited by shares",
   lawGoverned: "Companies Act 2006",
   placeRegistered: "Companies House",
-  registrationNumber: "00000008",
+  registrationNumber: "00000006",
   countryOrState: "Wales",
   naturesOfControl: ["OWNERSHIPOFSHARES_75TO100PERCENT", "VOTINGRIGHTS_75TO100PERCENT", "RIGHTTOAPPOINTANDREMOVEDIRECTORS"],
   ...DATES,
@@ -108,7 +108,7 @@ describe("companiesHousePscNotificationXml", () => {
     expect(xml).toContain(
       "<Corporate><CorporateName>TEIFI VALLEY HOLDINGS LIMITED</CorporateName><Address><Premise>Ty Teifi</Premise>" +
         "<Street>Stryd Fawr</Street><PostTown>Cardigan</PostTown><Country>GB-WLS</Country><Postcode>SA43 1HJ</Postcode></Address>" +
-        "<PSCCompanyIdentification><PSCPlaceRegistered>Companies House</PSCPlaceRegistered><PSCRegistrationNumber>00000008</PSCRegistrationNumber>" +
+        "<PSCCompanyIdentification><PSCPlaceRegistered>Companies House</PSCPlaceRegistered><PSCRegistrationNumber>00000006</PSCRegistrationNumber>" +
         "<LawGoverned>Companies Act 2006</LawGoverned><LegalForm>Private company limited by shares</LegalForm>" +
         "<CountryOrState>Wales</CountryOrState></PSCCompanyIdentification></Corporate>",
     );

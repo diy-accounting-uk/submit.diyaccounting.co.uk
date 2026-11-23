@@ -118,12 +118,12 @@ describe("System: the account settings item and its watch list with local dynali
   it("adds a company already on the list once, and removes one not on it as a change of nothing", async () => {
     const userId = "watch-list-duplicate-user";
     const [first, second] = await Promise.all([
-      store.addToWatchedCompanies(userId, "SC000000", 50),
-      store.addToWatchedCompanies(userId, "SC000000", 50),
+      store.addToWatchedCompanies(userId, "SC000001", 50),
+      store.addToWatchedCompanies(userId, "SC000001", 50),
     ]);
     expect([first.status, second.status].sort()).toEqual(["added", "unchanged"]);
     expect((await store.removeFromWatchedCompanies(userId, "00000009")).status).toBe("unchanged");
-    expect((await store.getAccountSettings(userId)).watchedCompanies).toEqual(["SC000000"]);
+    expect((await store.getAccountSettings(userId)).watchedCompanies).toEqual(["SC000001"]);
   });
 
   it("loses neither a watch list change nor a pass generation change made at the same moment", async () => {

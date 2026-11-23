@@ -2,13 +2,14 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/http-simulator/scenarios/filing-history.js
-// Filing histories and filed documents for the simulator's companies. 00000001 holds two sets of
-// accounts: the latest filed by software, with an iXBRL document built by the micro-entity accounts
-// builder from the company's own profile, and the one before filed on paper, as a PDF only. Its
-// confirmation statement is a PDF. 00000003 holds one set of accounts, filed on paper as a PDF only, and
-// after it the notice of an inspection location (SAIL) and of records moved to it.
-// SC000000 holds one set of small company accounts filed by software, with both years and a profit
-// and loss account, built by the small company accounts builder.
+// Filing histories and filed documents for the simulator's companies, dated from the register's
+// accounting dates (fixtures/register.js). 00000001 holds two sets of accounts: the latest filed by
+// software, with an iXBRL document built by the micro-entity accounts builder from the company's own
+// profile, and the one before filed on paper, as a PDF only. Its confirmation statement is a PDF.
+// 00000003 holds one set of accounts, filed on paper as a PDF only, and after it the notice of an
+// inspection location (SAIL) and of records moved to it. SC000001 holds one set of small company
+// accounts filed by software, with both years and a profit and loss account, built by the small
+// company accounts builder.
 // 00000007 holds more filings than a lookup reads (620 changes of registered office after its
 // incorporation, no accounts). Each other company holds its incorporation alone. A filing history item links its document as the
 // live register does, on the Document API's host.
@@ -16,16 +17,29 @@
 import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { getCompany } from "./companies.js";
+import { registerDates, registerCompany, confirmationStatementDates, addressLine1, addDays, PEOPLE } from "../fixtures/register.js";
+
+const DATES = registerDates();
+const FILED_YEAR = DATES.filed.end.slice(0, 4);
+const EARLIER_YEAR = DATES.earlier.end.slice(0, 4);
+const HARBOUR_LANE = registerCompany("00000001");
+const GLENMORE = registerCompany("SC000001");
+const HARBOUR_LANE_STATEMENT = confirmationStatementDates(HARBOUR_LANE.incorporatedOn).lastMadeUpTo;
+const officeOf = (company) => ({
+  addressLine1: addressLine1(company.address),
+  cityOrTown: company.address.locality,
+  postalCode: company.address.postalCode,
+});
 
 const DOCUMENT_API_HOST = "https://document-api.company-information.service.gov.uk";
 const SAIL_ADDRESS = "Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ";
 const PDF_CONTENT = "%PDF-1.4\n% Simulator filed document\n%%EOF\n";
 
-const IXBRL_DOCUMENT_ID = "SIMDOC00000001AA2098";
-const PAPER_DOCUMENT_ID = "SIMDOC00000001AA2097";
-const CONFIRMATION_DOCUMENT_ID = "SIMDOC00000001CS2098";
-const PDF_ONLY_DOCUMENT_ID = "SIMDOC00000003AA2098";
-const SMALL_IXBRL_DOCUMENT_ID = "SIMDOCSC000000AA2098";
+const IXBRL_DOCUMENT_ID = `SIMDOC00000001AA${FILED_YEAR}`;
+const PAPER_DOCUMENT_ID = `SIMDOC00000001AA${EARLIER_YEAR}`;
+const CONFIRMATION_DOCUMENT_ID = `SIMDOC00000001CS${FILED_YEAR}`;
+const PDF_ONLY_DOCUMENT_ID = `SIMDOC00000003AA${FILED_YEAR}`;
+const SMALL_IXBRL_DOCUMENT_ID = `SIMDOCSC000001AA${FILED_YEAR}`;
 
 function filing({
   companyNumber,
@@ -60,34 +74,34 @@ const historyByCompanyNumber = {
   "00000001": [
     filing({
       companyNumber: "00000001",
-      transactionId: "SIMTX00000001AA2098",
+      transactionId: `SIMTX00000001AA${FILED_YEAR}`,
       category: "accounts",
       type: "AA",
       description: "accounts-with-accounts-type-micro-entity",
-      madeUpDate: "2098-04-30",
-      date: "2098-11-02",
+      madeUpDate: DATES.filed.end,
+      date: DATES.filed.filedOn,
       pages: 4,
       documentId: IXBRL_DOCUMENT_ID,
     }),
     filing({
       companyNumber: "00000001",
-      transactionId: "SIMTX00000001CS2098",
+      transactionId: `SIMTX00000001CS${HARBOUR_LANE_STATEMENT.slice(0, 4)}`,
       category: "confirmation-statement",
       type: "CS01",
       description: "confirmation-statement-with-no-updates",
-      madeUpDate: "2098-04-16",
-      date: "2098-04-20",
+      madeUpDate: HARBOUR_LANE_STATEMENT,
+      date: addDays(HARBOUR_LANE_STATEMENT, 4),
       pages: 3,
       documentId: CONFIRMATION_DOCUMENT_ID,
     }),
     filing({
       companyNumber: "00000001",
-      transactionId: "SIMTX00000001AA2097",
+      transactionId: `SIMTX00000001AA${EARLIER_YEAR}`,
       category: "accounts",
       type: "AA",
       description: "accounts-with-accounts-type-total-exemption-full",
-      madeUpDate: "2097-04-30",
-      date: "2097-12-15",
+      madeUpDate: DATES.earlier.end,
+      date: DATES.earlier.filedOn,
       pages: 6,
       paperFiled: true,
       documentId: PAPER_DOCUMENT_ID,
@@ -96,46 +110,46 @@ const historyByCompanyNumber = {
   "00000003": [
     filing({
       companyNumber: "00000003",
-      transactionId: "SIMTX00000003AD032098",
+      transactionId: `SIMTX00000003AD03${FILED_YEAR}`,
       category: "address",
       type: "AD03",
       description: "move-registers-to-sail-company-with-new-address",
       newAddress: SAIL_ADDRESS,
-      date: "2098-11-20",
+      date: addDays(DATES.filed.filedOn, 37),
       pages: 2,
     }),
     filing({
       companyNumber: "00000003",
-      transactionId: "SIMTX00000003AD022098",
+      transactionId: `SIMTX00000003AD02${FILED_YEAR}`,
       category: "address",
       type: "AD02",
       description: "change-sail-address-company-with-new-address",
       newAddress: SAIL_ADDRESS,
-      date: "2098-11-20",
+      date: addDays(DATES.filed.filedOn, 37),
       pages: 1,
     }),
     filing({
       companyNumber: "00000003",
-      transactionId: "SIMTX00000003AA2098",
+      transactionId: `SIMTX00000003AA${FILED_YEAR}`,
       category: "accounts",
       type: "AA",
       description: "accounts-with-accounts-type-micro-entity",
-      madeUpDate: "2098-03-31",
-      date: "2098-10-14",
+      madeUpDate: DATES.filed.end,
+      date: addDays(DATES.filed.filedOn, -19),
       pages: 5,
       paperFiled: true,
       documentId: PDF_ONLY_DOCUMENT_ID,
     }),
   ],
-  "SC000000": [
+  "SC000001": [
     filing({
-      companyNumber: "SC000000",
-      transactionId: "SIMTXSC000000AA2098",
+      companyNumber: "SC000001",
+      transactionId: `SIMTXSC000001AA${FILED_YEAR}`,
       category: "accounts",
       type: "AA",
       description: "accounts-with-accounts-type-total-exemption-full",
-      madeUpDate: "2098-09-30",
-      date: "2099-03-02",
+      madeUpDate: DATES.filed.end,
+      date: addDays(DATES.filed.filedOn, 30),
       pages: 9,
       documentId: SMALL_IXBRL_DOCUMENT_ID,
     }),
@@ -159,11 +173,11 @@ function incorporationOnly(company) {
 const LONG_HISTORY_COMPANY_NUMBER = "00000007";
 const LONG_HISTORY_ADDRESS_CHANGES = 620;
 
-// Newest first: one change of registered office a day, back from the last day of 2098, then the
-// incorporation.
+// Newest first: one change of registered office a day, back from the end of the last filed period,
+// then the incorporation.
 function longHistory(company) {
   const changes = Array.from({ length: LONG_HISTORY_ADDRESS_CHANGES }, (_, index) => {
-    const date = new Date(Date.UTC(2098, 11, 31 - index)).toISOString().slice(0, 10);
+    const date = addDays(DATES.filed.end, -index);
     return filing({
       companyNumber: company.company_number,
       transactionId: `SIMTX${company.company_number}AD${String(index).padStart(4, "0")}`,
@@ -222,12 +236,12 @@ function ixbrlAccounts() {
     ixbrlDocument = buildMicroEntityAccounts({
       companyNumber: company.company_number,
       companyName: company.company_name,
-      registeredOffice: { addressLine1: "1 Example Street", cityOrTown: "Cardiff", postalCode: "CF14 3UZ" },
+      registeredOffice: officeOf(HARBOUR_LANE),
       periodStart: company.accounts.last_accounts.period_start_on,
       periodEnd: company.accounts.last_accounts.period_end_on,
       averageNumberOfEmployees: 2,
-      directorName: "Eleanor Bramwell",
-      dateOfApproval: "2098-10-20",
+      directorName: `${PEOPLE.eleanorBramwell.forename} ${PEOPLE.eleanorBramwell.surname}`,
+      dateOfApproval: DATES.filed.approvedOn,
       balanceSheet: {
         current: {
           fixedAssets: 10000,
@@ -246,23 +260,23 @@ function ixbrlAccounts() {
 
 let smallIxbrlDocument;
 
-// SC000000's set of small company accounts as the small company accounts builder writes it.
+// SC000001's set of small company accounts as the small company accounts builder writes it.
 function smallIxbrlAccounts() {
   if (smallIxbrlDocument === undefined) {
-    const company = getCompany("SC000000");
+    const company = getCompany("SC000001");
     smallIxbrlDocument = buildSmallCompanyAccounts({
       companyNumber: company.company_number,
       companyName: company.company_name,
-      registeredOffice: { addressLine1: "1 Simulator Street", cityOrTown: "Edinburgh", postalCode: "EH1 1AA" },
+      registeredOffice: officeOf(GLENMORE),
       periodStart: company.accounts.last_accounts.period_start_on,
       periodEnd: company.accounts.last_accounts.period_end_on,
       averageNumberOfEmployees: 3,
-      principalActivity: "Software development",
+      principalActivity: "Industrial machinery engineering",
       accountingPolicies:
         "The financial statements have been prepared under the historical cost convention and in accordance with FRS 102 section 1A.",
-      directors: ["Morag Simulator"],
-      directorName: "Morag Simulator",
-      dateOfApproval: "2099-02-20",
+      directors: [`${PEOPLE.catrionaMacleod.forename} ${PEOPLE.catrionaMacleod.surname}`],
+      directorName: `${PEOPLE.catrionaMacleod.forename} ${PEOPLE.catrionaMacleod.surname}`,
+      dateOfApproval: addDays(DATES.filed.approvedOn, 10),
       balanceSheet: {
         current: {
           fixedAssets: 8000,
@@ -329,7 +343,7 @@ const documents = {
   },
   [PAPER_DOCUMENT_ID]: { companyNumber: "00000001", category: "accounts", pages: 6, content: { "application/pdf": () => PDF_CONTENT } },
   [SMALL_IXBRL_DOCUMENT_ID]: {
-    companyNumber: "SC000000",
+    companyNumber: "SC000001",
     category: "accounts",
     pages: 9,
     content: { "application/pdf": () => PDF_CONTENT, "application/xhtml+xml": smallIxbrlAccounts },

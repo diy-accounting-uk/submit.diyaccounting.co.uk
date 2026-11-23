@@ -10,12 +10,15 @@ import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { pageScrollsSideways, recordScreenshotPath, serveFilingResultAssets } from "./submissionRecordAssets.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
+const COMPANY = registerCompany("00000001");
+
 const COMPANY_PROFILE = {
-  companyNumber: "00000001",
-  companyName: "TEST COMPANY LTD",
+  companyNumber: COMPANY.number,
+  companyName: COMPANY.name,
   companyStatus: "active",
   companyType: "ltd",
   confirmationStatementNextDue: "2026-10-05",
@@ -40,7 +43,7 @@ const PSCS_RESULT = {
 
 const FILING_DATA = {
   sicCodes: ["62012"],
-  registeredEmailAddress: "test@example.com",
+  registeredEmailAddress: COMPANY.email,
   paymentPeriodPaid: false,
   statementOfCapital: null,
   shareholdings: [],
@@ -221,7 +224,7 @@ test.describe("File Confirmation Statement page", () => {
     await lookUpCompany(page);
 
     await expect(page.locator("#authView")).toBeVisible();
-    await expect(page.locator("#authCompanyName")).toContainText("TEST COMPANY LTD");
+    await expect(page.locator("#authCompanyName")).toContainText(COMPANY.name);
     await expect(page.locator("#publicOfficersBody")).toContainText("Jane Doe");
     await expect(page.locator("#publicPscsBody")).toContainText("Jane Doe");
   });
@@ -283,7 +286,7 @@ test.describe("File Confirmation Statement page", () => {
 
     await expect(page.locator("#reviewView")).toBeVisible();
     await expect(page.locator("#sicCodes")).toHaveValue("62012");
-    await expect(page.locator("#registeredEmailAddress")).toHaveValue("test@example.com");
+    await expect(page.locator("#registeredEmailAddress")).toHaveValue(COMPANY.email);
     await expect(page.locator("#directorRowsContainer")).toContainText("Jane Doe");
     const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
     expect(filingDataCalls).toHaveLength(1);
@@ -761,12 +764,12 @@ test.describe("File Confirmation Statement page", () => {
 
     const copy = page.locator("#filingRecord .customer-copy");
     await expect(copy).toBeVisible();
-    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the confirmation statement for TEST COMPANY LTD");
+    await expect(copy.locator(".customer-copy-title")).toHaveText(`Your copy of the confirmation statement for ${COMPANY.name}`);
     await expect(copy.locator(".customer-copy-submission")).toContainText("ABC123");
     await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by Companies House");
 
     const statement = copy.locator(".submission-record").first();
-    await expect(statement.locator(".entity")).toHaveText("TEST COMPANY LTD");
+    await expect(statement.locator(".entity")).toHaveText(COMPANY.name);
     await expect(statement.locator(".reference")).toHaveText("Company number 00000001");
     await expect(statement.locator("h2")).toHaveText("Confirmation statement");
     await expect(statement.locator(".subtitle")).toHaveText("Made up to 21 September 2026");

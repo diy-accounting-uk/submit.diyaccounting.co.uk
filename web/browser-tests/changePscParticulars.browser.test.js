@@ -10,6 +10,12 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompanies, registerCompany } from "@app/http-simulator/fixtures/register.js";
+const USER_EMAIL = PEOPLE.samPatel.email;
+const COMPANY = registerCompany("00000001");
+const CORPORATE_PSC_NAME = COMPANY.pscs.find((psc) => psc.kind === "corporate-entity-person-with-significant-control").name;
+const CORPORATE_PSC_NUMBER = registerCompanies().find((company) => company.name === CORPORATE_PSC_NAME).number;
+const NEW_ENTITY_NAME = registerCompany("00000010").name;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -42,7 +48,7 @@ const PSCS = [
     dateOfBirth: { month: 1, year: 1970 },
   },
   {
-    name: "SIMULATOR HOLDINGS LIMITED",
+    name: CORPORATE_PSC_NAME,
     kind: "corporate-entity-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2019-06-01",
@@ -61,13 +67,13 @@ const PSCS = [
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, USER_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -75,8 +81,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const pathname = decodeURIComponent(url.pathname);
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
-    if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
+    if (pathname === "/api/v1/companies-house/company/00000001") return json({ companyNumber: COMPANY.number, companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs: PSCS });
     if (pathname === "/api/v1/companies-house/psc-change-details" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
@@ -180,27 +185,27 @@ for (const width of [1280, 390]) {
     await page.goto(`${SITE}/cy/companies-house/changePscDetails.html`, { waitUntil: "networkidle" });
     await choose(
       page,
-      "SIMULATOR HOLDINGS LIMITED (Endid cyfreithiol neu berson cofrestradwy arall)",
+      `${CORPORATE_PSC_NAME} (Endid cyfreithiol neu berson cofrestradwy arall)`,
       "Chwilio am y personau â rheolaeth arwyddocaol",
     );
     await expect(page.getByLabel("Eu cenedligrwydd")).toBeHidden();
     await page.getByLabel("Eu henw").check();
-    await page.locator("#newEntityName").fill("SIMULATOR GROUP LIMITED");
+    await page.locator("#newEntityName").fill(NEW_ENTITY_NAME);
     await page.getByLabel("Eu ffurf gyfreithiol neu’r gyfraith sy’n eu llywodraethu").check();
     await page.locator("#legalForm").fill("Cwmni preifat cyfyngedig");
-    await page.locator("#lawGoverned").fill("Deddf Cwmnïau 2006");
-    await page.locator("#placeRegistered").fill("Tŷ’r Cwmnïau");
+    await page.locator("#lawGoverned").fill("DEDDF CWMNÏAU 2006");
+    await page.locator("#placeRegistered").fill("TŶ’R CWMNÏAU");
     await page.locator("#countryOrState").fill("Cymru a Lloegr");
-    await page.locator("#registrationNumber").fill("12345678");
+    await page.locator("#registrationNumber").fill(CORPORATE_PSC_NUMBER);
     await dates(page);
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "entity-cy");
     await page.getByRole("button", { name: "Parhau" }).click();
 
     const review = page.locator("#reviewList");
-    await expect(review).toContainText("SIMULATOR GROUP LIMITED");
+    await expect(review).toContainText(NEW_ENTITY_NAME);
     await expect(review).toContainText("Ffurf gyfreithiol: Cwmni preifat cyfyngedig");
-    await expect(review).toContainText("12345678");
+    await expect(review).toContainText(CORPORATE_PSC_NUMBER);
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "entity-review-cy");
 
@@ -208,14 +213,14 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
     expect(filings[0]).toMatchObject({
       pscKind: "corporate-entity-person-with-significant-control",
-      name: "SIMULATOR HOLDINGS LIMITED",
-      newName: "SIMULATOR GROUP LIMITED",
+      name: CORPORATE_PSC_NAME,
+      newName: NEW_ENTITY_NAME,
       identification: {
         legalForm: "Cwmni preifat cyfyngedig",
-        lawGoverned: "Deddf Cwmnïau 2006",
-        placeRegistered: "Tŷ’r Cwmnïau",
+        lawGoverned: "DEDDF CWMNÏAU 2006",
+        placeRegistered: "TŶ’R CWMNÏAU",
         countryOrState: "Cymru a Lloegr",
-        registrationNumber: "12345678",
+        registrationNumber: CORPORATE_PSC_NUMBER,
       },
     });
     expect(filings[0]).not.toHaveProperty("nationality");
@@ -256,7 +261,7 @@ test("a missing surname, home address, legal form or registration number is refu
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(status).toContainText("Give the new usual residential address's building name or number, its post town and its country.");
 
-  await page.getByLabel("SIMULATOR HOLDINGS LIMITED (Legal entity or other registrable person)").check();
+  await page.getByLabel(`${CORPORATE_PSC_NAME} (Legal entity or other registrable person)`).check();
   await expect(page.locator("#residenceSection")).toBeHidden();
   await page.getByLabel("Their legal form or governing law").check();
   await page.locator("#legalForm").fill("Private limited company");

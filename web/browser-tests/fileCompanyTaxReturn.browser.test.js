@@ -19,6 +19,11 @@ import {
   accountAmountIds,
   noteId,
 } from "../public/lib/ct600-fields.js";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
+const USER_EMAIL = PEOPLE.samPatel.email;
+const DIRECTOR = `${PEOPLE.samPatel.forename} ${PEOPLE.samPatel.surname}`;
+const PRACTICE_NAME = registerCompany("00000009").name;
+const OTHER_COMPANY_NUMBER = registerCompany("00000003").number;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -115,14 +120,14 @@ test.describe("File Company Tax Return entry form", () => {
   }
 
   async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }, practice = {}) {
-    await page.addInitScript(() => {
+    await page.addInitScript((email) => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       } catch {
         // storage can be blocked; the page then asks for sign-in
       }
-    });
+    }, USER_EMAIL);
     await page.route("**/*", async (route) => {
       const url = new URL(route.request().url());
       if (url.hostname !== "localhost") {
@@ -728,11 +733,11 @@ test.describe("File Company Tax Return entry form", () => {
     currentProfitAndLossAccount: "95038",
     principalActivity: "Software consultancy",
     accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
-    directors: "Alex Example",
+    directors: DIRECTOR,
     averageEmployees: "2",
-    directorName: "Alex Example",
+    directorName: DIRECTOR,
     directorDateApproved: "2026-06-30",
-    declarantName: "Alex Example",
+    declarantName: DIRECTOR,
     nonTradingLoanRelationshipCredits: "1000",
     depreciation: "6000",
     donations: "2000",
@@ -746,7 +751,7 @@ test.describe("File Company Tax Return entry form", () => {
   async function typeLongForm(page, extra = {}) {
     for (const [id, value] of Object.entries({ ...LONG_ANSWERS, ...extra })) await page.locator(`#${id}`).fill(value);
     await page.locator("#loansMadeAp2Yes").check();
-    await page.locator("#loanName1Ap2").fill("Alex Example");
+    await page.locator("#loanName1Ap2").fill(DIRECTOR);
     await page.locator("#loanAmount1Ap2").fill("15000");
     for (const id of [
       "statementSection477Exemption",
@@ -962,7 +967,7 @@ test.describe("File Company Tax Return entry form", () => {
 
     expect(previewRequests[0].figures.accountingPeriods).toHaveLength(2);
     expect(previewRequests[0].figures.accountingPeriods[1]).toMatchObject({ mainPoolAllowances: 363 });
-    expect(previewRequests[0].figures.accountingPeriods[1].loansToParticipators.loans).toEqual([{ name: "Alex Example", amount: 15000 }]);
+    expect(previewRequests[0].figures.accountingPeriods[1].loansToParticipators.loans).toEqual([{ name: DIRECTOR, amount: 15000 }]);
     expect(previewRequests[0].longPeriod).toBeUndefined();
     await expect(page.locator("#reviewReturn1Heading")).toHaveText("Return 1 of 2: 1 January 2025 to 31 December 2025");
     await expect(page.locator("#reviewReturn2Heading")).toHaveText("Return 2 of 2: 1 January 2026 to 31 March 2026");
@@ -1098,7 +1103,7 @@ test.describe("File Company Tax Return entry form", () => {
 
     await expect(page.locator("#formView")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("#mainPoolAllowancesAp2")).toHaveValue("363");
-    await expect(page.locator("#loanName1Ap2")).toHaveValue("Alex Example");
+    await expect(page.locator("#loanName1Ap2")).toHaveValue(DIRECTOR);
     await expect(page.locator("#periodStart")).toBeDisabled();
     await expect(page.locator("#periodEnd")).toBeDisabled();
     await page.locator("#mainPoolAllowancesAp2").fill("300");
@@ -1692,8 +1697,8 @@ test.describe("File Company Tax Return entry form", () => {
 
   test("an iXBRL document for another company fills nothing", async ({ page }) => {
     await openForm(page);
-    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: "99999999" }));
-    await expect(page.locator("#booksImportStatus")).toContainText("99999999", { timeout: 60_000 });
+    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: OTHER_COMPANY_NUMBER }));
+    await expect(page.locator("#booksImportStatus")).toContainText(OTHER_COMPANY_NUMBER, { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#periodStart")).toHaveValue("");
@@ -1804,7 +1809,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#companyNumber")).toHaveValue("00000007");
     await expect(page.locator("#companyNumber")).toHaveJSProperty("readOnly", true);
     await expect(page.locator("#practiceNameGroup")).toBeVisible();
-    await page.locator("#practiceName").fill("Example Practice LLP");
+    await page.locator("#practiceName").fill(PRACTICE_NAME);
     await page.locator("#companyLookupBtn").click();
     await expect(page.locator("#formView")).toBeVisible();
     await expect(page.locator("#utr")).toHaveValue("1234567890");
@@ -1835,7 +1840,7 @@ test.describe("File Company Tax Return entry form", () => {
     expect(previewRequests).toHaveLength(1);
     expect(previewRequests[0]).toMatchObject({
       clientId: "client-1",
-      agent: { practiceName: "Example Practice LLP", authorisationConfirmed: true },
+      agent: { practiceName: PRACTICE_NAME, authorisationConfirmed: true },
       declarant: { status: "Agent" },
     });
   });
@@ -1857,7 +1862,7 @@ test.describe("File Company Tax Return entry form", () => {
       requested,
     });
     await page.locator("#clientChoice-client-1").check();
-    await page.locator("#practiceName").fill("Example Practice LLP");
+    await page.locator("#practiceName").fill(PRACTICE_NAME);
     await page.locator("#companyLookupBtn").click();
     await expect(page.locator("#formView")).toBeVisible();
     await expect(page.locator("#savedBooksSelect option")).toHaveText(["Precision Code FY26 (version 2)"]);

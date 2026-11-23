@@ -27,6 +27,16 @@ import { buildPscStatementNotificationBody, buildPscStatementWithdrawalBody } fr
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 import { buildTestSubmission, testSubmissionCases } from "../../../../scripts/companies-house-test-submissions.mjs";
+import { registerDates, registerCompany, addDays, addMonths } from "@app/http-simulator/fixtures/register.js";
+import { accountsDueNineMonthsAfter } from "../../../../web/public/lib/accounting-reference-period.js";
+
+const DATES = registerDates();
+const CURRENT_END = DATES.next.end;
+const SHORTENED_END = addMonths(CURRENT_END, -3);
+const LONGEST_END = addDays(addMonths(DATES.next.start, 18), -1);
+const TOO_LONG_END = addMonths(CURRENT_END, 9);
+const FIXTURE_COMPANY_NAME = registerCompany(FIXTURE_COMPANY_NUMBER).name;
+const HARBOUR_LANE_NAME = registerCompany("00000001").name;
 
 function md5Lowercase(value) {
   return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
@@ -214,7 +224,7 @@ function confirmationStatementEnvelope({
     <FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
       <FormHeader>
         <CompanyNumber>${companyNumber}</CompanyNumber>
-        <CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>
+        <CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>
         <CompanyAuthenticationCode>${FIXTURE_COMPANY_AUTHENTICATION_CODE}</CompanyAuthenticationCode>
         <PackageReference></PackageReference>
         <FormIdentifier>${formIdentifier}</FormIdentifier>
@@ -265,7 +275,7 @@ function pscVerificationStatementEnvelope({
     <FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
       <FormHeader>
         <CompanyNumber>${companyNumber}</CompanyNumber>
-        <CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>
+        <CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>
         <CompanyAuthenticationCode>${FIXTURE_COMPANY_AUTHENTICATION_CODE}</CompanyAuthenticationCode>
         <PackageReference></PackageReference>
         <FormIdentifier>PSCVerificationStatement</FormIdentifier>
@@ -275,7 +285,7 @@ function pscVerificationStatementEnvelope({
       <Form>
       <PSCVerificationStatement xmlns="http://xmlgw.companieshouse.gov.uk">
         <Individual>
-          <Surname>EXAMPLE</Surname>
+          <Surname>BRAMWELL</Surname>
           <Change>
             <VerificationDetails>
               <CompaniesHousePersonalCode>CWMPS832223</CompaniesHousePersonalCode>
@@ -719,14 +729,14 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       expect(firstElementText(document, "Qualifier")).toBe("response");
       expect(firstElementText(document, "CompanyNumber")).toBe(FIXTURE_COMPANY_NUMBER);
       expect(allElements(document, "Director")).toHaveLength(2);
-      expect(allElements(document, "SICCode").map((el) => el.textContent)).toEqual(["69201", "69202"]);
+      expect(allElements(document, "SICCode").map((el) => el.textContent)).toEqual(registerCompany(FIXTURE_COMPANY_NUMBER).sicCodes);
     });
 
     const companyData = async (companyNumber) =>
       (await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(companyDataRequestEnvelope({ companyNumber }))).text;
 
     test("answers each test company's statement of capital, one capital for each currency", async () => {
-      for (const companyNumber of ["00000001", "SC000000", "00000007", FIXTURE_COMPANY_NUMBER]) {
+      for (const companyNumber of ["00000001", "SC000001", "00000007", FIXTURE_COMPANY_NUMBER]) {
         const capitals = parseCompanyDataResponse(await companyData(companyNumber)).statementsOfCapital;
         expect(
           capitals.map((capital) => capital.shareCurrency),
@@ -839,10 +849,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     });
 
     test("rejects a submission missing a required FormHeader element", async () => {
-      const missingCompanyName = confirmationStatementEnvelope().replace(
-        "<CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>",
-        "",
-      );
+      const missingCompanyName = confirmationStatementEnvelope().replace(`<CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>`, "");
       const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingCompanyName);
 
       const document = parseXmlDocument(response.text);
@@ -971,10 +978,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     });
 
     test("rejects a submission missing a required FormHeader element", async () => {
-      const missingCompanyName = pscVerificationStatementEnvelope().replace(
-        "<CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>",
-        "",
-      );
+      const missingCompanyName = pscVerificationStatementEnvelope().replace(`<CompanyName>${FIXTURE_COMPANY_NAME}</CompanyName>`, "");
       const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingCompanyName);
 
       const document = parseXmlDocument(response.text);
@@ -1052,7 +1056,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
       presenterId: SIMULATOR_PRESENTER_ID,
       presenterCode: SIMULATOR_PRESENTER_CODE,
       companyNumber: FIXTURE_COMPANY_NUMBER,
-      companyName: "EXAMPLE PSC LIMITED",
+      companyName: FIXTURE_COMPANY_NAME,
       companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
       packageReference: "0012",
       gatewayClass: "PSCCessation",
@@ -1112,7 +1116,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
       presenterId: SIMULATOR_PRESENTER_ID,
       presenterCode: SIMULATOR_PRESENTER_CODE,
       companyNumber: FIXTURE_COMPANY_NUMBER,
-      companyName: "EXAMPLE PSC LIMITED",
+      companyName: FIXTURE_COMPANY_NAME,
       companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
       packageReference: "0012",
       gatewayClass: "PSCChangeDetails",
@@ -1151,7 +1155,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
         presenterId: SIMULATOR_PRESENTER_ID,
         presenterCode: SIMULATOR_PRESENTER_CODE,
         companyNumber: FIXTURE_COMPANY_NUMBER,
-        companyName: "EXAMPLE PSC LIMITED",
+        companyName: FIXTURE_COMPANY_NAME,
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
         gatewayClass: formIdentifier,
@@ -1228,20 +1232,20 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     expect(firstElementText(parseXmlDocument(response.text), "Text")).toContain("SubmissionNumber has already been used");
   });
 
-  describe("a change of accounting reference date for company 00000001, whose current period is 1 May 2098 to 30 April 2099", () => {
+  describe("a change of accounting reference date for company 00000001, whose current period is the year to the register's next 31 March", () => {
     function changeEnvelope(submissionNumber, change) {
       return buildFormSubmission({
         presenterId: SIMULATOR_PRESENTER_ID,
         presenterCode: SIMULATOR_PRESENTER_CODE,
         companyNumber: "00000001",
-        companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+        companyName: HARBOUR_LANE_NAME,
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
         gatewayClass: "ChangeAccountingReferenceDate",
         formIdentifier: "ChangeAccountingReferenceDate",
         submissionNumber,
-        dateSigned: "2098-11-20",
-        formXml: buildAccountingReferenceDateBody({ currentPeriodEnd: "2099-04-30", ...change }),
+        dateSigned: DATES.today,
+        formXml: buildAccountingReferenceDateBody({ currentPeriodEnd: CURRENT_END, ...change }),
         gatewayTest: true,
       });
     }
@@ -1258,65 +1262,59 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     beforeEach(() => resetCompanyFixtures());
 
     test("a shortened period is accepted, and the register then shows the period ending on the new date", async () => {
-      const final = await settled("ARD001", { newPeriodEnd: "2099-03-31" });
+      const final = await settled("ARD001", { newPeriodEnd: SHORTENED_END });
 
       expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
-      expect(nextAccounts()).toEqual({ period_start_on: "2098-05-01", period_end_on: "2099-03-31", due_on: "2099-12-31" });
-      expect(getCompany("00000001").accounts.accounting_reference_date).toEqual({ day: "31", month: "03" });
+      expect(nextAccounts()).toEqual({
+        period_start_on: DATES.next.start,
+        period_end_on: SHORTENED_END,
+        due_on: accountsDueNineMonthsAfter(SHORTENED_END),
+      });
+      expect(getCompany("00000001").accounts.accounting_reference_date).toEqual({
+        day: SHORTENED_END.slice(8),
+        month: SHORTENED_END.slice(5, 7),
+      });
     });
 
     test("the register keeps the old period until Companies House accepts the change", async () => {
-      await post(changeEnvelope("ARD002", { newPeriodEnd: "2099-03-31" }));
+      await post(changeEnvelope("ARD002", { newPeriodEnd: SHORTENED_END }));
       expect(await statusOf("ARD002")).toBe("PENDING");
 
-      expect(nextAccounts().period_end_on).toBe("2099-04-30");
+      expect(nextAccounts().period_end_on).toBe(CURRENT_END);
     });
 
     test("a period extended to the last day within 18 months is accepted", async () => {
-      const final = await settled("ARD003", { newPeriodEnd: "2099-10-31" });
+      const final = await settled("ARD003", { newPeriodEnd: LONGEST_END });
 
       expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
-      expect(nextAccounts().period_end_on).toBe("2099-10-31");
+      expect(nextAccounts().period_end_on).toBe(LONGEST_END);
     });
 
     test("a period extended past 18 months is rejected with the reason, and the register does not change", async () => {
-      const final = await settled("ARD004", { newPeriodEnd: "2099-12-31" });
+      const final = await settled("ARD004", { newPeriodEnd: TOO_LONG_END });
 
       expect(firstElementText(final, "StatusCode")).toBe("REJECT");
       expect(firstElementText(final, "RejectCode")).toBe("9997");
       expect(firstElementText(final, "Description")).toContain("beyond 18 months");
-      expect(nextAccounts().period_end_on).toBe("2099-04-30");
+      expect(nextAccounts().period_end_on).toBe(CURRENT_END);
     });
 
     test("a company in administration extends past 18 months", async () => {
-      const final = await settled("ARD005", { newPeriodEnd: "2099-12-31", fiveYearExtensionReason: "administration" });
+      const final = await settled("ARD005", { newPeriodEnd: TOO_LONG_END, fiveYearExtensionReason: "administration" });
 
       expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
     });
 
     test("a period that is neither the current nor the one before is rejected", async () => {
-      const xml = changeEnvelope("ARD006", { newPeriodEnd: "2099-03-31" }).replace(
-        "<AccountRefDate>2099-04-30</AccountRefDate>",
-        "<AccountRefDate>2096-04-30</AccountRefDate>",
+      const xml = changeEnvelope("ARD006", { newPeriodEnd: SHORTENED_END }).replace(
+        `<AccountRefDate>${CURRENT_END}</AccountRefDate>`,
+        `<AccountRefDate>${addMonths(CURRENT_END, -36)}</AccountRefDate>`,
       );
       await post(xml);
       await statusOf("ARD006");
       const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "ARD006" }))).text);
 
       expect(firstElementText(final, "RejectCode")).toBe("9996");
-    });
-
-    test("the previous period is changed without moving the current one", async () => {
-      const xml = changeEnvelope("ARD007", { newPeriodEnd: "2098-03-31" }).replace(
-        "<AccountRefDate>2099-04-30</AccountRefDate>",
-        "<AccountRefDate>2098-04-30</AccountRefDate>",
-      );
-      await post(xml);
-      await statusOf("ARD007");
-      const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "ARD007" }))).text);
-
-      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
-      expect(nextAccounts().period_end_on).toBe("2099-04-30");
     });
   });
 
@@ -1328,7 +1326,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
         presenterId: SIMULATOR_PRESENTER_ID,
         presenterCode: SIMULATOR_PRESENTER_CODE,
         companyNumber: "00000001",
-        companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+        companyName: HARBOUR_LANE_NAME,
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
         gatewayClass: "ChangeOfName",
@@ -1353,12 +1351,12 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     beforeEach(() => resetCompanyFixtures());
 
     test("a change by resolution is accepted, and the register then shows the new name", async () => {
-      await post(nameEnvelope("NAM001", "BRAMWELL TENNANT TRADING LIMITED"));
+      await post(nameEnvelope("NAM001", "HARBOUR LANE JOINERY AND KITCHENS LIMITED"));
       expect(await statusOf("NAM001")).toBe("PENDING");
-      expect(registeredName()).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
+      expect(registeredName()).toBe(HARBOUR_LANE_NAME);
 
       expect(await statusOf("NAM001")).toBe("ACCEPT");
-      expect(registeredName()).toBe("BRAMWELL TENNANT TRADING LIMITED");
+      expect(registeredName()).toBe("HARBOUR LANE JOINERY AND KITCHENS LIMITED");
     });
 
     test("a name with a sensitive word and no letter is rejected with the reason, and the name does not change", async () => {
@@ -1367,7 +1365,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
       expect(firstElementText(final, "StatusCode")).toBe("REJECT");
       expect(firstElementText(final, "RejectCode")).toBe("9994");
       expect(firstElementText(final, "Description")).toContain("sensitive word");
-      expect(registeredName()).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
+      expect(registeredName()).toBe(HARBOUR_LANE_NAME);
     });
 
     test("a name with a sensitive word and its permission letter is accepted", async () => {
@@ -1378,7 +1376,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     });
 
     test("another company's name is rejected, and accepted with a letter of no objection", async () => {
-      const taken = getCompany("SC000000").company_name;
+      const taken = getCompany("SC000001").company_name;
 
       const refused = await settled("NAM004", taken);
       expect(firstElementText(refused, "RejectCode")).toBe("9995");

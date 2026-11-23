@@ -9,41 +9,44 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const EXAMPLE_COMPANY_RESULT = {
+const COMPANY = registerCompany("00000001");
+
+const COMPANY_RESULT = {
   totalResults: 1,
   itemsPerPage: 20,
   startIndex: 0,
   items: [
     {
-      companyNumber: "00000001",
-      title: "SIMULATOR EXAMPLE COMPANY LIMITED",
-      companyStatus: "active",
+      companyNumber: COMPANY.number,
+      title: COMPANY.name,
+      companyStatus: COMPANY.status,
       companyType: "ltd",
-      dateOfCreation: "2009-04-16",
-      addressSnippet: "1 Example Street, Cardiff, CF14 3UZ",
+      dateOfCreation: COMPANY.incorporatedOn,
+      addressSnippet: `${addressLine1(COMPANY.address)}, ${COMPANY.address.locality}, ${COMPANY.address.postalCode}`,
     },
   ],
 };
 
-const EXAMPLE_COMPANY_PROFILE = {
-  companyNumber: "00000001",
-  companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
-  companyStatus: "active",
+const COMPANY_PROFILE = {
+  companyNumber: COMPANY.number,
+  companyName: COMPANY.name,
+  companyStatus: COMPANY.status,
   companyType: "ltd",
-  dateOfCreation: "2009-04-16",
-  jurisdiction: "england-wales",
+  dateOfCreation: COMPANY.incorporatedOn,
+  jurisdiction: COMPANY.jurisdiction,
   registeredOfficeAddress: {
-    address_line_1: "1 Example Street",
-    locality: "Cardiff",
-    postal_code: "CF14 3UZ",
+    address_line_1: addressLine1(COMPANY.address),
+    locality: COMPANY.address.locality,
+    postal_code: COMPANY.address.postalCode,
     country: "United Kingdom",
   },
-  sicCodes: ["62012"],
-  accountsNextDue: "2099-01-31",
-  confirmationStatementNextDue: "2099-04-30",
+  sicCodes: COMPANY.sicCodes,
+  accountsNextDue: COMPANY.accounts.next.due,
+  confirmationStatementNextDue: COMPANY.confirmationStatementDates.due,
 };
 
 test.describe("Company Lookup page", () => {
@@ -60,7 +63,7 @@ test.describe("Company Lookup page", () => {
     });
   }
 
-  async function setupRoutes(page, { searchResult = EXAMPLE_COMPANY_RESULT, profile = EXAMPLE_COMPANY_PROFILE, searchError = null } = {}) {
+  async function setupRoutes(page, { searchResult = COMPANY_RESULT, profile = COMPANY_PROFILE, searchError = null } = {}) {
     await page.addInitScript(
       ({ searchResultArg, profileArg, searchErrorArg }) => {
         // The lookup shows its results to a reader who is signed in.
@@ -112,12 +115,12 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 
     await expect(page.locator("#searchResultsContainer")).toBeVisible();
-    await expect(page.locator("#searchResults")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#searchResults")).toContainText(COMPANY.name);
     await expect(page.locator("#searchResults")).toContainText("00000001");
     await expect(page.locator("#searchResults")).toContainText("Active");
     await expect(page.locator("#searchResults")).toContainText("16 April 2009");
@@ -130,7 +133,7 @@ test.describe("Company Lookup page", () => {
     await serveSiteStyles(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(300);
 
@@ -157,7 +160,7 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 
@@ -165,12 +168,14 @@ test.describe("Company Lookup page", () => {
     await delay(200);
 
     await expect(page.locator("#profileView")).toBeVisible();
-    await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#companyProfile")).toContainText(COMPANY.name);
     await expect(page.locator("#companyProfile")).toContainText("Active");
     await expect(page.locator("#companyProfile")).toContainText("Private limited company");
     await expect(page.locator("#companyProfile")).toContainText("England and Wales");
     await expect(page.locator("#companyProfile")).toContainText("16 April 2009");
-    await expect(page.locator("#companyProfile")).toContainText("62012 - Business and domestic software development");
+    await expect(page.locator("#companyProfile")).toContainText(
+      "16230 - Manufacture of other builders' carpentry and joinery; 43320 - Joinery installation",
+    );
     await expect(page.locator("#companyProfile")).not.toContainText("2009-04-16");
   });
 
@@ -179,7 +184,7 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 
@@ -195,7 +200,7 @@ test.describe("Company Lookup page", () => {
     await loadPage(page, "companyNumber=00000001");
 
     await expect(page.locator("#profileView")).toBeVisible();
-    await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#companyProfile")).toContainText(COMPANY.name);
   });
 
   test("shows a retry message with the wait time when the API reports a rate limit", async ({ page }) => {
@@ -205,7 +210,7 @@ test.describe("Company Lookup page", () => {
     });
     await loadPage(page);
 
-    await page.fill("#companyQuery", "Simulator Example");
+    await page.fill("#companyQuery", "Harbour Lane");
     await page.click("#searchBtn");
     await delay(200);
 

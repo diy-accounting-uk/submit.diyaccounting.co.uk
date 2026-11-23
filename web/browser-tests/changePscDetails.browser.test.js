@@ -10,6 +10,11 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000001");
+const CORPORATE_PSC = COMPANY.pscs.find((psc) => psc.kind === "corporate-entity-person-with-significant-control").name;
+const SIGNED_IN_EMAIL = PEOPLE.eleanorBramwell.email;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -42,7 +47,7 @@ const PSCS = [
     dateOfBirth: { month: 1, year: 1970 },
   },
   {
-    name: "SIMULATOR HOLDINGS LIMITED",
+    name: CORPORATE_PSC,
     kind: "corporate-entity-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2019-06-01",
@@ -61,13 +66,13 @@ const PSCS = [
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, pscs = PSCS } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, SIGNED_IN_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -75,8 +80,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const pathname = decodeURIComponent(url.pathname);
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
-    if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
+    if (pathname === "/api/v1/companies-house/company/00000001") return json({ companyNumber: "00000001", companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs });
     if (pathname === "/api/v1/companies-house/psc-change-details" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
@@ -119,7 +123,7 @@ for (const width of [1280, 390]) {
 
     await expect(page.locator("#pscChoices label")).toHaveText([
       "Eleanor Bramwell (Individual)",
-      "SIMULATOR HOLDINGS LIMITED (Legal entity or other registrable person)",
+      `${CORPORATE_PSC} (Legal entity or other registrable person)`,
     ]);
     await page.getByLabel("Eleanor Bramwell (Individual)").check();
     await page.getByLabel("How they control the company").check();
@@ -178,7 +182,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("h1")).toHaveText("Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid");
     await page.locator("#companyNumber").fill("00000001");
     await page.getByRole("button", { name: "Chwilio am y personau â rheolaeth arwyddocaol" }).click();
-    await page.getByLabel("SIMULATOR HOLDINGS LIMITED (Endid cyfreithiol neu berson cofrestradwy arall)").check();
+    await page.getByLabel(`${CORPORATE_PSC} (Endid cyfreithiol neu berson cofrestradwy arall)`).check();
     await page.getByLabel("Eu cyfeiriad", { exact: true }).check();
     await expect(page.locator("#addressLegend")).toHaveText("Cyfeiriad newydd y brif swyddfa");
     await page.locator("#premise").fill("Unit 4");
@@ -203,7 +207,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
     expect(filings[0]).toMatchObject({
       pscKind: "corporate-entity-person-with-significant-control",
-      name: "SIMULATOR HOLDINGS LIMITED",
+      name: CORPORATE_PSC,
       address: { premise: "Unit 4", street: "Harbour Road", postTown: "Caerdydd", postcode: "CF10 1AA", country: "GB-WLS" },
     });
     expect(filings[0]).not.toHaveProperty("naturesOfControl");
@@ -215,12 +219,12 @@ for (const width of [1280, 390]) {
 
 test("a link from the company lookup chooses its PSC and words the address for it", async ({ page }) => {
   await serveSite(page);
-  await page.goto(`${SITE}/companies-house/changePscDetails.html?companyNumber=00000001&pscName=SIMULATOR%20HOLDINGS%20LIMITED`, {
+  await page.goto(`${SITE}/companies-house/changePscDetails.html?companyNumber=00000001&pscName=${encodeURIComponent(CORPORATE_PSC)}`, {
     waitUntil: "networkidle",
   });
   await expect(page.locator("#companyNumber")).toHaveValue("00000001");
   await page.getByRole("button", { name: LOOK_UP }).click();
-  await expect(page.getByLabel("SIMULATOR HOLDINGS LIMITED (Legal entity or other registrable person)")).toBeChecked();
+  await expect(page.getByLabel(`${CORPORATE_PSC} (Legal entity or other registrable person)`)).toBeChecked();
   await page.getByLabel("Their address").check();
   await expect(page.locator("#addressLegend")).toHaveText("The new principal office address");
 });

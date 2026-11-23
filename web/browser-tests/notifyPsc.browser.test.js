@@ -10,9 +10,12 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
+const COMPANY = registerCompany("00000001");
+const SIGNED_IN_EMAIL = PEOPLE.eleanorBramwell.email;
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/psc1");
 
 const CONTENT_TYPES = {
@@ -30,13 +33,13 @@ const CONTENT_TYPES = {
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
 async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, SIGNED_IN_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -45,7 +48,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
     if (pathname === "/api/v1/companies-house/company/00000001")
-      return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
+      return json({ companyNumber: "00000001", companyName: COMPANY.name });
     if (pathname === "/api/v1/companies-house/psc-notification" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
@@ -119,7 +122,7 @@ for (const width of [1280, 390]) {
     await page.locator("#companyNumber").fill("00000001");
     await page.getByRole("button", { name: "Look up the company" }).click();
 
-    await expect(page.locator("#formCompanyName")).toHaveText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#formCompanyName")).toHaveText(COMPANY.name);
     await expect(page.locator("#individualSection")).toBeVisible();
     await expect(page.locator("#entitySection")).toBeHidden();
     await expect(page.locator("#serviceAddress")).toBeHidden();
@@ -148,7 +151,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
     expect(filings[0]).toEqual({
       companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyName: COMPANY.name,
       companyAuthCode: "SIMCS01",
       dateSigned: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       pscKind: "individual-person-with-significant-control",
@@ -196,7 +199,7 @@ for (const width of [1280, 390]) {
     await page.locator("#legalForm").fill("Private company limited by shares");
     await page.locator("#lawGoverned").fill("Companies Act 2006");
     await page.locator("#placeRegistered").fill("Companies House");
-    await page.locator("#registrationNumber").fill("00000008");
+    await page.locator("#registrationNumber").fill("00000006");
     await page.locator("#directors").check();
     await page.getByRole("group", { name: "Perchnogaeth cyfranddaliadau" }).locator('input[value="75TO100PERCENT"]').check();
     await fillDates(page);
@@ -213,7 +216,7 @@ for (const width of [1280, 390]) {
     const review = page.locator("#reviewList");
     await expect(review).toContainText("Endid cyfreithiol perthnasol");
     await expect(review).toContainText("Ty Teifi, Stryd Fawr, Aberteifi, SA43 1HJ, Cymru");
-    await expect(review).toContainText("Companies House, UNITED KINGDOM, 00000008");
+    await expect(review).toContainText("Companies House, UNITED KINGDOM, 00000006");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "review-cy");
 
@@ -227,7 +230,7 @@ for (const width of [1280, 390]) {
       lawGoverned: "Companies Act 2006",
       placeRegistered: "Companies House",
       countryOrState: "UNITED KINGDOM",
-      registrationNumber: "00000008",
+      registrationNumber: "00000006",
       naturesOfControl: ["OWNERSHIPOFSHARES_75TO100PERCENT", "RIGHTTOAPPOINTANDREMOVEDIRECTORS"],
     });
     expect(filings[0]).not.toHaveProperty("surname");

@@ -11,6 +11,10 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { TEST_COMPANY_DATA } from "@app/http-simulator/scenarios/confirmation-statement.js";
+import { PEOPLE, registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const COMPANY = registerCompany("00000001");
+const SIGNED_IN_EMAIL = PEOPLE.eleanorBramwell.email;
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
@@ -46,13 +50,13 @@ async function serveSite(
     refuseUnconfirmed = null,
   } = {},
 ) {
-  await page.addInitScript(() => {
+  await page.addInitScript((email) => {
     try {
       localStorage.setItem("consent.analytics", "declined");
       localStorage.setItem("cognitoIdToken", "mock-id-token");
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
     } catch {}
-  });
+  }, SIGNED_IN_EMAIL);
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -63,7 +67,7 @@ async function serveSite(
     if (pathname === "/api/v1/companies-house/company/00000001") {
       return json({
         companyNumber: "00000001",
-        companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+        companyName: COMPANY.name,
         companyType: "ltd",
         confirmationStatementNextMadeUpTo: "2027-04-16",
       });
@@ -142,8 +146,9 @@ for (const width of [1280, 390]) {
     await expect(page.locator("h1")).toHaveText("Return an allotment of shares");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Status: sandbox.");
     await lookUp(page);
-    expect(reads[0]).toMatchObject({ companyAuthCode: "SIMCS01" });
-    await expect(page.locator("#formView")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    // The page dates the read today, as the filing route's own read of the register is.
+    expect(reads[0]).toMatchObject({ companyAuthCode: "SIMCS01", madeUpDate: new Date().toISOString().slice(0, 10) });
+    await expect(page.locator("#formView")).toContainText(COMPANY.name);
     await expect(page.locator("#formView")).toContainText("Companies House charges no fee for this filing.");
     await expect(page.locator("#beforeSource")).toHaveText(
       "This is the share capital Companies House holds for the company. The return must start from it: Submit checks it against the register again when you file and sends no return that differs. File an earlier allotment that is not on the register yet first.",
@@ -175,7 +180,7 @@ for (const width of [1280, 390]) {
     expect(filings).toHaveLength(1);
     expect(filings[0]).toMatchObject({
       companyNumber: "00000001",
-      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      companyName: COMPANY.name,
       companyAuthCode: "SIMCS01",
       startDate: "2026-11-02",
       allotments: [

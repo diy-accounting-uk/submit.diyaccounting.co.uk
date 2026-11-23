@@ -8,6 +8,9 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { registerCompany } from "@app/http-simulator/fixtures/register.js";
+
+const WELSH_COMPANY = registerCompany("00000006");
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -29,11 +32,14 @@ async function openFormView(page, jurisdiction) {
     await route.fulfill({ status: 200, contentType: "text/html", body: html });
   });
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.evaluate((companyJurisdiction) => {
-    company = { companyNumber: "00000001", companyName: "CWMNI PRAWF CYFYNGEDIG" };
-    showDocumentLanguageChoice(companyJurisdiction);
-    showView("formView");
-  }, jurisdiction);
+  await page.evaluate(
+    ({ companyJurisdiction, companyNumber, companyName }) => {
+      company = { companyNumber, companyName };
+      showDocumentLanguageChoice(companyJurisdiction);
+      showView("formView");
+    },
+    { companyJurisdiction: jurisdiction, companyNumber: WELSH_COMPANY.number, companyName: WELSH_COMPANY.name },
+  );
 }
 
 test.describe("File micro-entity accounts page - the language of the accounts", () => {

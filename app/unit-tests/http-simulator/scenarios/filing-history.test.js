@@ -6,6 +6,11 @@
 import { describe, test, expect } from "vitest";
 import { getFilingHistory, getFiling, getDocumentMetadata, getDocumentContent } from "@app/http-simulator/scenarios/filing-history.js";
 import { documentIdFromMetadataLink } from "@app/services/companiesHouseDocumentApi.js";
+import { registerDates } from "@app/http-simulator/fixtures/register.js";
+
+const DATES = registerDates();
+const FILED = `SIMTX00000001AA${DATES.filed.end.slice(0, 4)}`;
+const EARLIER = `SIMTX00000001AA${DATES.earlier.end.slice(0, 4)}`;
 
 describe("simulator filing history", () => {
   test("00000001 holds a software-filed set, a confirmation statement and a paper-filed set, newest first", () => {
@@ -16,10 +21,7 @@ describe("simulator filing history", () => {
   });
 
   test("narrows to a category and pages by start index and page size", () => {
-    expect(getFilingHistory("00000001", { category: "accounts" }).items.map((item) => item.transaction_id)).toEqual([
-      "SIMTX00000001AA2098",
-      "SIMTX00000001AA2097",
-    ]);
+    expect(getFilingHistory("00000001", { category: "accounts" }).items.map((item) => item.transaction_id)).toEqual([FILED, EARLIER]);
     const page = getFilingHistory("00000001", { itemsPerPage: 1, startIndex: 1 });
     expect(page.total_count).toBe(3);
     expect(page.items.map((item) => item.type)).toEqual(["CS01"]);
@@ -29,7 +31,7 @@ describe("simulator filing history", () => {
     const history = getFilingHistory("00000007", { itemsPerPage: 100, startIndex: 500 });
     expect(history.total_count).toBe(621);
     expect(history.items).toHaveLength(100);
-    expect(getFilingHistory("00000007").items[0].date).toBe("2098-12-31");
+    expect(getFilingHistory("00000007").items[0].date).toBe(DATES.filed.end);
     expect(getFilingHistory("00000007", { category: "accounts" }).total_count).toBe(0);
   });
 
@@ -45,24 +47,24 @@ describe("simulator filing history", () => {
 
   test("00000003 holds one set of accounts, filed on paper as a PDF only", () => {
     const [set] = getFilingHistory("00000003", { category: "accounts" }).items;
-    expect(set).toEqual(expect.objectContaining({ type: "AA", paper_filed: true, description_values: { made_up_date: "2098-03-31" } }));
+    expect(set).toEqual(expect.objectContaining({ type: "AA", paper_filed: true, description_values: { made_up_date: DATES.filed.end } }));
     const documentId = set.links.document_metadata.split("/document/")[1];
     expect(Object.keys(getDocumentMetadata(documentId, "http://localhost").resources)).toEqual(["application/pdf"]);
   });
 
-  test("SC000000 holds one set of small company accounts filed by software, held as iXBRL", () => {
-    const [set] = getFilingHistory("SC000000", { category: "accounts" }).items;
+  test("SC000001 holds one set of small company accounts filed by software, held as iXBRL", () => {
+    const [set] = getFilingHistory("SC000001", { category: "accounts" }).items;
     expect(set).toEqual(
       expect.objectContaining({
         type: "AA",
         description: "accounts-with-accounts-type-total-exemption-full",
-        description_values: { made_up_date: "2098-09-30" },
+        description_values: { made_up_date: DATES.filed.end },
       }),
     );
     expect(set.paper_filed).toBeUndefined();
     const documentId = set.links.document_metadata.split("/document/")[1];
     const { content } = getDocumentContent(documentId, "application/xhtml+xml");
-    expect(content).toContain("SIMULATOR TEST COMPANY (SCOTLAND) LIMITED");
+    expect(content).toContain("GLENMORE ENGINEERING LIMITED");
     expect(content).toContain("Profit and loss account");
   });
 
@@ -73,14 +75,14 @@ describe("simulator filing history", () => {
   });
 
   test("answers one filing by its transaction id", () => {
-    expect(getFiling("00000001", "SIMTX00000001AA2098").description).toBe("accounts-with-accounts-type-micro-entity");
+    expect(getFiling("00000001", FILED).description).toBe("accounts-with-accounts-type-micro-entity");
     expect(getFiling("00000001", "SIMTX-NONE")).toBeNull();
   });
 });
 
 describe("simulator Document API", () => {
-  const softwareId = documentIdFromMetadataLink(getFiling("00000001", "SIMTX00000001AA2098").links.document_metadata);
-  const paperId = documentIdFromMetadataLink(getFiling("00000001", "SIMTX00000001AA2097").links.document_metadata);
+  const softwareId = documentIdFromMetadataLink(getFiling("00000001", FILED).links.document_metadata);
+  const paperId = documentIdFromMetadataLink(getFiling("00000001", EARLIER).links.document_metadata);
 
   test("the software-filed set is held as a PDF and as iXBRL, the paper set as a PDF only", () => {
     expect(Object.keys(getDocumentMetadata(softwareId, "http://simulator").resources).sort()).toEqual([
@@ -92,7 +94,7 @@ describe("simulator Document API", () => {
 
   test("serves the iXBRL the micro-entity accounts builder writes for the company", () => {
     const { content } = getDocumentContent(softwareId, "application/xhtml+xml");
-    expect(content).toContain("SIMULATOR EXAMPLE COMPANY LIMITED");
+    expect(content).toContain("HARBOUR LANE JOINERY LIMITED");
     expect(content).toContain("ix:nonNumeric");
     expect(getDocumentMetadata(softwareId, "http://simulator").resources["application/xhtml+xml"].content_length).toBe(
       Buffer.byteLength(content),

@@ -32,7 +32,11 @@ function toolAnswer(tool, args) {
   if (tool === "add_client") return { client: { clientId: `client-${args.displayName[0].toLowerCase()}`, displayName: args.displayName } };
   if (tool === "list_clients") return { clients: CLIENTS };
   if (tool === "request_companies_house_codes") {
-    return { entryId: ENTRY_ID, url: `${ORIGIN}/companies-house/mcpCodes.html?entry=${ENTRY_ID}`, expiresAt: "2099-01-01T00:00:00Z" };
+    return {
+      entryId: ENTRY_ID,
+      url: `${ORIGIN}/companies-house/mcpCodes.html?entry=${ENTRY_ID}`,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    };
   }
   if (tool === "run_for_clients") {
     const rows = CLIENTS.map((client) => ({ ...client, ok: true, result: { submissionNumber: `S-${client.clientId}` } }));

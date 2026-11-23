@@ -8,6 +8,9 @@
 import { test, expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveRealSite, SITE_ORIGIN } from "./serveRealSite.js";
+import { PEOPLE } from "@app/http-simulator/fixtures/register.js";
+
+const SIGNED_IN_EMAIL = PEOPLE.samPatel.email;
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -17,15 +20,18 @@ const expiredJwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: Math.fl
 test("an expired sign-in with no refresh token shows Not signed in and Subscribe goes to sign in", async ({ page }) => {
   const deadTokenCalls = [];
   const refreshCalls = [];
-  await page.addInitScript((jwt) => {
-    try {
-      if (sessionStorage.getItem("expiredSeeded")) return;
-      sessionStorage.setItem("expiredSeeded", "1");
-      localStorage.setItem("cognitoIdToken", jwt);
-      localStorage.setItem("cognitoAccessToken", jwt);
-      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
-    } catch {}
-  }, expiredJwt);
+  await page.addInitScript(
+    ({ jwt, email }) => {
+      try {
+        if (sessionStorage.getItem("expiredSeeded")) return;
+        sessionStorage.setItem("expiredSeeded", "1");
+        localStorage.setItem("cognitoIdToken", jwt);
+        localStorage.setItem("cognitoAccessToken", jwt);
+        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
+      } catch {}
+    },
+    { jwt: expiredJwt, email: SIGNED_IN_EMAIL },
+  );
   await serveRealSite(page, {
     signedIn: false,
     apiHandler: (url, request) => {
@@ -57,15 +63,18 @@ test("an expired sign-in with no refresh token shows Not signed in and Subscribe
 for (const pagePath of ["bundles.html", "index.html"]) {
   test(`${pagePath} with an expired sign-in makes no call with the dead token, clears it and stays put`, async ({ page }) => {
     const deadTokenCalls = [];
-    await page.addInitScript((jwt) => {
-      try {
-        if (sessionStorage.getItem("expiredSeeded")) return;
-        sessionStorage.setItem("expiredSeeded", "1");
-        localStorage.setItem("cognitoIdToken", jwt);
-        localStorage.setItem("cognitoAccessToken", jwt);
-        localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "user@example.com" }));
-      } catch {}
-    }, expiredJwt);
+    await page.addInitScript(
+      ({ jwt, email }) => {
+        try {
+          if (sessionStorage.getItem("expiredSeeded")) return;
+          sessionStorage.setItem("expiredSeeded", "1");
+          localStorage.setItem("cognitoIdToken", jwt);
+          localStorage.setItem("cognitoAccessToken", jwt);
+          localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
+        } catch {}
+      },
+      { jwt: expiredJwt, email: SIGNED_IN_EMAIL },
+    );
     await serveRealSite(page, {
       apiHandler: (url, request) => {
         const headers = request.headers();
