@@ -196,7 +196,7 @@ for (const width of [1280, 390]) {
     await page.locator("#legalForm").fill("Private company limited by shares");
     await page.locator("#lawGoverned").fill("Companies Act 2006");
     await page.locator("#placeRegistered").fill("Companies House");
-    await page.locator("#registrationNumber").fill("09876543");
+    await page.locator("#registrationNumber").fill("00000008");
     await page.locator("#directors").check();
     await page.getByRole("group", { name: "Perchnogaeth cyfranddaliadau" }).locator('input[value="75TO100PERCENT"]').check();
     await fillDates(page);
@@ -213,7 +213,7 @@ for (const width of [1280, 390]) {
     const review = page.locator("#reviewList");
     await expect(review).toContainText("Endid cyfreithiol perthnasol");
     await expect(review).toContainText("Ty Teifi, Stryd Fawr, Aberteifi, SA43 1HJ, Cymru");
-    await expect(review).toContainText("Companies House, UNITED KINGDOM, 09876543");
+    await expect(review).toContainText("Companies House, UNITED KINGDOM, 00000008");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "review-cy");
 
@@ -227,7 +227,7 @@ for (const width of [1280, 390]) {
       lawGoverned: "Companies Act 2006",
       placeRegistered: "Companies House",
       countryOrState: "UNITED KINGDOM",
-      registrationNumber: "09876543",
+      registrationNumber: "00000008",
       naturesOfControl: ["OWNERSHIPOFSHARES_75TO100PERCENT", "RIGHTTOAPPOINTANDREMOVEDIRECTORS"],
     });
     expect(filings[0]).not.toHaveProperty("surname");

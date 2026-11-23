@@ -106,7 +106,7 @@ describe("readLastAccounts", () => {
       set: SET,
       document: readFileSync(join(FIXTURES, "builder-micro-entity-both-years.xhtml"), "utf8"),
     });
-    const answer = await readLastAccounts("09876543");
+    const answer = await readLastAccounts("00000008");
     expect(answer.outcome).toBe("mapped");
     expect(answer.set).toEqual(SET);
     expect(answer.accounts).toMatchObject(expected["builder-micro-entity-both-years.xhtml"]);
@@ -119,14 +119,14 @@ describe("readLastAccounts", () => {
     [{ problem: "too-large", set: SET }, "too-large"],
   ])("answers why there are no figures for %j", async (read, outcome) => {
     mockFetchLastFiledAccounts.mockResolvedValue(read);
-    const answer = await readLastAccounts("09876543");
+    const answer = await readLastAccounts("00000008");
     expect(answer.outcome).toBe(outcome);
     expect(answer.accounts).toBeUndefined();
   });
 
   test("answers unreadable, with the reason, for a document that does not read as accounts", async () => {
     mockFetchLastFiledAccounts.mockResolvedValue({ set: SET, document: "<html><body>Scanned accounts</body></html>" });
-    const answer = await readLastAccounts("09876543");
+    const answer = await readLastAccounts("00000008");
     expect(answer.outcome).toBe("unreadable");
     expect(answer.reason).toEqual(expect.any(String));
   });
@@ -135,7 +135,7 @@ describe("readLastAccounts", () => {
     const depth = 50000;
     const document = `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body>${"<div>".repeat(depth)}x${"</div>".repeat(depth)}</body></html>`;
     mockFetchLastFiledAccounts.mockResolvedValue({ set: SET, document });
-    const answer = await readLastAccounts("09876543");
+    const answer = await readLastAccounts("00000008");
     expect(answer.outcome).toBe("unreadable");
     expect(answer.reason).toBe("The document's markup is nested too deeply to read.");
   });
@@ -148,7 +148,7 @@ describe("readLastAccounts", () => {
     const answer = await readLastAccounts("04549236");
     expect(answer.outcome).toBe("unreadable");
     expect(answer.accounts).toBeUndefined();
-    expect(answer.reason).toBe("The document states the company number 09876543, not 04549236.");
+    expect(answer.reason).toBe("The document states the company number 00000008, not 04549236.");
   });
 
   test("answers a reason of at most 300 characters when the document's own text is quoted in it", async () => {
@@ -157,7 +157,7 @@ describe("readLastAccounts", () => {
       `$1ixt:${"x".repeat(5000)}$2`,
     );
     mockFetchLastFiledAccounts.mockResolvedValue({ set: SET, document });
-    const answer = await readLastAccounts("09876543");
+    const answer = await readLastAccounts("00000008");
     expect(answer.outcome).toBe("unreadable");
     expect(answer.reason.length).toBeLessThanOrEqual(301);
     expect(answer.reason.endsWith("…")).toBe(true);
@@ -169,11 +169,11 @@ describe("readLastAccounts", () => {
       set: SET,
       document: readFileSync(join(FIXTURES, "builder-micro-entity-both-years.xhtml"), "utf8"),
     });
-    const first = await readLastAccounts("09876543");
-    const second = await readLastAccounts("09876543");
+    const first = await readLastAccounts("00000008");
+    const second = await readLastAccounts("00000008");
     expect(second).toEqual(first);
     expect(mockDocumentOfItem).toHaveBeenCalledTimes(1);
-    expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#09876543#TX1", first, 7 * 24 * 60 * 60);
+    expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#00000008#TX1", first, 7 * 24 * 60 * 60);
   });
 
   test.each([
@@ -184,9 +184,9 @@ describe("readLastAccounts", () => {
   ])("keeps the answer for %j in the cache for as long as its outcome holds", async (read, outcome, seconds) => {
     process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
     mockFetchLastFiledAccounts.mockResolvedValue(read);
-    const answer = await readLastAccounts("09876543");
+    const answer = await readLastAccounts("00000008");
     expect(answer.outcome).toBe(outcome);
-    expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#09876543#TX1", answer, seconds);
+    expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#00000008#TX1", answer, seconds);
   });
 
   test("reads the document when the cache cannot be read or written", async () => {
@@ -197,20 +197,20 @@ describe("readLastAccounts", () => {
       set: SET,
       document: readFileSync(join(FIXTURES, "builder-micro-entity-both-years.xhtml"), "utf8"),
     });
-    expect((await readLastAccounts("09876543")).outcome).toBe("mapped");
+    expect((await readLastAccounts("00000008")).outcome).toBe("mapped");
   });
 
   test("does not cache a failed read from Companies House", async () => {
     process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
     mockNewestAccountsFiling.mockResolvedValue({ item: { transaction_id: "TX9" } });
     mockDocumentOfItem.mockResolvedValue({ chResponse: { ok: false, status: 429 } });
-    await readLastAccounts("09876543");
-    expect(cache.has("lastaccounts#09876543#TX9")).toBe(false);
+    await readLastAccounts("00000008");
+    expect(cache.has("lastaccounts#00000008#TX9")).toBe(false);
   });
 
   test("passes on a failed read from Companies House", async () => {
     const chResponse = { ok: false, status: 429 };
     mockFetchLastFiledAccounts.mockResolvedValue({ chResponse });
-    expect(await readLastAccounts("09876543")).toEqual({ chResponse });
+    expect(await readLastAccounts("00000008")).toEqual({ chResponse });
   });
 });

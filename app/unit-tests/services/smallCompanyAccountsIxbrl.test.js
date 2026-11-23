@@ -97,7 +97,7 @@ const FIXED_ASSET_NOTE = {
 };
 
 const SAMPLE_INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST SMALL LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",

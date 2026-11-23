@@ -534,7 +534,7 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   });
 
   test("skips the fee gate when the company number is one of several in the comma-separated list, with whitespace tolerated", async () => {
-    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 00000004 ,07654321";
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 00000004 ,00000011";
     mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);

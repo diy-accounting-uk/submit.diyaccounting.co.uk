@@ -28,7 +28,7 @@ import { buildSmallCompanyAccounts } from "../app/services/smallCompanyAccountsI
 const VALIDATOR_BASE_URI = "https://test-validator.companieshouse.gov.uk";
 
 const SAMPLE_INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST MICRO LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
@@ -59,7 +59,7 @@ const SAMPLE_INPUT = {
 };
 
 const SMALL_COMPANY_SAMPLE_INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST SMALL LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",

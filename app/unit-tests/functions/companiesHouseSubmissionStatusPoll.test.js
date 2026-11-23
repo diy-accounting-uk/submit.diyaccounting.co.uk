@@ -187,7 +187,7 @@ async function sendAccountsEnvelope(submissionNumber, { scenario } = {}) {
   const envelope = buildAccountsSubmission({
     presenterId: SIMULATOR_PRESENTER_ID,
     presenterCode: SIMULATOR_PRESENTER_CODE,
-    companyNumber: "02706061",
+    companyNumber: "00000009",
     companyName: "TEST COMPANY LIMITED",
     companyAuthenticationCode: "ABC123",
     packageReference: "0012",

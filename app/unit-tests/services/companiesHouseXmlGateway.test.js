@@ -125,7 +125,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "02706061",
+      companyNumber: "00000009",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",
@@ -141,7 +141,7 @@ describe("services/companiesHouseXmlGateway", () => {
 
       expect(firstElementText(document, "Class")).toBe("Accounts");
       expect(firstElementText(document, "Qualifier")).toBe("request");
-      expect(firstElementText(document, "CompanyNumber")).toBe("02706061");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000009");
       expect(firstElementText(document, "CompanyName")).toBe("TEST COMPANY LIMITED");
       expect(firstElementText(document, "FormIdentifier")).toBe("Accounts");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
@@ -206,7 +206,7 @@ describe("services/companiesHouseXmlGateway", () => {
     const baseInput = {
       presenterId: "12345678901",
       presenterCode: "SimTest1",
-      companyNumber: "02706061",
+      companyNumber: "00000009",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",
@@ -586,9 +586,9 @@ describe("services/companiesHouseXmlGateway", () => {
     });
 
     test("carries CompanyNumber instead when no submissionNumber is given", () => {
-      const xml = buildStatusRequest({ ...baseInput, submissionNumber: undefined, companyNumber: "02706061" });
+      const xml = buildStatusRequest({ ...baseInput, submissionNumber: undefined, companyNumber: "00000009" });
       const document = parseXmlDocument(xml);
-      expect(firstElementText(document, "CompanyNumber")).toBe("02706061");
+      expect(firstElementText(document, "CompanyNumber")).toBe("00000009");
       expect(document.getElementsByTagName("SubmissionNumber")).toHaveLength(0);
     });
 
@@ -819,7 +819,7 @@ describe("services/companiesHouseXmlGateway", () => {
       const submission = buildAccountsSubmission({
         presenterId: SIMULATOR_TEST_PRESENTER_ID,
         presenterCode: SIMULATOR_TEST_PRESENTER_CODE,
-        companyNumber: "02706061",
+        companyNumber: "00000009",
         companyName: "TEST COMPANY LIMITED",
         companyAuthenticationCode: "ABC123",
         packageReference: "0012",
@@ -850,7 +850,7 @@ describe("services/companiesHouseXmlGateway", () => {
       const submission = buildAccountsSubmission({
         presenterId: SIMULATOR_TEST_PRESENTER_ID,
         presenterCode: "not-the-right-code",
-        companyNumber: "02706061",
+        companyNumber: "00000009",
         companyName: "TEST COMPANY LIMITED",
         companyAuthenticationCode: "ABC123",
         packageReference: "0012",

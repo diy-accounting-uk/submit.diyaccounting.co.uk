@@ -70,7 +70,7 @@ function accountsEnvelope({
   senderId = VALID_SENDER_ID,
   authValue = VALID_AUTH_VALUE,
   submissionNumber = "AAA001",
-  companyNumber = "02706061",
+  companyNumber = "00000009",
   documentData = "PGh0bWw+PC9odG1sPg==",
 } = {}) {
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -395,7 +395,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
 
   test("acknowledges a dormant company's accounts and polls them to ACCEPT", async () => {
     const dormantDocument = buildMicroEntityAccounts({
-      companyNumber: "02706061",
+      companyNumber: "00000009",
       companyName: "TEST DORMANT LIMITED",
       registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
       periodStart: "2025-07-01",

@@ -25,7 +25,7 @@ const CURRENT = {
 const PRIOR = { ...CURRENT, turnover: 40000, profitBeforeTax: 9500, tax: 1500, profit: 8000 };
 
 const INPUT = {
-  companyNumber: "02706061",
+  companyNumber: "00000009",
   companyName: "TEST MICRO LIMITED",
   registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",

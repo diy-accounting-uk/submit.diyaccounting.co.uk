@@ -57,7 +57,7 @@ describe("http-simulator/scenarios/accounts-filing", () => {
 
   describe("the revised accounts rule", () => {
     test("acknowledges a revised document that states every fact of a revision by replacement", () => {
-      const result = submitAccounts({ ...VALID, submissionNumber: "REV001", companyNumber: "02706061", ixbrl: REVISED_BY_REPLACEMENT });
+      const result = submitAccounts({ ...VALID, submissionNumber: "REV001", companyNumber: "00000009", ixbrl: REVISED_BY_REPLACEMENT });
       expect(result.acknowledged).toBe(true);
     });
 
@@ -65,22 +65,22 @@ describe("http-simulator/scenarios/accounts-filing", () => {
       const result = submitAccounts({
         ...VALID,
         submissionNumber: "REV002",
-        companyNumber: "02706061",
+        companyNumber: "00000009",
         ixbrl: REVISED_BY_SUPPLEMENTARY_NOTE,
       });
       expect(result.acknowledged).toBe(true);
     });
 
     test("refuses a revised document with neither form of revision, with the validator's text", () => {
-      const result = submitAccounts({ ...VALID, submissionNumber: "REV003", companyNumber: "02706061", ixbrl: REVISED_WITH_NEITHER });
+      const result = submitAccounts({ ...VALID, submissionNumber: "REV003", companyNumber: "00000009", ixbrl: REVISED_WITH_NEITHER });
       expect(result.errors).toEqual([REVISED_ACCOUNTS_RULE_ERROR]);
       expect(result.errors[0]).toMatchObject({ raisedBy: "Accounts", number: 9999, type: "fatal" });
       expect(result.errors[0].text).toContain("either SupplementaryNote must be provided and be non-empty");
     });
 
     test("leaves the submission number of a refused revision free for the corrected document", () => {
-      submitAccounts({ ...VALID, submissionNumber: "REV004", companyNumber: "02706061", ixbrl: REVISED_WITH_NEITHER });
-      const corrected = submitAccounts({ ...VALID, submissionNumber: "REV004", companyNumber: "02706061", ixbrl: REVISED_BY_REPLACEMENT });
+      submitAccounts({ ...VALID, submissionNumber: "REV004", companyNumber: "00000009", ixbrl: REVISED_WITH_NEITHER });
+      const corrected = submitAccounts({ ...VALID, submissionNumber: "REV004", companyNumber: "00000009", ixbrl: REVISED_BY_REPLACEMENT });
       expect(corrected.acknowledged).toBe(true);
     });
 
@@ -96,7 +96,7 @@ describe("http-simulator/scenarios/accounts-filing", () => {
     });
 
     test("acknowledges an original document, whether its revised fact is false or absent", () => {
-      expect(submitAccounts({ ...VALID, submissionNumber: "ORI001", companyNumber: "02706061", ixbrl: ORIGINAL }).acknowledged).toBe(true);
+      expect(submitAccounts({ ...VALID, submissionNumber: "ORI001", companyNumber: "00000009", ixbrl: ORIGINAL }).acknowledged).toBe(true);
       expect(breaksRevisedAccountsRule(ixbrlDocument({}))).toBe(false);
     });
 
@@ -107,7 +107,7 @@ describe("http-simulator/scenarios/accounts-filing", () => {
 
   describe("submitAccounts", () => {
     test("acknowledges a valid submission with a 1 second poll interval", () => {
-      const result = submitAccounts({ ...VALID, submissionNumber: "AAA001", companyNumber: "02706061" });
+      const result = submitAccounts({ ...VALID, submissionNumber: "AAA001", companyNumber: "00000009" });
       expect(result.acknowledged).toBe(true);
       expect(result.pollInterval).toBe(1);
       expect(result.gatewayTimestamp).toBeTruthy();
