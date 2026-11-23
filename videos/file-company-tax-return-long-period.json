@@ -369,12 +369,13 @@
           "value": "95038"
         },
         {
-          "action": "click",
+          "action": "point",
           "target": "#includeComparatives",
           "scrollTo": {
             "role": "heading",
             "name": "Accounts"
-          }
+          },
+          "dwellMs": 500
         },
         {
           "action": "fill",

@@ -374,16 +374,17 @@
       "still": true,
       "steps": [
         {
-          "action": "click",
+          "action": "point",
           "target": "#includeComparatives",
           "scrollTo": {
             "role": "heading",
             "name": "Accounts"
           },
-          "caption": "Add last year's figures beside this year's.",
-          "headline": "Add last year",
+          "caption": "These are not the first accounts, so last year's figures go beside this year's.",
+          "headline": "Last year beside this year",
           "keyWord": "last",
-          "instruction": "Tick Include last year's figures, then enter last year's profit and loss and balance sheet."
+          "instruction": "Check that Include last year's figures is ticked: accounts that are not the company's first show last year's figures.",
+          "dwellMs": 500
         },
         {
           "action": "fill",
