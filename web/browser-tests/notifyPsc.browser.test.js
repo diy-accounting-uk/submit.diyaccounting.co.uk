@@ -494,3 +494,36 @@ test("an individual's Welsh surname with a lower-case ŷ is stopped before sendi
   await expect(status).not.toContainText("Prŷs");
   expect(filings).toHaveLength(0);
 });
+
+test("a personal code typed as PSC01 prints it, with a space either side of each slash, is taken whole", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await openForm(page);
+  await fillIndividual(page);
+  await page.getByLabel("The person notified as a PSC has verified their identity in accordance with the Companies Act 2006").check();
+  await page.locator("#personalCode").fill("cwm / ps83 / 2223");
+  await expect(page.locator("#personalCode")).toHaveValue("cwm / ps83 / 2223");
+  await page.locator("#influence").check();
+  await fillDates(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("CWMPS832223");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  expect(filings[0].personalCode).toBe("CWMPS832223");
+});
+
+test("a personal code that is too long once its groups are joined is refused before anything is sent", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await openForm(page);
+  await fillIndividual(page);
+  await page.getByLabel("The person notified as a PSC has verified their identity in accordance with the Companies Act 2006").check();
+  await page.locator("#personalCode").fill("CWM PS83 22234");
+  await page.locator("#influence").check();
+  await fillDates(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "A Companies House personal code is 11 characters: letters, then numbers.",
+  );
+  expect(filings).toHaveLength(0);
+});

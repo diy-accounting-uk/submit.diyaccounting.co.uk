@@ -184,6 +184,17 @@ describe("companiesHousePscChangeDetailsPost ingestHandler", () => {
     expect(JSON.stringify(writes.map((cmd) => cmd.input))).toContain('"kind":"psc-change-details"');
   });
 
+  test("files significant influence through a firm or a trust beside other controls held the same way, as PSC01 allows", async () => {
+    for (const naturesOfControl of [
+      ["SIGINFLUENCECONTROL_AS_FIRM", "OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM", "RIGHTTOAPPOINTANDREMOVEDIRECTORS_AS_FIRM"],
+      ["SIGINFLUENCECONTROL_AS_TRUST", "VOTINGRIGHTS_50TO75PERCENT_AS_TRUST"],
+      ["OWNERSHIPOFSHARES_25TO50PERCENT", "SIGINFLUENCECONTROL_AS_FIRM"],
+    ]) {
+      const response = await ingestHandler(buildEvent({ body: buildChangeBody({ naturesOfControl }) }));
+      expect(response.statusCode, `${naturesOfControl.join(", ")}: ${response.body}`).toBe(201);
+    }
+  });
+
   test("answers 400 in JSON, sending nothing, for no change, a bad control, a bad address or a confirmation before the change", async () => {
     for (const [overrides, message] of [
       [{ naturesOfControl: undefined }, "Invalid change - a change of details needs a change"],

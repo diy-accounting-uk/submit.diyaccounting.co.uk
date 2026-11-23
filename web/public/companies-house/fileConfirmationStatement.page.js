@@ -445,7 +445,7 @@ function buildDirectorRow(index, director) {
     textInput(`directorOtherForenames-${index}`, director.otherForenames, { spellcheck: "false" }),
     element("label", { for: `directorPersonalCode-${index}` }, window.siteText("ch.cs.personal-code", "Companies House personal code")),
     textInput(`directorPersonalCode-${index}`, "", {
-      "maxlength": "16",
+      "maxlength": "24",
       "spellcheck": "false",
       "data-gateway-text": "off",
     }),
@@ -933,7 +933,7 @@ function buildPscFollowUpRow({ director, index, psc }, matches) {
   input.type = "text";
   input.id = `pscPersonalCode-${index}`;
   input.dataset.gatewayText = "off";
-  input.maxLength = 16;
+  input.maxLength = 24;
   input.spellcheck = false;
   const buttonGroup = document.createElement("div");
   buttonGroup.className = "button-group";
