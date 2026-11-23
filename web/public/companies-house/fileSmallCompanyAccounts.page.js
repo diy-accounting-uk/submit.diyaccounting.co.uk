@@ -676,7 +676,7 @@ async function handleAccountsFormSubmit(event) {
   try {
     const preview = await window.renderMicroEntityAccounts(buildAccountsPayload());
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
-    document.getElementById("previewRendered").srcdoc = window.accountsFormSections.documentForFrame(preview.ixbrl);
+    window.accountsFormSections.showInFrame(document.getElementById("previewRendered"), preview.ixbrl);
     showView("previewView");
     document.getElementById("previewView").scrollIntoView();
     priorYearWarningShown = revisingFilletedAsFullWithoutPriorYear();

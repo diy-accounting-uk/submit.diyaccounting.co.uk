@@ -27,7 +27,8 @@ export const SITE_ORIGIN = "http://localhost:3000";
 export const SIGNED_IN_EMAIL = PEOPLE.samPatel.email;
 
 // apiHandler(url, request) returns an object to send as JSON, or undefined for an empty object.
-export async function serveRealSite(page, { signedIn = false, apiHandler = () => undefined } = {}) {
+// origin is the address the site is served at, for a page that shows its own address to the reader.
+export async function serveRealSite(page, { signedIn = false, apiHandler = () => undefined, origin = SITE_ORIGIN } = {}) {
   if (signedIn) {
     await page.addInitScript((email) => {
       try {
@@ -40,7 +41,7 @@ export async function serveRealSite(page, { signedIn = false, apiHandler = () =>
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (url.hostname !== "localhost") {
+    if (url.origin !== origin) {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
       return;
     }

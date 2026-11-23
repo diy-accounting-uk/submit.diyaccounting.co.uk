@@ -200,9 +200,10 @@ export function renderEmail({
   return { subject: cleanSubject, text, html };
 }
 
-function bundleName(catalog, bundleId) {
+// A bundle's name in the email's language: its Welsh name for a Welsh email when the catalogue has one.
+function bundleName(catalog, bundleId, language = "en") {
   const bundle = catalog?.bundles?.find((b) => b.id === bundleId);
-  return bundle?.name || bundleId || "your bundle";
+  return (language === "cy" && bundle?.nameCy) || bundle?.name || bundleId || "your bundle";
 }
 
 function formatDate(value, locale = "en-GB") {
@@ -473,6 +474,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
     }
     case "pass-generated": {
       const welsh = data.language === "cy";
+      const passName = bundleName(catalog, data.bundleId, welsh ? "cy" : "en");
       const passUrl = `${siteUrl(baseUrl, welsh ? "cy/pass.html" : "pass.html")}?pass=${encodeURIComponent(data.code)}`;
       const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       // A campaign pass names each bundle it grants, with the duration and tokens it sets; any other
@@ -480,7 +482,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       const terms = (data.grants ?? [{ bundleId: data.bundleId, summary: data.passSummary }]).map((grant) => {
         const bundle = catalog?.bundles?.find((b) => b.id === grant.bundleId);
         return {
-          name: bundleName(catalog, grant.bundleId),
+          name: bundleName(catalog, grant.bundleId, welsh ? "cy" : "en"),
           summary: grant.summary,
           tokensGranted: grant.tokens ?? bundle?.tokensGranted,
           timeout: grant.duration ?? bundle?.timeout,
@@ -498,11 +500,11 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       const printNote = welsh
         ? "Mae blaen a chefn y tocyn wedi’u hatodi fel ffeiliau i’w hargraffu: mae’r blaen yn dangos y geiriau, mae’r cefn yn dangos y cod QR."
         : "The front and back of the pass are attached as files to print: the front shows the words, the back shows the QR code.";
-      const subject = welsh ? `Tocyn i’w rannu: ${name}` : `A pass to share: ${name}`;
+      const subject = welsh ? `Tocyn i’w rannu: ${passName}` : `A pass to share: ${passName}`;
       return {
         ...renderEmail({
           subject,
-          preheader: welsh ? `Tocyn ar gyfer ${name} i’w roi i rywun arall.` : `A pass for the ${name} to give to someone else.`,
+          preheader: welsh ? `Tocyn ar gyfer ${passName} i’w roi i rywun arall.` : `A pass for the ${passName} to give to someone else.`,
           heading: subject,
           intro: passIssuerIntro(data, welsh),
           section: recipient.section,

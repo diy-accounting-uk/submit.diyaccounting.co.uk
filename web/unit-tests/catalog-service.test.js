@@ -312,6 +312,18 @@ describe("bundlePassSummary", () => {
     expect(bundlePassSummary({ passSummary: "open the operator dashboard" }, "cy")).toBe("open the operator dashboard");
   });
 
+  it("every catalogue bundle's Welsh name is the one the Welsh pages show", () => {
+    const catalogue = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf-8"));
+    const welsh = parseToml(readFileSync("i18n/cy.toml", "utf-8")).strings;
+    const pageNames = Object.fromEntries(
+      Object.entries(welsh)
+        .filter(([id]) => id.startsWith("chrome.bundle-"))
+        .map(([id, entry]) => [id.slice("chrome.bundle-".length), entry.cy]),
+    );
+    const catalogueNames = Object.fromEntries(catalogue.bundles.filter((entry) => entry.nameCy).map((entry) => [entry.id, entry.nameCy]));
+    expect(catalogueNames).toEqual(pageNames);
+  });
+
   it("every catalogue bundle that says what it lets you do says it in Welsh too", () => {
     const catalogue = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf-8"));
     const missing = catalogue.bundles.filter((entry) => entry.passSummary && !entry.passSummaryCy).map((entry) => entry.id);

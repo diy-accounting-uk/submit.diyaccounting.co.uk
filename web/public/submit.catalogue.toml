@@ -30,6 +30,7 @@ version = "1.1.0"
 [[bundles]]
 id = "default"
 name = "Default"
+nameCy = "Diofyn"
 enable = "never"
 allocation = "automatic"
 
@@ -43,6 +44,7 @@ allocation = "automatic"
 [[bundles]]
 id = "day-guest"
 name = "Day pass"
+nameCy = "Tocyn diwrnod"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -96,6 +98,7 @@ tokensGranted = 3
 [[bundles]]
 id = "week-guest"
 name = "Week pass"
+nameCy = "Tocyn wythnos"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -113,6 +116,7 @@ tokensGranted = 3
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
+nameCy = "Gwestai drwy wahoddiad"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -263,6 +267,7 @@ currency = "gbp"
 [[bundles]]
 id = "resident-guest"
 name = "Resident Guest"
+nameCy = "Gwestai Resident"
 passSummary = "submit VAT returns to HMRC"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF"
 levelName = "Guest"
@@ -282,6 +287,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro-comp"
 name = "Resident Tax Agent (Complimentary)"
+nameCy = "Resident Tax Agent (am ddim)"
 passSummary = "do everything in Resident Pro and manage a practice's clients, with no limit on tokens"
 passSummaryCy = "gwneud popeth yn Resident Pro a rheoli cleientiaid practis, heb derfyn ar gredyd (tokens)"
 includes = ["resident-tax-agent"]
@@ -300,6 +306,7 @@ tokensGranted = "unlimited"
 [[bundles]]
 id = "resident-vat-comp"
 name = "Resident VAT (Complimentary)"
+nameCy = "Resident VAT (am ddim)"
 passSummary = "submit VAT returns to HMRC and make pass links for other people"
 passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF a gwneud dolenni tocyn i bobl eraill"
 includes = ["resident-vat"]
@@ -319,6 +326,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-ltd-comp"
 name = "Resident Ltd (Complimentary)"
+nameCy = "Resident Ltd (am ddim)"
 passSummary = "file accounts and confirmation statements to Companies House"
 passSummaryCy = "ffeilio cyfrifon a datganiadau cadarnhau i Dŷ'r Cwmnïau"
 includes = ["resident-ltd"]
@@ -339,6 +347,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "operator"
 name = "Operator"
+nameCy = "Gweithredwr"
 passSummary = "open the operator dashboard"
 passSummaryCy = "agor dangosfwrdd y gweithredwr"
 levelName = "Operator"

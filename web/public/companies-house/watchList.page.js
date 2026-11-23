@@ -138,7 +138,7 @@ async function renderWatchList(list) {
   });
   if (list.length === 0) return;
   const table = document.createElement("table");
-  table.className = "data-table";
+  table.className = "data-table data-table--compact";
   const head = table.createTHead().insertRow();
   [
     window.siteText("ch.watch.column-company", "Company"),

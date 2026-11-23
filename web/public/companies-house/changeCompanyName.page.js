@@ -83,8 +83,14 @@ function updateLetter() {
   document.getElementById("letterGroup").style.display = document.getElementById("needsLetter").checked ? "block" : "none";
 }
 
-function optionText(selectId, value) {
-  return document.querySelector(`#${selectId} option[value="${value}"]`).textContent.trim().replace(/\s+/g, " ");
+// The letter the reader chose, and the words of a choice as the page shows them.
+function letterKind() {
+  return document.querySelector('input[name="letterKind"]:checked').value;
+}
+
+function letterKindText(value) {
+  const choice = document.querySelector(`input[name="letterKind"][value="${value}"]`);
+  return document.querySelector(`label[for="${choice.id}"]`).textContent.trim().replace(/\s+/g, " ");
 }
 
 // The register's search for each proposed name, made once per name: the lookup counts in the
@@ -144,10 +150,10 @@ async function handleChangeSubmit(event) {
     return;
   }
   const holder = await companyWithSameName(proposedName);
-  const lettered = document.getElementById("needsLetter").checked && document.getElementById("letterKind").value === "same-as-no-objection";
+  const lettered = document.getElementById("needsLetter").checked && letterKind() === "same-as-no-objection";
   if (holder && !lettered) {
     document.getElementById("needsLetter").checked = true;
-    document.getElementById("letterKind").value = "same-as-no-objection";
+    document.querySelector('input[name="letterKind"][value="same-as-no-objection"]').checked = true;
     updateLetter();
     showError(
       window.siteText(
@@ -179,7 +185,7 @@ async function handleChangeSubmit(event) {
     }
     try {
       letter = {
-        kind: document.getElementById("letterKind").value,
+        kind: letterKind(),
         fileName: file.name,
         size: file.size,
         contentBase64: await readLetter(file),
@@ -268,7 +274,7 @@ function renderReview() {
     window.siteText("ch.name.review-letter", "Supporting letter"),
     filing.letter
       ? window.siteText("ch.name.letter-summary", "{kind}: {file}", {
-          kind: optionText("letterKind", filing.letter.kind),
+          kind: letterKindText(filing.letter.kind),
           file: filing.letter.fileName,
         })
       : window.siteText("ch.name.no-letter", "None"),

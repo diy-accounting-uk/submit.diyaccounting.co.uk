@@ -11,7 +11,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { NOT_HELD_COMPANY_NUMBER, addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
+import { NOT_HELD_COMPANY_NUMBER, PEOPLE, addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/screenshots/company-drill-down");
@@ -522,15 +522,21 @@ test.describe("Company lookup drill-down past the newest filings", () => {
     const view = page.locator("#drillView");
     await expect(view).toContainText(`Micro company accounts made up to 30 April ${PREVIOUS_YEAR}`, { timeout: 15000 });
     await expect(view).toContainText(`Total exemption full accounts made up to 30 April ${EARLIER_YEAR}`);
-    await expect(view).toContainText("A description companies house has not published");
+    await expect(view).toContainText("A description Companies House has not published");
     await expect(view).not.toContainText("Accounts with accounts type");
   });
 
-  test("the Welsh filing history marks Companies House's English words as English", async ({ page }) => {
+  test("the Welsh filing history gives the filings it opens in Welsh and marks Companies House's other words as English", async ({
+    page,
+  }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/cy/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
-    const description = page.locator("#drillView a", { hasText: "Micro company accounts made up to" });
-    await expect(description).toHaveAttribute("lang", "en", { timeout: 15000 });
+    const view = page.locator("#drillView");
+    await expect(
+      view.locator("a", { hasText: `Cyfrifon micro-endid wedi’u gwneud hyd at 30 Ebrill ${PREVIOUS_YEAR}` }),
+    ).not.toHaveAttribute("lang", "en", { timeout: 15000 });
+    await expect(view).not.toContainText("Micro company accounts");
+    await expect(view.locator("a", { hasText: "Total exemption full accounts made up to" })).toHaveAttribute("lang", "en");
     await shootAtWidths(page, "cy-filing-history");
   });
 
@@ -1145,7 +1151,8 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     const table = page.locator("#drillView table");
     await expect(table).toContainText("Cyfarwyddwr", { timeout: 15000 });
     await expect(table).toContainText("Ysgrifennydd corfforaethol");
-    await expect(table).toContainText("Llp member");
+    await expect(table).toContainText("Aelod o bartneriaeth atebolrwydd cyfyngedig");
+    await expect(table).not.toContainText("Llp member");
     await expect(table).not.toContainText("Director");
     await expect(table).not.toContainText("Corporate secretary");
     await expect(page.locator("#drillView .remove-officer-links a").first()).toHaveText("Tynnu BRAMWELL, Eleanor (Cyfarwyddwr)");
@@ -1155,6 +1162,13 @@ test.describe("Company lookup drill-down officer resignation links", () => {
   test("the officers table words a CIC's manager, a UK Societas's organ members and an overseas company's authorised persons", async ({
     page,
   }) => {
+    // People and a company of the simulator's register, as the register writes an officer's name.
+    const ROLE_HOLDERS = [
+      `${PEOPLE.priyaHaldane.surname.toUpperCase()}, ${PEOPLE.priyaHaldane.forename}`,
+      `${PEOPLE.owenPrys.surname.toUpperCase()}, ${PEOPLE.owenPrys.forename}`,
+      registerCompany("00000009").name,
+      `${PEOPLE.catrionaMacleod.surname.toUpperCase()}, ${PEOPLE.catrionaMacleod.forename}`,
+    ];
     const roles = [
       ["cic-manager", "CIC manager", "Rheolwr CBC"],
       ["member-of-a-management-organ", "Member of a management organ", "Aelod o organ reoli"],
@@ -1168,7 +1182,7 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     const officers = {
       ...OFFICERS,
       activeCount: roles.length,
-      officers: roles.map(([officerRole], index) => ({ name: `OFFICER, Number ${index + 1}`, officerRole, appointedOn: "2016-02-01" })),
+      officers: roles.map(([officerRole], index) => ({ name: ROLE_HOLDERS[index], officerRole, appointedOn: "2016-02-01" })),
     };
     await serveSite(page, { officers });
     const roleCells = page.locator("#drillView table tbody tr td:nth-child(2)");
@@ -1177,6 +1191,7 @@ test.describe("Company lookup drill-down officer resignation links", () => {
       roles.map(([, english]) => english),
       { timeout: 15000 },
     );
+    await expect(page.locator("#drillView table tbody tr td:nth-child(1)")).toHaveText(ROLE_HOLDERS);
     await page.goto(`${BASE}/cy/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
     await expect(roleCells).toHaveText(
       roles.map(([, , welsh]) => welsh),

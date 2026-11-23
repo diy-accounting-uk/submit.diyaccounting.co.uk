@@ -4014,9 +4014,9 @@ cy = '''Gweld eich rhwymedigaethau TAW'''
 hash = "3d2c65952b63"
 cy = '''Gweld eich taliadau TAW'''
 
-[strings."receipts.field-name"]
-hash = "4d5e23e57ad1"
-cy = '''Enw’r dderbynneb'''
+[strings."receipts.field-file-name"]
+hash = "3efed3de9d4b"
+cy = '''Enw’r ffeil'''
 
 [strings."receipts.details"]
 hash = "02f7cc377c23"
@@ -17084,6 +17084,60 @@ cy = '''Hysbyswyd'''
 [strings."ch.drill.made-up-to"]
 hash = "0003dc6e9112"
 cy = '''{description}, wedi’i wneud hyd at {date}'''
+
+# The Welsh of the filing descriptions the drill-down opens, and of an LLP's officer roles.
+
+[strings."ch.drill.role-llp-member"]
+hash = "746b0dafce4e"
+cy = '''Aelod o bartneriaeth atebolrwydd cyfyngedig'''
+
+[strings."ch.drill.role-llp-designated-member"]
+hash = "e8866b01584e"
+cy = '''Aelod dynodedig o bartneriaeth atebolrwydd cyfyngedig'''
+
+[strings."ch.drill.role-corporate-llp-member"]
+hash = "bfdf4720830a"
+cy = '''Aelod corfforaethol o bartneriaeth atebolrwydd cyfyngedig'''
+
+[strings."ch.drill.role-corporate-llp-designated-member"]
+hash = "3d32bfe3a305"
+cy = '''Aelod dynodedig corfforaethol o bartneriaeth atebolrwydd cyfyngedig'''
+
+[strings."ch.drill.description-dormant"]
+hash = "b2b969dc04c7"
+cy = '''Cyfrifon cwmni segur wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.description-full"]
+hash = "33c0d23b7a77"
+cy = '''Cyfrifon llawn wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.description-small"]
+hash = "b21343587a1e"
+cy = '''Cyfrifon cwmni bach wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.description-micro-entity"]
+hash = "3e8b109e75a9"
+cy = '''Cyfrifon micro-endid wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.description-audited-abridged"]
+hash = "ab7daa8cb9e7"
+cy = '''Cyfrifon talfyredig wedi’u harchwilio, wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.description-unaudited-abridged"]
+hash = "4199e12c23ea"
+cy = '''Cyfrifon talfyredig heb eu harchwilio, wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.description-confirmation-no-updates"]
+hash = "04c63588321b"
+cy = '''Datganiad cadarnhau a wnaed ar {date} heb ddiweddariadau'''
+
+[strings."ch.drill.description-confirmation-updates"]
+hash = "aba83b996d66"
+cy = '''Datganiad cadarnhau a wnaed ar {date} gyda diweddariadau'''
+
+[strings."ch.drill.description-confirmation"]
+hash = "e463a4ec4f9b"
+cy = '''Datganiad cadarnhau a wnaed ar {date}'''
 
 [strings."ch.drill.filing-history"]
 hash = "61e2e5e9025e"

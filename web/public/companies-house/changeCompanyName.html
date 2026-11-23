@@ -186,13 +186,17 @@
                 (checked 22 November 2026)
               </footer>
             </blockquote>
-            <div class="form-group">
-              <label for="letterKind">What the letter gives</label>
-              <select id="letterKind" name="letterKind">
-                <option value="sensitive-word-permission">Permission to use a sensitive word or expression</option>
-                <option value="same-as-no-objection">No objection from the company or LLP that has the same name</option>
-              </select>
-            </div>
+            <fieldset class="form-group" id="letterKind">
+              <legend>What the letter gives</legend>
+              <div class="choice">
+                <input type="radio" name="letterKind" id="letterKind-sensitive-word" value="sensitive-word-permission" checked />
+                <label for="letterKind-sensitive-word">Permission to use a sensitive word or expression</label>
+              </div>
+              <div class="choice">
+                <input type="radio" name="letterKind" id="letterKind-same-name" value="same-as-no-objection" />
+                <label for="letterKind-same-name">No objection from the company or LLP that has the same name</label>
+              </div>
+            </fieldset>
             <div class="form-group">
               <label for="letterFile">The letter, as a PDF</label>
               <p id="letterFile-hint" class="hint">At most 3 MB. It goes to Companies House with the form and is not kept on this site.</p>

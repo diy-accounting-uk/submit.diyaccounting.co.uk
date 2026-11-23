@@ -191,6 +191,13 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#letterGroup blockquote p").first()).toHaveAttribute("lang", "en-GB");
     await page.locator("#letterFile").setInputFiles(LETTER);
     expect(await noSideScroll(page)).toBe(true);
+    await expect(page.getByLabel("Caniatâd i ddefnyddio gair neu ymadrodd sensitif")).toBeChecked();
+    const clipped = await page
+      .locator("#letterKind label")
+      .evaluateAll((labels) =>
+        labels.filter((label) => label.scrollWidth > label.clientWidth + 1).map((label) => label.textContent.trim()),
+      );
+    expect(clipped).toEqual([]);
     await shoot(page, "form-letter-cy");
 
     await page.getByRole("button", { name: "Parhau" }).click();
@@ -275,7 +282,7 @@ test("a letter of no objection to a same-as name is sent as that kind", async ({
   await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
   await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "GLENMORE ENGINEERING (SCOTLAND) LIMITED" });
   await page.getByLabel("The name needs a supporting letter").check();
-  await page.locator("#letterKind").selectOption("same-as-no-objection");
+  await page.getByLabel("No objection from the company or LLP that has the same name").check();
   await page.locator("#letterFile").setInputFiles(LETTER);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#reviewList")).toContainText(
@@ -517,7 +524,7 @@ test("a name the same as another company's by Companies House's rules is caught,
   await expect(page.locator("#statusMessagesContainer")).toContainText(
     "Companies House lists THE BRAMWELL & TENNANT TRADING CO CYF (00000009) with this name.",
   );
-  await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
+  await expect(page.locator('input[name="letterKind"][value="same-as-no-objection"]')).toBeChecked();
   expect(filings).toHaveLength(0);
 });
 
@@ -540,7 +547,7 @@ test("a name another company holds is caught before sending, and asks for that c
     "Companies House lists BRAMWELL TENNANT TRADING LTD (00000009) with this name.",
   );
   await expect(page.locator("#letterGroup")).toBeVisible();
-  await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
+  await expect(page.locator('input[name="letterKind"][value="same-as-no-objection"]')).toBeChecked();
   await expect(page.locator("#formView")).toBeVisible();
 
   await page.locator("#letterFile").setInputFiles(LETTER);
@@ -562,6 +569,6 @@ test("a name written with a number word is caught as the same as one written wit
   await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "Two Trees Limited" });
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText("Companies House lists 2 TREES LTD (08888888) with this name.");
-  await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
+  await expect(page.locator('input[name="letterKind"][value="same-as-no-objection"]')).toBeChecked();
   expect(filings).toHaveLength(0);
 });

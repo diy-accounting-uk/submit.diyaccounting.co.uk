@@ -224,8 +224,8 @@ test("a link from the company lookup chooses its PSC by the register's id, apart
 
 test("a link naming a PSC whose name two current PSCs share chooses neither, so the reader chooses", async ({ page }) => {
   const namesake = (month) => ({
-    name: "Jo Smith",
-    nameElements: { forename: "Jo", surname: "Smith" },
+    name: "Owen Prys",
+    nameElements: { forename: "Owen", surname: "Prys" },
     kind: "individual-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2016-04-06",
@@ -233,7 +233,7 @@ test("a link naming a PSC whose name two current PSCs share chooses neither, so 
     dateOfBirth: { month, year: 1970 },
   });
   await serveSite(page, { pscs: [namesake(1), namesake(2)] });
-  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Jo%20Smith`, { waitUntil: "networkidle" });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Owen%20Prys`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
   await expect(page.locator('#pscChoices input[name="psc"]')).toHaveCount(2);
   await expect(page.locator('#pscChoices input[name="psc"]:checked')).toHaveCount(0);
@@ -291,6 +291,8 @@ test("an accepted filing links to its receipt, which the receipts page opens", a
   await expect(page).toHaveURL(/\/hmrc\/receipt\/receipts\.html\?receipt=/);
   await expect(page.locator("#receiptDisplay")).toBeVisible();
   await expect(page.locator("#receiptContent")).toContainText("000123");
+  await expect(page.locator("#receiptContent")).toContainText("File name");
+  await expect(page.locator("#receiptContent")).not.toContainText("Receipt name");
 });
 
 for (const [language, prefix, lookUp, cont, refusal] of [
@@ -370,8 +372,8 @@ test("a refusal the page has no words for shows the route's message", async ({ p
 // Two current PSCs of one name, told apart only by the month and year of birth the register gives.
 const NAMESAKES = [
   {
-    name: "Jo Smith",
-    nameElements: { forename: "Jo", surname: "Smith" },
+    name: "Owen Prys",
+    nameElements: { forename: "Owen", surname: "Prys" },
     kind: "individual-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2016-04-06",
@@ -379,8 +381,8 @@ const NAMESAKES = [
     dateOfBirth: { month: 6, year: 1985 },
   },
   {
-    name: "Jo Smith",
-    nameElements: { forename: "Jo", surname: "Smith" },
+    name: "Owen Prys",
+    nameElements: { forename: "Owen", surname: "Prys" },
     kind: "individual-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2019-09-01",
@@ -395,30 +397,30 @@ test("two PSCs of one name and one month of birth are told apart by the date eac
   await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
   await expect(page.locator("#pscChoices label")).toHaveText([
-    "Jo Smith, born June 1985, notified 6 April 2016 (Individual)",
-    "Jo Smith, born June 1985, notified 1 September 2019 (Individual)",
+    "Owen Prys, born June 1985, notified 6 April 2016 (Individual)",
+    "Owen Prys, born June 1985, notified 1 September 2019 (Individual)",
   ]);
 });
 
 test("two PSCs of one name are told apart by month and year of birth, and a link naming that name chooses neither", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings, pscs: NAMESAKES });
-  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Jo%20Smith`, { waitUntil: "networkidle" });
+  await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Owen%20Prys`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
   await expect(page.locator("#pscChoices label")).toHaveText([
-    "Jo Smith, born June 1985 (Individual)",
-    "Jo Smith, born February 1990 (Individual)",
+    "Owen Prys, born June 1985 (Individual)",
+    "Owen Prys, born February 1990 (Individual)",
   ]);
   await expect(page.locator('#pscChoices input[name="psc"]:checked')).toHaveCount(0);
-  await page.getByLabel("Jo Smith, born February 1990 (Individual)").check();
+  await page.getByLabel("Owen Prys, born February 1990 (Individual)").check();
   await page.locator("#cessationDate").fill("2026-11-01");
   await page.locator("#confirmationDate").fill("2026-11-03");
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#reviewList")).toContainText("Jo Smith, born February 1990 (Individual)");
+  await expect(page.locator("#reviewList")).toContainText("Owen Prys, born February 1990 (Individual)");
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect.poll(() => filings.length).toBe(1);
-  expect(filings[0]).toMatchObject({ surname: "Smith", dobMonth: 2, dobYear: 1990 });
+  expect(filings[0]).toMatchObject({ surname: "Prys", dobMonth: 2, dobYear: 1990 });
 });
 
 test("three PSCs of one name, two born in the same month, are told apart by the date Companies House was notified", async ({ page }) => {
@@ -428,8 +430,8 @@ test("three PSCs of one name, two born in the same month, are told apart by the 
   await page.goto(`${SITE}/companies-house/ceasePsc.html?companyNumber=00000001`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
   await expect(page.locator("#pscChoices label")).toHaveText([
-    "Jo Smith, born June 1985, notified 6 April 2016 (Individual)",
-    "Jo Smith, born February 1990 (Individual)",
-    "Jo Smith, born June 1985, notified 15 March 2021 (Individual)",
+    "Owen Prys, born June 1985, notified 6 April 2016 (Individual)",
+    "Owen Prys, born February 1990 (Individual)",
+    "Owen Prys, born June 1985, notified 15 March 2021 (Individual)",
   ]);
 });

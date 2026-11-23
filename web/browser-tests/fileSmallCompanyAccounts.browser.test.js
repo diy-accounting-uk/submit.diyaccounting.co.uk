@@ -27,7 +27,7 @@ const PAGE_PATH = "companies-house/fileSmallCompanyAccounts.html";
 
 // The company the form opens: its first accounts by default, so the form leaves out the prior year;
 // a company with accounts on the register already shows the prior year.
-const FIRST_ACCOUNTS_COMPANY = { companyNumber: "00000001", companyName: "TEST SMALL LTD", dateOfCreation: "2025-04-01" };
+const FIRST_ACCOUNTS_COMPANY = { companyNumber: "00000001", companyName: registerCompany("00000001").name, dateOfCreation: "2025-04-01" };
 const ESTABLISHED_COMPANY = { ...FIRST_ACCOUNTS_COMPANY, dateOfCreation: "2019-04-01", accountsLastPeriodStart: "2024-04-01" };
 
 async function openFormView(page, { established = false } = {}) {
@@ -350,6 +350,7 @@ test.describe("File small company accounts page", () => {
       document.getElementById("formCompanyName").textContent = company.companyName;
       document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     });
+    await expect(page.locator("#formCompanyName")).toHaveText("HARBOUR LANE JOINERY LIMITED");
     await screenshotAtBothWidths(page, "small-original-share-capital");
   });
 

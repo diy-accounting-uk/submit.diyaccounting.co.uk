@@ -326,6 +326,30 @@ export const SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LABELS = [
   "Profit for the financial year",
 ];
 
+/**
+ * A test-service case moved onto a company of the simulator's register and one of its directors, so
+ * a page a reader sees names no real company or person.
+ * @param {object} testCase - a case of scripts/fixtures/companies-house-test-service-cases.json
+ * @param {{number: string, name: string, address: object}} company - a company of app/http-simulator/fixtures/register.js
+ * @param {{forename: string, surname: string}} directorPerson - a person of that file's PEOPLE
+ * @param {object} [registeredOffice] - the office the accounts state; the company's office on the register when not given
+ */
+export function onRegisterCompany(testCase, company, directorPerson, registeredOffice) {
+  const { premises, street, locality, postalCode, country } = company.address;
+  return {
+    ...testCase,
+    companyNumber: company.number,
+    companyName: company.name,
+    registeredOffice: registeredOffice ?? {
+      addressLine1: [premises, street].filter(Boolean).join(" "),
+      cityOrTown: locality,
+      postalCode,
+      country,
+    },
+    director: { ...testCase.director, name: `${directorPerson.forename} ${directorPerson.surname}` },
+  };
+}
+
 export function microInputFromTestServiceCase(testCase) {
   return {
     companyNumber: testCase.companyNumber,

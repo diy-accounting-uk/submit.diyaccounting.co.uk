@@ -10,7 +10,8 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { microInputFromTestServiceCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { microInputFromTestServiceCase, onRegisterCompany } from "@app/test-helpers/accountsDocumentCases.js";
+import { PEOPLE, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
@@ -23,7 +24,14 @@ const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const PAGE_PATH = "companies-house/fileMicroEntityAccounts.html";
 const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
 const CASES = JSON.parse(fs.readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8"));
-const microInput = (name) => microInputFromTestServiceCase(CASES.find((testCase) => testCase.name === name));
+// The micro-entity case is DIY Accounting Limited's own: a page here shows it on the register's joinery.
+const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
+const microInput = (name) => {
+  const testCase = CASES.find((entry) => entry.name === name);
+  return microInputFromTestServiceCase(
+    testCase.companyNumber === "06846849" ? onRegisterCompany(testCase, JOINERY, PEOPLE.eleanorBramwell) : testCase,
+  );
+};
 
 function serveFile(page, pattern, file) {
   return page.route(pattern, (route) =>

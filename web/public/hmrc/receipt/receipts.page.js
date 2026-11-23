@@ -495,7 +495,7 @@ async function displayReceiptTable(data, name) {
     const row = { ...entry, value, kind: isAmount ? "money" : "text" };
     return box ? { ...row, label: box.label, definition: box.definition, source: box.source } : row;
   });
-  const rows = [{ field: "receiptName", label: siteText("receipts.field-name", "Receipt name"), value: name, kind: "text" }, ...dataRows];
+  const rows = [{ field: "receiptName", label: siteText("receipts.field-file-name", "File name"), value: name, kind: "text" }, ...dataRows];
 
   const showCopy = isVatReceipt(data);
   document.getElementById("receiptHeading").hidden = showCopy;

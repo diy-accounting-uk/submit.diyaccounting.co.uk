@@ -225,6 +225,24 @@ describe("lib/customerEmailTemplates", () => {
       expect(m.passQr.physical).toBe(false);
     });
 
+    test("a Welsh pass email names the bundle by its Welsh name", () => {
+      const m = buildCustomerEmail({
+        kind: "pass-generated",
+        data: {
+          ...passData,
+          passTypeId: "digital-pass",
+          generatedBy: "user",
+          language: "cy",
+          passSummary: "cyflwyno Ffurflenni TAW i CThEF",
+        },
+        baseUrl,
+        catalog: { bundles: [{ ...passCatalog.bundles[0], nameCy: "Tocyn wythnos" }] },
+      });
+      expect(m.subject).toBe("Tocyn i’w rannu: Tocyn wythnos");
+      expect(m.text).toContain("Mae’n rhoi Tocyn wythnos:");
+      expect(m.text).not.toContain("Week pass");
+    });
+
     test("the section for the person who gets the pass says what it gives and how to redeem it", () => {
       const m = build({ passTypeId: "digital-pass", generatedBy: "user" });
       expect(m.text).toContain("For the person who gets this pass");

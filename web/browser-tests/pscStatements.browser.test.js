@@ -261,8 +261,8 @@ test("a statement that a PSC failed to comply with a section 790E notice names t
 test("two PSCs of one name are told apart by their month and year of birth, and the one chosen is named", async ({ page }) => {
   const filings = [];
   const namesake = (month, year) => ({
-    name: "Jo Smith",
-    nameElements: { forename: "Jo", surname: "Smith" },
+    name: "Owen Prys",
+    nameElements: { forename: "Owen", surname: "Prys" },
     kind: "individual-person-with-significant-control",
     naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
     notifiedOn: "2016-04-06",
@@ -275,16 +275,16 @@ test("two PSCs of one name are told apart by their month and year of birth, and 
   await page.getByLabel("Give a statement").check();
   await page.locator("#notify-790e").check();
   await expect(page.locator("#pscChoices label")).toHaveText([
-    "Jo Smith, born January 1970 (Individual)",
-    "Jo Smith, born June 1985 (Individual)",
+    "Owen Prys, born January 1970 (Individual)",
+    "Owen Prys, born June 1985 (Individual)",
   ]);
-  await page.getByLabel("Jo Smith, born June 1985 (Individual)").check();
+  await page.getByLabel("Owen Prys, born June 1985 (Individual)").check();
   await dateAndCode(page, "2026-11-01");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#reviewList")).toContainText("Jo Smith, born June 1985 (Individual)");
+  await expect(page.locator("#reviewList")).toContainText("Owen Prys, born June 1985 (Individual)");
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 15000 });
-  expect(filings[0]).toMatchObject({ surname: "Smith", dobMonth: 6, dobYear: 1985 });
+  expect(filings[0]).toMatchObject({ surname: "Prys", dobMonth: 6, dobYear: 1985 });
 });
 
 test("a withdrawal of a statement given before the present rules is sent with its date", async ({ page }) => {

@@ -827,8 +827,8 @@ function slugText(slug) {
 }
 
 // The officer roles the register gives a company, in the reader's language. The English is the
-// register's role as slugText writes it; a role this list does not hold (an LLP's, a partnership's,
-// an overseas entity's) reads as the register's words.
+// register's role as slugText writes it; a role this list does not hold (a partnership's, an
+// overseas entity's) reads as the register's words.
 const COMPANY_OFFICER_ROLES = {
   "director": () => window.siteText("ch.drill.role-director", "Director"),
   "corporate-director": () => window.siteText("ch.drill.role-corporate-director", "Corporate director"),
@@ -851,6 +851,12 @@ const COMPANY_OFFICER_ROLES = {
   "member-of-an-administrative-organ": () => window.siteText("ch.drill.role-administrative-organ", "Member of an administrative organ"),
   "corporate-member-of-an-administrative-organ": () =>
     window.siteText("ch.drill.role-corporate-administrative-organ", "Corporate member of an administrative organ"),
+  // A limited liability partnership's members.
+  "llp-member": () => window.siteText("ch.drill.role-llp-member", "LLP member"),
+  "llp-designated-member": () => window.siteText("ch.drill.role-llp-designated-member", "LLP designated member"),
+  "corporate-llp-member": () => window.siteText("ch.drill.role-corporate-llp-member", "Corporate LLP member"),
+  "corporate-llp-designated-member": () =>
+    window.siteText("ch.drill.role-corporate-llp-designated-member", "Corporate LLP designated member"),
   // The persons an overseas company names for its UK establishment.
   "person-authorised-to-accept": () => window.siteText("ch.drill.role-authorised-to-accept", "Person authorised to accept"),
   "person-authorised-to-represent": () => window.siteText("ch.drill.role-authorised-to-represent", "Person authorised to represent"),
@@ -1541,7 +1547,7 @@ function filingLink(companyNumber, filing, text) {
 // A description the register's enumeration lacks, in the words of its description key.
 function descriptionFromKey(filing) {
   const madeUpDate = filing.descriptionValues?.made_up_date;
-  const text = slugText(filing.description);
+  const text = slugText(filing.description).replace(/\bcompanies house\b/gi, "Companies House");
   return madeUpDate
     ? window.siteText("ch.drill.made-up-to", "{description}, made up to {date}", {
         description: text,
@@ -1563,9 +1569,40 @@ function markEnglish(content) {
   return span;
 }
 
+// The descriptions of the filings the drill-down opens, in Welsh for the Welsh page, where the
+// glossary of i18n/cy.toml settles the Welsh for the kind of accounts. Any other description reads
+// in Companies House's English words.
+const WELSH_FILING_DESCRIPTIONS = {
+  "accounts-with-accounts-type-dormant": (date) =>
+    window.siteText("ch.drill.description-dormant", "Accounts for a dormant company made up to {date}", { date }),
+  "accounts-with-accounts-type-full": (date) => window.siteText("ch.drill.description-full", "Full accounts made up to {date}", { date }),
+  "accounts-with-accounts-type-small": (date) =>
+    window.siteText("ch.drill.description-small", "Accounts for a small company made up to {date}", { date }),
+  "accounts-with-accounts-type-micro-entity": (date) =>
+    window.siteText("ch.drill.description-micro-entity", "Micro company accounts made up to {date}", { date }),
+  "accounts-with-accounts-type-audited-abridged": (date) =>
+    window.siteText("ch.drill.description-audited-abridged", "Audited abridged accounts made up to {date}", { date }),
+  "accounts-with-accounts-type-unaudited-abridged": (date) =>
+    window.siteText("ch.drill.description-unaudited-abridged", "Unaudited abridged accounts made up to {date}", { date }),
+  "confirmation-statement-with-no-updates": (date) =>
+    window.siteText("ch.drill.description-confirmation-no-updates", "Confirmation statement made on {date} with no updates", { date }),
+  "confirmation-statement-with-updates": (date) =>
+    window.siteText("ch.drill.description-confirmation-updates", "Confirmation statement made on {date} with updates", { date }),
+  "confirmation-statement-with-made-up-date": (date) =>
+    window.siteText("ch.drill.description-confirmation", "Confirmation statement made on {date}", { date }),
+};
+
+function welshFilingDescription(filing) {
+  const madeUpDate = filing.descriptionValues?.made_up_date;
+  if (!isWelshPage() || !madeUpDate || !Object.hasOwn(WELSH_FILING_DESCRIPTIONS, filing.description)) return null;
+  return WELSH_FILING_DESCRIPTIONS[filing.description](labels().formatCompanyDate(madeUpDate));
+}
+
 // A filing's description, in Companies House's own words where its enumeration has them, as a link
 // to the view the filing opens when a company number is given.
 function filingDescription(filing, companyNumber) {
+  const welsh = welshFilingDescription(filing);
+  if (welsh !== null) return companyNumber ? filingLink(companyNumber, filing, welsh) : welsh;
   const register = window.companiesHouseWords.registerDescription(filing, (isoDate) => labels().formatCompanyDate(isoDate));
   const text = register ?? descriptionFromKey(filing);
   const content = companyNumber ? filingLink(companyNumber, filing, text) : text;

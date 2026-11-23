@@ -203,6 +203,13 @@ test.describe("Company watch list", () => {
       expect(account.mostInFlight).toBe(1);
       const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       expect(scrollsSideways).toBe(false);
+      const overhang = await page.evaluate(() => {
+        const card = document.getElementById("watchListTable").closest(".results-container");
+        const style = getComputedStyle(card);
+        const contentRight = card.getBoundingClientRect().right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth);
+        return document.querySelector("#watchListTable table").getBoundingClientRect().right - contentRight;
+      });
+      expect(overhang).toBeLessThanOrEqual(0.5);
       await shoot(page, "three-companies");
     });
 

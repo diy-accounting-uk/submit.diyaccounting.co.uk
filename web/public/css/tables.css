@@ -44,6 +44,14 @@ caption {
   border-bottom: 1px solid var(--c-rule-subtle);
 }
 
+/* A table of many narrow columns, such as the watch list: half the space between columns, so it
+   fits a card at desktop width. */
+.data-table--compact th,
+.data-table--compact td {
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
 .data-table .receipt-nowrap {
   white-space: nowrap;
 }

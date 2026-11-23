@@ -7,7 +7,10 @@
 
 import { test, expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveRealSite, SITE_ORIGIN } from "./serveRealSite.js";
+import { serveRealSite } from "./serveRealSite.js";
+
+// The site's own address, which the page writes into the pass link a reader copies.
+const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -68,6 +71,7 @@ const eventPass = {
 async function openPage(page, { passes, onCreate }) {
   const created = [];
   await serveRealSite(page, {
+    origin: SITE_ORIGIN,
     signedIn: true,
     apiHandler: (url, request) => {
       if (url.pathname === "/api/v1/pass/campaign") return { passes: passes(), count: passes().length };

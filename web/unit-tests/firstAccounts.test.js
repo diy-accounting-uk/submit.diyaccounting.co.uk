@@ -73,14 +73,14 @@ describe("when small company accounts may leave out the prior year", () => {
   test("the company a form holds keeps the profile facts that say whether a period is its first", () => {
     const profile = {
       companyNumber: "00000001",
-      companyName: "TEST SMALL LTD",
+      companyName: "HARBOUR LANE JOINERY LIMITED",
       dateOfCreation: "2019-04-01",
       accountsLastPeriodEnd: "2025-03-31",
       registeredOffice: { postalCode: "AB1 2CD" },
     };
     expect(companyFromProfile(profile)).toEqual({
       companyNumber: "00000001",
-      companyName: "TEST SMALL LTD",
+      companyName: "HARBOUR LANE JOINERY LIMITED",
       dateOfCreation: "2019-04-01",
       accountsLastPeriodEnd: "2025-03-31",
     });

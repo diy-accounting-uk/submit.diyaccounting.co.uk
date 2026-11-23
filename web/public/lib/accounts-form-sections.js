@@ -133,8 +133,24 @@ table.statement td.positive { padding-right: 1.5mm; }
     return xhtml.includes("</head>") ? xhtml.replace("</head>", `${NARROW_FRAME_STYLE}</head>`) : xhtml;
   }
 
+  // Shows the rendered accounts in the preview frame at the document's full height, so the page
+  // scrolls through them and no line is cut at the frame's bottom edge. The frame runs no script;
+  // allow-same-origin lets this page read the document's height.
+  function showInFrame(frame, xhtml) {
+    frame.addEventListener(
+      "load",
+      () => {
+        const height = frame.contentDocument?.documentElement?.scrollHeight;
+        if (height) frame.style.height = `${height + frame.offsetHeight - frame.clientHeight}px`;
+      },
+      { once: true },
+    );
+    frame.srcdoc = documentForFrame(xhtml);
+  }
+
   window.accountsFormSections = {
     documentForFrame,
+    showInFrame,
     fillRegisteredOffice,
     fillFiledRegisteredOffice,
     readRegisteredOffice,

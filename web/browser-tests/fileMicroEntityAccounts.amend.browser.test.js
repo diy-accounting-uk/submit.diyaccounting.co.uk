@@ -10,13 +10,13 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { accountsDocumentCases, microInputFromTestServiceCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { accountsDocumentCases, microInputFromTestServiceCase, onRegisterCompany } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
-import { addressLine1, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+import { addressLine1, PEOPLE, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -30,7 +30,6 @@ const JOINERY = registerCompany(REGISTER_COMPANY_NUMBERS[0]);
 const JOINERY_OFFICE = `${addressLine1(JOINERY.address)}, ${JOINERY.address.locality}, ${JOINERY.address.postalCode}`;
 
 const cases = accountsDocumentCases();
-const microCase = cases.find((candidate) => candidate.name === "micro-entity-accounts");
 const dormantCase = cases.find((candidate) => candidate.name === "micro-entity-accounts-dormant");
 const smallCase = cases.find((candidate) => candidate.name === "small-company-accounts");
 
@@ -52,9 +51,15 @@ function serveFile(page, pattern, file, contentType = "application/javascript") 
   );
 }
 
-const MICRO_TEST_CASE = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), "scripts/fixtures/companies-house-test-service-cases.json"), "utf8"),
-).find((testCase) => testCase.name === "micro-entity-accounts");
+const MICRO_TEST_CASE = onRegisterCompany(
+  JSON.parse(fs.readFileSync(path.join(process.cwd(), "scripts/fixtures/companies-house-test-service-cases.json"), "utf8")).find(
+    (testCase) => testCase.name === "micro-entity-accounts",
+  ),
+  JOINERY,
+  PEOPLE.eleanorBramwell,
+  // The office the joinery's accounts were filed with, before it moved to the office on the register.
+  { addressLine1: "3 Church Street", cityOrTown: "Whitby", postalCode: "YO22 4DE", country: "England" },
+);
 const ACCOUNTANTS_REPORT = { accountantsName: "Jones & Partners", statement: "We compiled these accounts from the company's records." };
 
 function microDocument({ language = "en", accountantsReport, directorsAdvances, balanceSheet } = {}) {
@@ -192,7 +197,7 @@ async function fillRevisionTexts(page) {
 
 test.describe("File micro-entity accounts page - revising accounts from a receipt", () => {
   test("opens with the registered office the filed accounts state, which the customer can change", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#revisionSection")).toBeVisible();
     await expect(page.locator("#officeAddressLine1")).toHaveValue(MICRO_TEST_CASE.registeredOffice.addressLine1);
     await expect(page.locator("#officeCityOrTown")).toHaveValue(MICRO_TEST_CASE.registeredOffice.cityOrTown);
@@ -202,7 +207,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("says under the office fields when the register's office today differs from the filed office", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#officeHint")).toHaveText("Filled in from the accounts you filed. Change a part to correct it.");
     await expect(page.locator("#officeDiffersHint")).toBeVisible();
     await expect(page.locator("#officeDiffersHint")).toHaveText(
@@ -212,7 +217,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("says in Welsh when the register's office today differs from the filed office", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml), { welsh: true });
+    await openAmend(page, accountsReceipt(microDocument()), { welsh: true });
     await expect(page.locator("#officeDiffersHint")).toContainText(
       `Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel ${JOINERY_OFFICE}.`,
     );
@@ -220,7 +225,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
 
   for (const [label, width] of Object.entries(WIDTHS)) {
     test(`fills the form from the document filed and shows the revision section (${label})`, async ({ page }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml), { width });
+      await openAmend(page, accountsReceipt(microDocument()), { width });
 
       await expect(page.locator("#formView")).toBeVisible();
       await expect(page.locator("#revisionBanner")).toBeVisible();
@@ -235,7 +240,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("#formCompanyNumber")).toHaveText(MICRO_TEST_CASE.companyNumber);
       await expect(page.locator("#periodEnd")).not.toHaveValue("");
       await expect(page.locator("#currentCurrentAssets")).not.toHaveValue("");
-      await expect(page.locator("#directorName")).not.toHaveValue("");
+      await expect(page.locator("#directorName")).toHaveValue("Eleanor Bramwell");
       await expect(page.locator("#changeCompanyLink")).toBeHidden();
       await expect(page.locator("[data-feature-status]")).toHaveText(
         "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
@@ -259,7 +264,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
 
   for (const [label, width] of Object.entries(WIDTHS)) {
     test(`asks for both revision texts before the preview (${label})`, async ({ page }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml), { width });
+      await openAmend(page, accountsReceipt(microDocument()), { width });
       await expect(page.locator("#revisionSection")).toBeVisible();
       await page.fill("#directorDateApproved", "2026-11-20");
       await page.locator("#accountsForm button[type='submit']").first().click();
@@ -274,7 +279,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   }
 
   test("refuses a revision approved before the original accounts", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#revisionSection")).toBeVisible();
     await fillRevisionTexts(page);
     await page.fill("#directorDateApproved", "2026-09-01");
@@ -292,7 +297,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("says when the date approved is more than 28 days ago", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#revisionSection")).toBeVisible();
     const today = new Date();
     const daysAgo = (days) => new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -312,7 +317,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("asks for the original approval date when the filed accounts do not give it", async ({ page }) => {
-    const undated = microCase.xhtml.replace(
+    const undated = microDocument().replace(
       /<ix:nonNumeric name="core:DateAuthorisationFinancialStatementsForIssue"[^>]*>[^<]*<\/ix:nonNumeric>/,
       "",
     );
@@ -458,7 +463,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   ];
   for (const [name, overrides, text, next] of refusals) {
     test(`refuses ${name}, with one sentence and its next step`, async ({ page }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml, overrides));
+      await openAmend(page, accountsReceipt(microDocument(), overrides));
       await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(text);
       await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute("href", next);
       await expect(page.locator("#formView")).toBeHidden();
@@ -476,7 +481,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("states the revised accounts activity's status on a refusal too", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml, { statusCode: "REJECT" }));
+    await openAmend(page, accountsReceipt(microDocument(), { statusCode: "REJECT" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("did not accept those accounts");
     await expect(page.locator("[data-feature-status]")).toBeVisible();
     await expect(page.locator("[data-feature-status]")).toHaveText(
@@ -506,7 +511,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   ];
   for (const [status, line] of statuses) {
     test(`states the revised accounts activity's ${status ?? "unnamed"} status while revising`, async ({ page }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml), { revisedStatus: status });
+      await openAmend(page, accountsReceipt(microDocument()), { revisedStatus: status });
       await expect(page.locator("#formView")).toBeVisible();
       await expect(page.locator("[data-feature-status]")).toHaveText(line);
     });
@@ -529,7 +534,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("shows its own sentence, and no technical message, when the accounts cannot be opened", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml), { profileFails: true });
+    await openAmend(page, accountsReceipt(microDocument()), { profileFails: true });
     const status = page.locator("#statusMessagesContainer .status-error");
     await expect(status.locator(".status-message-cause")).toHaveText(
       "We could not open those accounts to revise. Open the filing again from your receipts.",
@@ -541,7 +546,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("says revised accounts cannot be filed here where they are not offered", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml), { offered: false });
+    await openAmend(page, accountsReceipt(microDocument()), { offered: false });
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Revised accounts cannot be filed here yet");
     await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveText("See the filing");
     await expect(page.locator("#revisionSection")).toBeHidden();
@@ -551,7 +556,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
 
   for (const [label, width] of Object.entries(WIDTHS)) {
     test(`files the revision and names the revised accounts in the result (${label})`, async ({ page }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml), { width });
+      await openAmend(page, accountsReceipt(microDocument()), { width });
       await expect(page.locator("#revisionSection")).toBeVisible();
       await fillRevisionTexts(page);
       await page.fill("#directorDateApproved", "2026-11-20");
@@ -580,7 +585,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       if (errors.length) throw new Error(errors.join("; "));
       return buildAccountsIxbrl(validated);
     });
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await serveFile(page, "**/lib/approval-date-check.js", "lib/approval-date-check.js");
     await serveFile(page, "**/lib/balance-sheet-check.js", "lib/balance-sheet-check.js");
     await serveFile(page, "**/lib/accounts-notes-check.js", "lib/accounts-notes-check.js");
@@ -597,24 +602,34 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.frameLocator("#previewRendered").locator("body")).toContainText(
       "The original balance sheet left out the creditors due within one year.",
     );
+    // The frame is as tall as the accounts, so the page scrolls through them and no line is cut at its edge.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const frame = document.getElementById("previewRendered");
+          const root = frame.contentDocument?.documentElement;
+          return root ? root.scrollHeight - frame.clientHeight : null;
+        }),
+      )
+      .toBeLessThanOrEqual(1);
     await screenshotAtBothWidths(page, "micro-amend-preview");
   });
 
   test("shows the banner, the revision section and a refusal in Welsh on the Welsh page", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml), { welsh: true });
+    await openAmend(page, accountsReceipt(microDocument()), { welsh: true });
     await expect(page.locator("#revisionSection")).toBeVisible();
     await expect(page.locator("#revisionBanner")).not.toContainText("revised accounts");
     await expect(page.locator("#directorsReportConsistent")).toHaveValue("Ddim yn berthnasol");
     await screenshotAtBothWidths(page, "micro-amend-welsh-revision-section");
     await page.unrouteAll({ behavior: "ignoreErrors" });
     const welshPage = await page.context().newPage();
-    await openAmend(welshPage, accountsReceipt(microCase.xhtml, { jointFilingId: "joint-1" }), { welsh: true });
+    await openAmend(welshPage, accountsReceipt(microDocument(), { jointFilingId: "joint-1" }), { welsh: true });
     await expect(welshPage.locator("#statusMessagesContainer")).not.toBeEmpty();
     await screenshotAtBothWidths(welshPage, "micro-amend-welsh-refusal-joint-filing");
   });
 
   test("names the revised accounts when Companies House rejects them", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml), { outcome: "REJECT" });
+    await openAmend(page, accountsReceipt(microDocument()), { outcome: "REJECT" });
     await expect(page.locator("#revisionSection")).toBeVisible();
     await fillRevisionTexts(page);
     await page.fill("#directorDateApproved", "2026-11-20");
@@ -641,7 +656,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     test(`says in ${language} that the register holds no accounts to replace when the route refuses the filing for that`, async ({
       page,
     }) => {
-      await openAmend(page, accountsReceipt(microCase.xhtml), { welsh });
+      await openAmend(page, accountsReceipt(microDocument()), { welsh });
       await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
       await expect(page.locator("#revisionSection")).toBeVisible();
       await fillRevisionTexts(page);
@@ -664,7 +679,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   }
 
   test("shows the route's own message for a filing refused for any other reason", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
     await expect(page.locator("#revisionSection")).toBeVisible();
     await fillRevisionTexts(page);
@@ -680,7 +695,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   });
 
   test("a new filing after the revision files original accounts", async ({ page }) => {
-    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await openAmend(page, accountsReceipt(microDocument()));
     await expect(page.locator("#revisionSection")).toBeVisible();
     await expect(page.locator("#periodEnd")).toHaveJSProperty("readOnly", true);
     await page.evaluate(() => startAgain());
