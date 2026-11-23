@@ -164,6 +164,7 @@
     );
   }
 
+  // Answers true when the pass list was read and shown.
   async function loadCampaignPasses() {
     const list = document.getElementById("cpList");
     const empty = document.getElementById("cpListEmpty");
@@ -171,8 +172,10 @@
       const { passes } = await callApi("/api/v1/pass/campaign");
       list.replaceChildren(...passes.map(passCardEl));
       empty.hidden = passes.length > 0;
+      return true;
     } catch (error) {
       showStatus(error.status === 403 ? "Only an operator can list campaign passes." : "Could not load the campaign passes.", "error");
+      return false;
     }
   }
 
@@ -214,8 +217,9 @@
     document.getElementById("cpAddGrant").addEventListener("click", addGrantRow);
     document.getElementById("campaignPassForm").addEventListener("submit", createCampaignPass);
     document.getElementById("mainContent").addEventListener("click", copyLink);
-    await loadCampaignPasses();
-    document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-campaign-passes" }));
+    if (await loadCampaignPasses()) {
+      document.dispatchEvent(new CustomEvent("activity-completed", { detail: "operator-campaign-passes" }));
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

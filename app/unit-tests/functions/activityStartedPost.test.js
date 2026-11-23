@@ -122,6 +122,15 @@ describe("activityStartedPost ingestHandler", () => {
     );
   });
 
+  test("publishes activity-completed for the operator's campaign pass page", async () => {
+    const response = await ingestHandler(buildActivityStartedEvent({ activityId: "operator-campaign-passes", phase: "completed" }));
+
+    expect(response.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "activity-completed", detail: { activityId: "operator-campaign-passes" } }),
+    );
+  });
+
   test("publishes activity-completed for help", async () => {
     await ingestHandler(buildActivityStartedEvent({ activityId: "help", phase: "completed" }));
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "activity-completed" }));

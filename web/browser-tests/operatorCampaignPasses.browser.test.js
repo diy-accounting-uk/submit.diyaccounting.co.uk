@@ -202,6 +202,49 @@ test.describe("the operator's campaign pass page", () => {
     await expect(page.locator("#statusMessagesContainer")).not.toContainText("HMRC");
   });
 
+  for (const [outcome, status, completions] of [
+    ["a loaded pass list records the page's completion once", 200, 1],
+    ["a pass list the server refuses records no completion", 403, 0],
+  ]) {
+    test(outcome, async ({ page }) => {
+      const activityPosts = [];
+      await serveRealSite(page, {
+        origin: SITE_ORIGIN,
+        signedIn: true,
+        apiHandler: (url, request) => {
+          if (url.pathname === "/api/v1/activity/started") activityPosts.push(request.postDataJSON());
+          return undefined;
+        },
+      });
+      await page.route(`${SITE_ORIGIN}/api/v1/pass/campaign*`, (route) =>
+        route.fulfill({
+          status,
+          contentType: "application/json",
+          body: JSON.stringify(status === 200 ? { passes: [donorPass], count: 1 } : { message: "Forbidden" }),
+        }),
+      );
+      await page.addInitScript(() => {
+        localStorage.setItem("consent.analytics", "declined");
+        localStorage.setItem("cognitoAccessToken", "mock-access-token");
+      });
+      await page.goto(`${SITE_ORIGIN}/operator/campaign-passes.html`, { waitUntil: "domcontentloaded" });
+
+      if (status === 200) await expect(page.locator("#cpList")).toContainText(donorPass.code);
+      else await expect(page.locator(".status-message.status-error").first()).toBeVisible();
+      await expect
+        .poll(() => activityPosts.filter((post) => post?.activityId === "operator-campaign-passes" && post?.phase === "started").length)
+        .toBe(1);
+      const completed = () =>
+        activityPosts.filter((post) => post?.activityId === "operator-campaign-passes" && post?.phase === "completed");
+      if (completions) {
+        await expect.poll(() => completed().length).toBe(1);
+      } else {
+        await page.waitForLoadState("networkidle");
+        expect(completed()).toHaveLength(0);
+      }
+    });
+  }
+
   test("offers no bundle sold by subscription, the automatic one or the operator's own", async ({ page }) => {
     await openPage(page, { passes: () => [], onCreate: () => ({}) });
     // The list fills once the catalogue has loaded.

@@ -34,7 +34,7 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
-const VIEW_ACTIVITY_IDS = ["help", "operator-dashboard"];
+const VIEW_ACTIVITY_IDS = ["help", "operator-dashboard", "operator-campaign-passes"];
 
 function isKnownActivityId(activityId) {
   const catalog = loadCatalogFromRoot();
