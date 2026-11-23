@@ -57,6 +57,7 @@ import { buildAllotmentOfSharesBody } from "./companiesHouseAllotmentOfSharesXml
 import { refuseCapitalUnlikeRegister } from "./companiesHouseAllotmentRegister.js";
 import { toMillionths, multiplyMillionths, fromMillionths } from "../../web/public/lib/share-capital.js";
 import { isValidProposedCompanyName } from "../../web/public/lib/companies-house-company-name.js";
+import { todayInLondon } from "../../web/public/lib/approval-date-check.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -918,6 +919,10 @@ function extractAllotmentOfShares(body, errorMessages) {
   } else if (period && isValidIsoDate(startDate) && endDate < startDate) {
     errorMessages.push("Invalid endDate - must not be before startDate");
   }
+  // A return is made after the allotment: a date after today in the UK is not a date shares were allotted.
+  const today = todayInLondon(new Date());
+  if (isValidIsoDate(startDate) && startDate > today) errorMessages.push("Invalid startDate - must not be after today");
+  if (period && isValidIsoDate(endDate) && endDate > today) errorMessages.push("Invalid endDate - must not be after today");
   const givenAllotments = Array.isArray(body.allotments) ? body.allotments : [];
   if (givenAllotments.length === 0) errorMessages.push("Missing allotments - name at least one allotment of shares");
   if (givenAllotments.length > MAX_ALLOTMENTS) errorMessages.push(`Invalid allotments - at most ${MAX_ALLOTMENTS}`);

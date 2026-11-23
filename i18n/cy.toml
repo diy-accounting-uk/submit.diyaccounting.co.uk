@@ -27349,3 +27349,13 @@ cy = '''Ffactor barnwrol'''
 [strings."ch.drill.role-receiver-and-manager"]
 hash = "0d1771725599"
 cy = '''Derbynnydd a rheolwr'''
+
+# == Return of allotment of shares: an allotment date after today, and a late return ==
+
+[strings."ch.allot.problem-future"]
+hash = "f0294f186213"
+cy = '''Ni all y cyfrannau fod wedi’u clustnodi ar ôl heddiw. Rhowch y dyddiadau y cawsant eu clustnodi.'''
+
+[strings."ch.allot.late-return"]
+hash = "016903e7a011"
+cy = '''Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.'''

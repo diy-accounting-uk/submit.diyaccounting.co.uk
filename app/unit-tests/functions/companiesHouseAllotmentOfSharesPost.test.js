@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/unit-tests/functions/companiesHouseAllotmentOfSharesPost.test.js
-import { describe, test, beforeEach, expect, vi } from "vitest";
+import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
@@ -256,6 +256,34 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       .map(([cmd]) => cmd)
       .filter((cmd) => cmd instanceof lib.UpdateCommand || cmd instanceof lib.PutCommand);
     expect(JSON.stringify(writes.map((cmd) => cmd.input))).toContain('"kind":"allotment-of-shares"');
+  });
+
+  describe("the dates of the allotment against today in the UK", () => {
+    afterEach(() => vi.useRealTimers());
+
+    test("refuses a first or last allotment date after today, and sends nothing", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-20T12:00:00Z"));
+      for (const [overrides, message] of [
+        [{ startDate: "2026-11-21" }, "Invalid startDate - must not be after today"],
+        [{ startDate: "2026-11-19", endDate: "2026-11-21" }, "Invalid endDate - must not be after today"],
+      ]) {
+        const response = await ingestHandler(buildEvent({ body: buildFormBody({ dateSigned: "2026-11-20", ...overrides }) }));
+        expect(response.statusCode, message).toBe(400);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+        expect(JSON.stringify(parseResponseBody(response))).toContain(message);
+      }
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files an allotment dated today in the UK, after midnight in London and before it in UTC", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-06-30T23:30:00Z"));
+      const response = await ingestHandler(
+        buildEvent({ body: buildFormBody({ dateSigned: "2026-07-01", startDate: "2026-07-01", endDate: "2026-07-01" }) }),
+      );
+      expect(response.statusCode, JSON.stringify(parseResponseBody(response))).toBe(201);
+    });
   });
 
   test("answers 400 in JSON, sending nothing, for a return the form cannot state", async () => {

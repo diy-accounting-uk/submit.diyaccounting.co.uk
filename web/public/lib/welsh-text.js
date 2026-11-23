@@ -230,6 +230,8 @@ window.WELSH_TEXT = {
   "ch.allot.currency-gbp": "Punt sterling (GBP)",
   "ch.allot.currency-table": "Cyfrannau a ddelid cynt, mewn un arian cyfred",
   "ch.allot.currency-usd": "Doler yr Unol Daleithiau (USD)",
+  "ch.allot.late-return":
+    "Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.",
   "ch.allot.lookup-failed": "Nid oedd modd darllen y cwmni hwn o Dŷ’r Cwmnïau.",
   "ch.allot.mismatch-class":
     "Cyfrannau {currency} {name} cyn y clustnodiad: {returnnumber} o gyfrannau â gwerth nominal agregedig o {returnvalue} yn y ffurflen hon, {registernumber} o gyfrannau â gwerth nominal agregedig o {registervalue} ar y gofrestr.",
@@ -253,6 +255,7 @@ window.WELSH_TEXT = {
     "Mae nifer y cyfranddaliadau {name} wedi’i luosi â’r gwerth enwol neu’r swm heb ei dalu ar bob cyfranddaliad yn rhoi mwy na 6 lle degol. Mae Tŷ’r Cwmnïau yn derbyn symiau i 6 lle degol.",
   "ch.allot.problem-discount":
     "Mae’r swm a dalwyd a’r swm na thalwyd ar bob cyfran {name} yn dod i lai na’i gwerth nominal, sef {nominal}.",
+  "ch.allot.problem-future": "Ni all y cyfrannau fod wedi’u clustnodi ar ôl heddiw. Rhowch y dyddiadau y cawsant eu clustnodi.",
   "ch.allot.problem-rights": "Rhowch fanylion rhagnodedig yr hawliau sydd ynghlwm wrth y cyfrannau {name}.",
   "ch.allot.problem-unpaid":
     "Rhowch gyfanswm y swm agregedig heb ei dalu cyn y clustnodiad fel rhif. Rhowch 0 os yw’r cyfrannau wedi’u talu’n llawn.",
