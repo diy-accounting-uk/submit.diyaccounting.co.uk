@@ -206,7 +206,7 @@ A new `diya-gl check <book>` gives CI an exit code: 0 when the book passes its s
 - `linux/amd64` and `linux/arm64`, built with `docker buildx` and pushed as one index. Each architecture runs `image-smoke.sh`.
 - Labels: the OCI labels of today plus `io.modelcontextprotocol.server.name`.
 - SBOM and provenance attestations on push.
-- The pages snapshot inside the image at `/opt/diya-gl-web` when the operator chooses to bundle it (Q3), so `view --pages` works offline.
+- The pages snapshot inside the image at `/opt/diya-gl-web` (Q3, answered 2026-11-23), so `view --pages` works offline.
 - How the book is mounted:
 
 ```
@@ -222,7 +222,7 @@ The port in the second line is an example. DIST1 sets the constant.
 | --- | --- |
 | GLX1 (`NEXT.md`) | GLX1 designs the pages, the account and the storage. This plan delivers the same pages to a local origin and changes none of them. GLX1 decides which stores and sign-ins the pages offer on `http://127.0.0.1:<fixed port>`; DIST1 makes the origin fixed so that choice is possible. Download links on diya-gl.co.uk wait for GLX1's design. |
 | `PLAN_AMENDED_ACCOUNTS.md` section 11, AA26 | `buildBookFromRegister` lands in the engine. Every channel carries it on the next release with no task here. |
-| AA27 | Adds the package download to the pages. The desktop app gets it with the next pages snapshot. Offline use needs the templates in the snapshot (Q3). |
+| AA27 | Adds the package download to the pages. The desktop app gets it with the next pages snapshot. Offline use needs the templates in the snapshot (Q3 bundles them). |
 | `PLAN_DIYA_GL_STANDARDS.md` GLS4, GLS17 | GLS4 adds an MCP tool; every MCP channel carries it. GLS17 adds rejecting rules; `diya-gl check` reports them. |
 | `PLAN_ORGANIC_SEARCH.md` | Its Claude directory rows cover Submit's plugin. Q4 decides whether a local diya-gl server joins a plugin. |
 
@@ -251,7 +251,7 @@ The port in the second line is an example. DIST1 sets the constant.
 | Task | Follows |
 | --- | --- |
 | DIST1, DIST4, DIST6 | Nothing |
-| DIST2 | Q3 |
+| DIST2 | Nothing |
 | DIST3 | DIST1, DIST4 (both edit `diya-gl/bin/diya-gl.js` and `diya-gl/package.json`) |
 | DIST5 | DIST1 |
 | DIST7 | DIST5, then one npm release that carries `mcpName` |
@@ -276,7 +276,7 @@ Every task edits a section of `diya-gl/README.md`. Merge the tasks in order on o
 #### DIST2. GitHub Release and the pages snapshot
 
 - **Files**: `scripts/build-diya-gl-web-snapshot.mjs`, `.github/workflows/publish-diya-gl.yml`, `app/test/diya-gl-web-snapshot.test.js`, `diya-gl/README.md`.
-- **Do**: the script runs after `scripts/build-diya-gl-bundle.mjs` and zips `web/diya-gl.co.uk/public/` with a `snapshot.json` (version, commit, SHA-256 of each file). Q3 decides whether `assets/templates/` goes in. Leave out `sw.js`, because the view server answers it 404. In the workflow, create the GitHub Release `diya-gl-v<version>` on the tag step (`gh release create --verify-tag`), attach the snapshot, `SHA256SUMS` and an attestation. Keep the existing re-dispatch rule: each step keys on what the registry and the release already hold.
+- **Do**: the script runs after `scripts/build-diya-gl-bundle.mjs` and zips `web/diya-gl.co.uk/public/` with a `snapshot.json` (version, commit, SHA-256 of each file). `assets/templates/` goes in (Q3). Leave out `sw.js`, because the view server answers it 404. In the workflow, create the GitHub Release `diya-gl-v<version>` on the tag step (`gh release create --verify-tag`), attach the snapshot, `SHA256SUMS` and an attestation. Keep the existing re-dispatch rule: each step keys on what the registry and the release already hold.
 - **Tests**: the snapshot's version equals `diya-gl/package.json`; every file in `snapshot.json` is in the zip with its hash; DIST1's `--pages <zip>` serves `ltd.html` from it.
 - **Gates**: `npm test`; a `workflow_dispatch` run of `publish-diya-gl.yml` on the batch branch is not allowed, because the workflow publishes. The PR's `test.yml` run builds the snapshot.
 
@@ -381,6 +381,7 @@ Alternative B, £0: an unsigned `.zip`. The user clicks "More info", then "Run a
 Alternative C: a code signing certificate from a certificate authority. It needs a hardware or cloud key store and a quote; no price was checked for this plan.
 
 **Q3. Bundle the pages and the templates in the desktop app and the image, or fetch them on first use.**
+Answered 2026-11-23: the operator chose to bundle both (about 11 MB more per download), so the app works offline from the first start.
 Recommendation: bundle both, £0. The app and the image work offline from the first start, and the pages match the engine version. It adds about 11 MB to each download (pages and engine 2 MB, assets with the templates 9 MB). The pages and templates are under PolyForm Internal Use; the npm package stays Apache-2.0 and unchanged.
 Alternative, £0: bundle nothing. `view` fetches from https://diya-gl.co.uk on first use as today; the first start needs the network, and the version shown is the site's, not the engine's.
 
