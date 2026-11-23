@@ -816,6 +816,36 @@ function slugText(slug) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+// A nature of control as the register's words give it, in the reader's language: the right, the
+// band of shares or votes, and whether it is held through a trust or a firm. A nature the register
+// has beyond these (an LLP's, an overseas entity's) reads as its words.
+function natureText(slug) {
+  const words = String(slug || "");
+  const holding = /-as-(trust|firm)$/.exec(words)?.[1];
+  const base = holding ? words.slice(0, -`-as-${holding}`.length) : words;
+  const bands = {
+    "25-to-50-percent": window.siteText("ch.drill.band-25", "25 to 50 percent"),
+    "50-to-75-percent": window.siteText("ch.drill.band-50", "50 to 75 percent"),
+    "75-to-100-percent": window.siteText("ch.drill.band-75", "75 to 100 percent"),
+  };
+  const band = (right) => bands[base.slice(right.length + 1)];
+  let text;
+  if (base.startsWith("ownership-of-shares-") && band("ownership-of-shares")) {
+    text = window.siteText("ch.drill.nature-shares", "Ownership of shares {band}", { band: band("ownership-of-shares") });
+  } else if (base.startsWith("voting-rights-") && band("voting-rights")) {
+    text = window.siteText("ch.drill.nature-votes", "Voting rights {band}", { band: band("voting-rights") });
+  } else if (base === "right-to-appoint-and-remove-directors") {
+    text = window.siteText("ch.drill.nature-directors", "Right to appoint and remove directors");
+  } else if (base === "significant-influence-or-control") {
+    text = window.siteText("ch.drill.nature-influence", "Significant influence or control");
+  } else {
+    return slugText(words);
+  }
+  if (holding === "trust") return window.siteText("ch.drill.nature-as-trust", "{nature} as trust", { nature: text });
+  if (holding === "firm") return window.siteText("ch.drill.nature-as-firm", "{nature} as firm", { nature: text });
+  return text;
+}
+
 function table(headings, rows) {
   const element = document.createElement("table");
   element.className = "data-table";
@@ -1308,11 +1338,17 @@ async function appendOfficerLinks(container, companyNumber, officers, { activity
     const named = { companyNumber, officerName: officer.name, officerRole: officer.role };
     if (officer.appointedOn) named.appointedOn = officer.appointedOn;
     link.href = `${pagePrefix()}/companies-house/${page}?${new URLSearchParams(named)}`;
-    link.textContent = linkText({ ...officer, name: window.companiesHouseNamesakes.namedApart(officer, current) });
+    link.textContent = linkText(officer, window.companiesHouseNamesakes.namesakeNote(officer, current));
     item.appendChild(link);
     list.appendChild(item);
   });
   container.appendChild(list);
+}
+
+// An officer's role, then what tells them apart from a current officer of the same name: one bracket
+// in the link's words, "Director, born January 1970".
+function roleWithNote(officer, note) {
+  return note ? `${slugText(officer.role)}, ${note}` : slugText(officer.role);
 }
 
 // The officer resignation form's link for each current director or secretary.
@@ -1321,8 +1357,8 @@ function appendRemoveOfficerLinks(container, companyNumber, officers) {
     activityId: "remove-officer",
     page: "removeOfficer.html",
     className: "remove-officer-links",
-    linkText: (officer) =>
-      window.siteText("ch.drill.remove-this-officer", "Remove {name} ({role})", { name: officer.name, role: slugText(officer.role) }),
+    linkText: (officer, note) =>
+      window.siteText("ch.drill.remove-this-officer", "Remove {name} ({role})", { name: officer.name, role: roleWithNote(officer, note) }),
   });
 }
 
@@ -1332,10 +1368,10 @@ function appendChangeOfficerLinks(container, companyNumber, officers) {
     activityId: "change-officer",
     page: "changeOfficer.html",
     className: "change-officer-links",
-    linkText: (officer) =>
+    linkText: (officer, note) =>
       window.siteText("ch.drill.change-this-officer", "Change the details of {name} ({role})", {
         name: officer.name,
-        role: slugText(officer.role),
+        role: roleWithNote(officer, note),
       }),
   });
 }
@@ -1355,7 +1391,7 @@ async function renderPscs(container, companyNumber) {
         window.siteText("ch.drill.column-control", "Nature of control"),
         window.siteText("ch.drill.column-notified", "Notified"),
       ],
-      pscs.map((psc) => [psc.name, psc.naturesOfControl.map(slugText).join("; "), labels().formatCompanyDate(psc.notifiedOn)]),
+      pscs.map((psc) => [psc.name, psc.naturesOfControl.map(natureText).join("; "), labels().formatCompanyDate(psc.notifiedOn)]),
     ),
   );
   await appendPscLinks(container, companyNumber, pscs, {

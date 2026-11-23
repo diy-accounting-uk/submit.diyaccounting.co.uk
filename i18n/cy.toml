@@ -27264,3 +27264,41 @@ cy = '''hysbyswyd {date}'''
 [strings."ch.psc-statements.psc-protected"]
 hash = "453232b2d37c"
 cy = '''person y mae Tŷ’r Cwmnïau yn diogelu ei fanylion'''
+
+# == The drill-down's natures of control in Welsh ==
+
+[strings."ch.drill.band-25"]
+hash = "3eb1fef3d757"
+cy = '''25 i 50 y cant'''
+
+[strings."ch.drill.band-50"]
+hash = "dbf2f905d42e"
+cy = '''50 i 75 y cant'''
+
+[strings."ch.drill.band-75"]
+hash = "a6218631bcad"
+cy = '''75 i 100 y cant'''
+
+[strings."ch.drill.nature-shares"]
+hash = "a5603c4401e6"
+cy = '''Perchnogaeth cyfranddaliadau {band}'''
+
+[strings."ch.drill.nature-votes"]
+hash = "4f2bb19e4878"
+cy = '''Hawliau pleidleisio {band}'''
+
+[strings."ch.drill.nature-directors"]
+hash = "e525b73958e9"
+cy = '''Yr hawl i benodi a diswyddo cyfarwyddwyr'''
+
+[strings."ch.drill.nature-influence"]
+hash = "f726f4b44bc2"
+cy = '''Dylanwad neu reolaeth arwyddocaol'''
+
+[strings."ch.drill.nature-as-trust"]
+hash = "b374f8fba212"
+cy = '''{nature} drwy ymddiriedolaeth'''
+
+[strings."ch.drill.nature-as-firm"]
+hash = "9bbca5be3dc0"
+cy = '''{nature} drwy ffyrm'''

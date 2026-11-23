@@ -492,6 +492,42 @@ test.describe("Company lookup drill-down past the newest filings", () => {
     await shootAtWidths(page, "cy-filing-history");
   });
 
+  test("the Welsh PSC table gives each nature of control in Welsh", async ({ page }) => {
+    const natures = [
+      "ownership-of-shares-50-to-75-percent",
+      "voting-rights-25-to-50-percent-as-trust",
+      "right-to-appoint-and-remove-directors-as-firm",
+      "significant-influence-or-control",
+    ];
+    await serveSite(page, { bundles: ["resident-ltd"], pscs: { ...PSCS, pscs: [{ ...PSCS.pscs[0], naturesOfControl: natures }] } });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView table")).toContainText(
+      "Perchnogaeth cyfranddaliadau 50 i 75 y cant; Hawliau pleidleisio 25 i 50 y cant drwy ymddiriedolaeth; Yr hawl i benodi a diswyddo cyfarwyddwyr drwy ffyrm; Dylanwad neu reolaeth arwyddocaol",
+      { timeout: 15000 },
+    );
+    await expect(page.locator("#drillView table")).not.toContainText("Ownership of shares");
+  });
+
+  test("the English PSC table keeps the register's words for each nature of control", async ({ page }) => {
+    await serveSite(page, {
+      bundles: ["resident-ltd"],
+      pscs: {
+        ...PSCS,
+        pscs: [
+          {
+            ...PSCS.pscs[0],
+            naturesOfControl: ["voting-rights-75-to-100-percent-as-trust", "part-right-to-share-surplus-assets-25-to-50-percent"],
+          },
+        ],
+      },
+    });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView table")).toContainText(
+      "Voting rights 75 to 100 percent as trust; Part right to share surplus assets 25 to 50 percent",
+      { timeout: 15000 },
+    );
+  });
+
   test("a whole filing history carries no note", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
@@ -987,7 +1023,7 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
 
     await expect(page.locator("#drillView .remove-officer-links a")).toHaveText(
-      ["Remove BRAMWELL, Eleanor (born January 1970) (Director)", "Remove BRAMWELL, Eleanor (born April 1998) (Director)"],
+      ["Remove BRAMWELL, Eleanor (Director, born January 1970)", "Remove BRAMWELL, Eleanor (Director, born April 1998)"],
       { timeout: 15000 },
     );
   });

@@ -280,6 +280,36 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(result).not.toContainText("PENDING");
   });
 
+  test("a book that fills one field says so in the singular, in English and Welsh", async ({ page }) => {
+    for (const [prefix, sentence] of [
+      ["", "Filled 1 field from precision-code.diya-gl.zip for the period"],
+      ["/cy", "Llenwyd 1 maes o precision-code.diya-gl.zip ar gyfer y cyfnod"],
+    ]) {
+      await serveRealSite(page, [], { requests: [], status: 409, body: {} });
+      // The form's entries cut to the period start alone, so the fill counts one field.
+      await page.route("**/lib/ct600-fields.js", async (route) => {
+        const source = fs.readFileSync(path.join(process.cwd(), "web/public/lib/ct600-fields.js"), "utf-8");
+        const body = source.replace(
+          "export function formEntriesFromBook(",
+          'export function formEntriesFromBook(figures) {\n  return [["periodStart", figures.periodStart]];\n}\nfunction allFormEntriesFromBook(',
+        );
+        await route.fulfill({ status: 200, contentType: "application/javascript", body });
+      });
+      if (prefix) await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
+      await page.goto(PAGE_URL.replace("/companies-house/", `${prefix}/companies-house/`), { waitUntil: "domcontentloaded" });
+      await page.locator("#companyNumber").fill("12345678");
+      await page.locator("#companyLookupBtn").click();
+      await expect(page.locator("#formView")).toBeVisible();
+      await page.locator("#booksImportFile").setInputFiles({
+        name: "precision-code.diya-gl.zip",
+        mimeType: "application/zip",
+        buffer: await zippedPrecisionCodeBook(),
+      });
+      await expect(page.locator("#booksImportStatus")).toContainText(sentence, { timeout: 60_000 });
+      await page.unrouteAll({ behavior: "ignoreErrors" });
+    }
+  });
+
   test("the Welsh page sets the reference of a return HMRC has not settled apart from the words around it", async ({ page }) => {
     const submission = {
       requests: [],
