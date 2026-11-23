@@ -323,6 +323,27 @@ test("a statement that the company has no PSC is refused while the register show
   expect(filings).toHaveLength(0);
 });
 
+test("the refusal of a statement that the company has no PSC names a protected PSC by what it is, as the register gives it no name", async ({
+  page,
+}) => {
+  const filings = [];
+  const protectedPsc = { kind: "super-secure-person-with-significant-control", notifiedOn: "2021-03-01", ceasedOn: null };
+  await serveSite(page, { filings, pscs: [protectedPsc, PSCS[2]] });
+  await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByLabel("Give a statement").check();
+  await page.locator("#notify-none").check();
+  await dateAndCode(page, "2026-11-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  const status = page.locator("#statusMessagesContainer");
+  await expect(status).toContainText(
+    "The register shows a person with significant control who has not ceased: a person whose details Companies House keeps protected.",
+  );
+  await expect(status).not.toContainText("undefined");
+  expect(filings).toHaveLength(0);
+});
+
 test("no choice, or a restrictions withdrawal without how it ended, is refused before anything is sent", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings });

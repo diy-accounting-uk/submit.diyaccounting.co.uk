@@ -340,6 +340,17 @@ async function changeShares(page) {
   await page.locator("#controlSection").getByRole("group", { name: "Ownership of shares" }).getByLabel("75% or more").check();
 }
 
+test("two PSCs of one name and one month of birth are told apart by the date each was notified", async ({ page }) => {
+  const twins = NAMESAKES.map((psc) => ({ ...psc, dateOfBirth: { month: 6, year: 1985 } }));
+  await serveSite(page, { filings: [], pscs: twins });
+  await page.goto(`${SITE}/companies-house/changePscDetails.html?companyNumber=00000001`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Look up the persons with significant control" }).click();
+  await expect(page.locator("#pscChoices label")).toHaveText([
+    "Jo Smith, born June 1985, notified 6 April 2016 (Individual)",
+    "Jo Smith, born June 1985, notified 1 September 2019 (Individual)",
+  ]);
+});
+
 test("two PSCs of one name are told apart by month and year of birth, and a link naming that name chooses neither", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings, pscs: NAMESAKES });

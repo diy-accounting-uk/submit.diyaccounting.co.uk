@@ -1593,6 +1593,7 @@ window.WELSH_TEXT = {
   "ch.psc-statements.lookup-failed": "Methu darllen y cwmni hwn o Dŷ’r Cwmnïau.",
   "ch.psc-statements.no-psc-but-current":
     "Mae’r gofrestr yn dangos person â rheolaeth arwyddocaol nad yw wedi peidio â bod yn un: {names}. Dywedwch wrth Dŷ’r Cwmnïau eu bod wedi peidio cyn i chi ddatgan nad oes gan y cwmni un.",
+  "ch.psc-statements.psc-protected": "person y mae Tŷ’r Cwmnïau yn diogelu ei fanylion",
   "ch.psc-statements.review-company": "Cwmni",
   "ch.psc-statements.review-date": "Dyddiad perthnasol",
   "ch.psc-statements.review-psc": "Person â rheolaeth arwyddocaol",

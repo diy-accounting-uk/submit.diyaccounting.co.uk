@@ -154,7 +154,15 @@ function formProblem(action, statement) {
     return window.siteText(
       "ch.psc-statements.no-psc-but-current",
       "The register shows a person with significant control who has not ceased: {names}. Tell Companies House they have ceased before you state that the company has none.",
-      { names: current.map((psc) => psc.name).join("; ") },
+      {
+        // A protected PSC (super-secure) is on the register with no name.
+        names: current
+          .map(
+            (psc) =>
+              psc.name || window.siteText("ch.psc-statements.psc-protected", "a person whose details Companies House keeps protected"),
+          )
+          .join("; "),
+      },
     );
   }
   if (statement === LINKED && !chosenPsc()) {

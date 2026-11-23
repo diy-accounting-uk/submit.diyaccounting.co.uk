@@ -27258,3 +27258,9 @@ cy = '''cyfenw'''
 [strings."ch.namesake.notified"]
 hash = "8e39b3f52aa2"
 cy = '''hysbyswyd {date}'''
+
+# == A protected PSC named in the refusal of a statement that the company has no PSC: ch.psc-statements.psc-protected ==
+
+[strings."ch.psc-statements.psc-protected"]
+hash = "453232b2d37c"
+cy = '''person y mae Tŷ’r Cwmnïau yn diogelu ei fanylion'''
