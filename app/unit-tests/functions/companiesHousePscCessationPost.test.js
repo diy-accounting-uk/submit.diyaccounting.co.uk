@@ -167,6 +167,19 @@ describe("companiesHousePscCessationPost ingestHandler", () => {
     expect(JSON.stringify(writes.map((cmd) => cmd.input))).toContain('"kind":"psc-cessation"');
   });
 
+  test("keeps the keyed hashes of the PSC's name with the filing in progress, and never the name", async () => {
+    await ingestHandler(buildEvent());
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const stored = JSON.stringify(
+      mockSend.mock.calls
+        .map(([cmd]) => cmd)
+        .filter((cmd) => cmd instanceof lib.UpdateCommand || cmd instanceof lib.PutCommand)
+        .map((cmd) => cmd.input),
+    );
+    expect(stored).toMatch(/"echoedValues":\{"saltVersion":"[^"]+","hashes":\["[0-9a-f]{24}"/);
+    expect(stored).not.toMatch(/Bramwell/i);
+  });
+
   test("answers 400 in JSON, sending nothing, for a missing kind, a missing name, bad dates or a confirmation before the cessation", async () => {
     for (const [overrides, message] of [
       [{ pscKind: "super-secure-person-with-significant-control" }, "Invalid pscKind"],

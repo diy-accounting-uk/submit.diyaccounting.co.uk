@@ -51,6 +51,7 @@ import {
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
+import { echoedValuesOf } from "../../services/companiesHouseEchoedValues.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
@@ -380,10 +381,14 @@ export async function ingestHandler(event) {
 
     // The reader's language choice, so the receipt email of an accepted filing is in it.
     const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
+    const echoedValues = echoedValuesOf(statement, userSub);
     inProgressData = {
       // The company whose cached register answers an accepted statement drops.
       companyNumber: statement.companyNumber,
       ...(welsh ? { language: "cy" } : {}),
+      // The keyed hashes of the names and addresses the statement sends, so a rejection read later
+      // can be stripped of them.
+      ...(echoedValues ? { echoedValues } : {}),
       // A statement accepted after its envelope got no answer marks the paid fee used then.
       ...(shouldMarkChargeUsed ? { feeCharge: { activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey } } : {}),
     };

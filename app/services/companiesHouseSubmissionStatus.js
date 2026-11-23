@@ -28,6 +28,7 @@ import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 import { markChargeUsed } from "./activityCharges.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
 import { dropCompanyCacheAfterAcceptedFiling } from "./companiesHouseCacheDrop.js";
+import { statusWithoutEchoedValues } from "./companiesHouseEchoedValues.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
@@ -213,9 +214,10 @@ function sentRequestData(persistedRequest) {
 
 /**
  * Record a submission's status once Companies House has decided it. REJECT stores "failed" with
- * the reject reasons; ACCEPT writes a receipt, asks for the receipt email, marks a paid
- * confirmation statement fee used, charges its token, drops the company's cached register answers,
- * stores "completed" and publishes the form's accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
+ * the reject reasons, less any word of a name, an address or the company's name the filing sent;
+ * ACCEPT writes a receipt, asks for the receipt email, marks a paid confirmation statement fee used,
+ * charges its token, drops the company's cached register answers, stores "completed" and publishes
+ * the form's accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
  * a record that fails or stops part-way is retried, and the retry finds the receipt of the
  * submission and runs only the steps the receipt does not show as done, so the receipt, its email
  * and the token charge each happen once. The never-received rejection gives its claim back, so a
@@ -229,7 +231,9 @@ function sentRequestData(persistedRequest) {
  * @param {string} input.kind - a key of COMPANIES_HOUSE_FORMS
  * @returns {Promise<{data: object, recorded: boolean}>} recorded is false when nothing was written
  */
-export async function recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status, kind }) {
+export async function recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status: gatewayStatus, kind }) {
+  // A rejection's reason can repeat what the filing sent; those words go before it is stored or shown.
+  const status = statusWithoutEchoedValues(gatewayStatus, sentRequestData(persistedRequest).echoedValues, userSub);
   if (status.statusCode !== "REJECT" && status.statusCode !== "ACCEPT") {
     // PENDING or PARKED: leave the request state as-is and hand the current snapshot back so the
     // caller can keep polling.

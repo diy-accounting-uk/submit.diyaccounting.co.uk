@@ -41,6 +41,7 @@ import {
 } from "./companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { recordSubmissionInProgress, recordOutcomeUnknown } from "./companiesHouseSubmissionInProgress.js";
+import { echoedValuesOf } from "./companiesHouseEchoedValues.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { initializeSalt } from "./subHasher.js";
 import { readOwnPresenterFromBody } from "./companiesHouseOwnPresenter.js";
@@ -202,6 +203,11 @@ export async function fileCompaniesHouseForm(event, kind) {
   });
   if (registerRefusal) return registerRefusal;
 
+  // The keyed hashes of the names and addresses the form sends, so a rejection read later can be
+  // stripped of them.
+  const echoedValues = echoedValuesOf(form, userSub);
+  const inProgressData = echoedValues ? { echoedValues } : {};
+
   let submissionNumber;
   let envelopeSent = false;
   try {
@@ -215,7 +221,7 @@ export async function fileCompaniesHouseForm(event, kind) {
       submissionNumber,
       kind,
       underOwnPresenter: Boolean(ownPresenter),
-      data: { companyNumber: form.companyNumber },
+      data: { companyNumber: form.companyNumber, ...inProgressData },
     });
 
     const submissionXml = buildFormSubmission({
@@ -281,7 +287,7 @@ export async function fileCompaniesHouseForm(event, kind) {
     if (envelopeSent && !gatewayRequestNotDelivered(error)) {
       // The envelope left, so Companies House may have it. The filing stays pending, the page
       // polls it by number, and a late ACCEPT still gets its receipt and email.
-      await recordOutcomeUnknown({ userSub, submissionNumber, kind, data: { companyNumber: form.companyNumber } });
+      await recordOutcomeUnknown({ userSub, submissionNumber, kind, data: { companyNumber: form.companyNumber, ...inProgressData } });
       await recordSubmissionFailure({
         kind,
         failure: "gateway-outcome-unknown",

@@ -57,6 +57,7 @@ import {
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
+import { echoedValuesOf } from "../../services/companiesHouseEchoedValues.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
@@ -664,11 +665,15 @@ export async function ingestHandler(event) {
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
+    const echoedValues = echoedValuesOf(accounts, userSub);
     inProgressData = {
       // The company whose cached register answers accepted accounts drop.
       companyNumber: accounts.companyNumber,
       filedDocument: ixbrl,
       chargeActivityId,
+      // The keyed hashes of the names and addresses the accounts send, so a rejection read later can
+      // be stripped of them.
+      ...(echoedValues ? { echoedValues } : {}),
       ...jointFilingFields(jointFilingId),
       ...amendedFields(Boolean(accounts.revision)),
       ...revisesReceiptFields(accounts.revision?.revisesReceipt),
