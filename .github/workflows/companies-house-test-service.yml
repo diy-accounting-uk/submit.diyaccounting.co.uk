@@ -48,6 +48,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The chained deployment role's session lasts one hour from here. Noting the time before the
+      # role is assumed leaves the run at least five minutes inside it.
+      - name: Note when the AWS session ends
+        id: session
+        run: echo "stop-by=$(date -u -d '+55 minutes' '+%Y-%m-%dT%H:%M:%SZ')" | tee -a "$GITHUB_OUTPUT"
+
       - name: Assume the AWS actions and deployment roles
         uses: ./.github/actions/aws-role
         with:
@@ -78,10 +84,12 @@ jobs:
             node scripts/companies-house-test-service-run.js \
               --cases scripts/fixtures/companies-house-test-service-cases.json \
               --out-dir "$RUNNER_TEMP/companies-house-test-service" \
+              --stop-by "$STOP_BY" \
               ${{ inputs.case != '' && format('--case {0}', inputs.case) || '' }}
           fi
         env:
           POLL_SUBMISSION: ${{ inputs.poll-submission }}
+          STOP_BY: ${{ steps.session.outputs.stop-by }}
           COMPANIES_HOUSE_XMLGW_URI: ${{ steps.env-ci.outputs.xmlgw-uri }}
           COMPANIES_HOUSE_PRESENTER_ID_ARN: ${{ steps.env-ci.outputs.presenter-id-arn }}
           COMPANIES_HOUSE_PRESENTER_CODE_ARN: ${{ steps.env-ci.outputs.presenter-code-arn }}
