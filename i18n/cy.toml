@@ -26647,8 +26647,8 @@ hash = "d3209a05e733"
 cy = '''Dyma’r cyfalaf cyfrannau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni. Rhaid i’r ffurflen ddechrau ohono: mae Submit yn ei wirio yn erbyn y gofrestr eto pan fyddwch yn ffeilio, ac nid yw’n anfon ffurflen sy’n wahanol. Ffeiliwch yn gyntaf glustnodiad cynharach nad yw ar y gofrestr eto.'''
 
 [strings."ch.allot.before-typed"]
-hash = "6af487701ff9"
-cy = '''Nid oes gan Dŷ’r Cwmnïau gyfalaf cyfrannau ar gyfer y cwmni hwn, felly mae’r ffurflen yn dechrau heb ddim. Rhowch y cyfrannau a glustnodwyd yn unig isod.'''
+hash = "aeab786e4b89"
+cy = '''Nid yw cofrestr Tŷ’r Cwmnïau yn dangos cyfalaf cyfrannau ar gyfer y cwmni hwn cyn y clustnodiad, felly mae’r ffurflen yn nodi’r cyfrannau a glustnodwyd yn unig.'''
 
 [strings."ch.allot.lookup-failed"]
 hash = "85798bd4b10f"

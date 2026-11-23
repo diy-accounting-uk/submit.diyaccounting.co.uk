@@ -379,27 +379,34 @@ function renderAfter() {
   );
 }
 
+// The table of shares held before, its currency hint and its add button are shown unless the register
+// shows no capital: then the route refuses any share stated as held before, so there is nothing to type.
+function showBeforeTables(shown) {
+  for (const id of ["beforeTables", "beforeCurrencyHint", "addCurrencyBtn"]) document.getElementById(id).hidden = !shown;
+}
+
 function fillBefore(capitals, { readFailed = false } = {}) {
   document.getElementById("beforeTables").replaceChildren();
   const source = document.getElementById("beforeSource");
   const held = capitals.filter((capital) => capital.shares && capital.shares.length > 0);
+  showBeforeTables(held.length > 0 || readFailed);
   if (held.length > 0) {
     held.forEach(addCapitalTable);
     source.textContent = window.siteText(
       "ch.allot.before-from-register",
       "This is the share capital Companies House holds for the company. The return must start from it: Submit checks it against the register again when you file and sends no return that differs. File an earlier allotment that is not on the register yet first.",
     );
-  } else {
+  } else if (readFailed) {
     addCapitalTable();
-    source.textContent = readFailed
-      ? window.siteText(
-          "ch.allot.before-read-failed",
-          "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment as the register holds it: Submit checks it against the register when you file and sends no return that differs.",
-        )
-      : window.siteText(
-          "ch.allot.before-typed",
-          "Companies House holds no share capital for this company, so the return starts from none. Enter only the shares allotted below.",
-        );
+    source.textContent = window.siteText(
+      "ch.allot.before-read-failed",
+      "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment as the register holds it: Submit checks it against the register when you file and sends no return that differs.",
+    );
+  } else {
+    source.textContent = window.siteText(
+      "ch.allot.before-typed",
+      "The Companies House register shows no share capital for this company before the allotment, so the return states the allotted shares only.",
+    );
   }
 }
 

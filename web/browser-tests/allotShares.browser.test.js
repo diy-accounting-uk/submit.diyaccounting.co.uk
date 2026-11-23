@@ -354,21 +354,22 @@ test("a removed allotment leaves the statement, and the reader's correction of t
   await expect(afterRows(page).locator("td")).toHaveText(["Ordinary", "250", "250"]);
 });
 
-test("a company whose capital the register does not give files only the shares it allots", async ({ page }) => {
+test("a company whose register shows no capital gets no table of shares held before, and files the allotted shares only", async ({
+  page,
+}) => {
   const filings = [];
   await serveSite(page, { filings, capitals: [] });
   await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
   await lookUp(page);
   await expect(page.locator("#beforeSource")).toHaveText(
-    "Companies House holds no share capital for this company, so the return starts from none. Enter only the shares allotted below.",
+    "The Companies House register shows no share capital for this company before the allotment, so the return states the allotted shares only.",
   );
-  await expect(page.locator('#beforeTables input[id^="before-class-"]')).toHaveValue("");
+  await expect(page.locator("#beforeTables .capital-table")).toHaveCount(0);
+  await expect(page.locator("#beforeTables")).toBeHidden();
+  await expect(page.locator("#addCurrencyBtn")).toBeHidden();
+  await expect(page.locator("#beforeCurrencyHint")).toBeHidden();
   await page.locator("#startDate").fill("2026-11-02");
   await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#statusMessagesContainer")).toContainText(
-    "Give the prescribed particulars of rights attached to the Ordinary shares.",
-  );
   await page.locator('textarea[id^="new-rights-"]').fill("One vote a share.");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#reviewView")).toBeVisible();
@@ -377,6 +378,19 @@ test("a company whose capital the register does not give files only the shares i
   expect(filings[0].statementOfCapital[0].shares).toEqual([
     { shareClass: "Ordinary", prescribedParticulars: "One vote a share.", numShares: "50", aggregateNominalValue: "50" },
   ]);
+});
+
+test("the no-capital sentence is in Welsh on the Welsh page", async ({ page }) => {
+  await serveSite(page, { capitals: [] });
+  await page.goto(`${SITE}/cy/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.locator("#companyForm button[type=submit]").click();
+  await expect(page.locator("#formView")).toBeVisible();
+  await expect(page.locator("#beforeSource")).toHaveText(
+    "Nid yw cofrestr Tŷ’r Cwmnïau yn dangos cyfalaf cyfrannau ar gyfer y cwmni hwn cyn y clustnodiad, felly mae’r ffurflen yn nodi’r cyfrannau a glustnodwyd yn unig.",
+  );
+  await expect(page.locator("#addCurrencyBtn")).toBeHidden();
 });
 
 for (const filingData of [500, 504]) {

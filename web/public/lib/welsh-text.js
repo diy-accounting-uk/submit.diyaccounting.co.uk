@@ -217,7 +217,7 @@ window.WELSH_TEXT = {
   "ch.allot.before-read-failed":
     "Nid oedd Submit yn gallu darllen cyfalaf cyfrannau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfrannau oedd gan y cwmni cyn y clustnodiad fel y mae’r gofrestr yn ei ddal: mae Submit yn ei wirio yn erbyn y gofrestr pan fyddwch yn ffeilio, ac nid yw’n anfon ffurflen sy’n wahanol.",
   "ch.allot.before-typed":
-    "Nid oes gan Dŷ’r Cwmnïau gyfalaf cyfrannau ar gyfer y cwmni hwn, felly mae’r ffurflen yn dechrau heb ddim. Rhowch y cyfrannau a glustnodwyd yn unig isod.",
+    "Nid yw cofrestr Tŷ’r Cwmnïau yn dangos cyfalaf cyfrannau ar gyfer y cwmni hwn cyn y clustnodiad, felly mae’r ffurflen yn nodi’r cyfrannau a glustnodwyd yn unig.",
   "ch.allot.class": "Dosbarth o gyfrannau",
   "ch.allot.class-hint": "Er enghraifft, Cyffredin neu Ffafriaeth.",
   "ch.allot.confirm-capital":
