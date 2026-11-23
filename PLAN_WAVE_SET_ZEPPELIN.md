@@ -35,7 +35,7 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 ## Status
 
-submit: merged (PR #860, 21b778a6d) and live on prod as `prod-21b778a`, 2026-11-23. The prod proofs pass but CP1, which is the operator's (the test user is not an operator; `../private.diyaccounting.co.uk/operator/zeppelin-prod-proofs-2026-11-23.md`); their findings are NEXT.md rows ZP1 to ZP4. spreadsheets: pushed at d85ad1ed3 (gated), pull request #223, its `test.yml` running. Then AA12's four test-service filings and the rest of "After the deploy".
+submit: the set merged (PR #860, 21b778a6d) and is live on prod as `prod-21b778a`; the prod proofs pass but CP1, which is the operator's (`../private.diyaccounting.co.uk/operator/zeppelin-prod-proofs-2026-11-23.md`). The second pull request (the operator's choice, 2026-11-23): `claude/zeppelin-after`, PR #864, carries AA30, AA28, CL3, ZP1 to ZP5 and AA12's fixture notes, gated in the cloud on b087829; its ci deploy 45290908537 runs, then the ci proofs and `/auto-merge`. spreadsheets: merged (PR #223, 3935bac23), live, diya-gl 1.2.99 on npm. AA12's four test-service filings are 000096 to 000099. Open: MA1 (waits on DUE14), OAA3, AA13.
 
 ## The goal
 
