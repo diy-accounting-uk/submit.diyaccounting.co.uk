@@ -32,7 +32,8 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
 } from "./helpers/behaviour-helpers.js";
-import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
+import { companiesHouseLookupFixture, isCompaniesHouseSimulatorLane } from "./steps/behaviour-companies-house-filing-steps.js";
+import { COMPANY_AUTHENTICATION_CODE } from "@app/http-simulator/fixtures/register.js";
 import { fillInHostedUINativeAuth, handleTotpChallenge, submitHostedUINativeAuth } from "./steps/behaviour-login-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
@@ -363,7 +364,8 @@ test("a chat client files revised micro-entity accounts through the hosted conne
     expect(codes.structuredContent.entryId).toBeTruthy();
 
     await page.goto(new URL(codes.structuredContent.url, baseUrl).toString());
-    await page.locator("#companyAuthCode").fill("AB12CD");
+    // The simulator checks the authentication code its register holds; the other lanes file with their own.
+    await page.locator("#companyAuthCode").fill(isCompaniesHouseSimulatorLane(envFilePath) ? COMPANY_AUTHENTICATION_CODE : "AB12CD");
     await page.locator("#saveCodesBtn").click();
     await expect(page.locator("#codesDoneView")).toBeVisible();
 

@@ -238,7 +238,7 @@
         {
           "action": "type",
           "target": "#ownPresenterId",
-          "text": "12345678901",
+          "text": "98765432109",
           "clear": true,
           "secret": true,
           "caption": "Type your presenter id.",
@@ -249,7 +249,7 @@
         {
           "action": "type",
           "target": "#ownPresenterCode",
-          "text": "SimTest1",
+          "text": "CustSim1",
           "clear": true,
           "secret": true,
           "caption": "Type your presenter authentication code.",

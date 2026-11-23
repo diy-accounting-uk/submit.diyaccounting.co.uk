@@ -230,7 +230,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "2025-04-01"
+          "value": "{{register:00000001:periodStart}}"
         },
         {
           "action": "fill",
@@ -239,7 +239,7 @@
             "role": "heading",
             "name": "Period"
           },
-          "value": "2026-03-31",
+          "value": "{{register:00000001:periodEnd}}",
           "caption": "Set the accounting period.",
           "headline": "Set the accounting period",
           "keyWord": "period",
@@ -373,6 +373,58 @@
       "chapter": "The details",
       "still": true,
       "steps": [
+        {
+          "action": "click",
+          "target": "#includeComparatives",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Accounts"
+          },
+          "caption": "Add last year's figures beside this year's.",
+          "headline": "Add last year",
+          "keyWord": "last",
+          "instruction": "Tick Include last year's figures, then enter last year's profit and loss and balance sheet."
+        },
+        {
+          "action": "fill",
+          "target": "#priorTurnover",
+          "value": "20000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCostOfSales",
+          "value": "8000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorAdministrativeExpenses",
+          "value": "12000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorInterestReceivable",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#priorTax",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCashAtBank",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorProfitAndLossAccount",
+          "value": "0"
+        },
         {
           "action": "type",
           "target": "#principalActivity",

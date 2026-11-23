@@ -56,7 +56,8 @@ import {
   describeTheSmallCompanyRevision,
   dropCorrectedBookOnTheRevision,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
-import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
+import { companiesHouseLookupFixture, isCompaniesHouseSimulatorLane } from "../steps/behaviour-companies-house-filing-steps.js";
+import { COMPANY_AUTHENTICATION_CODE, PEOPLE } from "@app/http-simulator/fixtures/register.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
@@ -199,7 +200,16 @@ function buildSmallCompanyAccounts({ withComparatives = false, profitAndLossForm
   };
 }
 
-const companyAuthCode = "AB12CD";
+// The simulator checks the authentication code its register holds; the other lanes file with their own.
+const companyAuthCode = isCompaniesHouseSimulatorLane(envFilePath) ? COMPANY_AUTHENTICATION_CODE : "AB12CD";
+
+const fullName = (person) => `${person.forename} ${person.surname}`;
+// The books' directors and members, named as people of the simulator's register.
+const bookPeople = {
+  "Carol Smith": fullName(PEOPLE.eleanorBramwell),
+  "David Brown": fullName(PEOPLE.marcusTennant),
+  "Emma Wilson": fullName(PEOPLE.priyaHaldane),
+};
 
 let mockOAuth2Process;
 let serverProcess;
@@ -555,8 +565,13 @@ test("Click through: file micro-entity accounts from a book, amend them from a c
   test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
-  const correctedBookZipFile = await writeFixtureBookZip("precision-code-ltd-loan", companyNumber, testInfo.outputPath("corrected-books"));
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
+  const correctedBookZipFile = await writeFixtureBookZip(
+    "precision-code-ltd-loan",
+    companyNumber,
+    testInfo.outputPath("corrected-books"),
+    bookPeople,
+  );
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileMicroEntityAccounts(page, screenshotPath);
@@ -597,7 +612,7 @@ test("Click through: file micro-entity accounts from a book, amend them from a c
 test("Click through: file micro-entity accounts from a book and see the filing accepted", async ({ page }, testInfo) => {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileMicroEntityAccounts(page, screenshotPath);
@@ -620,7 +635,7 @@ test("Click through: file micro-entity accounts from a book and see the filing a
       priorFixedAssets: "182902",
       priorCapitalAndReserves: "180802",
       averageEmployees: "3",
-      directorName: "Carol Smith",
+      directorName: bookPeople["Carol Smith"],
     },
     screenshotPath,
   );
@@ -674,7 +689,7 @@ test("Click through: file micro-entity accounts from an iXBRL accounts document 
 test("Click through: a book with no activity ticks the dormant box on the micro-entity form", async ({ page }, testInfo) => {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("dormant-ltd", companyNumber, testInfo.outputPath("books"));
+  const bookZipFile = await writeFixtureBookZip("dormant-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileMicroEntityAccounts(page, screenshotPath);
@@ -696,7 +711,7 @@ test("Click through: a book with no activity ticks the dormant box on the micro-
 test("Click through: file small company accounts from a book and see the filing accepted", async ({ page }, testInfo) => {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"), bookPeople);
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileSmallCompanyAccounts(page, screenshotPath);
@@ -718,8 +733,8 @@ test("Click through: file small company accounts from a book and see the filing 
       currentProfitAndLossAccount: "307928",
       noteLandBuildingsCostAtStart: "200000",
       averageEmployees: "3",
-      directors: "Carol Smith\nDavid Brown\nEmma Wilson",
-      directorName: "Carol Smith",
+      directors: Object.values(bookPeople).join("\n"),
+      directorName: bookPeople["Carol Smith"],
     },
     screenshotPath,
   );

@@ -232,7 +232,7 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "2025-01-01"
+          "value": "{{register:00000001:periodStart:-3}}"
         },
         {
           "action": "fill",
@@ -241,8 +241,8 @@
             "role": "heading",
             "name": "Period"
           },
-          "value": "2026-03-31",
-          "caption": "This period of account runs for 15 months, from 1 January 2025 to 31 March 2026.",
+          "value": "{{register:00000001:periodEnd}}",
+          "caption": "This period of account runs for 15 months, to the end of the company's accounting year.",
           "headline": "A 15 month period",
           "keyWord": "15",
           "instruction": "Enter the Period start and Period end of the 15-month period of account."
@@ -367,6 +367,54 @@
           "action": "fill",
           "target": "#currentProfitAndLossAccount",
           "value": "95038"
+        },
+        {
+          "action": "click",
+          "target": "#includeComparatives",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Accounts"
+          }
+        },
+        {
+          "action": "fill",
+          "target": "#priorTurnover",
+          "value": "20000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCostOfSales",
+          "value": "8000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorAdministrativeExpenses",
+          "value": "12000"
+        },
+        {
+          "action": "fill",
+          "target": "#priorInterestReceivable",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#priorTax",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCashAtBank",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorProfitAndLossAccount",
+          "value": "0"
         },
         {
           "action": "hold",

@@ -290,12 +290,15 @@ const bookFixturesDirectory = path.resolve(process.cwd(), "fixtures/diya-gl");
 /**
  * Zip a fixture book (book.toml and lines.jsonl) for the "Fill from your books" card, with the
  * company number the sandbox looks up in place of the fixture's own, and return the file's path.
+ * peopleNamed maps a name the fixture gives a director or member to the name the zipped book gives
+ * them instead.
  */
-export async function writeFixtureBookZip(fixtureName, companyNumber, outputDirectory) {
+export async function writeFixtureBookZip(fixtureName, companyNumber, outputDirectory, peopleNamed = {}) {
   const directory = path.join(bookFixturesDirectory, fixtureName);
-  const bookToml = fs
+  let bookToml = fs
     .readFileSync(path.join(directory, "book.toml"), "utf8")
     .replace(/("diya-gl:companyNumber" = ")\d+(")/, `$1${companyNumber}$2`);
+  for (const [fixturePerson, name] of Object.entries(peopleNamed)) bookToml = bookToml.replaceAll(`"${fixturePerson}"`, `"${name}"`);
   const zip = new JSZip();
   zip.file("book.toml", bookToml);
   zip.file("lines.jsonl", fs.readFileSync(path.join(directory, "lines.jsonl")));

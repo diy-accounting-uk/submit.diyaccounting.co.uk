@@ -334,12 +334,13 @@
           "dwellMs": 500
         },
         {
-          "action": "click",
+          "action": "point",
           "target": "#includeComparatives",
-          "caption": "Add last year's figures for comparison.",
-          "instruction": "Tick Include prior-year comparatives to add last year's figures.",
-          "headline": "Add last year",
-          "keyWord": "last"
+          "caption": "These are not the first accounts, so last year's figures go beside this year's.",
+          "instruction": "Check that Include prior-year comparatives is ticked: accounts that are not the company's first show last year's figures.",
+          "headline": "Last year beside this year",
+          "keyWord": "last",
+          "dwellMs": 500
         },
         {
           "action": "fill",
