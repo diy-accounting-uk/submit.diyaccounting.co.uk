@@ -327,6 +327,7 @@ test("a malformed personal code, an unconfirmed identity and a missing consent a
   await page.locator("#identityVerified").check();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#formView")).toContainText("Confirm the company has the officer's consent to act in this appointment.");
+  await expect(page.locator("#statusMessagesContainer")).not.toContainText("personal code");
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });

@@ -752,6 +752,7 @@ async function handleFile() {
     );
     return;
   }
+  if (window.hideStatus) window.hideStatus();
   const form = warningShown ? { ...filing.form, capitalDifferenceConfirmed: true } : filing.form;
   const scenario = document.getElementById("govTestScenario").value.trim();
   const headers = scenario ? { "Gov-Test-Scenario": scenario } : {};

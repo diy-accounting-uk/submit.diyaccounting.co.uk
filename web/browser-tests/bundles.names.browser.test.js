@@ -7,7 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveRealSite, SITE_ORIGIN, screenshotAll } from "./serveRealSite.js";
+import { serveRealSite, SITE_ORIGIN, screenshotAll, declineConsent } from "./serveRealSite.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -105,6 +105,7 @@ test.describe("Your current bundles says where each row comes from", () => {
       await expect(current).not.toContainText("site's configuration");
       const order = await current.locator(".bundle-group-heading, .bundle-row-name").allTextContents();
       expect(order.indexOf("Resident Pro")).toBeLessThan(order.indexOf("Set for your account"));
+      await declineConsent(page);
       await page.screenshot({ path: `target/screenshots/bundles-groups-${width}.png`, fullPage: true });
     });
   }

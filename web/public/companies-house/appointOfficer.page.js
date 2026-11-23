@@ -235,6 +235,8 @@ function personFields(role, appointmentDate) {
 
 function handleAppointmentSubmit(event) {
   event.preventDefault();
+  // A refusal belongs to the answers it refused: each Continue checks them afresh.
+  window.hideStatus?.();
   showFieldsForChoice();
   if (!window.formErrors.requireFormFields(document.getElementById("appointmentForm"))) return;
   const { role, corporate } = chosenKind();

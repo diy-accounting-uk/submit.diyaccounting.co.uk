@@ -125,7 +125,7 @@ function syncChange() {
   const removing = change === "to-office" && document.getElementById("removeSail").checked;
   document.getElementById("addressFields").style.display = change === "sail" ? "block" : "none";
   document.getElementById("recordFields").style.display = change === "sail" ? "none" : "block";
-  document.getElementById("removeSailChoice").style.display = change === "to-office" ? "block" : "none";
+  document.getElementById("removeSailChoice").hidden = change !== "to-office";
   document.getElementById("recordChoices").style.display = removing ? "none" : "block";
   document.getElementById("records-hint").style.display = removing ? "none" : "block";
   document.getElementById("recordsLegend").textContent =
@@ -177,6 +177,7 @@ function changeFields(change) {
   if (change === "to-office" && document.getElementById("removeSail").checked) return { destination, removeSailAddress: true };
   const records = Array.from(document.querySelectorAll('#recordChoices input[name="record"]:checked')).map((input) => input.value);
   if (records.length === 0) {
+    window.formErrors.clearFormErrors();
     showError(window.siteText("ch.records.choose-record", "Tick at least one record that has moved."));
     return null;
   }

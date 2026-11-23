@@ -203,6 +203,10 @@ test("one record moved back to the registered office is filed with that record a
   await page.getByLabel("Records are now kept at the registered office (form AD04)").check();
   await expect(page.locator("#recordsLegend")).toHaveText("Records now kept at the registered office");
   await expect(page.locator("#removeSailChoice")).toBeVisible();
+  const box = await page.locator("#removeSail").boundingBox();
+  const labelBox = await page.locator('label[for="removeSail"]').boundingBox();
+  expect(labelBox.x).toBeGreaterThan(box.x + box.width);
+  expect(labelBox.y).toBeLessThan(box.y + box.height);
   await page.getByLabel("Register of debenture holders").check();
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();
@@ -315,6 +319,7 @@ test("a move that names no record, or an address with no building, is refused be
   await page.getByLabel("Records are now kept at the inspection location (form AD03)").check();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText("Tick at least one record that has moved.");
+  await expect(page.locator("#formView")).not.toContainText("Enter Building name or number");
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });

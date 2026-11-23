@@ -758,6 +758,7 @@ for (const width of [1280, 390]) {
     await page.getByLabel("The capital this return states is the company's capital at the date the return is made up to").check();
     await page.getByRole("button", { name: "File with Companies House" }).click();
     await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+    await expect(page.locator("#statusMessagesContainer")).not.toContainText("Tick the confirmation");
     expect(filings).toHaveLength(2);
     expect(filings[0]).not.toHaveProperty("capitalDifferenceConfirmed");
     expect(filings[1].capitalDifferenceConfirmed).toBe(true);

@@ -787,8 +787,10 @@ async function appendFileThis(container, { activityId, page, label, companyNumbe
 
 // -- shared rendering ---------------------------------------------------------------------------
 
+// A term whose value the register did not give is left out, so no label stands over an empty line.
 function appendTerms(dl, fields) {
   fields.forEach(([label, value]) => {
+    if (value === undefined || value === null || value === "") return;
     const dt = document.createElement("dt");
     dt.textContent = label;
     const dd = document.createElement("dd");

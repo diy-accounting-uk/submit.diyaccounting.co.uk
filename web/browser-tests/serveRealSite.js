@@ -62,7 +62,7 @@ export async function serveRealSite(page, { signedIn = false, apiHandler = () =>
 }
 
 // Records the consent answer as declined and removes the banner and dialog, so a capture shows the page.
-async function declineConsent(page) {
+export async function declineConsent(page) {
   await page.evaluate(() => {
     try {
       localStorage.setItem("consent.rum", "declined");

@@ -30,6 +30,8 @@ const YEAR = TODAY > `${TODAY.slice(0, 4)}-04-30` ? Number(TODAY.slice(0, 4)) + 
 const PREVIOUS_YEAR = YEAR - 1;
 const EARLIER_YEAR = YEAR - 2;
 const OLDEST_YEAR = YEAR - 3;
+// A year whose accounts sit beyond the newest ten filings the routes read.
+const BEYOND_NEWEST_YEAR = YEAR - 10;
 
 const CONTENT_TYPES = {
   ".html": "text/html",
@@ -465,9 +467,9 @@ test.describe("Company lookup drill-down", () => {
 // A company with more filings than the routes read: the newest of them, and the total on the register.
 const TRUNCATED_FILINGS = { ...FILINGS, totalCount: 612, truncated: true };
 const OLDER_SET = {
-  transactionId: "SIMTX00000001AA2085",
-  madeUpDate: "2085-04-30",
-  filedOn: "2085-12-01",
+  transactionId: `SIMTX00000001AA${BEYOND_NEWEST_YEAR}`,
+  madeUpDate: `${BEYOND_NEWEST_YEAR}-04-30`,
+  filedOn: `${BEYOND_NEWEST_YEAR}-12-01`,
   accountsType: "micro-entity",
   amended: false,
   paperFiled: false,
@@ -583,20 +585,22 @@ test.describe("Company lookup drill-down past the newest filings", () => {
     await expect(page.locator("#drillView .drill-truncated")).toContainText("This shows the accounts among the company's newest filings.", {
       timeout: 15000,
     });
-    await expect(page.locator("#drillView")).toContainText("30 April 2085");
+    await expect(page.locator("#drillView")).toContainText(`30 April ${BEYOND_NEWEST_YEAR}`);
     await shoot(page, "accounts-truncated");
   });
 
   test("a set older than the newest ten whose iXBRL mark was not read is not called PDF only or not held", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"], filedAccounts: TRUNCATED_FILED_ACCOUNTS });
-    await page.goto(`${BASE}/companies-house/company/00000001/accounts/2085-04-30/SIMTX00000001AA2085`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillView")).toContainText("SIMTX00000001AA2085", { timeout: 15000 });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts/${BEYOND_NEWEST_YEAR}-04-30/SIMTX00000001AA${BEYOND_NEWEST_YEAR}`, {
+      waitUntil: "networkidle",
+    });
+    await expect(page.locator("#drillView")).toContainText(`SIMTX00000001AA${BEYOND_NEWEST_YEAR}`, { timeout: 15000 });
     const text = await page.locator("#drillView").innerText();
     expect(text).not.toContain("iXBRL document");
     expect(text).not.toContain("Not held");
     expect(text).not.toMatch(/PDF only/i);
     await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillView")).toContainText("30 April 2085", { timeout: 15000 });
+    await expect(page.locator("#drillView")).toContainText(`30 April ${BEYOND_NEWEST_YEAR}`, { timeout: 15000 });
     expect(await page.locator("#drillView").innerText()).not.toMatch(/PDF only/i);
   });
 

@@ -259,6 +259,7 @@ test.describe("Company watch list", () => {
       await page.goto(`${BASE}/companies-house/company/${GLENMORE.number}`, { waitUntil: "networkidle" });
       const profileAdd = page.locator("#watchSection .watch-list-add");
       await expect(profileAdd).toHaveText("Add to watch list", { timeout: 15000 });
+      await expect(page.locator("#companyProfile")).not.toContainText("Incorporated");
       await shoot(page, "lookup-profile-add");
       await profileAdd.click();
       await expect(profileAdd).toHaveText("On your watch list");
