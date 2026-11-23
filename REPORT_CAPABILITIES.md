@@ -995,10 +995,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-13 Warm backend routes via prefetch scripts
 
 - **Use when:** a page must pre-warm a Lambda or route before its own script needs the real response.
-- **Does:** Each prefetch-*-head.js script issues one HEAD request from the page's head element. It targets the catalog, HMRC receipt, HMRC receipt name, HMRC token or mock auth URL route. It does not fetch or cache the response body.
+- **Does:** Each prefetch-*-head.js script issues one HEAD request from the page's head element. It targets the HMRC receipt, HMRC receipt name, HMRC token or mock auth URL route. It does not fetch or cache the response body.
 - **Run:** no command; see Does and Entry
-- **Entry:** `web/public/prefetch/prefetch-catalog-head.js`
-- **Files:** web/public/prefetch/prefetch-catalog-head.js, web/public/prefetch/prefetch-hmrc-receipt-head.js, web/public/prefetch/prefetch-hmrc-receipt-name-head.js, web/public/prefetch/prefetch-hmrc-token-head.js, web/public/prefetch/prefetch-mock-authurl-head.js
+- **Entry:** `web/public/prefetch/prefetch-hmrc-receipt-head.js`
+- **Files:** web/public/prefetch/prefetch-hmrc-receipt-head.js, web/public/prefetch/prefetch-hmrc-receipt-name-head.js, web/public/prefetch/prefetch-hmrc-token-head.js, web/public/prefetch/prefetch-mock-authurl-head.js
 - **Keywords:** prefetch, head request, warm route, cold start, lambda warming
 - **Related:** SITE-09
 
@@ -1138,7 +1138,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** hmrcVatReturnGet.js's ingestHandler calls getVatReturn to read back a filed HMRC VAT return. viewVatReturn.html displays the result, including a status-clear case.
 - **Run:** `GET /api/v1/hmrc/vat/return`
 - **Entry:** `app/functions/hmrc/hmrcVatReturnGet.js:ingestHandler`; `app/functions/hmrc/hmrcVatReturnGet.js:getVatReturn`
-- **Files:** app/functions/hmrc/hmrcVatReturnGet.js, app/unit-tests/functions/hmrcVatReturnGet.test.js, behaviour-tests/getVatReturn.behaviour.test.js, web/public/hmrc/vat/viewVatReturn.html, web/browser-tests/view-vat-return.browser.test.js, web/browser-tests/viewVatReturn.statusClear.browser.test.js, web/public/prefetch/prefetch-hmrc-vat-return-get-head.js
+- **Files:** app/functions/hmrc/hmrcVatReturnGet.js, app/unit-tests/functions/hmrcVatReturnGet.test.js, behaviour-tests/getVatReturn.behaviour.test.js, web/public/hmrc/vat/viewVatReturn.html, web/browser-tests/view-vat-return.browser.test.js, web/browser-tests/viewVatReturn.statusClear.browser.test.js
 - **Keywords:** vat return, view vat return, period key, hmrc vat api, status clear, get vat return
 - **Related:** HMRC-01, HMRC-03
 

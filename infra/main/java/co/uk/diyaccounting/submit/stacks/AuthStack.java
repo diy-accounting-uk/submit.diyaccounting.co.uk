@@ -162,6 +162,7 @@ public class AuthStack extends Stack {
                         .urlPath(props.sharedNames().auth.cognitoTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().auth.cognitoTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().auth.cognitoTokenPostLambdaCustomAuthorizer)
+                        .headRoute(true)
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .build());
         this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.apiProps;

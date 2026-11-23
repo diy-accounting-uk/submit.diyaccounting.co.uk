@@ -441,6 +441,7 @@ public class HmrcStack extends Stack {
                         .urlPath(props.sharedNames().hmrc.hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrc.hmrcTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrc.hmrcTokenPostLambdaCustomAuthorizer)
+                        .headRoute(true)
                         .environment(exchangeHmrcTokenLambdaEnv)
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;

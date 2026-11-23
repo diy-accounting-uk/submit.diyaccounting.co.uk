@@ -526,101 +526,36 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
 
-        // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
-        // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
-        // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
-        // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
-        // sharing), for 77 + 4 + 3 + 3 = 87. GET /api/v1/operator/snapshot adds its own route
-        // plus its automatic HEAD route, since no other route shares that path. GET and PUT
-        // /api/v1/hmrc/itsa/self-employment/annual add their own two routes plus one shared
-        // auto-HEAD route for the path, bringing the total to 96. GET
-        // /api/v1/hmrc/itsa/obligations/crystallisation and GET /api/v1/hmrc/itsa/status each add
-        // their own route plus their own automatic HEAD route, since neither path is shared with
-        // another method, for 96 + 2 + 2 = 100. POST /api/v1/hmrc/itsa/bsas/trigger, GET
-        // /api/v1/hmrc/itsa/bsas/self-employment and POST
-        // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
-        // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106,
-        // and the earlier count of 112 (106 plus the WAF-explored figure above). Each of the four
-        // DIYA-GL storage routes also answers on /api/v1/books, its permanent second path: the
-        // same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
-        // another 10 routes, bringing the total to 112 + 10 = 122.
-        // GET, PUT and DELETE /api/v1/hmrc/itsa/losses-and-claims share one path: three method
-        // routes plus one auto-HEAD route for the GET. The same shape repeats for
-        // /api/v1/hmrc/itsa/tax-liability-adjustments, for another 4 + 4 = 8 routes, bringing the
-        // total to 135 + 8 = 143. GET and POST /api/v1/practice/clients share one path (2 method
-        // routes + 1 auto-HEAD), and GET and DELETE /api/v1/practice/clients/{clientId} share
-        // another (2 + 1), for another 3 + 3 = 6 routes, bringing the total to 143 + 6 = 149. GET
-        // /api/v1/practice/clients/{clientId}/authorisation adds its own route plus its own
-        // auto-HEAD route, since no other method shares that path, for 149 + 2 = 151. POST and
-        // DELETE /api/v1/practice/clients/{clientId}/authorisation/invitations share one path (2
-        // method routes + 1 auto-HEAD, since auto-HEAD is added once per path regardless of which
-        // method registers it first), for another 3 routes, bringing the total to 151 + 3 = 154.
-        // POST /api/v1/practice/clients/{clientId}/books/{bookId}/move adds its own route plus
-        // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156. The
-        // six confirmation statement routes (officers, PSCs, filing-data, preview, submit, poll)
-        // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
-        // routes, for 156 + 12 = 168. POST /api/v1/billing/activity-checkout adds its own route
-        // plus its own auto-HEAD route, since no other method shares that path, for 168 + 2 = 170.
-        // POST /api/v1/session/sign-out adds its own route, its own auto-HEAD route, and an
-        // unauthenticated OPTIONS preflight route (every Cognito app client's origin needs the
-        // cross-origin browser preflight to reach a route with no authoriser, the same reason
-        // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
-        // route plus its own auto-HEAD route, for 173 + 2 = 175. The three Company Tax Return routes
-        // each sit on their own unshared path, adding three primary routes and three auto-HEAD
-        // routes, for 187 + 6 = 193. GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/details
-        // share one path, adding three primary routes and one auto-HEAD route, for 193 + 4 = 197.
-        // GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/period share one path and add the
-        // same four, for 197 + 4 = 201. GET and PUT /api/v1/hmrc/itsa/foreign-property/annual share one
-        // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204. GET
-        // /api/v1/hmrc/itsa/bsas/foreign-property and POST its /adjust path each sit on their own
-        // unshared path, adding two primary routes and two auto-HEAD routes, for 204 + 4 = 208. PUT
-        // /api/v1/account/settings sits on its own unshared path, adding its primary route and its
-        // auto-HEAD route, for 208 + 2 = 210. POST /api/v1/pass/release sits on its own unshared path,
-        // adding its primary route and its auto-HEAD route, for 210 + 2 = 212. GET and POST /api/v1/affiliate
-        // share one path and add two primary routes and one auto-HEAD route, for 212 + 3 = 215. GET /api/v1/pass/held
-        // sits on its own unshared path and adds
-        // a primary route and an auto-HEAD route, for 217. GET and POST /api/v1/affiliate/application share
-        // one path and add two primary routes and one auto-HEAD route, for 220. GET
-        // /api/v1/operator/console-image sits on its own unshared path and adds a primary route and
-        // an auto-HEAD route, for 222. POST /api/v1/pass/delete sits on its own unshared path and adds a
-        // primary route and an auto-HEAD route, for 224. GET /api/v1/commission/mine sits on its own unshared
-        // path and adds a primary route and an auto-HEAD route, for 226. GET /api/v1/public/company-deadlines sits
-        // on its own unshared path with no authorizer and adds a primary route and an auto-HEAD route, which
-        // raise the total by 2 over the figure the tests held before it. The company lookup's filing
-        // history, filed accounts and filed document routes each sit on their own unshared path and
-        // add a primary route and an auto-HEAD route, for 230 + 6 = 236. GET /api/v1/public/company-register
-        // sits on its own unshared path with no authorizer and adds a primary route and an auto-HEAD
-        // route, for 236 + 2 = 238. GET /api/v1/pass/campaign sits on its own unshared path and adds a
-        // primary route and an auto-HEAD route, for 238 + 2 = 240. GET
-        // /api/v1/companies-house/company/{companyNumber}/last-accounts sits on its own unshared path and
-        // adds a primary route and an auto-HEAD route, for 240 + 2 = 242. GET
-        // /api/v1/companies-house/company/{companyNumber}/reports/{report} sits on its own unshared path
-        // and adds a primary route and an auto-HEAD route, for 242 + 2 = 244. POST
-        // /api/v1/account/acquisition sits on its own unshared path and adds a primary route and an
-        // auto-HEAD route, for 244 + 2 = 246. POST /api/v1/companies-house/psc-cessation and GET
-        // /api/v1/companies-house/forms/{kind}/{submissionNumber} each sit on their own unshared path and add a
-        // primary route and an auto-HEAD route, for 246 + 4 = 250. The due list's routes sit on three
-        // unshared paths: GET /api/v1/due-list with its auto-HEAD route, PUT and DELETE on
-        // /api/v1/due-list/businesses/{id} with one auto-HEAD route, and POST /api/v1/due-list/rows with
-        // its auto-HEAD route, for 250 + 7 = 257. POST /api/v1/companies-house/psc-change-details sits on
-        // its own unshared path and adds a primary route and an auto-HEAD route, for 257 + 2 = 259. POST
-        // /api/v1/companies-house/accounting-reference-date does the same, for 259 + 2 = 261. POST
-        // /api/v1/companies-house/officer-resignation does the same, for 261 + 2 = 263. POST
-        // /api/v1/companies-house/sail-address and POST /api/v1/companies-house/record-location each sit on
-        // their own unshared path and add a primary route and an auto-HEAD route, for 263 + 4 = 267. POST
-        // /api/v1/companies-house/change-of-name sits on its own unshared path and adds a primary route and
-        // an auto-HEAD route, for 267 + 2 = 269. POST
-        // /api/v1/companies-house/psc-statement-notification and POST
-        // /api/v1/companies-house/psc-statement-withdrawal each sit on their own unshared path and add a
-        // primary route and an auto-HEAD route, for 269 + 4 = 273. POST
-        // /api/v1/companies-house/psc-notification sits on its own unshared path and adds a primary route
-        // and an auto-HEAD route, for 273 + 2 = 275. POST
-        // /api/v1/companies-house/officer-appointment and POST /api/v1/companies-house/officer-change each
-        // sit on their own unshared path and add a primary route and an auto-HEAD route, for 275 + 4 = 279. POST
-        // /api/v1/companies-house/allotment-of-shares sits on its own unshared path and adds a primary route
-        // and an auto-HEAD route, for 279 + 2 = 281.
+        // A HEAD route sits only on a path that has a GET route, and on the two token paths whose
+        // pages warm their Lambdas with a HEAD request.
+        var headWithoutGet = java.util.Set.of("/api/v1/cognito/token", "/api/v1/hmrc/token");
+        var methodsByPath = new java.util.HashMap<String, java.util.Set<String>>();
+        for (Template template : apiTemplates) {
+            for (Object route :
+                    template.findResources("AWS::ApiGatewayV2::Route").values()) {
+                @SuppressWarnings("unchecked")
+                var properties = (Map<String, Object>) ((Map<String, Object>) route).get("Properties");
+                String[] routeKey = ((String) properties.get("RouteKey")).split(" ", 2);
+                methodsByPath
+                        .computeIfAbsent(routeKey[1], path -> new java.util.HashSet<>())
+                        .add(routeKey[0]);
+            }
+        }
+        methodsByPath.forEach((path, methods) -> {
+            if (methods.contains("HEAD")) {
+                org.junit.jupiter.api.Assertions.assertTrue(
+                        methods.contains("GET") || headWithoutGet.contains(path), "HEAD " + path + " has no GET route");
+            }
+        });
+        headWithoutGet.forEach(path -> {
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    java.util.Set.of("POST", "HEAD"), methodsByPath.get(path), "the routes on " + path);
+        });
+
+        // Every route the two API stacks build: one per method on a path, a HEAD route beside each GET
+        // route and on the two token paths, and an OPTIONS preflight route per books path.
         assertEquals(
-                281,
+                225,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")
