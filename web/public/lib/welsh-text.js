@@ -393,6 +393,25 @@ window.WELSH_TEXT = {
     "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Dim ond y cyfrif elw a cholled sydd yn y ffeil: llenwch y fantolen a gweddill y cyfrifon, yna ewch i’r rhagolwg.",
   "ch.books-filled-micro":
     "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
+  "ch.books.add-capital": "Ychwanegu’r cyfranddalwyr a’r cyfalaf",
+  "ch.books.auth-code": "Cod dilysu’r cwmni (dewisol)",
+  "ch.books.auth-code-hint":
+    "Mae Tŷ’r Cwmnïau yn rhoi’r cyfranddalwyr a’r cyfalaf cyfranddaliadau ar gyfer cod dilysu’r cwmni. Anfonir y cod ar gyfer y cais hwn yn unig ac ni chaiff ei gadw.",
+  "ch.books.auth-code-needed": "Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.",
+  "ch.books.building": "Yn gwneud y llyfrau…",
+  "ch.books.capital-added": "Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.",
+  "ch.books.differences": "Beth i’w wirio yn y llyfr:",
+  "ch.books.download-package": "Lawrlwytho’r flwyddyn nesaf fel pecyn taenlen",
+  "ch.books.failed": "Nid oedd modd gwneud y llyfrau: {reason}",
+  "ch.books.first-period": "Nid yw’r cwmni wedi ffeilio cyfrifon eto, felly mae’r llyfr yn dechrau heb falansau agoriadol.",
+  "ch.books.heading": "Llyfrau’r cwmni",
+  "ch.books.intro":
+    "Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.",
+  "ch.books.next-period": "Mae llyfr y flwyddyn nesaf yn rhedeg o {start} i {end}.",
+  "ch.books.no-filed-book":
+    "Nid oes gan y cyfrifon diwethaf ar y gofrestr ddogfen iXBRL y gall y dudalen hon ei darllen, felly nid oes balansau agoriadol yn llyfr y flwyddyn nesaf.",
+  "ch.books.open-filed": "Agor y cyfrifon diwethaf yn DIYA-GL",
+  "ch.books.start-next-year": "Dechrau’r flwyddyn nesaf yn DIYA-GL",
   "ch.callback.back-to-filing": "Yn ôl i’r ffeilio gyda Thŷ’r Cwmnïau",
   "ch.callback.exchanging": "Wrthi’n cyfnewid y cod awdurdodi am docyn mynediad...",
   "ch.callback.heading": "Cysylltu â Thŷ’r Cwmnïau",

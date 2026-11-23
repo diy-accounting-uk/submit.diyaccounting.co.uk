@@ -217,7 +217,7 @@ export default Ajv2020Stub;`,
   };
 }
 
-// The bundle's public surface: the engine read, the book writers (a JSON file, book.toml and lines.jsonl text, the provenance stamps), the three derivations, the CT600 figures
+// The bundle's public surface: the engine read, the book of a company's next period from the register, the book writers (a JSON file, book.toml and lines.jsonl text, the provenance stamps), the three derivations, the CT600 figures
 // model (ct600Figures.js and ct600LongPeriod.js, the modules the server works the boxes with), the two accounts derivations, and the schemas
 // registered so the read validates and the writers order their keys with no further setup.
 const ENTRY_SOURCE = `
@@ -249,6 +249,7 @@ export { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-
 export { writeBookJson } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 export { canonicalBookToml, canonicalLinesJsonl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-canonical.js";
 export { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
+export { buildBookFromRegister, RegisterBookError } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-register-book.js";
 export { annualInvestmentAllowanceMaximum, deriveCt600FromFigures, validateCt600Figures, section455RateChangeDate } from "./app/services/ct600Figures.js";
 export { accountingPeriodsOf, deriveLongPeriodReturns, splitLongPeriodFigures } from "./app/services/ct600LongPeriod.js";
 export async function ltdTaxData(financialYear) {

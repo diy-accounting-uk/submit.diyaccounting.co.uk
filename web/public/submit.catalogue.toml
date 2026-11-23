@@ -575,6 +575,19 @@ metered = false
 paths = ["companies-house/companySearch.html", "^/api/v1/companies-house/search$", "^/api/v1/companies-house/company/[^/]+$", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-history|registered-email-address/eligibility)$", "^/api/v1/public/company-deadlines$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
+# start-company-books: the company drill-down's books in the DIYA-GL app, made in the browser from
+# the register: the last filed accounts' document, and the shareholders and capital for the company
+# authentication code. It has no page of its own; the drill-down shows it to an account that holds it.
+[[activities]]
+id = "start-company-books"
+name = "Start Company Books (Companies House, preview)"
+nameCy = "Dechrau llyfrau cwmni (Tŷ'r Cwmnïau, rhagolwg (preview))"
+display = "never"
+bundles = ["default"]
+metered = false
+paths = ["^/api/v1/companies-house/company/[^/]+/filed-accounts$", "^/api/v1/companies-house/company/[^/]+/filed-accounts/[^/]+/document$", "^/api/v1/companies-house/company/[^/]+/filing-data$"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
 [[activities]]
 id = "company-watch-list"
 name = "Company Watch List (Companies House)"

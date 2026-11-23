@@ -28,6 +28,7 @@ import {
   openCompanyProfile,
   verifyCompanyProfile,
   verifyCompanyAddress,
+  verifyCompanyBooksOffered,
   openCompanyView,
   verifyNoPersonalDetailsShown,
   openFirstFilingWithAView,
@@ -137,6 +138,7 @@ test("Click through: Search Companies House and view a company profile", async (
   await openCompanyProfile(page, expectedCompanyName, screenshotPath);
   await verifyCompanyProfile(page, expectedCompanyName, expectedCompanyStatus, screenshotPath);
   await verifyCompanyAddress(page, expectedCompanyNumber, "", screenshotPath);
+  await verifyCompanyBooksOffered(page, screenshotPath);
 
   /* ********************** */
   /*  COMPANY DRILL-DOWN    */

@@ -449,11 +449,15 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/companies-house/confirmation-statement",
         "/api/v1/companies-house/confirmation-statement/render",
         "/api/v1/companies-house/confirmation-statement/00001A",
+        "/api/v1/companies-house/psc-verification-statement",
+        "/api/v1/companies-house/psc-verification-statement/00001A",
+      ];
+      // The company books read the last filed accounts and, for the authentication code, the
+      // shareholders and capital, for every signed-in account where the activity is listed.
+      const companyBooksRoutes = [
         "/api/v1/companies-house/company/00000008/filing-data",
         "/api/v1/companies-house/company/00000008/filed-accounts",
         "/api/v1/companies-house/company/00000008/filed-accounts/MzAwMDAwMDAwMA/document",
-        "/api/v1/companies-house/psc-verification-statement",
-        "/api/v1/companies-house/psc-verification-statement/00001A",
       ];
       const lookupRoutes = [
         "/api/v1/companies-house/search",
@@ -493,8 +497,14 @@ describe("bundleEnforcement.js", () => {
         });
       });
 
-      test.each([...lookupRoutes, ...defaultBundleRoutes])("%s is allowed", async (urlPath) => {
+      test.each([...lookupRoutes, ...defaultBundleRoutes, ...companyBooksRoutes])("%s is allowed", async (urlPath) => {
         await expect(enforceBundles(defaultOnlyEvent(urlPath))).resolves.toBeDefined();
+      });
+
+      test.each(companyBooksRoutes)("%s is refused on prod, where the company books are not listed", async (urlPath) => {
+        const event = defaultOnlyEvent(urlPath);
+        process.env.ENVIRONMENT_NAME = "prod";
+        await expect(enforceBundles(event)).rejects.toMatchObject({ name: "BundleEntitlementError" });
       });
 
       test.each([

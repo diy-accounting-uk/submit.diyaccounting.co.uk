@@ -27572,3 +27572,69 @@ cy = '''Lawrlwytho fel pecyn taenlen'''
 [strings."ch.revision.downloads-open"]
 hash = "01062a3963f8"
 cy = '''Agor yn DIYA-GL'''
+
+# == The company drill-down's books in the DIYA-GL app (lib/company-books.js), ids ch.books.* ==
+
+[strings."ch.books.heading"]
+hash = "d1e84945ae4b"
+cy = '''Llyfrau’r cwmni'''
+
+[strings."ch.books.intro"]
+hash = "bc345126a4fa"
+cy = '''Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.'''
+
+[strings."ch.books.building"]
+hash = "c5b9ea7f8be9"
+cy = '''Yn gwneud y llyfrau…'''
+
+[strings."ch.books.failed"]
+hash = "446c95ea338e"
+cy = '''Nid oedd modd gwneud y llyfrau: {reason}'''
+
+[strings."ch.books.next-period"]
+hash = "7b46099aa736"
+cy = '''Mae llyfr y flwyddyn nesaf yn rhedeg o {start} i {end}.'''
+
+[strings."ch.books.no-filed-book"]
+hash = "901b6de01a69"
+cy = '''Nid oes gan y cyfrifon diwethaf ar y gofrestr ddogfen iXBRL y gall y dudalen hon ei darllen, felly nid oes balansau agoriadol yn llyfr y flwyddyn nesaf.'''
+
+[strings."ch.books.first-period"]
+hash = "d3962ecd2f27"
+cy = '''Nid yw’r cwmni wedi ffeilio cyfrifon eto, felly mae’r llyfr yn dechrau heb falansau agoriadol.'''
+
+[strings."ch.books.differences"]
+hash = "e1969e17ba77"
+cy = '''Beth i’w wirio yn y llyfr:'''
+
+[strings."ch.books.open-filed"]
+hash = "7b088ba47c6d"
+cy = '''Agor y cyfrifon diwethaf yn DIYA-GL'''
+
+[strings."ch.books.start-next-year"]
+hash = "d8df1dbf7dbc"
+cy = '''Dechrau’r flwyddyn nesaf yn DIYA-GL'''
+
+[strings."ch.books.download-package"]
+hash = "ea91ef9b4288"
+cy = '''Lawrlwytho’r flwyddyn nesaf fel pecyn taenlen'''
+
+[strings."ch.books.auth-code"]
+hash = "44d1f471ea7c"
+cy = '''Cod dilysu’r cwmni (dewisol)'''
+
+[strings."ch.books.auth-code-hint"]
+hash = "cb9f108a018b"
+cy = '''Mae Tŷ’r Cwmnïau yn rhoi’r cyfranddalwyr a’r cyfalaf cyfranddaliadau ar gyfer cod dilysu’r cwmni. Anfonir y cod ar gyfer y cais hwn yn unig ac ni chaiff ei gadw.'''
+
+[strings."ch.books.add-capital"]
+hash = "30c21e6e9481"
+cy = '''Ychwanegu’r cyfranddalwyr a’r cyfalaf'''
+
+[strings."ch.books.auth-code-needed"]
+hash = "8a8635942f33"
+cy = '''Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.'''
+
+[strings."ch.books.capital-added"]
+hash = "c1ee70dd96a3"
+cy = '''Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.'''

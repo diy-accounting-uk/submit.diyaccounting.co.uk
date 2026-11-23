@@ -11,11 +11,13 @@ const LANDLORD_DIRECTORY = path.join(process.cwd(), "mcp/test/fixtures/landlord-
 const bundleUrl = pathToFileURL(path.join(process.cwd(), "web/public/lib/books-bundle.js")).href;
 
 describe("books-bundle.js", () => {
-  it("exposes the book reader, the book writers, the five filing derivations, the CT600 figures and long period model and the two accounts derivations", async () => {
+  it("exposes the book reader, the register book builder, the book writers, the five filing derivations, the CT600 figures and long period model and the two accounts derivations", async () => {
     const bundle = await import(bundleUrl);
     expect(Object.keys(bundle).sort()).toEqual([
+      "RegisterBookError",
       "accountingPeriodsOf",
       "annualInvestmentAllowanceMaximum",
+      "buildBookFromRegister",
       "canonicalBookToml",
       "canonicalLinesJsonl",
       "ct600FiguresFromBook",
