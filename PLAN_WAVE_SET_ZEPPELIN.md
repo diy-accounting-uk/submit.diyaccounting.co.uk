@@ -35,7 +35,7 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 ## Status
 
-approved 2026-11-22 (the operator's `/collab-loop` on the set). building wave 1. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
+approved 2026-11-22 (the operator's `/collab-loop` on the set). building: waves 1 to 6 gated, wave 8 at cf48439ec signed and gating, wave 7 cut after wave 8; the spreadsheets set at af075b0ec through wave 16, wave 17 building. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
 
 ## The goal
 
