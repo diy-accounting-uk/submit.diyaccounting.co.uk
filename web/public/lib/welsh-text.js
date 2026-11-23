@@ -232,6 +232,8 @@ window.WELSH_TEXT = {
   "ch.allot.currency-usd": "Doler yr Unol Daleithiau (USD)",
   "ch.allot.late-return":
     "Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.",
+  "ch.allot.late-return-period":
+    "Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad cyntaf, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.",
   "ch.allot.lookup-failed": "Nid oedd modd darllen y cwmni hwn o Dŷ’r Cwmnïau.",
   "ch.allot.mismatch-class":
     "Cyfrannau {currency} {name} cyn y clustnodiad: {returnnumber} o gyfrannau â gwerth nominal agregedig o {returnvalue} yn y ffurflen hon, {registernumber} o gyfrannau â gwerth nominal agregedig o {registervalue} ar y gofrestr.",

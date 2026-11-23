@@ -27406,3 +27406,9 @@ cy = '''Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni'''
 [strings."ch-allot-shares.submit-compares-this-return-with-the-fb4f08"]
 hash = "fb4f085ef483"
 cy = '''Mae Submit yn cymharu’r ffurflen hon â chofrestr Tŷ’r Cwmnïau fel y mae heddiw. Mae ffurflen ar gyfer clustnodiad a wnaed cyn clustnodiad arall y mae’r gofrestr eisoes yn ei ddangos yn datgan y cyfalaf ar ei dyddiad ei hun, felly gall y ddau fod yn wahanol.'''
+
+# == A late return of allotment for a period, counted from its first allotment: ch.allot.late-return-period ==
+
+[strings."ch.allot.late-return-period"]
+hash = "b1c074660dcb"
+cy = '''Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad cyntaf, erbyn {date}. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.'''

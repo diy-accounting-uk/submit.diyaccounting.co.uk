@@ -674,11 +674,19 @@ function renderLateNote() {
   note.id = "lateReturn";
   note.className = "hint";
   note.setAttribute("role", "note");
-  note.textContent = window.siteText(
-    "ch.allot.late-return",
-    "This return is late. The law asks for it within one month of the allotment, by {date}. Companies House still takes it, and a fine can follow.",
-    { date: window.companiesHouseLabels.formatCompanyDate(allotmentDates.returnDueDateFor(filing.form)) },
-  );
+  const date = window.companiesHouseLabels.formatCompanyDate(allotmentDates.returnDueDateFor(filing.form));
+  // A return for a period names its first allotment, whose month runs first.
+  note.textContent = filing.form.endDate
+    ? window.siteText(
+        "ch.allot.late-return-period",
+        "This return is late. The law asks for it within one month of the first allotment, by {date}. Companies House still takes it, and a fine can follow.",
+        { date },
+      )
+    : window.siteText(
+        "ch.allot.late-return",
+        "This return is late. The law asks for it within one month of the allotment, by {date}. Companies House still takes it, and a fine can follow.",
+        { date },
+      );
   document.getElementById("reviewList").after(note);
 }
 

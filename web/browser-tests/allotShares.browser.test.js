@@ -863,7 +863,22 @@ test.describe("the allotment dates against today", () => {
     await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
     await reviewACashAllotment(page, { continueButton: "Continue", startDate: "2026-01-01", endDate: "2026-02-20" });
     await expect(page.locator("#lateReturn")).toHaveText(
-      "This return is late. The law asks for it within one month of the allotment, by 1 February 2026. Companies House still takes it, and a fine can follow.",
+      "This return is late. The law asks for it within one month of the first allotment, by 1 February 2026. Companies House still takes it, and a fine can follow.",
+    );
+  });
+
+  test("a late return for a period names its first allotment in Welsh", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-03-15T12:00:00Z"));
+    await serveSite(page);
+    await page.goto(`${SITE}/cy/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await reviewACashAllotment(page, {
+      lookUpButton: "Chwilio am gyfrannau’r cwmni",
+      continueButton: "Parhau",
+      startDate: "2026-01-31",
+      endDate: "2026-03-02",
+    });
+    await expect(page.locator("#lateReturn")).toHaveText(
+      "Mae’r ffurflen hon yn hwyr. Mae’r gyfraith yn gofyn amdani o fewn mis i’r clustnodiad cyntaf, erbyn 28 Chwefror 2026. Mae Tŷ’r Cwmnïau yn dal i’w derbyn, a gall dirwy ddilyn.",
     );
   });
 
