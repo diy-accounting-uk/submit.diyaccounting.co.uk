@@ -165,8 +165,8 @@ async function recount(userSub) {
   const counts = { businesses: items.filter(isBusiness).length, rows: items.filter(isRow).length };
   // A count under an earlier salt version that moved within the settle window may hold reservations
   // for items a write that began before the rotation is still writing there: those are its count
-  // less the items it has, and they are counted too.
-  for (const { hashedSub } of subHashCandidates(userSub)) {
+  // less the items it counts, which are those still under that version and those moved from it.
+  for (const { version, hashedSub } of subHashCandidates(userSub)) {
     if (hashedSub === key.hashedSub) continue;
     const earlier = (
       await executeDynamoDbCommand(
@@ -174,7 +174,9 @@ async function recount(userSub) {
       )
     ).Item;
     if (!earlier || Date.now() - (earlier.countedAt ?? 0) >= COUNT_SETTLE_MS) continue;
-    const there = items.filter((item) => item.hashedSub === hashedSub);
+    // The earlier count counts every item the account held under that version, so an item the
+    // rotation has moved from there (marked from:<version>) is one of its items, not a reservation.
+    const there = items.filter((item) => item.hashedSub === hashedSub || item.saltRotation === `from:${version}`);
     counts.businesses += Math.max(0, (earlier.businesses ?? 0) - there.filter(isBusiness).length);
     counts.rows += Math.max(0, (earlier.rows ?? 0) - there.filter(isRow).length);
   }
