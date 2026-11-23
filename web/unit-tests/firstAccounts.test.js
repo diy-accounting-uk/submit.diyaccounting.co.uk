@@ -4,7 +4,12 @@
 // web/unit-tests/firstAccounts.test.js
 
 import { describe, test, expect } from "vitest";
-import { isFirstAccountsPeriod, comparativesFinding, marksFirstAccounts } from "../public/lib/first-accounts.js";
+import {
+  isFirstAccountsPeriod,
+  comparativesFinding,
+  marksFirstAccounts,
+  endsWithinFirstFinancialYear,
+} from "../public/lib/first-accounts.js";
 
 describe("when small company accounts may leave out the prior year", () => {
   test("a period that starts on the day of incorporation, with no accounts on the register, is the first", () => {
@@ -51,5 +56,13 @@ describe("when small company accounts may leave out the prior year", () => {
   test("a revision of first accounts stays first after the register holds a later year", () => {
     const profile = { dateOfCreation: "2025-04-01", accountsLastPeriodStart: "2026-04-01", accountsLastPeriodEnd: "2027-03-31" };
     expect(isFirstAccountsPeriod(profile, "2025-04-01")).toBe(true);
+  });
+
+  test("first accounts end within 18 months of incorporation and the seven days a financial year may run past its reference date", () => {
+    expect(endsWithinFirstFinancialYear("2025-01-01", "2025-12-31")).toBe(true);
+    expect(endsWithinFirstFinancialYear("2025-01-01", "2026-06-30")).toBe(true);
+    expect(endsWithinFirstFinancialYear("2025-01-01", "2026-07-07")).toBe(true);
+    expect(endsWithinFirstFinancialYear("2025-01-01", "2026-07-08")).toBe(false);
+    expect(endsWithinFirstFinancialYear("2019-06-01", "2025-12-31")).toBe(false);
   });
 });

@@ -40,7 +40,7 @@ import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
 import { buildMicroEntityAccounts, DORMANT_TRADING_STATUSES } from "../../services/microEntityAccountsIxbrl.js";
 import { SHARE_CLASSES, sharesIssuedFor } from "../../../web/public/lib/accounts-notes-check.js";
-import { comparativesFinding, isFirstAccountsPeriod } from "../../../web/public/lib/first-accounts.js";
+import { comparativesFinding, endsWithinFirstFinancialYear, isFirstAccountsPeriod } from "../../../web/public/lib/first-accounts.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
@@ -323,12 +323,18 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
 // it holds no accounts but, on a revision, these. A request cannot make an established company's
 // accounts one year by naming its period's start as the incorporation date.
 function refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, profile) {
-  if (profile?.dateOfCreation === accounts.dateOfIncorporation && isFirstAccountsPeriod(profile, accounts.periodStart)) return undefined;
+  if (
+    profile?.dateOfCreation === accounts.dateOfIncorporation &&
+    isFirstAccountsPeriod(profile, accounts.periodStart) &&
+    endsWithinFirstFinancialYear(accounts.periodStart, accounts.periodEnd)
+  ) {
+    return undefined;
+  }
   return buildValidationError(
     request,
     [
       "Companies House does not hold these as the company's first accounts: it was incorporated on " +
-        `${profile?.dateOfCreation ?? "a date the register does not give"}, or it has filed accounts before, so these accounts must show the prior year`,
+        `${profile?.dateOfCreation ?? "a date the register does not give"}, it has filed accounts before, or the period runs longer than a first financial year can, so these accounts must show the prior year`,
     ],
     responseHeaders,
   );

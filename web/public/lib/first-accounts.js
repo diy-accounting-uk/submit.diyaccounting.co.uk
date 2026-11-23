@@ -23,6 +23,29 @@ export function isFirstAccountsPeriod(profile, periodStart) {
   return !profile.accountsLastPeriodEnd || profile.accountsLastPeriodEnd >= periodStart;
 }
 
+// A company's first accounting reference period runs more than six months but not more than 18
+// months from incorporation (Companies Act 2006 s391(5)), and may not be extended beyond 18 months
+// (s392(5)); its financial year may end up to seven days either side of the reference date (s390(3)).
+const FIRST_PERIOD_MONTHS = 18;
+const FINANCIAL_YEAR_LEEWAY_DAYS = 7;
+
+/**
+ * Whether a period that starts on the day of incorporation ends no later than a first financial
+ * year can: 18 months from that day, and the seven days a financial year may run past its
+ * reference date. A longer period starting on that day is not one set of first accounts.
+ * @param {string} periodStart - ISO date, the day of incorporation
+ * @param {string} periodEnd - ISO date
+ * @returns {boolean}
+ */
+export function endsWithinFirstFinancialYear(periodStart, periodEnd) {
+  const start = new Date(`${periodStart}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || !periodEnd) return false;
+  const latest = new Date(
+    Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + FIRST_PERIOD_MONTHS, start.getUTCDate() - 1 + FINANCIAL_YEAR_LEEWAY_DAYS),
+  );
+  return periodEnd <= latest.toISOString().slice(0, 10);
+}
+
 /**
  * What is wrong with the years small company accounts state, or null.
  * @param {{periodStart: string, dateOfIncorporation?: string, hasPriorYear: boolean}} accounts -

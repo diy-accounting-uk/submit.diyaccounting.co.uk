@@ -1069,6 +1069,17 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
+    test("refuses one year for an established company that names a period from its incorporation to its latest year end", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2019-06-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      });
+      const body = { ...firstAccountsBody(), dateOfIncorporation: "2019-06-01", periodStart: "2019-06-01", periodEnd: "2025-12-31" };
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("longer than a first financial year can");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
     test("files the revision of first accounts after the register holds a later year", async () => {
       mockGetCompanyProfile.mockResolvedValue({
         profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2026-01-01", accountsLastPeriodEnd: "2026-12-31" },
