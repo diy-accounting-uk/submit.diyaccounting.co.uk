@@ -27215,9 +27215,6 @@ cy = '''penodwyd {date}'''
 hash = "94851d227719"
 cy = '''<strong>Mae’r cyfalaf cyn y clustnodiad yn wahanol i gofrestr Tŷ’r Cwmnïau</strong>'''
 
-[strings."ch-allot-shares.companies-house-reads-the-register-as-57d5b4"]
-hash = "57d5b4080e9c"
-cy = '''Mae Tŷ’r Cwmnïau yn darllen y gofrestr fel y mae heddiw. Mae ffurflen ar gyfer clustnodiad a wnaed cyn clustnodiad arall y mae’r gofrestr eisoes yn ei ddangos yn datgan y cyfalaf ar ei dyddiad ei hun, felly gall y ddau fod yn wahanol.'''
 
 [strings."ch-allot-shares.the-capital-this-return-states-is-042672"]
 hash = "042672b5ed7e"
@@ -27403,3 +27400,9 @@ cy = '''Person awdurdodedig i gynrychioli ac i dderbyn'''
 [strings."ch.watch.unread-try-again"]
 hash = "5649fb3a3003"
 cy = '''Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni'''
+
+# == The return of allotment of shares: the warning names Submit as what compares the return with the register ==
+
+[strings."ch-allot-shares.submit-compares-this-return-with-the-fb4f08"]
+hash = "fb4f085ef483"
+cy = '''Mae Submit yn cymharu’r ffurflen hon â chofrestr Tŷ’r Cwmnïau fel y mae heddiw. Mae ffurflen ar gyfer clustnodiad a wnaed cyn clustnodiad arall y mae’r gofrestr eisoes yn ei ddangos yn datgan y cyfalaf ar ei dyddiad ei hun, felly gall y ddau fod yn wahanol.'''

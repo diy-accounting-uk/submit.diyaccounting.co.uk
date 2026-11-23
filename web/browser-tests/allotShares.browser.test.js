@@ -694,6 +694,8 @@ for (const width of [1280, 390]) {
     await expect(warning).toBeVisible();
     await expect(page.locator("#reviewView")).toBeVisible();
     await expect(warning).toContainText("The capital before the allotment differs from the Companies House register");
+    await expect(warning).toContainText("Submit compares this return with the Companies House register as it stands today.");
+    await expect(warning).not.toContainText("Companies House reads the register");
     await expect(page.locator("#capitalWarningList li")).toHaveText([
       "GBP Ordinary shares before the allotment: 100 shares of aggregate nominal value 100 in this return, 120 shares of aggregate nominal value 120 on the register.",
       "Total amount unpaid in GBP before the allotment: 0 in this return, 5 on the register.",
@@ -725,6 +727,7 @@ for (const width of [1280, 390]) {
     await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
     const warning = page.locator("#capitalWarning");
     await expect(warning).toContainText("Mae’r cyfalaf cyn y clustnodiad yn wahanol i gofrestr Tŷ’r Cwmnïau");
+    await expect(warning).toContainText("Mae Submit yn cymharu’r ffurflen hon â chofrestr Tŷ’r Cwmnïau fel y mae heddiw.");
     await expect(page.locator("#capitalWarningList li")).toHaveText([
       "Cyfrannau GBP Ordinary cyn y clustnodiad: 100 o gyfrannau â gwerth nominal agregedig o 100 yn y ffurflen hon, 120 o gyfrannau â gwerth nominal agregedig o 120 ar y gofrestr.",
       "Cyfanswm y swm heb ei dalu yn GBP cyn y clustnodiad: 0 yn y ffurflen hon, 5 ar y gofrestr.",
