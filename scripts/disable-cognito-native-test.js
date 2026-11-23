@@ -3,24 +3,30 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 //
-// Disable Cognito native auth and drop the credentials enable-cognito-native-test.js saved
+// Release the native auth hold enable-cognito-native-test.js took, disable Cognito native auth when
+// no other holder remains, and drop the credentials it saved
 //
 // The test user itself stays. It is durable and reused, and its password was rotated when the
 // credentials were issued.
 //
-// Usage: node scripts/disable-cognito-native-test.js [environment-name]
-// Example: node scripts/disable-cognito-native-test.js ci
+// Usage: node scripts/disable-cognito-native-test.js
+// The environment is the one the credentials file records.
 //
 // Prerequisites: AWS SSO profile must be selected first:
 //   . ./scripts/aws-use-submit-profile.sh
 
-import { execFile } from "child_process";
-import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 
-const execFileAsync = promisify(execFile);
-const environmentName = process.argv[2] || "ci";
+import { SSMClient } from "@aws-sdk/client-ssm";
+
+import {
+  applyHold,
+  scriptHolder,
+  runToggleScript,
+  DEFAULT_STALE_AFTER_HOURS,
+} from "../.github/actions/hold-native-auth/hold-native-auth.mjs";
+
 const credentialsFile = path.resolve("cognito-native-test-credentials.json");
 
 async function main() {
@@ -44,16 +50,21 @@ async function main() {
   console.log(`Issued: ${credentials.issuedAt}`);
   console.log("");
 
-  // Step 1: Disable native auth
+  // Step 1: Release the hold, and disable native auth when no other holder remains
   console.log(`=== Disabling Cognito native auth ===`);
   try {
-    const { stdout, stderr } = await execFileAsync("node", ["scripts/toggle-cognito-native-auth.js", "disable", credentials.environment]);
-    if (stdout) console.log(stdout.trimEnd());
-    if (stderr) console.error(stderr.trimEnd());
+    await applyHold({
+      mode: "disable",
+      environmentName: credentials.environment,
+      holder: scriptHolder(),
+      ssmClient: new SSMClient({}),
+      staleAfterMs: DEFAULT_STALE_AFTER_HOURS * 60 * 60 * 1000,
+      repository: process.env.GITHUB_REPOSITORY,
+      token: process.env.GITHUB_TOKEN,
+      toggle: (action) => runToggleScript(action, credentials.environment),
+    });
   } catch (error) {
     console.error(`Failed to disable native auth: ${error.message}`);
-    if (error.stdout) console.log(error.stdout.trimEnd());
-    if (error.stderr) console.error(error.stderr.trimEnd());
   }
 
   // Step 2: Remove credentials file
