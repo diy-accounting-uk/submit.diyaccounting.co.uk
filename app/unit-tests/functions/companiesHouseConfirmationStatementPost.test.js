@@ -376,6 +376,49 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("refuses a shareholder's surname over the 160 characters its schema allows, naming the field and the limit", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({
+        body: buildStatementBody({
+          shareholdings: [{ shareClass: "ORDINARY", numberHeld: 100, shareholders: [{ surname: "A".repeat(161) }] }],
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("shareholdings[0].shareholders[0].surname must be at most 160 characters");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  const ECHOED = {
+    errors: [{ raisedBy: "Gateway", number: "604", type: "fatal", text: "Director ALICE MARGARET EXAMPLE has no verified identity" }],
+    statuses: [],
+  };
+  const CLEANED = [
+    {
+      raisedBy: "Gateway",
+      number: "604",
+      type: "fatal",
+      text: "Director [a value of the request] [a value of the request] [a value of the request] has no verified identity",
+    },
+  ];
+
+  test("a rejected payment periods query whose text echoes a director's name answers the code with the name taken out", async () => {
+    mockParseGatewayResponse.mockReturnValue(ECHOED);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(500);
+    expect(parseResponseBody(response).errors).toEqual(CLEANED);
+  });
+
+  test("a rejected submission whose text echoes a director's name keeps the code and takes the name out of the answer, the state and the event", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({ errors: [], statuses: [] }).mockReturnValue(ECHOED);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(500);
+    expect(parseResponseBody(response).errors).toEqual(CLEANED);
+    const kept = JSON.stringify([mockSend.mock.calls, mockEventBridgeSend.mock.calls]);
+    expect(kept).toContain("604");
+    expect(kept).not.toMatch(/ALICE|MARGARET/);
+  });
+
   test("rejects a director's personal code that is not 11 characters", async () => {
     const response = await companiesHouseConfirmationStatementPostHandler(
       buildEvent({

@@ -45,7 +45,8 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "./subHasher.js";
 import { readOwnPresenterFromBody } from "./companiesHouseOwnPresenter.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
-import { gatewayTextProblems } from "../../web/public/lib/companies-house-gateway-text.js";
+import { gatewayFieldProblems } from "../../web/public/lib/companies-house-gateway-text.js";
+import { withoutRequestValues } from "./companiesHouseErrorText.js";
 import { GATEWAY_FORM_BUILDERS } from "./companiesHouseForms.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseFormFiling.js" });
@@ -89,7 +90,7 @@ export function extractCompanyFields(body, errorMessages) {
 export function extractFormRequest(event, kind, errorMessages) {
   const body = parseRequestBody(event) || {};
   const form = { ...extractCompanyFields(body, errorMessages), ...GATEWAY_FORM_BUILDERS[kind].extractAndValidate(body, errorMessages) };
-  errorMessages.push(...gatewayTextProblems(form, COMPANIES_HOUSE_FORMS[kind].textFields));
+  errorMessages.push(...gatewayFieldProblems(form, COMPANIES_HOUSE_FORMS[kind].textFields));
   return form;
 }
 
@@ -236,29 +237,31 @@ export async function fileCompaniesHouseForm(event, kind) {
     envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
     const parsed = parseGatewayResponse(gatewayResponse.data);
+    // What is kept and answered of a rejection: its texts with any value the request sent taken out.
+    const answered = withoutRequestValues(parsed, { ...form, ownPresenter });
 
     if (parsed.errors?.length) {
-      await putAsyncRequest(userSub, submissionNumber, "failed", { ...parsed, kind }, asyncRequestsTableName);
+      await putAsyncRequest(userSub, submissionNumber, "failed", { ...answered, kind }, asyncRequestsTableName);
       await recordSubmissionFailure({
         kind,
         failure: "gateway-rejected-envelope",
         summary: `Companies House ${label} rejected by the gateway`,
         userSub,
-        detail: { errors: parsed.errors },
+        detail: { errors: answered.errors },
       });
       if (hasInvalidCompanyAuthenticationCodeError(parsed.errors)) {
         return http400BadRequestResponse({
           request,
           headers: { ...responseHeaders },
           message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
-          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: parsed.errors },
+          error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, submissionNumber, errors: answered.errors },
         });
       }
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
         message: `Companies House rejected the ${label} submission envelope`,
-        error: { submissionNumber, errors: parsed.errors },
+        error: { submissionNumber, errors: answered.errors },
       });
     }
 

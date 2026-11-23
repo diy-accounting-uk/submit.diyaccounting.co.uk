@@ -82,17 +82,6 @@ export function addressProblems(address) {
   if (Boolean(address.country) === Boolean(address.otherForeignCountry)) problems.push("an address needs one country");
   else if (address.country && !UK_COUNTRY_CODES.includes(address.country))
     problems.push("an address names a country this form does not have");
-  for (const [field, max] of [
-    ["premise", 50],
-    ["street", 50],
-    ["thoroughfare", 50],
-    ["postTown", 50],
-    ["county", 50],
-    ["otherForeignCountry", 50],
-    ["postcode", 15],
-  ]) {
-    if (address[field] && String(address[field]).length > max) problems.push(`${field} is longer than ${max} characters`);
-  }
   return problems;
 }
 

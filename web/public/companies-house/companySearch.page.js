@@ -372,6 +372,14 @@ const AUTHORITY_SOURCES = {
     url: "https://assets.publishing.service.gov.uk/media/6a98266bdf4246cf45e467ef/PSC04_v5.0-FINAL.pdf",
     title: "PSC04 Change of details of individual person with significant control (PSC)",
   },
+  pscEntityChangeForm: {
+    url: "https://assets.publishing.service.gov.uk/media/5eac135f86650c435efc5cc4/PSC05_V3.0.pdf",
+    title: "PSC05 Change of details of relevant legal entity (RLE) with significant control",
+  },
+  pscOtherChangeForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6911ea90ece74c08fbaa6422/PSC06_v4.0-FINAL.pdf",
+    title: "PSC06 Change of details of other registrable person (ORP) with significant control",
+  },
   pscGuidance: {
     url: "https://www.gov.uk/guidance/people-with-significant-control-pscs",
     title: "People with significant control (PSCs)",
@@ -512,6 +520,22 @@ function authorityNotes(activityId) {
       inEnglishOnly(
         "pscChangeForm",
         "You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.",
+      ),
+      inEnglishOnly(
+        "pscEntityChangeForm",
+        "You may use this form to give notice of a change to the details of a relevant legal entity (RLE).",
+      ),
+      inEnglishOnly(
+        "pscEntityChangeForm",
+        "This form may be signed by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly(
+        "pscOtherChangeForm",
+        "You may use this form to change the details of an other registrable person (ORP) if you have elected to keep PSC register information on the public register.",
+      ),
+      inEnglishOnly(
+        "pscOtherChangeForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
       ),
       codeOnline,
     ],

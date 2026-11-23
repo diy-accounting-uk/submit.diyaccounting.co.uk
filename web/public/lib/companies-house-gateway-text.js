@@ -60,14 +60,20 @@ function namedStrings(value, segments, name) {
 }
 
 /**
- * The reasons the text fields a form names cannot go to the gateway, or [] when they all can.
+ * The reasons the text fields a form names cannot go to the gateway, or [] when they all can: a
+ * character the pattern does not take, or more characters than the field's schema allows. Each
+ * names the field, and the characters or the limit, never the value.
  * @param {object} form - the form's fields
- * @param {string[]} paths - its gateway text fields, such as "surname", "address.*" or
- *   "shareholdings[].shareholders[].surname"
+ * @param {Object<string, number>} textFields - each gateway text field's path, such as "surname",
+ *   "address.street" or "shareholdings[].shareholders[].surname", and the maxLength its schema gives
  * @returns {string[]}
  */
-export function gatewayTextProblems(form, paths) {
-  return paths
-    .flatMap((path) => namedStrings(form, path.split("."), "").map(([field, text]) => gatewayTextProblem(field, text)))
-    .filter(Boolean);
+export function gatewayFieldProblems(form, textFields) {
+  return Object.entries(textFields).flatMap(([path, maxLength]) =>
+    namedStrings(form, path.split("."), "").flatMap(([field, text]) => {
+      const tooLong = [...text].length > maxLength ? [`${field} must be at most ${maxLength} characters`] : [];
+      const characters = gatewayTextProblem(field, text);
+      return [...tooLong, ...(characters ? [characters] : [])];
+    }),
+  );
 }

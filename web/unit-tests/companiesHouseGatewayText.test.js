@@ -4,7 +4,7 @@
 import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { GATEWAY_CHARACTER_CLASS, gatewayTextProblem, gatewayTextProblems } from "../public/lib/companies-house-gateway-text.js";
+import { GATEWAY_CHARACTER_CLASS, gatewayTextProblem, gatewayFieldProblems } from "../public/lib/companies-house-gateway-text.js";
 
 const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
 
@@ -54,12 +54,26 @@ describe("companies-house-gateway-text", () => {
       shareholders: [{ surname: "Jones" }, { surname: "Llŷr" }],
       naturesOfControl: ["OWNERSHIPOFSHARES_25TO50PERCENT"],
     };
-    const problems = gatewayTextProblems(form, ["surname", "forename", "address.*", "shareholders[].surname", "missing.*"]);
+    const problems = gatewayFieldProblems(form, {
+      "surname": 160,
+      "forename": 50,
+      "address.premise": 50,
+      "address.street": 50,
+      "address.postTown": 50,
+      "shareholders[].surname": 160,
+      "missing.street": 50,
+    });
     expect(problems).toEqual([
       "surname has characters Companies House does not accept: ŵ",
       "address.street has characters Companies House does not accept: ŵ",
       "shareholders[1].surname has characters Companies House does not accept: ŷ",
     ]);
     expect(problems.join(" ")).not.toMatch(/Glynd|Ffordd|Llŷr/);
+  });
+
+  test("names a field longer than its limit, with the limit, never the value", () => {
+    const problems = gatewayFieldProblems({ surname: "A".repeat(161), forename: "B".repeat(50) }, { surname: 160, forename: 50 });
+    expect(problems).toEqual(["surname must be at most 160 characters"]);
+    expect(gatewayFieldProblems({ surname: "Ŵ".repeat(160) }, { surname: 160 })).toEqual([]);
   });
 });

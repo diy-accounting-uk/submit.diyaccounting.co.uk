@@ -30,10 +30,6 @@ export const FIRST_NOTIFICATION_DATE = "2016-04-06";
 /** NameMismatchReason's values, the reasons a PSC's name can differ from their verified name. */
 export const NAME_MISMATCH_REASONS = ["PREFERRED_NAME", "LEGALLY_CHANGED", "TRANSLATION_OR_DIFF_CONV", "REGISTER_ERROR", "NOT_SAY"];
 
-const tooLong = (problems, field, value, max) => {
-  if (value && String(value).length > max) problems.push(`${field} is longer than ${max} characters`);
-};
-
 /**
  * The reasons an individual's particulars cannot be filed, or [] when they can.
  * @param {object} individual - see buildPscNotificationBody
@@ -42,15 +38,9 @@ const tooLong = (problems, field, value, max) => {
 export function individualProblems(individual) {
   const problems = [];
   if (!individual.surname) problems.push("an individual PSC needs a surname");
-  tooLong(problems, "surname", individual.surname, 160);
-  tooLong(problems, "forename", individual.forename, 50);
-  tooLong(problems, "otherForenames", individual.otherForenames, 50);
-  tooLong(problems, "title", individual.title, 50);
   if (!ISO_DATE.test(individual.dateOfBirth ?? "")) problems.push("dateOfBirth must be YYYY-MM-DD");
   if (!individual.nationality) problems.push("an individual PSC needs a nationality");
-  tooLong(problems, "nationality", individual.nationality, 50);
   if (!individual.countryOfResidence) problems.push("an individual PSC needs a country of residence");
-  tooLong(problems, "countryOfResidence", individual.countryOfResidence, 50);
   const service = individual.serviceAddress;
   if (!service || (service.sameAsRegisteredOffice !== true && !service.address)) {
     problems.push("an individual PSC needs a service address or the registered office");
@@ -88,16 +78,11 @@ export function individualProblems(individual) {
 export function entityProblems(entity, corporate) {
   const problems = [];
   if (!entity.name) problems.push(corporate ? "a relevant legal entity needs its name" : "an other registrable person needs its name");
-  tooLong(problems, "name", entity.name, 160);
   addressProblems(entity.address).forEach((problem) => problems.push(`principal office address: ${problem}`));
   for (const field of ["legalForm", "lawGoverned"]) {
     if (!entity[field]) problems.push(`${field} is needed`);
-    tooLong(problems, field, entity[field], 160);
   }
   if (corporate) {
-    tooLong(problems, "placeRegistered", entity.placeRegistered, 160);
-    tooLong(problems, "registrationNumber", entity.registrationNumber, 160);
-    tooLong(problems, "countryOrState", entity.countryOrState, 50);
     if (entity.placeRegistered && !entity.registrationNumber) {
       problems.push("an entity entered in a register needs its registration number there");
     }

@@ -1298,3 +1298,32 @@ test.describe("Company lookup drill-down notice of a new PSC", () => {
     await expect(page.locator('#drillView .file-this[data-activity="notify-psc"]')).toHaveCount(0);
   });
 });
+
+test.describe("Company lookup drill-down PSC change of details authority", () => {
+  test("the change of a PSC's details quotes PSC04 for an individual, PSC05 for a relevant legal entity and PSC06 for another registrable person", async ({
+    page,
+  }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    const control = page.locator('#drillView .file-this[data-activity="change-psc-details"]');
+    await expect(control.locator("a.btn")).toHaveText("Tell Companies House a PSC's details have changed", { timeout: 15000 });
+    const authority = control.locator(".file-this-authority");
+    await expect(authority).toContainText(
+      "“You may use this form to give notice of a change to the details of a relevant legal entity (RLE).”",
+    );
+    await expect(authority).toContainText(
+      "“This form may be signed by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.”",
+    );
+    await expect(authority).toContainText(
+      "“You may use this form to change the details of an other registrable person (ORP) if you have elected to keep PSC register information on the public register.”",
+    );
+    const sources = await authority.locator("a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toEqual(
+      expect.arrayContaining([
+        "https://assets.publishing.service.gov.uk/media/6a98266bdf4246cf45e467ef/PSC04_v5.0-FINAL.pdf",
+        "https://assets.publishing.service.gov.uk/media/5eac135f86650c435efc5cc4/PSC05_V3.0.pdf",
+        "https://assets.publishing.service.gov.uk/media/6911ea90ece74c08fbaa6422/PSC06_v4.0-FINAL.pdf",
+      ]),
+    );
+  });
+});

@@ -259,10 +259,9 @@ function extractSailAddress(body, errorMessages) {
     return {};
   }
   const address = {};
-  for (const [field, { maxLength, required }] of Object.entries(SAIL_ADDRESS_PARTS)) {
+  for (const [field, { required }] of Object.entries(SAIL_ADDRESS_PARTS)) {
     const value = trimmed(given[field]);
     if (required && !value) errorMessages.push(`Missing address.${field}`);
-    if (value.length > maxLength) errorMessages.push(`Invalid address.${field} - must be at most ${maxLength} characters`);
     if (value) address[field] = value;
   }
   if (typeof given.country !== "string" || !Object.hasOwn(SAIL_ADDRESS_COUNTRIES, given.country)) {

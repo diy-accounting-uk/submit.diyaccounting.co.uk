@@ -295,8 +295,8 @@ describe("the filing route every Companies House form shares", () => {
 
   test("every form's text fields are named, or the form has none", () => {
     for (const kind of SHARED_ROUTE_KINDS) {
-      expect(COMPANIES_HOUSE_FORMS[kind].textFields, kind).toEqual(expect.any(Array));
-      expect(COMPANIES_HOUSE_FORMS[kind].textFields.length > 0, kind).toBe(!NO_GATEWAY_TEXT.includes(kind));
+      expect(COMPANIES_HOUSE_FORMS[kind].textFields, kind).toEqual(expect.any(Object));
+      expect(Object.keys(COMPANIES_HOUSE_FORMS[kind].textFields).length > 0, kind).toBe(!NO_GATEWAY_TEXT.includes(kind));
     }
     expect(Object.keys(WELSH_TEXT).sort()).toEqual(SHARED_ROUTE_KINDS.filter((kind) => !NO_GATEWAY_TEXT.includes(kind)).sort());
   });
@@ -404,6 +404,79 @@ describe("the filing route every Companies House form shares", () => {
     expect(JSON.parse(response.body).message).toContain(`${field} has characters Companies House does not accept: ŵ`);
     expect(everythingKept(response)).not.toMatch(/Glyndŵr/);
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  // The same field set one character over the limit its schema gives it.
+  function overLimit(overrides, field, length) {
+    const copy = structuredClone(overrides);
+    // "allotments[0].consideration" walks into allotments, then its entry 0.
+    const keys = field.split(".").flatMap((key) => key.split(/\[(\d+)\]/).filter(Boolean));
+    const parent = keys.slice(0, -1).reduce((node, key) => node[key], copy);
+    parent[keys.at(-1)] = "A".repeat(length);
+    return copy;
+  }
+
+  test.each(Object.entries(WELSH_TEXT))(
+    "%s answers a JSON 400 naming the field and its limit for a value over the schema's maximum, sending nothing",
+    async (kind, [overrides, field]) => {
+      // A field in an array is named with its index; the table names it with "[]".
+      const limit = COMPANIES_HOUSE_FORMS[kind].textFields[field.replace(/\[\d+\]/g, "[]")];
+      const response = await fileCompaniesHouseForm(buildEvent(kind, overLimit(overrides, field, limit + 1)), kind);
+      expect(response.statusCode).toBe(400);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(JSON.parse(response.body).message).toContain(`${field} must be at most ${limit} characters`);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    },
+  );
+
+  test("a PSC's surname of 161 characters, which the gateway would answer with a schema error, is refused with a 400", async () => {
+    const response = await fileCompaniesHouseForm(buildEvent("psc-cessation", { surname: "A".repeat(161) }), "psc-cessation");
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).message).toContain("surname must be at most 160 characters");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("a rejection whose texts echo a name keeps the error codes and takes the echoed values out", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [
+        {
+          raisedBy: "Gateway",
+          number: "604",
+          type: "fatal",
+          text: "Surname BRAMWELL is not an officer of EXAMPLE PSC LIMITED",
+          location: "Surname",
+        },
+        { raisedBy: "Gateway", number: "9999", type: "fatal", text: "the person bramwell is not known" },
+      ],
+      statuses: [],
+    });
+    const response = await fileCompaniesHouseForm(buildEvent("psc-cessation"), "psc-cessation");
+    expect(response.statusCode).toBe(500);
+    expect(JSON.parse(response.body).errors).toEqual([
+      {
+        raisedBy: "Gateway",
+        number: "604",
+        type: "fatal",
+        text: "Surname [a value of the request] is not an officer of [a value of the request]",
+        location: "Surname",
+      },
+      { raisedBy: "Gateway", number: "9999", type: "fatal", text: "the person [a value of the request] is not known" },
+    ]);
+    const kept = everythingKept(response);
+    expect(kept).toContain("604");
+    expect(kept).not.toMatch(/BRAMWELL|EXAMPLE PSC LIMITED/i);
+  });
+
+  test("a rejection whose text echoes an address takes each part of it out", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [{ number: "100", text: "Address Unit 4, Harbour House, 12 Quay Street, Bristol BS1 4DJ is not a physical location" }],
+      statuses: [],
+    });
+    const sail = await fileCompaniesHouseForm(buildEvent("sail-address"), "sail-address");
+    expect(JSON.parse(sail.body).errors[0].text).toBe(
+      "Address [a value of the request], [a value of the request], [a value of the request] [a value of the request] is not a physical location",
+    );
+    expect(everythingKept(sail)).not.toMatch(/Quay Street|Harbour House|Bristol|BS1 4DJ/);
   });
 
   test("a change of name to a Welsh name is upper-cased and taken", async () => {
