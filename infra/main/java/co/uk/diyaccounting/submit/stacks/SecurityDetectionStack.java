@@ -52,6 +52,9 @@ import software.constructs.Construct;
  */
 public class SecurityDetectionStack extends Stack {
 
+    /** The AWS SDK app id that a test-user purge's salt read carries in its user agent. */
+    public static final String TEST_USER_PURGE_APP_ID = "submit-test-user-purge";
+
     @Value.Immutable
     public interface SecurityDetectionStackProps extends StackProps, SubmitStackProps {
 
@@ -223,6 +226,11 @@ public class SecurityDetectionStack extends Stack {
         // scripts/aws-accounts/bootstrap-account.sh), which does not match the "<env>-*" pattern
         // above, so it is excluded by exact name too: the CDK deploy itself reads the salt
         // secret's resource policy grant.
+        //
+        // A test-user purge (scripts/delete-user-data.js --test-user-purge, which every test
+        // sign-in enable runs) hashes the durable test user's sub, which needs the salt. Its read
+        // carries the SDK app id TEST_USER_PURGE_APP_ID in its user agent, and only that read is
+        // left out; every other read by a person still counts.
         // ----------------------------------------------------------------------------------
         String deploymentRoleName = "submit-%s-deployment-role".formatted(props.envName());
         String saltReadMetricName = "SaltSecretUnexpectedRead";
@@ -232,8 +240,9 @@ public class SecurityDetectionStack extends Stack {
                         ("{ ($.eventSource = \"secretsmanager.amazonaws.com\") && ($.eventName = \"GetSecretValue\")"
                                         + " && ($.requestParameters.secretId = \"*user-sub-hash-salt*\")"
                                         + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\")"
-                                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") }")
-                                .formatted(props.envName(), deploymentRoleName)))
+                                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")"
+                                        + " && ($.userAgent != \"*app/%s*\") }")
+                                .formatted(props.envName(), deploymentRoleName, TEST_USER_PURGE_APP_ID)))
                 .metricNamespace("Submit/Security")
                 .metricName(saltReadMetricName)
                 .metricValue("1")
