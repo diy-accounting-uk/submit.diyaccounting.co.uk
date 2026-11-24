@@ -207,10 +207,10 @@ test.describe("Receipts page - receipt details", () => {
     const filing = page.locator("#receiptsTable tbody tr").nth(1).locator("td.receipt-cell .receipt-entry");
     await expect(filing).toHaveCount(3);
     await expect(filing.nth(0)).toContainText("Accounts: ACC1");
-    await expect(filing.nth(1)).toContainText("Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025): CT1");
-    await expect(filing.nth(2)).toContainText("Company Tax Return 2 of 2 (1 January 2026 to 31 March 2026): CT2");
+    await expect(filing.nth(1)).toContainText("Company Tax Return (preview) 1 of 2 (1 January 2025 to 31 December 2025): CT1");
+    await expect(filing.nth(2)).toContainText("Company Tax Return (preview) 2 of 2 (1 January 2026 to 31 March 2026): CT2");
     await expect(page.locator("#receiptsTable tbody tr").nth(0)).toContainText(
-      "Amended Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025): HM1",
+      "Amended Company Tax Return (preview) 1 of 2 (1 January 2025 to 31 December 2025): HM1",
     );
   });
 
@@ -250,11 +250,11 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(2);
     const pair = page.locator("#receiptsTable tbody tr").nth(0).locator("td.receipt-cell .receipt-entry");
     await expect(pair).toHaveCount(2);
-    await expect(pair.nth(0)).toContainText("Company Tax Return: CT1");
+    await expect(pair.nth(0)).toContainText("Company Tax Return (preview): CT1");
     await expect(pair.nth(1)).toContainText("Accounts: ACC1");
     const lone = page.locator("#receiptsTable tbody tr").nth(1).locator(".receipt-entry");
     await expect(lone).toHaveCount(1);
-    await expect(lone).not.toContainText("Company Tax Return:");
+    await expect(lone).not.toContainText("Company Tax Return (preview):");
   });
 
   test("lists the revised accounts and the amended Company Tax Return under the filing they amend, marked as amended", async ({ page }) => {
@@ -303,9 +303,9 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(1);
     const entries = page.locator("#receiptsTable tbody tr").nth(0).locator("td.receipt-cell .receipt-entry");
     await expect(entries).toHaveCount(4);
-    await expect(entries.nth(0)).toContainText("Amended Company Tax Return: CT2");
+    await expect(entries.nth(0)).toContainText("Amended Company Tax Return (preview): CT2");
     await expect(entries.nth(1)).toContainText("Revised accounts: ACC2");
-    await expect(entries.nth(2)).toContainText("Company Tax Return: CT1");
+    await expect(entries.nth(2)).toContainText("Company Tax Return (preview): CT1");
     await expect(entries.nth(3)).toContainText("Accounts: ACC1");
     await screenshotAtBothWidths(page, "receipts-revised-listed");
   });
