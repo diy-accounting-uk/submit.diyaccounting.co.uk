@@ -5,7 +5,7 @@
 
 A signed-in user sees one list of every filing and payment that their businesses owe, from every source, sorted by due date. Each row says where it came from and when that source was last read. The user can get an email before each due date and when a watched company files, and can subscribe to the list in a calendar. A new user enters a company number, or signs in to HMRC, and sees at once what is due and what Submit can file. Facts checked 2026-11-22.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (DUE5 to DUE14 and ODUE2) are tracked in section 9.3, not on `NEXT.md`. Briefs are section 9.2.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (DUE5 to DUE14, ODUE2 and CL4) are tracked in section 9.3, not on `NEXT.md`. Briefs are section 9.2.
 
 ## Operator assertions (verbatim)
 
@@ -488,4 +488,9 @@ Source of each task: the operator, 2026-11-22. Owner is Claude Code, except ODUE
 | DUE12 | machine-only | blocked | DUE6 | DUE13 | submit |
 | DUE13 | machine-only | blocked | DUE9, DUE11, DUE12 | ODUE2 | submit |
 | ODUE2 | human-driven | blocked | DUE13 deployed to ci | DUE14 | none |
-| DUE14 | machine-only | blocked | ODUE2 | MA1 (`NEXT.md`), WDM6, WDM11, WDM13, WDM15 (`PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |
+| DUE14 | machine-only | blocked | ODUE2 | MA1 (`PLAN_WATCH_DUE_CAMPAIGN.md`), WDM6, WDM11, WDM13, WDM15 (`PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |
+| CL4 | machine-only | ready | nothing | nothing | submit |
+
+#### CL4. Filings due show as rows in the company's accounts list, with prefilled downloads (moved from `NEXT.md`)
+
+CL1's accounts and confirmation statement sections list each filing that is due (from the profile's next accounts period and due date and next confirmation statement date) as a row above the filed ones, with its due date and days left, and on an accounts row the CL3 links for that period: open the next year's book in diya-gl web, and download the prefilled spreadsheet package; plus CL1's "File this" button. An overdue filing says so. Gates: `npm run bundle` first in a worktree; unit tests; `npx eslint` and `npx prettier --check` on each changed file; `./mvnw clean verify` when a route or stack changes; a browser test of each changed page; the `companies-house` simulator behaviour journey on the simulator lane (one suite at a time, under the lock); Welsh strings in `i18n/cy.toml` with the English; `visual-review` on the changed pages. **Source**: operator, 2026-11-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files. **Repository**: submit. **Class**: machine-only. **State**: ready. **Blocked by**: nothing. **Unblocks**: nothing.

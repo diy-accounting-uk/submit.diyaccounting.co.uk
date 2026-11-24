@@ -5,7 +5,7 @@
 
 Five audiences learn what the watch list and the due list show and what filing costs. Each one lands on a page that answers its question, and each one has a next step to a paid bundle. The channels cost nothing; a paid channel is the operator's decision. Each step from a visit to a paid bundle is counted by `utm_source`, and each channel has a stop rule. Facts checked 2026-11-22.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (WDM3 to WDM13 and WDM15 to WDM17) are tracked in section 8.3, not on `NEXT.md`. WDM18 (paid search) starts when the free channels show a sign-up rate (decision D1). Briefs are section 8.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (MA1, WDM3 to WDM13 and WDM15 to WDM17) are tracked in section 8.3, not on `NEXT.md`. WDM18 (paid search) starts when the free channels show a sign-up rate (decision D1). Briefs are section 8.
 
 ## Operator assertions (verbatim)
 
@@ -43,7 +43,7 @@ From board row WDM1, operator, 2026-11-22:
 | Due list | plan `PLAN_DUE_LIST.md`; launch is DUE14 | the `default` bundle (decision D2 of that plan) | `PLAN_DUE_LIST.md` sections 8, 9 |
 | Company reports | plan `PLAN_COMPANY_REPORTS.md`; launch is CR14 | the `default` bundle (decision D1 of that plan) | `PLAN_COMPANY_REPORTS.md` sections 5, 8 |
 | Campaign passes | open row CP1, zeppelin W4 | operator page | `NEXT.md` CP1 |
-| Marketing assets (videos, screenshots, listing packs) | open row MA1, blocked on CL1, WL1 and the due list | none | `NEXT.md` MA1 |
+| Marketing assets (videos, screenshots, listing packs) | open task MA1, blocked on the due list | none | MA1 (section 8.3) |
 | Practice bundle (Resident Tax Agent) | listed on ci only; prod waits on UH1 | `resident-tax-agent` | `submit.catalogue.toml:241`; `PLAN_ITSA_APPROVAL.md` UH1 |
 | CT600 | preview, not on prod | `resident-ltd` | `submit.catalogue.toml:575-583` |
 
@@ -203,7 +203,7 @@ Both the due list and the reports are in the `default` bundle (decision D2 of `P
 | WDM8 | The `campaign` skill learns the company deadline questions | WDM5, WDM4 | machine-only | Sonnet | 1 file |
 | WDM9 | Campaign sessions and posting | WDM8, WDM4 | human-driven | | 0 files |
 | WDM10 | Links from the spreadsheets site | WDM5 | machine-only | Sonnet | ~3 files |
-| WDM11 | The listing copy sitting file | MA1 (`NEXT.md`), DUE14 | machine-only | Sonnet | 1 file |
+| WDM11 | The listing copy sitting file | MA1 (section 8.3), DUE14 | machine-only | Sonnet | 1 file |
 | WDM12 | Update the live listings | WDM11 | human-driven | | 0 files |
 | WDM13 | The donor email update paragraph | DUE14 | machine-only | Opus | 1 file |
 | WDM14 | The `resident-ltd-comp` bundle | CP1 | machine-only | Sonnet | ~5 files |
@@ -293,7 +293,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 
 - **Goal.** One file that the operator works through to add the watch list and the due list to each live listing.
 - **Output.** `../private.diyaccounting.co.uk/strategy/marketing/WATCH_DUE_LISTINGS_SITTING.md`: for each `[[listing]]` of `web/marketing/marketing.toml` with `state = "live"`, the profile URL, the field to change (features, description) and the exact text from MA1's packs. Every link carries `utm_source=<the listing's utmSource>&utm_medium=listing&utm_campaign=watch-due`, so WDM4 counts its landings. Read each profile in Chrome, read-only, to name its fields.
-- **Waits on**: MA1 (`NEXT.md`), DUE14 (`PLAN_DUE_LIST.md`). **Class**: machine-only. **Repository**: private. **Model**: Sonnet. **Size**: 1 file.
+- **Waits on**: MA1 (section 8.3), DUE14 (`PLAN_DUE_LIST.md`). **Class**: machine-only. **Repository**: private. **Model**: Sonnet. **Size**: 1 file.
 
 #### WDM12. Update the live listings
 
@@ -353,7 +353,8 @@ Source of each task: the operator, 2026-11-22. Owner is Claude Code, except WDM9
 | WDM8 | machine-only | blocked | WDM5, WDM4 | WDM9 | submit |
 | WDM9 | human-driven | blocked | WDM8, WDM4 | nothing | none |
 | WDM10 | machine-only | blocked | WDM5 | nothing | spreadsheets |
-| WDM11 | machine-only | blocked | MA1 (`NEXT.md`), DUE14 (`PLAN_DUE_LIST.md`) | WDM12 | private |
+| MA1 | machine-only | blocked | DUE14 (`PLAN_DUE_LIST.md`) | WDM11 | submit |
+| WDM11 | machine-only | blocked | MA1, DUE14 (`PLAN_DUE_LIST.md`) | WDM12 | private |
 | WDM12 | human-driven | blocked | WDM11 | nothing | none |
 | WDM13 | machine-only | blocked | DUE14 (`PLAN_DUE_LIST.md`) | nothing | private |
 | WDM15 | machine-only | blocked | DUE14 (`PLAN_DUE_LIST.md`) | WDM16 | private |
@@ -363,6 +364,14 @@ Source of each task: the operator, 2026-11-22. Owner is Claude Code, except WDM9
 - WDM10: the operator approved the links on 2026-11-22. The session builds them when WDM5 is live.
 - WDM6, WDM11, WDM13 and WDM15 start when DUE14 is on prod.
 - WDM5, WDM6 and WDM7 land in that order (shared files).
+
+#### MA1. Marketing assets for the company drill-down, the watch list and the due list (moved from `NEXT.md`)
+
+When the due list's launch (DUE14, `PLAN_DUE_LIST.md`) is on prod: write a scene script for each (`videos/<name>.json`, the `site-video-capture` skill) and record it on the simulator lane; upload each unlisted with the `video-publish` skill, which stops there until the operator has watched it; take the guide screenshots (`npm run video:walkthrough`) and the site screenshots of the new pages; add a `[[listingProduct]]` pack for each feature to `web/marketing/marketing.toml` (name, tagline, the short and long descriptions within `[[packFields]]`, keywords, features, screenshots and videos) and run `npm run marketing:build` (the three lists in `web/unit-tests/marketing-site.test.js` change only when an entry goes live); and link each pack and video from `PLAN_WATCH_DUE_CAMPAIGN.md`. Run `visual-review` on the screenshots and the `ui-ux-pro-max` skill on the guide's pages. Blocked on DUE14. **Source**: operator, 2026-11-22. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files. **Repository**: submit. **Class**: machine-only. **State**: blocked. **Blocked by**: DUE14 (`PLAN_DUE_LIST.md`). **Unblocks**: WDM11.
+
+#### Facts for the spreadsheets task WDM10 (moved from `NEXT.md`'s shared facts)
+
+WDM10 shares these facts; so do AA20 and AA35 of `PLAN_AMENDED_ACCOUNTS.md` and the GLS rows of `PLAN_DIYA_GL_STANDARDS.md` whose repository is spreadsheets, which carry them in their plans. `orient-spreadsheets` comes first, and a worktree comes from that repository's `scripts/worktree-add.sh`. An agent runs only the tests that its change reaches, with `VITEST_MAX_WORKERS=2`, and `npx prettier --check` on its files. The pre-push hook (`.githooks/pre-push`) runs the scoped suite, so a task branch is pushed with `SKIP_PUSH_TESTS=1`, and its browser and LibreOffice proof is `test.yml` on the pull request. `deploy.yml` there runs on a push to any branch that touches `web/spreadsheets.diyaccounting.co.uk/**`, `web/diya-gl.co.uk/**`, `app/lib/**`, `app/data/**`, `app/products/**`, `app/templates/**` or `examples/**`, and it deploys the one spreadsheets ci environment. The engine bundle and the package templates are on the DIYA-GL site (`web/diya-gl.co.uk/public/`), and SY2's build copies the engine and the Ltd package templates to the spreadsheets site (`web/spreadsheets.diyaccounting.co.uk/public/`). The `connect-src` of both sites names `https://submit.diyaccounting.co.uk` (`infra/main/resources/security-headers.json`, `infra/main/resources/diya-gl-security-headers.json`), so a page there calls prod's Submit from prod and from ci.
 
 ## 9. Not confirmed
 

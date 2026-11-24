@@ -5,7 +5,7 @@
 
 A reviewer with an accounting and audit background reads a diya-gl book and finds each construct that keeps a set of accounts whole stated in code they can review: double entry, a typed chart of accounts mapped to the FRS 102 and FRS 105 taxonomy, a trial balance built from the lines, the year-end close and roll forward, control accounts, journals with a reason and an author, corrections by reversal, period locks after a filing, VAT boxes from the lines, and the ties from trial balance to each filed fact. Facts checked 2026-11-22 against `spreadsheets.diyaccounting.co.uk` main at `24547a929` and `submit.diyaccounting.co.uk` main at `60ab98a8f`.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (GLS4, GLS7, GLS8, GLS10 to GLS15, GLS17 to GLS20) are tracked in section 6.3, not on `NEXT.md`. Briefs are section 6.2.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (GLS4, GLS7, GLS8, GLS10 to GLS15, GLS17 to GLS20) are tracked in section 6.3, and GLV1 in section 6.4, not on `NEXT.md`. Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -384,6 +384,18 @@ Every task below is Owner Claude Code, source the operator (2026-11-22). Model, 
 | GLS18 | machine-only | blocked | GLS11 | nothing | spreadsheets |
 | GLS19 | machine-only | ready | nothing | nothing | spreadsheets |
 | GLS20 | machine-only | blocked | GLS11 | nothing | spreadsheets |
+
+### 6.4 GLV1, moved from `NEXT.md`
+
+GLV1 is tracked here, not on `NEXT.md`. It follows AA30 of `PLAN_AMENDED_ACCOUNTS.md`.
+
+| Label | Class | State | Blocked by | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| GLV1 | machine-only | ready | nothing | nothing | submit |
+
+#### GLV1. The books card's browser tests prove the summary book's figures from filed documents
+
+Submit pins `@diy-accounting-uk/diya-gl` 1.2.99 (AA30 of `PLAN_AMENDED_ACCOUNTS.md`, be0c37212), and the readers of the changed balance sheet fields and `app/unit-tests/fixtures/filed-accounts/expected.json` moved with it. Left: (1) add to `web/browser-tests/booksImport.browser.test.js` the tests that a summary book read from a filed micro-entity and small company document gives back the filed figures (creditors compared as creditors within one year); (2) the small company form takes prepayments and accrued income into debtors, where its prepayments split should take them (AA30's open note). Gates: `npm test`, the books card's browser tests, `test:fileMicroEntityAccountsBehaviour-simulator`. **Source**: the summary book trace, 2026-11-22; AA30, 2026-11-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. **Repository**: submit. **Class**: machine-only. **State**: ready. **Blocked by**: nothing. **Unblocks**: nothing.
 
 ## 7. Decisions
 

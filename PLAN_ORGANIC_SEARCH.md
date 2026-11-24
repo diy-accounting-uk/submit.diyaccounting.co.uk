@@ -5,7 +5,7 @@
 
 Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 13 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 7 open tasks are rows on `NEXT.md`, where each row carries its brief: OS24d, OOS44, OS18g, OS24, OOS17b, OOS17 and OOS30. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 7 of the 8 open tasks (OOS17b, OOS17, OS18g, OS24, OS24d, OOS30 and LIM1) are tracked in section 8.6, not on `NEXT.md`. OOS44 is the one row on `NEXT.md`, where it carries its brief. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -18,8 +18,8 @@ Every path that brings a customer to the DIY Accounting sites with no payment fo
 - **Organic means no payment for placement.** No ads, no sponsored listing, no paid review. A one-off account fee that a store charges every developer is named in the row that meets it, and the operator decides it.
 - **Nothing is posted to a site we do not own by automation.** A person posts, submits and sends. A session drafts, fills and prepares. This is the `/campaign` skill's rule and the reason is there: forum bans, the DMCC Act 2024 and the CAP Code.
 - **A page, a listing or a skill states only what prod offers.** The source of truth is `AVAILABILITY` in `scripts/build-mtd-calendar.mjs`. Today that is VAT, Companies House accounts, the confirmation statement, and registered office and email changes.
-- **The hosted connector is listed in the assistant directories with its VAT tool set** (operator, 2026-11-12). The assistant derives the figures and the user files in the browser. A tool for another filing joins the listing when that filing is live on prod, under board row MCP1.
-- **The board holds the briefs.** A task that is a row on `NEXT.md` has its brief there and nowhere else. This plan keeps the brief of a task that is not yet a row, and the operator moves it to the board when its turn comes.
+- **The hosted connector is listed in the assistant directories with its VAT tool set** (operator, 2026-11-12). The assistant derives the figures and the user files in the browser. A tool for another filing joins the listing when that filing is live on prod, under MCP1 (`PLAN_HOSTED_MCP.md`).
+- **The board holds the briefs of its rows.** A task that is a row on `NEXT.md` (OOS44) has its brief there and nowhere else. The briefs of the other open tasks are in section 8.6. This plan keeps the brief of a task that is not yet a row, and the operator moves it to the board when its turn comes.
 
 The marketing strategy is `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md`. Its organic rows are carried here with their ids: MK-10 (OS41a), MK-14 (OS6), MK-18 (OS35), MK-19 (OS4). MK-20 is met: HMRC's VAT finder shows Submit with its four VAT features and the free version (read 2026-11-12). Its goal stands: paid Submit subscribers.
 
@@ -586,7 +586,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | 9 | Z13 Agentic checkout protocols | 5 | Programme owners | Country and product-type limits. | Not today. Watch Google's UK date for UCP. |
 | 10 | B1 HMRC software finder for VAT | 4 | HMRC SDS team | HMRC edits the entry on request and decides the flags. | Yes. The free day pass is the evidence for the flag. |
 | 11 | B2 HMRC software finder for MTD Income Tax | 4 | HMRC | Recognition and production credentials. | Yes. The approval rows IA1 to IA10 are the build. |
-| 12 | B3 HMRC Corporation Tax software suppliers list | 4 | HMRC SDS team | Recognition scenarios, then an annual renewal. | Yes. Rows CT25 and CT26 are the build. |
+| 12 | B3 HMRC Corporation Tax software suppliers list | 4 | HMRC SDS team | Recognition scenarios, then an annual renewal. | Yes. Tasks CT25 and CT26 (`PLAN_HMRC_CT_APPROVAL.md`) are the build. |
 | 13 | Y3 Presence in the sources assistants cite | 4 | Each source's owner | See the path for each source. | See B4, D1, D2, D7, Q1. |
 | 14 | X2 ChatGPT Plugin Directory | 4 | OpenAI | Verified identity or business, then a review. A plugin must not show plans or start a subscription. | Yes. The plan is bought on the site; the plugin explains and links to an information page. The country list takes GB. |
 | 15 | C3 ICAEW Technology Accreditation | 4 | ICAEW | Product evaluation; cost and criteria not confirmed. | Unknown until the criteria are read. |
@@ -828,17 +828,17 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
-| OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; on the board |
-| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | submitted 0.1.6 on 2026-11-20; the review and the publish step are on the board as OS18g |
+| OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; section 8.6 |
+| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | submitted 0.1.6 on 2026-11-20; the review and the publish step are task OS18g in section 8.6 |
 
 **Wave 4: Listings**
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
+| OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; section 8.6 |
 | OS24c | The Yell and FreeIndex listings go live | D1, D2, D3, D4, D5, D6, C2, E4, L3 | Two listings submitted on 2026-11-15. | Both rows marked live in the listing register. | blocked; on the board |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
-| OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven; on the board |
+| OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven; section 8.6 |
 
 **Wave 5: Free tools**
 
@@ -899,7 +899,51 @@ flowchart LR
 
 ### 8.5 Briefs of the tasks that are not yet on the board
 
-The brief of a boarded task is its row on `NEXT.md`. Every task is boarded.
+The brief of OOS44 is its row on `NEXT.md`. The briefs of the other open tasks are in section 8.6.
+
+### 8.6 State and briefs of the open tasks
+
+OOS17b, OOS17, OS18g, OS24, OS24d, OOS30 and LIM1 are tracked here, not on `NEXT.md`. OOS44 (the FSB proposal) stays on `NEXT.md`. "Blocked by" lists the tasks and events not yet done.
+
+Facts for OS24, OS24d and LIM1: The listing register is `web/marketing/marketing.toml`: `npm run marketing:build` rebuilds `web/marketing/marketing.json` and `web/marketing/index.html`, and `web/unit-tests/marketing-site.test.js` holds three lists of the live listings in the register's order, so a row that moves an entry to `live` adds its id to each (OS24d, OS24).
+
+| Label | Class | State | Blocked by | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| OOS17b | machine-ask | ready | the operator's go for the click | nothing | none |
+| OOS17 | machine-only (reads the reply) | blocked | the directory team's review | OOS30 | none |
+| OS18g | machine-only | blocked | OpenAI's review email | nothing | none |
+| OS24 | machine-only | blocked | G2's answer, due by 2026-11-17 | LIM1 | submit |
+| OS24d | machine-only | blocked | Crozdesk's review | nothing | submit |
+| OOS30 | human-driven | blocked | OOS17's listing going live | nothing | none |
+| LIM1 | machine-ask | blocked | OS24 (G2's answer) | nothing | submit |
+
+#### OOS17b. Request publishing of the plugin in Claude's directory
+
+The operator submitted the plugin bundle on 2026-11-14 from https://claude.ai/directory/manage (source https://github.com/diy-accounting-uk/diya-submit-plugin, tracking `main`, which `sync-plugin-repo.yml` keeps equal to `plugins/diya-submit/`; contact `antony@diyaccounting.co.uk`). At 08:25 UTC on 2026-11-24 that page listed the plugin under "Needs you" with "Scan passed" and the button "Request publishing"; an Anthropic reviewer then publishes it. On the operator's go, the session presses "Request publishing" on that page in the operator's Chrome, where the operator is signed in, and reads the state back. The directory team writes to the contact address; a reply that asks for a change becomes its own row. The ask: the operator's go for the click. **Source**: `PLAN_ORGANIC_SEARCH.md` OOS17 (group 6, assistant connector). **Owner**: Claude Code, Operator (go). **Model**: Haiku. **Size**: 0 files. **Repository**: none. **Class**: machine-ask. **State**: ready. **Blocked by**: the operator's go for the click. **Unblocks**: nothing.
+
+#### OOS17. The connector's review in Claude's directory
+
+The MCP connector "DIY Accounting Submit" was submitted on 2026-11-14 and shows "In review" at https://claude.ai/directory/manage/diy-accounting-submit (slug `diy-accounting-submit`, categories Financial Services and Productivity, contact antony@diyaccounting.co.uk; the reviewer steps and password are in the Compliance step's "Additional notes"). Review can take a few weeks. The directory team writes to the contact email; a reply that asks for a change becomes its own row, and the listing going live unblocks OOS30. Blocked on the directory team's review. **Source**: `PLAN_ORGANIC_SEARCH.md` OOS17 (group 6, assistant connector). **Owner**: Claude Code (reads the reply in the mail mirror). **Model**: none. **Size**: 0 files. **Repository**: none. **Class**: machine-only (reads the reply). **State**: blocked. **Blocked by**: the directory team's review. **Unblocks**: OOS30.
+
+#### OS18g. Read OpenAI's review of plugin 0.1.6, then publish it
+
+The operator submitted 0.1.6 for review on 2026-11-20 (the plugin page reads "0.1.6 · In review": https://platform.openai.com/plugins/manage/plugin_asdk_app_6af90052c7f08191b817bdecceff0362). OpenAI sends its decision by email to the plugin's contact address. A session searches the mail mirror (corpus-loom `search`, source `mail-antony`, or the `.eml` files under `../mail/`) at each `/unblock` and reads the plugin page in Chrome. On approval the session presses Publish on the plugin page in the operator's Chrome, where the operator is signed in (approved by the operator, 2026-11-22). A requested change becomes its own row. The plugin page read "0.1.6 · In review" and "Estimated review completion: Dec 6, 2026" at 08:25 UTC on 2026-11-24, and the mail mirror (pulled 11:42 UTC on 2026-11-23) holds OpenAI's submission notice of 08:54 UTC on 2026-11-20 and no decision. Blocked on OpenAI's review email. **Source**: https://developers.openai.com/plugins/deploy/submission; `PLAN_ORGANIC_SEARCH.md` OOS18 (group 6, assistant connector). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files. **Repository**: none. **Class**: machine-only. **State**: blocked. **Blocked by**: OpenAI's review email. **Unblocks**: nothing.
+
+#### OS24. G2's address in the listing register
+
+The register, the FeaturedCustomers line and the Trustpilot review line are on prod (pull request #821), and the FeaturedCustomers line is on the spreadsheets home page (pull request #198 there). G2 acknowledged the claim of the DIY Accounting Submit profile on 2026-11-13 22:35 UTC and answers within 2 business days, by 2026-11-17, with its address; the same request asks for Capterra, GetApp and Software Advice, which G2 verifies and answers by email. G2's email reaches the mail mirror, so a session finds it with the corpus-loom `search` tool (source `mail-antony`, since 2026-11-13). When it gives the address, the session sets the `g2` entry of `web/marketing/marketing.toml` to `live` with that address, runs the register's build, and lands it on the next batch. The other places of the sitting of 2026-11-13 (AlternativeTo, SaaSHub, accountingfirms.co.uk, FeaturedCustomers' verification) are reviewed by their own teams and gave no date; the record is `../private.diyaccounting.co.uk/strategy/marketing/OS24_SITTING_2026-11-13.md`. Blocked on G2's answer, which was due by 2026-11-17; the mail mirror holds none to its pull of 11:42 UTC on 2026-11-23. Unblocks LIM1. **Source**: `PLAN_ORGANIC_SEARCH.md` OS24 (group 8, listing register and reviews). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files. **Repository**: submit. **Class**: machine-only. **State**: blocked. **Blocked by**: G2's answer, due by 2026-11-17. **Unblocks**: LIM1.
+
+#### OS24d. Crozdesk lists DIY Accounting Submit
+
+The listing in the Revleads vendor panel (https://vendor.revleads.com/app/diy-accounting-submit/status) is complete on all six tabs and was submitted for review; the status page read "Listing under review" and "Listing not live yet" at 2026-11-21 (read in Chrome). Changes made in the panel during review need no resubmission. When the page is live at `https://crozdesk.com/<category>/<subcategory>/<slug>` (Revleads sends an email when it goes live; the mail mirror is the read), set the `crozdesk` entry of `web/marketing/marketing.toml` to `state = "live"` with that address and the day, add `"submit"` to its `products`, run `npm run marketing:build`, and land the four files in one PR (the register, its two built files and the three lists in `web/unit-tests/marketing-site.test.js`). Revleads sells pay-per-click and pay-per-lead campaigns: start none. Blocked on Crozdesk's review. **Source**: operator, 2026-11-17; `PLAN_ORGANIC_SEARCH.md` OS24 (group 8, listing register and reviews). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files. **Repository**: submit. **Class**: machine-only. **State**: blocked. **Blocked by**: Crozdesk's review. **Unblocks**: nothing.
+
+#### OOS30. A person posts the launch
+
+A person posts each text of `web/marketing/launch/` on the day the connector is listed in the first directory, and answers the comments: Product Hunt, Show HN, the dev.to post, and the AI tool directories that list free. Show HN needs a product a reader can try at once: the free day pass covers it. The three AI directories that charge ($49, $99 and $497) are skipped unless the operator decides to pay. The video of OS30 goes with the posts. Blocked on OOS17's listing going live. **Source**: `PLAN_ORGANIC_SEARCH.md` OOS30 (group 6, assistant connector). **Owner**: Operator. **Model**: none. **Size**: 0 files. **Repository**: none. **Class**: human-driven. **State**: blocked. **Blocked by**: OOS17's listing going live. **Unblocks**: nothing.
+
+#### LIM1. Confirm Capterra's and GetApp's listing text limits
+
+MKT8's packs mark their limits `confirmed = false` in `web/marketing/marketing.toml` (`[[packFields]]`). Their guideline pages no longer exist: https://www.getapp.com/listing_guidelines/ and https://www.capterra.com/legal/listing-guidelines both redirect to G2's Community Guidelines (https://legal.g2.com/community-guidelines, read in Chrome on 2026-11-20), which state no length for a short or long description, no call-to-action rule and no video length. G2 owns the three sites and takes one product profile for all of them, so the limits are those of G2's own profile form, which opens when G2 answers the claim (OS24). Then a session reads the form's limits in the operator's Chrome with the operator signed in to G2, and sets each `[[packFields.limits]]` entry to `confirmed = true` with the date, or removes an entry the form does not have. Blocked on OS24 (G2's answer). **Source**: operator, 2026-11-17 (MKT8's listing packs; `web/marketing/`). **Owner**: Claude Code (read, register), Operator (signed in to G2). **Model**: Haiku. **Size**: ~2 files. **Repository**: submit. **Class**: machine-ask. **State**: blocked. **Blocked by**: OS24 (G2's answer). **Unblocks**: nothing.
 
 ## 9. Not confirmed
 
