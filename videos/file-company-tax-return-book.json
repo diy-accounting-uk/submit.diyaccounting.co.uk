@@ -159,16 +159,24 @@
       "still": true,
       "steps": [
         {
+          "action": "point",
+          "target": {
+            "role": "button",
+            "name": "File Company Tax Return (HMRC, preview)"
+          },
+          "caption": "Open File Company Tax Return to find the company.",
+          "headline": "Find the company",
+          "keyWord": "company",
+          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page.",
+          "dwellMs": 500
+        },
+        {
           "action": "click",
           "target": {
             "role": "button",
             "name": "File Company Tax Return (HMRC, preview)"
           },
-          "expectsNavigation": true,
-          "caption": "Open File Company Tax Return to find the company.",
-          "headline": "Find the company",
-          "keyWord": "company",
-          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page."
+          "expectsNavigation": true
         },
         {
           "action": "await",
@@ -253,7 +261,7 @@
         },
         {
           "action": "point",
-          "target": "#microCurrentTurnover",
+          "target": "tr:has(#microCurrentTurnover) > :first-child",
           "dwellMs": 500,
           "caption": "Turnover comes straight from the book.",
           "headline": "Turnover from the book",
@@ -472,11 +480,16 @@
         {
           "action": "goto",
           "url": "/hmrc/receipt/receipts.html",
-          "waitFor": "#receiptsTable .receipt-label",
+          "waitFor": "#receiptsTable .receipt-label"
+        },
+        {
+          "action": "point",
+          "target": ".receipt-label",
           "caption": "Your receipts page lists the filing.",
           "headline": "Find your filing",
           "keyWord": "filing",
-          "instruction": "Choose Receipts to find the filing in the list."
+          "instruction": "Choose Receipts to find the filing in the list.",
+          "dwellMs": 500
         },
         {
           "action": "click",
