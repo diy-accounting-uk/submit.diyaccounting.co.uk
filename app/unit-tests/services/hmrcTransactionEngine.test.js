@@ -146,6 +146,7 @@ describe("buildCt600SubmissionRequest", () => {
     expect(firstElement(live, "GatewayTest")).toBeUndefined();
     const testInLive = parse(submission({ gatewayTest: false, testInLive: true }).xml);
     expect(firstElementText(testInLive, "Class")).toBe(CT600_TEST_IN_LIVE_CLASS);
+    expect(firstElement(testInLive, "GatewayTest")).toBeUndefined();
   });
 
   test("adds the ChannelRouting timestamp only when given", () => {

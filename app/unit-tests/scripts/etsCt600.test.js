@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { readEtsInputs, runEtsExchange, tamperCasePassed, tamperIrmark } from "../../../scripts/lib/etsCt600.js";
+import { readEtsInputs, runEtsExchange, runTestInLiveExchange, tamperCasePassed, tamperIrmark } from "../../../scripts/lib/etsCt600.js";
 
 const complete = {
   HMRC_CT_ETS_SENDER_ID: "sender",
@@ -77,6 +77,71 @@ describe("runEtsExchange", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.final.errors[0].number).toBe("1046");
+  });
+});
+
+describe("runTestInLiveExchange", () => {
+  const tilSubmission =
+    "<GovTalkMessage><Class>HMRC-CT-CT600-TIL</Class><SenderID>company-user</SenderID><Authentication><Method>clear</Method><Value>company-password</Value></Authentication></GovTalkMessage>";
+  const run = async (submissionXml) => {
+    const calls = [];
+    const answers = [acknowledgement, govTalk("response"), govTalk("response")];
+    const result = await runTestInLiveExchange({
+      submissionXml,
+      post: async (url, xml) => {
+        calls.push({ url, xml });
+        return { status: 200, data: answers.shift() };
+      },
+      wait: async () => {},
+    });
+    return { calls, result };
+  };
+
+  it("posts to the live Transaction Engine and deletes there", async () => {
+    const { calls, result } = await run(tilSubmission);
+    expect(result.ok).toBe(true);
+    expect(calls[0].url).toBe("https://transaction-engine.tax.service.gov.uk/submission");
+    expect(calls[1].url).toBe("https://poll.example/poll");
+    expect(calls[2].url).toBe("https://transaction-engine.tax.service.gov.uk/submission");
+  });
+
+  it("polls and deletes with the test-in-live class and no GatewayTest", async () => {
+    const { calls } = await run(tilSubmission);
+    expect(calls[1].xml).toContain("<Qualifier>poll</Qualifier>");
+    expect(calls[2].xml).toContain("<Function>delete</Function>");
+    for (const { xml } of calls) {
+      expect(xml).toContain("<Class>HMRC-CT-CT600-TIL</Class>");
+      expect(xml).not.toContain("GatewayTest");
+    }
+  });
+
+  it("writes the transcript without the Government Gateway user ID or password", async () => {
+    const { result } = await run(tilSubmission);
+    const transcript = JSON.stringify(result.transcript);
+    expect(transcript).not.toContain("company-user");
+    expect(transcript).not.toContain("company-password");
+  });
+
+  it("sends nothing for a submission of another class", async () => {
+    const posted = [];
+    await expect(
+      runTestInLiveExchange({
+        submissionXml: tilSubmission.replace("HMRC-CT-CT600-TIL", "HMRC-CT-CT600"),
+        post: async (url) => posted.push(url),
+      }),
+    ).rejects.toThrow(/HMRC-CT-CT600-TIL; nothing was sent/);
+    expect(posted).toEqual([]);
+  });
+
+  it("sends nothing for a submission that carries GatewayTest", async () => {
+    const posted = [];
+    await expect(
+      runTestInLiveExchange({
+        submissionXml: tilSubmission.replace("</Class>", "</Class><GatewayTest>1</GatewayTest>"),
+        post: async (url) => posted.push(url),
+      }),
+    ).rejects.toThrow(/no GatewayTest; nothing was sent/);
+    expect(posted).toEqual([]);
   });
 });
 
