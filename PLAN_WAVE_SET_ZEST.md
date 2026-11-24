@@ -34,7 +34,6 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 - **Beside the set (no pull request):**
   - CT39: the company-book run, on the laptop, because it reads the finance files in the Drive
     mirror.
-  - AL34: a read of CloudTrail on prod, on the laptop.
   - VID22: a capture dispatch on prod and the publish. It can run at any time.
   - CQ93: the decision, written in the private file. It is a security finding, so it stays on the
     laptop. A code change that it decides becomes a new row (the row says so).
@@ -74,7 +73,7 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 State: building (2026-11-24 10:30 UTC). Wave branch `claude/zest-w01` at 11f4564ac
 (`.claude/worktrees/zest-w01`). Queues posted: anvil aa37 (from `claude/zest-aa37-held`), bugle
 vat51, cyclone ct38-design; dusk, flint, garnet, harbour and jasper each set up first, then ts1,
-look4, dash53, al33 then seed1, and ct40. Beside on the laptop: CT39 and AL34 (local agents).
+look4, dash53, al33 then seed1, and ct40. Beside on the laptop: CT39 (a local agent).
 
 ### Wave 2: CT38's build
 
