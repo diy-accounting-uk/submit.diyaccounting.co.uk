@@ -20,7 +20,7 @@ lands, signs and proves.
 
 ## Status
 
-defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); wave 1 landed; wave 2 building.
+defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); waves 1 and 2 landed; gating at f0d3a2aaa.
 
 ## The goal
 
@@ -73,7 +73,7 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 - No two batches share a source file. TS1 writes the generated calendar; CT38 changes its
   generator in wave 2 and runs it again.
 
-State: landed at f27fb84df (2026-11-24): TS1 daed109d0, CT40 6f933c1d4, LOOK4 0f8323989, DASH53 966c554ac, VAT51 c998cb513, AL33 d48d75c64, SEED1 8982edb95, AA37 f27fb84df; CT38's design is in `PLAN_HMRC_CT_APPROVAL.md` (052d77cc1). Gates: lint passed on 8982edb95 (jasper); unit (dusk), browser (flint) and the VAT and confirmation statement simulator suites (garnet) run on 8982edb95; unit on f27fb84df (bugle) covers AA37, whose browser tests and accounts simulator suite passed on its own branch. The docker build is left to the ci deploy: no Dockerfile changed.
+State: landed at 2c975ec18 (2026-11-24): TS1 daed109d0, CT40 6f933c1d4, LOOK4 0f8323989, DASH53 966c554ac, VAT51 c998cb513, AL33 d48d75c64, SEED1 8982edb95, AA37 f27fb84df, the gate fixes d4692250f, BK1 9f73f7798 and d56151f23, CT41 4de87e54e, AL35 2c975ec18 (the app-id filter, the operator's choice). Gates on 8982edb95 and d4692250f passed (unit, browser, lint, the VAT and confirmation statement simulator suites); the whole set is gated again with wave 2.
 
 ### Wave 2: CT38's build
 
@@ -85,7 +85,7 @@ CT38 is about 24 files. It is a chain of two agents on one worktree: the design 
 then the build (Sonnet). The build runs `npm run build:welsh` and `npm run build:mtd-calendar` on
 top of wave 1, so the calendar holds both TS1's dates and CT38's availability rows.
 
-State: building ahead of wave 1's gate: cyclone builds CT38 from `claude/zest-w01` at daed109d0; it takes wave 1's later commits as one commit before it lands.
+State: landed at f0d3a2aaa on `claude/zest-w02` (`.claude/worktrees/zest-w02`), from wave 1's tip 2c975ec18 with no conflict; the generators ran with no change. Gates on f0d3a2aaa: unit (dusk), browser (flint), lint (jasper), java (garnet), the CT600 and accounts simulator suites (bugle), the VAT and confirmation statement suites (harbour). Wave 3's look runs on cyclone's CT38 branch.
 
 ### Wave 3: the look wave
 
