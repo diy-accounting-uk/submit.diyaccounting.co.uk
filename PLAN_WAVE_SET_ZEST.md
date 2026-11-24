@@ -10,6 +10,8 @@ lands, signs and proves.
 
 ## Operator assertions (verbatim, 2026-11-24)
 
+> AL35 salt alarm, CT41 loans crash, BK1 statement readers
+
 > The changes I want are: The FSB offer chain, the donators offer chain, the CT in prod chain.
 
 > Build a new wave set from the board tasks you can include
@@ -28,12 +30,10 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 
 ## The set
 
-- **submit: 9 rows.** CT38, TS1, AA37, LOOK4, VAT51, DASH53, AL33, SEED1, and the `--til` code of
-  CT40.
+- **submit: 12 rows.** CT38, TS1, AA37, LOOK4, VAT51, DASH53, AL33, SEED1, the `--til` code of
+  CT40, and AL35, CT41 and BK1 (joined by the operator's answer, 2026-11-24).
 - **spreadsheets: 0 rows.**
 - **Beside the set (no pull request):**
-  - CT39: the company-book run, on the laptop, because it reads the finance files in the Drive
-    mirror.
   - VID22: a capture dispatch on prod and the publish. It can run at any time.
   - CQ93: the decision, written in the private file. It is a security finding, so it stays on the
     laptop. A code change that it decides becomes a new row (the row says so).
@@ -58,6 +58,9 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 | dash53 | DASH53 | Sonnet | the actor rule (`app/lib/httpResponseHelper.js`, `app/lib/activityAlert.js`) and the receipt writer it finds, with their unit tests |
 | ops | AL33, then SEED1 | Sonnet | `infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java` and its test; `.github/workflows/mcp-reviewer-seed.yml`, `scripts/ensure-mcp-reviewer-user.js` |
 | ct40 | CT40 (the `--til` code) | Sonnet | `scripts/hmrc-tpvs-ct600.js` and its unit test |
+| al35 | AL35 | Sonnet | `scripts/delete-user-data.js` or the salt read's metric filter, and their tests |
+| ct41 | CT41 | Sonnet | `app/services/ct600Figures.js` and its unit test |
+| bk1 | BK1 | Sonnet | `mcp/lib/finance/bank-lines.js`, `mcp/lib/finance/paypal-statement-lines.js`, `app/services/paypalTransactions.js`, their tests |
 | ct38-design | CT38 (the design) | Opus | no source file; the design goes to `docs-out/` on the worker's branch |
 
 - **AA37** starts from the held build `refs/remotes/cloud-pebble/claude/pebble-aa37` (1c67bcef0),
