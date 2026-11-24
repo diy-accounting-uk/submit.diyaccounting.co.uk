@@ -33,6 +33,7 @@ export async function serveFilingResultRecord(page) {
     "submission-record",
     "review-links",
     "ct600-fields",
+    "balance-sheet-headings",
     "long-period",
     "companies-house-lane",
   ]) {
@@ -108,6 +109,7 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/balance-sheet-check.js", "lib/balance-sheet-check.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-notes-check.js", "lib/accounts-notes-check.js", "application/javascript");
   await serveFile(page, "**/lib/first-accounts.js", "lib/first-accounts.js", "application/javascript");
+  await serveFile(page, "**/lib/balance-sheet-headings.js", "lib/balance-sheet-headings.js", "application/javascript");
   await serveFile(page, "**/lib/long-period.js", "lib/long-period.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");

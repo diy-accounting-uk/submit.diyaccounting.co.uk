@@ -34,6 +34,7 @@ export async function serveFilingResultAssets(page) {
     "filing-record.js",
     "filing-result-record.js",
     "ct600-fields.js",
+    "balance-sheet-headings.js",
     "long-period.js",
   ]) {
     await serveFile(page, `**/lib/${library}`, `lib/${library}`, "application/javascript");

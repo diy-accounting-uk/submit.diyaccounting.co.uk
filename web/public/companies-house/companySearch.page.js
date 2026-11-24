@@ -1080,6 +1080,47 @@ async function renderAccountsSection(profile) {
     companyNumber: profile.companyNumber,
     prefill: { currentPeriodEnd: profile.accountsNextPeriodEnd },
   });
+  const entitlement = await loadEntitlement().catch((error) => {
+    console.warn("Could not read the bundles for the company books:", error);
+    return null;
+  });
+  if (entitlement && activityAccess(entitlement, "start-company-books").held) {
+    const holder = document.createElement("div");
+    holder.id = "companyBooks";
+    section.appendChild(holder);
+    appendCompanyBooks(holder, profile);
+  }
+}
+
+// The company's books in the DIYA-GL app, made in this browser from the register; the section shows
+// without waiting for them.
+async function appendCompanyBooks(holder, profile) {
+  try {
+    const [{ renderCompanyBooks }, confirmation, env] = await Promise.all([
+      import("/lib/company-books.js"),
+      import("/lib/services/companies-house-confirmation-service.js"),
+      (window.envReady ?? Promise.resolve({})).catch(() => ({})),
+    ]);
+    if (!env.DIYA_GL_BASE_URL) {
+      holder.remove();
+      return;
+    }
+    await renderCompanyBooks(holder, {
+      profile,
+      diyaGlBaseUrl: env.DIYA_GL_BASE_URL,
+      formatDate: (iso) => labels().formatCompanyDate(iso),
+      deps: {
+        loadBundle: () => import("/lib/books-bundle.js"),
+        getFiledAccounts: window.getFiledAccounts,
+        getFiledAccountsDocument: window.getFiledAccountsDocument,
+        getOfficers: window.getOfficers,
+        getFilingData: confirmation.getConfirmationStatementFilingData,
+      },
+    });
+  } catch (error) {
+    console.error("Could not show the company's books:", error);
+    holder.remove();
+  }
 }
 
 async function renderConfirmationSection(profile) {

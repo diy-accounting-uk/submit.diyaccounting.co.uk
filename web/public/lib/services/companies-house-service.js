@@ -141,6 +141,24 @@ export async function getFiledAccounts(companyNumber) {
 }
 
 /**
+ * Get one filed set of accounts as its iXBRL document.
+ * @param {string} companyNumber
+ * @param {string} transactionId - the set's filing history transaction id
+ * @returns {Promise<{companyNumber: string, transactionId: string, document: string}>}
+ */
+export async function getFiledAccountsDocument(companyNumber, transactionId) {
+  const response = await fetchWithIdToken(
+    `/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filed-accounts/${encodeURIComponent(transactionId)}/document`,
+    { method: "GET" },
+  );
+  const body = await readJsonAnswer(response);
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
  * Get one company report. A report the route has no module for yet answers 404 with the reason
  * "unknown_report", which the error carries. A report cut short answers 200 with partial,
  * callLimitReached or tooLarge in its body.
@@ -171,6 +189,7 @@ if (typeof window !== "undefined") {
   window.getPscs = getPscs;
   window.getFilingHistory = getFilingHistory;
   window.getFiledAccounts = getFiledAccounts;
+  window.getFiledAccountsDocument = getFiledAccountsDocument;
   window.getCompanyReport = getCompanyReport;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 }

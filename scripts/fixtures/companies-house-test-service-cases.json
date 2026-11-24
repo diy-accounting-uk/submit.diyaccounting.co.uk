@@ -624,7 +624,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed. Revises the case micro-entity-accounts as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
+      "note": "Filed on the test service: run 45260265446 (2026-11-23), submission 000096, acknowledged, pending review. Revises the case micro-entity-accounts as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
     },
     "revision": {
       "originalDateOfApproval": "2026-09-15",
@@ -681,7 +681,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed. Revises the case micro-entity-accounts-dormant as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder. A fictional company, as its original is."
+      "note": "Filed on the test service: run 45262253902 (2026-11-23), submission 000097, acknowledged, pending review. Revises the case micro-entity-accounts-dormant as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder. A fictional company, as its original is."
     },
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
@@ -808,7 +808,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed. Revises the case small-company-accounts-full as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
+      "note": "Filed on the test service: run 45264216385 (2026-11-23), submission 000098, acknowledged, pending review. Revises the case small-company-accounts-full as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
     },
     "revision": {
       "originalDateOfApproval": "2026-09-15",
@@ -927,7 +927,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed. Revises the case small-company-accounts-filleted as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
+      "note": "Filed on the test service: run 45266205215 (2026-11-23), submission 000099, acknowledged, pending review. Revises the case small-company-accounts-filleted as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
     },
     "revision": {
       "originalDateOfApproval": "2026-09-15",

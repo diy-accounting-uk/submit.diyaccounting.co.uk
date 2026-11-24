@@ -32,12 +32,18 @@
  * PaymentPeriodsRequest is free and synchronous: it is never polled.
  *
  * Usage:
- *   node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>]
+ *   node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>] [--stop-by <ISO time>]
  *   node scripts/companies-house-test-service-run.js --poll <submissionNumber> --out-dir <dir>
  *
  * --out-dir is required and must resolve outside this repository (assertOutsideRepository), so
  * an evidence log carrying redacted gateway exchanges is never a file git could pick up.
  * --case runs a single named case from the fixture instead of the whole list.
+ * --stop-by is the time the run's AWS session ends. A case that could still be running then is not
+ * started: it is recorded as NOT_RUN, so every case that did run keeps its result.
+ *
+ * Cases expected to end in POLL_TIMEOUT run after the others and poll for a shorter wall clock.
+ * The evidence log and the summary are written again after each case, so a case that throws, or
+ * a run that is stopped, leaves the results of the cases before it.
  * --poll polls an existing submission to a terminal state without submitting anything: it
  * allocates no submission number and posts no filing, and exits non-zero only on a GovTalkErrors
  * block.
@@ -90,6 +96,46 @@ const DEFAULT_POLL_INTERVAL_MS = 2000;
 const MIN_POLL_INTERVAL_MS = 1000;
 const MAX_POLL_INTERVAL_MS = 30000;
 const MAX_POLL_WALL_CLOCK_MS = 10 * 60 * 1000;
+// A case expected to stay pending shows that by still being pending at this bound.
+const EXPECTED_TIMEOUT_POLL_WALL_CLOCK_MS = 4 * 60 * 1000;
+// Time allowed for one gateway exchange and a submission number, on top of the polling.
+const CASE_REQUEST_ALLOWANCE_MS = 60 * 1000;
+
+/**
+ * How long a case's poll loop runs before it gives up with POLL_TIMEOUT: shorter for a case
+ * expected to end that way.
+ * @param {{expectedOutcome?: {status?: string}}} caseDef
+ * @returns {number}
+ */
+export function pollWallClockMsFor(caseDef) {
+  return caseDef?.expectedOutcome?.status === "POLL_TIMEOUT" ? EXPECTED_TIMEOUT_POLL_WALL_CLOCK_MS : MAX_POLL_WALL_CLOCK_MS;
+}
+
+function isPolledCase(caseDef) {
+  return caseDef.type === "accounts" || caseDef.type === "confirmationStatement" || caseDef.type === "pscVerificationStatement";
+}
+
+/**
+ * The longest a case can take: one exchange for a synchronous read; for a filing, its poll wall
+ * clock, one more poll at the longest interval, and the submit.
+ * @param {object} caseDef
+ * @returns {number}
+ */
+export function longestCaseMs(caseDef) {
+  if (!isPolledCase(caseDef)) return CASE_REQUEST_ALLOWANCE_MS;
+  return pollWallClockMsFor(caseDef) + MAX_POLL_INTERVAL_MS + CASE_REQUEST_ALLOWANCE_MS;
+}
+
+/**
+ * The cases in run order: those expected to end in POLL_TIMEOUT after the rest, each group in
+ * fixture order.
+ * @param {object[]} cases
+ * @returns {object[]}
+ */
+export function orderCases(cases) {
+  const expectsTimeout = (caseDef) => caseDef.expectedOutcome?.status === "POLL_TIMEOUT";
+  return [...cases.filter((caseDef) => !expectsTimeout(caseDef)), ...cases.filter(expectsTimeout)];
+}
 
 function sleep(ms) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
@@ -244,11 +290,12 @@ async function pollUntilTerminal(
       : { terminal: false, status: "PENDING" };
 
   let delayMs = nextPollDelayMs(submitParsed, DEFAULT_POLL_INTERVAL_MS);
+  const wallClockMs = pollWallClockMsFor(caseDef);
   const pollStartedAt = Date.now();
   let attempts = 0;
 
   while (!terminal.terminal) {
-    if (Date.now() - pollStartedAt > MAX_POLL_WALL_CLOCK_MS) {
+    if (Date.now() - pollStartedAt > wallClockMs) {
       terminal = { terminal: true, status: "POLL_TIMEOUT" };
       break;
     }
@@ -514,16 +561,37 @@ async function runCase(caseDef, context) {
   };
 }
 
+// The entry for a case that ended without an observed gateway outcome: it threw, or it was not
+// started before the AWS session ends.
+function unfinishedEntry(caseDef, observedStatus, message) {
+  return {
+    case: caseDef.name,
+    type: caseDef.type,
+    observedStatus,
+    errors: [{ text: message }],
+    rejections: [],
+    exchanges: [],
+    expectedStatus: caseDef.expectedOutcome?.status,
+    expectedPinned: Boolean(caseDef.expectedOutcome?.pinned),
+    note: caseDef.expectedOutcome?.note,
+    pass: false,
+  };
+}
+
 function buildSummaryMarkdown(entries) {
   const rows = entries.map(
     (entry) =>
       `| ${entry.case} | ${entry.observedStatus} | ${entry.expectedStatus}${entry.expectedPinned ? "" : " (unpinned)"} | ${entry.pass ? "pass" : "FAIL"} | ${entry.submissionNumber || ""} |`,
   );
-  return ["| Case | Observed | Expected | Result | Submission number |", "|---|---|---|---|---|", ...rows].join("\n");
+  const unfinished = entries
+    .filter((entry) => entry.observedStatus === "ERROR" || entry.observedStatus === "NOT_RUN")
+    .map((entry) => `- ${entry.case}: ${entry.errors[0].text}`);
+  const table = ["| Case | Observed | Expected | Result | Submission number |", "|---|---|---|---|---|", ...rows].join("\n");
+  return unfinished.length > 0 ? `${table}\n\n${unfinished.join("\n")}` : table;
 }
 
 function parseArgs(argv) {
-  const args = { casesPath: undefined, outDir: undefined, caseName: undefined, pollSubmission: undefined };
+  const args = { casesPath: undefined, outDir: undefined, caseName: undefined, pollSubmission: undefined, stopBy: undefined };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--cases") {
@@ -538,6 +606,9 @@ function parseArgs(argv) {
     } else if (arg === "--poll") {
       args.pollSubmission = argv[i + 1];
       i += 1;
+    } else if (arg === "--stop-by") {
+      args.stopBy = argv[i + 1];
+      i += 1;
     }
   }
   return args;
@@ -548,16 +619,17 @@ function parseArgs(argv) {
  * markdown summary to --out-dir, and return whether every case matched its expected outcome.
  * @param {object[]} cases
  * @param {string} outDir
- * @param {{caseName?: string, sleepFn?: Function}} [options] - sleepFn overrides the real
- *   between-poll wait; tests use it to prove the announced PollInterval was honoured without a
- *   real-time wait
+ * @param {{caseName?: string, sleepFn?: Function, stopBy?: number}} [options] - sleepFn overrides
+ *   the real between-poll wait; tests use it to prove the announced PollInterval was honoured
+ *   without a real-time wait. stopBy (epoch milliseconds) is when the AWS session ends: a case
+ *   that could still be running then is recorded as NOT_RUN instead of started.
  * @returns {Promise<{entries: object[], allPass: boolean}>}
  */
-export async function runCases(cases, outDir, { caseName, sleepFn } = {}) {
+export async function runCases(cases, outDir, { caseName, sleepFn, stopBy } = {}) {
   if (process.env.COMPANIES_HOUSE_GATEWAY_TEST !== "true") {
     throw new Error('COMPANIES_HOUSE_GATEWAY_TEST must be "true": without it a filing goes to the live gateway');
   }
-  const selected = caseName ? cases.filter((caseDef) => caseDef.name === caseName) : cases;
+  const selected = orderCases(caseName ? cases.filter((caseDef) => caseDef.name === caseName) : cases);
   if (caseName && selected.length === 0) {
     throw new Error(`No case named "${caseName}" in the fixture`);
   }
@@ -574,15 +646,29 @@ export async function runCases(cases, outDir, { caseName, sleepFn } = {}) {
   // not on the loop's own speed.
   const entries = [];
   for (const caseDef of selected) {
-    console.log(`[companies-house-test-service-run] running case "${caseDef.name}"`);
-    const entry = await runCase(caseDef, context);
+    let entry;
+    if (stopBy !== undefined && Date.now() + longestCaseMs(caseDef) > stopBy) {
+      entry = unfinishedEntry(
+        caseDef,
+        "NOT_RUN",
+        `not started: it could still be running at ${new Date(stopBy).toISOString()}, when the AWS session ends`,
+      );
+    } else {
+      console.log(`[companies-house-test-service-run] running case "${caseDef.name}"`);
+      try {
+        entry = await runCase(caseDef, context);
+      } catch (error) {
+        entries.push(unfinishedEntry(caseDef, "ERROR", error.message));
+        writeEvidence(outDir, entries);
+        throw error;
+      }
+    }
     entries.push(entry);
+    writeEvidence(outDir, entries);
     console.log(
       `[companies-house-test-service-run] case "${caseDef.name}": observed ${entry.observedStatus}, expected ${entry.expectedStatus}, ${entry.pass ? "pass" : "FAIL"}`,
     );
   }
-
-  writeEvidence(outDir, entries);
 
   return { entries, allPass: entries.every((entry) => entry.pass) };
 }
@@ -646,10 +732,11 @@ export async function runPoll(submissionNumber, outDir, { sleepFn } = {}) {
 }
 
 async function main() {
-  const { casesPath, outDir, caseName, pollSubmission } = parseArgs(process.argv.slice(2));
-  if (!outDir || Boolean(casesPath) === Boolean(pollSubmission)) {
+  const { casesPath, outDir, caseName, pollSubmission, stopBy } = parseArgs(process.argv.slice(2));
+  const stopByMs = stopBy === undefined ? undefined : Date.parse(stopBy);
+  if (!outDir || Boolean(casesPath) === Boolean(pollSubmission) || Number.isNaN(stopByMs)) {
     console.error(
-      "Usage: node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>]\n" +
+      "Usage: node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>] [--stop-by <ISO time>]\n" +
         "       node scripts/companies-house-test-service-run.js --poll <submissionNumber> --out-dir <dir>",
     );
     process.exitCode = 1;
@@ -669,7 +756,7 @@ async function main() {
   }
 
   const cases = JSON.parse(readFileSync(casesPath, "utf8"));
-  const { allPass } = await runCases(cases, outDir, { caseName });
+  const { allPass } = await runCases(cases, outDir, { caseName, stopBy: stopByMs });
 
   if (!allPass) {
     console.error("[companies-house-test-service-run] one or more cases missed their expected outcome");

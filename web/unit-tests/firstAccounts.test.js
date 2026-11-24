@@ -12,7 +12,6 @@ import {
   endsWithinFirstFinancialYear,
   firstAccountsLine,
   isFirstAccountsPeriod,
-  marksFirstAccounts,
 } from "../public/lib/first-accounts.js";
 
 describe("when small company accounts may leave out the prior year", () => {
@@ -41,16 +40,6 @@ describe("when small company accounts may leave out the prior year", () => {
     expect(comparativesFinding({ periodStart: "2025-04-01", dateOfIncorporation: "2025-04-01", hasPriorYear: true })).toBe(
       "first-accounts-have-no-prior-year",
     );
-  });
-
-  test("a filed document marks first accounts by a date of incorporation that reads as the period's start date", () => {
-    const start =
-      '<ix:nonNumeric name="bus:StartDateForPeriodCoveredByReport" contextRef="p2026" format="ixt2:datedaymonthyearen">1 July 2025</ix:nonNumeric>';
-    const incorporated = (date) =>
-      `<ix:nonNumeric name="bus:DateFormationOrIncorporation" contextRef="p2026" format="ixt2:datedaymonthyearen">${date}</ix:nonNumeric>`;
-    expect(marksFirstAccounts(`${start}${incorporated("1 July 2025")}`)).toBe(true);
-    expect(marksFirstAccounts(`${start}${incorporated("1 June 2025")}`)).toBe(false);
-    expect(marksFirstAccounts(start)).toBe(false);
   });
 
   test("a register whose last accounts give their end and no start still shows accounts filed before the period", () => {

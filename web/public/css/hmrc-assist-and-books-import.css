@@ -159,3 +159,10 @@ input.hmrc-assist-highlight {
 .worked-tax__row .hint {
   margin-bottom: 0;
 }
+
+/* The amend view's DIYA-GL book actions: a gap between buttons that wrap onto a second row. */
+.revision-downloads-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

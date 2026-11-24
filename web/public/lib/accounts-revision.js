@@ -552,29 +552,7 @@ export async function readRevisionSource(receiptName, { fetchReceipt, loadBundle
   // A receipt that is missing or not accounts has no accounts record to go back to.
   if (refusal) return { refusal, next: receipt?.kind === ACCOUNTS_RECEIPT_KIND ? "record" : "receipts" };
   const bundle = await loadBundle();
-  try {
-    return { source: { ...revisionSourceOf(receipt, bundle), receiptName } };
-  } catch (error) {
-    const headings = unreadHeadingsOf(receipt.filedDocument);
-    if (error?.name !== "IxbrlError" || headings.length === 0) throw error;
-    return {
-      refusal: siteText(
-        "ch.revision.refuse-unread-heading",
-        "These accounts carry {headings}, which this site cannot yet read back, so they cannot be revised here yet.",
-        { headings: headings.join(", ") },
-      ),
-      next: "record",
-    };
-  }
-}
-
-// The books mapping does not yet read back the micro-entity headings outside the balance sheet
-// totals, and refuses accounts that state one; these are the ones a document states.
-const HEADINGS_THE_MAPPING_CANNOT_READ = ["calledUpShareCapitalNotPaid", "prepaymentsAccruedIncome", "accrualsDeferredIncome"];
-
-function unreadHeadingsOf(document) {
-  const { current, prior } = balanceSheetLinesOf(document);
-  return HEADINGS_THE_MAPPING_CANNOT_READ.filter((line) => current[line] || prior[line]).map((line) => BALANCE_SHEET_LINE_TITLE[line]());
+  return { source: { ...revisionSourceOf(receipt, bundle), receiptName } };
 }
 
 const originalDateNeeded = () =>
@@ -829,6 +807,7 @@ export function showRevisionProblems(elements, dateApproved) {
  */
 export function hideRevisionSection({ section, originalDate, nonCompliance, amendments }) {
   for (const id of ["periodStart", "periodEnd"]) document.getElementById(id).readOnly = false;
+  document.getElementById("revisionDownloads")?.replaceChildren();
   section.hidden = true;
   nonCompliance.required = false;
   amendments.required = false;

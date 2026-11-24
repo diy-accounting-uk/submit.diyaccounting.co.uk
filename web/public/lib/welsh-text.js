@@ -393,6 +393,25 @@ window.WELSH_TEXT = {
     "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Dim ond y cyfrif elw a cholled sydd yn y ffeil: llenwch y fantolen a gweddill y cyfrifon, yna ewch i’r rhagolwg.",
   "ch.books-filled-micro":
     "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
+  "ch.books.add-capital": "Ychwanegu’r cyfranddalwyr a’r cyfalaf",
+  "ch.books.auth-code": "Cod dilysu’r cwmni (dewisol)",
+  "ch.books.auth-code-hint":
+    "Mae Tŷ’r Cwmnïau yn rhoi’r cyfranddalwyr a’r cyfalaf cyfranddaliadau ar gyfer cod dilysu’r cwmni. Anfonir y cod ar gyfer y cais hwn yn unig ac ni chaiff ei gadw.",
+  "ch.books.auth-code-needed": "Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.",
+  "ch.books.building": "Yn gwneud y llyfrau…",
+  "ch.books.capital-added": "Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.",
+  "ch.books.differences": "Beth i’w wirio yn y llyfr:",
+  "ch.books.download-package": "Lawrlwytho’r flwyddyn nesaf fel pecyn taenlen",
+  "ch.books.failed": "Nid oedd modd gwneud y llyfrau: {reason}",
+  "ch.books.first-period": "Nid yw’r cwmni wedi ffeilio cyfrifon eto, felly mae’r llyfr yn dechrau heb falansau agoriadol.",
+  "ch.books.heading": "Llyfrau’r cwmni",
+  "ch.books.intro":
+    "Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.",
+  "ch.books.next-period": "Mae llyfr y flwyddyn nesaf yn rhedeg o {start} i {end}.",
+  "ch.books.no-filed-book":
+    "Nid oes gan y cyfrifon diwethaf ar y gofrestr ddogfen iXBRL y gall y dudalen hon ei darllen, felly nid oes balansau agoriadol yn llyfr y flwyddyn nesaf.",
+  "ch.books.open-filed": "Agor y cyfrifon diwethaf yn DIYA-GL",
+  "ch.books.start-next-year": "Dechrau’r flwyddyn nesaf yn DIYA-GL",
   "ch.callback.back-to-filing": "Yn ôl i’r ffeilio gyda Thŷ’r Cwmnïau",
   "ch.callback.exchanging": "Wrthi’n cyfnewid y cod awdurdodi am docyn mynediad...",
   "ch.callback.heading": "Cysylltu â Thŷ’r Cwmnïau",
@@ -1441,8 +1460,6 @@ window.WELSH_TEXT = {
   "ch.email.status-blocks": "Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.",
   "ch.email.type-not-covered": "Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.",
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
-  "ch.filing.first-accounts-one-year":
-    "Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol. Ni all y wefan hon ddarllen yn ôl gyfrifon ag un flwyddyn eto, felly ni ellir eu diwygio yma eto.",
   "ch.filing.load-failed": "Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.",
   "ch.filing.no-comparatives-why":
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
@@ -1840,6 +1857,18 @@ window.WELSH_TEXT = {
     "Mae’r cyfrifon a ffeiliwyd yn cynnwys {filed} rhes o flaensymiau i gyfarwyddwyr ac mae’r ffurflen hon yn cymryd {taken}, felly nid yw’r rhesi ar ôl rhes {taken} wedi’u llenwi.",
   "ch.revision.date-before-original":
     "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",
+  "ch.revision.downloads-book": "Lawrlwytho fel llyfr DIYA-GL",
+  "ch.revision.downloads-differences": "Lle mae’r llyfr yn wahanol i’r cyfrifon a ffeiliwyd:",
+  "ch.revision.downloads-filleted":
+    "Mae’r copi a ffeiliwyd wedi’i dalfyrru ac nid yw’n cynnwys cyfrif elw a cholled, felly mae gan y llyfr un llinell ar gyfer elw’r flwyddyn.",
+  "ch.revision.downloads-heading": "Lawrlwytho’r cyfrifon sy’n cael eu diwygio",
+  "ch.revision.downloads-nothing-uploaded":
+    "Nid oes dim yn cael ei uwchlwytho: caiff y llyfr ei wneud yn y porwr hwn, ac mae dolenni DIYA-GL yn ei gario y tu mewn i’r cyfeiriad.",
+  "ch.revision.downloads-open": "Agor yn DIYA-GL",
+  "ch.revision.downloads-package": "Lawrlwytho fel pecyn taenlen",
+  "ch.revision.downloads-summary":
+    "Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.",
+  "ch.revision.downloads-unavailable": "Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.",
   "ch.revision.line-accruals": "croniadau",
   "ch.revision.line-accruals-deferred-income": "croniadau ac incwm gohiriedig",
   "ch.revision.line-amounts-owed-to-directors": "symiau sy’n ddyledus i gyfarwyddwyr",
@@ -1888,8 +1917,6 @@ window.WELSH_TEXT = {
     "Mae’r cyfrifon y mae’r dderbynneb yn eu henwi ar gyfer y cyfnod {from} i {to}, felly ni all cyfrifon diwygiedig ar gyfer {start} i {end} gymryd eu lle.",
   "ch.revision.refuse-period-not-on-register":
     "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at {end}, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
-  "ch.revision.refuse-unread-heading":
-    "Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.",
   "ch.revision.refused-title": "Ni ellir diwygio’r cyfrifon hyn yma",
   "ch.revision.rejected": "Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.",
   "ch.revision.status-not-production":

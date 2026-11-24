@@ -12,6 +12,10 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { NOT_HELD_COMPANY_NUMBER, PEOPLE, addressLine1, registerCompany } from "@app/http-simulator/fixtures/register.js";
+import { decodeBookFragment } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-link.js";
+import { parse as parseToml } from "smol-toml";
+import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
+import { microInputFromTestServiceCase } from "@app/test-helpers/accountsDocumentCases.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/screenshots/company-drill-down");
@@ -188,6 +192,9 @@ async function serveSite(
     pscs = PSCS,
     signedIn = true,
     officers = OFFICERS,
+    submitEnv = null,
+    filedDocument = null,
+    filingData = null,
   } = {},
 ) {
   await page.addInitScript((withSignIn) => {
@@ -215,10 +222,14 @@ async function serveSite(
       if (company && company[2] === "/persons-with-significant-control") return json(route, 200, pscs);
       if (company && company[2] === "/filing-history") return json(route, 200, filings);
       if (company && company[2] === "/filed-accounts") return json(route, 200, filedAccounts);
+      if (company && filedDocument && /^\/filed-accounts\/[^/]+\/document$/.test(company[2] || ""))
+        return json(route, 200, { companyNumber: "00000001", document: filedDocument });
+      if (company && filingData && company[2] === "/filing-data") return json(route, 200, filingData);
       if (company && company[2] === "/registered-email-address/eligibility")
         return json(route, 200, { eligibilityStatusCode: "COMPANY_VALID_FOR_SERVICE" });
       return json(route, 200, {});
     }
+    if (pathname === "/submit.env" && submitEnv) return route.fulfill({ status: 200, contentType: "text/plain", body: submitEnv });
     if (pathname === "/submit.environment-name.txt")
       return route.fulfill({ status: 200, contentType: "text/plain", body: environmentName });
     const drill = pathname.match(/^(\/cy)?\/companies-house\/company\//);
@@ -413,6 +424,77 @@ test.describe("Company lookup drill-down", () => {
         "/companies-house/recordsLocation.html?companyNumber=00000001",
       ].sort(),
     );
+  });
+
+  test("the accounts section starts the company's books in DIYA-GL from the last filed accounts, and the code adds the shareholders", async ({
+    page,
+  }) => {
+    const apiRequests = [];
+    const lastAccounts = buildMicroEntityAccounts({
+      ...microInputFromTestServiceCase(
+        JSON.parse(fs.readFileSync(path.join(process.cwd(), "scripts/fixtures/companies-house-test-service-cases.json"), "utf8")).find(
+          (testCase) => testCase.name === "micro-entity-accounts",
+        ),
+      ),
+      companyNumber: "00000001",
+      companyName: COMPANY.name,
+      periodStart: `${EARLIER_YEAR}-05-01`,
+      periodEnd: `${PREVIOUS_YEAR}-04-30`,
+    });
+    await serveSite(page, {
+      bundles: [],
+      apiRequests,
+      submitEnv: "DIYA_GL_BASE_URL=https://ci.diya-gl.co.uk/\n",
+      filedDocument: lastAccounts,
+      filingData: {
+        madeUpDate: `${YEAR}-04-16`,
+        statementOfCapital: {
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: "100",
+          shares: [{ shareClass: "ORDINARY", numShares: "100", aggregateNominalValue: "100" }],
+        },
+        shareholdings: [
+          {
+            shareClass: "ORDINARY",
+            numberHeld: "100",
+            shareholders: [{ forename: "Eleanor", surname: "Bramwell", address: { addressLine1: "1 Home Road" } }],
+          },
+        ],
+      },
+    });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    const books = page.locator("#companyBooks");
+    await expect(books.locator("#companyBooksStartNextYear")).toBeVisible({ timeout: 30000 });
+    await expect(books).toContainText(`The next year's book runs from`);
+    const bookOf = async (id) => {
+      const href = await books.locator(id).getAttribute("href");
+      return { href, ...decodeBookFragment(href.split("#book=")[1]) };
+    };
+    const filed = await bookOf("#companyBooksOpenFiled");
+    const next = await bookOf("#companyBooksStartNextYear");
+    const packageBook = await bookOf("#companyBooksDownloadPackage");
+    expect(filed.href).toMatch(/^https:\/\/ci\.diya-gl\.co\.uk\/ltd\.html#book=/);
+    expect(packageBook.href).toMatch(/^https:\/\/ci\.diya-gl\.co\.uk\/ltd\.html\?download=package#book=/);
+    expect(packageBook.toml).toBe(next.toml);
+    const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
+    expect(dayOf(parseToml(filed.toml).documentInfo.periodCoveredEnd)).toBe(`${PREVIOUS_YEAR}-04-30`);
+    const nextBook = parseToml(next.toml);
+    expect([dayOf(nextBook.documentInfo.periodCoveredStart), dayOf(nextBook.documentInfo.periodCoveredEnd)]).toEqual([
+      `${PREVIOUS_YEAR}-05-01`,
+      `${YEAR}-04-30`,
+    ]);
+    expect(nextBook.entityInformation["diya-gl:companyNumber"]).toBe("00000001");
+    expect(next.lines.trim().length).toBeGreaterThan(0);
+    expect(JSON.stringify(nextBook)).not.toContain("1 Home Road");
+    await shootAtWidths(page, "company-books");
+
+    await page.fill("#companyBooksAuthCode", "222222");
+    await page.click("#companyBooksCapitalForm button[type=submit]");
+    await expect(page.locator("#companyBooksCapitalStatus")).toHaveText("The shareholders and the share capital are in the book.");
+    const withMembers = await bookOf("#companyBooksStartNextYear");
+    expect(JSON.stringify(parseToml(withMembers.toml).members)).toContain("Bramwell");
+    expect(withMembers.toml).not.toContain("1 Home Road");
+    expect(apiRequests.some((request) => request.endsWith("/filing-data"))).toBe(true);
   });
 
   test("an account with the default bundle alone is told which bundle files the accounts and the statement", async ({ page }) => {

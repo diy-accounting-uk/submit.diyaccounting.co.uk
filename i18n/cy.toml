@@ -18420,10 +18420,6 @@ cy = '''Eu diwygio ar dudalen cyfrifon cwmni bach'''
 hash = "c87e46cde010"
 cy = '''Eu diwygio ar dudalen cyfrifon micro-endid'''
 
-[strings."ch.revision.refuse-unread-heading"]
-hash = "ebadaa8100f0"
-cy = '''Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.'''
-
 [strings."ch.gateway.status-accept"]
 hash = "070c160a6299"
 cy = '''wedi’i dderbyn'''
@@ -23891,10 +23887,6 @@ cy = '''Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y c
 hash = "cf6d0bca4819"
 cy = '''Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.'''
 
-[strings."ch.filing.first-accounts-one-year"]
-hash = "868cdf709abd"
-cy = '''Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol. Ni all y wefan hon ddarllen yn ôl gyfrifon ag un flwyddyn eto, felly ni ellir eu diwygio yma eto.'''
-
 [strings."ch.filing.no-comparatives-why"]
 hash = "503f3e5ce5ba"
 cy = '''Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.'''
@@ -27542,3 +27534,107 @@ cy = '''Nid oedd modd cwblhau’r cais.'''
 [strings."widget.failure-refused"]
 hash = "ade9ebdb9506"
 cy = '''Gwrthodwyd y cais.'''
+
+# == The accounts being amended, downloaded as a DIYA-GL book (lib/revision-downloads.js), ids ch.revision.downloads-* ==
+
+[strings."ch.revision.downloads-heading"]
+hash = "037461a2223c"
+cy = '''Lawrlwytho’r cyfrifon sy’n cael eu diwygio'''
+
+[strings."ch.revision.downloads-unavailable"]
+hash = "fd7096790558"
+cy = '''Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.'''
+
+[strings."ch.revision.downloads-summary"]
+hash = "d7a6d715c90a"
+cy = '''Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.'''
+
+[strings."ch.revision.downloads-filleted"]
+hash = "4d1d3cdca563"
+cy = '''Mae’r copi a ffeiliwyd wedi’i dalfyrru ac nid yw’n cynnwys cyfrif elw a cholled, felly mae gan y llyfr un llinell ar gyfer elw’r flwyddyn.'''
+
+[strings."ch.revision.downloads-differences"]
+hash = "18510737a53f"
+cy = '''Lle mae’r llyfr yn wahanol i’r cyfrifon a ffeiliwyd:'''
+
+[strings."ch.revision.downloads-nothing-uploaded"]
+hash = "dd7348727716"
+cy = '''Nid oes dim yn cael ei uwchlwytho: caiff y llyfr ei wneud yn y porwr hwn, ac mae dolenni DIYA-GL yn ei gario y tu mewn i’r cyfeiriad.'''
+
+[strings."ch.revision.downloads-book"]
+hash = "da987165aee5"
+cy = '''Lawrlwytho fel llyfr DIYA-GL'''
+
+[strings."ch.revision.downloads-package"]
+hash = "1ca20d871bee"
+cy = '''Lawrlwytho fel pecyn taenlen'''
+
+[strings."ch.revision.downloads-open"]
+hash = "01062a3963f8"
+cy = '''Agor yn DIYA-GL'''
+
+# == The company drill-down's books in the DIYA-GL app (lib/company-books.js), ids ch.books.* ==
+
+[strings."ch.books.heading"]
+hash = "d1e84945ae4b"
+cy = '''Llyfrau’r cwmni'''
+
+[strings."ch.books.intro"]
+hash = "bc345126a4fa"
+cy = '''Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.'''
+
+[strings."ch.books.building"]
+hash = "c5b9ea7f8be9"
+cy = '''Yn gwneud y llyfrau…'''
+
+[strings."ch.books.failed"]
+hash = "446c95ea338e"
+cy = '''Nid oedd modd gwneud y llyfrau: {reason}'''
+
+[strings."ch.books.next-period"]
+hash = "7b46099aa736"
+cy = '''Mae llyfr y flwyddyn nesaf yn rhedeg o {start} i {end}.'''
+
+[strings."ch.books.no-filed-book"]
+hash = "901b6de01a69"
+cy = '''Nid oes gan y cyfrifon diwethaf ar y gofrestr ddogfen iXBRL y gall y dudalen hon ei darllen, felly nid oes balansau agoriadol yn llyfr y flwyddyn nesaf.'''
+
+[strings."ch.books.first-period"]
+hash = "d3962ecd2f27"
+cy = '''Nid yw’r cwmni wedi ffeilio cyfrifon eto, felly mae’r llyfr yn dechrau heb falansau agoriadol.'''
+
+[strings."ch.books.differences"]
+hash = "e1969e17ba77"
+cy = '''Beth i’w wirio yn y llyfr:'''
+
+[strings."ch.books.open-filed"]
+hash = "7b088ba47c6d"
+cy = '''Agor y cyfrifon diwethaf yn DIYA-GL'''
+
+[strings."ch.books.start-next-year"]
+hash = "d8df1dbf7dbc"
+cy = '''Dechrau’r flwyddyn nesaf yn DIYA-GL'''
+
+[strings."ch.books.download-package"]
+hash = "ea91ef9b4288"
+cy = '''Lawrlwytho’r flwyddyn nesaf fel pecyn taenlen'''
+
+[strings."ch.books.auth-code"]
+hash = "44d1f471ea7c"
+cy = '''Cod dilysu’r cwmni (dewisol)'''
+
+[strings."ch.books.auth-code-hint"]
+hash = "cb9f108a018b"
+cy = '''Mae Tŷ’r Cwmnïau yn rhoi’r cyfranddalwyr a’r cyfalaf cyfranddaliadau ar gyfer cod dilysu’r cwmni. Anfonir y cod ar gyfer y cais hwn yn unig ac ni chaiff ei gadw.'''
+
+[strings."ch.books.add-capital"]
+hash = "30c21e6e9481"
+cy = '''Ychwanegu’r cyfranddalwyr a’r cyfalaf'''
+
+[strings."ch.books.auth-code-needed"]
+hash = "8a8635942f33"
+cy = '''Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.'''
+
+[strings."ch.books.capital-added"]
+hash = "c1ee70dd96a3"
+cy = '''Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.'''

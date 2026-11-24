@@ -328,6 +328,7 @@ app.get("/submit.env", (req, res) => {
     "COMPANIES_HOUSE_IDENTITY_BASE_URI",
     "COMPANIES_HOUSE_GATEWAY_TEST",
     "DIY_SUBMIT_BASE_URL",
+    "DIYA_GL_BASE_URL",
     "GA4_MEASUREMENT_ID",
     "UET_TAG_ID",
   ];

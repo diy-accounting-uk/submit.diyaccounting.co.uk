@@ -63,6 +63,7 @@ const LIBRARIES = [
   "review-links.js",
   "filing-record.js",
   "ct600-fields.js",
+  "balance-sheet-headings.js",
   "long-period.js",
   "accounts-revision.js",
   "first-accounts.js",
@@ -280,7 +281,7 @@ test.describe("Filings page - customer copy", () => {
     await screenshotAtBothWidths(page, "filing-no-comparatives");
   });
 
-  test("says why a company's first accounts, which have one year, have no amend link yet", async ({ page }) => {
+  test("offers a company's first accounts, which have one year, to amend on the small company form", async ({ page }) => {
     const firstAccounts = buildSmallCompanyAccounts({
       ...SMALL_COMPANY_CASE_INPUT,
       dateOfIncorporation: SMALL_COMPANY_CASE_INPUT.periodStart,
@@ -294,10 +295,11 @@ test.describe("Filings page - customer copy", () => {
       { ...ACCOUNTS_RECEIPT, companyNumber: SMALL_COMPANY_CASE_INPUT.companyNumber, filedDocument: firstAccounts },
       { revisionOffered: true },
     );
-    await expect(page.locator("#amendFilingLink")).toBeHidden();
-    await expect(page.locator("#filingNotice")).toHaveText(
-      "These are the company's first accounts, so they have no previous year. This site cannot yet read back accounts with one year, so they cannot be amended here yet.",
+    await expect(page.locator("#amendFilingLink")).toHaveAttribute(
+      "href",
+      `fileSmallCompanyAccounts.html?amend=${encodeURIComponent(ACCOUNTS_RECEIPT_NAME)}`,
     );
+    await expect(page.locator("#filingNotice")).toBeHidden();
     await screenshotAtBothWidths(page, "filing-first-accounts");
   });
 

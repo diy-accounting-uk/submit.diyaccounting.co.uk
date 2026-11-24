@@ -30,6 +30,9 @@ import {
   nextPollDelayMs,
   evaluateOutcome,
   blankFirstDirectorPersonalCode,
+  orderCases,
+  pollWallClockMsFor,
+  longestCaseMs,
   runCases,
   runPoll,
 } from "../../../scripts/companies-house-test-service-run.js";
@@ -121,6 +124,42 @@ describe("evaluateOutcome", () => {
 
   test("a TERMINAL expectation does not match an observed GOVTALK_ERROR", () => {
     expect(evaluateOutcome({ status: "TERMINAL" }, "GOVTALK_ERROR")).toBe(false);
+  });
+});
+
+describe("orderCases", () => {
+  test("puts the cases expected to end in POLL_TIMEOUT after the rest, each group in fixture order", () => {
+    const cases = [
+      { name: "a", expectedOutcome: { status: "POLL_TIMEOUT" } },
+      { name: "b", expectedOutcome: { status: "OK" } },
+      { name: "c", expectedOutcome: { status: "POLL_TIMEOUT" } },
+      { name: "d", expectedOutcome: { status: "TERMINAL" } },
+    ];
+    expect(orderCases(cases).map((caseDef) => caseDef.name)).toEqual(["b", "d", "a", "c"]);
+  });
+});
+
+describe("pollWallClockMsFor and longestCaseMs", () => {
+  test("a case expected to end in POLL_TIMEOUT polls for four minutes, any other case for ten", () => {
+    expect(pollWallClockMsFor({ expectedOutcome: { status: "POLL_TIMEOUT" } })).toBe(4 * 60 * 1000);
+    expect(pollWallClockMsFor({ expectedOutcome: { status: "TERMINAL" } })).toBe(10 * 60 * 1000);
+    expect(pollWallClockMsFor({})).toBe(10 * 60 * 1000);
+  });
+
+  test("a filing can take its poll wall clock, one more poll and the submit; a synchronous read one exchange", () => {
+    expect(longestCaseMs({ type: "accounts", expectedOutcome: { status: "POLL_TIMEOUT" } })).toBe(4 * 60 * 1000 + 30_000 + 60_000);
+    expect(longestCaseMs({ type: "confirmationStatement", expectedOutcome: { status: "TERMINAL" } })).toBe(
+      10 * 60 * 1000 + 30_000 + 60_000,
+    );
+    expect(longestCaseMs({ type: "companyDataRequest" })).toBe(60_000);
+  });
+
+  test("the fixture's cases expected to poll until POLL_TIMEOUT fit inside a 55 minute AWS session", () => {
+    const fixture = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8"));
+    const total = fixture
+      .filter((caseDef) => caseDef.expectedOutcome?.status === "POLL_TIMEOUT")
+      .reduce((sum, caseDef) => sum + longestCaseMs(caseDef), 0);
+    expect(total).toBeLessThanOrEqual(55 * 60 * 1000);
   });
 });
 
@@ -503,10 +542,92 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
 
         expect(entries[0].observedStatus).toBe("POLL_TIMEOUT");
         expect(entries[0].pass).toBe(true);
+        expect(now - startedAt).toBeGreaterThanOrEqual(4 * 60 * 1000);
+        expect(now - startedAt).toBeLessThan(10 * 60 * 1000);
+      } finally {
+        dateSpy.mockRestore();
+      }
+    });
+
+    test("a case expected to finish keeps polling for ten minutes before POLL_TIMEOUT", { timeout: 30_000 }, async () => {
+      let now = 1_000_000;
+      const startedAt = now;
+      const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+      const sleepFn = (ms) => {
+        now += ms;
+        return Promise.resolve();
+      };
+      try {
+        const { entries } = await runCases(
+          [accountsCase({ govTestScenario: "PENDING_FOREVER", expectedOutcome: { status: "TERMINAL" } })],
+          outDir,
+          { sleepFn },
+        );
+
+        expect(entries[0].observedStatus).toBe("POLL_TIMEOUT");
+        expect(entries[0].pass).toBe(false);
         expect(now - startedAt).toBeGreaterThanOrEqual(10 * 60 * 1000);
       } finally {
         dateSpy.mockRestore();
       }
+    });
+
+    test("runs the cases expected to end in POLL_TIMEOUT after the others", async () => {
+      const cases = [
+        accountsCase({ name: "pending-accounts", govTestScenario: "PENDING_FOREVER", expectedOutcome: { status: "POLL_TIMEOUT" } }),
+        baseCase({ name: "statement", expectedOutcome: { status: "ACCEPT" } }),
+      ];
+      let now = 1_000_000;
+      const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+      const sleepFn = (ms) => {
+        now += ms;
+        return Promise.resolve();
+      };
+      try {
+        const { entries } = await runCases(cases, outDir, { sleepFn });
+
+        expect(entries.map((entry) => entry.case)).toEqual(["statement", "pending-accounts"]);
+      } finally {
+        dateSpy.mockRestore();
+      }
+    });
+
+    test("keeps the results of the cases before one that throws, and records the one that threw", async () => {
+      const cases = [
+        baseCase({ name: "finished-case", expectedOutcome: { status: "ACCEPT" } }),
+        accountsCase({ name: "broken-accounts", balanceSheet: undefined }),
+      ];
+
+      await expect(runCases(cases, outDir, { sleepFn: fastSleep })).rejects.toThrow(/not a valid accounts request/);
+
+      const evidence = JSON.parse(readFileSync(join(outDir, "evidence-log.json"), "utf8"));
+      expect(evidence.map((entry) => [entry.case, entry.observedStatus, entry.pass])).toEqual([
+        ["finished-case", "ACCEPT", true],
+        ["broken-accounts", "ERROR", false],
+      ]);
+      expect(evidence[1].errors[0].text).toMatch(/not a valid accounts request/);
+      const summary = readFileSync(join(outDir, "summary.md"), "utf8");
+      expect(summary).toContain("| finished-case | ACCEPT |");
+      expect(summary).toMatch(/- broken-accounts: .*not a valid accounts request/);
+    });
+
+    test("does not start a case that could still be running when the AWS session ends", async () => {
+      const stopBy = Date.now() + 3 * 60 * 1000;
+      const cases = [
+        baseCase({ name: "short-case", type: "companyDataRequest", madeUpDate: "2025-09-21", expectedOutcome: { status: "OK" } }),
+        accountsCase({ name: "long-case", expectedOutcome: { status: "POLL_TIMEOUT" } }),
+      ];
+
+      const { entries, allPass } = await runCases(cases, outDir, { sleepFn: fastSleep, stopBy });
+
+      expect(entries.map((entry) => [entry.case, entry.observedStatus, entry.pass])).toEqual([
+        ["short-case", "OK", true],
+        ["long-case", "NOT_RUN", false],
+      ]);
+      expect(allPass).toBe(false);
+      expect(mockDynamoSend).not.toHaveBeenCalled();
+      const summary = readFileSync(join(outDir, "summary.md"), "utf8");
+      expect(summary).toContain(`- long-case: not started: it could still be running at ${new Date(stopBy).toISOString()}`);
     });
 
     test("throws when the accounts case is not a valid accounts request", async () => {

@@ -669,15 +669,17 @@ async function startRevision(receiptName) {
   try {
     const module = await import("../lib/accounts-revision.js");
     const statusLine = document.querySelector("[data-feature-status]");
-    const restoreStatus = await module.showRevisionStatus(statusLine);
-    statusLine.hidden = false;
+    // A revision not offered here leaves the page's own status line, which states where an original files.
     if (!(await module.isRevisionOfferedHere())) {
+      statusLine.hidden = false;
       refuseRevision(
         window.siteText("ch.revision.not-offered", "Revised accounts cannot be filed here yet, so these accounts cannot be amended."),
         module.refusalNextStep("record", receiptName),
       );
       return;
     }
+    const restoreStatus = await module.showRevisionStatus(statusLine);
+    statusLine.hidden = false;
     const read = await module.readRevisionSource(receiptName, {
       fetchReceipt: (name) => window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {}),
       loadBundle: window.booksImport.loadBundle,
@@ -708,6 +710,9 @@ async function startRevision(receiptName) {
     applyFirstAccountsRule();
     revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
+    import("../lib/revision-downloads.js")
+      .then((downloads) => downloads.fillRevisionDownloads(read.source, { loadBundle: window.booksImport.loadBundle }))
+      .catch((error) => console.error("Failed to offer the accounts being amended as a DIYA-GL book:", error));
     document.getElementById("revisionBanner").hidden = false;
     document.getElementById("changeCompanyLine").hidden = true;
     showRevisionLateNote();

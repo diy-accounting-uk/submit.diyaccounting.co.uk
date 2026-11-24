@@ -22,6 +22,9 @@
 // than stale-after-hours - a backstop for a holder whose run never reaches its own release step at
 // all (a cancelled run, a runner that dies outright).
 //
+// scripts/enable-cognito-native-test.js and scripts/disable-cognito-native-test.js take and release
+// a hold the same way, through applyHold below, so a workflow's disable leaves a local enable on.
+//
 // SSM has no compare-and-swap for a plain String parameter (see claim-ci-slot.mjs's own comment),
 // so a write here is read-modify-write with a read-back verification: after writing, this reads
 // the parameter again and retries the whole read-modify-write if another writer's update landed
@@ -29,6 +32,7 @@
 
 import { spawnSync } from "node:child_process";
 import { randomInt } from "node:crypto";
+import os from "node:os";
 
 import { SSMClient, GetParameterCommand, PutParameterCommand } from "@aws-sdk/client-ssm";
 
@@ -66,7 +70,10 @@ export function removeHolder(holders, id) {
 // native auth, so any error (rate limit, network blip) resolves to null - "unknown", which
 // isHolderStale treats the same as "still active" - and is logged rather than thrown, matching
 // claim-ci-slot.mjs's resolveRunFinished.
+// A holder with no run (a local enable) or a call with no token cannot be checked, and resolves to
+// null without a request.
 async function resolveRunFinished(repository, runId, token) {
+  if (!runId || !token || !repository) return null;
   try {
     const status = await fetchRunStatus(repository, runId, token);
     return !claimIsActive(status);
@@ -134,13 +141,75 @@ async function updateHoldersWithRetry(ssmClient, parameterName, computeNext) {
   throw new Error(`Could not update ${parameterName} after ${MAX_WRITE_ATTEMPTS} attempts; last observed value: ${JSON.stringify(lastObserved)}`);
 }
 
-function runToggleScript(action, environmentName, client) {
+export function runToggleScript(action, environmentName, client) {
   const args = ["scripts/toggle-cognito-native-auth.js", action, environmentName];
   if (client && client !== "both") args.push("--client", client);
   const result = spawnSync(process.execPath, args, { stdio: "inherit" });
   if (result.status !== 0) {
     throw new Error(`toggle-cognito-native-auth.js ${action} ${environmentName} exited ${result.status}`);
   }
+}
+
+// A holder older than this is dropped even when its run cannot be read; the action's
+// stale-after-hours input defaults to the same.
+export const DEFAULT_STALE_AFTER_HOURS = 4;
+
+/**
+ * The holder for a hold taken by scripts/enable-cognito-native-test.js: inside a workflow run,
+ * that run and job, so the hold goes when the run finishes; on a person's machine, that user and
+ * host. The disable script works out the same holder, so it releases what the enable took.
+ * @param {Record<string, string|undefined>} [env]
+ * @param {{username?: string, hostname?: string}} [machine]
+ * @returns {{id: string, runId: string|null, workflow: string}}
+ */
+export function scriptHolder(env = process.env, { username = os.userInfo().username, hostname = os.hostname() } = {}) {
+  if (env.GITHUB_RUN_ID) {
+    return { id: `${env.GITHUB_RUN_ID}-${env.GITHUB_JOB}-native-test`, runId: env.GITHUB_RUN_ID, workflow: env.GITHUB_WORKFLOW || "" };
+  }
+  return { id: `local-${username}@${hostname}`, runId: null, workflow: "local" };
+}
+
+/**
+ * Take or release one holder's hold on an environment's native auth. Enable adds the holder and
+ * turns native auth on; disable removes it and turns native auth off only when no holder remains.
+ * Stale holders are dropped on either call.
+ * @param {object} hold
+ * @param {"enable"|"disable"} hold.mode
+ * @param {string} hold.environmentName
+ * @param {{id: string, runId: string|null, workflow: string}} hold.holder
+ * @param {{send: Function}} hold.ssmClient
+ * @param {number} hold.staleAfterMs
+ * @param {string} [hold.repository] - with token, lets a finished run's holder be dropped
+ * @param {string} [hold.token]
+ * @param {(action: "enable"|"disable") => void|Promise<void>} hold.toggle - turns native auth on or off
+ * @returns {Promise<{holders: object[], toggled: "enable"|"disable"|null}>}
+ */
+export async function applyHold({ mode, environmentName, holder, ssmClient, staleAfterMs, repository, token, toggle }) {
+  const parameterName = holdersParameterName(environmentName);
+
+  if (mode === "enable") {
+    const holders = await updateHoldersWithRetry(ssmClient, parameterName, async (current) => {
+      const nowMs = Date.now();
+      const kept = await dropStaleHolders(current, { repository, token, staleAfterMs, nowMs });
+      return addHolder(kept, { ...holder, since: new Date(nowMs).toISOString() });
+    });
+    console.log(`native-auth-holders for ${environmentName}: ${holders.map((each) => each.id).join(", ")}`);
+    await toggle("enable");
+    return { holders, toggled: "enable" };
+  }
+
+  const holders = await updateHoldersWithRetry(ssmClient, parameterName, async (current) => {
+    const nowMs = Date.now();
+    const withoutSelf = removeHolder(current, holder.id);
+    return dropStaleHolders(withoutSelf, { repository, token, staleAfterMs, nowMs });
+  });
+
+  if (holders.length === 0) {
+    await toggle("disable");
+    return { holders, toggled: "disable" };
+  }
+  console.log(`Not disabling native auth on ${environmentName}: still held by ${holders.map((each) => each.id).join(", ")}`);
+  return { holders, toggled: null };
 }
 
 export async function main() {
@@ -163,32 +232,16 @@ export async function main() {
     );
   }
 
-  const parameterName = holdersParameterName(environmentName);
-  const ssmClient = new SSMClient({});
-  const staleAfterMs = staleAfterHours * 60 * 60 * 1000;
-
-  if (mode === "enable") {
-    const holders = await updateHoldersWithRetry(ssmClient, parameterName, async (current) => {
-      const nowMs = Date.now();
-      const stale = await dropStaleHolders(current, { repository, token, staleAfterMs, nowMs });
-      return addHolder(stale, { id: holderId, runId, workflow, since: new Date(nowMs).toISOString() });
-    });
-    console.log(`native-auth-holders for ${environmentName}: ${holders.map((holder) => holder.id).join(", ")}`);
-    runToggleScript("enable", environmentName, client);
-    return;
-  }
-
-  const holders = await updateHoldersWithRetry(ssmClient, parameterName, async (current) => {
-    const nowMs = Date.now();
-    const withoutSelf = removeHolder(current, holderId);
-    return dropStaleHolders(withoutSelf, { repository, token, staleAfterMs, nowMs });
+  await applyHold({
+    mode,
+    environmentName,
+    holder: { id: holderId, runId, workflow },
+    ssmClient: new SSMClient({}),
+    staleAfterMs: staleAfterHours * 60 * 60 * 1000,
+    repository,
+    token,
+    toggle: (action) => runToggleScript(action, environmentName, client),
   });
-
-  if (holders.length === 0) {
-    runToggleScript("disable", environmentName, client);
-  } else {
-    console.log(`Not disabling native auth on ${environmentName}: still held by ${holders.map((holder) => holder.id).join(", ")}`);
-  }
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {

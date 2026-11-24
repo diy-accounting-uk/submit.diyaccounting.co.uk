@@ -67,6 +67,21 @@ export async function verifyCompanyProfile(page, expectedName, expectedStatus, s
   });
 }
 
+// The company's books in DIYA-GL: the accounts section offers the last accounts, the next year and
+// its spreadsheet package as DIYA-GL addresses where the environment lists the company books, which
+// prod does not yet.
+export async function verifyCompanyBooksOffered(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The accounts section offers the company's books in DIYA-GL", async () => {
+    const environmentName = (await (await page.request.get(new URL("/submit.environment-name.txt", page.url()).href)).text()).trim();
+    if (environmentName === "prod") return;
+    const books = page.locator("#companyBooks");
+    await expect(books.locator("#companyBooksStartNextYear")).toHaveAttribute("href", /ltd\.html#book=[A-Za-z0-9_-]+$/, { timeout: 60000 });
+    await expect(books.locator("#companyBooksDownloadPackage")).toHaveAttribute("href", /ltd\.html\?download=package#book=/);
+    await books.scrollIntoViewIfNeeded();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-books.png`, readerView: true });
+  });
+}
+
 // The company's drill-down: each view has its own address, which the page moves to as the reader
 // clicks through.
 export async function verifyCompanyAddress(page, companyNumber, view, screenshotPath = defaultScreenshotPath) {

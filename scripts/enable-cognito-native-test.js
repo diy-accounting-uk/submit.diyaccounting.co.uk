@@ -12,7 +12,8 @@
 //   . ./scripts/aws-use-submit-profile.sh
 //
 // This script:
-//   1. Enables COGNITO on the Hosted UI (toggle-cognito-native-auth.js enable)
+//   1. Takes a hold on native auth and enables COGNITO on the Hosted UI (hold-native-auth.mjs's
+//      applyHold, then toggle-cognito-native-auth.js enable), so a workflow's disable leaves it on
 //   2. Rotates the local test lane's durable user (ensure-cognito-test-user.js)
 //   3. Saves credentials to cognito-native-test-credentials.json
 //   4. Prints export commands for running behaviour tests
@@ -22,6 +23,15 @@ import { promisify } from "util";
 import fs from "fs";
 import os from "os";
 import path from "path";
+
+import { SSMClient } from "@aws-sdk/client-ssm";
+
+import {
+  applyHold,
+  scriptHolder,
+  runToggleScript,
+  DEFAULT_STALE_AFTER_HOURS,
+} from "../.github/actions/hold-native-auth/hold-native-auth.mjs";
 
 const execFileAsync = promisify(execFile);
 const environmentName = process.argv[2] || "ci";
@@ -42,16 +52,21 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 1: Enable native auth
+  // Step 1: Hold and enable native auth
   console.log(`=== Enabling Cognito native auth for ${environmentName} ===`);
   try {
-    const { stdout, stderr } = await execFileAsync("node", ["scripts/toggle-cognito-native-auth.js", "enable", environmentName]);
-    if (stdout) console.log(stdout.trimEnd());
-    if (stderr) console.error(stderr.trimEnd());
+    await applyHold({
+      mode: "enable",
+      environmentName,
+      holder: scriptHolder(),
+      ssmClient: new SSMClient({}),
+      staleAfterMs: DEFAULT_STALE_AFTER_HOURS * 60 * 60 * 1000,
+      repository: process.env.GITHUB_REPOSITORY,
+      token: process.env.GITHUB_TOKEN,
+      toggle: (action) => runToggleScript(action, environmentName),
+    });
   } catch (error) {
     console.error(`Failed to enable native auth: ${error.message}`);
-    if (error.stdout) console.log(error.stdout.trimEnd());
-    if (error.stderr) console.error(error.stderr.trimEnd());
     process.exit(1);
   }
 
