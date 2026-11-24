@@ -5,7 +5,7 @@
 
 A signed-in user sees one list of every filing and payment that their businesses owe, from every source, sorted by due date. Each row says where it came from and when that source was last read. The user can get an email before each due date and when a watched company files, and can subscribe to the list in a calendar. A new user enters a company number, or signs in to HMRC, and sees at once what is due and what Submit can file. Facts checked 2026-11-22.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. 13 machine tasks (DUE2 to DUE14) and 1 human task (ODUE2), all boarded on `NEXT.md`. Briefs are section 9.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (DUE5 to DUE14 and ODUE2) are tracked in section 9.3, not on `NEXT.md`. Briefs are section 9.2.
 
 ## Operator assertions (verbatim)
 
@@ -471,3 +471,21 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Change.** Add `"prod"` to the activity's `environments`; update `app/unit-tests/services/prodSurface.test.js`. Make the guide video public after the operator has watched it.
 - **Run.** `npx vitest run app/unit-tests/services/prodSurface.test.js`.
 - **Waits on**: ODUE2. **Class**: machine-only. **Repository**: submit. **Model**: Haiku. **Size**: ~5 files.
+
+### 9.3 State of the open tasks
+
+Source of each task: the operator, 2026-11-22. Owner is Claude Code, except ODUE2 (Operator). Model, size and repository are in the table of section 9.1 and the briefs. "Waits on" lists the tasks not yet on `main`; the briefs' "Waits on" lines list every dependency.
+
+| Label | Class | State | Waits on | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| DUE5 | machine-only | ready | nothing | DUE6, DUE10 | submit |
+| DUE6 | machine-only | blocked | DUE5 | DUE7, DUE12, WDM3 (`PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |
+| DUE7 | machine-only | blocked | DUE6 | DUE8 | submit |
+| DUE8 | machine-only | blocked | DUE7 | DUE9 | submit |
+| DUE9 | machine-only | blocked | DUE8 | DUE13 | submit |
+| DUE10 | machine-only | blocked | DUE5 | DUE11 | submit |
+| DUE11 | machine-only | blocked | DUE10 | DUE13 | submit |
+| DUE12 | machine-only | blocked | DUE6 | DUE13 | submit |
+| DUE13 | machine-only | blocked | DUE9, DUE11, DUE12 | ODUE2 | submit |
+| ODUE2 | human-driven | blocked | DUE13 deployed to ci | DUE14 | none |
+| DUE14 | machine-only | blocked | ODUE2 | MA1, WDM6, WDM11, WDM13, WDM15 (on `NEXT.md` and `PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |

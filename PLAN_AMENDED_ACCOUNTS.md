@@ -5,7 +5,7 @@
 
 A customer files amended (revised) accounts for a micro-entity, a small company and a dormant company on prod. Every channel that files original accounts files the revision. Every publication point says so. Companies House has approved what it must approve. The GOV.UK page "Find software for filing company accounts" shows Yes in its "Amended accounts" column for DIY Accounting Submit. Two book features serve the same customer. From the amend journey, the customer downloads the filed accounts as a DIYA-GL book or as a spreadsheet package. Submit also builds a new set of books for a company's next period from what Companies House holds. Facts checked 2026-11-12.
 
-**Status**: 40 tasks; every open one is on `NEXT.md` (2026-11-21). Board row CL1 builds AA23 and AA29; CL3 builds AA25, AA26, AA27, AA30, AA31 and the lookup's book actions of AA28. The other 33 tasks are rows under their own labels. Briefs are section 5.2. The copy at `../private.diyaccounting.co.uk/strategy/PLAN_AMENDED_ACCOUNTS.md` is the earlier draft; this file is the one the board follows.
+**Status**: the open tasks (AA12, AA17, AA18, AA20, AA21, AA24, AA32 to AA35, OAA3 and OAA5) are tracked in section 5.3, not on `NEXT.md`. Briefs are section 5.2. The copy at `../private.diyaccounting.co.uk/strategy/PLAN_AMENDED_ACCOUNTS.md` is the earlier draft; this file is current.
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -527,7 +527,8 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **How.** The operator gave the go on 2026-11-22. Dispatch `.github/workflows/companies-house-test-service.yml` once for each revised case: `gh workflow run companies-house-test-service.yml --ref main -f case=<case name>`. The run builds each request with the route's own functions and sets `GatewayTest`. Its artifact holds the redacted exchanges.
 - **Proof.** The gateway acknowledges each submission. It parses the iXBRL at submit, so an acknowledgement shows that the document passed its rules. Each poll answers pending until the XML team reviews.
 - **Record.** Write the run id and the date into each case's `expectedOutcome.note` in the fixture. Use the form of the other cases ("Observed OK on the test service, run <run id> (<date>).").
-- **Waits on**: AA11, and AA10 on `main`. **Class**: machine-only (the operator gave the go for the four test submissions on 2026-11-22). **Repository**: submit. **Model**: Haiku. **Size**: 1 file.
+- **Remainder.** Submissions 000096 to 000099 hold the four revised cases (evidence `../private.diyaccounting.co.uk/companies-house/xmlgw-evidence/AA12_REVISED_TEST_SUBMISSIONS_2026-11-23.md`). The review and judge are in `../private.diyaccounting.co.uk/companies-house/reviews/aa12-judge-2026-11-24/`: every case reconciles with no mismatch and passes the validator, and each verdict is "question" until the gateway answers. After the XML team reviews them, poll each submission (`gh workflow run companies-house-test-service.yml --ref main -f poll-submission=<number>`) and record each answer in the evidence file.
+- **Waits on**: the XML team's review of 000096 to 000099. **Class**: machine-only (the operator gave the go for the four test submissions on 2026-11-22). **Repository**: submit. **Model**: Haiku. **Size**: 1 file.
 
 #### AA14. Prove a revision through the Submit API
 
@@ -584,6 +585,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA17. Guide, screenshots and video
 
+- **Remainder.** The scene script `videos/amend-company-accounts.json`, the guide journey, the 13 walkthrough frames and the `publish.json` entry are on `main` (PR #860); the entry's `videoId` is null. Left, on the laptop with the SSO session: `npm run video:record -- amend-company-accounts simulator` with narration (Polly); the unlisted upload by the `video-publish` skill, which stops there for OAA3; the id and chapters in `web/public/videos/publish.json`; `npm run video:walkthrough -- --id amend-company-accounts`; then `AWS_PROFILE=diya-submit-prod npm run video:embed-check`.
 - **Scene script.** Create `videos/amend-company-accounts.json` on the pattern of `videos/file-company-tax-return-with-accounts.json`: `environments` is `["simulator"]`; `pages` lists the micro-entity form and `web/public/companies-house/filings.html`. The scenes: the receipt, Amend, the corrected figure, the two texts, the preview with the revision page, the accepted result, the receipts list. It records on the simulator and never on prod. The scripts for original accounts list `["ci"]`; this journey needs an accepted receipt, which only the simulator gives without a person. When AA28 is on `main` before the recording, one scene shows the download actions and the corrected book on the books card.
 - **Guide.** In `web/public/guide.page.js`, add `{ video: "amend-company-accounts" }` after `{ video: "file-small-company-accounts" }`. The guide shows a journey only where its activity is listed. Give the video the activity `file-revised-accounts` in `web/public/videos/publish.json`.
 - **Record and upload.** Follow the `site-video-capture` skill to record. Follow the `video-publish` skill to check and upload the recording unlisted. Stop there. The public flip is AA18's, after OAA3.
@@ -766,6 +768,27 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Tests.** A browser test of the link on the Ltd page's new book form; `npx vitest run web/unit-tests/seo-validation.test.js`; `npm run build:sitemaps`.
 - **Waits on**: AA34, so that each link opens a page that prod serves. **Class**: machine-only. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~7 files.
 
+### 5.3 State of the open tasks
+
+Source of each task: the operator, 2026-11-12 and 2026-11-21. Owner is Claude Code, except OAA3 and OAA5 (Operator). Model, size and repository are in the briefs. "Waits on" lists the tasks not yet on `main`; the briefs' "Waits on" lines list every dependency.
+
+| Label | Class | State | Waits on | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| AA12 | machine-only | blocked | the XML team's review of 000096 to 000099 | nothing | submit |
+| AA17 | machine-only | ready | nothing | OAA3 | submit |
+| OAA3 | human-driven | blocked | AA17 | AA18 | none |
+| AA18 | machine-only | blocked | OAA3 | AA20, AA21 | submit |
+| AA20 | machine-only | blocked | AA18 | nothing | spreadsheets |
+| AA21 | machine-only | blocked | AA18 | nothing | submit |
+| AA24 | machine-only | ready | nothing | nothing | submit |
+| AA32 | machine-only | ready | nothing | nothing | submit |
+| AA33 | machine-only | ready | nothing | OAA5, AA34 | submit |
+| OAA5 | human-driven | blocked | AA33 | AA34 | none |
+| AA34 | machine-only | blocked | AA33 on `main`, OAA5 | AA35 | submit |
+| AA35 | machine-only | blocked | AA34 | nothing | spreadsheets |
+
+- AA18 and AA34: the session runs each launch when its preconditions hold.
+
 ## 6. Dependency graph
 
 ```mermaid
@@ -853,7 +876,7 @@ graph TD
 - **The book link.** `<DIYA_GL_BASE_URL>ltd.html#book=<data>` opens a book in the DIYA-GL app. The data is the JSON `{ toml, lines }`, deflate-raw compressed, as base64url. The fragment stays in the browser. ci uses `https://ci.diya-gl.co.uk/` and prod uses `https://diya-gl.co.uk/`.
 - **Where a built book lives.** In the page's memory, in a file that the customer downloads, and in a book link. A customer who saves it from the DIYA-GL app stores it through `/api/v1/diya-gl`, where the activity `diya-gl-storage` is offered. That activity lists no `prod` today. No task of this plan adds a store.
 - **Register data about people.** Directors and people with significant control are public register data. A `CompanyDataRequest` answer also holds dates of birth and addresses. The page copies names, roles, appointment dates and shareholdings, and drops the rest before it builds the book. The authentication code goes to one request and is not kept.
-- **The spreadsheets repository.** Create a worktree with its `scripts/worktree-add.sh`. Its unit tests are `npx vitest run app/test/<file>`. Its app bundle is `npm run build:diya-gl-bundle`. Its pre-push hook runs a long scoped suite.
+- **The spreadsheets repository.** Start with the `orient-spreadsheets` skill. Create a worktree with its `scripts/worktree-add.sh`. Its unit tests are `npx vitest run app/test/<file>`. Its app bundle is `npm run build:diya-gl-bundle`. Its pre-push hook runs the scoped suite, so a task branch is pushed with `SKIP_PUSH_TESTS=1`; the browser and LibreOffice proof is `test.yml` on the pull request. An agent runs only the tests its change reaches, with `VITEST_MAX_WORKERS=2`, and `npx prettier --check` on its files. `deploy.yml` there runs on a push to any branch that touches `web/spreadsheets.diyaccounting.co.uk/**`, `web/diya-gl.co.uk/**`, `app/lib/**`, `app/data/**`, `app/products/**`, `app/templates/**` or `examples/**`, and deploys the one spreadsheets ci environment. The `connect-src` of both sites names `https://submit.diyaccounting.co.uk`, so a page there calls prod's Submit from prod and from ci.
 - **Private records.** Correspondence, credentials and the XML team's names stay in `../private.diyaccounting.co.uk/companies-house/correspondence/`. This repository is public. A plan, a comment and a test name hold none of them.
 
 ## 8. Order of delivery

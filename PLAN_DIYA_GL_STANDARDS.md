@@ -5,7 +5,7 @@
 
 A reviewer with an accounting and audit background reads a diya-gl book and finds each construct that keeps a set of accounts whole stated in code they can review: double entry, a typed chart of accounts mapped to the FRS 102 and FRS 105 taxonomy, a trial balance built from the lines, the year-end close and roll forward, control accounts, journals with a reason and an author, corrections by reversal, period locks after a filing, VAT boxes from the lines, and the ties from trial balance to each filed fact. Facts checked 2026-11-22 against `spreadsheets.diyaccounting.co.uk` main at `24547a929` and `submit.diyaccounting.co.uk` main at `60ab98a8f`.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. Tasks GLS2 to GLS20 are boarded on `NEXT.md`. Briefs are section 6.2.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (GLS4, GLS7, GLS8, GLS10 to GLS15, GLS17 to GLS20) are tracked in section 6.3, not on `NEXT.md`. Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -28,7 +28,7 @@ A reviewer with an accounting and audit background reads a diya-gl book and find
 - **The engine matches the workbook.** The Ltd calculator reproduces the workbook's formulas (`app/lib/diya-gl-calculator.js:4-8`). A change that would make a figure part from the workbook follows the spreadsheets repository's reconciliation-bug method (its `CLAUDE.md`): assert the sheet's behaviour as it is and add a warning that carries the true figure, unless the operator decides otherwise (section 7).
 - **Every check is breakable.** A new check or warning has a test that corrupts one input and asserts the exact set of results that flip.
 - **Schema change is v3, read beside v2.** Both schemas are closed (`additionalProperties: false` on the book root `book:9`, on `accountDefinition` `book:1094` and on the line `lines:9`), so an older reader rejects any new field. New fields go into new `-v3` schema files. The engine reads v2 and v3. It writes v3 only after Submit's pinned engine reads v3 (GLS10 before GLS11).
-- **Submit pins the engine.** Submit depends on `@diy-accounting-uk/diya-gl` `1.2.94` (`package.json:408`) and builds `web/public/lib/books-bundle.js` with `npm run bundle:books`. A Submit task that uses a new engine export bumps the pin and rebuilds the bundle.
+- **Submit pins the engine.** Submit depends on `@diy-accounting-uk/diya-gl` `1.2.99`, which carries GLS9 (`package.json`) and builds `web/public/lib/books-bundle.js` with `npm run bundle:books`. A Submit task that uses a new engine export bumps the pin and rebuilds the bundle.
 
 ## 1. Sources
 
@@ -220,6 +220,7 @@ A warning `book-bank-statement-differs` compares each `diya-gl:statementBalances
 - Pull before committing: `update.yml` and `publish-diya-gl.yml` push to main.
 - A further change found there that is not in the brief is one plain question to the operator.
 - Change nothing in `examples/` by hand; regenerate through `node app/bin/extract-scenarios.js` where a fixture must change.
+- A spreadsheets task starts with the `orient-spreadsheets` skill, and its worktree comes from that repository's `scripts/worktree-add.sh`. An agent runs only the tests its change reaches, with `VITEST_MAX_WORKERS=2`, and `npx prettier --check` on its files. The pre-push hook runs the scoped suite, so a task branch is pushed with `SKIP_PUSH_TESTS=1`; the browser and LibreOffice proof is `test.yml` on the pull request. `deploy.yml` there runs on a push to any branch that touches `web/spreadsheets.diyaccounting.co.uk/**`, `web/diya-gl.co.uk/**`, `app/lib/**`, `app/data/**`, `app/products/**`, `app/templates/**` or `examples/**`, and deploys the one spreadsheets ci environment. The engine bundle and the package templates are on the DIYA-GL site (`web/diya-gl.co.uk/public/`). The `connect-src` of both sites names `https://submit.diyaccounting.co.uk`, so a page there calls prod's Submit from prod and from ci.
 
 ## 6. Tasks
 
@@ -266,8 +267,8 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS4. Trial balance view on the books page and an MCP tool
 
 - **Repository**: spreadsheets. **Saved book**: no effect.
-- **Do**: a Trial balance view on the Company books page (`web/diya-gl.co.uk/public/`), with a period picker (year, month, VAT quarter) and each account's lines on demand; a diya-gl MCP tool `trial_balance` with the same arguments.
-- **Done when**: a browser test shows the view's totals equal; the spreadsheets repository's visual definition of done for a new view.
+- **Do**: the Trial balance view on the Company books page (`web/diya-gl.co.uk/public/`), the engine's trial balance functions, the `trial_balance` MCP tool and its docs are on spreadsheets `main` (PR #223, diya-gl 1.2.99). Left: run the `visual-review` skill on the view, then fix each fail there or board it.
+- **Done when**: the review passes, or each fail is fixed or boarded.
 
 #### GLS5. Nine report-only warnings
 
@@ -284,7 +285,7 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS7. Statement ties and `accountsFacts`
 
 - **Repository**: spreadsheets. **Saved book**: no figure changes; a new check can show red on an inconsistent book.
-- **Do**: `accountsFacts(results)` (FRS 105 lines and FRS 102 Section 1A lines by concept name), exported from the engine, carrying the presentation rules of `submit:app/services/microEntityAccountsFromResults.js:42-65` and `submit:app/services/smallCompanyAccountsFromResults.js` so GLS8's expected values hold. The four checks of section 3.5 at a penny's tolerance, in `app/products/ltd/checks/`, with the presentation rule for accounts that change side, and the 3100 pair in `rollForwardChecks`.
+- **Do**: build from spreadsheets `main` (operator, 2026-11-23). `accountsFacts(results)` (FRS 105 lines and FRS 102 Section 1A lines by concept name), exported from the engine, carrying the presentation rules of `submit:app/services/microEntityAccountsFromResults.js:42-65` and `submit:app/services/smallCompanyAccountsFromResults.js` so GLS8's expected values hold. The four checks of section 3.5 at a penny's tolerance, in `app/products/ltd/checks/`, with the presentation rule for accounts that change side, and the 3100 pair in `rollForwardChecks`.
 - **Tests**: each check passes on every Ltd example and flips alone when one input is corrupted.
 
 #### GLS8. Submit reads `accountsFacts`
@@ -302,12 +303,12 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS10. Submit's pinned engine reads v3
 
 - **Repository**: submit. **Saved book**: no effect.
-- **Do**: bump `@diy-accounting-uk/diya-gl` to the release carrying GLS9 (`package.json:408`). Change `scripts/build-books-bundle.mjs` to hand the v2 and the v3 pair to GLS9's loaders: the schema ids (`:34-35`), the `Ajv2020` stub that picks a validator by `$id` (`:170-178`), the bundle entry's `useSchemas` call (`:206-209`) and the standalone validator source (`:252-260`). Run `npm run bundle:books`, then the books-import and MCP book unit tests and a v3 book read through the bundle.
+- **Do**: `main` pins diya-gl 1.2.99, which carries GLS9, and `scripts/build-books-bundle.mjs` registers the v2 and v3 schemas from `SCHEMA_VERSIONS` (AA30 of `PLAN_AMENDED_ACCOUNTS.md`, be0c37212). Left: a test that a v3 book reads through the bundle, then the books-import and MCP book unit tests.
 
 #### GLS11. The engine writes v3
 
 - **Repository**: spreadsheets. **Saved book**: no effect on load; a book saved again is written as v3.
-- **Do**: `scripts/build-provenance-data.mjs` sets `FORMAT_VERSION` to `diya-gl/3` and regenerates `app/lib/provenance-data.js` (generated; not edited by hand); the loader migrates a v2 book to v3 on load per section 3.6; every writer (`buildNewBook`, `rollForward`, `buildIxbrlSummaryBooks`, the exporter, the canonical writer) states class and concept on each account.
+- **Do**: GLS9's finding: `app/lib/provenance.js` stamps a loaded v3 book `diya-gl/2`; the engine must stamp it `diya-gl/3`. `scripts/build-provenance-data.mjs` sets `FORMAT_VERSION` to `diya-gl/3` and regenerates `app/lib/provenance-data.js` (generated; not edited by hand); the loader migrates a v2 book to v3 on load per section 3.6; every writer (`buildNewBook`, `rollForward`, `buildIxbrlSummaryBooks`, the exporter, the canonical writer) states class and concept on each account.
 - **Tests**: GLS2's properties over v3 books; every v2 example migrates with unchanged figures; the parity gate passes.
 
 #### GLS12. Audit stamps, journal entries and reversal
@@ -355,7 +356,7 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS19. Concept and account labels, English and Welsh
 
 - **Repository**: spreadsheets. **Saved book**: no effect.
-- **Do**: section 3.11. A script `scripts/build-frc-concept-labels.mjs` reads the FRC suite zip and writes `app/data/frc-concept-labels.json`; the Welsh names of the standard charts in `account-classes.js`; the schema-description test.
+- **Do**: build from spreadsheets `main` (operator, 2026-11-23). Section 3.11. A script `scripts/build-frc-concept-labels.mjs` reads the FRC suite zip and writes `app/data/frc-concept-labels.json`; the Welsh names of the standard charts in `account-classes.js`; the schema-description test.
 - **Tests**: every concept in the outbound map has an English and a Welsh label; the script's output is stable on a second run.
 
 #### GLS20. Bank statement balances and their warning
@@ -363,6 +364,26 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 - **Repository**: spreadsheets. **Saved book**: no effect.
 - **Do**: section 3.12, with an edit `setStatementBalance`.
 - **Tests**: the warning flips when one statement balance differs by a penny.
+
+### 6.3 State of the open tasks
+
+Every task below is Owner Claude Code, source the operator (2026-11-22). Model, size and repository are in the table of section 6.1 and the briefs. "Waits on" lists the tasks not yet on `main`.
+
+| Label | Class | State | Waits on | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| GLS4 | machine-only | ready | nothing | nothing | spreadsheets |
+| GLS7 | machine-only | ready | nothing | GLS8 | spreadsheets |
+| GLS8 | machine-only | blocked | GLS7 released to npm | nothing | submit |
+| GLS10 | machine-only | ready | nothing | GLS11 | submit |
+| GLS11 | machine-only | blocked | GLS10 | GLS12, GLS17, GLS18, GLS20 | spreadsheets |
+| GLS12 | machine-only | blocked | GLS11 | GLS13, GLS17 | spreadsheets |
+| GLS13 | machine-only | blocked | GLS12 | GLS14 | spreadsheets |
+| GLS14 | machine-only | blocked | GLS13 | GLS15 | spreadsheets |
+| GLS15 | machine-only | blocked | GLS14 released | nothing | submit |
+| GLS17 | machine-only | blocked | GLS11, GLS12 | nothing | spreadsheets |
+| GLS18 | machine-only | blocked | GLS11 | nothing | spreadsheets |
+| GLS19 | machine-only | ready | nothing | nothing | spreadsheets |
+| GLS20 | machine-only | blocked | GLS11 | nothing | spreadsheets |
 
 ## 7. Decisions
 
