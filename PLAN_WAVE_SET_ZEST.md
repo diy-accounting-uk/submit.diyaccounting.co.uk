@@ -37,7 +37,7 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
   - VID22: a capture dispatch on prod and the publish. It can run at any time.
   - CQ93: the decision, written in the private file. It is a security finding, so it stays on the
     laptop. A code change that it decides becomes a new row (the row says so).
-  - CT40's run: the operator types the Government Gateway credentials, after CT39's book exists.
+  - CT40's run: the operator gives the book's path and types the Government Gateway credentials.
     It uses the `--til` code of wave 1 from that wave's worktree, or from `main` after the merge.
 - **Left out:**
   - OOS44 and DON1 are human-driven (test 4).
@@ -145,8 +145,8 @@ State: pending.
 
 ## After the deploy
 
-- OCT8: the operator files DIY Accounting Limited's accounts and CT600 on prod (needs CT38 live,
-  CT39 and CT40).
+- OCT8: the operator files DIY Accounting Limited's accounts and CT600 on prod (needs CT38 live
+  and CT40).
 - OCT9, then UH7.
 
 ## When the set branch fails
