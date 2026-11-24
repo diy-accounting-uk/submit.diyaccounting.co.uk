@@ -18,7 +18,7 @@ lands, signs and proves.
 
 ## Status
 
-defined 2026-11-24.
+defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); building wave 1.
 
 ## The goal
 
@@ -71,7 +71,10 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 - No two batches share a source file. TS1 writes the generated calendar; CT38 changes its
   generator in wave 2 and runs it again.
 
-State: pending.
+State: building (2026-11-24 10:30 UTC). Wave branch `claude/zest-w01` at 11f4564ac
+(`.claude/worktrees/zest-w01`). Queues posted: anvil aa37 (from `claude/zest-aa37-held`), bugle
+vat51, cyclone ct38-design; dusk, flint, garnet, harbour and jasper each set up first, then ts1,
+look4, dash53, al33 then seed1, and ct40. Beside on the laptop: CT39 and AL34 (local agents).
 
 ### Wave 2: CT38's build
 
