@@ -99,6 +99,101 @@ describe("parsePaypalStatementRecords", () => {
   });
 });
 
+describe("PayPal's Transaction details layout", () => {
+  // The report that replaced Transaction History: type, id, name and email on the date line, then
+  // Gross, Net and Fee, and a long type carried on at its column's indent. Every row is invented.
+  const TRANSACTION_DETAILS = [
+    "Merchant account ID: TESTMERCHANT01",
+    "Transaction details for all transactions",
+    "01/07/2025 - 31/07/2025",
+    "",
+    "Date        Transaction type          Transaction ID       Name                Email                       Gross      Net       Fee",
+    "03/07/2025  Donation payment          5AB12345CD678901E    Ada Fernsby         ada@example.invalid         20.00      19.21     -0.79",
+    "08/07/2025  Pre-approved payment      7CD23456EF789012G    Linewise Hosting    billing@example.invalid     -12.00     -12.00    0.00",
+    "            bill user payment",
+    "14/07/2025  General hold              9EF34567GH890123I                                                    -42.50     -42.50    0.00",
+    "16/07/2025  Other                     1GH45678IJ901234K    Quillmore Supplies                              42.50      42.50     0.00",
+    "22/07/2025  Account hold for open     3IJ56789KL012345M                                                    -5.00      -5.00     0.00",
+    "            authorisation",
+    "Page 1 of 1",
+    "",
+  ].join("\n");
+
+  it("reads each row's date, type and counterparty, id and Gross, Net and Fee", () => {
+    expect(parsePaypalStatementRecords(TRANSACTION_DETAILS)).toEqual([
+      {
+        date: "2025-07-03",
+        description: "Donation payment: Ada Fernsby",
+        status: "Completed",
+        currency: "GBP",
+        gross: 20,
+        fee: -0.79,
+        net: 19.21,
+        id: "5AB12345CD678901E",
+      },
+      {
+        date: "2025-07-08",
+        description: "Pre-approved payment bill user payment: Linewise Hosting",
+        status: "Completed",
+        currency: "GBP",
+        gross: -12,
+        fee: 0,
+        net: -12,
+        id: "7CD23456EF789012G",
+      },
+      {
+        date: "2025-07-14",
+        description: "General hold",
+        status: "Completed",
+        currency: "GBP",
+        gross: -42.5,
+        fee: 0,
+        net: -42.5,
+        id: "9EF34567GH890123I",
+      },
+      {
+        date: "2025-07-16",
+        description: "Other: Quillmore Supplies",
+        status: "Completed",
+        currency: "GBP",
+        gross: 42.5,
+        fee: 0,
+        net: 42.5,
+        id: "1GH45678IJ901234K",
+      },
+      {
+        date: "2025-07-22",
+        description: "Account hold for open authorisation",
+        status: "Pending",
+        currency: "GBP",
+        gross: -5,
+        fee: 0,
+        net: -5,
+        id: "3IJ56789KL012345M",
+      },
+    ]);
+  });
+
+  it("posts the receipt, its fee and the bill, and no hold", () => {
+    const { lines } = paypalLinesFromStatementText(TRANSACTION_DETAILS, ACCOUNTS);
+    expect(lines.map((line) => [line.documentReference, line.accountMainID, line.amount])).toEqual([
+      ["5AB12345CD678901E", SALES_ACCOUNT, 20],
+      ["5AB12345CD678901E", FEE_ACCOUNT, 0.79],
+      ["7CD23456EF789012G", PURCHASES_ACCOUNT, 12],
+      ["1GH45678IJ901234K", SALES_ACCOUNT, 42.5],
+    ]);
+  });
+
+  it("moves the wallet by the receipt, its fee and the bill, and not by the hold's release two days later", () => {
+    const lines = paypalWalletLinesFromStatementText(TRANSACTION_DETAILS, { walletAccountMainID: "1250" });
+    expect(lines.map((line) => [line.documentReference, line.amount, line.debitCreditCode])).toEqual([
+      ["5AB12345CD678901E", 20, "D"],
+      ["5AB12345CD678901E", 0.79, "C"],
+      ["7CD23456EF789012G", 12, "C"],
+    ]);
+  });
+});
+
 describe("parsePaypalActivitySummary", () => {
   it("reads a row's amount per currency, keyed by the header's own order", () => {
     const text = activitySummaryText(
@@ -284,6 +379,65 @@ describe("paypalLinesFromStatementText", () => {
 
     const { lines } = paypalLinesFromStatementText(text, { ...ACCOUNTS, statementText: activity });
     expect(lines.some((line) => line.documentReference === "OTH0006")).toBe(true);
+  });
+});
+
+describe("a receipt in another currency", () => {
+  // PayPal takes its fee in the receipt's own currency and converts what is left, the net.
+  const EURO_RECEIPT = statementText([
+    {
+      date: "14/08/2025",
+      description: "Donation Payment: Ada Fernsby",
+      status: "Completed",
+      currency: "EUR",
+      gross: 20.0,
+      fee: -1.03,
+      id: "TESTEUR001AAAAAAAA",
+    },
+    {
+      date: "14/08/2025",
+      description: "General Currency Conversion",
+      status: "Completed",
+      currency: "EUR",
+      gross: -18.97,
+      id: "TESTEUR002BBBBBBBB",
+    },
+    {
+      date: "14/08/2025",
+      description: "General Currency Conversion",
+      status: "Completed",
+      currency: "GBP",
+      gross: 16.2,
+      id: "TESTEUR003CCCCCCCC",
+    },
+  ]);
+
+  it("posts its pound gross to sales and its pound fee to purchases, split from the converted net at the conversion's rate", () => {
+    const { lines } = paypalLinesFromStatementText(EURO_RECEIPT, ACCOUNTS);
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({ sourceJournalID: "sales", accountMainID: SALES_ACCOUNT, amount: 17.08, amountCurrency: "GBP" });
+    expect(lines[1]).toMatchObject({ sourceJournalID: "purchases", accountMainID: FEE_ACCOUNT, amount: 0.88, amountCurrency: "GBP" });
+  });
+
+  it("moves the wallet by the pound net the conversion credited", () => {
+    const lines = paypalWalletLinesFromStatementText(EURO_RECEIPT, { walletAccountMainID: "1250" });
+    const signed = lines.reduce((total, line) => total + (line.debitCreditCode === "D" ? line.amount : -line.amount), 0);
+    expect(signed).toBeCloseTo(16.2, 2);
+  });
+
+  it("posts nothing when no conversion converted its net", () => {
+    const unconverted = statementText([
+      {
+        date: "14/08/2025",
+        description: "Donation Payment: Ada Fernsby",
+        status: "Completed",
+        currency: "EUR",
+        gross: 20.0,
+        fee: -1.03,
+        id: "TESTEUR001AAAAAAAA",
+      },
+    ]);
+    expect(paypalLinesFromStatementText(unconverted, ACCOUNTS).lines).toEqual([]);
   });
 });
 
@@ -535,6 +689,28 @@ describe.skipIf(!existsSync(REAL_PAYPAL_DIR))("paypalWalletLinesFromStatementPdf
 });
 
 describe("paypalWalletLinesFromStatementText", () => {
+  it("moves nothing on the wallet for a credit that releases a hold up to three days later, and moves a credit four days later", () => {
+    const hold = { date: "01/08/2025", description: "General Hold", status: "Completed", gross: -42.5, id: "HOLD0001" };
+    const releasedAfter = (date, id) =>
+      statementText([hold, { date, description: "Other: Quillmore Supplies", status: "Completed", gross: 42.5, id }]);
+
+    for (const date of ["01/08/2025", "04/08/2025"]) {
+      expect(paypalWalletLinesFromStatementText(releasedAfter(date, "REL0001"), { walletAccountMainID: "1250" })).toEqual([]);
+    }
+    const lines = paypalWalletLinesFromStatementText(releasedAfter("05/08/2025", "REL0002"), { walletAccountMainID: "1250" });
+    expect(lines.map((line) => [line.documentReference, line.amount, line.debitCreditCode])).toEqual([["REL0002", 42.5, "D"]]);
+  });
+
+  it("moves a credit dated before the hold of the same amount", () => {
+    const text = statementText([
+      { date: "03/08/2025", description: "General Hold", status: "Completed", gross: -42.5, id: "HOLD0002" },
+      { date: "02/08/2025", description: "Other: Quillmore Supplies", status: "Completed", gross: 42.5, id: "REL0003" },
+    ]);
+    expect(paypalWalletLinesFromStatementText(text, { walletAccountMainID: "1250" }).map((line) => line.documentReference)).toEqual([
+      "REL0003",
+    ]);
+  });
+
   const rows = [
     { date: "02/06/2026", description: "Donation Payment: A N Other", status: "Completed", gross: 10, fee: -0.59, id: "WALLET0001" },
     {

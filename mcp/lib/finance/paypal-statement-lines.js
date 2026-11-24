@@ -152,15 +152,71 @@ function matchDataRow(rawLine) {
   return { date: dateMatch[1], descriptionTail: columns.slice(0, -5).join(" "), status, currency, gross, fee, net };
 }
 
+// PayPal's "Transaction details" report, which replaced "Transaction History"
+// from July 2025: one line per transaction holding the date, the type, the
+// transaction id, the counterparty's name and email, and the Gross, Net and
+// Fee figures as its last three columns, in that order. A type too long for
+// its column carries on in the next line at the column's own indent. The
+// report states no status or currency: its rows are pound movements, and an
+// authorisation hold is the only row still open.
+const TRANSACTION_DETAILS_TITLE = /Transaction details for all transactions/;
+const TRANSACTION_DETAILS_NOISE = /^(Page \d|Transaction details|Merchant account)/;
+const OPEN_AUTHORISATION_HOLD = /^account hold for open authorisation$/i;
+
+function matchTransactionDetailsRow(rawLine) {
+  const dateMatch = LEADING_DATE.exec(rawLine);
+  if (!dateMatch) return null;
+  const columns = rawLine
+    .trim()
+    .split(/\s{2,}/)
+    .filter((column) => column !== "");
+  if (columns.length < 6) return null;
+  const [gross, net, fee] = columns.slice(-3);
+  if (!AMOUNT_TOKEN.test(gross) || !AMOUNT_TOKEN.test(net) || !AMOUNT_TOKEN.test(fee)) return null;
+  const counterparty = columns.slice(3, -3).find((column) => !column.includes("@"));
+  return { date: dateMatch[1], type: columns[1], id: columns[2], counterparty, typeIndent: dateMatch[0].length, gross, net, fee };
+}
+
+function parseTransactionDetailsRecords(text) {
+  const rows = [];
+  let current = null;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const row = matchTransactionDetailsRow(rawLine);
+    if (row) {
+      current = row;
+      rows.push(row);
+      continue;
+    }
+    const trimmed = rawLine.trim();
+    if (trimmed === "" || TRANSACTION_DETAILS_NOISE.test(trimmed)) {
+      current = null;
+      continue;
+    }
+    if (current && rawLine.search(/\S/) === current.typeIndent) current.type += ` ${trimmed.split(/\s{2,}/)[0]}`;
+  }
+  return rows.map((row) => ({
+    date: isoDateFromUkDate(row.date),
+    description: row.counterparty ? `${row.type}: ${row.counterparty}` : row.type,
+    status: OPEN_AUTHORISATION_HOLD.test(row.type) ? "Pending" : "Completed",
+    currency: "GBP",
+    gross: parseAmount(row.gross),
+    fee: parseAmount(row.fee),
+    net: parseAmount(row.net),
+    id: row.id,
+  }));
+}
+
 /**
- * Parse a PayPal "Transaction History" PDF's rendered text into raw
- * records, one per transaction: its description reassembled from whatever
- * lines wrapped around the date/amount row, its id, and its own posting
- * date, status, currency and Gross/Fee/Net figures.
+ * Parse a PayPal statement PDF's rendered text into raw records, one per
+ * transaction: its description, its id, and its own posting date, status,
+ * currency and Gross/Fee/Net figures. A "Transaction History" description is
+ * reassembled from whatever lines wrapped around the date/amount row; a
+ * "Transaction details" report is read by its own layout.
  * @param {string} text - pdftotext -layout output for one statement PDF
  * @returns {Array<{date: string, description: string, status: string, currency: string, gross: number, fee: number, net: number, id: string|undefined}>}
  */
 export function parsePaypalStatementRecords(text) {
+  if (TRANSACTION_DETAILS_TITLE.test(text)) return parseTransactionDetailsRecords(text);
   const records = [];
   let descriptionParts = [];
 
@@ -364,10 +420,15 @@ function isPostable(record, chosenReleaseIds, poundAmounts) {
   return true;
 }
 
-// The pound figure of each completed foreign-currency record: the amount of
-// the same-day GBP "General Currency Conversion" row that funded it. Each
-// conversion leg is used once, in statement order, so two bills on one day
-// take their own legs.
+const pence = (value) => Math.round(value * 100) / 100;
+
+// The pound figures of each completed foreign-currency record, from the
+// same-day GBP "General Currency Conversion" row that funded it. PayPal
+// converts what the record left in the wallet, its net, so the foreign leg
+// is the net with the sign turned; the pound leg is then the pound net, and
+// a fee splits it at the conversion's own rate into a pound gross and a
+// pound fee that add up to it. Each conversion leg is used once, in
+// statement order, so two bills on one day take their own legs.
 function poundAmountsOfForeignRecords(records) {
   const amounts = new Map();
   const conversions = records.filter((record) => record.status === "Completed" && isCurrencyConversion(record.description));
@@ -375,7 +436,7 @@ function poundAmountsOfForeignRecords(records) {
   for (const record of records) {
     if (record.currency === "GBP" || record.status !== "Completed" || isCurrencyConversion(record.description)) continue;
     const foreignLeg = conversions.find(
-      (leg) => !used.has(leg) && leg.currency === record.currency && leg.date === record.date && leg.gross === -record.gross,
+      (leg) => !used.has(leg) && leg.currency === record.currency && leg.date === record.date && pence(leg.gross + record.net) === 0,
     );
     const poundLeg = conversions.find(
       (leg) => !used.has(leg) && leg.currency === "GBP" && leg.date === record.date && Math.sign(leg.gross) === Math.sign(record.gross),
@@ -383,7 +444,8 @@ function poundAmountsOfForeignRecords(records) {
     if (!foreignLeg || !poundLeg) continue;
     used.add(foreignLeg);
     used.add(poundLeg);
-    amounts.set(record, poundLeg.gross);
+    const gross = record.fee === 0 ? poundLeg.gross : pence((poundLeg.gross * record.gross) / record.net);
+    amounts.set(record, { gross, fee: pence(poundLeg.gross - gross) });
   }
   return amounts;
 }
@@ -416,10 +478,8 @@ function postableRecords(text, statementText) {
   return records
     .filter((record) => isPostable(record, chosenReleaseIds, poundAmounts))
     .map((record) => {
-      if (record.currency !== "GBP" && record.fee !== 0) {
-        throw new Error(`PayPal ${record.currency} record ${record.id} carries a fee; no pound figure for it`);
-      }
-      return { record, gross: record.currency === "GBP" ? record.gross : poundAmounts.get(record), currency: "GBP" };
+      const { gross, fee } = record.currency === "GBP" ? record : poundAmounts.get(record);
+      return { record, gross, fee, currency: "GBP" };
     });
 }
 
@@ -455,13 +515,13 @@ function billGrossLine({ record, gross, currency }, { sourceJournalID, accountMa
   });
 }
 
-function feeLine({ record, currency }, { feeAccountMainID, taxCode }) {
+function feeLine({ record, fee, currency }, { feeAccountMainID, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${record.id}-FEE`,
     sourceJournalID: "purchases",
     postingDate: record.date,
     accountMainID: feeAccountMainID,
-    amount: Math.abs(record.fee),
+    amount: Math.abs(fee),
     amountCurrency: currency,
     documentType: "receipt",
     documentReference: record.id,
@@ -530,7 +590,7 @@ export function paypalLinesFromStatementText(
       };
       lines.push(gross >= 0 ? receiptGrossLine(posting, coding) : billGrossLine(posting, coding));
     }
-    if (record.fee !== 0) {
+    if (posting.fee !== 0) {
       lines.push(feeLine(posting, { feeAccountMainID, taxCode }));
     }
   }
@@ -571,20 +631,29 @@ function walletLine({ record, amount, side, bankCode, entryNumber, detailComment
   };
 }
 
-// A credit that returns exactly what a completed hold took on the same day:
-// the hold and its release leave the wallet's balance where it was.
-function releasesSameDayHold(record, records) {
+// The most days PayPal takes to release a hold.
+const HOLD_RELEASE_DAYS = 3;
+const DAY_MS = 86_400_000;
+
+// A credit that returns exactly what a completed hold took, on the hold's
+// day or up to HOLD_RELEASE_DAYS later: the hold and its release leave the
+// wallet's balance where it was.
+function releasesHold(record, records) {
+  const creditDay = Date.parse(record.date);
   return (
     record.gross > 0 &&
-    records.some(
-      (other) =>
+    records.some((other) => {
+      const daysAfterHold = (creditDay - Date.parse(other.date)) / DAY_MS;
+      return (
         other !== record &&
         other.status === "Completed" &&
         other.currency === record.currency &&
-        other.date === record.date &&
+        daysAfterHold >= 0 &&
+        daysAfterHold <= HOLD_RELEASE_DAYS &&
         isHoldCandidate(other) &&
-        other.gross === -record.gross,
-    )
+        other.gross === -record.gross
+      );
+    })
   );
 }
 
@@ -593,8 +662,8 @@ function releasesSameDayHold(record, records) {
  * each postable receipt's gross comes in (bank code DR, or the matching
  * label rule's walletBankCode) and each fee and bill goes out (bank code
  * CR), so the wallet account moves the way PayPal's balance does. A credit
- * that returns the same amount as a completed hold on the same day moves
- * nothing, because the hold and the credit cancel inside the wallet. The
+ * that returns the same amount as a completed hold, on its day or up to
+ * three days later, moves nothing, because the hold and the credit cancel inside the wallet. The
  * transfers to and from the linked bank are the bank statement's own lines
  * and are not posted here. With the bank statement's top-up and withdrawal
  * lines added, the net of these lines is the month's Available-balance
@@ -608,8 +677,8 @@ export function paypalWalletLinesFromStatementText(text, { walletAccountMainID, 
 
   const records = parsePaypalStatementRecords(text);
   const lines = [];
-  for (const { record, gross } of postableRecords(text, statementText)) {
-    if (releasesSameDayHold(record, records)) continue;
+  for (const { record, gross, fee } of postableRecords(text, statementText)) {
+    if (releasesHold(record, records)) continue;
     const rule = matchLabel(record.description, labels);
     if (gross >= 0) {
       lines.push(
@@ -636,11 +705,11 @@ export function paypalWalletLinesFromStatementText(text, { walletAccountMainID, 
         }),
       );
     }
-    if (record.fee !== 0) {
+    if (fee !== 0) {
       lines.push(
         walletLine({
           record,
-          amount: record.fee,
+          amount: fee,
           side: "C",
           bankCode: "CR",
           entryNumber: `PAYPAL-WALLET-${record.id}-FEE`,

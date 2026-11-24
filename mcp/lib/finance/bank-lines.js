@@ -75,12 +75,14 @@ function parseCsvLine(line) {
   return fields;
 }
 
+// NatWest writes "31 Jul 2025"; the same CSV saved again by Excel holds "31-Jul-25".
 function parseStatementDate(text) {
-  const match = /^(\d{2}) (\w{3}) (\d{4})$/.exec(text.trim());
+  const match = /^(\d{2}) (\w{3}) (\d{4})$/.exec(text.trim()) || /^(\d{2})-(\w{3})-(\d{2})$/.exec(text.trim());
   if (!match) {
     throw new Error(`Unrecognised statement date "${text}"`);
   }
-  const [, day, monthName, year] = match;
+  const [, day, monthName, yearDigits] = match;
+  const year = yearDigits.length === 2 ? `20${yearDigits}` : yearDigits;
   const month = MONTHS[monthName];
   if (!month) {
     throw new Error(`Unrecognised statement month "${monthName}"`);
