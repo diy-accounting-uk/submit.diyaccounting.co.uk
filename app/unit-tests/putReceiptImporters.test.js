@@ -13,7 +13,6 @@ const ALLOWED_IMPORTERS = [
   "app/services/filedReceipt.js",
   "app/functions/hmrc/hmrcVatAssistReportPost.js",
   "app/functions/hmrc/hmrcItsaAssistReportPost.js",
-  "app/lib/hmrcAssistReceipt.js",
 ];
 
 function sourceFiles(dir) {

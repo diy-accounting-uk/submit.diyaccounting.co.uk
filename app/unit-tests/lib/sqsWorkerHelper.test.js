@@ -11,6 +11,7 @@ vi.mock("@app/services/subHasher.js", async (importOriginal) => ({
 const { processSqsRecords } = await import("@app/lib/sqsWorkerHelper.js");
 const { callActorClass } = await import("@app/lib/integrationCalls.js");
 const { resetRememberedActors } = await import("@app/lib/activityAlert.js");
+const { _clearOperatorsCache } = await import("@app/lib/operators.js");
 
 const quietLogger = { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} };
 
@@ -45,6 +46,17 @@ describe("processSqsRecords actor class", () => {
 
   it("classes a worker call for a customer email as customer", async () => {
     expect(await actorsSeenByWorker([record({ userEmail: "someone@example.com" })])).toEqual(["customer"]);
+  });
+
+  it("classes a worker call for an operator as operator in a container that has not loaded the operator list", async () => {
+    vi.stubEnv("OPERATOR_EMAILS", "operator@example.com");
+    _clearOperatorsCache();
+    try {
+      expect(await actorsSeenByWorker([record({ userEmail: "operator@example.com" })])).toEqual(["operator"]);
+    } finally {
+      vi.unstubAllEnvs();
+      _clearOperatorsCache();
+    }
   });
 
   it("classes a worker call with no email in the payload as customer", async () => {

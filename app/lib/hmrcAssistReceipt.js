@@ -4,29 +4,20 @@
 // app/lib/hmrcAssistReceipt.js
 
 import { createLogger } from "./logger.js";
-import { getReceipt, putReceipt } from "../data/dynamoDbReceiptRepository.js";
-import { resolveActorClass } from "./activityAlert.js";
+import { acknowledgeStoredReceipt } from "../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/lib/hmrcAssistReceipt.js" });
 
 /**
- * Stamp the stored Assist report receipt with the time HMRC accepted the acknowledgement:
- * read it and put it back with acknowledgedAt.
+ * Stamp the stored Assist report receipt with the time HMRC accepted the acknowledgement. The
+ * receipt keeps the actor, client and ttl it was filed with.
  * @param {string} userSub - The user's subject identifier
  * @param {string} receiptId - The receipt the report request returned
  * @param {"en"|"cy"} [presentedLanguage] - The language of the messages on screen when they were first displayed
  */
 export async function acknowledgeReceipt(userSub, receiptId, presentedLanguage) {
-  const receipt = await getReceipt(userSub, receiptId);
-  if (!receipt) {
+  const acknowledged = await acknowledgeStoredReceipt(userSub, receiptId, { acknowledgedAt: new Date().toISOString(), presentedLanguage });
+  if (!acknowledged) {
     logger.warn({ message: "Assist report receipt not found to acknowledge", receiptId });
-    return;
   }
-  await putReceipt(
-    userSub,
-    receiptId,
-    { ...receipt, acknowledgedAt: new Date().toISOString(), ...(presentedLanguage ? { presentedLanguage } : {}) },
-    resolveActorClass(),
-    undefined,
-  );
 }
