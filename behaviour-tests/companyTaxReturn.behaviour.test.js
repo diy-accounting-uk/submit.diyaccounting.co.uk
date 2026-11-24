@@ -120,6 +120,13 @@ const { companyNumber, companyName } = companiesHouseLookupFixture(envFilePath);
 
 // Set only on the ci run that files with HMRC's External Test Service (hmrc-ets-ct600-page.yml).
 const etsCredentials = readEtsPageCredentials(process.env);
+// On a deployed lane the Lambda files with HMRC's External Test Service, which refuses the dummy
+// Gateway credentials of the other journeys, so only the local lanes run them. Without the ETS
+// credentials a deployed lane has no journey to run, and no hook starts.
+test.skip(
+  runTestServer !== "run" && !etsCredentials,
+  "A deployed lane files only with the ETS credentials, in the ETS journey that hmrc-ets-ct600-page.yml runs",
+);
 const ETS_TEST_TITLE_MARKER = "External Test Service";
 // No video, no failure screenshot and no trace: none of them is limited to the receipt elements.
 if (etsCredentials) test.use({ video: "off", screenshot: "off", trace: "off" });
