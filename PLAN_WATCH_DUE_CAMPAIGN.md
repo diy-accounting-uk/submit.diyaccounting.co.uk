@@ -5,7 +5,7 @@
 
 Five audiences learn what the watch list and the due list show and what filing costs. Each one lands on a page that answers its question, and each one has a next step to a paid bundle. The channels cost nothing; a paid channel is the operator's decision. Each step from a visit to a paid bundle is counted by `utm_source`, and each channel has a stop rule. Facts checked 2026-11-22.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. 16 tasks, WDM2 to WDM17, boarded on `NEXT.md`: 11 machine-only, 1 machine-ask, 4 human-driven. WDM18 (paid search) starts when the free channels show a sign-up rate (decision D1). Briefs are section 8.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (WDM3 to WDM13 and WDM15 to WDM17) are tracked in section 8.3, not on `NEXT.md`. WDM18 (paid search) starts when the free channels show a sign-up rate (decision D1). Briefs are section 8.
 
 ## Operator assertions (verbatim)
 
@@ -195,21 +195,21 @@ Both the due list and the reports are in the `default` bundle (decision D2 of `P
 | Label | Task | Waits on | Class | Model | Size |
 | --- | --- | --- | --- | --- | --- |
 | WDM2 | Record the source of an account at its first sign-in | nothing | machine-only | Sonnet | ~7 files |
-| WDM3 | Count a watch list add and a due list view | WL1, DUE6 | machine-only | Sonnet | ~7 files |
-| WDM4 | The campaign funnel view and dashboard table | WDM2, WDM3 | machine-only | Sonnet | ~12 files |
-| WDM5 | The watch list landing page and its links | WL1 and CL1 on prod | machine-only | Sonnet | ~14 files |
-| WDM6 | The due list landing page and its links | DUE14, WDM5 | machine-only | Sonnet | ~12 files |
+| WDM3 | Count a watch list add and a due list view | DUE6 (`PLAN_DUE_LIST.md`) | machine-only | Sonnet | ~7 files |
+| WDM4 | The campaign funnel view and dashboard table | WDM3 | machine-only | Sonnet | ~12 files |
+| WDM5 | The watch list landing page and its links | nothing | machine-only | Sonnet | ~14 files |
+| WDM6 | The due list landing page and its links | DUE14 (`PLAN_DUE_LIST.md`), WDM5 | machine-only | Sonnet | ~12 files |
 | WDM7 | The company check landing page | CR14, WDM6 | machine-only | Sonnet | ~7 files |
 | WDM8 | The `campaign` skill learns the company deadline questions | WDM5, WDM4 | machine-only | Sonnet | 1 file |
 | WDM9 | Campaign sessions and posting | WDM8, WDM4 | human-driven | | 0 files |
-| WDM10 | Links from the spreadsheets site | WDM5 (the operator approved the links on 2026-11-22) | machine-only | Sonnet | ~3 files |
-| WDM11 | The listing copy sitting file | MA1, WL1 on prod, DUE14 | machine-only | Sonnet | 1 file |
+| WDM10 | Links from the spreadsheets site | WDM5 | machine-only | Sonnet | ~3 files |
+| WDM11 | The listing copy sitting file | MA1 (`NEXT.md`), DUE14 | machine-only | Sonnet | 1 file |
 | WDM12 | Update the live listings | WDM11 | human-driven | | 0 files |
-| WDM13 | The donor email update paragraph | WL1 on prod, DUE14 | machine-only | Opus | 1 file |
+| WDM13 | The donor email update paragraph | DUE14 | machine-only | Opus | 1 file |
 | WDM14 | The `resident-ltd-comp` bundle | CP1 | machine-only | Sonnet | ~5 files |
-| WDM15 | Draft the partner proposals | WL1 on prod, DUE14 | machine-only | Opus | 1 file |
+| WDM15 | Draft the partner proposals | DUE14 | machine-only | Opus | 1 file |
 | WDM16 | Send the partner proposals | WDM15 | human-driven | | 0 files |
-| WDM17 | Make each partner's pass | CP1 on prod, WDM14, a partner's yes | human-driven | | 0 files |
+| WDM17 | Make each partner's pass | a partner's yes | human-driven | | 0 files |
 
 WDM18 is briefed below and is boarded when the free channels show a sign-up rate. WDM5, WDM6 and WDM7 edit `scripts/filing-pages.toml`, `web/public/sitemap.xml`, `lighthouse.config.json` and `i18n/cy.toml`, so they land in that order.
 
@@ -233,7 +233,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Due list.** On `web/public/due.html`, mark the page with `data-activity-view="due-list"` and the completion that `web/public/submit.js` reads (anchor: "carrying data-activity-view"). Add `"due-list"` to `VIEW_ACTIVITY_IDS` in `app/functions/account/activityStartedPost.js`. Fire `due_list_view` when `gtag` exists.
 - **Not key events.** `infra/google/ga4/analytics.toml` keeps its four key events.
 - **Tests.** The unit test of `activityStartedPost.js` accepts `due-list` completed; browser tests assert the beacon request on an add and on the due list load.
-- **Waits on**: WL1, DUE6. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~7 files.
+- **Waits on**: DUE6 (`PLAN_DUE_LIST.md`). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~7 files.
 
 #### WDM4. The campaign funnel view and dashboard table
 
@@ -242,7 +242,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Search family.** In `v_search_console_pages_daily.sql`, add the paths of the three landing pages as family `campaign page`.
 - **Dashboard.** A table "Watch list and due list campaign, last 30 days" with the five columns, counts under 3 shown as "fewer than 3": a `buildWatchDueFunnel` beside `buildPaidSubscribers` in `app/functions/analytics/operatorSnapshotPublish.js` puts the rows in the snapshot, and `web/public/operator/dashboard.page.js` draws them. Update `web/browser-tests/operatorDashboardFixtures.js`, and `scripts/dashboard-review-checks.mjs` if it lists tables by name.
 - **Gates.** The dashboard gates in `NEXT.md`'s shared facts; `visual-review` on the new table.
-- **Waits on**: WDM2, WDM3. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~12 files.
+- **Waits on**: WDM3. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~12 files.
 
 #### WDM5. The watch list landing page and its links
 
@@ -252,7 +252,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Links.** A "Watch this company" link on each result of the public deadline lookup (`web/public/lib/company/deadline-lookup.js`) to CL1's address `/companies-house/company/<CRN>`, whose profile carries WL1's "Add to watch list". A line "Keep track of this company's next filing dates" linking `watch-a-company.html` on `dormant-company-accounts.html`, `micro-entity-accounts.html`, `small-company-accounts.html` and `confirmation-statement.html`: an optional `related` list on `[[page]]` entries, rendered by `otherPagesHtml` in `scripts/build-filing-pages.mjs` beside `lookup_in`.
 - **New public page.** The five things of `PLAN_ORGANIC_SEARCH.md` section 8.4.
 - **Tests.** `npx vitest run web/unit-tests/filingPages.test.js web/unit-tests/seo-validation.test.js app/unit-tests/scripts/lighthouseMulti.test.js web/unit-tests/welsh-pages.test.js`; a browser test of the lookup's new link. `visual-review` on the new page.
-- **Waits on**: WL1 and CL1 on prod. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~14 files.
+- **Waits on**: nothing. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~14 files.
 
 #### WDM6. The due list landing page and its links
 
@@ -261,7 +261,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Links.** A line linking the new page from `dormant-company-accounts.html` and `confirmation-statement.html` through WDM5's `related` list, and a link in the text of a section of `watch-a-company.html`.
 - **New public page.** The five things of section 8.4.
 - **Tests.** As WDM5. `visual-review` on the new page.
-- **Waits on**: DUE14 (the due list on prod), WDM5 (shared files). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~12 files.
+- **Waits on**: DUE14 (`PLAN_DUE_LIST.md`; the due list on prod), WDM5 (shared files). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~12 files.
 
 #### WDM7. The company check landing page
 
@@ -285,15 +285,15 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 #### WDM10. Links from the spreadsheets site
 
 - **Goal.** A visitor who downloads a spreadsheet package sees a link to the company filing dates.
-- **Ask first.** The spreadsheets repository is stable: the operator says yes to this change before it starts (`orient-spreadsheets`).
+- **Approved.** The operator approved the links on 2026-11-22; the session builds them when WDM5 is live (`orient-spreadsheets`).
 - **Change.** In the sibling repository, after `orient-spreadsheets`: on `web/spreadsheets.diyaccounting.co.uk/public/download.html`, in the thanks and download steps (anchor "File this return with HMRC"), add "See when your company's accounts and confirmation statement are due", linking `https://submit.diyaccounting.co.uk/company-filing-deadlines.html?utm_source=spreadsheets&utm_medium=download&utm_campaign=watch-due`; the same line on the limited company product page that `app/lib/product-pages.js` writes. That repository's `npm test` router and `npx prettier --check`.
-- **Waits on**: WDM5, the operator's yes. **Class**: machine-ask. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~3 files.
+- **Waits on**: WDM5. **Class**: machine-only (approved 2026-11-22). **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~3 files.
 
 #### WDM11. The listing copy sitting file
 
 - **Goal.** One file that the operator works through to add the watch list and the due list to each live listing.
 - **Output.** `../private.diyaccounting.co.uk/strategy/marketing/WATCH_DUE_LISTINGS_SITTING.md`: for each `[[listing]]` of `web/marketing/marketing.toml` with `state = "live"`, the profile URL, the field to change (features, description) and the exact text from MA1's packs. Every link carries `utm_source=<the listing's utmSource>&utm_medium=listing&utm_campaign=watch-due`, so WDM4 counts its landings. Read each profile in Chrome, read-only, to name its fields.
-- **Waits on**: MA1, WL1 on prod, DUE14. **Class**: machine-only. **Repository**: private. **Model**: Sonnet. **Size**: 1 file.
+- **Waits on**: MA1 (`NEXT.md`), DUE14 (`PLAN_DUE_LIST.md`). **Class**: machine-only. **Repository**: private. **Model**: Sonnet. **Size**: 1 file.
 
 #### WDM12. Update the live listings
 
@@ -305,7 +305,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 
 - **Goal.** The `[UPDATE]` text of the donor thank-you reply names the watch list and the due list, in the operator's voice.
 - **Output.** Through the `email-draft` skill, one paragraph of three or four sentences in `../private.diyaccounting.co.uk/strategy/marketing/DONOR_THANK_YOU_TEMPLATE.md`, beside the `[UPDATE]` slot: what each list shows, that both are free with a sign-in, and the link `https://submit.diyaccounting.co.uk/company-filing-and-payment-dates.html?utm_source=donors&utm_medium=email&utm_campaign=watch-due`. The operator pastes it under DON1.
-- **Waits on**: WL1 on prod, DUE14. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
+- **Waits on**: DUE14 (`PLAN_DUE_LIST.md`). **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
 
 #### WDM14. The `resident-ltd-comp` bundle
 
@@ -318,7 +318,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Goal.** One short proposal for each body of section 3, through the `email-draft` skill.
 - **Content.** What the watch list and the due list show for that body's members (section 2.4 for the bookkeeping bodies, 2.3 for IPSE, 2.1 for Enterprise Nation); the prices; the offer of a year of Resident Ltd through a link that members can use for six months; "There is no cost to <body>." Each link in a proposal carries `utm_source=<body>&utm_medium=partner&utm_campaign=watch-due`. Find each body's partnerships contact route and write it with its source URL.
 - **Output.** `../private.diyaccounting.co.uk/strategy/marketing/WATCH_DUE_PARTNER_PROPOSALS.md`.
-- **Waits on**: WL1 on prod, DUE14. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
+- **Waits on**: DUE14 (`PLAN_DUE_LIST.md`). **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
 
 #### WDM16. Send the partner proposals
 
@@ -330,7 +330,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 
 - **Goal.** A body that agrees gets its own link.
 - **Steps.** On CP1's operator page, the operator makes one pass per body: grant `resident-ltd-comp` for `P1Y` with the bundle's own tokens; redemption window 6 months; total redemptions 500; one redemption per account; link with `utm_source=<body>&utm_medium=partner&utm_campaign=watch-due`. He sends the link to the body.
-- **Waits on**: CP1 on prod, WDM14, a body's yes. **Class**: human-driven. **Owner**: operator. **Size**: 0 files.
+- **Waits on**: a body's yes. **Class**: human-driven. **Owner**: operator. **Size**: 0 files.
 
 #### WDM18. Paid search for company deadline queries
 
@@ -338,6 +338,31 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Change.** In `infra/google/ads/ads.toml`, a Search campaign with `status = "PAUSED"`, the budget D1 names, UK by presence, the keywords "company accounts due date", "confirmation statement due date", "when are my accounts due" and their relatives, the negative list of the existing campaign, and `final_url_suffix = "utm_source=google&utm_medium=cpc&utm_campaign=watch-due&utm_term={keyword}"` landing on `company-filing-deadlines.html`. Run the forecast (`ads-advisor` skill) and write the clicks and cost per click it gives in the pull request.
 - **Ask.** The campaign spends only when the operator says "start" and its status changes to enabled; the reading date goes in `MARKETING_GUIDANCE.md`'s decision log with the change.
 - **Waits on**: a sign-up rate from the landing pages in WDM4's view, then the operator's word on the budget (D1), WDM4, WDM5. **Class**: machine-ask. **Repository**: submit. **Model**: Sonnet. **Size**: ~2 files.
+
+### 8.3 State of the open tasks
+
+Source of each task: the operator, 2026-11-22. Owner is Claude Code, except WDM9, WDM12, WDM16 and WDM17 (Operator). Model, size and repository are in the table of section 8.1. "Waits on" lists the tasks not yet on `main`; the briefs' "Waits on" lines list every dependency.
+
+| Label | Class | State | Waits on | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| WDM3 | machine-only | blocked | DUE6 (`PLAN_DUE_LIST.md`) | WDM4 | submit |
+| WDM4 | machine-only | blocked | WDM3 | WDM8, WDM9, WDM18 | submit |
+| WDM5 | machine-only | ready | nothing | WDM6, WDM8, WDM10, WDM18 | submit |
+| WDM6 | machine-only | blocked | DUE14 (`PLAN_DUE_LIST.md`), WDM5 | WDM7 | submit |
+| WDM7 | machine-only | blocked | CR14 (`PLAN_COMPANY_REPORTS.md`), WDM6 | nothing | submit |
+| WDM8 | machine-only | blocked | WDM5, WDM4 | WDM9 | submit |
+| WDM9 | human-driven | blocked | WDM8, WDM4 | nothing | none |
+| WDM10 | machine-only | blocked | WDM5 | nothing | spreadsheets |
+| WDM11 | machine-only | blocked | MA1 (`NEXT.md`), DUE14 (`PLAN_DUE_LIST.md`) | WDM12 | private |
+| WDM12 | human-driven | blocked | WDM11 | nothing | none |
+| WDM13 | machine-only | blocked | DUE14 (`PLAN_DUE_LIST.md`) | nothing | private |
+| WDM15 | machine-only | blocked | DUE14 (`PLAN_DUE_LIST.md`) | WDM16 | private |
+| WDM16 | human-driven | blocked | WDM15 | WDM17 (through a body's yes) | none |
+| WDM17 | human-driven | blocked | a body's yes | nothing | none |
+
+- WDM10: the operator approved the links on 2026-11-22. The session builds them when WDM5 is live.
+- WDM6, WDM11, WDM13 and WDM15 start when DUE14 is on prod.
+- WDM5, WDM6 and WDM7 land in that order (shared files).
 
 ## 9. Not confirmed
 

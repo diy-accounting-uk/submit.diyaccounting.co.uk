@@ -5,7 +5,7 @@
 
 A signed-in reader opens a company on the lookup and reads six plain reports built from the company's own public filings. Each report states figures, dates and changes, names the filing each one comes from, and defines each figure in one sentence. No report gives an opinion. Submit reads Companies House as a good citizen: inside the published rate limit, with a cache for each kind of answer, one request at a time for a company, and a stop on a 429. Facts checked 2026-11-22.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. Tasks CR2 to CR9, OCR1 and CR14 are boarded on `NEXT.md`; CR13's draft is written (`../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_DATA_LICENCE_QUESTION.md`, 2026-11-22); CR10 to CR12 are not built until a report needs them (section 8). Briefs are section 6.2.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (CR4 to CR9, CR14 and OCR1) are tracked in section 6.3, not on `NEXT.md`; CR13's draft is written (`../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_DATA_LICENCE_QUESTION.md`, 2026-11-22); CR10 to CR12 are not built until a report needs them (section 8). Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -237,12 +237,12 @@ Every report page ends with one line, keyed `ch.reports.source`: "Source: the Co
 | --- | --- | --- | --- | --- | --- |
 | CR2 | The fetch and cache layer, the cache table and the report route | CL1 (routes agent), WL1 | machine-only | Sonnet | ~16 files |
 | CR3 | The reports views on the drill-down page | CR2, CL1 (page agent) | machine-only | Sonnet | ~8 files |
-| CR4 | Filing record and timeliness | CR3 | machine-only | Sonnet | ~6 files |
-| CR5 | People over time | CR3 | machine-only | Sonnet | ~6 files |
+| CR4 | Filing record and timeliness | nothing | machine-only | Sonnet | ~6 files |
+| CR5 | People over time | nothing | machine-only | Sonnet | ~6 files |
 | CR6 | Share capital | CR4, CR5, CR9 | machine-only | Sonnet | ~5 files |
-| CR7 | Charges and insolvency | CR3 | machine-only | Sonnet | ~6 files |
+| CR7 | Charges and insolvency | nothing | machine-only | Sonnet | ~6 files |
 | CR8 | Registered office and name history | CR4 | machine-only | Sonnet | ~5 files |
-| CR9 | Accounts figures year on year | CR3, CL2 | machine-only | Sonnet | ~9 files |
+| CR9 | Accounts figures year on year | nothing | machine-only | Sonnet | ~9 files |
 | OCR1 | Ask Companies House the licence question | nothing | human-driven | operator | 0 files |
 | CR14 | Copy, privacy line, guide and launch on prod | CR4 to CR9 | machine-only | Sonnet | ~8 files |
 
@@ -271,13 +271,13 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 
 - **Goal.** Report 2.1, at `/reports/filings`.
 - **Files.** `app/lib/companyReports/filings.js` (the module and the time-limit rules from section 2.1, with GOV.UK's two URLs in a comment); its unit tests (first accounts, later accounts, a confirmation statement, an `AA01` in the history, a public company shows days only, a company with no filings); simulator data in `app/http-simulator/scenarios/companies.js` and AA23's filing history scenario (a company with one filing past the usual limit); the view in `companyReports.page.js`; Welsh strings; the browser test.
-- **Waits on**: CR3. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
+- **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
 
 #### CR5. People over time
 
 - **Goal.** Report 2.2, at `/reports/people`.
 - **Files.** `app/lib/companyReports/people.js`; unit tests (pages of officers, resigned officers, a PSC ceased, a PSC statement, the dropped fields absent from the cached value); the simulator's officers and PSC answers gain a resigned officer, a second page and a statement (`app/http-simulator/routes/companies-house.js:101`, `:120`, and a new statements route); the view; Welsh strings, with each nature of control in words; the browser test.
-- **Waits on**: CR3. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
+- **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
 
 #### CR6. Share capital
 
@@ -289,7 +289,7 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 
 - **Goal.** Report 2.4, at `/reports/charges`.
 - **Files.** `app/lib/companyReports/charges.js`; unit tests (no `links.charges`, outstanding and satisfied charges, an insolvency case, the practitioner's address dropped); simulator routes for `/company/{n}/charges` and `/company/{n}/insolvency` with one company that has both; the view; Welsh strings for each status and case type; the browser test.
-- **Waits on**: CR3. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
+- **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
 
 #### CR8. Registered office and name history
 
@@ -301,7 +301,7 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 
 - **Goal.** Report 2.6, at `/reports/accounts`, and the figure cache fill.
 - **Files.** `app/lib/companyReports/accounts.js` and the fill of `cachedAccountsFigures` through AA23's Document API client functions (metadata, then content as `application/xhtml+xml`); unit tests on Submit's own fixtures (`app/test-helpers/accountsDocumentCases.js`) and on the three real micro-entity and small company documents that CL2 adds (if CL2 has not added them, fetch three and save them as fixtures); cases: a paper filing, a micro-entity with no profit and loss, a filleted small company, a dormant company, an `IxbrlError`, first accounts, a zero earlier figure (no percentage), the figure cache holds no `directors` or `signer`, a 429 from the Document API writes the stop; the simulator serves two iXBRL filings and one PDF-only filing (AA23's scenarios); the view; Welsh strings; the browser test.
-- **Waits on**: CR3, CL2. **Class**: machine-only. **Model**: Sonnet. **Size**: ~9 files.
+- **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~9 files.
 
 #### CR10. Figures from the Accounts Data Product
 
@@ -335,6 +335,24 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 - **Goal.** The reports on prod, with their copy and proof.
 - **Files.** `prod` on `company-reports`; the privacy line (section 3.6) in `web/public/privacy.html`; an FAQ entry; the capability entry in `REPORT_CAPABILITIES.md` (the `capabilities` skill); the guide screenshots (`npm run video:walkthrough`) for the reports journey; `visual-review` and `ui-ux-pro-max` on them.
 - **Waits on**: CR4, CR5, CR6, CR7, CR8, CR9. **Class**: machine-only. **Model**: Sonnet. **Size**: ~8 files.
+
+### 6.3 State of the open tasks
+
+Source of each task: the operator, 2026-11-22. Owner is Claude Code, except OCR1 (Operator). Model, size and repository are in the table of section 6.1. "Waits on" lists the tasks not yet on `main`; the briefs' "Waits on" lines list every dependency.
+
+| Label | Class | State | Waits on | Unblocks | Repository |
+| --- | --- | --- | --- | --- | --- |
+| CR4 | machine-only | ready | nothing | CR6, CR8, CR14 | submit |
+| CR5 | machine-only | ready | nothing | CR6, CR14 | submit |
+| CR7 | machine-only | ready | nothing | CR14 | submit |
+| CR9 | machine-only | ready | nothing | CR6, CR14 | submit |
+| CR6 | machine-only | blocked | CR4, CR5, CR9 | CR14 | submit |
+| CR8 | machine-only | blocked | CR4 | CR14 | submit |
+| CR14 | machine-only | blocked | CR4, CR5, CR6, CR7, CR8, CR9 | WDM7 (`PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |
+| OCR1 | human-driven | ready | nothing | the licence statement in the source line (D5) | none |
+
+- OCR1: the draft is `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_DATA_LICENCE_QUESTION.md`. The operator posts it on https://forum.companieshouse.gov.uk in the category "API Question", pastes the answer into a file in the same folder, and a session then records it in section 1.3 and in the reports' source line.
+- CR4, CR5, CR7 and CR9 run in parallel and land one after the other (shared `i18n/cy.toml` and page script).
 
 ## 7. Costs
 

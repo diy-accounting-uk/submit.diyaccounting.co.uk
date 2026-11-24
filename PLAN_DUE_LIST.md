@@ -488,4 +488,4 @@ Source of each task: the operator, 2026-11-22. Owner is Claude Code, except ODUE
 | DUE12 | machine-only | blocked | DUE6 | DUE13 | submit |
 | DUE13 | machine-only | blocked | DUE9, DUE11, DUE12 | ODUE2 | submit |
 | ODUE2 | human-driven | blocked | DUE13 deployed to ci | DUE14 | none |
-| DUE14 | machine-only | blocked | ODUE2 | MA1, WDM6, WDM11, WDM13, WDM15 (on `NEXT.md` and `PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |
+| DUE14 | machine-only | blocked | ODUE2 | MA1 (`NEXT.md`), WDM6, WDM11, WDM13, WDM15 (`PLAN_WATCH_DUE_CAMPAIGN.md`) | submit |
