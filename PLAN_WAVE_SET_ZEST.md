@@ -20,7 +20,7 @@ lands, signs and proves.
 
 ## Status
 
-defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); set branch gated at 277483aef; pushed; on main (PR #865, 46c9ae964); prod proofs run after `main`'s deploy.
+defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); set branch gated at 277483aef; pushed; on main (PR #865, 46c9ae964); prod proofs passed on prod-46c9ae9 2026-11-24.
 
 ## The goal
 
@@ -150,6 +150,13 @@ Gated at 277483aef (`claude/zest-set`, 2026-11-24): unit 15740 and mcp 474 (dusk
    - **TS1:** the prod calendar and rates pages show the new words and dates.
    - **DASH53:** receipts that the probes write after the deploy carry the actor `test-user` and a
      TTL (a lake read, no scan).
+
+   Run on prod-46c9ae9 (deploy 45430544613, 2026-11-24): every proof passed. CT38: the test user
+   sees the unavailable panel, and GET, the preview POST and the return POST answer 403 (17:45
+   UTC). AL33: `prod-46c9ae9-app-hmrc-stack-health` OK after the probes, no alarm in ALARM. TS1:
+   the prod calendar, rates and Welsh pages show "checked 24 November 2026". DASH53: the probes'
+   5 receipts carry `test-user` (lake), and one read by its key has a TTL two days on. AL35: the
+   prod native sign-in enable at 17:40 UTC left `SaltSecretUnexpectedRead` at 0.
 
 ## After the deploy
 
