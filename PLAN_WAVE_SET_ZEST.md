@@ -20,7 +20,7 @@ lands, signs and proves.
 
 ## Status
 
-defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); waves 1 and 2 landed; gating at f0d3a2aaa.
+defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); set branch gated at 277483aef; pushed.
 
 ## The goal
 
@@ -96,7 +96,7 @@ State: landed at f0d3a2aaa on `claude/zest-w02` (`.claude/worktrees/zest-w02`), 
 The batch runs `visual-review` on the CT600 page with the live banner and with the unavailable
 panel, and `ui-ux-pro-max` on the CT600 guide screenshots. LOOK4 takes its own panels in wave 1.
 
-State: pending.
+State: landed on `claude/zest-w03`: the look pass 2f660c1cd, the receipts test 5c319a6e5, the other CT600 guides 9b32d2892, their frames and the loan buttons 277483aef.
 
 ## Gates
 
@@ -119,6 +119,9 @@ State: pending.
   workers with one-hour ci credentials.
 
 ## The push
+
+Gated at 277483aef (`claude/zest-set`, 2026-11-24): unit 15740 and mcp 474 (dusk), browser 2500 (flint), lint (jasper) on 277483aef; all 42 simulator suites on 5c319a6e5 (seven workers); the proxy suites submitVat, postVatReturn and fileMicroEntityAccounts on 9b32d2892 (the laptop: the workers have no Docker or local TLS); Java 575 on f0d3a2aaa. The confirmation statement proxy suite needs the ci-only auth code (CHT2).
+
 
 1. Assemble `claude/zest-set` from the tip of wave 3, and gate it as above.
 2. Read the ci slots, push `claude/zest-set` once, and open one pull request that lists the rows
