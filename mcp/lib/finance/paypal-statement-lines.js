@@ -125,10 +125,13 @@ const STATUS_TOKEN = /^[A-Za-z]+$/;
 const CURRENCY_TOKEN = /^[A-Z]{3}$/;
 const AMOUNT_TOKEN = /^-?[\d,]+\.\d\d$/;
 const ID_LINE = /^\s*ID:\s*(\S+)/;
-// Lines that never belong to a description: the page header repeated on
-// every page, the running column header, and the period banner that closes
-// each page.
-const NOISE_LINE = /^(Date\s+Description|Transaction History|Page \d|DIY Accounting|antony@|[A-Za-z]+ \d{1,2},? \d{4}\s+through)/;
+// Each page opens with its header: the title, the period, the account
+// holder's name and email address, then the column header. Every line from
+// the title to the column header belongs to the header, whoever the account
+// holder is. The period banner and the page number close each page.
+const PAGE_TITLE = /^Transaction History$/;
+const COLUMN_HEADER = /^Date\s+Description\s+Status\s+Currency\s+Gross\s+Fee\s+Net$/;
+const PAGE_FOOTER = /^(Page \d|[A-Za-z]+ \d{1,2},? \d{4}\s+through)/;
 
 // A data row carries its date at the start of the line and its five other
 // fields -- Status, Currency, Gross, Fee, Net -- as the last five
@@ -219,8 +222,17 @@ export function parsePaypalStatementRecords(text) {
   if (TRANSACTION_DETAILS_TITLE.test(text)) return parseTransactionDetailsRecords(text);
   const records = [];
   let descriptionParts = [];
+  let inPageHeader = false;
 
   for (const rawLine of text.split(/\r?\n/)) {
+    const trimmed = rawLine.trim();
+    if (PAGE_TITLE.test(trimmed)) inPageHeader = true;
+    if (inPageHeader) {
+      if (COLUMN_HEADER.test(trimmed)) inPageHeader = false;
+      descriptionParts = [];
+      continue;
+    }
+
     const dataRow = matchDataRow(rawLine);
     if (dataRow) {
       const description = [...descriptionParts, dataRow.descriptionTail]
@@ -248,8 +260,7 @@ export function parsePaypalStatementRecords(text) {
       continue;
     }
 
-    const trimmed = rawLine.trim();
-    if (trimmed === "" || NOISE_LINE.test(trimmed)) {
+    if (trimmed === "" || PAGE_FOOTER.test(trimmed)) {
       descriptionParts = [];
       continue;
     }

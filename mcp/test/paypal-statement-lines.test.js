@@ -85,6 +85,40 @@ function activitySummaryText(currencies, rows) {
 }
 
 describe("parsePaypalStatementRecords", () => {
+  // A statement's page as pdftotext lays it out: the header with the account holder's own name and
+  // email address, the column header, then the records. Every name here is invented.
+  const pageFor = (holder, email, records) =>
+    [
+      "Transaction History",
+      "July 01, 2025 through July 31, 2025",
+      holder,
+      email,
+      "Date         Description                                       Status      Currency   Gross     Fee       Net",
+      ...records,
+      "July 01, 2025 through July 31, 2025                                                                    Page 1",
+    ].join("\n");
+
+  it("reads no line of the page header into a description, whoever holds the account", () => {
+    const text = pageFor("Brackenfold Trading Ltd", "accounts@brackenfold.example", [
+      "             Donation Payment: Ada Fernsby",
+      "03/07/2025                                                     Completed   GBP         15.00   -0.65     14.35",
+      "             ID: HDR0001AAAAAAAA",
+    ]);
+    expect(parsePaypalStatementRecords(text).map((record) => record.description)).toEqual(["Donation Payment: Ada Fernsby"]);
+  });
+
+  it("keeps a wrapped description line that starts with any company's name", () => {
+    const text = pageFor("Brackenfold Trading Ltd", "accounts@brackenfold.example", [
+      "             Pre-approved Payment Bill User Payment:",
+      "             DIY Accounting Tools Ltd",
+      "08/07/2025                                                     Completed   GBP        -18.00   0.00     -18.00",
+      "             ID: HDR0002BBBBBBBB",
+    ]);
+    expect(parsePaypalStatementRecords(text).map((record) => record.description)).toEqual([
+      "Pre-approved Payment Bill User Payment: DIY Accounting Tools Ltd",
+    ]);
+  });
+
   it("reassembles a description that wraps across the date line", () => {
     const records = parsePaypalStatementRecords(STATEMENT);
     const googleCloud = records.find((record) => record.id === "TESTID0001AAAAAAAA");

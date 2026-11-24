@@ -124,14 +124,15 @@ export function donationRowsFromTransactions(transactions, { onUnmatched = () =>
       onUnmatched(adapted.id, adapted.currency);
       continue;
     }
+    const { amount, fee } = poundFiguresOf(adapted, gbp);
     const original = isRefund ? byId.get(adapted.referenceId) : undefined;
     const receipt = original ?? adapted;
     const knownProduct = isRefund && !original ? null : productOf(receipt);
     rows.push({
       id: adapted.id,
       date: adapted.date,
-      amount: gbp,
-      fee: Math.abs(adapted.fee),
+      amount,
+      fee,
       product: knownProduct,
       original_amount: adapted.gross,
       original_currency: adapted.currency,
@@ -139,6 +140,18 @@ export function donationRowsFromTransactions(transactions, { onUnmatched = () =>
     });
   }
   return rows;
+}
+
+const pence = (value) => Math.round(value * 100) / 100;
+
+// A receipt's pound gross and pound fee, the fee as a positive number. A pound receipt is its own.
+// PayPal converts what a receipt in another currency left in the wallet, its net, so the pound
+// figure is the pound net, and a fee splits it at the conversion's rate into a pound gross and a
+// pound fee whose difference is that net.
+function poundFiguresOf(adapted, gbp) {
+  if (adapted.currency === "GBP" || adapted.fee === 0) return { amount: gbp, fee: Math.abs(adapted.fee) };
+  const amount = pence((gbp * adapted.gross) / (adapted.gross + adapted.fee));
+  return { amount, fee: pence(amount - gbp) };
 }
 
 function productOf(adapted) {
