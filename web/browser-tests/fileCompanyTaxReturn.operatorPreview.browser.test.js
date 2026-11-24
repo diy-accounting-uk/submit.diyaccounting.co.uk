@@ -27,6 +27,7 @@ const CONTENT_TYPES = {
 // Serves the real site from disk, signed in, with the bundle answer a person of this kind gets.
 async function serveSite(page, { environmentName, operator, previewFeatures }) {
   await page.addInitScript(() => {
+    localStorage.setItem("consent.analytics", "declined");
     localStorage.setItem("cognitoIdToken", "id-token");
     localStorage.setItem("userInfo", JSON.stringify({ email: "person@test.diyaccounting.co.uk", sub: "person-sub" }));
   });
