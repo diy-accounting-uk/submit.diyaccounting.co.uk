@@ -18,7 +18,7 @@ lands, signs and proves.
 
 ## Status
 
-defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); building wave 1.
+defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); wave 1 landed; wave 2 building.
 
 ## The goal
 
@@ -70,10 +70,7 @@ the outgoing prod set. More waves cost nothing. A second push costs a ci set.
 - No two batches share a source file. TS1 writes the generated calendar; CT38 changes its
   generator in wave 2 and runs it again.
 
-State: building (2026-11-24 10:30 UTC). Wave branch `claude/zest-w01` at 11f4564ac
-(`.claude/worktrees/zest-w01`). Queues posted: anvil aa37 (from `claude/zest-aa37-held`), bugle
-vat51, cyclone ct38-design; dusk, flint, garnet, harbour and jasper each set up first, then ts1,
-look4, dash53, al33 then seed1, and ct40. Beside on the laptop: CT39 (a local agent).
+State: landed at f27fb84df (2026-11-24): TS1 daed109d0, CT40 6f933c1d4, LOOK4 0f8323989, DASH53 966c554ac, VAT51 c998cb513, AL33 d48d75c64, SEED1 8982edb95, AA37 f27fb84df; CT38's design is in `PLAN_HMRC_CT_APPROVAL.md` (052d77cc1). Gates: lint passed on 8982edb95 (jasper); unit (dusk), browser (flint) and the VAT and confirmation statement simulator suites (garnet) run on 8982edb95; unit on f27fb84df (bugle) covers AA37, whose browser tests and accounts simulator suite passed on its own branch. The docker build is left to the ci deploy: no Dockerfile changed.
 
 ### Wave 2: CT38's build
 
@@ -85,7 +82,7 @@ CT38 is about 24 files. It is a chain of two agents on one worktree: the design 
 then the build (Sonnet). The build runs `npm run build:welsh` and `npm run build:mtd-calendar` on
 top of wave 1, so the calendar holds both TS1's dates and CT38's availability rows.
 
-State: pending.
+State: building ahead of wave 1's gate: cyclone builds CT38 from `claude/zest-w01` at daed109d0; it takes wave 1's later commits as one commit before it lands.
 
 ### Wave 3: the look wave
 
