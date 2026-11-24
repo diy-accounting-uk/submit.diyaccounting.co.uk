@@ -16,6 +16,7 @@
 import { validateEnv } from "./env.js";
 import { context } from "./logger.js";
 import { initializeSalt } from "../services/subHasher.js";
+import { warmOperators } from "./operators.js";
 
 /**
  * Determine if an error is retryable (transient) or terminal.
@@ -117,6 +118,9 @@ export async function processSqsRecords(
       // resolveActorClass() reads it to class the worker's recorded calls as customer, test or synthetic.
       // It is set for every record, so a record without one does not inherit the previous record's.
       context.set("userEmail", body.payload?.userEmail || null);
+      // A worker's container may not have loaded the operator list yet, and the synchronous actor
+      // check reads an operator's email as a customer's until it has.
+      if (body.payload?.userEmail) await warmOperators();
 
       logger.info({ message: "Processing SQS message", [userContextKey]: userId, requestId, messageId: record.messageId });
 

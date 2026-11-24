@@ -6,12 +6,25 @@
 import { describe, test, expect, vi } from "vitest";
 import { DeleteCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
+vi.mock("../../../app/services/subHasher.js", () => ({
+  initializeSalt: vi.fn(async () => {
+    saltReads.push(process.env.AWS_SDK_UA_APP_ID);
+  }),
+  hashSub: (sub) => `current-${sub}`,
+  hashSubWithVersion: (sub, version) => `${version}-${sub}`,
+  getPreviousVersions: () => ["v1"],
+}));
+
+const saltReads = [];
+
 import {
   anonymizeReceipts,
+  computeAllHashedSubs,
   deleteSubscriptions,
   deleteUserData,
   lookupSubscriptionIdsInLake,
   TABLE_DEFS,
+  TEST_USER_PURGE_APP_ID,
 } from "../../../scripts/delete-user-data.js";
 
 const RECEIPT = {
@@ -183,5 +196,27 @@ describe("deleteUserData", () => {
       },
     });
     expect(lookups).toBe(0);
+  });
+});
+
+describe("computeAllHashedSubs", () => {
+  test("a test-user purge reads the salt with its app id in the user agent", async () => {
+    saltReads.length = 0;
+    delete process.env.AWS_SDK_UA_APP_ID;
+
+    const hashes = await computeAllHashedSubs("sub-1", { testUserPurge: true });
+
+    expect(hashes).toEqual(["current-sub-1", "v1-sub-1"]);
+    expect(saltReads).toEqual([TEST_USER_PURGE_APP_ID]);
+    delete process.env.AWS_SDK_UA_APP_ID;
+  });
+
+  test("a full purge reads the salt with no app id of its own", async () => {
+    saltReads.length = 0;
+    delete process.env.AWS_SDK_UA_APP_ID;
+
+    await computeAllHashedSubs("sub-1");
+
+    expect(saltReads).toEqual([undefined]);
   });
 });

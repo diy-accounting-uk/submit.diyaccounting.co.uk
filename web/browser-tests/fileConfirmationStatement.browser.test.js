@@ -404,6 +404,42 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#previewView")).toBeVisible();
   });
 
+  test("a share class's prescribed particulars of 200 characters wrap inside their box and reach the preview whole", async ({ page }) => {
+    const particulars =
+      "One vote a share. Each share takes part equally in dividends and in a distribution of capital. ".repeat(3).slice(0, 199) + ".";
+    expect(particulars).toHaveLength(200);
+    setupPage(page);
+    await setupRoutes(page, {
+      filingData: {
+        ...FILING_DATA,
+        statementOfCapital: {
+          totalAmountUnpaid: 0,
+          totalNumberOfIssuedShares: 100,
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: 100,
+          shares: [{ shareClass: "ORDINARY", prescribedParticulars: "One vote a share.", numShares: 100, aggregateNominalValue: 100 }],
+        },
+      },
+    });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    const box = page.locator("#prescribedParticulars-0");
+    await expect(box).toHaveAttribute("data-gateway-text", "off");
+    await expect(page.locator("label[for='prescribedParticulars-0']")).toHaveText("Prescribed particulars");
+    await box.fill(`  ${particulars}  `);
+    const widths = await box.evaluate((field) => ({ scroll: field.scrollWidth, client: field.clientWidth }));
+    expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    const previewCalls = await page.evaluate(() => window.__previewCalls);
+    expect(previewCalls[0].statementOfCapital.shares[0].prescribedParticulars).toBe(particulars);
+  });
+
   test("a statement whose capital and shareholders are as the register sends no statement of capital and says so", async ({ page }) => {
     setupPage(page);
     // The register answers its figures as strings, as Companies House's filing data does.

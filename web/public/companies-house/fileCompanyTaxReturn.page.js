@@ -811,7 +811,7 @@ function moneyGroup(id, label, hint) {
 function removeButton(kind, row, part, label) {
   return create(
     "button",
-    { "type": "button", "class": "secondary", "data-remove": kind, "data-row": String(row), "data-part": String(part) },
+    { "type": "button", "class": "secondary-button", "data-remove": kind, "data-row": String(row), "data-part": String(part) },
     label,
   );
 }
@@ -918,7 +918,7 @@ function loansPartBody(part, questions) {
       create("div", { id: id("loanRows") }),
       create(
         "button",
-        { "type": "button", "id": id("addLoanBtn"), "class": "secondary", "data-part": String(part) },
+        { "type": "button", "id": id("addLoanBtn"), "class": "secondary-button", "data-part": String(part) },
         siteText("ch.ct.add-participator", "Add another participator"),
       ),
       releasedBeforeEnd,
@@ -938,7 +938,7 @@ function loansPartBody(part, questions) {
         create("div", { id: id("repaymentRows") }),
         create(
           "button",
-          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary", "data-part": String(part) },
+          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary-button", "data-part": String(part) },
           siteText("ch.ct.add-repayment", "Add another repayment"),
         ),
       ),

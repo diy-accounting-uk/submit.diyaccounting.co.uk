@@ -281,9 +281,11 @@ describe("the text boxes of each Companies House gateway form page", () => {
   test("the confirmation statement page marks off the boxes it builds that the gateway reads under another pattern", () => {
     const source = fs.readFileSync(path.join(PAGES_DIR, "fileConfirmationStatement.page.js"), "utf-8");
     const built = (prefix) => source.match(new RegExp(`textInput\\(\`${prefix}-\\$\\{index\\}\`[\\s\\S]*?\\)\\s*,?\\n`))?.[0] ?? "";
-    for (const prefix of ["prescribedParticulars", "aggregateNominalValue", "directorPersonalCode", "directorNameMismatchReason"]) {
+    for (const prefix of ["aggregateNominalValue", "directorPersonalCode", "directorNameMismatchReason"]) {
       expect(built(prefix), prefix).toContain('"data-gateway-text": "off"');
     }
+    const prescribedParticulars = source.match(/element\(\s*"textarea",\s*\{[^}]*`prescribedParticulars-\$\{index\}`[^}]*\}/)?.[0] ?? "";
+    expect(prescribedParticulars).toContain('"data-gateway-text": "off"');
     for (const prefix of ["shareClass", "holdingShareClass", "directorOtherForenames"]) {
       expect(built(prefix), prefix).not.toContain("data-gateway-text");
     }

@@ -74,7 +74,7 @@ import {
   formRequestFields,
 } from "../../services/jointFiling.js";
 import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
-import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
+import { refuseRevisionWhenNotEnabled, refuseJointFilingIdOnAccountsWhenNotOpen } from "../../services/ctClientScope.js";
 import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../../web/public/lib/balance-sheet-check.js";
 import { isApprovedAfterToday, approvalDateAfterTodayMessage } from "../../../web/public/lib/approval-date-check.js";
 import { refusalOf as revisedReceiptRefusal } from "../../../web/public/lib/accounts-revision.js";
@@ -584,6 +584,9 @@ export async function ingestHandler(event) {
 
   const revisionRefusal = refuseRevisionWhenNotEnabled(event, request, parseRequestBody(event)?.revision != null);
   if (revisionRefusal) return revisionRefusal;
+
+  const jointFilingRefusal = await refuseJointFilingIdOnAccountsWhenNotOpen(event, request, parseRequestBody(event)?.jointFilingId != null);
+  if (jointFilingRefusal) return jointFilingRefusal;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({

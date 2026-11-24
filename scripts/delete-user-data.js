@@ -178,11 +178,17 @@ export async function deleteSubscriptions(docClient, tableName, subscriptionIds)
   return deleted;
 }
 
+// The AWS SDK app id a test-user purge's salt read carries in its user agent ("app/<id>"). The
+// salt-read alarm's metric filter (SecurityDetectionStack.java) leaves out a read that carries it.
+export const TEST_USER_PURGE_APP_ID = "submit-test-user-purge";
+
 /**
- * Compute all hashedSub variants for a user sub using multi-version salt.
+ * Compute all hashedSub variants for a user sub using multi-version salt. A test-user purge reads
+ * the salt with TEST_USER_PURGE_APP_ID in its user agent.
  */
-async function computeAllHashedSubs(userSub) {
+export async function computeAllHashedSubs(userSub, { testUserPurge = false } = {}) {
   const { initializeSalt, hashSub, hashSubWithVersion, getPreviousVersions } = await import("../app/services/subHasher.js");
+  if (testUserPurge) process.env.AWS_SDK_UA_APP_ID = TEST_USER_PURGE_APP_ID;
   await initializeSalt();
 
   const hashes = [hashSub(userSub)]; // current version
@@ -330,7 +336,7 @@ function runCli() {
       if (hashedSub) {
         hashedSubs = [hashedSub];
       } else {
-        hashedSubs = await computeAllHashedSubs(userSub);
+        hashedSubs = await computeAllHashedSubs(userSub, { testUserPurge });
         if (!jsonOutput) {
           console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
         }

@@ -25,6 +25,14 @@ describe("what the catalogue lists in each environment", () => {
     expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
   });
 
+  test("the Company Tax Return and the joint filing open on prod only to an operator's own preview", () => {
+    for (const id of ["file-company-tax-return", "file-company-tax-return-with-accounts"]) {
+      expect(activity(id).environments).not.toContain("prod");
+      expect(activity(id).operatorPreviewEnvironments).toEqual(["prod"]);
+    }
+    expect(activity("practice").operatorPreviewEnvironments).toBeUndefined();
+  });
+
   test("the MCP harness is not listed in prod", () => {
     expect(isActivityListedInEnvironment(activity("mcp-harness"), "prod")).toBe(false);
   });

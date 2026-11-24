@@ -11,7 +11,7 @@ export const PREVIEW_FEATURES_HEADER = "x-preview-features";
 const PREVIEW_FEATURES_KEY = "previewFeatures";
 const OPERATOR_FEATURES_KEY = "operatorFeatures";
 
-export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [] };
+export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [], previewFeatures: false };
 
 function readSession(key) {
   try {
@@ -112,7 +112,7 @@ export async function fetchBundleResponse() {
 /**
  * The account settings, each with the default when the person is signed out. A failed read
  * rejects, so the watch list is never shown empty for an account whose list could not be read.
- * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>}
+ * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[], previewFeatures: boolean}>}
  */
 export async function fetchAccountSettings() {
   const response = await readBundleResponse();
@@ -146,7 +146,7 @@ export async function changeWatchList(op, companyNumber) {
  * Change one account setting on the server.
  * @param {string} name - The setting name
  * @param {boolean} value - The new value
- * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>} The settings after the change
+ * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[], previewFeatures: boolean}>} The settings after the change
  */
 export async function updateAccountSetting(name, value) {
   const response = await window.fetchWithIdToken("/api/v1/account/settings", {
@@ -160,14 +160,17 @@ export async function updateAccountSetting(name, value) {
 }
 
 /**
- * Everything that decides whether the catalogue shows an item to this person.
- * @returns {Promise<{preview: boolean, operatorFeatures: boolean, account: {passGeneration: boolean}}>}
+ * Everything that decides whether the catalogue shows an item to this person. operator is true
+ * when the bundle answer grants the operator bundle.
+ * @returns {Promise<{preview: boolean, operatorFeatures: boolean, operator: boolean, account: {passGeneration: boolean, previewFeatures: boolean}}>}
  */
 export async function fetchViewer() {
-  // The catalogue's display rules take the default settings when the read fails.
-  const account = await fetchAccountSettings().catch((err) => {
+  // The catalogue's display rules take the default settings, and no operator, when the read fails.
+  const response = await readBundleResponse().catch((err) => {
     console.warn("viewer-settings: could not read the account settings", err);
-    return { ...ACCOUNT_SETTING_DEFAULTS };
+    return null;
   });
-  return { preview: isPreviewOn(), operatorFeatures: isOperatorFeaturesOn(), account };
+  const account = { ...ACCOUNT_SETTING_DEFAULTS, ...(response?.settings ?? {}) };
+  const operator = (response?.bundles ?? []).some((bundle) => bundle.bundleId === "operator" && bundle.allocated);
+  return { preview: isPreviewOn(), operatorFeatures: isOperatorFeaturesOn(), operator, account };
 }

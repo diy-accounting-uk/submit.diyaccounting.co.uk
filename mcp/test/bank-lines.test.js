@@ -84,6 +84,17 @@ describe("bankLinesFromCsv", () => {
     expect(() => bankLinesFromCsv(withUnknownType, { accountMainID: "1200" })).toThrow(/Unrecognised statement type/);
   });
 
+  it("reads the day-month-year dates of a statement saved again by Excel as the statement's own", () => {
+    const excelSaved = STATEMENT.replace(/^(\d{2}) (\w{3}) 20(\d{2}),/gm, "$1-$2-$3,");
+    expect(excelSaved).not.toEqual(STATEMENT);
+    expect(bankLinesFromCsv(excelSaved, { accountMainID: "1200" })).toEqual(bankLinesFromCsv(STATEMENT, { accountMainID: "1200" }));
+  });
+
+  it("rejects a date in neither form", () => {
+    const badDate = STATEMENT.replace(/^(\d{2}) (\w{3}) (\d{4}),/m, "$3/$2/$1,");
+    expect(() => bankLinesFromCsv(badDate, { accountMainID: "1200" })).toThrow(/Unrecognised statement date/);
+  });
+
   it("rejects a file without the NatWest header", () => {
     expect(() => bankLinesFromCsv("not,a,statement\n", { accountMainID: "1200" })).toThrow(/Not a NatWest bank statement CSV/);
   });

@@ -161,11 +161,27 @@ test.describe("Hidden feature content", () => {
   test("the Company Tax Return page asks no 'Who is this return for?' in prod, where the practice clients call is refused", async ({
     page,
   }) => {
+    // The operator whose own preview opens the page on prod: the page is open, and filing for a client stays off.
+    await page.addInitScript(() => localStorage.setItem("cognitoIdToken", "id-token"));
+    await serveSite(page, "prod");
+    await page.route("**/api/v1/bundle", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          bundles: [
+            { bundleId: "resident-ltd", allocated: true },
+            { bundleId: "operator", allocated: true },
+          ],
+          settings: { passGeneration: true, watchedCompanies: [], previewFeatures: true },
+        }),
+      }),
+    );
     await page.route("**/api/v1/practice/clients", (route) =>
       route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED" }) }),
     );
-    await serveSite(page, "prod");
     await page.goto("http://localhost:3000/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
+    await expect(page.locator("[data-operator-live]")).toBeVisible();
     await expect(page.locator("#clientChoice")).toBeHidden();
     await expect(page.getByText("Who is this return for?")).toBeHidden();
   });

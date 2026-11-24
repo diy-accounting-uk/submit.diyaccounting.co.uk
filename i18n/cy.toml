@@ -1928,13 +1928,17 @@ cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurfle
 hash = "8a1c6e669367"
 cy = '''Ffurflen Dreth y Cwmni CThEF (CT600)'''
 
-[strings."mtd-calendar.preview-period-of-account-up-to-7c5530"]
-hash = "7c553015999f"
-cy = '''rhagolwg (preview) <span class="calendar-date">cyfnod cyfrifon hyd at 18 mis</span>'''
+[strings."mtd-calendar.preview-operator-only-on-the-live-ae4b75"]
+hash = "ae4b75dd16c4"
+cy = '''rhagolwg (preview) <span class="calendar-date">gweithredwr yn unig ar y wefan fyw; cyfnod cyfrifon hyd at 18 mis</span>'''
 
-[strings."mtd-calendar.preview-book-export-file-fe1847"]
-hash = "fe1847d81d29"
-cy = '''rhagolwg (preview) <span class="calendar-date">ffeil allforio llyfr</span>'''
+[strings."mtd-calendar.preview-operator-only-on-the-live-3e99b6"]
+hash = "3e99b6891ee9"
+cy = '''rhagolwg (preview) <span class="calendar-date">gweithredwr yn unig ar y wefan fyw; ffeil allforio llyfr</span>'''
+
+[strings."mtd-calendar.preview-operator-only-on-the-live-a3c5ee"]
+hash = "a3c5eecb8a26"
+cy = '''rhagolwg (preview) <span class="calendar-date">gweithredwr yn unig ar y wefan fyw</span>'''
 
 [strings."mtd-calendar.web-form-guide-video-6afae7"]
 hash = "6afae78ffc07"
@@ -3791,16 +3795,16 @@ hash = "8a7c8b67fe8b"
 cy = '''Cyfrifon'''
 
 [strings."receipts.kind-ct600"]
-hash = "e84474d2d95e"
-cy = '''Ffurflen Dreth y Cwmni'''
+hash = "9f963838b9cd"
+cy = '''Ffurflen Dreth y Cwmni (rhagolwg)'''
 
 [strings."receipts.kind-revised-accounts"]
 hash = "fb8e973b6fe9"
 cy = '''Cyfrifon diwygiedig'''
 
 [strings."receipts.kind-amended-ct600"]
-hash = "755b43917dd6"
-cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio'''
+hash = "aa3098747dfb"
+cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio (rhagolwg)'''
 
 [strings."receipts.kind-confirmation-statement"]
 hash = "9e84a7fe6e03"
@@ -12442,12 +12446,12 @@ hash = "fb7099ad8e81"
 cy = '''Gwirio eto'''
 
 [strings."ch-tax-return.title"]
-hash = "486ac7c7dc6c"
-cy = '''Ffeilio Ffurflen Dreth y Cwmni - DIY Accounting Submit'''
+hash = "809dd115a507"
+cy = '''Ffeilio Ffurflen Dreth y Cwmni (rhagolwg) - DIY Accounting Submit'''
 
-[strings."ch-tax-return.file-a-company-tax-return-f72d4f"]
-hash = "f72d4fc1888f"
-cy = '''Ffeilio Ffurflen Dreth y Cwmni'''
+[strings."ch-tax-return.file-a-company-tax-return-preview-48b37f"]
+hash = "48b37f96be01"
+cy = '''Ffeilio Ffurflen Dreth y Cwmni (rhagolwg)'''
 
 [strings."ch-tax-return.file-a-small-company-s-ct600-d036c1"]
 hash = "d036c1002ed4"
@@ -15370,8 +15374,8 @@ hash = "790206e6162b"
 cy = '''Cyfeirnod Unigryw y Trethdalwr {utr}'''
 
 [strings."ch.ct.record-title"]
-hash = "9fa560474380"
-cy = '''Ffurflen Dreth y Cwmni (CT600){parts}'''
+hash = "5e1c19c60183"
+cy = '''Ffurflen Dreth y Cwmni (CT600, rhagolwg){parts}'''
 
 [strings."ch.ct.record-receipt-name"]
 hash = "0e8001a46645"
@@ -15442,8 +15446,8 @@ hash = "e980aa28e91b"
 cy = '''Y dderbynneb hon yw prawf y cwmni ei fod wedi ffeilio’r Ffurflen. Cadwch hi gyda chofnodion y cwmni. Mae’r dderbynneb IRmark yn dangos bod CThEF wedi cael y Ffurflen heb newid. Yr ID cydberthynas yw’r cyfeirnod i’w ddyfynnu os byddwch yn holi CThEF am y ffeilio hwn.'''
 
 [strings."ch.ct.record-copy-title"]
-hash = "ec83b4f3a6e2"
-cy = '''Eich copi o Ffurflen Dreth y Cwmni{parts}'''
+hash = "fb2571db1219"
+cy = '''Eich copi o Ffurflen Dreth y Cwmni (rhagolwg){parts}'''
 
 [strings."ch.ct.record-accepted"]
 hash = "211880accc66"
@@ -27638,3 +27642,13 @@ cy = '''Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.
 [strings."ch.books.capital-added"]
 hash = "c1ee70dd96a3"
 cy = '''Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.'''
+
+# == The banner on a filing that an operator's own preview opens on the live site, ids chrome.operator-live-* ==
+
+[strings."chrome.operator-live-tag"]
+hash = "b64ac05f17e6"
+cy = '''Byw'''
+
+[strings."chrome.operator-live-text"]
+hash = "3cbfbbb0818f"
+cy = '''Mae’r ffeilio hwn ar agor oherwydd eich bod yn weithredwr gyda nodweddion rhagolwg (preview) ymlaen. Mae’n ffeilio go iawn: mae’r Ffurflen yn mynd i CThEF ac, pan fyddwch yn eu ffeilio gyda’i gilydd, mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau.'''

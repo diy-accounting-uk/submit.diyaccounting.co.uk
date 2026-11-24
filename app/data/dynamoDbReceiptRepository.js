@@ -166,6 +166,43 @@ export async function markReceiptStepDone(hashedSub, receiptId, step) {
 }
 
 /**
+ * Stamp a stored receipt with the time its acknowledgement was accepted, and the language its
+ * messages were first shown in, changing nothing else: the receipt keeps the actor, client, creation
+ * time and ttl it was filed with.
+ * @param {string} userSub
+ * @param {string} receiptId
+ * @param {{acknowledgedAt: string, presentedLanguage?: "en"|"cy"}} acknowledgement
+ * @returns {Promise<boolean>} false when no receipt is stored under this id for this user
+ */
+export async function acknowledgeStoredReceipt(userSub, receiptId, { acknowledgedAt, presentedLanguage }) {
+  const values = { ":at": acknowledgedAt, ...(presentedLanguage ? { ":language": presentedLanguage } : {}) };
+  const updateExpression = presentedLanguage
+    ? "SET #receipt.acknowledgedAt = :at, #receipt.presentedLanguage = :language"
+    : "SET #receipt.acknowledgedAt = :at";
+  for (const { hashedSub } of subHashCandidates(userSub)) {
+    try {
+      await executeDynamoDbCommand(
+        (module) =>
+          new module.UpdateCommand({
+            TableName: getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME"),
+            Key: { hashedSub, receiptId },
+            UpdateExpression: updateExpression,
+            ConditionExpression: "attribute_exists(receiptId)",
+            ExpressionAttributeNames: { "#receipt": "receipt" },
+            ExpressionAttributeValues: values,
+          }),
+      );
+      return true;
+    } catch (error) {
+      if (error.name === "ConditionalCheckFailedException") continue;
+      logger.error({ message: "Error acknowledging a receipt", error: error.message, receiptId });
+      throw error;
+    }
+  }
+  return false;
+}
+
+/**
  * Remove a step recorded on a receipt, only when it still holds the time this caller recorded, so
  * the step runs again on the next record.
  * @param {string} hashedSub

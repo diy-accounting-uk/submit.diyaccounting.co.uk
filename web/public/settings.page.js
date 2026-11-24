@@ -2,8 +2,9 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/public/settings.page.js
-// The settings page: two switches kept in this browser session (preview features, and for an
-// operator the operator features) and one kept on the account (pass generation).
+// The settings page: preview features, kept on the account when the person is signed in and in this
+// browser session always; operator features, for an operator, kept in this browser session; and
+// pass generation, kept on the account.
 
 import {
   isPreviewOn,
@@ -30,14 +31,33 @@ async function init() {
   const passSwitch = byId("passGenerationSwitch");
 
   previewSwitch.checked = isPreviewOn();
-  previewSwitch.addEventListener("change", () => setPreviewOn(previewSwitch.checked));
+
+  let response = null;
+  // Signed in, the choice is kept on the account and in the session; signed out, in the session only.
+  previewSwitch.addEventListener("change", async () => {
+    const wanted = previewSwitch.checked;
+    setPreviewOn(wanted);
+    if (!response) return;
+    previewSwitch.disabled = true;
+    try {
+      const stored = (await updateAccountSetting("previewFeatures", wanted)).previewFeatures;
+      previewSwitch.checked = stored;
+      setPreviewOn(stored);
+    } catch (error) {
+      previewSwitch.checked = !wanted;
+      setPreviewOn(!wanted);
+      showSaveFailure(error);
+    } finally {
+      previewSwitch.disabled = false;
+    }
+  });
 
   operatorSwitch.checked = isOperatorFeaturesOn();
   operatorSwitch.addEventListener("change", () => setOperatorFeaturesOn(operatorSwitch.checked));
 
   passSwitch.checked = ACCOUNT_SETTING_DEFAULTS.passGeneration;
   passSwitch.disabled = true;
-  const response = await fetchBundleResponse();
+  response = await fetchBundleResponse();
   // fetchBundleResponse answers null for a visitor who is not signed in too, who sees the sign-in panel.
   let signedIn;
   try {
@@ -55,6 +75,9 @@ async function init() {
     );
   }
   if (response) {
+    const storedPreview = response.settings?.previewFeatures ?? ACCOUNT_SETTING_DEFAULTS.previewFeatures;
+    previewSwitch.checked = storedPreview;
+    setPreviewOn(storedPreview);
     passSwitch.checked = response.settings?.passGeneration ?? ACCOUNT_SETTING_DEFAULTS.passGeneration;
     passSwitch.disabled = false;
     byId("operatorFeaturesRow").hidden = !(response.bundles ?? []).some((bundle) => bundle.bundleId === "operator" && bundle.allocated);

@@ -312,11 +312,35 @@
     return banner;
   }
 
+  // The banner on a page that an operator's own preview opened: it files live, not to a test service.
+  function operatorLiveBanner() {
+    const banner = document.createElement("div");
+    banner.className = "feature-status-summary";
+    banner.dataset.operatorLive = "";
+    const line = document.createElement("p");
+    const tag = document.createElement("span");
+    tag.className = "status-tag";
+    tag.dataset.status = "production";
+    tag.textContent = siteText("chrome.operator-live-tag", "Live");
+    line.append(
+      tag,
+      " ",
+      siteText(
+        "chrome.operator-live-text",
+        "This filing is open because you are an operator with preview features on. It files for real: the return goes to HMRC and, when you file them together, the accounts go to Companies House.",
+      ),
+    );
+    banner.append(line);
+    return banner;
+  }
+
   /**
    * Put the not-available panel in place of the page's content when the page's activity is not
    * shown to this person: the catalogue does not list it in this environment and preview features
    * are off, or the person switched it off in their settings. Under preview features a page the
    * catalogue does not list opens with a sandbox banner, and its requests go to the test services.
+   * A page that an operator's own preview opens files live: it opens with the live banner, and the
+   * page's own preview hint, which says nothing is filed, is hidden.
    * @returns {Promise<boolean>} True when the panel replaced the page's content
    */
   async function guardUnlistedActivity() {
@@ -330,7 +354,11 @@
     const [environmentName, viewer] = await Promise.all([service.fetchCurrentEnvironmentName(), viewerSettings.fetchViewer()]);
     const listed = service.isActivityListedInEnvironment(activity, environmentName);
     if (service.isActivityShown(activity, environmentName, viewer)) {
-      if (!listed) {
+      if (!listed && service.opensByOperatorPreview(activity, environmentName)) {
+        for (const hint of main.querySelectorAll('[data-feature-status="preview"]')) hint.hidden = true;
+        main.prepend(operatorLiveBanner());
+        document.body.dataset.operatorPreviewActivity = activity.id;
+      } else if (!listed) {
         main.prepend(previewSandboxBanner());
         document.body.dataset.previewActivity = activity.id;
       }

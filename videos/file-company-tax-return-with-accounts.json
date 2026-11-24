@@ -245,7 +245,7 @@
         },
         {
           "action": "point",
-          "target": "#microCurrentTurnover",
+          "target": "tr:has(#microCurrentTurnover) > :first-child",
           "dwellMs": 500,
           "caption": "Turnover comes straight from the book.",
           "headline": "Turnover from the book",
@@ -637,11 +637,16 @@
           "action": "goto",
           "url": "/hmrc/receipt/receipts.html",
           "waitFor": "#receiptsTable .receipt-label",
-          "scrollTo": "#receiptsTable",
+          "scrollTo": "#receiptsTable"
+        },
+        {
+          "action": "point",
+          "target": ".receipt-label",
           "caption": "Your receipts page lists the accounts and the return as one filing.",
           "headline": "One filing, two receipts",
           "keyWord": "two",
-          "instruction": "Choose Receipts to find the accounts and the return listed as one filing."
+          "instruction": "Choose Receipts to find the accounts and the return listed as one filing.",
+          "dwellMs": 500
         },
         {
           "action": "hold",

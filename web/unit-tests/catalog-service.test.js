@@ -11,6 +11,7 @@ import {
   isActivityListedInEnvironment,
   isActivityShown,
   isJointFilingOffered,
+  opensByOperatorPreview,
   isRevisedAccountsOffered,
   isBundleShown,
   activityPagePath,
@@ -243,6 +244,48 @@ describe("isBundleShown", () => {
   it("hides the operator bundle when operator features are off", () => {
     expect(isBundleShown({ id: "operator" }, "prod", viewer)).toBe(true);
     expect(isBundleShown({ id: "operator" }, "prod", { ...viewer, operatorFeatures: false })).toBe(false);
+  });
+});
+
+describe("an activity the catalogue opens to an operator's own preview", () => {
+  const catalogue = parseToml(readFileSync(new URL("../public/submit.catalogue.toml", import.meta.url), "utf8"));
+  const taxReturn = catalogue.activities.find((entry) => entry.id === "file-company-tax-return");
+  const operator = { preview: false, operatorFeatures: true, operator: true, account: { passGeneration: true, previewFeatures: true } };
+
+  it("opens the Company Tax Return and the joint filing on prod and nowhere else", () => {
+    for (const id of ["file-company-tax-return", "file-company-tax-return-with-accounts"]) {
+      const entry = catalogue.activities.find((candidate) => candidate.id === id);
+      expect(opensByOperatorPreview(entry, "prod")).toBe(true);
+      expect(opensByOperatorPreview(entry, "ci")).toBe(false);
+    }
+  });
+
+  it("shows on prod to an operator with operator features on and the stored preview features setting on", () => {
+    expect(isActivityShown(taxReturn, "prod", operator)).toBe(true);
+  });
+
+  it.each([
+    ["a customer", { operator: false }],
+    ["an operator with operator features off", { operatorFeatures: false }],
+    ["an operator whose stored preview features setting is off", { account: { passGeneration: true, previewFeatures: false } }],
+    [
+      "an operator with preview features on for the session only",
+      { preview: true, account: { passGeneration: true, previewFeatures: false } },
+    ],
+  ])("is hidden on prod from %s", (who, change) => {
+    expect(isActivityShown(taxReturn, "prod", { ...operator, ...change })).toBe(false);
+  });
+
+  it("shows on ci by its listing, to a customer as to an operator", () => {
+    expect(
+      isActivityShown(taxReturn, "ci", { ...operator, operator: false, account: { passGeneration: true, previewFeatures: false } }),
+    ).toBe(true);
+    expect(isActivityShown(taxReturn, "ci", operator)).toBe(true);
+  });
+
+  it("offers the joint filing on prod by the same rule", () => {
+    expect(isJointFilingOffered(catalogue, "prod", operator)).toBe(true);
+    expect(isJointFilingOffered(catalogue, "prod", { ...operator, operator: false })).toBe(false);
   });
 });
 

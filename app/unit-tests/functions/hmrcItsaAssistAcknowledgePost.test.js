@@ -130,6 +130,14 @@ function hmrcCalls() {
   return mockFetch.mock.calls.filter((call) => String(call[0]).startsWith(process.env.HMRC_BASE_URI));
 }
 
+function receiptAcknowledgements() {
+  return mockSend.mock.calls
+    .map((call) => call[0])
+    .filter(
+      (cmd) => cmd.input?.TableName === process.env.RECEIPTS_DYNAMODB_TABLE_NAME && cmd.input?.UpdateExpression?.includes("acknowledgedAt"),
+    );
+}
+
 function receiptPuts() {
   return mockSend.mock.calls
     .map((call) => call[0])
@@ -216,12 +224,12 @@ describe("hmrcItsaAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(204);
-    const puts = receiptPuts();
-    expect(puts).toHaveLength(1);
-    expect(puts[0].input.Item.receiptId).toBe(RECEIPT_ID);
-    expect(puts[0].input.Item.receipt.acknowledgedAt).toBeTruthy();
-    expect(puts[0].input.Item.receipt.kind).toBe("itsa-assist-report");
-    expect(puts[0].input.Item.receipt.messages).toEqual(HMRC_REPORT.messages);
+    const acknowledgements = receiptAcknowledgements();
+    expect(acknowledgements).toHaveLength(1);
+    expect(acknowledgements[0].input.Key.receiptId).toBe(RECEIPT_ID);
+    expect(acknowledgements[0].input.ExpressionAttributeValues[":at"]).toBeTruthy();
+    // The acknowledgement changes the stored receipt in place, so it keeps the actor, client and ttl it was filed with.
+    expect(receiptPuts()).toEqual([]);
   });
 
   test.each([
@@ -233,7 +241,7 @@ describe("hmrcItsaAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(status);
-    expect(receiptPuts()).toHaveLength(0);
+    expect(receiptAcknowledgements()).toHaveLength(0);
   });
 
   test("returns 202 when x-wait-time-ms is 0", async () => {

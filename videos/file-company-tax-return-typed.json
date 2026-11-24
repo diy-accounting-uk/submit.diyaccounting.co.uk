@@ -264,11 +264,16 @@
             "name": "Accounts"
           },
           "text": "100000",
-          "clear": true,
+          "clear": true
+        },
+        {
+          "action": "point",
+          "target": "tr:has(#currentTurnover) > :first-child",
           "caption": "Type this year's profit and loss, then the balance sheet.",
           "headline": "Type the figures",
           "keyWord": "figures",
-          "instruction": "Enter this year's profit and loss, then each balance sheet line."
+          "instruction": "Enter this year's profit and loss, then each balance sheet line.",
+          "dwellMs": 500
         },
         {
           "action": "type",
@@ -300,11 +305,16 @@
             "name": "Balance sheet"
           },
           "text": "3010",
-          "clear": true,
+          "clear": true
+        },
+        {
+          "action": "point",
+          "target": "tr:has(#currentCashAtBank) > :first-child",
           "caption": "Here the cash figure has lost a digit.",
           "headline": "A figure with a typo",
           "keyWord": "typo",
-          "instruction": "Enter a Cash at bank figure that leaves the balance sheet out of balance."
+          "instruction": "Enter a Cash at bank figure that leaves the balance sheet out of balance.",
+          "dwellMs": 500
         },
         {
           "action": "type",
@@ -352,15 +362,20 @@
             "name": "Balance sheet"
           },
           "text": "30100",
-          "clear": true,
-          "caption": "Put the missing digit back and the message clears.",
-          "headline": "Correct the figure",
-          "keyWord": "Correct",
-          "instruction": "Correct Cash at bank so the balance sheet balances, and check that the message clears."
+          "clear": true
         },
         {
           "action": "click",
           "target": "#principalActivity"
+        },
+        {
+          "action": "point",
+          "target": "tr:has(#currentCashAtBank) > :first-child",
+          "caption": "Put the missing digit back and the message clears.",
+          "headline": "Correct the figure",
+          "keyWord": "Correct",
+          "instruction": "Correct Cash at bank so the balance sheet balances, and check that the message clears.",
+          "dwellMs": 500
         },
         {
           "action": "hold",
@@ -640,11 +655,16 @@
         {
           "action": "goto",
           "url": "/hmrc/receipt/receipts.html",
-          "waitFor": "#receiptsTable .receipt-label",
+          "waitFor": "#receiptsTable .receipt-label"
+        },
+        {
+          "action": "point",
+          "target": ".receipt-label",
           "caption": "Your receipts page lists the filing.",
           "headline": "Find your filing",
           "keyWord": "filing",
-          "instruction": "Choose Receipts to find the filing in the list."
+          "instruction": "Choose Receipts to find the filing in the list.",
+          "dwellMs": 500
         },
         {
           "action": "click",

@@ -42,6 +42,7 @@
         // A read the server could not answer decides nothing. A refusal (the sign-in is not accepted)
         // is an answer: the server refuses every HMRC request made with that sign-in too.
         if (response.status >= 500 || response.status === 429) return null;
+        if (response.status === 401) window.signInRefused = true;
         if (!response.ok) return false;
 
         const data = await response.json();

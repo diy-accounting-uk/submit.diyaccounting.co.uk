@@ -161,21 +161,33 @@ describe("donationRowsFromTransactions", () => {
     expect(rows).toEqual([]);
   });
 
-  test("a USD receipt takes the pound amount its conversion credited and keeps the original", () => {
+  test("a USD receipt with a fee takes its pound gross and pound fee from the net its conversion credited, and keeps the original", () => {
+    // PayPal takes the fee in dollars and converts the net: 10.00 less 0.64 is 9.36, credited as 7.42.
     const rows = donationRowsFromTransactions([
       record({ id: "USD000000000000K1", code: "T0013", amount: "10.00", currency: "USD", fee: "-0.64" }),
-      record({ id: "CNV000000000000K2", code: "T0200", amount: "-10.00", currency: "USD", referenceId: "USD000000000000K1" }),
+      record({ id: "CNV000000000000K2", code: "T0200", amount: "-9.36", currency: "USD", referenceId: "USD000000000000K1" }),
       record({ id: "CNV000000000000K3", code: "T0200", amount: "7.42", currency: "GBP", referenceId: "USD000000000000K1" }),
     ]);
     expect(rows).toEqual([
       expect.objectContaining({
         id: "USD000000000000K1",
-        amount: 7.42,
+        amount: 7.93,
+        fee: 0.51,
         original_amount: 10,
         original_currency: "USD",
         product: "donation-paypal",
       }),
     ]);
+    expect(rows[0].amount - rows[0].fee).toBeCloseTo(7.42, 2);
+  });
+
+  test("a USD receipt with no fee takes the pound amount its conversion credited", () => {
+    const rows = donationRowsFromTransactions([
+      record({ id: "USD000000000000K4", code: "T0013", amount: "10.00", currency: "USD" }),
+      record({ id: "CNV000000000000K5", code: "T0200", amount: "-10.00", currency: "USD", referenceId: "USD000000000000K4" }),
+      record({ id: "CNV000000000000K6", code: "T0200", amount: "7.93", currency: "GBP", referenceId: "USD000000000000K4" }),
+    ]);
+    expect(rows).toEqual([expect.objectContaining({ id: "USD000000000000K4", amount: 7.93, fee: 0 })]);
   });
 
   test("a USD receipt with no conversion is left out and reported by id", () => {

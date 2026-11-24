@@ -4,7 +4,8 @@
 # Makes sure the demo reviewer user, its one-time code seed and its two sample books exist, one job
 # per environment (scripts/ensure-mcp-reviewer-user.js; capability MCP-26). The schedule runs both
 # environments weekly, which saves the books again and so keeps them inside their 35 day expiry. A
-# dispatch targets one environment. The deployment role (submit-<env>-deployment-role) holds
+# dispatch targets one environment. The ci job ends with a notice when no ci set stands, because the
+# books are saved through the ci site. The deployment role (submit-<env>-deployment-role) holds
 # AdministratorAccess, so no grant is added. The script prints no password, seed or token.
 
 name: mcp reviewer seed
@@ -59,7 +60,27 @@ jobs:
           deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Find whether a ci set stands
+        id: ci-set
+        if: matrix.environment == 'ci'
+        run: |
+          set -euo pipefail
+          if ! LAST_KNOWN_GOOD=$(aws ssm get-parameter --name /submit/ci/last-known-good-deployment --query 'Parameter.Value' --output text 2>ssm-error.txt); then
+            grep -q ParameterNotFound ssm-error.txt || { cat ssm-error.txt; exit 1; }
+            LAST_KNOWN_GOOD=""
+          fi
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "The ci set ${LAST_KNOWN_GOOD} stands."
+            echo "stands=true" >> "$GITHUB_OUTPUT"
+          else
+            message="No ci set stands (/submit/ci/last-known-good-deployment is ${LAST_KNOWN_GOOD:-missing}), so the ci site cannot save the sample books; the ci reviewer is not seeded this run."
+            echo "::notice::${message}"
+            echo "${message}" > mcp-reviewer-seed.log
+            echo "stands=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Seed the reviewer user and its sample books
+        if: matrix.environment == 'prod' || steps.ci-set.outputs.stands == 'true'
         env:
           ENVIRONMENT_NAME: ${{ matrix.environment }}
         run: |

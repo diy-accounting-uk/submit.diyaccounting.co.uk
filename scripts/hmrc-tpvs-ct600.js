@@ -29,6 +29,15 @@
  * final response or an error, then the submission is deleted. The transcript is written with the
  * gateway user ID and password blanked. --agent works in this mode too.
  *
+ * With --til the return goes to HMRC's live Transaction Engine as a test-in-live message (class
+ * HMRC-CT-CT600-TIL, no GatewayTest), which HMRC checks against the live rules and the company's
+ * records and files nothing. It needs --book, --utr (the company's own) and the three
+ * --registered-office options, and HMRC_CT_VENDOR_ID in the environment. The Government Gateway
+ * user ID and password are typed at a prompt that does not echo; they reach no file and no log. The
+ * acknowledgement is polled until a final response or an error, then the submission is deleted, with
+ * the same class. The transcript is written with the user ID and password blanked. --til refuses
+ * --ets, --tamper-irmark, --scenario and --agent.
+ *
  * With --ets --tamper-irmark the IRmark is changed after it is computed; the case passes (exit 0)
  * only when HMRC answers business error 2021 and the delete succeeds.
  *
@@ -40,6 +49,7 @@
  *
  * Usage: node scripts/hmrc-tpvs-ct600.js --scenario <file> [--out <dir>] [--utr <10 digits>] [--ets]
  *        node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets [--tamper-irmark]]
+ *        node scripts/hmrc-tpvs-ct600.js --til --book <dir> --utr <10 digits> --registered-office-line1 <line> --registered-office-town <town> --registered-office-postcode <postcode> [--out <dir>] [--prior <file>] [--micro] [--amended] [--loans [<file>]]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -62,7 +72,8 @@ import {
   postToTransactionEngine,
   TPVS_CT600_URL,
 } from "../app/services/hmrcTransactionEngine.js";
-import { readEtsInputs, runEtsExchange, tamperCasePassed, tamperIrmark } from "./lib/etsCt600.js";
+import { readEtsInputs, runEtsExchange, runTestInLiveExchange, tamperCasePassed, tamperIrmark } from "./lib/etsCt600.js";
+import { promptGatewayCredentials, testInLiveRefusals } from "./lib/testInLiveCt600.js";
 
 function argument(name, fallback) {
   const index = process.argv.indexOf(name);
@@ -85,6 +96,7 @@ const KNOWN_FLAGS = [
   "--registered-office-town",
   "--scenario",
   "--tamper-irmark",
+  "--til",
   "--utr",
 ];
 const unknownFlags = process.argv.slice(2).filter((value) => value.startsWith("-") && !KNOWN_FLAGS.includes(value));
@@ -94,7 +106,20 @@ if (unknownFlags.length > 0) {
   console.error(
     "       node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended] [--loans [<file>]] [--agent <practice name>] [--ets [--tamper-irmark]]",
   );
+  console.error(
+    "       node scripts/hmrc-tpvs-ct600.js --til --book <dir> --utr <10 digits> --registered-office-line1 <line> --registered-office-town <town> --registered-office-postcode <postcode> [--out <dir>] [--prior <file>] [--micro] [--amended] [--loans [<file>]]",
+  );
   process.exit(2);
+}
+
+const til = process.argv.includes("--til");
+if (til) {
+  const refusals = testInLiveRefusals(process.argv.slice(2), process.env);
+  if (refusals.length > 0) {
+    refusals.forEach((reason) => console.error(reason));
+    console.error("Nothing was sent to HMRC.");
+    process.exit(2);
+  }
 }
 
 if (process.argv.includes("--scenario")) {
@@ -126,6 +151,7 @@ const registeredOffice = {
   postalCode: argument("--registered-office-postcode", "EC1A 1AA"),
 };
 const priorFile = argument("--prior", undefined);
+const gatewayCredentials = til ? await promptGatewayCredentials() : undefined;
 const priorYearProfitAndLoss = priorFile ? JSON.parse(readFileSync(priorFile, "utf8")) : undefined;
 
 const { book, lines } = loadDiyaGlData(bookDirectory);
@@ -206,25 +232,38 @@ const computationsIxbrl = buildCtComputations({
   tradeOutsideUk: figures.lossOutsideUk === true,
 });
 const irEnvelopeXml = buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computationsIxbrl, amended, agent });
+const credentials = etsInputs ?? gatewayCredentials ?? { senderId: "tpvs", password: "tpvs" };
+function submissionVendorId() {
+  if (etsInputs) return etsInputs.vendorId;
+  if (til) return process.env.HMRC_CT_VENDOR_ID.trim();
+  return "1000";
+}
+const vendorId = submissionVendorId();
 const { xml, irmark } = buildCt600SubmissionRequest({
-  senderId: etsInputs ? etsInputs.senderId : "tpvs",
-  password: etsInputs ? etsInputs.password : "tpvs",
+  senderId: credentials.senderId,
+  password: credentials.password,
   utr,
-  vendorId: etsInputs ? etsInputs.vendorId : "1000",
+  vendorId,
   productName: "DIY Accounting Submit",
   productVersion: PRODUCT_VERSION,
   irEnvelopeXml,
-  gatewayTest: true,
+  gatewayTest: !til,
+  testInLive: til,
 });
 
 mkdirSync(outputDirectory, { recursive: true });
 const tamper = ets && process.argv.includes("--tamper-irmark");
 const outputPrefix = (agent ? "ct600-agent" : amended ? "ct600-amended" : "ct600") + (tamper ? "-tamper" : "");
-if (ets) {
-  const { transcript, final, ok } = await runEtsExchange({ submissionXml: tamper ? tamperIrmark(xml) : xml });
+if (ets || til) {
+  const { transcript, final, ok } = til
+    ? await runTestInLiveExchange({ submissionXml: xml })
+    : await runEtsExchange({ submissionXml: tamper ? tamperIrmark(xml) : xml });
   const exchange = { transcript, final, ok };
   transcript.forEach(({ label, xml: message }, index) =>
-    writeFileSync(join(outputDirectory, `${outputPrefix}-ets-${String(index + 1).padStart(2, "0")}-${label}.xml`), message),
+    writeFileSync(
+      join(outputDirectory, `${outputPrefix}-${til ? "til" : "ets"}-${String(index + 1).padStart(2, "0")}-${label}.xml`),
+      message,
+    ),
   );
   console.log(JSON.stringify({ irmark, boxes, response: final }, null, 2));
   process.exit(tamper ? (tamperCasePassed(exchange) ? 0 : 1) : ok ? 0 : 1);

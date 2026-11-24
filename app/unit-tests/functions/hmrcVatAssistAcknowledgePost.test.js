@@ -130,6 +130,14 @@ function hmrcCalls() {
   return mockFetch.mock.calls.filter((call) => String(call[0]).startsWith(process.env.HMRC_BASE_URI));
 }
 
+function receiptAcknowledgements() {
+  return mockSend.mock.calls
+    .map((call) => call[0])
+    .filter(
+      (cmd) => cmd.input?.TableName === process.env.RECEIPTS_DYNAMODB_TABLE_NAME && cmd.input?.UpdateExpression?.includes("acknowledgedAt"),
+    );
+}
+
 function receiptPuts() {
   return mockSend.mock.calls
     .map((call) => call[0])
@@ -231,12 +239,12 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(204);
-    const puts = receiptPuts();
-    expect(puts).toHaveLength(1);
-    expect(puts[0].input.Item.receiptId).toBe(RECEIPT_ID);
-    expect(puts[0].input.Item.receipt.acknowledgedAt).toBeTruthy();
-    expect(puts[0].input.Item.receipt.kind).toBe("vat-assist-report");
-    expect(puts[0].input.Item.receipt.messages).toEqual(HMRC_REPORT.messages);
+    const acknowledgements = receiptAcknowledgements();
+    expect(acknowledgements).toHaveLength(1);
+    expect(acknowledgements[0].input.Key.receiptId).toBe(RECEIPT_ID);
+    expect(acknowledgements[0].input.ExpressionAttributeValues[":at"]).toBeTruthy();
+    // The acknowledgement changes the stored receipt in place, so it keeps the actor, client and ttl it was filed with.
+    expect(receiptPuts()).toEqual([]);
   });
 
   test.each(["en", "cy"])("records presentedLanguage %s on the stored receipt", async (presentedLanguage) => {
@@ -244,13 +252,13 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(buildEvent({ body: { presentedLanguage } }));
 
     expect(response.statusCode).toBe(204);
-    expect(receiptPuts()[0].input.Item.receipt.presentedLanguage).toBe(presentedLanguage);
+    expect(receiptAcknowledgements()[0].input.ExpressionAttributeValues[":language"]).toBe(presentedLanguage);
   });
 
   test("leaves presentedLanguage off the receipt when the body carries none", async () => {
     mockHmrcNoContent();
     await ingestHandler(buildEvent());
-    expect(receiptPuts()[0].input.Item.receipt).not.toHaveProperty("presentedLanguage");
+    expect(receiptAcknowledgements()[0].input.ExpressionAttributeValues).not.toHaveProperty(":language");
   });
 
   test.each(["fr", "", 1, "CY"])("returns 400 when presentedLanguage is %j", async (presentedLanguage) => {
@@ -268,7 +276,7 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(status);
-    expect(receiptPuts()).toHaveLength(0);
+    expect(receiptAcknowledgements()).toHaveLength(0);
   });
 
   test.each([
@@ -279,7 +287,7 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(500);
-    expect(receiptPuts()).toHaveLength(0);
+    expect(receiptAcknowledgements()).toHaveLength(0);
   });
 
   test("returns 202 when x-wait-time-ms is 0", async () => {

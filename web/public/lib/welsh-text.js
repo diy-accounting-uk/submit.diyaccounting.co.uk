@@ -852,7 +852,7 @@ window.WELSH_TEXT = {
   "ch.ct.record-computations-as-filed": "Y cyfrifiannau treth fel y’u ffeiliwyd",
   "ch.ct.record-computations-explanation": "Dyma’r ddogfen sy’n cyfrifo eich elw trethadwy. Mae CThEF yn ei darllen gyda’r Ffurflen.",
   "ch.ct.record-computations-frame": "Y cyfrifiannau treth fel y cawsant eu ffeilio",
-  "ch.ct.record-copy-title": "Eich copi o Ffurflen Dreth y Cwmni{parts}",
+  "ch.ct.record-copy-title": "Eich copi o Ffurflen Dreth y Cwmni (rhagolwg){parts}",
   "ch.ct.record-correlation": "ID cydberthynas",
   "ch.ct.record-correlation-line": "ID cydberthynas {id}",
   "ch.ct.record-file-another": "Gweld tudalen y CT600 i ffeilio Ffurflen arall",
@@ -872,7 +872,7 @@ window.WELSH_TEXT = {
   "ch.ct.record-result-explanation":
     "Dyma’r ffigurau a gafodd CThEF: cyfnod y Ffurflen, y cyfrifiant treth sy’n cyfrifo’r elw, a’r dreth sy’n ddyledus. Gwiriwch nhw yn erbyn eich cofnodion.",
   "ch.ct.record-see-full": "Gweld y copi llawn a ffeiliwyd",
-  "ch.ct.record-title": "Ffurflen Dreth y Cwmni (CT600){parts}",
+  "ch.ct.record-title": "Ffurflen Dreth y Cwmni (CT600, rhagolwg){parts}",
   "ch.ct.record-utr": "Cyfeirnod Unigryw y Trethdalwr",
   "ch.ct.record-utr-line": "Cyfeirnod Unigryw y Trethdalwr {utr}",
   "ch.ct.refuse-accounts-alone":
@@ -2069,6 +2069,9 @@ window.WELSH_TEXT = {
   "chrome.notice-in-english": "Mae’r dudalen hon yn Saesneg.",
   "chrome.notice-welsh-copy": "Mae’r dudalen hon ar gael yn Gymraeg.",
   "chrome.open-settings": "Agor y gosodiadau",
+  "chrome.operator-live-tag": "Byw",
+  "chrome.operator-live-text":
+    "Mae’r ffeilio hwn ar agor oherwydd eich bod yn weithredwr gyda nodweddion rhagolwg (preview) ymlaen. Mae’n ffeilio go iawn: mae’r Ffurflen yn mynd i CThEF ac, pan fyddwch yn eu ffeilio gyda’i gilydd, mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau.",
   "chrome.preview-sandbox-tag": "Prawf",
   "chrome.preview-sandbox-text":
     "Mae’r nodwedd hon ar agor oherwydd bod nodweddion rhagolwg (preview) ymlaen. Mae’n rhedeg yn erbyn y gwasanaethau prawf ac nid yw’n ffeilio dim byd go iawn.",
@@ -2857,10 +2860,10 @@ window.WELSH_TEXT = {
   "receipts.kind-accounting-reference-date": "Newid dyddiad cyfeirnod cyfrifyddu",
   "receipts.kind-accounts": "Cyfrifon",
   "receipts.kind-allotment-of-shares": "Dychwelyd cyfrannau a glustnodwyd",
-  "receipts.kind-amended-ct600": "Ffurflen Dreth y Cwmni wedi’i diwygio",
+  "receipts.kind-amended-ct600": "Ffurflen Dreth y Cwmni wedi’i diwygio (rhagolwg)",
   "receipts.kind-change-of-name": "Newid enw’r cwmni",
   "receipts.kind-confirmation-statement": "Datganiad cadarnhau",
-  "receipts.kind-ct600": "Ffurflen Dreth y Cwmni",
+  "receipts.kind-ct600": "Ffurflen Dreth y Cwmni (rhagolwg)",
   "receipts.kind-filing": "Ffeilio gyda Thŷ’r Cwmnïau",
   "receipts.kind-officer-appointment": "Cyfarwyddwr neu ysgrifennydd wedi’i benodi",
   "receipts.kind-officer-change": "Manylion cyfarwyddwr neu ysgrifennydd wedi newid",

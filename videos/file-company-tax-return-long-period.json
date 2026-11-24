@@ -301,11 +301,16 @@
             "name": "Accounts"
           },
           "text": "250000",
-          "clear": true,
+          "clear": true
+        },
+        {
+          "action": "point",
+          "target": "tr:has(#currentTurnover) > :first-child",
           "caption": "Type the profit and loss for the whole 15 months, then the balance sheet.",
           "headline": "Type the 15 month figures",
           "keyWord": "figures",
-          "instruction": "Enter the profit and loss for all 15 months, then each balance sheet line."
+          "instruction": "Enter the profit and loss for all 15 months, then each balance sheet line.",
+          "dwellMs": 500
         },
         {
           "action": "type",
@@ -514,11 +519,16 @@
           "action": "fill",
           "target": "#mainPoolAllowancesAp2",
           "scrollTo": "label[for=mainPoolAllowances]",
-          "value": "363",
+          "value": "363"
+        },
+        {
+          "action": "point",
+          "target": "label[for=mainPoolAllowancesAp2]",
           "caption": "Type the allowances for return 1, then for return 2.",
           "headline": "Allowances for each return",
           "keyWord": "Allowances",
-          "instruction": "Enter the allowances for return 1, then for return 2."
+          "instruction": "Enter the allowances for return 1, then for return 2.",
+          "dwellMs": 500
         },
         {
           "action": "fill",
@@ -529,11 +539,16 @@
           "action": "fill",
           "target": "#donationsPaidAp2",
           "scrollTo": "label[for=donationsPaid]",
-          "value": "0",
+          "value": "0"
+        },
+        {
+          "action": "point",
+          "target": "label[for=donationsPaidAp2]",
           "caption": "Donations paid are also typed for each return.",
           "headline": "Donations for each return",
           "keyWord": "Donations",
-          "instruction": "Enter the donations paid for return 1, then for return 2."
+          "instruction": "Enter the donations paid for return 1, then for return 2.",
+          "dwellMs": 500
         },
         {
           "action": "click",
@@ -541,11 +556,7 @@
           "scrollTo": {
             "role": "heading",
             "name": "Loans"
-          },
-          "caption": "Only return 2 has a loan to a director.",
-          "headline": "A loan in return 2",
-          "keyWord": "loan",
-          "instruction": "Choose Yes for the loan to a director in the return 2 column."
+          }
         },
         {
           "action": "fill",
@@ -556,6 +567,15 @@
           "action": "fill",
           "target": "#loanAmount1Ap2",
           "value": "15000"
+        },
+        {
+          "action": "point",
+          "target": "label[for=loanName1Ap2]",
+          "caption": "Only return 2 has a loan to a director.",
+          "headline": "A loan in return 2",
+          "keyWord": "loan",
+          "instruction": "Choose Yes for the loan to a director in the return 2 column.",
+          "dwellMs": 500
         },
         {
           "action": "hold",
@@ -767,11 +787,16 @@
           "action": "goto",
           "url": "/hmrc/receipt/receipts.html",
           "waitFor": "#receiptsTable .receipt-label",
-          "scrollTo": "#receiptsTable",
+          "scrollTo": "#receiptsTable"
+        },
+        {
+          "action": "point",
+          "target": ".receipt-label",
           "caption": "Your receipts page lists both returns as one filing.",
           "headline": "One filing, two receipts",
           "keyWord": "two",
-          "instruction": "Choose Receipts to find both returns listed as one filing."
+          "instruction": "Choose Receipts to find both returns listed as one filing.",
+          "dwellMs": 500
         },
         {
           "action": "hold",

@@ -408,6 +408,26 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#repaymentName1")).toHaveCount(0);
   });
 
+  test("the loan and repayment buttons are styled as the page's secondary buttons", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await page.locator("#loansMadeYes").check();
+    await page.locator("#addLoanBtn").click();
+    await page.locator("#repaidSinceYes").check();
+    for (const button of [
+      page.locator("#addLoanBtn"),
+      page.locator('[data-loan-row="2"] button[data-remove="loan"]'),
+      page.locator("#addRepaymentBtn"),
+      page.locator('[data-repayment-row="1"] button[data-remove="repayment"]'),
+    ]) {
+      await expect(button).toHaveClass("secondary-button");
+      await expect(button).toHaveCSS("border-top-style", "solid");
+    }
+    expect(await page.locator("#addLoanBtn").evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(
+      await page.locator("#backToFormBtn").evaluate((node) => parseFloat(getComputedStyle(node).minHeight)),
+    );
+  });
+
   test("a book with an overdrawn director's loan account opens the loans question at Yes with the amount and works the tax", async ({
     page,
   }) => {
@@ -1085,8 +1105,12 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#returnIrmark")).toContainText(`Return 1 of 2 IRmark: ${IRMARKS.A1}`);
     await expect(page.locator("#returnIrmark")).toContainText(`Return 2 of 2 IRmark: ${IRMARKS.A2}`);
     await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(2);
-    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText("Your copy of the Company Tax Return 1 of 2");
-    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText("Your copy of the Company Tax Return 2 of 2");
+    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText(
+      "Your copy of the Company Tax Return (preview) 1 of 2",
+    );
+    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText(
+      "Your copy of the Company Tax Return (preview) 2 of 2",
+    );
 
     expect(submission.requests).toHaveLength(2);
     const [first, second] = submission.requests;
@@ -1365,14 +1389,14 @@ test.describe("File Company Tax Return entry form", () => {
 
       const copy = page.locator("#returnRecord .customer-copy");
       await expect(copy).toBeVisible({ timeout: 15_000 });
-      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
+      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
       await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
       await expect(copy.locator(".customer-copy-submission")).toContainText("RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S");
 
       const record = copy.locator(".submission-record").first();
       await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
       await expect(record.locator(".reference").first()).toHaveText("Unique Taxpayer Reference 8596148860");
-      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600)");
+      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600, preview)");
       await expect(record.locator(".subtitle")).toHaveText("Return period 1 April 2025 to 31 March 2026");
       await expect(record.locator("tr", { hasText: "Profit or loss per the accounts" })).toBeVisible();
       await expect(record.locator("tr", { hasText: "Box 440: Corporation Tax chargeable" }).locator("td.figure")).toHaveText("12,345.67");

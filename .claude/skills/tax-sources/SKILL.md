@@ -70,14 +70,14 @@ sourcing it elsewhere.
    update `quote`. If the fact changed, update the fact's text in the page that uses it, and keep the
    id when the meaning is the same fact (a new rate for the same allowance) or add a new id when it
    is a new fact.
-3. Rebuild the pages that use the source (`npm run build:mtd-calendar`, `npm run build:rates-page`) and commit the sources and the
-   regenerated page together.
+3. Rebuild the pages that use the source (`npm run build:mtd-calendar`, `npm run build:rates-page`, `npm run build:filing-pages`) and commit the
+   sources and the regenerated pages together.
 
 ## Refresh all sources
 
 1. `node scripts/verify-tax-sources.mjs` checks every file.
 2. Refresh each file that failed as above, then set `retrieved` to today on the rest.
-3. `npm run build:mtd-calendar` and `npm run build:rates-page`, then `npx vitest run web/unit-tests/mtdCalendar.test.js web/unit-tests/ratesPage.test.js`.
+3. `npm run build:mtd-calendar`, `npm run build:rates-page` and `npm run build:filing-pages`, then `npx vitest run web/unit-tests/mtdCalendar.test.js web/unit-tests/ratesPage.test.js web/unit-tests/filingPages.test.js`.
 4. Commit.
 
 The 30-day limit makes the unit test fail once a source ages out. Refresh all before then.

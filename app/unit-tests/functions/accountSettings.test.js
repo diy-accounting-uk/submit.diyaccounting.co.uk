@@ -113,7 +113,7 @@ describe("account settings route", () => {
     const response = await accountSettingsPutHandler(putEvent({ passGeneration: false }));
 
     expect(response.statusCode).toBe(200);
-    expect(parseResponseBody(response)).toEqual({ settings: { passGeneration: false, watchedCompanies: [] } });
+    expect(parseResponseBody(response)).toEqual({ settings: { passGeneration: false, watchedCompanies: [], previewFeatures: false } });
     expect(storedItem).toMatchObject({ bundleId: ACCOUNT_SETTINGS_ITEM_ID, settings: { passGeneration: false } });
     expect(storedItem.hashedSub).toBeTruthy();
   });
@@ -133,7 +133,11 @@ describe("account settings route", () => {
     const response = await accountSettingsPutHandler(putEvent({ watchList: { add: "SC000000" } }));
 
     expect(response.statusCode).toBe(200);
-    expect(parseResponseBody(response).settings).toEqual({ passGeneration: false, watchedCompanies: ["00000001", "SC000000"] });
+    expect(parseResponseBody(response).settings).toEqual({
+      passGeneration: false,
+      watchedCompanies: ["00000001", "SC000000"],
+      previewFeatures: false,
+    });
   });
 
   test("PUT adds to a watch list stored before any other setting, creating the settings item", async () => {
@@ -240,7 +244,7 @@ describe("account settings route", () => {
   test("GET /api/v1/bundle returns pass generation on for a user with no stored settings", async () => {
     const response = await bundleGetHandler(buildEventWithToken(makeIdToken("settings-user"), {}));
 
-    expect(parseResponseBody(response).settings).toEqual({ passGeneration: true, watchedCompanies: [] });
+    expect(parseResponseBody(response).settings).toEqual({ passGeneration: true, watchedCompanies: [], previewFeatures: false });
   });
 
   test("GET /api/v1/bundle returns the stored setting and leaves the settings item out of the bundles", async () => {
@@ -249,7 +253,7 @@ describe("account settings route", () => {
     const response = await bundleGetHandler(buildEventWithToken(makeIdToken("settings-user"), {}));
 
     const body = parseResponseBody(response);
-    expect(body.settings).toEqual({ passGeneration: false, watchedCompanies: [] });
+    expect(body.settings).toEqual({ passGeneration: false, watchedCompanies: [], previewFeatures: false });
     expect(body.bundles.map((bundle) => bundle.bundleId)).not.toContain(ACCOUNT_SETTINGS_ITEM_ID);
   });
 });

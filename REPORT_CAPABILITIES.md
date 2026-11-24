@@ -133,6 +133,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Company Tax Return filing](#company-tax-return-filing-ch)
     - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC: use when a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
     - [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS: use when HMRC's Software Developers Support Team sends Corporation Tax test scenarios whose figures must be filed by the product's own builder to TPVS or ETS and the XML sent back, or a case must show which CT600 content the product refuses.
+    - [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live: use when a company's own return, built from its diya-gl book, must be checked by HMRC's live Transaction Engine against the live rules and the company's records (rule 1610, the period HMRC holds) before it is filed, without filing it.
   - [Filing infrastructure](#filing-infrastructure-ch)
     - [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions: use when a filing (office address, email address, accounts) needs a Companies House transaction created, read or updated.
     - [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout: use when any outbound Companies House API call needs a bounded wait instead of hanging.
@@ -1613,7 +1614,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in · [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House · [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
-- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
+- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS · [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
 - [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
@@ -1797,6 +1798,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group company-tax-return-filing-ch -->
 - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
+- [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live
 <!-- /generated:group company-tax-return-filing-ch -->
 
 #### CH-15 File a Company Tax Return with HMRC
@@ -1818,6 +1820,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/hmrc-tpvs-ct600.js, scripts/lib/ctScenario.js, scripts/lib/ctScenarioCommand.js, scripts/lib/etsCt600.js, fixtures/ct-scenarios/marginal-relief-small.json, fixtures/ct-scenarios/micro-entity-loss.json, fixtures/ct-scenarios/long-period-part-1.json, fixtures/ct-scenarios/long-period-part-2.json, app/unit-tests/scripts/ctScenario.test.js
 - **Keywords:** scenario, SDST, TPVS, ETS, CT600, corporation tax, test pack, refused, irmark, new applicant
 - **Related:** CH-15
+
+#### CH-27 Send a company's own Company Tax Return to HMRC as a test in live
+
+- **Use when:** a company's own return, built from its diya-gl book, must be checked by HMRC's live Transaction Engine against the live rules and the company's records (rule 1610, the period HMRC holds) before it is filed, without filing it.
+- **Does:** hmrc-tpvs-ct600.js --til builds the return, the computations and the accounts from --book, asks for the company's Government Gateway user ID and password at a prompt that does not echo, posts the message to the live Transaction Engine as class HMRC-CT-CT600-TIL with no GatewayTest, polls it to a final response or an error, deletes it with the same class, and writes the transcript with the user ID and password blanked. It refuses --ets, --tamper-irmark, --scenario and --agent, and needs --utr, the three --registered-office options and HMRC_CT_VENDOR_ID.
+- **Run:** `HMRC_CT_VENDOR_ID=<vendor id> node scripts/hmrc-tpvs-ct600.js --til --book <book dir> --micro --utr <company UTR> --registered-office-line1 <line> --registered-office-town <town> --registered-office-postcode <postcode> --out <dir>`
+- **Entry:** `scripts/lib/testInLiveCt600.js:testInLiveRefusals`; `scripts/lib/etsCt600.js:runTestInLiveExchange`; `scripts/hmrc-tpvs-ct600.js`
+- **Files:** scripts/lib/testInLiveCt600.js, scripts/lib/etsCt600.js, scripts/hmrc-tpvs-ct600.js, app/unit-tests/scripts/testInLiveCt600.test.js, app/unit-tests/scripts/etsCt600.test.js
+- **Keywords:** test in live, TIL, HMRC-CT-CT600-TIL, CT600, corporation tax, live transaction engine, government gateway, rule 1610, files nothing
+- **Related:** CH-19
 
 ### Filing infrastructure (CH)
 
@@ -7820,7 +7832,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot review: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
-- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [SS-04](#ss-04-apply-book-edits-and-derivations)
+- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live), [SS-04](#ss-04-apply-book-edits-and-derivations)
 - corporation tax payment date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
@@ -7882,7 +7894,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
-- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
+- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - ct600 due date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
@@ -8258,6 +8270,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - file-revised-accounts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - filed accounts: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
+- files nothing: [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -8418,7 +8431,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gov-vendor: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - gov.uk: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - gov.uk quote: [SITE-33](#site-33-check-the-tax-sources-each-week)
-- government gateway: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- government gateway: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - gptbot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
@@ -8504,6 +8517,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc vat: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - hmrc vat api: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-04](#hmrc-04-retrieve-vat-liabilities), [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - hmrc-api-requests: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
+- hmrc-ct-ct600-til: [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - hmrc-grants: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - hmrc-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - hmrc-service: [HMRC-29](#hmrc-29-call-the-hmrc-api)
@@ -8730,6 +8744,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - listings check: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - listings-check.yml: [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
+- live transaction engine: [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - llm as judge: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - llm judge: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - llm voice tells: [DEV-38](#dev-38-write-plain-human-prose)
@@ -9460,6 +9475,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - route53 alias: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
 - route53 mail records: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - rss: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
+- rule 1610: [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - ruleset evaluation: [DATA-11](#data-11-run-glue-data-quality-checks)
 - rum ga4 agreement: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - rum injection: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
@@ -9864,6 +9880,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test discovery: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - test flag: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
+- test in live: [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - test items: [OPS-217](#ops-217-expire-the-test-items-a-table-already-holds)
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - test naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
@@ -9896,6 +9913,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - tier: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
+- til: [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
 - time window: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - timeout: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - timer pill: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)

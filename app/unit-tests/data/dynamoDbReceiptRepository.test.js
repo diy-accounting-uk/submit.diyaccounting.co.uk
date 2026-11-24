@@ -58,8 +58,15 @@ vi.mock("@app/services/subHasher.js", () => ({
   subHashCandidates: vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]),
 }));
 
-const { putReceipt, putReceiptIfNew, listUserReceipts, findReceiptForSubmission, markReceiptStepDone, clearReceiptStep } =
-  await import("@app/data/dynamoDbReceiptRepository.js");
+const {
+  putReceipt,
+  putReceiptIfNew,
+  listUserReceipts,
+  findReceiptForSubmission,
+  markReceiptStepDone,
+  clearReceiptStep,
+  acknowledgeStoredReceipt,
+} = await import("@app/data/dynamoDbReceiptRepository.js");
 const { subHashCandidates } = await import("@app/services/subHasher.js");
 
 describe("data/dynamoDbReceiptRepository", () => {
@@ -332,6 +339,48 @@ describe("data/dynamoDbReceiptRepository", () => {
       const receipts = await listUserReceipts("practice-sub", "client-unknown");
 
       expect(receipts).toEqual([]);
+    });
+  });
+
+  describe("acknowledgeStoredReceipt", () => {
+    function conditionalCheckFailed() {
+      const error = new Error("The conditional request failed");
+      error.name = "ConditionalCheckFailedException";
+      return error;
+    }
+
+    test("stamps the receipt's acknowledgement and leaves its actor, client and ttl as filed", async () => {
+      const acknowledged = await acknowledgeStoredReceipt("user-1", "2026-11-19T13:17:00.000Z-AR1", {
+        acknowledgedAt: "2026-11-19T13:18:00.000Z",
+        presentedLanguage: "cy",
+      });
+
+      expect(acknowledged).toBe(true);
+      expect(mockPutCommand).not.toHaveBeenCalled();
+      const params = mockUpdateCommand.mock.calls[0][0];
+      expect(params.Key).toEqual({ hashedSub: "hashed-user-1", receiptId: "2026-11-19T13:17:00.000Z-AR1" });
+      expect(params.UpdateExpression).toBe("SET #receipt.acknowledgedAt = :at, #receipt.presentedLanguage = :language");
+      expect(params.ExpressionAttributeValues).toEqual({ ":at": "2026-11-19T13:18:00.000Z", ":language": "cy" });
+      expect(params.UpdateExpression).not.toMatch(/actor|clientId|ttl/);
+      expect(params.ConditionExpression).toBe("attribute_exists(receiptId)");
+    });
+
+    test("tries the hash of an earlier salt version when the current one holds no such receipt", async () => {
+      subHashCandidates.mockReturnValueOnce([
+        { version: "v2", hashedSub: "hashed-v2-user-1" },
+        { version: "v1", hashedSub: "hashed-v1-user-1" },
+      ]);
+      mockSend.mockRejectedValueOnce(conditionalCheckFailed()).mockResolvedValueOnce({});
+
+      expect(await acknowledgeStoredReceipt("user-1", "r-1", { acknowledgedAt: "2026-11-19T13:18:00.000Z" })).toBe(true);
+      expect(mockUpdateCommand.mock.calls.map(([params]) => params.Key.hashedSub)).toEqual(["hashed-v2-user-1", "hashed-v1-user-1"]);
+      expect(mockUpdateCommand.mock.calls[1][0].UpdateExpression).toBe("SET #receipt.acknowledgedAt = :at");
+    });
+
+    test("answers false when no receipt is stored under the id", async () => {
+      mockSend.mockRejectedValue(conditionalCheckFailed());
+
+      expect(await acknowledgeStoredReceipt("user-1", "missing", { acknowledgedAt: "2026-11-19T13:18:00.000Z" })).toBe(false);
     });
   });
 });

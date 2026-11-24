@@ -5,12 +5,18 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -392,5 +398,36 @@ class SecurityDetectionStackTest {
         assertTrue(
                 consoleSigninFilterScoped,
                 "expected ConsoleSigninWithoutMfa filter pattern to include IAMUser type guard");
+    }
+
+    // Every test sign-in enable purges the durable test user, and the purge hashes its sub with
+    // the salt. The salt-read filter leaves out that one read by the app id the purge sets in its
+    // user agent, and keeps every other clause, so any other read by a person still counts.
+    @Test
+    void saltReadFilterLeavesOutOnlyTheTestUserPurgeRead() throws IOException {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+
+        List<String> saltPatterns = template.findResources("AWS::Logs::MetricFilter").values().stream()
+                .map(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return (String) properties.get("FilterPattern");
+                })
+                .filter(pattern -> pattern.contains("user-sub-hash-salt"))
+                .toList();
+
+        assertEquals(
+                List.of("{ ($.eventSource = \"secretsmanager.amazonaws.com\") && ($.eventName = \"GetSecretValue\")"
+                        + " && ($.requestParameters.secretId = \"*user-sub-hash-salt*\")"
+                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"docs-*\")"
+                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"submit-docs-deployment-role\")"
+                        + " && ($.userAgent != \"*app/submit-test-user-purge*\") }"),
+                saltPatterns);
+
+        String purgeScript = Files.readString(Path.of("scripts/delete-user-data.js"));
+        Matcher appId = Pattern.compile("export const TEST_USER_PURGE_APP_ID = \"([^\"]+)\";")
+                .matcher(purgeScript);
+        assertTrue(appId.find(), "scripts/delete-user-data.js declares TEST_USER_PURGE_APP_ID");
+        assertEquals(SecurityDetectionStack.TEST_USER_PURGE_APP_ID, appId.group(1));
     }
 }

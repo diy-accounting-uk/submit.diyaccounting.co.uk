@@ -97,8 +97,11 @@ const carries = (input, keys) => inputValues(input, keys).some((value) => value 
 // Example facts that depend on a part of the company's own data. When the case input holds no value
 // for the part, the fact is the example company's own and not a miss; when it does, a fact we fail
 // to tag stays a miss. Each entry is [concept, the input keys that feed it, the reason when none do].
+// No input key feeds TaxationSocialSecurityPayable: it is the total of the tax creditors, which our
+// documents state as its parts, CorporationTaxPayable and OtherTaxationSocialSecurityPayable.
 const FACTS_THE_INPUT_FEEDS = [
-  ["TaxationSocialSecurityPayable", ["taxationSocialSecurity"], "a balance sheet line the filer has no figure for"],
+  ["TaxationSocialSecurityPayable", [], "a total of the tax creditors, which our document states as its parts"],
+  ["OtherTaxationSocialSecurityPayable", ["taxationSocialSecurity"], "a balance sheet line the filer has no figure for"],
   ["BankBorrowingsOverdrafts", ["bankLoansOverdrafts", "bankLoansAfterOneYear"], "a balance sheet line the filer has no figure for"],
   ["AccruedLiabilities", ["accruals"], "a balance sheet line the filer has no figure for"],
   ["AddressLine2", ["addressLine2"], "an address part the registered office does not have"],
