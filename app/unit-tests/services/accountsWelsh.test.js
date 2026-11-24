@@ -360,6 +360,7 @@ describe("Welsh small company accounts", () => {
     ["the full set", SMALL_COMPANY_CASE_INPUT],
     ["Format 2", SMALL_COMPANY_FORMAT_2_CASE_INPUT],
     ["the filleted copy", { ...SMALL_COMPANY_CASE_INPUT, filleted: true }],
+    ["the bank and tax lines", SMALL_COMPANY_BANK_LINES_CASE_INPUT],
   ])("%s read back through the diya-gl reader gives the same figures as the English", (label, input) => {
     const expect_ = { regime: "small", companyNumber: input.companyNumber };
     const english = mapIxbrlAccounts(buildSmallCompanyAccounts(input), expect_);

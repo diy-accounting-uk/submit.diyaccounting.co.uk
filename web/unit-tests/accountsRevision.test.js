@@ -31,6 +31,7 @@ import {
   SMALL_COMPANY_NOTES_CASE_INPUT,
   SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
   SMALL_COMPANY_FORMAT_2_CASE_INPUT,
+  SMALL_COMPANY_BANK_LINES_CASE_INPUT,
 } from "../../app/test-helpers/accountsDocumentCases.js";
 import {
   buildSmallCompanyAccounts,
@@ -394,6 +395,39 @@ describe("the balance sheet of a filed document comes back whole in its revision
       expect(capitalAndReservesMismatch(back[year])).toBeNull();
     }
     expect(() => buildMicroEntityAccounts({ ...input, balanceSheet: back })).not.toThrow();
+  });
+
+  test("the taxation and social security line is read from the concept beside corporation tax, in both years", () => {
+    const filed = buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT);
+    expect(filed).toContain("core:OtherTaxationSocialSecurityPayable");
+    const lines = balanceSheetLinesOf(filed);
+    expect(lines.current.taxationSocialSecurity).toBe(SMALL_COMPANY_BANK_LINES_CASE_INPUT.balanceSheet.current.taxationSocialSecurity);
+    expect(lines.prior.taxationSocialSecurity).toBe(SMALL_COMPANY_BANK_LINES_CASE_INPUT.balanceSheet.prior.taxationSocialSecurity);
+    expect(lines.unreadable).toBe(false);
+  });
+
+  test("a document filed with the line on the concept of the tax creditors' total gives the same figures", () => {
+    const filed = buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT).replaceAll(
+      "core:OtherTaxationSocialSecurityPayable",
+      "core:TaxationSocialSecurityPayable",
+    );
+    expect(filed).toContain("core:TaxationSocialSecurityPayable");
+    const lines = balanceSheetLinesOf(filed);
+    expect(lines.current.taxationSocialSecurity).toBe(SMALL_COMPANY_BANK_LINES_CASE_INPUT.balanceSheet.current.taxationSocialSecurity);
+    expect(lines.prior.taxationSocialSecurity).toBe(SMALL_COMPANY_BANK_LINES_CASE_INPUT.balanceSheet.prior.taxationSocialSecurity);
+  });
+
+  test("a document that states both concepts gives the figure beside corporation tax", () => {
+    const built = buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT);
+    const fact =
+      /<ix:nonFraction name="core:OtherTaxationSocialSecurityPayable" contextRef="e2026-within-one-year"[^>]*>[^<]*<\/ix:nonFraction>/.exec(
+        built,
+      )[0];
+    const total = fact
+      .replace("core:OtherTaxationSocialSecurityPayable", "core:TaxationSocialSecurityPayable")
+      .replace(/>[^<]*</, ">9,999<");
+    const lines = balanceSheetLinesOf(built.replace(fact, `${fact}${total}`));
+    expect(lines.current.taxationSocialSecurity).toBe(SMALL_COMPANY_BANK_LINES_CASE_INPUT.balanceSheet.current.taxationSocialSecurity);
   });
 
   test("the micro-entity headings outside the totals are read from the document, in both years", () => {

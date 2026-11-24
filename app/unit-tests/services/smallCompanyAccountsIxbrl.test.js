@@ -818,7 +818,8 @@ describe("the creditor lines, policies, accountants' report and controlling part
   test("tags the bank and taxation lines on the within-one-year context and the bank loans on the after-one-year context", () => {
     const xhtml = buildSmallCompanyAccounts(withBank);
     expect(nonFractionValue(xhtml, "core:BankBorrowingsOverdrafts", "e2026-within-one-year")).toBe(300);
-    expect(nonFractionValue(xhtml, "core:TaxationSocialSecurityPayable", "e2026-within-one-year")).toBe(200);
+    expect(nonFractionValue(xhtml, "core:OtherTaxationSocialSecurityPayable", "e2026-within-one-year")).toBe(200);
+    expect(xhtml).not.toContain("core:TaxationSocialSecurityPayable");
     expect(nonFractionValue(xhtml, "core:BankBorrowingsOverdrafts", "e2026-after-one-year")).toBe(1200);
     expect(nonFractionValue(xhtml, "core:OtherCreditors", "e2026-after-one-year")).toBe(800);
     expect(nonFractionValue(xhtml, "core:Creditors", "e2026-after-one-year")).toBe(2000);

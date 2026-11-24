@@ -564,18 +564,24 @@ describe("facts the case input decides", () => {
     },
   });
 
-  it.each(["TaxationSocialSecurityPayable", "BankBorrowingsOverdrafts", "AccruedLiabilities"])(
+  it.each(["OtherTaxationSocialSecurityPayable", "BankBorrowingsOverdrafts", "AccruedLiabilities"])(
     "judges %s a line the filer has no figure for, and keeps it missing when the input carries one",
     (concept) => {
       expect(notCarriedFromInput(concept, small)).toBe("a balance sheet line the filer has no figure for");
       const field = {
-        TaxationSocialSecurityPayable: "taxationSocialSecurity",
+        OtherTaxationSocialSecurityPayable: "taxationSocialSecurity",
         BankBorrowingsOverdrafts: "bankLoansOverdrafts",
         AccruedLiabilities: "accruals",
       }[concept];
       expect(notCarriedFromInput(concept, withBalanceSheetLine({ [field]: 250 }))).toBeNull();
     },
   );
+
+  it("judges the total of the tax creditors as stated by its parts, whatever the input carries", () => {
+    const reason = "a total of the tax creditors, which our document states as its parts";
+    expect(notCarriedFromInput("TaxationSocialSecurityPayable", small)).toBe(reason);
+    expect(notCarriedFromInput("TaxationSocialSecurityPayable", withBalanceSheetLine({ taxationSocialSecurity: 250 }))).toBe(reason);
+  });
 
   it("judges AddressLine2 and CountyRegion by the registered office parts", () => {
     expect(notCarriedFromInput("AddressLine2", small)).toContain("address part");

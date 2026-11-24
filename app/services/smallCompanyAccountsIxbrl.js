@@ -480,7 +480,7 @@ const CREDITOR_SUB_LINES = [
   ["Bank loans and overdrafts", "bankBorrowingsOverdrafts", "bankLoansOverdrafts", true],
   ["Trade creditors", "tradeCreditors", "tradeCreditors"],
   ["Corporation tax", "corporationTaxPayable", "corporationTax"],
-  ["Taxation and social security", "taxationSocialSecurityPayable", "taxationSocialSecurity", true],
+  ["Taxation and social security", "otherTaxationSocialSecurityPayable", "taxationSocialSecurity", true],
   ["Other creditors", "otherCreditors", "otherCreditors"],
   ["Accruals", "accruedLiabilities", "accruals", true, "-accruals"],
 ];

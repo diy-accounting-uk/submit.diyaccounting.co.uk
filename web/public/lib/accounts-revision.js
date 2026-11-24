@@ -375,11 +375,17 @@ function intangibleAssetNoteOf(document, periodEnd) {
 // The balance sheet lines the books mapping does not give as the forms file them, by the concept and
 // the dimension members of the context each is tagged on: the creditor splits, the provisions, the
 // creditors after one year without the provisions, and the micro-entity headings outside the totals.
+// A line with earlierName is read from that concept when the document does not state name: documents
+// filed with the taxation line on the total's concept keep it.
 const WITHIN_ONE_YEAR = ["core:MaturitiesOrExpirationPeriodsDimension=core:WithinOneYear"];
 const AFTER_ONE_YEAR = ["core:MaturitiesOrExpirationPeriodsDimension=core:AfterOneYear"];
 export const BALANCE_SHEET_LINE_FACTS = {
   bankLoansOverdrafts: { name: "core:BankBorrowingsOverdrafts", members: WITHIN_ONE_YEAR },
-  taxationSocialSecurity: { name: "core:TaxationSocialSecurityPayable", members: WITHIN_ONE_YEAR },
+  taxationSocialSecurity: {
+    name: "core:OtherTaxationSocialSecurityPayable",
+    earlierName: "core:TaxationSocialSecurityPayable",
+    members: WITHIN_ONE_YEAR,
+  },
   accruals: {
     name: "core:AccruedLiabilities",
     members: ["core:FinancialInstrumentCurrentNon-currentDimension=core:CurrentFinancialInstruments", ...WITHIN_ONE_YEAR],
@@ -412,13 +418,16 @@ function membersOf(document, contextRef) {
 export function balanceSheetLinesOf(document) {
   const periodEnd = filedPeriodOf(document)?.periodEnd;
   const lines = { current: {}, prior: {}, unreadable: false };
-  for (const [line, { name, members }] of Object.entries(BALANCE_SHEET_LINE_FACTS)) {
+  for (const [line, { name, earlierName, members }] of Object.entries(BALANCE_SHEET_LINE_FACTS)) {
     const wanted = [...members].sort().join("|");
-    for (const { contextRef, value } of figuresOf(document, name)) {
-      const instant = instantOf(document, contextRef);
-      if (instant === null || membersOf(document, contextRef).join("|") !== wanted) continue;
+    const onTheLine = (concept) =>
+      figuresOf(document, concept).filter(
+        ({ contextRef }) => instantOf(document, contextRef) !== null && membersOf(document, contextRef).join("|") === wanted,
+      );
+    const stated = onTheLine(name);
+    for (const { contextRef, value } of stated.length > 0 || !earlierName ? stated : onTheLine(earlierName)) {
       if (Number.isNaN(value)) lines.unreadable = true;
-      else lines[instant === periodEnd ? "current" : "prior"][line] = value;
+      else lines[instantOf(document, contextRef) === periodEnd ? "current" : "prior"][line] = value;
     }
   }
   return lines;

@@ -196,7 +196,7 @@ export const CONCEPTS = {
   companyHasActedAsAnAgent: { prefix: "direp", name: "CompanyHasActedAsAnAgentDuringPeriodTruefalse" },
   currentTaxForPeriod: { prefix: "core", name: "CurrentTaxForPeriod" },
   bankBorrowingsOverdrafts: { prefix: "core", name: "BankBorrowingsOverdrafts" },
-  taxationSocialSecurityPayable: { prefix: "core", name: "TaxationSocialSecurityPayable" },
+  otherTaxationSocialSecurityPayable: { prefix: "core", name: "OtherTaxationSocialSecurityPayable" },
   descriptionGoingConcernStatus: { prefix: "core", name: "DescriptionGoing-concernStatus" },
   preparedOnGoingConcernBasis: { prefix: "core", name: "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse" },
   revenueRecognitionPolicy: { prefix: "core", name: "RevenueRecognitionPolicy" },

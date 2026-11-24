@@ -24,6 +24,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { buildMicroEntityAccounts } from "../app/services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../app/services/smallCompanyAccountsIxbrl.js";
+import { inAccountsLanguage } from "../app/services/accountsLanguage.js";
+import { SMALL_COMPANY_BANK_LINES_CASE_INPUT } from "../app/test-helpers/accountsDocumentCases.js";
 
 const VALIDATOR_BASE_URI = "https://test-validator.companieshouse.gov.uk";
 
@@ -298,6 +300,8 @@ export function validationSamples() {
     ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
     ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
     ["small-first-accounts", buildSmallCompanyAccounts(firstAccountsOf(SMALL_COMPANY_SAMPLE_INPUT))],
+    ["small-bank-and-tax-lines", buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT)],
+    ["small-bank-and-tax-lines-welsh", inAccountsLanguage("cy", () => buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT))],
     ["revised-micro", buildMicroEntityAccounts({ ...SAMPLE_INPUT, ...REVISED_APPROVAL })],
     ["revised-dormant", buildMicroEntityAccounts({ ...DORMANT_SAMPLE_INPUT, ...REVISED_APPROVAL })],
     ["revised-small-full", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, ...REVISED_APPROVAL })],
