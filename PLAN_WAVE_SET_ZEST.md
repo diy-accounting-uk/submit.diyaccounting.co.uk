@@ -20,7 +20,7 @@ lands, signs and proves.
 
 ## Status
 
-defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); set branch gated at 277483aef; pushed.
+defined 2026-11-24; approved 2026-11-24 (the operator's `/collab-loop` for zest); set branch gated at 277483aef; pushed; on main (PR #865, 46c9ae964); prod proofs run after `main`'s deploy.
 
 ## The goal
 
@@ -127,8 +127,8 @@ Gated at 277483aef (`claude/zest-set`, 2026-11-24): unit 15740 and mcp 474 (dusk
 2. Read the ci slots, push `claude/zest-set` once, and open one pull request that lists the rows
    by wave. Hand it to `/watch`.
 3. Run the ci proofs inside the ci set's self-destruct delay:
-   - **CT38:** the CT600 page on ci still files to the test services; `companyTaxReturnBehaviour-ci`
-     passes.
+   - **CT38:** the CT600 page on ci still files to the test services: `hmrc-ets-ct600-page.yml` on
+     the set (the `-ci` suite's other journeys use dummy Gateway credentials, CT43).
    - **TS1:** the calendar and rates pages on ci show the new words and dates.
    - **AL33:** the log metric filter of the ci set has the new pattern (read with
      `aws logs describe-metric-filters`).
@@ -137,6 +137,11 @@ Gated at 277483aef (`claude/zest-set`, 2026-11-24): unit 15740 and mcp 474 (dusk
    - **AA37:** the micro-entity and small company accounts suites pass on ci.
    - **SEED1:** a dispatch of `mcp-reviewer-seed.yml` with `environment=ci` from the set branch
      passes.
+   Run on `ci-set1` (deploy 45409706302, 2026-11-24): every proof passed. CT38: `hmrc-ets-ct600-page.yml`
+   run 45427135903, attempt 2 (attempt 1 stopped at the company lookup). TS1: the calendar, rates and
+   Welsh pages show "checked 24 November 2026". AL33: `{ $.level >= 50 }` on the nine ci-env functions;
+   AL35's purge agent in the salt filter. VAT51: `submitVatBehaviour-ci` in the deploy's probes. AA37:
+   the micro-entity suite on ci, 8 passed (the end-to-end journey on its rerun). SEED1: run 45416468563.
 4. `/auto-merge` with `--merge`. `main`'s deploy is the one prod deploy.
 5. Run the prod proofs:
    - **CT38:** the test user, who is not an operator, sees the unavailable panel on the CT600 page,
