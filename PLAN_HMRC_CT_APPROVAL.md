@@ -1391,6 +1391,411 @@ panel, the ledger and the two reviews at 1280 px and 390 px.
 | C60, C69 | The short-period and the two long-period scenario files accepted by TPVS |
 | C87 | The new panel, ledger and reviews pass WCAG AA |
 
+### Design: the CT600 and the joint filing on prod, for an operator with preview features on (CT38)
+
+CT38's build follows this design (cyclone, 2026-11-24, read on `main` at 11f4564a).
+
+Read on `main` at 11f4564a. Every `file:line` below is at that commit.
+
+On prod, `file-company-tax-return` and `file-company-tax-return-with-accounts` open, and file
+live, only for a user who meets all three conditions:
+
+- (a) holds `resident-ltd`, or an aggregate that includes it;
+- (b) has the stored account setting `previewFeatures` set to true;
+- (c) is on the operator list.
+
+Nothing else changes on ci. The Lambda environment does not change either, because prod already
+posts to the live Transaction Engine: `HMRC_CT_GATEWAY_TEST` comes from `gatewayTestFlag`
+(`infra/.../CompaniesHouseStack.java:1315`, `:3654`), and `hmrcCtReturnPost.js:193` reads it.
+
+#### 1. The stored setting `previewFeatures`
+
+##### Server
+
+`app/lib/accountSettings.js`:
+
+- `:8` becomes `ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [], previewFeatures: false }`.
+- `SETTING_CHECKS` (`:17`) gains `previewFeatures: (value) => (typeof value === "boolean" ? null : "Setting previewFeatures must be true or false")`.
+- `WRITTEN_WHOLE` (`:45`) becomes `["passGeneration", "previewFeatures"]`.
+- The JSDoc return type of `resolveAccountSettings` (`:33`) and the header comment (`:5-6`) add the setting.
+- `resolveAccountSettings` (`:35-41`) needs no other change: it loops over the defaults' keys.
+
+`PUT /api/v1/account/settings` (`app/functions/account/accountSettingsPut.js:75`) needs no code
+change:
+
+- `validateAccountSettingsUpdate` (`:91`) accepts the new key through `WRITTEN_WHOLE`.
+- `updateAccountSettings` (`app/data/dynamoDbBundleRepository.js:637`) writes any named setting
+  on its own path.
+- `:124` answers `resolveAccountSettings(stored)`, which now includes `previewFeatures`.
+- No activity gates the write (`:96-103` gate only the watch list). Any user may store the
+  setting, and condition (c) still applies.
+
+`GET /api/v1/bundle` already returns `settings` from `resolveAccountSettings(await
+getAccountSettings(userId))` (`app/functions/account/bundleGet.js:175`), so the page reads the new
+setting with no change there.
+
+##### Browser
+
+`web/public/lib/services/viewer-settings.js`:
+
+- `:14` mirrors the server defaults: `{ passGeneration: true, watchedCompanies: [], previewFeatures: false }`.
+- The return types of `fetchAccountSettings` (`:115-117`) and `updateAccountSetting` (`:148-151`)
+  add the setting.
+- `fetchViewer` (`:166`) reads the bundle answer once and returns `{ preview, operatorFeatures,
+  operator, account }`. `operator` is true when `bundles` holds `{ bundleId: "operator",
+  allocated: true }`, which is what `bundleGet.js:248` grants an operator. On a failed read it
+  returns the defaults and `operator: false`.
+
+##### The settings page switch (`web/public/settings.page.js:28-33`, `web/public/settings.html:44-53`)
+
+- **Before the bundle read answers:** the switch shows `isPreviewOn()` (`viewer-settings.js:34`),
+  as today.
+- **Signed in, read answered:** the switch shows `response.settings.previewFeatures`, and
+  `setPreviewOn(stored)` (`viewer-settings.js:39`) makes the session choice equal to it. The
+  `x-preview-features` header, which `correlation-utils.js:212-213` sends from `isPreviewOn()`,
+  then follows the stored choice in every new browser.
+- **Change, signed in:**
+  1. `setPreviewOn(checked)` keeps the session choice.
+  2. `updateAccountSetting("previewFeatures", checked)` (`viewer-settings.js:151`) stores it, and
+     the switch takes the stored answer.
+  3. On failure both are set back to the earlier value and `showSaveFailure` runs, as the pass
+     switch does at `:62-73`.
+  4. The switch is disabled while the write is in flight.
+- **Change, signed out (no `cognitoIdToken`):** `setPreviewOn(checked)` only, as today.
+- **Hint** (`settings.html:50-53`): it gains one sentence, because it now says a preview feature
+  "files nothing real": "For an operator, a filing that a preview opens on the live site files
+  for real; its page says so." See section 5 for the Welsh.
+
+#### 2. The catalogue field and the one server check
+
+##### Catalogue field
+
+`operatorPreviewEnvironments`, an array of environment names. It goes on:
+
+- `file-company-tax-return` (`web/public/submit.catalogue.toml:665-674`);
+- `file-company-tax-return-with-accounts` (`:681-688`).
+
+The value is `operatorPreviewEnvironments = ["prod"]`. Both keep `environments` without `prod`, so
+`app/unit-tests/services/prodSurface.test.js:12-26` still holds. A comment above each entry says
+that the field names where an operator who stored preview features on reaches the activity.
+
+##### The check, in `app/lib/previewFeatures.js`
+
+```js
+/**
+ * Whether an operator's own preview opens an activity that this environment does not list.
+ * @param {object} activity - the catalogue activity
+ * @param {string|undefined} environmentName - ENVIRONMENT_NAME
+ * @param {{sub: string, email?: string}} user - the token's claims, from the authorizer context
+ * @returns {Promise<boolean>}
+ */
+export async function operatorPreviewPasses(activity, environmentName, user)
+```
+
+It returns true only when all three conditions hold, checked cheapest first:
+
+1. `Array.isArray(activity?.operatorPreviewEnvironments) && activity.operatorPreviewEnvironments.includes(environmentName)`;
+2. `await isOperatorEmail(user?.email)` (`app/lib/operators.js:26`);
+3. `resolveAccountSettings(await getAccountSettings(user.sub)).previewFeatures === true`
+   (`accountSettings.js:35`, `dynamoDbBundleRepository.js:576`).
+
+Notes:
+
+- With no `user.sub`, it returns false.
+- A failed read of the settings or of the operator list rejects. `enforceBundles`' callers already
+  answer an error that is not a `BundleEntitlementError` with a 500
+  (`accountSettingsPut.js:55-63` shows the pattern). It never answers a pass.
+- The bundle check is not in this function: it stays in `enforceBundles`.
+
+##### Call site 1: `enforceBundles` (`app/services/bundleManagement.js:137`)
+
+`:160-162` become:
+
+```js
+const listedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
+const operatorPreviewActivities =
+  listedActivities.length === 0 ? await activitiesOpenedByOperatorPreview(pathActivities, environmentName, { sub: userSub, email: userEmail }) : [];
+const matchedActivities =
+  listedActivities.length > 0 ? listedActivities
+  : operatorPreviewActivities.length > 0 ? operatorPreviewActivities
+  : previewRunsAgainstSandbox(event, requestPath) ? pathActivities : [];
+```
+
+- `activitiesOpenedByOperatorPreview` is a local helper: a sequential `filter` over
+  `operatorPreviewPasses`.
+- The environment refusal (`:163-175`), the required bundles (`:177`), the operator bundle (`:187`)
+  and the bundle check (`:199-212`) are unchanged.
+- The CT routes `^/api/v1/hmrc/ct/return.*` match only `file-company-tax-return`, so they require
+  its `bundles`. `resolveAggregateBundles` (`web/public/lib/services/catalogue-aggregates.js:59`)
+  makes those `resident-ltd` and every aggregate that includes it, when `productCatalog.js:22`
+  loads the catalogue. That is condition (a).
+- The three CT routes reach this through `enforceCtBundles` (`app/services/ctClientScope.js:38`,
+  `:49`), called at:
+  - `hmrcCtReturnPost.js:110`;
+  - `hmrcCtReturnPreviewPost.js:51`;
+  - `hmrcCtReturnGet.js:51`.
+- The company profile route `^/api/v1/companies-house/company/[^/]+$` is also matched by
+  activities that prod lists, so `listedActivities` is not empty there and it is unchanged.
+
+##### Call site 2: `refuseJointFilingWhenNotEnabled` (`app/services/ctClientScope.js:67`)
+
+- It becomes `async`.
+- `:71` becomes `isActivityListedInEnvironment(activity, environmentName) || (await
+  operatorPreviewPasses(activity, environmentName, extractUserFromAuthorizerContext(event))) ||
+  previewRunsAgainstSandbox(event, request?.pathname)`.
+- The bundle check at `:79-86` is unchanged.
+- The one call site, `hmrcCtReturnPost.js:122`, adds `await`.
+- `extractUserFromAuthorizerContext` comes from `app/lib/httpResponseHelper.js`, as
+  `accountSettingsPut.js:23` imports it.
+
+##### Why a header alone never passes
+
+- `operatorPreviewPasses` takes no event, so it cannot read a header. Its inputs are the catalogue
+  entry, `ENVIRONMENT_NAME`, the authorizer's claims and the stored setting.
+- `previewRunsAgainstSandbox` answers false for every Corporation Tax path (`previewFeatures.js:51`).
+  `enforceBundles` passes `requestPath` (`bundleManagement.js:162`) and
+  `refuseJointFilingWhenNotEnabled` passes `request?.pathname` (`ctClientScope.js:71`). Both are
+  `/api/v1/hmrc/ct/return…`.
+- So on prod a request that carries `x-preview-features: on`, from a user whose stored setting is
+  false, or who is not an operator, is refused with `ACTIVITY_ENVIRONMENT_RESTRICTED`.
+
+#### 3. The page states
+
+##### `isActivityShown` (`web/public/lib/services/catalog-service.js:149`)
+
+It gains one branch after the `accountSetting` and `operatorFeatures` checks (`:150-151`), before
+the `previewEnvironments` branch (`:152`):
+
+```js
+if (Array.isArray(activity?.operatorPreviewEnvironments) && activity.operatorPreviewEnvironments.includes(environmentName)) {
+  return viewer?.operator === true && viewer?.operatorFeatures !== false && viewer?.account?.previewFeatures === true;
+}
+```
+
+- In such an environment the session choice `viewer.preview` no longer shows the activity.
+- A new export, `opensByOperatorPreview(activity, environmentName)`, holds the first line's
+  condition. `isActivityShown` and the guard both use it.
+- The server keeps its own copy in `previewFeatures.js`, because `catalog-service.js` touches
+  `window` (`:17`, `:302-305`). The unit tests run both against the same catalogue entries.
+- `isJointFilingOffered` (`:108`) goes through `isActivityShown`, so the joint choice follows.
+
+##### `guardUnlistedActivity` (`web/public/widgets/entitlement-status.js:322`)
+
+When the activity is shown and not listed (`:332-337`):
+
+- If `opensByOperatorPreview(activity, environmentName)` is true, it prepends `operatorLiveBanner()`
+  in place of `previewSandboxBanner()` (`:294`), and sets `document.body.dataset.operatorPreviewActivity
+  = activity.id`.
+- It also hides every `main [data-feature-status="preview"]`. That is the CT page's hint
+  (`web/public/companies-house/fileCompanyTaxReturn.html:35-38`), which says nothing reaches HMRC.
+- Otherwise it prepends the sandbox banner, as today.
+
+`operatorLiveBanner()` builds a `div.feature-status-summary[data-operator-live]` with a
+`span.status-tag[data-status="production"]`, whose colour exists (`web/public/css/layout.css:42`):
+
+| Key | English | Welsh |
+|---|---|---|
+| `chrome.operator-live-tag` | Live | Byw |
+| `chrome.operator-live-text` | This filing is open because you are an operator with preview features on. It files for real: the return goes to HMRC and, when you file them together, the accounts go to Companies House. | Mae’r ffeilio hwn ar agor oherwydd eich bod yn weithredwr gyda nodweddion rhagolwg (preview) ymlaen. Mae’n ffeilio go iawn: mae’r Ffurflen yn mynd i CThEF ac, pan fyddwch yn eu ffeilio gyda’i gilydd, mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau. |
+
+##### The states
+
+`listed` is `isActivityListedInEnvironment` (`:331`). "Panel" is the "Not available here yet"
+panel (`:349-357`, `chrome.unavailable-*`), which links to the availability table.
+
+| Environment | Viewer | `isActivityShown` | Guard returns | What shows |
+|---|---|---|---|---|
+| prod | operator; stored preview on; operator features on | true | false | live banner, hint hidden, page open, joint choice offered |
+| prod | operator; stored preview off (whatever the session says) | false | true | panel |
+| prod | operator; preview on; operator features off | false | true | panel |
+| prod | customer, any preview choice | false | true | panel |
+| prod | signed out | false | true | panel |
+| ci | anyone signed in | true (listed) | false | no banner, hint shown (true on ci), page open |
+| ci | operator with preview on | true (listed) | false | as above: the field does not name ci |
+
+Notes:
+
+- On prod the CT tile on the home page follows `isActivityShown`, so only the first row sees it.
+- A customer on prod with the session preview on sees the panel, where today they see the page with
+  the sandbox banner. Today the CT routes refuse that customer anyway.
+
+#### 4. Agent filing stays off prod
+
+- `enforceCtBundles`' gate at `ctClientScope.js:39-47` reads only whether `practice` is listed
+  (`:23-26`). `practice` gets no `operatorPreviewEnvironments`, so a client-scoped CT request on
+  prod is still refused with `CLIENT_SCOPE_ENVIRONMENT_RESTRICTED`, operator or not.
+- The page's client choice reads `/api/v1/practice/clients`, which prod refuses, so it stays
+  hidden. `hiddenContent.browser.test.js:161-171` pins this. That test opens the page on prod as a
+  viewer with no operator bundle, so after this change the panel replaces `main`. The build points
+  the test at the operator state (bundle answer with `operator` and `previewFeatures: true`), so it
+  still proves the client choice is hidden on the open page.
+
+#### 5. "preview" labels
+
+The CT600 is not live for the public anywhere, so these labels carry "preview" in every
+environment.
+
+| File | Key or field | Today | After |
+|---|---|---|---|
+| `submit.catalogue.toml:667-668` | `name`, `nameCy` of `file-company-tax-return` | carry it | unchanged |
+| `submit.catalogue.toml:683` | `name` of the joint filing | "File Accounts and Company Tax Return Together (preview)" | unchanged |
+| `submit.catalogue.toml` (new, after `:683`) | `nameCy` of the joint filing | absent | "Ffeilio cyfrifon a Ffurflen Dreth Cwmni gyda’i gilydd (rhagolwg)" |
+| `companies-house/fileCompanyTaxReturn.html:7` | `<title>` | "File a Company Tax Return - …" | "File a Company Tax Return (preview) - DIY Accounting Submit" |
+| `companies-house/fileCompanyTaxReturn.html:30` | `<h1>` (cy key `ch-tax-return.file-a-company-tax-return-f72d4f`) | "File a Company Tax Return" | "File a Company Tax Return (preview)"; new cy key and entry "Ffeilio Ffurflen Dreth y Cwmni (rhagolwg)" |
+| `hmrc/receipt/receipts.page.js:209` | `receipts.kind-ct600` (cy `i18n/cy.toml:3793`) | "Company Tax Return" | "Company Tax Return (preview)" / "Ffurflen Dreth y Cwmni (rhagolwg)" |
+| `hmrc/receipt/receipts.page.js:213` | `receipts.kind-amended-ct600` (cy `:3801`) | "Amended Company Tax Return" | "Amended Company Tax Return (preview)" / "Ffurflen Dreth y Cwmni wedi’i diwygio (rhagolwg)" |
+| `lib/filing-result-record.js:186` | `ch.ct.record-title` (cy `:15372`) | "Company Tax Return (CT600){parts}" | "Company Tax Return (CT600, preview){parts}" / "Ffurflen Dreth y Cwmni (CT600, rhagolwg){parts}" |
+| `lib/filing-result-record.js:211` | `ch.ct.record-copy-title` (cy `:15444`) | "Your copy of the Company Tax Return{parts}" | "Your copy of the Company Tax Return (preview){parts}" / "Eich copi o Ffurflen Dreth y Cwmni (rhagolwg){parts}" |
+| `settings.html:50-53` | preview hint | (section 1) | one sentence added; the settings page has no Welsh twin (`entitlement-status.js:340`) |
+| `widgets/entitlement-status.js` (new) | `chrome.operator-live-tag`, `chrome.operator-live-text` | absent | section 3 |
+
+Other labels:
+
+- `receipts.kind-accounts` (`receipts.page.js:208`) keeps no "preview": the accounts are live at
+  Companies House.
+- CT600A has no label of its own in either file (searched for `CT600A` in both). It goes with the
+  CT600's labels.
+- The catalogue holds no other HMRC company filing.
+
+How the Welsh is written:
+
+- A changed English string changes its hash, so its existing `cy.toml` entry is rewritten in place.
+- A new key goes in a headed section at the end of `i18n/cy.toml`.
+- Then `npm run build:welsh` regenerates `web/public/lib/welsh-text.js` and
+  `web/public/cy/companies-house/fileCompanyTaxReturn.html`.
+
+#### 6. The availability rows (`scripts/build-mtd-calendar.mjs`)
+
+The status vocabulary stays `production | sandbox | preview | not offered` (`:130`), and the
+second element is the note (`cellHtml`, `:355`).
+
+- CT600 row (`:162-175`): web form cell `["preview", "operator only on the live site; period of
+  account up to 18 months"]`; book drop cell `["preview", "operator only on the live site; book
+  export file"]`.
+- Joint row (`:211-216`): `["preview", "operator only on the live site"]` and `["preview",
+  "operator only on the live site; book export file"]`.
+
+`availabilityStatus` (`:226-229`) still answers `preview`, so
+`app/unit-tests/video/publishStatusWords.test.js` is unaffected. Then run `npm run
+build:mtd-calendar` to write `web/public/mtd-calendar.html`, then `npm run build:welsh` to write
+`web/public/cy/mtd-calendar.html`. The cy note strings get `cy.toml` entries if the builder keys
+them; the build checks the generated page.
+
+#### 7. Files the build changes
+
+| # | File |
+|---|---|
+| 1 | `web/public/submit.catalogue.toml` |
+| 2 | `app/lib/previewFeatures.js` |
+| 3 | `app/services/bundleManagement.js` |
+| 4 | `app/services/ctClientScope.js` |
+| 5 | `app/functions/hmrc/hmrcCtReturnPost.js` (`await` at `:122`) |
+| 6 | `app/lib/accountSettings.js` |
+| 7 | `web/public/lib/services/viewer-settings.js` |
+| 8 | `web/public/settings.page.js` |
+| 9 | `web/public/settings.html` |
+| 10 | `web/public/lib/services/catalog-service.js` |
+| 11 | `web/public/widgets/entitlement-status.js` |
+| 12 | `web/public/companies-house/fileCompanyTaxReturn.html` |
+| 13 | `web/public/hmrc/receipt/receipts.page.js` |
+| 14 | `web/public/lib/filing-result-record.js` |
+| 15 | `i18n/cy.toml` |
+| 16 | `web/public/lib/welsh-text.js` (generated) |
+| 17 | `web/public/cy/companies-house/fileCompanyTaxReturn.html` (generated) |
+| 18 | `scripts/build-mtd-calendar.mjs` |
+| 19 | `web/public/mtd-calendar.html` (generated) |
+| 20 | `web/public/cy/mtd-calendar.html` (generated) |
+| 21-29 | the tests in section 8: 4 changed unit files, 1 new unit file, 1 changed web unit file, 1 new and 2 changed browser files |
+
+That is 29 files: 20 source or generated (4 of them generated) and 9 test files.
+
+It fits one Sonnet agent, for these reasons:
+
+- Each source edit is small: a branch, a field or a string.
+- The chain is serial: catalogue, then server gate, then page, then labels, then generators.
+- The only risk is the generated Welsh. `build:welsh` reports a missing or stale entry, and the
+  agent fixes it in the same pass.
+- No CDK file changes, so `./mvnw clean verify` is not a gate.
+
+#### 8. Tests
+
+Server, unit:
+
+- **`app/unit-tests/lib/operatorPreview.test.js` (new).** It mocks `getAccountSettings` and sets
+  `OPERATOR_EMAILS`. One test per case:
+  - passes on prod for an operator whose stored preview features are on;
+  - refuses when the catalogue does not name the environment (ci, or an activity with no field);
+  - refuses when the email is not on the operator list;
+  - refuses when the stored setting is false, or absent;
+  - refuses a token with no sub;
+  - a failed settings read rejects and does not pass.
+- **`app/unit-tests/functions/previewFeaturesGate.test.js` (extend).** Through `enforceBundles`,
+  with `ENVIRONMENT_NAME=prod`:
+  - a CT return request from an operator with the stored setting on and `resident-ltd` passes;
+  - the same request without `resident-ltd` is refused `BUNDLE_FORBIDDEN`;
+  - a holder of `resident-pro` passes (aggregate);
+  - a request with `x-preview-features: on` and no stored setting is refused
+    `ACTIVITY_ENVIRONMENT_RESTRICTED`;
+  - the same request from a customer with the stored setting on is refused;
+  - a ci request is unchanged by the operator rule.
+- **`app/unit-tests/functions/hmrcCtReturnPost.test.js` (extend).** A return carrying a joint
+  filing id, on prod:
+  - from an operator with the stored setting on, it goes on;
+  - from a customer, or with only the header, it is refused `ACTIVITY_ENVIRONMENT_RESTRICTED`;
+  - a client-scoped return from that operator is still refused
+    `CLIENT_SCOPE_ENVIRONMENT_RESTRICTED`.
+- **`app/unit-tests/lib/accountSettings.test.js` (extend):**
+  - `previewFeatures` defaults to false;
+  - a boolean is accepted and written whole;
+  - a non-boolean is refused with "Setting previewFeatures must be true or false";
+  - a stored non-boolean resolves to the default.
+- **`app/unit-tests/services/prodSurface.test.js` (extend).** Both activities still have no
+  `prod` in `environments`; both name `operatorPreviewEnvironments` `["prod"]`; `practice` names
+  none.
+
+Browser code, unit:
+
+- **`web/unit-tests/catalog-service.test.js` (extend).** On prod, `isActivityShown` for an
+  activity with `operatorPreviewEnvironments`:
+  - true for operator, stored preview on and operator features on;
+  - false with any one of the three missing;
+  - false for a session preview without the stored setting;
+  - unchanged on ci;
+  - `isJointFilingOffered` follows the same rule.
+
+Browser:
+
+- **`web/browser-tests/fileCompanyTaxReturn.operatorPreview.browser.test.js` (new).** It uses
+  `hiddenContent.browser.test.js:26`'s way of serving the site with `submit.environment-name.txt`
+  = `prod` and a stubbed `/api/v1/bundle`:
+  - an operator with preview features on sees the live banner, in English and in Welsh, and not
+    the preview hint;
+  - an operator with preview features off sees the unavailable panel;
+  - a customer sees the unavailable panel;
+  - on ci the page opens with its preview hint and no banner;
+  - screenshots at 1280 and 390 px for `visual-review`.
+- **`web/browser-tests/settings.browser.test.js` (extend):**
+  - the preview switch, signed in, saves `previewFeatures` to the account and keeps the session
+    choice;
+  - a failed save sets both back and says the setting was not saved;
+  - a new page reads the stored choice.
+- **`web/browser-tests/hiddenContent.browser.test.js:161-171` (change).** The test opens the page
+  as an operator with preview on, and still finds no client choice on prod.
+
+Unchanged and in the gates: `web/browser-tests/fileCompanyTaxReturn.browser.test.js`
+(environment-free); `npm run test:companyTaxReturnBehaviour-simulator` (simulator lists the
+activity, so the operator rule does not apply).
+
+#### Not decided here
+
+- PRV1 lives in the private repository. Its unit test is the build's, and its content is not in
+  this repository, so this design does not specify it.
+
+#### The joint filing id on the accounts route
+
+`app/services/companiesHouseAccountsPost.js` reads a joint filing id (line 616) and charges the CT600's tokens (line 649) with no check that the joint filing activity is enabled for the caller. On prod a customer's accounts request can carry a joint filing id: the accounts file live, and the return is then refused. The build applies the same operator-preview check there: the accounts route refuses a joint filing id, before it files or charges, unless the joint filing activity passes `enforceBundles` for the caller. A unit test covers a customer's request with a joint filing id on prod.
+
+
 ## Tasks
 
 The launch and approval steps are on the Board above.
