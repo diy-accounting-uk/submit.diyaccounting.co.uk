@@ -397,15 +397,15 @@ test.describe("An account the bundle read has not decided", () => {
   }
 
   // The refusal decides the account as not synthetic, and a separate bundle read sends the reader to
-  // sign in. The page may send its HMRC request before that redirect, which the server refuses for
-  // the same sign-in; it never carries the synthetic account. authorizedFetch marks its requests
-  // with x-initial-request, so the read that sends the reader to sign in can answer after the
-  // page's own request.
+  // sign in. A refused sign-in is refreshed before the page's HMRC request goes, and one that cannot
+  // be refreshed sends the reader to sign in with no HMRC request, whichever read answers first.
+  // authorizedFetch marks its requests with x-initial-request, so the read that sends the reader to
+  // sign in can answer after the page is ready to send.
   for (const [order, bundleAnswerMs] of [
     ["answering together", () => 300],
     ["with the read that sends to sign in answering last", (request) => (request.headers()["x-initial-request"] ? 3000 : 300)],
   ]) {
-    test(`a bundle read the server refuses sends the reader to sign in with no synthetic account, ${order}`, async ({ page }) => {
+    test(`a bundle read the server refuses sends the reader to sign in with no HMRC request, ${order}`, async ({ page }) => {
       const requests = [];
       await holdHmrcGrant(page);
       await openVatPage(page, "viewVatReturn.html", {
@@ -417,9 +417,7 @@ test.describe("An account the bundle read has not decided", () => {
         onApiRequest: (request) => requests.push(request),
       });
       await page.waitForURL("**/auth/login.html**", { timeout: 15_000 });
-      for (const request of hmrcRequestsOf(requests)) {
-        expect(request.headers()["hmrcaccount"]).toBeUndefined();
-      }
+      expect(hmrcRequestsOf(requests)).toHaveLength(0);
     });
   }
 

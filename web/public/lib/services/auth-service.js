@@ -56,6 +56,25 @@ export function clearSession() {
  * @param {string} [message] - Notice shown before the page changes
  * @returns {boolean} True when this call started the redirect
  */
+/** True once sendToSignIn has started this page's way to sign in. */
+export function isSignInRedirectStarted() {
+  return __signInRedirectStarted;
+}
+
+// window.signInRefused is set when a request on this page was answered 401, by developer-mode.js's
+// bundle read among others: the sign-in it carried was refused, so it is refreshed before the next
+// request uses it.
+
+/** True once a request on this page was answered 401 and no refresh has replaced the sign-in since. */
+export function isSignInRefused() {
+  return typeof window !== "undefined" && window.signInRefused === true;
+}
+
+/** The sign-in this page holds was refused, or was replaced by a refresh that worked. */
+export function setSignInRefused(refused) {
+  if (typeof window !== "undefined") window.signInRefused = refused;
+}
+
 export function sendToSignIn(message = "Your session has expired. Please sign in again.") {
   if (typeof window === "undefined") return false;
   if (__signInRedirectStarted) return false;

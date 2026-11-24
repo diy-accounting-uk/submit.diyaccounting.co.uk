@@ -4,7 +4,7 @@
 // API client for making authorized requests
 
 import { fetchWithId } from "../utils/correlation-utils.js";
-import { ensureSession, sendToSignIn } from "./auth-service.js";
+import { ensureSession, isSignInRedirectStarted, isSignInRefused, sendToSignIn, setSignInRefused } from "./auth-service.js";
 import { serviceOfUrl } from "../utils/dom-utils.js";
 
 // page-chrome.js gives the text in the chosen language; without it the English stands.
@@ -153,7 +153,14 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
  * @param {object} init - Fetch init options
  * @returns {Promise<Response>} Fetch response
  */
+// Once the page is on its way to sign in, it sends nothing more: a request made with the refused
+// sign-in would be refused too. The answer never comes, so nothing on the page reacts while it unloads.
+function leavingForSignIn() {
+  return new Promise(() => {});
+}
+
 export async function authorizedFetch(input, init = {}) {
+  if (isSignInRedirectStarted()) return leavingForSignIn();
   const response = await authorizedFetchOnce(input, init);
   if (response.status === 401 && isHmrcApiPath(input) && typeof window !== "undefined" && window.hmrcScopeCheck) {
     window.hmrcScopeCheck.clearHmrcToken();
@@ -171,6 +178,15 @@ function isHmrcApiPath(input) {
 }
 
 async function authorizedFetchOnce(input, init) {
+  // A sign-in this page already saw refused is refreshed before it is sent again. When it cannot be,
+  // the page goes to sign in and sends nothing.
+  if (isSignInRefused()) {
+    if (!(await ensureSession({ force: true }))) {
+      sendToSignIn();
+      return leavingForSignIn();
+    }
+    setSignInRefused(false);
+  }
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
   // Uses X-Authorization (not Authorization) to match API Gateway Lambda authorizer configuration
@@ -254,6 +270,7 @@ async function isUpstreamRejection(response) {
  * @returns {Promise<Response>} Fetch response
  */
 export async function fetchWithIdToken(input, init = {}) {
+  if (isSignInRedirectStarted()) return leavingForSignIn();
   // Helper to get the current idToken
   const getIdToken = () => {
     try {
