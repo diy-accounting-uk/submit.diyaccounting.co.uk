@@ -11,7 +11,7 @@
 
 ## Status
 
-defined 2026-11-24; decisions D1 to D4 open (section 4).
+defined 2026-11-24; D1 to D4 decided 2026-11-24 (section 4); AC1 ready.
 
 ## 1. The goal
 
@@ -39,9 +39,9 @@ Each AWS read that a session needs and that step 1 cannot answer becomes a board
 | # | Task | Follows | Needs | Model | Size |
 |---|---|---|---|---|---|
 | AC1 | Inventory: every AWS call the sessions make, classed by the step of section 1 that can answer it | nothing | machine-only | Sonnet | ~1 file |
-| AC2 | The permission set: the coordinator role(s), as a proposal the operator approves | AC1, D1, D2 | machine-ask | Opus | ~1 file |
+| AC2 | The permission set: the ci coordinator role and the prod-proof workflow role, as a proposal the operator approves | AC1 | machine-ask | Opus | ~1 file |
 | AC3 | `coordinator-credentials.yml` and the ci coordinator role in `IdentityStack.java` | AC2 approved | machine-only | Sonnet | ~6 files |
-| AC4 | The prod role and its path (by D2) | AC2 approved | machine-only | Sonnet | ~4 files |
+| AC4 | `prod-proof.yml`: the Cognito toggle, a named `-prod` suite and the toggle back, under its own OIDC role (D2) | AC2 approved | machine-only | Sonnet | ~5 files |
 | AC5 | `scripts/aws-session.sh`: dispatch, decrypt, write a named profile that expires with the session | AC3 | machine-only | Sonnet | ~3 files |
 | AC6 | Operator public keys: the directory, its deploy, and the token route | D3, D4 | machine-only | Opus then Sonnet | ~10 files |
 | AC7 | The operator routes accept the operator token for reads; `scripts/operator-api.mjs` signs and calls them | AC6 | machine-only | Sonnet | ~6 files |
@@ -58,7 +58,7 @@ Read the session transcripts under `~/.claude/projects/-Users-antony-projects-di
 From AC1, one role per account the decisions allow, each written as the CDK policy statements it will become:
 
 - **ci coordinator role** (the floor the operator set: the cloud worker role's two statements), plus the reads the board, `/refine` and the ci proofs take: `cloudformation:ListStacks`, `DescribeStacks` and `DescribeStackEvents` on `ci-*`; `ssm:GetParameter` on `/submit/ci/*`; `cloudwatch:DescribeAlarms`; `logs:FilterLogEvents` and `GetLogEvents` on `/aws/lambda/ci-*`; Athena on workgroup `ci-env-analytics` with its results bucket; the Cognito native toggle the proofs use (`cognito-idp:UpdateUserPoolClient` on the ci pool's client, `AdminSetUserPassword` and `AdminCreateUser` on the `synthetic-*` users only).
-- **prod**, by D2.
+- **prod-proof workflow role** (D2): the Cognito native toggle on the prod pool's client and the `synthetic-*` users only, assumed by `prod-proof.yml` on `main`; the session never holds it.
 - Every role: one hour, trust only `repo:diy-accounting-uk/submit.diyaccounting.co.uk:ref:refs/heads/main`, no `environment:` (as `cloud-credentials.yml`), an explicit deny on `dynamodb:Scan`, `Query` and `GetItem` of every customer table (the rule that no session scans a customer table becomes IAM), and no IAM, KMS key policy or CloudTrail writes.
 
 The proposal is a section of this plan; the operator approves it before AC3.
@@ -69,12 +69,12 @@ The proposal is a section of this plan; the operator approves it before AC3.
 
 ### AC5. The session's side
 
-`scripts/aws-session.sh ci|prod`: dispatches the workflow, waits, downloads, decrypts in memory, and writes `[diya-submit-ci-session]` to a credentials file under the scratchpad with `expiration`, never into `~/.aws/credentials`. The skills then use `--profile diya-submit-ci-session`. Run again when it expires; a run takes about a minute (the cloud worker runs take 40 to 70 s).
+`scripts/aws-session.sh`: dispatches the workflow, waits, downloads, decrypts in memory, and writes `[diya-submit-ci-session]` to a credentials file under the scratchpad with `expiration`, never into `~/.aws/credentials`. The skills then use `--profile diya-submit-ci-session`. Run again when it expires; a run takes about a minute (the cloud worker runs take 40 to 70 s).
 
 ### AC6. Operator public keys and the token
 
-- A directory of operator public keys (D4), one `<handle>.pub` per key holder, read by the deploy into the stack (an SSM parameter or the Lambda's bundle).
-- `POST /api/v1/operator/token`: the client sends its handle, a timestamp and an `ssh-keygen -Y sign -n submit-operator` signature of `token|<handle>|<ts>`; the Lambda checks the key is listed, the timestamp is within 5 minutes and the signature verifies (`verifySshSignature`); it answers a token signed by the API (D3) that expires in one hour and carries the scope `operator:read`.
+- `operator-keys/` (D4), one `<handle>.pub` per key holder, read by the deploy into the stack (an SSM parameter or the Lambda's bundle).
+- `POST /api/v1/operator/token`: the client sends its handle, a timestamp and an `ssh-keygen -Y sign -n submit-operator` signature of `token|<handle>|<ts>`; the Lambda checks the key is listed, the timestamp is within 5 minutes and the signature verifies (`verifySshSignature`); it answers a JWT signed by a key in Secrets Manager (D3) that expires in one hour and carries the scope `operator:read`.
 - A key holder can use the token only for reads of operator data that the dashboard shows. It never returns a customer identifier; the snapshot already holds none.
 
 ### AC7. The operator routes take the token
@@ -93,12 +93,12 @@ An `ask` rule in `.claude/settings.json` for commands that name the SSO profiles
 
 For each AC1 entry that no API or page answers: a board row that adds it to the snapshot (an objective, a panel) or an operator API route. First candidates: the live deployments and last-known-good per environment (the board's Part 4), the alarm states, the receipt TTL check, the donor-pass redemptions.
 
-## 4. Decisions
+## 4. Decisions (operator, 2026-11-24)
 
-- **D1. How a laptop session gets AWS access.** (a) Session credentials for ci only; prod through workflows and the operator API. (b) Session credentials for ci and a read-only prod role. (c) No session credentials at all: every AWS read is a workflow that writes its answer to a job summary or artifact.
-- **D2. The prod role, if D1 is (b).** (a) Read-only: CloudFormation, CloudWatch alarms and logs, SSM `/submit/prod/*`, Athena on the prod lake, with the customer-table deny. (b) As (a), plus the Cognito native toggle for the prod proofs. (c) No prod role; prod proofs move into workflows.
-- **D3. The operator token.** (a) A JWT signed by a key in Secrets Manager, checked by `customAuthorizer.js`. (b) An opaque token stored hashed in DynamoDB with a TTL. (c) A Cognito token for a machine user that the key signature unlocks.
-- **D4. Where the public keys live.** (a) `operator-keys/` in this repository (public keys are not secret; a change goes through a PR and the deploy). (b) The private repository, with a sync step that copies them into SSM. (c) Secrets Manager only, set by a workflow input.
+- **D1. Session access: ci credentials only.** The session makes one-hour ci credentials through `coordinator-credentials.yml`. Prod is read through the operator API, the dashboard and workflows; no prod key reaches the laptop. AC4 builds no prod role for the session.
+- **D2. Prod proofs move into workflows.** A prod-proof workflow turns on the Cognito native login, runs the named `-prod` suite and turns it off again, under its own OIDC role. The session dispatches it and reads the result. AC4 is that workflow and its role.
+- **D3. The operator token is a short JWT.** One hour, scope `operator:read`, signed by a key in Secrets Manager, checked by `customAuthorizer.js`. No table.
+- **D4. The public keys live in `operator-keys/` in this repository.** One `<handle>.pub` per key holder; a change goes through a PR and reaches the stack with the deploy.
 
 ## 5. Proof
 
