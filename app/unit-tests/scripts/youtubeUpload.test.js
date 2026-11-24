@@ -47,6 +47,7 @@ import {
   buildSnippetUpdate,
   runMetadataSync,
   flipUploadedVideosPublic,
+  uploadOrMakePublic,
 } from "../../../scripts/youtube-upload.js";
 
 function makeTempDir() {
@@ -149,11 +150,23 @@ describe("selectPendingUploads (the idempotency guard)", () => {
       videos: [
         { id: "already-uploaded", publish: true, videoId: "abc123" },
         { id: "not-for-publishing", publish: false, videoId: null },
-        { id: "ready", publish: true, videoId: null },
-        { id: "also-ready", publish: true },
+        { id: "ready", publish: true, videoId: null, sourceRun: 101 },
+        { id: "also-ready", publish: true, sourceRun: 102 },
       ],
     };
-    expect(selectPendingUploads(list).map((entry) => entry.id)).toEqual(["ready", "also-ready"]);
+    expect(selectPendingUploads(list, () => {}).map((entry) => entry.id)).toEqual(["ready", "also-ready"]);
+  });
+
+  test("skips an entry with no sourceRun and names it in one line", () => {
+    const lines = [];
+    const list = {
+      videos: [
+        { id: "recorded", publish: true, videoId: null, sourceRun: 101 },
+        { id: "not-recorded-yet", publish: true, videoId: null, sourceRun: null },
+      ],
+    };
+    expect(selectPendingUploads(list, (line) => lines.push(line)).map((entry) => entry.id)).toEqual(["recorded"]);
+    expect(lines).toEqual(["Skipped not-recorded-yet: it has no sourceRun, so there is no recording to upload yet."]);
   });
 
   test("selects nothing once every publish:true entry has a videoId", () => {
@@ -953,6 +966,64 @@ describe("applyStatusSync", () => {
     });
 
     expect(setVideoStatusImpl.mock.calls[0][0].privacyStatus).toBe("unlisted");
+  });
+});
+
+describe("uploadOrMakePublic", () => {
+  const list = {
+    videos: [
+      { id: "on-the-channel", publish: true, videoId: "abc123", sourceRun: 100 },
+      { id: "waiting", publish: true, videoId: null, sourceRun: 101, videoFile: "missing.mp4", captionFile: "missing.vtt" },
+      { id: "not-recorded-yet", publish: true, videoId: null, sourceRun: null, videoFile: "missing.mp4" },
+    ],
+  };
+
+  test("--public makes the uploaded videos public and reads no waiting entry or its files", async () => {
+    const flipUploadedVideosPublicImpl = vi.fn(async () => []);
+    const publishEntryImpl = vi.fn();
+    const requireFileImpl = vi.fn();
+    const readPipelineVersionImpl = vi.fn();
+    const lines = [];
+    await uploadOrMakePublic({
+      list,
+      publicVideo: true,
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      flipUploadedVideosPublicImpl,
+      publishEntryImpl,
+      requireFileImpl,
+      readPipelineVersionImpl,
+      log: (line) => lines.push(line),
+    });
+    expect(flipUploadedVideosPublicImpl).toHaveBeenCalledTimes(1);
+    expect(flipUploadedVideosPublicImpl.mock.calls[0][0].list).toBe(list);
+    expect(publishEntryImpl).not.toHaveBeenCalled();
+    expect(requireFileImpl).not.toHaveBeenCalled();
+    expect(readPipelineVersionImpl).not.toHaveBeenCalled();
+    expect(lines).toEqual([]);
+  });
+
+  test("an upload run skips the entry with no sourceRun and uploads the recorded one unlisted", async () => {
+    const flipUploadedVideosPublicImpl = vi.fn();
+    const publishEntryImpl = vi.fn(async ({ list: current }) => current);
+    const requireFileImpl = vi.fn();
+    const lines = [];
+    await uploadOrMakePublic({
+      list,
+      publicVideo: false,
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      flipUploadedVideosPublicImpl,
+      publishEntryImpl,
+      requireFileImpl,
+      readPipelineVersionImpl: () => 3,
+      log: (line) => lines.push(line),
+    });
+    expect(flipUploadedVideosPublicImpl).not.toHaveBeenCalled();
+    expect(requireFileImpl.mock.calls.map(([filePath]) => filePath)).toEqual(["missing.mp4", "missing.vtt"]);
+    expect(publishEntryImpl).toHaveBeenCalledTimes(1);
+    expect(publishEntryImpl.mock.calls[0][0]).toMatchObject({ entry: { id: "waiting" }, publicVideo: false, pipelineVersion: 3 });
+    expect(lines).toEqual(["Skipped not-recorded-yet: it has no sourceRun, so there is no recording to upload yet."]);
   });
 });
 

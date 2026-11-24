@@ -793,15 +793,15 @@
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 39523846101,
+      "sourceRun": 45440628828,
       "sourceArtifact": "video-view-payments-prod",
-      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-sq1i/view-payments.mp4",
-      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-sq1i/view-payments.vtt",
+      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos/video-view-payments-prod/view-payments.mp4",
+      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos/video-view-payments-prod/view-payments.vtt",
       "title": "How to see VAT payments HMRC has recorded | DIY Accounting Submit",
       "description": "DIY Accounting Submit sends VAT returns to HMRC under Making Tax Digital for 99p a month, with a free day pass to try it. This video shows signing in, taking out a day pass, and asking HMRC which VAT payments it has recorded against a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk/?utm_source=youtube&utm_medium=video.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT payments", "VAT return"],
       "categoryId": "27",
-      "videoId": "0ZRGqC4YvDQ",
+      "videoId": "OhFGLzVOX-Q",
       "walkthrough": [
         {
           "scene": "payments-form",
@@ -837,13 +837,13 @@
           "headline": "Open VAT Payments",
           "caption": "Open VAT Payments to ask what HMRC has recorded.",
           "instruction": "Choose VAT Payments (HMRC) on the Activities page.",
-          "startSeconds": 13,
+          "startSeconds": 12,
           "thumb": "videos/view-payments/payments-form-2-thumb.webp",
           "full": "videos/view-payments/payments-form-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 424,
+          "thumbHeight": 448,
           "fullWidth": 1000,
-          "fullHeight": 886
+          "fullHeight": 934
         },
         {
           "scene": "payments-form",
@@ -851,13 +851,13 @@
           "headline": "Enter your VAT number",
           "caption": "Type the VAT registration number.",
           "instruction": "Enter your VAT registration number.",
-          "startSeconds": 21,
+          "startSeconds": 20,
           "thumb": "videos/view-payments/payments-form-4-thumb.webp",
           "full": "videos/view-payments/payments-form-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 424,
+          "thumbHeight": 448,
           "fullWidth": 1000,
-          "fullHeight": 886
+          "fullHeight": 934
         },
         {
           "scene": "payments-form",
@@ -865,13 +865,13 @@
           "headline": "Choose the start date",
           "caption": "Then the stretch of time to check.",
           "instruction": "Enter a From date and a To date to check between.",
-          "startSeconds": 27,
+          "startSeconds": 26,
           "thumb": "videos/view-payments/payments-form-5-thumb.webp",
           "full": "videos/view-payments/payments-form-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 424,
+          "thumbHeight": 448,
           "fullWidth": 1000,
-          "fullHeight": 886
+          "fullHeight": 934
         },
         {
           "scene": "payments-form",
@@ -879,26 +879,26 @@
           "headline": "Ask HMRC for access",
           "caption": "The first request sends you to HMRC to grant access.",
           "instruction": "Choose Retrieve payments; the first request sends you to HMRC to give permission.",
-          "startSeconds": 35,
+          "startSeconds": 34,
           "thumb": "videos/view-payments/payments-form-9-thumb.webp",
           "full": "videos/view-payments/payments-form-9.webp",
           "thumbWidth": 480,
-          "thumbHeight": 290,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 606
+          "fullHeight": 1080
         },
         {
           "scene": "results",
           "headline": "The answer",
           "caption": "HMRC answers with whatever payments it has on file. Any payment against the account shows here, with its date.",
           "instruction": "Read each payment and its date in the payments table.",
-          "startSeconds": 43,
+          "startSeconds": 41,
           "thumb": "videos/view-payments/results-thumb.webp",
           "full": "videos/view-payments/results.webp",
           "thumbWidth": 480,
-          "thumbHeight": 386,
+          "thumbHeight": 392,
           "fullWidth": 1000,
-          "fullHeight": 804
+          "fullHeight": 818
         }
       ]
     },

@@ -49,9 +49,10 @@
 // --check obtains a token, looks up the signed-in channel and prints its title, without
 // uploading anything. It's the first thing to run after consent, to prove the credential works.
 //
-// Uploads are unlisted by default. Pass --public to upload publicly, or, when everything is
-// already uploaded, to switch the uploaded videos to public.
-// Re-running is safe: an entry that already carries a videoId is skipped.
+// Uploads are unlisted. --public uploads nothing: it switches the videos already uploaded to public,
+// whatever entries are still waiting for an upload.
+// Re-running is safe: an entry that already carries a videoId is skipped, and so is an entry with no
+// sourceRun, whose recording has not been made yet.
 //
 // --sync-status compares the status videos/publish.json declares (embeddable,
 // publicStatsViewable, selfDeclaredMadeForKids, license) against what YouTube actually has
@@ -172,8 +173,12 @@ export function savePublishList(list, filePath = PUBLISH_LIST_PATH) {
   execFileSync("npx", ["prettier", "--write", filePath], { stdio: "ignore" });
 }
 
-export function selectPendingUploads(list) {
-  return list.videos.filter((entry) => entry.publish === true && !entry.videoId);
+export function selectPendingUploads(list, log = console.log) {
+  const pending = list.videos.filter((entry) => entry.publish === true && !entry.videoId);
+  for (const entry of pending.filter((candidate) => !candidate.sourceRun)) {
+    log(`Skipped ${entry.id}: it has no sourceRun, so there is no recording to upload yet.`);
+  }
+  return pending.filter((entry) => entry.sourceRun);
 }
 
 const PRIVACY_TO_FLIP = ["unlisted", "private"];
@@ -982,7 +987,7 @@ export async function main() {
     return;
   }
 
-  let list = loadPublishList();
+  const list = loadPublishList();
 
   if (captionOnly) {
     await runCaptionOnly({ list, ids: captionOnly, accessToken, quotaProject });
@@ -999,35 +1004,55 @@ export async function main() {
     return;
   }
 
-  const pending = selectPendingUploads(list);
+  await uploadOrMakePublic({ list, publicVideo, accessToken, quotaProject });
+}
+
+// --public switches the uploaded videos to public and reads no waiting entry, so an entry whose files
+// are not there yet cannot stop it. Otherwise every waiting entry with a recording is uploaded unlisted.
+export async function uploadOrMakePublic({
+  list,
+  publicVideo,
+  accessToken,
+  quotaProject,
+  flipUploadedVideosPublicImpl = flipUploadedVideosPublic,
+  publishEntryImpl = publishEntry,
+  readPipelineVersionImpl = readPipelineVersion,
+  requireFileImpl = requireFile,
+  log = console.log,
+}) {
+  if (publicVideo) {
+    await flipUploadedVideosPublicImpl({ list, accessToken, quotaProject, log });
+    return list;
+  }
+
+  const pending = selectPendingUploads(list, log);
   if (pending.length === 0) {
-    if (!publicVideo) {
-      console.log("Nothing to upload: every publish:true entry already has a videoId.");
-      return;
-    }
-    await flipUploadedVideosPublic({ list, accessToken, quotaProject });
-    return;
+    log("Nothing to upload: every publish:true entry with a recording already has a videoId.");
+    return list;
   }
 
   for (const entry of pending) {
-    requireFile(entry.videoFile, `video file for ${entry.id}`);
-    requireFile(entry.captionFile, `caption file for ${entry.id}`);
-    readPipelineVersion(entry.videoFile);
+    requireFileImpl(entry.videoFile, `video file for ${entry.id}`);
+    requireFileImpl(entry.captionFile, `caption file for ${entry.id}`);
+    readPipelineVersionImpl(entry.videoFile);
   }
 
   // A description that links to another video goes out after the video it links to.
   const linkTargetsFirst = [...pending].sort((a, b) => Number(hasVideoLink(a)) - Number(hasVideoLink(b)));
+  let current = list;
   for (const pendingEntry of linkTargetsFirst) {
-    const entry = list.videos.find((video) => video.id === pendingEntry.id);
-    list = await publishEntry({
+    const entry = current.videos.find((video) => video.id === pendingEntry.id);
+    current = await publishEntryImpl({
       entry,
-      list,
+      list: current,
       accessToken,
       quotaProject,
-      publicVideo,
-      pipelineVersion: readPipelineVersion(entry.videoFile),
+      publicVideo: false,
+      pipelineVersion: readPipelineVersionImpl(entry.videoFile),
+      log,
     });
   }
+  return current;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
