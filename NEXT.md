@@ -217,7 +217,7 @@ Facts the Corporation Tax recognition rows CT34 to CT37 and OCT7 share. SDST ans
 
 - [ ] **WDM3. Count a watch list add and a due list view.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM3 (the deliverable and its proof are in its section 8.2 brief). Blocked on DUE6. **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM3 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files. **Repository**: submit.
 
-- [ ] **WDM4. The campaign funnel view and dashboard table.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM4 (the deliverable and its proof are in its section 8.2 brief). Blocked on WDM2 and WDM3. **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM4 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~12 files. **Repository**: submit.
+- [ ] **WDM4. The campaign funnel view and dashboard table.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM4 (the deliverable and its proof are in its section 8.2 brief). Blocked on WDM3. **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM4 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~12 files. **Repository**: submit.
 
 - [ ] **WDM6. The due list landing page and its links.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM6 (the deliverable and its proof are in its section 8.2 brief). Blocked on DUE14 (the due list on prod) and WDM5 (shared files). **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM6 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~12 files. **Repository**: submit.
 
