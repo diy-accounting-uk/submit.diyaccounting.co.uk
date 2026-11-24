@@ -10,15 +10,25 @@ import {
 } from "@app/lib/accountSettings.js";
 
 describe("account settings", () => {
-  test("pass generation is on and the watch list empty by default", () => {
-    expect(ACCOUNT_SETTING_DEFAULTS).toEqual({ passGeneration: true, watchedCompanies: [] });
-    expect(resolveAccountSettings(undefined)).toEqual({ passGeneration: true, watchedCompanies: [] });
-    expect(resolveAccountSettings({})).toEqual({ passGeneration: true, watchedCompanies: [] });
+  test("pass generation is on, the watch list empty and preview features off by default", () => {
+    expect(ACCOUNT_SETTING_DEFAULTS).toEqual({ passGeneration: true, watchedCompanies: [], previewFeatures: false });
+    expect(resolveAccountSettings(undefined)).toEqual({ passGeneration: true, watchedCompanies: [], previewFeatures: false });
+    expect(resolveAccountSettings({})).toEqual({ passGeneration: true, watchedCompanies: [], previewFeatures: false });
   });
 
   test("a stored valid value replaces the default and anything else is ignored", () => {
-    expect(resolveAccountSettings({ passGeneration: false })).toEqual({ passGeneration: false, watchedCompanies: [] });
-    expect(resolveAccountSettings({ passGeneration: "no", other: true })).toEqual({ passGeneration: true, watchedCompanies: [] });
+    expect(resolveAccountSettings({ passGeneration: false })).toEqual({
+      passGeneration: false,
+      watchedCompanies: [],
+      previewFeatures: false,
+    });
+    expect(resolveAccountSettings({ passGeneration: "no", other: true })).toEqual({
+      passGeneration: true,
+      watchedCompanies: [],
+      previewFeatures: false,
+    });
+    expect(resolveAccountSettings({ previewFeatures: true }).previewFeatures).toBe(true);
+    expect(resolveAccountSettings({ previewFeatures: "on" }).previewFeatures).toBe(false);
     expect(resolveAccountSettings({ watchedCompanies: ["00000001", "SC000000"] }).watchedCompanies).toEqual(["00000001", "SC000000"]);
     expect(resolveAccountSettings({ watchedCompanies: "00000001" }).watchedCompanies).toEqual([]);
   });
@@ -47,8 +57,17 @@ describe("account settings", () => {
     expect(validateAccountSettingsUpdate(body)).toEqual({ update: {}, watchListOperation: operation, errors: [] });
   });
 
+  test("an update names preview features with a boolean value", () => {
+    expect(validateAccountSettingsUpdate({ previewFeatures: true })).toEqual({
+      update: { previewFeatures: true },
+      watchListOperation: null,
+      errors: [],
+    });
+  });
+
   test.each([
     [{ passGeneration: "off" }, "Setting passGeneration must be true or false"],
+    [{ previewFeatures: "on" }, "Setting previewFeatures must be true or false"],
     [{ colour: true }, "Unknown setting: colour"],
     [{}, "Request body names no setting"],
     [null, "Request body must be a JSON object of settings"],

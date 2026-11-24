@@ -206,11 +206,11 @@ function groupByJointFiling(items) {
 
 const JOINT_RECEIPT_TITLES = {
   "companies-house-accounts": siteText("receipts.kind-accounts", "Accounts"),
-  "company-tax-return": siteText("receipts.kind-ct600", "Company Tax Return"),
+  "company-tax-return": siteText("receipts.kind-ct600", "Company Tax Return (preview)"),
 };
 const AMENDED_RECEIPT_TITLES = {
   "companies-house-accounts": siteText("receipts.kind-revised-accounts", "Revised accounts"),
-  "company-tax-return": siteText("receipts.kind-amended-ct600", "Amended Company Tax Return"),
+  "company-tax-return": siteText("receipts.kind-amended-ct600", "Amended Company Tax Return (preview)"),
 };
 
 function receiptEntry(it, inJointFiling) {

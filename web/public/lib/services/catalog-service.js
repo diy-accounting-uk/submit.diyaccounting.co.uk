@@ -136,19 +136,36 @@ function isOperatorOnly(bundleIds) {
 }
 
 /**
+ * Whether the catalogue opens an activity to an operator's own preview in this environment: its
+ * `operatorPreviewEnvironments` names the environment. The server holds the same rule in
+ * app/lib/previewFeatures.js.
+ * @param {object} activity - An activity entry from the parsed catalog
+ * @param {string|null} environmentName - The current environment name
+ * @returns {boolean}
+ */
+export function opensByOperatorPreview(activity, environmentName) {
+  return Array.isArray(activity?.operatorPreviewEnvironments) && activity.operatorPreviewEnvironments.includes(environmentName);
+}
+
+/**
  * Whether the catalogue shows an activity to this person: listed in the environment, or shown by
  * preview features, and not switched off by the person's own settings. An activity may name an
  * account setting in `accountSetting` (a setting that is false hides it), and an operator who
  * turned operator features off does not see an activity that only the operator bundle serves.
  * An activity that names `previewEnvironments` is shown under preview features only in those environments.
+ * Where an activity's `operatorPreviewEnvironments` names the environment, it shows only to an
+ * operator, with operator features on, whose stored preview features setting is on.
  * @param {object} activity - An activity entry from the parsed catalog
  * @param {string|null} environmentName - The current environment name
- * @param {{preview: boolean, operatorFeatures: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
+ * @param {{preview: boolean, operatorFeatures: boolean, operator: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
  * @returns {boolean} True if the activity shows
  */
 export function isActivityShown(activity, environmentName, viewer) {
   if (activity?.accountSetting && viewer?.account?.[activity.accountSetting] === false) return false;
   if (viewer?.operatorFeatures === false && isOperatorOnly(activity?.bundles)) return false;
+  if (opensByOperatorPreview(activity, environmentName)) {
+    return viewer?.operator === true && viewer?.operatorFeatures !== false && viewer?.account?.previewFeatures === true;
+  }
   if (viewer?.preview === true && Array.isArray(activity?.previewEnvironments)) {
     return typeof environmentName === "string" && activity.previewEnvironments.includes(environmentName);
   }

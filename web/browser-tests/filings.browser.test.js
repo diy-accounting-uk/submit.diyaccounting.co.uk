@@ -155,7 +155,7 @@ test.describe("Filings page - customer copy", () => {
     await openFiling(page, CT_RECEIPT_NAME, CT_RECEIPT);
 
     const copy = page.locator("#filingContent .customer-copy");
-    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
     await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
     await expect(copy.locator(".customer-copy-submission")).toContainText("RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S");
     await expect(copy.locator("#ct600Box155 td.figure")).toHaveText("£4,500");

@@ -5,8 +5,15 @@
 // The preview-features header lets a request reach an activity that the catalogue does not list in
 // this environment, and only when the request runs against a sandbox service. The header is a
 // request, not a grant: the server checks the sandbox condition itself.
+//
+// An operator's own preview is the other way in: an activity whose operatorPreviewEnvironments names
+// this environment opens for an operator whose stored account setting turns preview features on.
+// It reads no header, and it reaches the services that environment uses, live on prod.
 
 import { getHeader } from "./httpResponseHelper.js";
+import { isOperatorEmail } from "./operators.js";
+import { resolveAccountSettings } from "./accountSettings.js";
+import { getAccountSettings } from "../data/dynamoDbBundleRepository.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
 
 const PREVIEW_FEATURES_HEADER = "x-preview-features";
@@ -50,4 +57,31 @@ export function previewRunsAgainstSandbox(event, requestPath) {
   }
   if (path.startsWith(CORPORATION_TAX_PATH_PREFIX)) return false;
   return String(getHeader(event?.headers, "hmrcAccount") || "").toLowerCase() === "synthetic";
+}
+
+/**
+ * Whether the catalogue opens an activity to an operator's own preview in this environment: its
+ * operatorPreviewEnvironments names the environment.
+ * @param {object} activity - The catalogue activity
+ * @param {string|undefined} environmentName - The environment name
+ * @returns {boolean}
+ */
+export function opensByOperatorPreview(activity, environmentName) {
+  return Array.isArray(activity?.operatorPreviewEnvironments) && activity.operatorPreviewEnvironments.includes(environmentName);
+}
+
+/**
+ * Whether an operator's own preview opens an activity that this environment does not list: the
+ * catalogue opens it to an operator's preview here, the token's email is on the operator list, and
+ * the account's stored preview features setting is on. It takes no request, so no header can pass it.
+ * The bundles the activity needs are checked by the caller.
+ * @param {object} activity - The catalogue activity
+ * @param {string|undefined} environmentName - The environment name
+ * @param {{sub?: string, email?: string}|null|undefined} user - The token's claims
+ * @returns {Promise<boolean>}
+ */
+export async function operatorPreviewPasses(activity, environmentName, user) {
+  if (!opensByOperatorPreview(activity, environmentName) || !user?.sub) return false;
+  if (!(await isOperatorEmail(user.email))) return false;
+  return resolveAccountSettings(await getAccountSettings(user.sub)).previewFeatures === true;
 }

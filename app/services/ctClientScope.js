@@ -8,12 +8,14 @@
 // joint filing id is half of an accounts and tax return pair, and is refused unless the catalogue's
 // `file-company-tax-return-with-accounts` activity is enabled in the environment and the caller's
 // bundles include one of its bundles. An accounts request that carries a revision is refused unless
-// the catalogue's `file-revised-accounts` activity is enabled in the environment.
+// the catalogue's `file-revised-accounts` activity is enabled in the environment. An activity is
+// enabled when the environment lists it, when an operator's own preview opens it, or when a preview
+// request runs against a sandbox service.
 
 import { enforceBundles } from "./bundleManagement.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCatalog.js";
-import { previewRunsAgainstSandbox } from "../lib/previewFeatures.js";
-import { http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
+import { previewRunsAgainstSandbox, operatorPreviewPasses } from "../lib/previewFeatures.js";
+import { http403ForbiddenResponse, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
 import { http403ForbiddenFromBundleEnforcement } from "./companiesHouseApi.js";
 
 const PRACTICE_ACTIVITY_ID = "practice";
@@ -62,13 +64,16 @@ export async function enforceCtBundles(event, request, clientId) {
  * @param {object} request - the parsed request, for the response
  * @param {boolean} carriesJointFilingId - the request body names a joint filing id
  * @param {string[]} heldBundleIds - the caller's bundles that matched the route, from enforceCtBundles
- * @returns {object|undefined} the 403 response, or undefined when the request may go on
+ * @returns {Promise<object|undefined>} the 403 response, or undefined when the request may go on
  */
-export function refuseJointFilingWhenNotEnabled(event, request, carriesJointFilingId, heldBundleIds) {
+export async function refuseJointFilingWhenNotEnabled(event, request, carriesJointFilingId, heldBundleIds) {
   if (!carriesJointFilingId) return undefined;
   const activity = loadCatalogFromRoot().activities?.find((candidate) => candidate.id === JOINT_FILING_ACTIVITY_ID);
   const environmentName = process.env.ENVIRONMENT_NAME;
-  const enabled = isActivityListedInEnvironment(activity, environmentName) || previewRunsAgainstSandbox(event, request?.pathname);
+  const enabled =
+    isActivityListedInEnvironment(activity, environmentName) ||
+    (await operatorPreviewPasses(activity, environmentName, extractUserFromAuthorizerContext(event))) ||
+    previewRunsAgainstSandbox(event, request?.pathname);
   if (!activity || !enabled) {
     return http403ForbiddenResponse({
       request,
@@ -85,6 +90,27 @@ export function refuseJointFilingWhenNotEnabled(event, request, carriesJointFili
     });
   }
   return undefined;
+}
+
+/**
+ * Refuse an accounts request that carries a joint filing id unless the joint filing activity is
+ * open to the caller: enforceBundles passes it for the caller's bundles in this environment. The
+ * accounts route asks before it charges or files, so accounts never go to Companies House as half
+ * of a pair whose return HMRC would then refuse. A request without a joint filing id is not refused here.
+ *
+ * @param {object} event - the Lambda event
+ * @param {object} request - the parsed request, for the response
+ * @param {boolean} carriesJointFilingId - the request body names a joint filing id
+ * @returns {Promise<object|undefined>} the 403 response, or undefined when the request may go on
+ */
+export async function refuseJointFilingIdOnAccountsWhenNotOpen(event, request, carriesJointFilingId) {
+  if (!carriesJointFilingId) return undefined;
+  try {
+    await enforceBundles(event, { activityId: JOINT_FILING_ACTIVITY_ID });
+    return undefined;
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(error, request);
+  }
 }
 
 /**

@@ -183,7 +183,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
       escapeRecordText(siteText("ch.ct.record-utr-line", "Unique Taxpayer Reference {utr}", { utr })),
       escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: company.companyNumber })),
     ],
-    title: siteText("ch.ct.record-title", "Company Tax Return (CT600){parts}", { parts: ofParts }),
+    title: siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts: ofParts }),
     subtitleHtml: escapeRecordText(
       siteText("ch.ct.record-period", "Return period {start} to {end}", { start: longDate(boxes[30]), end: longDate(periodEnd) }),
     ),
@@ -208,7 +208,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
   });
   const receipt = { ...outcome, utr, successMessage: undefined };
   return customerCopyHtml({
-    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return{parts}", { parts: ofParts }),
+    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", { parts: ofParts }),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(outcome.irmarkReceipt ?? outcome.irmark ?? ABSENT),

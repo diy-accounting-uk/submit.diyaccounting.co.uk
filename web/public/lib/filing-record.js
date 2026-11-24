@@ -219,7 +219,7 @@ function ct600Record(receipt, dateText) {
         ? escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: receipt.filed.boxes[2] }))
         : "",
     ].filter(Boolean),
-    title: siteText("ch.ct.record-title", "Company Tax Return (CT600){parts}", { parts: longPeriodTitleSuffix(receipt) }),
+    title: siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts: longPeriodTitleSuffix(receipt) }),
     subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
   });
   const boxes = receipt.filed?.boxes ?? {};
@@ -313,7 +313,9 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
     },
   ];
   return customerCopyHtml({
-    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return{parts}", { parts: longPeriodTitleSuffix(receipt) }),
+    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", {
+      parts: longPeriodTitleSuffix(receipt),
+    }),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT),

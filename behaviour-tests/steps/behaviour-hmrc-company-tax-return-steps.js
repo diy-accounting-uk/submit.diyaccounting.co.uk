@@ -806,10 +806,10 @@ export async function fixASecondColumnFieldAndPreview(page, { fieldId, value }, 
 export async function verifyBothReceiptsOnTheReceiptsPage(page, baseUrl, screenshotPath = defaultScreenshotPath) {
   await test.step("The user opens the receipts page and sees both returns' receipts under one filing", async () => {
     await page.goto(`${baseUrl}hmrc/receipt/receipts.html`);
-    const entry = page.locator("#receiptsTable tbody tr", { hasText: "Company Tax Return 1 of 2" }).first();
+    const entry = page.locator("#receiptsTable tbody tr", { hasText: "Company Tax Return (preview) 1 of 2" }).first();
     await expect(entry).toBeVisible({ timeout: 30000 });
-    await expect(entry).toContainText("Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025)");
-    await expect(entry).toContainText("Company Tax Return 2 of 2 (1 January 2026 to 31 March 2026)");
+    await expect(entry).toContainText("Company Tax Return (preview) 1 of 2 (1 January 2025 to 31 December 2025)");
+    await expect(entry).toContainText("Company Tax Return (preview) 2 of 2 (1 January 2026 to 31 March 2026)");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-long-period-receipts.png`, readerView: true });
   });
 }

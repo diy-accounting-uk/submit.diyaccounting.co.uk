@@ -3,8 +3,8 @@
 
 // web/browser-tests/settings.browser.test.js
 //
-// The settings page behind the header cog: the preview features switch and the operator features
-// switch (this session), and the pass generation switch (this account).
+// The settings page behind the header cog: the preview features switch (this account and this
+// session), the operator features switch (this session), and the pass generation switch (this account).
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -25,8 +25,8 @@ const CONTENT_TYPES = {
 
 // Serves the real site from disk with a signed-in user. The bundles route answers from `account`,
 // which the account settings route changes, so a setting kept on the server survives a navigation.
-async function serveSite(page, { environmentName = "prod", operator = false, signedIn = true, bundleStatus = 200 } = {}) {
-  const account = { passGeneration: true };
+async function serveSite(page, { environmentName = "prod", operator = false, signedIn = true, bundleStatus = 200, stored = {} } = {}) {
+  const account = { passGeneration: true, ...stored };
   const settingsWrites = [];
   await page.addInitScript((withSignIn) => {
     if (!withSignIn) return;
@@ -159,6 +159,34 @@ test.describe("Settings page", () => {
       await page.locator("#previewFeaturesSwitch").uncheck();
       await page.goto("http://localhost:3000/practice.html", { waitUntil: "networkidle" });
       await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
+    });
+
+    test("signed in, is saved to the account and kept in this session", async ({ page }) => {
+      const { settingsWrites } = await serveSite(page);
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await page.locator("#previewFeaturesSwitch").check();
+      await expect.poll(() => settingsWrites).toEqual([{ previewFeatures: true }]);
+      await expect(page.locator("#previewFeaturesSwitch")).toBeChecked();
+      expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBe("on");
+    });
+
+    test("a save the server refuses sets the switch and this session back and says the setting was not saved", async ({ page }) => {
+      await serveSite(page);
+      await page.route("**/api/v1/account/settings", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) }),
+      );
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await page.locator("#previewFeaturesSwitch").check();
+      await expect(page.locator("#previewFeaturesSwitch")).not.toBeChecked();
+      await expect(page.locator(".status-message")).toContainText("The setting was not saved");
+      expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBeNull();
+    });
+
+    test("is read from the account on a new page, and this session follows it", async ({ page }) => {
+      await serveSite(page, { stored: { previewFeatures: true } });
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await expect(page.locator("#previewFeaturesSwitch")).toBeChecked();
+      expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBe("on");
     });
 
     test("on, does not send the preview header from a page the catalogue lists", async ({ page }) => {

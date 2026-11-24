@@ -119,7 +119,7 @@ export async function ingestHandler(event) {
 
   const requestBody = parseRequestBody(event);
   const carriesJointFilingId = requestBody?.jointFilingId !== undefined && requestBody?.jointFilingId !== null;
-  const jointRefusal = refuseJointFilingWhenNotEnabled(event, request, carriesJointFilingId, bundleIds);
+  const jointRefusal = await refuseJointFilingWhenNotEnabled(event, request, carriesJointFilingId, bundleIds);
   if (jointRefusal) return jointRefusal;
 
   const errorMessages = [];

@@ -3,9 +3,10 @@
 
 // app/lib/accountSettings.js
 // The settings a signed-in user keeps on their account, each with a default: pass generation, a
-// boolean, and the company watch list, the company numbers the user watches.
+// boolean, the company watch list, the company numbers the user watches, and preview features, a
+// boolean that opens an operator's own preview of a filing the catalogue does not list.
 
-export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [] };
+export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [], previewFeatures: false };
 
 // The most companies one watch list holds. The watch list page reads each company's profile from
 // Companies House on every visit, so the cap bounds the calls one account can drive.
@@ -16,6 +17,7 @@ const COMPANY_NUMBER = /^[A-Z0-9]{8}$/;
 // The reason a value cannot be stored under a setting, or null when it can.
 const SETTING_CHECKS = {
   passGeneration: (value) => (typeof value === "boolean" ? null : "Setting passGeneration must be true or false"),
+  previewFeatures: (value) => (typeof value === "boolean" ? null : "Setting previewFeatures must be true or false"),
   watchedCompanies: (value) => {
     if (!Array.isArray(value)) return "Setting watchedCompanies must be a list of company numbers";
     if (value.length > WATCH_LIST_CAP) return `Setting watchedCompanies holds at most ${WATCH_LIST_CAP} companies`;
@@ -30,7 +32,7 @@ const SETTING_CHECKS = {
 /**
  * The account settings to use: the stored value of each setting, else its default.
  * @param {object|null|undefined} stored - The stored settings
- * @returns {{passGeneration: boolean, watchedCompanies: string[]}} Every setting with a value
+ * @returns {{passGeneration: boolean, watchedCompanies: string[], previewFeatures: boolean}} Every setting with a value
  */
 export function resolveAccountSettings(stored) {
   const settings = { ...ACCOUNT_SETTING_DEFAULTS, watchedCompanies: [...ACCOUNT_SETTING_DEFAULTS.watchedCompanies] };
@@ -42,7 +44,7 @@ export function resolveAccountSettings(stored) {
 
 // The settings a request writes whole. The watch list is not among them: it changes one company at
 // a time through watchList, which the server applies to the stored list.
-const WRITTEN_WHOLE = ["passGeneration"];
+const WRITTEN_WHOLE = ["passGeneration", "previewFeatures"];
 
 // The watch list operation in a request body: { add: "<company number>" } or { remove: "<company number>" }.
 function watchListOperationOf(value, errors) {
