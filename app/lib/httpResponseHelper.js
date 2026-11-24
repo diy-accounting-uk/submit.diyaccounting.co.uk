@@ -444,11 +444,12 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub, {
   };
   const requestBody = new URLSearchParams(body);
 
+  // The body always holds a code or a refresh token and a client secret, so the log names its fields only.
   logger.info({
     message: `Request to POST ${providerUrl}`,
     url: providerUrl,
     headers: { ...requestHeaders },
-    body: sanitiseString(requestBody.toString()),
+    bodyFields: [...requestBody.keys()],
   });
 
   const httpRequest = {

@@ -4,7 +4,7 @@
 // app/unit-tests/lib/loggerPiiRedaction.test.js
 // Tests for PII redaction in the logger
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { sanitiseString, sanitiseData, createSafeLogger, containsSensitiveData } from "@app/lib/logger.js";
 
 describe("lib/logger PII redaction", () => {
@@ -46,6 +46,19 @@ describe("lib/logger PII redaction", () => {
       const input = "User AB123456C with email test@example.com has VRN 123456789";
       const expected = "User [NINO] with email [EMAIL] has VRN [VRN]";
       expect(sanitiseString(input)).toBe(expected);
+    });
+
+    test("writes the sensitive data notice at level 50 for a string that holds a credential", () => {
+      const notices = [];
+      const spy = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => notices.push(String(chunk)) > 0);
+      try {
+        sanitiseString("grant_type=refresh_token&refresh_token=abc123&client_secret=def456");
+      } finally {
+        spy.mockRestore();
+      }
+      expect(notices.map((line) => JSON.parse(line))).toEqual([
+        expect.objectContaining({ level: 50, msg: expect.stringContaining("SENSITIVE DATA DETECTED") }),
+      ]);
     });
 
     test("returns non-string values unchanged", () => {
