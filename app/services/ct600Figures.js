@@ -640,6 +640,11 @@ function wholePoundProblem(value) {
  * customer corrects; a refusal ends the return.
  * @returns {Array<{field: string, message: string, refusal: boolean}>}
  */
+// The repayments of the loans figures. A loans file without the list holds no repayments.
+function repaymentsOf(loans) {
+  return Array.isArray(loans.repayments) ? loans.repayments : [];
+}
+
 function loansProblems(figures, { today } = {}) {
   const problems = [];
   const problem = (field, message, refusal = false) => problems.push({ field, message, refusal });
@@ -660,7 +665,7 @@ function loansProblems(figures, { today } = {}) {
     return problems;
   }
   const rows = Array.isArray(loans.loans) ? loans.loans : [];
-  const repayments = Array.isArray(loans.repayments) ? loans.repayments : [];
+  const repayments = repaymentsOf(loans);
   if (typeof loans.releasedBeforeEnd !== "boolean")
     problem("loansToParticipators", "Say whether any loans made in the period were repaid, released or written off before its end");
   if (rows.length === 0) problem("loansToParticipators", "Enter at least one loan to a participator, or answer that the company made none");
@@ -864,7 +869,7 @@ function workLoansToParticipators(figures, boxes, worked, taxDataByYear, { today
   // Repayments in date order, against each participator's parts in the order lent.
   const remaining = new Map(rateRows.map((row) => [row.name, row.parts.map((part) => ({ ...part }))]));
   const part2Last = part2LastDate(periodEnd);
-  const sortedRepayments = [...loans.repayments].sort((a, b) => a.date.localeCompare(b.date));
+  const sortedRepayments = [...repaymentsOf(loans)].sort((a, b) => a.date.localeCompare(b.date));
   const partTwo = [];
   const partThree = [];
   for (const repayment of sortedRepayments) {

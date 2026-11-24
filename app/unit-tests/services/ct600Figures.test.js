@@ -737,6 +737,17 @@ describe("loans to participators (supplementary page CT600A)", () => {
     for (const box of [510, 525, 528, 600]) expect(boxes[box]).toBeCloseTo(without[box] + 4050, 2);
   });
 
+  test("a loans file with no repayments list reports the loan on CT600A with nothing repaid", () => {
+    const { repayments, ...withoutRepayments } = loans();
+    expect(repayments).toEqual([]);
+    const { ct600a, boxes } = deriveWith(withLoans(withoutRepayments));
+    expect(ct600a).toMatchObject({ totalLoans: 12000, totalLoansOutstanding: 12000, taxChargeable: 4050, taxPayable: 4050 });
+    expect(ct600a.partTwo).toBeUndefined();
+    expect(ct600a.partThree).toBeUndefined();
+    expect(boxes[95]).toBe("yes");
+    expect(boxes[480]).toBe(4050);
+  });
+
   test("a company that made no loans carries no page and no loan boxes", () => {
     const { boxes, ct600a } = derive(TYPED);
     expect(ct600a).toBeUndefined();
