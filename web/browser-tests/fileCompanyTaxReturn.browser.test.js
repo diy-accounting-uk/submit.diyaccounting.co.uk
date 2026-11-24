@@ -408,6 +408,26 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#repaymentName1")).toHaveCount(0);
   });
 
+  test("the loan and repayment buttons are styled as the page's secondary buttons", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await page.locator("#loansMadeYes").check();
+    await page.locator("#addLoanBtn").click();
+    await page.locator("#repaidSinceYes").check();
+    for (const button of [
+      page.locator("#addLoanBtn"),
+      page.locator('[data-loan-row="2"] button[data-remove="loan"]'),
+      page.locator("#addRepaymentBtn"),
+      page.locator('[data-repayment-row="1"] button[data-remove="repayment"]'),
+    ]) {
+      await expect(button).toHaveClass("secondary-button");
+      await expect(button).toHaveCSS("border-top-style", "solid");
+    }
+    expect(await page.locator("#addLoanBtn").evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(
+      await page.locator("#backToFormBtn").evaluate((node) => parseFloat(getComputedStyle(node).minHeight)),
+    );
+  });
+
   test("a book with an overdrawn director's loan account opens the loans question at Yes with the amount and works the tax", async ({
     page,
   }) => {
