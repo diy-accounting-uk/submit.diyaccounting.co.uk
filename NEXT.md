@@ -18,7 +18,7 @@ name, then the wave and the batch that build the row, or `beside` for a row with
 with no such field is in no set. Anything touching code goes through a `claude/*` branch and PR;
 the operator merges.
 
-**Prod runs deployment prod-274295b** (`deploy.yml` run 45295682577 of `main` at 274295b2e, PR #864, promoted by 00:53 UTC on 2026-11-24; it replaces prod-21b778a, which `destroy-prod.yml` run 45300742327 removes).
+**Prod runs deployment prod-274295b** (`deploy.yml` run 45295682577 of `main` at 274295b2e, PR #864, promoted by 00:53 UTC on 2026-11-24; `destroy-prod.yml` run 45300742327 removed prod-21b778a by 01:20 UTC).
 **ci**: `ci-set1` stands (13 stacks, first created 13:37 UTC on 2026-11-23, updated by `deploy.yml` run 45290908537 of `claude/zeppelin-after` at 23:40 UTC) and `/submit/ci/last-known-good-deployment` is `ci-set1` (`promote-ci-apex.yml` run 45294971315 at 00:10 UTC on 2026-11-24); its self-destruct rule `cron(41 5/6 * * ? *)` fires next at 05:41 UTC on 2026-11-24.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
