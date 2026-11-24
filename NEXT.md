@@ -19,7 +19,7 @@ with no such field is in no set. Anything touching code goes through a `claude/*
 the operator merges.
 
 **Prod runs deployment prod-46c9ae9** (`deploy.yml` run 45430544613 of `main` at 46c9ae964, PR #865, promoted by 16:42 UTC on 2026-11-24; `destroy-prod.yml` run 45440059153 removed prod-274295b by 16:52 UTC).
-**ci**: `ci-set1` stands (13 stacks, first created 13:37 UTC on 2026-11-23, updated by `deploy.yml` run 45409706302 of `claude/zest-set` at 14:31 UTC on 2026-11-24) and `/submit/ci/last-known-good-deployment` is `ci-set1`, so its self-destruct rule skips it until another set takes that place.
+**ci**: no ci set stands. `destroy-ci.yml` run 45500833228 destroyed `ci-set1` at 22:36 UTC on 2026-11-24 (operator, 2026-11-24) and set `/submit/ci/last-known-good-deployment` to `None`, so the next push of a branch makes the ci set.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
