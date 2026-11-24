@@ -506,7 +506,7 @@ export async function ingestHandler(event, context) {
       });
     }
   } catch (error) {
-    console.error("Error in self-destruct ingestHandler:", error);
+    logger.error({ message: "Error in self-destruct ingestHandler", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
       message: "Internal Server Error in self-destruct ingestHandler",

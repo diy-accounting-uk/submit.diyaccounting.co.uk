@@ -77,6 +77,9 @@ public class Lambda {
         "Invoke Error", "Uncaught Exception", "Unhandled Promise Rejection", "Task timed out", "Runtime exited"
     };
 
+    /** The lowest level of an error line of the application's JSON logger: pino writes error as 50 and fatal as 60. */
+    static final int ERROR_LOG_LEVEL = 50;
+
     private static final String REST_PATH_PREFIX = "/api/v1/";
 
     /** How many checks a Lambda construct carries under {@link #stackHealthAlarm}. */
@@ -239,12 +242,15 @@ public class Lambda {
         this.healthChecks.addAll(List.of(errorsAlarm, logErrorsAlarm));
     }
 
-    /** Counts this function's error-like log lines into the named metric. */
+    /**
+     * Counts this function's error lines into the named metric: a line of the application's JSON
+     * logger whose level field is error or fatal. A failed invocation, a crash or a timeout reaches
+     * the function's Errors alarm and the invocation-errors filter instead.
+     */
     private void addLogErrorsMetricFilter(String metricName) {
         MetricFilter.Builder.create(this.scope, this.props.idPrefix() + "-LogErrorsMetricFilter")
                 .logGroup(this.logGroup)
-                .filterPattern(FilterPattern.anyTerm(
-                        "ERROR", "Error", "Exception", "Unhandled", "Task timed out", "SEVERE", "FATAL"))
+                .filterPattern(FilterPattern.numberValue("$.level", ">=", ERROR_LOG_LEVEL))
                 .metricNamespace(LOG_METRIC_NAMESPACE)
                 .metricName(metricName)
                 .metricValue("1")
