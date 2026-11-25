@@ -3487,7 +3487,9 @@ public class CompaniesHouseStack extends Stack {
             CompaniesHouseStackProps props,
             String activityBusArn,
             boolean grantApiKeyAccess) {
-        bundlesTable.grant(fn, "dynamodb:Query");
+        // Query reads the caller's bundles; GetItem reads the caller's account settings, which
+        // enforceBundles() reads to open an activity to an operator with preview features on.
+        bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:GetItem");
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
