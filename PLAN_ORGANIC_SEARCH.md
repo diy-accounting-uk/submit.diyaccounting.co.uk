@@ -5,7 +5,7 @@
 
 Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 13 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 7 of the 8 open tasks (OOS17b, OOS17, OS18g, OS24, OS24d, OOS30 and LIM1) are tracked in section 8.6, not on `NEXT.md`. OOS44 is the one row on `NEXT.md`, where it carries its brief. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 6 of the 8 open tasks (OOS17b, OOS17, OS24, OS24d, OOS30 and LIM1) are tracked in section 8.6, not on `NEXT.md`. OOS44 and OS18g are on `NEXT.md`, where each carries its brief. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -903,7 +903,7 @@ The brief of OOS44 is its row on `NEXT.md`. The briefs of the other open tasks a
 
 ### 8.6 State and briefs of the open tasks
 
-OOS17b, OOS17, OS18g, OS24, OS24d, OOS30 and LIM1 are tracked here, not on `NEXT.md`. OOS44 (the FSB proposal) stays on `NEXT.md`. "Blocked by" lists the tasks and events not yet done.
+OOS17b, OOS17, OS24, OS24d, OOS30 and LIM1 are tracked here, not on `NEXT.md`. OOS44 (the FSB proposal) and OS18g (publishing the ChatGPT plugin) are on `NEXT.md`. "Blocked by" lists the tasks and events not yet done.
 
 Facts for OS24, OS24d and LIM1: The listing register is `web/marketing/marketing.toml`: `npm run marketing:build` rebuilds `web/marketing/marketing.json` and `web/marketing/index.html`, and `web/unit-tests/marketing-site.test.js` holds three lists of the live listings in the register's order, so a row that moves an entry to `live` adds its id to each (OS24d, OS24).
 
