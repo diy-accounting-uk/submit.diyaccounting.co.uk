@@ -49,9 +49,13 @@
 
 (operator, 2026-11-25, the saved filed copy of DIY Accounting Limited's CT600: the CT600 boxes, the tax computation, the micro-entity accounts and HMRC's receipt)
 
+> For the plan, the HMRC filings will need to be in it's own section
+
+(operator, 2026-11-25, with a screenshot of the activities page listing "File Company Tax Return (HMRC, preview)" under "Companies House")
+
 ## Status
 
-v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.6 adds CTA1, the CT600 in its own section of the activities page, the operator's request of 2026-11-25, by hand. v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -95,6 +99,7 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 |---|---|---|---|---|---|
 | CTL0 | The worked tax panel keeps its figures when the own working disagrees, and hides the two-return block when the period is 12 months again | nothing | machine-only | Sonnet | ~4 files |
 | CTS1 | The answers are saved in the browser for the period the person chooses (28 days by default), offered back on return and deleted on filing | CTL0 | machine-only | Sonnet | ~7 files |
+| CTA1 | The activities page lists the Company Tax Return and the joint filing in their own section, "Corporation Tax", after "Income Tax" and before "Companies House" | nothing | machine-only | Sonnet | ~5 files |
 | CTL1 | The label register: every field, its official term and source, its reference, the workbook's label and cells, and whether a difference note is needed | nothing | machine-only | Opus | 1 file (this plan's appendix) |
 | CTL2 | The table carries the register: official label, reference, note, source link and workbook cells on every entry of `ct600-fields.js`, with Welsh; the `[id, label]` arrays become objects | CTL1, CTS1 | machine-only | Sonnet | ~6 files |
 | CTL5 | `scripts/ct600-source-shots.mjs`: one WebP for each cell the table names, cut from the published package, with the cell marked | CTL2 | machine-only | Sonnet | ~3 files and the images |
@@ -136,6 +141,10 @@ The change:
 6. Welsh for every new string. Gates: unit tests of `form-draft.js` (key, expiry, the three excluded fields, delete); browser cases in `web/browser-tests/fileCompanyTaxReturn.browser.test.js` that type, reload, restore and find the values, that choose "do not keep" and find nothing after a reload, and that file and find the record gone; `npm test`, `npx eslint`, `npx prettier --check`. CTS1 follows CTL0 and comes before CTL2 because all three change `fileCompanyTaxReturn.page.js`.
 
 Advice on the default. 28 days suits a personal computer: a company's accounts and return are often prepared over several weeks, and a shorter default would lose answers between sittings. A longer default keeps a company's figures in the browser after they are needed, so 90 days is a choice and not the default. The main risk is a shared computer; the notice and "do not keep" answer it. Saving drafts on our servers would follow the person across devices, but it would hold unfiled financial figures in our tables, and the operator asked for the browser.
+
+### CTA1. The Company Tax Return has its own section
+
+The activities page groups activities by the directory of their page (`activityArea` in `web/public/lib/services/catalog-service.js`, line 206; the order `areaOrder` in `web/public/index.page.js`, line 415). The CT600 page is `companies-house/fileCompanyTaxReturn.html`, so the Company Tax Return and the joint filing sit under "Companies House", though they file with HMRC. `activityArea` returns a new area "Corporation Tax" for the activities `file-company-tax-return` and `file-company-tax-return-with-accounts` (by activity id, so the page keeps its path and its links); `areaOrder` puts it after "Income Tax"; `AREA_NAMES_CY` gives its Welsh name ("Treth Gorfforaeth"). The activity names drop "(HMRC, preview)" for "(HMRC)" only through UH7; until then the name stays. Gates: `web/unit-tests` for `activityArea`, the activities page browser test (`web/browser-tests/` for `index.html`), `npm test`. CTA1 changes no file another task owns, so it can land alone.
 
 ### CTL1. The label register
 
