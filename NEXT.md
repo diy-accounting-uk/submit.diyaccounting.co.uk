@@ -43,11 +43,11 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
+- [ ] **AL36. Close the two stack-health alarm issues once the token exchange fix is on prod.** The fix is on `main` (PR #868, 20b55a766); on ci-set1 16 Cognito and 6 HMRC token exchanges logged only `bodyFields` and wrote no redaction notice. After `main`'s deploy promotes the new prod set, read the two log groups `/aws/lambda/<set>-app-cognito-token-post` and `-hmrc-token-post` for the notice since the deploy, then close issues #866 and #867 with that count. It waits on `deploy.yml` run 45593137650 of `main`, which is building `prod-20b55a7`. **Source**: Issues #866 and #867. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. **Repository**: none.
+
+- [ ] **VID22. Check that the site embeds the new view-payments video.** The manifest and the uploader fix are on `main` (PR #868). After `main`'s deploy promotes the new prod set, run `AWS_PROFILE=diya-submit-prod npm run video:embed-check`; a failure becomes the row's fix. It waits on `deploy.yml` run 45593137650 of `main`, which is building `prod-20b55a7`. **Source**: run 45254955206. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. **Repository**: none.
+
 ## Machine-only
-
-- [ ] **AL36. Close the two stack-health alarm issues once the token exchange fix is on prod.** The fix is on `main` (PR #868, 20b55a766); on ci-set1 16 Cognito and 6 HMRC token exchanges logged only `bodyFields` and wrote no redaction notice. After `main`'s deploy promotes the new prod set, read the two log groups `/aws/lambda/<set>-app-cognito-token-post` and `-hmrc-token-post` for the notice since the deploy, then close issues #866 and #867 with that count. **Source**: Issues #866 and #867. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. **Repository**: none.
-
-- [ ] **VID22. Check that the site embeds the new view-payments video.** The manifest and the uploader fix are on `main` (PR #868). After `main`'s deploy promotes the new prod set, run `AWS_PROFILE=diya-submit-prod npm run video:embed-check`; a failure becomes the row's fix. **Source**: run 45254955206. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. **Repository**: none.
 
 ## Machine-ask
 
