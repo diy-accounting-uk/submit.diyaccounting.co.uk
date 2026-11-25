@@ -37,9 +37,13 @@
 
 (operator, 2026-11-25, with screenshots of the review step: one row per figure, "Turnover, this year", "Period of account" with ISO dates)
 
+> Thanks, for the plan the "Income and reliefs" section needs some hiding with twisties, some are very common fields such as 515 and 305, they should be first, trading losses looks like a candidate.
+
+(operator, 2026-11-25)
+
 ## Status
 
-v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -174,9 +178,9 @@ The page has nine sections (`SECTIONS` in `web/public/lib/ct600-fields.js`: comp
 
 ### CTF1. Fold the less used blocks
 
-Most companies leave the capital allowances, the income and reliefs, the loans and the payments sections at 0 or No. The page shows them open, with every box, so the reader scrolls past about 30 boxes they do not use (the operator's form of 2026-11-25).
+Most companies leave the capital allowances, the trading losses, the loans and the payments sections at 0 or No. The page shows them open, with every box, so the reader scrolls past about 30 boxes they do not use (the operator's form of 2026-11-25).
 
-1. **The form.** The sections `allowances` and `reliefs` (`SECTIONS` in `web/public/lib/ct600-fields.js`), and within `payments` the optional own working, render inside a closed `<details>` whose summary names the section and says "All 0" or the count of boxes with an answer. Within `allowances`, each class group (`ALLOWANCE_CLASSES` in `fileCompanyTaxReturn.page.js`) folds the same way. The company, period, accounts, computation, loans and declaration sections stay open, because every return answers them.
+1. **The form.** The section `allowances` (`SECTIONS` in `web/public/lib/ct600-fields.js`), and within `payments` the optional own working, render inside a closed `<details>` whose summary names the section and says "All 0" or the count of boxes with an answer. The section `reliefs` ("Income and reliefs") stays open and is reordered (operator, 2026-11-25): first, open, the two boxes many companies fill, box 515 (`incomeTaxDeducted`) and box 305 qualifying donations paid (`DONATIONS_PAID_FIELD`); then a closed `<details>` named "Trading losses" holding box 160 (`lossesBroughtForward`), box 275 (`lossAgainstTotalProfits`), box 285 (`lossesBroughtForwardAgainstTotalProfits`), the carry-back claim (`lossCarriedBack`), the previous period's chargeable profits (`priorPeriodChargeableProfits`) and the trade outside the UK (`lossOutsideUk`); then a closed `<details>` named "Other income" holding box 620 (`frankedInvestmentIncome`). Within `allowances`, each class group (`ALLOWANCE_CLASSES` in `fileCompanyTaxReturn.page.js`) folds the same way. The company, period, accounts, computation, loans and declaration sections stay open, because every return answers them.
 2. **It opens itself** when any box inside holds a value other than its default, when a book or iXBRL file filled a box inside, when a problem names a box inside (the error moves focus there), or when CTS1 restores an answer inside. The reader can always open and close it.
 3. **"Tax worked out from your answers"** (`workedTaxPanel` and `renderWorkedTax`, `fileCompanyTaxReturn.page.js`, lines 743 and 1559; the panel is pushed after the reliefs section, line 1093, and stays outside that section's fold) shows, open, box 155, box 315, box 440, box 600 and any warning. The other rows of `workedItems` (line 1422) fold into a `<details>` named "How these are worked out". For a long period, each return's column folds the same way.
 4. **Typing into a folded box.** A test or scene script that types into a box inside a fold opens the fold first: `web/browser-tests/fileCompanyTaxReturn.browser.test.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js` (`#ownCorporationTax`, line 262) and `videos/file-company-tax-return-long-period.json` (`#annualInvestmentAllowance`, `#mainPoolAllowances` and `#donationsPaid`, lines 508 to 548). Playwright does not type into a hidden field, so without this the tests and CTL8's recording fail.
