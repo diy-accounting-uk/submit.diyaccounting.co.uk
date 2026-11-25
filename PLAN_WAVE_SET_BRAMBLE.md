@@ -11,7 +11,7 @@
 
 ## Status
 
-defined 2026-11-25. Wave 1 branches from `origin/main` after wave set aurora (`claude/aurora-ct600`) merges.
+defined 2026-11-25; its rows are off `NEXT.md` (operator, 2026-11-25), so nothing of it is dispatched. Boarding them again needs the operator's word; wave 1 then branches from `origin/main`.
 
 ## The goal
 
