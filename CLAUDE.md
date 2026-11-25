@@ -508,7 +508,7 @@ See the shared conventions section at the end of this file for shared rules. Add
 
 ## AWS Write Operations
 
-See the shared conventions section at the end of this file for full rules. **Always ask before writing to AWS.** Submit-specific paths:
+See the shared conventions section at the end of this file for full rules. **Always ask before writing to AWS.** The operator may request specific direct AWS write actions, which are confirmed back before execution. Submit-specific paths:
 
 - **Secrets**: GitHub Actions Secrets/Variables → `deploy-environment.yml` → AWS Secrets Manager
 - **Infrastructure**: CDK code → git push → GitHub Actions deploy
