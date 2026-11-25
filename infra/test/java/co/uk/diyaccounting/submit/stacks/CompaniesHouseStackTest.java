@@ -983,7 +983,8 @@ class CompaniesHouseStackTest {
                         "PolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
+                                Match.arrayWith(List.of(Match.objectLike(
+                                        Map.of("Action", Match.arrayWith(List.of("dynamodb:Query")))))))))),
                 43);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -993,6 +994,21 @@ class CompaniesHouseStackTest {
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
                 44);
+    }
+
+    @Test
+    void theCompanyTaxReturnRoutesReadTheAccountSettingsThatOpenThemToAnOperatorWithPreviewFeaturesOn() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        var names = SubmitSharedNames.forDocs().companiesHouse;
+        var bundlesTableName = SubmitSharedNames.forDocs().data.bundlesTableName;
+        for (String functionName : List.of(
+                names.hmrcCtReturnPreviewPostIngestLambdaFunctionName,
+                names.hmrcCtReturnPostIngestLambdaFunctionName,
+                names.hmrcCtReturnGetIngestLambdaFunctionName)) {
+            assertTrue(
+                    actionsOnRoleFor(template, functionName, bundlesTableName).contains("dynamodb:GetItem"),
+                    functionName + " reads the caller's account settings");
+        }
     }
 
     @Test
