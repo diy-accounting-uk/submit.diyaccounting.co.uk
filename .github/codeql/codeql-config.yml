@@ -23,6 +23,9 @@ paths-ignore:
   - "app/test-helpers/**"
   - "app/http-simulator/**"
 
+  # Local development server - never deployed (the Dockerfile copies no app/bin)
+  - "app/bin/server.js"
+
   # Test files by pattern
   - "**/*.test.js"
   - "**/*.spec.js"

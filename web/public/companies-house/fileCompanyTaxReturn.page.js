@@ -1298,10 +1298,26 @@ function orderOfTarget(target) {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
+// A loan or repayment row's field of the given return (1 or 2), such as loanName1 or repaymentAmount2Ap2.
+function isLoanRowFieldOf(target, part) {
+  const match = /^(loan|repayment)[A-Z][A-Za-z]*\d+(Ap2)?$/.exec(target);
+  return Boolean(match) && Boolean(match[2]) === (part === 2);
+}
+
+// The model checks the loan rows too, and its problems show at the loans question, which is touched as soon as
+// Yes is chosen. Where the form has a problem at one of that return's row fields, the row field carries it and
+// shows it once the field is left or the form is sent, so the model's copy at the question is left out.
+function isCoveredByLoanRowField(problem, formProblemList) {
+  const part = [1, 2].find((candidate) => problem.target === periodFieldId("loansMade", candidate));
+  return part !== undefined && formProblemList.some((formProblem) => isLoanRowFieldOf(formProblem.target, part));
+}
+
 // One problem per target: the form's own checks first, then the model's, in the order the form shows them.
 function evaluate(values) {
   const merged = new Map();
-  for (const problem of [...formProblems(values), ...modelProblems(values)]) {
+  const ownProblems = formProblems(values);
+  const fromModel = modelProblems(values).filter((problem) => !isCoveredByLoanRowField(problem, ownProblems));
+  for (const problem of [...ownProblems, ...fromModel]) {
     if (!merged.has(problem.target)) merged.set(problem.target, problem);
   }
   return [...merged.values()].sort((a, b) => orderOfTarget(a.target) - orderOfTarget(b.target));

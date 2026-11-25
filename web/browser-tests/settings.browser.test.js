@@ -176,7 +176,7 @@ test.describe("Settings page", () => {
         route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) }),
       );
       await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
-      await page.locator("#previewFeaturesSwitch").check();
+      await page.locator("#previewFeaturesSwitch").click();
       await expect(page.locator("#previewFeaturesSwitch")).not.toBeChecked();
       await expect(page.locator(".status-message")).toContainText("The setting was not saved");
       expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBeNull();

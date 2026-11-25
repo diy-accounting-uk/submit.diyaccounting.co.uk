@@ -160,16 +160,24 @@
       "still": true,
       "steps": [
         {
+          "action": "point",
+          "target": {
+            "role": "button",
+            "name": "File Company Tax Return (HMRC, preview)"
+          },
+          "caption": "Open File Company Tax Return to find the company.",
+          "headline": "Find the company",
+          "keyWord": "company",
+          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page.",
+          "dwellMs": 500
+        },
+        {
           "action": "click",
           "target": {
             "role": "button",
             "name": "File Company Tax Return (HMRC, preview)"
           },
-          "expectsNavigation": true,
-          "caption": "Open File Company Tax Return to find the company.",
-          "headline": "Find the company",
-          "keyWord": "company",
-          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page."
+          "expectsNavigation": true
         },
         {
           "action": "await",

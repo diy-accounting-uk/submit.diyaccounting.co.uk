@@ -408,6 +408,28 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#repaymentName1")).toHaveCount(0);
   });
 
+  test("a loan row's errors wait until its field is left or the return is previewed, not the Yes answer", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await page.locator("#loansMadeYes").check();
+    await expect(page.locator("#loanName1")).toBeVisible();
+    await expect(page.locator("#loansMade-error")).toHaveCount(0);
+    await expect(page.locator("#loanName1-error")).toHaveCount(0);
+    await expect(page.locator("#loanAmount1-error")).toHaveCount(0);
+
+    await page.locator("#loanName1").focus();
+    await page.locator("#loanAmount1").focus();
+    await expect(page.locator("#loanName1-error")).toContainText("Enter the participator's name, 2 to 56 characters");
+    await expect(page.locator("#loanAmount1-error")).toHaveCount(0);
+    await expect(page.locator("#loansMade-error")).toHaveCount(0);
+
+    await page.locator("#loanName1").fill("Carol Smith");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#loanName1-error")).toHaveCount(0);
+    await expect(page.locator("#loanAmount1-error")).toContainText("Enter the amount still owed in whole pounds, above 0");
+    await expect(page.locator("#loansMade-error")).toHaveCount(0);
+  });
+
   test("the loan and repayment buttons are styled as the page's secondary buttons", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
