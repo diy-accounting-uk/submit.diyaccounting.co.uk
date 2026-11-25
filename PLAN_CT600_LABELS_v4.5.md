@@ -45,9 +45,13 @@
 
 (operator, 2026-11-25)
 
+> Also please check: /Users/antony/Desktop/Your\ filing\ -\ DIY\ Accounting\ Submit.pdf and these names need harmonizing too
+
+(operator, 2026-11-25, the saved filed copy of DIY Accounting Limited's CT600: the CT600 boxes, the tax computation, the micro-entity accounts and HMRC's receipt)
+
 ## Status
 
-v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -102,7 +106,8 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTN3 | The working signs (the `showLoading` spinner and "working" messages) show as a bubble on every page, so the reader sees that the button did something | CTN1 | machine-only | Sonnet | ~4 files |
 | CTN2 | A failure at a step that writes to HMRC or Companies House leaves a detail panel under the status area, until it is closed or replaced: what was sent, what was not, where the answers are now, the kind of failure and the next step for that kind | CTN3, CTF1 | machine-only | Opus then Sonnet | ~8 files |
 | CTN4 | Every long running submission narrates its stages as the VAT submission does, each stage a status message that CTN3 shows as a bubble | CTN2 | machine-only | Sonnet | ~12 files |
-| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1, CTN4 | machine-only | Sonnet | screenshots and videos |
+| CTL9 | The filed copy and its parts (the CT600 boxes, the tax computation, the accounts, HMRC's receipt) use one name per concept from the register, no "preview" on a live filing, dates in words, and print without a blank page | CTL7 | machine-only | Sonnet | ~8 files |
+| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1, CTN4, CTL9 | machine-only | Sonnet | screenshots and videos |
 | OCTL1 | The operator decides whether to roll the pattern out to the other journeys, from the CT600 page on prod | CTL8 on prod | human-driven | operator | 0 files |
 
 ### CTL0. The worked tax panel goes to £0
@@ -228,6 +233,26 @@ The VAT submission tells the person what it is doing at each stage: `submitVat.p
 1. **Inventory.** Each page that sends to HMRC or Companies House and waits (the pages that call `showLoading()`: the CT600, the micro-entity, small company and dormant accounts, the confirmation statement, the Companies House forms in `web/public/companies-house/`, and the Income Tax pages in `web/public/hmrc/itsa/`), with the stages it passes through and whether it narrates them today. The inventory is a table in this section, written first.
 2. **Narrate.** Each page in the inventory that lacks narration shows one `info` message per stage, in the VAT submission's words where the stage is the same ("Checking your answers...", "Sending the return to HMRC...", "Waiting for HMRC's answer...", "Sending the accounts to Companies House...", "Companies House has the accounts; sending the return to HMRC..."), and passes a `pollPendingMessage` that names the service it waits for. For the CT600 these are the preview, the HMRC submission and its Transaction Engine poll, and each part of the joint filing. CTN3 shows each message as the working bubble; the spinner stays.
 3. Welsh for the new strings. Gates: for the CT600, a browser case with delayed routes that reads each stage's message in order before the answer; for each other page, the existing browser test asserts its first stage message; `npm test`, `npx eslint`, `npx prettier --check`. CTN4 follows CTN2, because both change the CT600 page's submit paths and the status messages they show.
+
+### CTL9. One name per concept across the filed copy
+
+The operator's saved filed copy of 2026-11-25 (six printed pages: the CT600 boxes, the Corporation Tax computation, the micro-entity accounts, HMRC's receipt) names one thing several ways:
+
+| Concept | The names in the filed copy | Where each comes from |
+|---|---|---|
+| Company number | "Box 2: Company registration number", "Company number", "Registered number:" | `CT600_BOX_ROWS`; `filing-result-record.js` and `filing-record.js` (`ch.record.company-number-line`); `ctComputationsIxbrl.js` line 325 and `accountsIxbrlCommon.js` line 835 |
+| Tax reference | "Box 3: Tax reference (Unique Taxpayer Reference)", "Unique Taxpayer Reference", "Unique Taxpayer Reference:" | the same three |
+| The period | "Box 30: Start of the period covered by the return" with `2025-04-01`, "Return period", "Period of account", "for the year ended", "Period from" | `CT600_BOX_ROWS`; `ctComputationsIxbrl.js`; the accounts cover |
+| Profit before the computation | "Profit before tax per accounts", "Profit or loss per the accounts" (the page's filed copy), "Profit or loss before tax" (the accounts) | `ctComputationsIxbrl.js` line 299; the filed copy's computation; the micro-entity format |
+| Bank interest | "Box 170: Bank, building society or other interest, and profits from non-trading loan relationships", "Less: bank interest (non-trading loan relationship credits)", "Less: non-trading loan relationship credits", "Other income" | `CT600_BOX_ROWS`; `ctComputationsIxbrl.js` line 46; the filed copy; the accounts |
+| Trading profit | "Box 155: Trading profits", "Adjusted trading profit", "Adjusted profit" | `CT600_BOX_ROWS`; `ctComputationsIxbrl.js` line 140; the page |
+| Retained profit | "Profit and loss account" (the accounts), "Profit and loss account reserve" (the form) | the micro-entity format; `MICRO_BALANCE_SHEET_FIELDS` |
+
+1. **One name.** Each concept takes the register's term (CTL1): HMRC's box name where the concept is a CT600 box, the statutory format's name for an accounts line, and the same words in the CT600 boxes, the computation, the receipt and the review (CTL7). The computation names the box a line feeds ("Adjusted trading profit (box 155)"). The computation and the accounts are filed documents, so a label change in `ctComputationsIxbrl.js` or the accounts builders applies to the next filing; the filed copy of an earlier filing stays as it was filed.
+2. **No "preview" on a live filing.** The filed copy's heading ("Your copy of the Company Tax Return (preview)") and its title ("Company Tax Return (CT600, preview)") drop "preview" when the filing went to HMRC's live service; UH7 removes it from the activity's name for everyone.
+3. **Values a person reads.** Box 4 shows its meaning ("Not one of the listed types") in place of `0`; boxes 30 and 35 show dates in words; the receipt shows "Filed 25 November 2026" once.
+4. **Print.** The filed copy prints without an empty page (page 3 of the operator's PDF held one line), keeps each download link and its sentence together, and gives the receipt's label column room for "Unique Taxpayer Reference" on one line. The CT600 boxes and the receipt use the accounts' type, so the copy reads as one document.
+5. Welsh for the new strings. Gates: the filed-copy unit tests, `web/browser-tests` for the result page and its print media, the computation and accounts iXBRL tests (`npm run fixtures:ixds` when a fixture changes), `npm test`; `visual-review` on the printed copy. CTL9 follows CTL7, because both change `filing-record.js` and `filing-result-record.js`.
 
 ### CTL8. The look pass
 
