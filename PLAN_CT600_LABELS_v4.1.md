@@ -29,9 +29,13 @@
 
 (operator, 2026-11-25)
 
+> preview shown... the spinner was weak though. add to that plan that we need the same narration bubbles as submit vat in any long running submission.
+
+(operator, 2026-11-25)
+
 ## Status
 
-v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -80,12 +84,13 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTL5 | `scripts/ct600-source-shots.mjs`: one WebP for each cell the table names, cut from the published package, with the cell marked | CTL2 | machine-only | Sonnet | ~3 files and the images |
 | CTL4 | The page shows the reference in every label, the note with its link on every field, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells, difference note and screenshot, with Welsh | CTL5 | machine-only | Sonnet | ~6 files |
 | CTL7 | The review step and the receipt show the same labels and references, with Welsh | CTL4 | machine-only | Sonnet | ~4 files |
-| CTV1 | Each section of the CT600 page that a CT600 video shows gets a click-to-load embed of that video, starting where the section first shows, and a link to that second | CTL4 | machine-only | Sonnet | ~7 files |
-| CTN1 | A status message the reader cannot see also shows as a closable bubble at the top right, with a link that jumps to the status area; every page that uses `showStatus` or `showFailure` | nothing | machine-only | Sonnet | ~5 files |
-| CTN3 | "Working" messages (an action in progress) show as the same bubble on every page, so the reader sees that the button did something | CTN1 | machine-only | Sonnet | ~4 files |
-| CTN2 | A failure at a step that writes to HMRC or Companies House leaves a detail panel under the status area, until it is closed or replaced: what was sent, what was not, where the answers are now, the kind of failure and the next step for that kind | CTN1, CTS1 | machine-only | Opus then Sonnet | ~8 files |
-| CTF1 | The less used blocks of the form, and the intermediate boxes of "Tax worked out from your answers", fold into closed disclosures that open themselves when they hold an answer, a problem or a book's figure | CTV1 | machine-only | Sonnet | ~5 files |
-| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1 | machine-only | Sonnet | screenshots and videos |
+| CTV1 | Each section of the CT600 page that a CT600 video shows gets a click-to-load embed of that video, starting where the section first shows, and a link to that second | CTL7 | machine-only | Sonnet | ~7 files |
+| CTF1 | The less used blocks of the form, and the intermediate boxes of "Tax worked out from your answers", fold into closed disclosures that open themselves when they hold an answer, a problem or a book's figure | CTV1 | machine-only | Sonnet | ~8 files |
+| CTN1 | A status message the reader cannot see also shows as a closable bubble at the top right, with a link that jumps to the status area; every page with the status area | nothing | machine-only | Sonnet | ~5 files |
+| CTN3 | The working signs (the `showLoading` spinner and "working" messages) show as a bubble on every page, so the reader sees that the button did something | CTN1 | machine-only | Sonnet | ~4 files |
+| CTN2 | A failure at a step that writes to HMRC or Companies House leaves a detail panel under the status area, until it is closed or replaced: what was sent, what was not, where the answers are now, the kind of failure and the next step for that kind | CTN3, CTF1 | machine-only | Opus then Sonnet | ~8 files |
+| CTN4 | Every long running submission narrates its stages as the VAT submission does, each stage a status message that CTN3 shows as a bubble | CTN2 | machine-only | Sonnet | ~12 files |
+| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1, CTN4 | machine-only | Sonnet | screenshots and videos |
 | OCTL1 | The operator decides whether to roll the pattern out to the other journeys, from the CT600 page on prod | CTL8 on prod | human-driven | operator | 0 files |
 
 ### CTL0. The worked tax panel goes to £0
@@ -139,7 +144,7 @@ The `[id, label]` arrays become objects with `id` and `label`. Every use changes
 
 ### CTL5. The screenshots
 
-`scripts/ct600-source-shots.mjs` reads the published package's workbook for each `source` with the diya-gl workbook reader (`dist/app/lib/xlsx-reader.js`). For each single cell (not a sum), it fails when no cell in that cell's row holds the entry's `workbookLabel`. It draws the rows around each named cell as an HTML grid with the sheet's own column letters, row numbers and labels, marks the cell, and takes a WebP with Playwright into `web/public/images/ct600-sources/<sheet>-<cell>.webp`. An npm script runs it. A unit test checks that each cell the table names has its image. The images are committed.
+`scripts/ct600-source-shots.mjs` reads the published package's workbook for each `source` with the diya-gl workbook reader (`dist/app/lib/xlsx-reader.js`). For each single cell (not a sum), it fails when no cell in that cell's row holds the entry's `workbookLabel`. It draws the rows around each named cell as an HTML grid with the sheet's own column letters, row numbers and labels, marks the cell, takes a PNG with Playwright, and converts it with `ffmpeg-static` to `web/public/images/ct600-sources/<sheet>-<cell>.webp`, as `scripts/video-walkthrough.js` writes its WebP frames (line 353). An npm script runs it. A unit test checks that each cell the table names has its image. The images are committed.
 
 ### CTL4. The page
 
@@ -156,34 +161,7 @@ The page has nine sections (`SECTIONS` in `web/public/lib/ct600-fields.js`: comp
 1. **The time a section first shows.** The page builds each section as `<section id="section-<id>" class="form-section">` (`fileCompanyTaxReturn.page.js`, line 1092), and the walkthrough script has no page to look in. So the capture records it: `scripts/site-video-capture.js` adds `section` to each timeline step record (line 749) whose `target` is a string, the id of the `section.form-section` that holds the target, read through the step's Playwright locator while the page is open. `scripts/video-walkthrough.js` then writes, for each CT600 video, `sections: { <section id>: <second> }` into both copies of `publish.json`: the start of the first step for each section, in seconds of the video as `startSeconds` is. A section that no step reaches gets no entry. A recording made before this change has no `section` and so gives no entry.
 2. **The page.** Under each section's heading, a closed `<details>` named "Watch this part" holds the first video, in the order typed, with-accounts, book, long-period, that has an entry for the section. On open it loads an iframe from `https://www.youtube-nocookie.com/embed/<id>?start=<second>`, built as `embedElement` builds one (`web/public/widgets/video-pages.js`, line 100), so a closed section loads nothing from YouTube. Beside it, a link to `https://youtu.be/<id>?t=<second>` names the time ("Watch from 1:23"). A section with no entry shows neither.
 3. **Prod.** The CT600 videos are public. The video pages hold them back on prod because prod does not list the activity, and the CT600 page reaches only CT38's operators on prod, so its embeds show nothing to a customer until UH7.
-4. Welsh for the new strings. Gates: a unit test of the section times from a fixture timeline; a browser case in `web/browser-tests/fileCompanyTaxReturn.browser.test.js` that serves a `publish.json` fixture with one section time (`page.route`), opens that section's details and finds the iframe's `start` and the link's `t`; `npm test`, `npx eslint`, `npx prettier --check`. CTV1 follows CTL4 because both change `fileCompanyTaxReturn.page.js`. CTL8 records the videos again and runs `npm run video:walkthrough`, so the times follow the new recordings.
-
-### CTN1. The bubble for a message out of view
-
-`showStatus` and `showFailure` (`web/public/lib/utils/dom-utils.js`, lines 17 and 215) add a message to `#statusMessagesContainer`, which sits at the top of each page (152 pages hold it). When the reader pressed a button far down the CT600 page, the message appeared off screen and the reader saw nothing (operator, 2026-11-25). The change, in the shared widget, so that it reaches every page:
-
-- When a message is added and `#statusMessagesContainer` is not in the viewport (an `IntersectionObserver` on the container), the same message also shows as a bubble fixed at the top right of the window: its text, a close button, and a link "Go to the message" that scrolls to the container and moves focus to the message.
-- The bubble closes when the reader closes it, when the container scrolls into view, or when the message is removed. An error bubble stays until then; an information or success bubble closes after 8 seconds. One bubble shows the newest message; it replaces the one before.
-- The bubble has `role="status"`, or `role="alert"` for an error. The message in the container keeps its own role, so a screen reader hears it once: the bubble carries `aria-hidden="true"` when the container message is announced.
-- Welsh for the new strings. Gates: a browser test on a long page (the CT600 page) that scrolls down, triggers a message, finds the bubble, follows its link and finds the container in view; a test that a message shown with the container in view makes no bubble; `npm test`, `npx eslint`, `npx prettier --check`; `visual-review` on the bubble in the light and dark themes.
-
-### CTN3. Working messages as bubbles
-
-A request that takes time shows "working" messages through `showStatus` with type `info`. CTN3 makes each such message, on every page, show as the CTN1 bubble whatever the scroll position, so that a pressed button always gives a sign that it did something. The message in the container stays. Gate: a browser case on the CT600 page that presses "Preview the return" with a delayed route and finds the bubble before the answer.
-
-### CTN2. The failure detail panel
-
-At a failure where the page writes to HMRC or Companies House (the CT600 file, the joint filing, and the preview, which is the step before them), the status message gains a panel under `#statusMessagesContainer` that stays until the reader closes it or a newer failure replaces it. It says:
-
-1. **What was sent and what was not.** For a joint filing, which part reached which service. This comes from `sending` and its `persistJoint` record (`fileCompanyTaxReturn.page.js`, line 2846).
-2. **Where the answers are.** "Your answers are still in this form and saved in this browser until <date>" (from CTS1's record), or "not saved: you chose not to keep them".
-3. **The kind of failure and its next step**, from the answer's status and error body:
-   - a fault on our side (a 5xx from Submit, as on 2026-11-25): "This is a fault in Submit, not in your answers or your sign-in. Nothing was sent to HMRC. We have been told." with a link to Help and the request id;
-   - Submit's own HMRC or Companies House credentials refused (the vendor or presenter credentials): "HMRC or Companies House refused Submit's own credentials. Nothing is wrong with your account. Try again later.";
-   - the person's own credentials or account refused (a Government Gateway user ID or password, the company authentication code, an entitlement): what to check, and where;
-   - HMRC or Companies House answered a business error: the error text and the field it names.
-   The classes come from one function with unit tests, built from `failureCause` in `dom-utils.js` and the CT600 error parsing in `web/public/lib/services/hmrc-ct-return-service.js`. Opus writes the classes and the text; Sonnet builds the panel.
-4. Welsh for the new strings. Gates: unit tests of the classes, one per kind, from recorded answers; browser cases that route each kind and find the panel with its next step; the panel survives a new information message and goes on a new failure or its close button. CTN2 follows CTS1 because it reads CTS1's saved record.
+4. Welsh for the new strings. Gates: a unit test of the section times from a fixture timeline; a browser case in `web/browser-tests/fileCompanyTaxReturn.browser.test.js` that serves a `publish.json` fixture with one section time (`page.route`), opens that section's details and finds the iframe's `start` and the link's `t`; `npm test`, `npx eslint`, `npx prettier --check`. CTV1 follows CTL7 because CTL4 changes `fileCompanyTaxReturn.page.js` and CTL7 changes the review text in `fileCompanyTaxReturn.browser.test.js`, and CTV1 changes both. CTL8 records the videos again and runs `npm run video:walkthrough`, so the times follow the new recordings.
 
 ### CTF1. Fold the less used blocks
 
@@ -191,8 +169,47 @@ Most companies leave the capital allowances, the income and reliefs, the loans a
 
 1. **The form.** The sections `allowances` and `reliefs` (`SECTIONS` in `web/public/lib/ct600-fields.js`), and within `payments` the optional own working, render inside a closed `<details>` whose summary names the section and says "All 0" or the count of boxes with an answer. Within `allowances`, each class group (`ALLOWANCE_CLASSES` in `fileCompanyTaxReturn.page.js`) folds the same way. The company, period, accounts, computation, loans and declaration sections stay open, because every return answers them.
 2. **It opens itself** when any box inside holds a value other than its default, when a book or iXBRL file filled a box inside, when a problem names a box inside (the error moves focus there), or when CTS1 restores an answer inside. The reader can always open and close it.
-3. **"Tax worked out from your answers"** (`workedTaxPanel` and `renderWorkedTax`, `fileCompanyTaxReturn.page.js`, lines 743 and 1559; the panel is pushed after the reliefs section, line 1093, and stays outside that section's fold) shows, open, the boxes a person checks: box 155, box 315, box 440 and box 600 (and box 330 to 345 when the period straddles two financial years). The steps between them (boxes 165, 235, 300, 329, 430, 475, 510, 525, 528 and the computation's adjusted profit) fold into a `<details>` named "How these are worked out". For a long period, each return's column folds the same way.
-4. Welsh for the new strings. Gates: browser cases that find each folded block closed on a blank form, open after a value is typed or a book fills it, and open with focus on the box a problem names; the worked tax panel shows its four boxes and opens its steps; `npm test`, `npx eslint`, `npx prettier --check`. CTF1 follows CTV1, because both change how `fileCompanyTaxReturn.page.js` renders a section. CTL8's look pass covers the folded page.
+3. **"Tax worked out from your answers"** (`workedTaxPanel` and `renderWorkedTax`, `fileCompanyTaxReturn.page.js`, lines 743 and 1559; the panel is pushed after the reliefs section, line 1093, and stays outside that section's fold) shows, open, box 155, box 315, box 440, box 600 and any warning. The other rows of `workedItems` (line 1422) fold into a `<details>` named "How these are worked out". For a long period, each return's column folds the same way.
+4. **Typing into a folded box.** A test or scene script that types into a box inside a fold opens the fold first: `web/browser-tests/fileCompanyTaxReturn.browser.test.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js` (`#ownCorporationTax`, line 262) and `videos/file-company-tax-return-long-period.json` (`#annualInvestmentAllowance`, `#mainPoolAllowances` and `#donationsPaid`, lines 508 to 548). Playwright does not type into a hidden field, so without this the tests and CTL8's recording fail.
+5. Welsh for the new strings. Gates: browser cases that find each folded block closed on a blank form, open after a value is typed or a book fills it, and open with focus on the box a problem names; the worked tax panel shows its four boxes and opens its steps; `npm test`, `npx eslint`, `npx prettier --check`. CTF1 follows CTV1, because both change how `fileCompanyTaxReturn.page.js` renders a section. CTL8's look pass covers the folded page.
+
+### CTN1. The bubble for a message out of view
+
+`showStatus` and `showFailure` (`web/public/lib/utils/dom-utils.js`, lines 17 and 215), and `StatusMessages.show` in `web/public/widgets/status-messages.js` (called directly by `web/public/lib/help-page.js`, line 309, and `web/public/lib/rates/rates-calculator.js`, line 54), add a message to `#statusMessagesContainer`, which sits at the top of each page (152 pages hold it, and all 152 load `submit.js`). When the reader pressed a button far down the CT600 page, the message appeared off screen and the reader saw nothing (operator, 2026-11-25). The change, in a new module `web/public/lib/utils/status-bubble.js` that `submit.js` starts, so that it reaches every page:
+
+- The module watches `#statusMessagesContainer` for added and removed messages (a `MutationObserver`), so it covers every function that writes there. When a message is added and the container is not in the viewport (an `IntersectionObserver` on the container), the same message also shows as a bubble fixed at the top right of the window: its text, a close button, and a link "Go to the message" that scrolls to the container and moves focus to the message.
+- The bubble closes when the reader closes it, when the container scrolls into view, or when the message is removed. An error bubble stays until then; an information or success bubble closes after 8 seconds. One bubble shows the newest message; it replaces the one before.
+- The bubble has no live-region role. The container (`role="status" aria-live="polite"` on all 152 pages) and an error's `role="alert"` (`showFailure`) already announce the message, so a screen reader hears it once. The close button and the link stay in the tab order.
+- The bubble's style goes in `web/public/css/messages.css`. The tests go in a new `web/browser-tests/statusBubble.browser.test.js`, so CTN1 and CTN3 change no source or test file that CTL0 to CTF1 change.
+- Welsh for the new strings. Gates: a browser test on a long page (the CT600 page) that scrolls down, triggers an error, finds the bubble, follows its link and finds the container in view; a test that an error shown with the container in view makes no bubble; `npm test`, `npx eslint`, `npx prettier --check`; `visual-review` on the bubble in the light and dark themes.
+
+### CTN3. Working signs as bubbles
+
+The pages show that a request is in progress in two ways. `showLoading()` (`web/public/widgets/status-messages.js`) shows the spinner `#loadingSpinner`, which sits beside the status area (`fileCompanyTaxReturn.html`, line 41); the CT600 page calls it for the preview and for each filing (`fileCompanyTaxReturn.page.js`, lines 2266 and 3418), and 57 files call it. A `showStatus` message of type `info` is the other way: `dom-utils.js` already treats it as progress (`clearSupersededMessages`, line 67), for example "Still processing..." while a request polls (`web/public/lib/services/api-client.js`, line 104).
+
+CTN3 shows each of them as a working bubble at the top right, whatever the scroll position: from `showLoading()` until `hideLoading()`, and for an `info` message until it leaves the container. This replaces CTN1's rule for `info` messages. The working bubble is separate from the CTN1 message bubble, so the error that ends a request stays: the CT600 page shows the error and then calls `hideLoading()` (lines 2299 and 2301). The spinner and the message in the container stay. Welsh for the new string ("Working"). Gates, in `web/browser-tests/statusBubble.browser.test.js`: a case on the CT600 page that presses "Preview the return" with a delayed route and finds the working bubble before the answer; a case that routes a failure and finds the working bubble gone and the error bubble shown.
+
+### CTN2. The failure detail panel
+
+At a failure where the page writes to HMRC or Companies House (the CT600 file, the joint filing, and the preview, which is the step before them), the status message gains a panel under `#statusMessagesContainer` that stays until the reader closes it or a newer failure replaces it. It says:
+
+1. **What was sent and what was not.** For a joint filing, which part reached which service. This comes from `sending` (`fileCompanyTaxReturn.page.js`, line 131) and its `persistJoint` record (line 2845). For the CT600 file, the server's own message states whether HMRC received the return, and the panel shows it as it is: a 502 can say "Do not file it again yet" (`app/functions/hmrc/hmrcCtReturnPost.js`, line 263).
+2. **Where the answers are.** "Your answers are still in this form and saved in this browser until <date>" (from CTS1's record), or "not saved: you chose not to keep them".
+3. **The kind of failure and its next step**, from the answer's status and error body:
+   - a fault on our side (a 5xx from Submit that carries no HMRC or Companies House error, as on 2026-11-25): "This is a fault in Submit, not in your answers or your sign-in." with a link to Help and the request id (the `x-request-id` header, `app/lib/httpResponseHelper.js`, line 212);
+   - Submit's own HMRC or Companies House credentials refused (the vendor or presenter credentials): "HMRC or Companies House refused Submit's own credentials. Nothing is wrong with your account. Try again later.";
+   - the person's own credentials or account refused (a Government Gateway user ID or password, the company authentication code, an entitlement): what to check, and where;
+   - HMRC or Companies House answered a business error: the error text and the field it names.
+   A 502 that carries HMRC's or Companies House's errors (`error.errors`, `hmrcCtReturnPost.js`, line 283) is their answer and takes one of the last three classes by its error numbers. The classes come from one function with unit tests, built from `failureCause` in `dom-utils.js`, the CT600 error parsing in `web/public/lib/services/hmrc-ct-return-service.js` and `companiesHouseErrorText` (`fileCompanyTaxReturn.page.js`, line 3141). Opus writes the classes and the text; Sonnet builds the panel.
+4. Welsh for the new strings. Gates: unit tests of the classes, one per kind, from fixture answers; browser cases that route each kind and find the panel with its next step; the panel survives a new information message and goes on a new failure or its close button. CTN2 follows CTF1, the last task before it that changes `fileCompanyTaxReturn.page.js` and its browser test, and CTN3, the last that changes the status widgets and `messages.css`. CTS1, which CTN2 reads, is before CTF1.
+
+### CTN4. Narrate every long running submission
+
+The VAT submission tells the person what it is doing at each stage: `submitVat.page.js` shows "Initiating HMRC authentication..." (line 396) and "Submitting VAT return to HMRC..." (line 505) as `info` status messages, and the async client shows `init.pollPendingMessage` on each poll (`web/public/lib/services/api-client.js`, line 104). The CT600 page shows only the `#loadingSpinner` beside the status area for its preview and its filings, which the operator found too weak (2026-11-25).
+
+1. **Inventory.** Each page that sends to HMRC or Companies House and waits (the pages that call `showLoading()`: the CT600, the micro-entity, small company and dormant accounts, the confirmation statement, the Companies House forms in `web/public/companies-house/`, and the Income Tax pages in `web/public/hmrc/itsa/`), with the stages it passes through and whether it narrates them today. The inventory is a table in this section, written first.
+2. **Narrate.** Each page in the inventory that lacks narration shows one `info` message per stage, in the VAT submission's words where the stage is the same ("Checking your answers...", "Sending the return to HMRC...", "Waiting for HMRC's answer...", "Sending the accounts to Companies House...", "Companies House has the accounts; sending the return to HMRC..."), and passes a `pollPendingMessage` that names the service it waits for. For the CT600 these are the preview, the HMRC submission and its Transaction Engine poll, and each part of the joint filing. CTN3 shows each message as the working bubble; the spinner stays.
+3. Welsh for the new strings. Gates: for the CT600, a browser case with delayed routes that reads each stage's message in order before the answer; for each other page, the existing browser test asserts its first stage message; `npm test`, `npx eslint`, `npx prettier --check`. CTN4 follows CTN2, because both change the CT600 page's submit paths and the status messages they show.
 
 ### CTL8. The look pass
 
