@@ -41,9 +41,13 @@
 
 (operator, 2026-11-25)
 
+> Also the preview form should look like the "The return as filed These are the figures HMRC received: the return period, the tax computation that works out the profit, and the tax due. Check them against your records." after submission. - for the plan.
+
+(operator, 2026-11-25)
+
 ## Status
 
-v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -162,6 +166,7 @@ The `[id, label]` arrays become objects with `id` and `label`. Every use changes
 
 The review step (`reviewAnswers` in `ct600-fields.js`) and the receipt (`filing-record.js`, `filing-result-record.js`) already read labels from the table. The operator found the review hard to read (2026-11-25): one row per figure ("Turnover, this year", then "Turnover, last year" much later), "Period of account" with ISO dates, and box numbers in some labels and not others. The change:
 
+0. **The review is the filed copy's document.** The review before sending shows the same document the result page shows after HMRC accepts it, under "The return as filed" (the company and its UTR, the return period, the tax computation that works out the profit, the tax due, and the accounts), rendered by the same code in `web/public/lib/filing-record.js` with its heading changed to "The return you are about to file". Each figure in it carries a Change link to its box. Points 1 to 3 below apply inside that document.
 1. **The accounts as columns.** The profit and loss account and the balance sheet each become one table with the columns Line, This year, Last year, and a Change link beside each figure that moves focus to that box, as the accounts section of the form already lays them out (`yearLedger` and `microLedger` in `fileCompanyTaxReturn.page.js`). A line with no figure in either year shows "—"; a year with no column (first accounts) has no column.
 2. **HMRC's labels and a Box column.** Every row of the other sections takes its label from the table (CTL2), with the reference in its own narrow column ("Box 3", "Box 30 and 35", "Item C", or empty), so a label never starts "Box n:". "Period of account" becomes HMRC's box 30 and box 35, "Start of the period covered by the return" and "End of the period covered by the return", as two rows.
 3. **Dates in words**: "1 April 2025", as `longDateText` writes them on the page.
