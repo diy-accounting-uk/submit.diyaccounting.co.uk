@@ -17,9 +17,13 @@
 
 (operator, 2026-11-25)
 
+> Also does filling in keep the session warm? there is a lot to fill in and it could easily be interupted. Please include in that plan, a strategy to inform the user and maintain data somewhere in their browser so it can be recovered, have an option in the form filling to set the "store in your browser for" option (default 28 days but please advise on this and the strategy in general).
+
+(operator, 2026-11-25)
+
 ## Status
 
-defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, and v2.2 adds CTV1, the operator's video request of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -62,10 +66,11 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | # | Task | Waits on | Needs | Model | Size |
 |---|---|---|---|---|---|
 | CTL0 | The worked tax panel keeps its figures when the own working disagrees, and hides the two-return block when the period is 12 months again | nothing | machine-only | Sonnet | ~4 files |
+| CTS1 | Typing keeps the sign-in alive, and the answers are saved in the browser for the period the person chooses (28 days by default), offered back on return and deleted on filing | CTL0 | machine-only | Sonnet | ~7 files |
 | CTL1 | The label register: every field, its official term and source, its reference, the workbook's label and cells, and whether a difference note is needed | nothing | machine-only | Opus | 1 file (this plan's appendix) |
 | CTL2 | The table carries the register: official label, reference, note, source link and workbook cells on every entry of `ct600-fields.js`, with Welsh; the `[id, label]` arrays become objects | CTL1 | machine-only | Sonnet | ~6 files |
 | CTL5 | `scripts/ct600-source-shots.mjs`: one WebP for each cell the table names, cut from the published package, with the cell marked | CTL2 | machine-only | Sonnet | ~3 files and the images |
-| CTL4 | The page shows the reference in every label, the note with its link on every field, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells, difference note and screenshot, with Welsh | CTL5 | machine-only | Sonnet | ~6 files |
+| CTL4 | The page shows the reference in every label, the note with its link on every field, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells, difference note and screenshot, with Welsh | CTL5, CTS1 | machine-only | Sonnet | ~6 files |
 | CTL7 | The review step and the receipt show the same labels and references, with Welsh | CTL4 | machine-only | Sonnet | ~4 files |
 | CTV1 | Each section of the CT600 page that a CT600 video shows gets a click-to-load embed of that video, starting where the section first shows, and a link to that second | CTL4 | machine-only | Sonnet | ~6 files |
 | CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1 | machine-only | Sonnet | screenshots and videos |
@@ -79,6 +84,25 @@ Two causes, both read from the code:
 2. **The two-return block stays on screen.** `.worked-tax__returns { display: grid; }` (`web/public/css/long-period.css`, line 59) overrides the `hidden` attribute. After the period of account was over 12 months once (for example while a date is typed), `workedTaxLong` stays visible with its last figures under the 12-month rows. Fix: `.worked-tax__returns[hidden] { display: none; }`, as `web/public/css/bundles-cards.css` (line 26) does for its sections.
 
 Gates: a case in `web/browser-tests/fileCompanyTaxReturn.browser.test.js` that types an own working £100 away from box 440 and still reads box 440 and box 600; a case that types a 13-month period and then a 12-month one and finds no "Return 1 of 2" heading visible; the review step still refuses the disagreement with both figures; `npm test`, `npx eslint` and `npx prettier --check` on each changed file. CTL0 touches no file that the other tasks need first, so it can land alone and before them.
+
+### CTS1. The sign-in stays alive and the answers survive an interruption
+
+What happens today, read from the code:
+
+- **Typing does not keep the sign-in alive.** Nothing on the CT600 page calls the API while the person types. The stacks set no token lifetimes, so Cognito's defaults apply: the ID token lasts one hour and the refresh token 30 days. The page refreshes the ID token only when a request needs it (`authorizedFetch` in `web/public/lib/services/api-client.js`, line 162, calls `ensureSession` and, when the refresh fails, `sendToSignIn`).
+- **An interruption loses the answers.** `sendToSignIn` (`web/public/lib/services/auth-service.js`, line 78) clears the session and goes to the sign-in page. A closed tab, a crash or a reload does the same. The page keeps answers in `sessionStorage` only after a joint filing has sent its first part (`persistJoint`, `fileCompanyTaxReturn.page.js`, line 2846), and that store ends with the tab.
+
+The change:
+
+1. **Keep the sign-in alive while the person works.** On input in `returnForm`, at most once every ten minutes, call `ensureSession({ minTTLms: 15 * 60 * 1000 })`, so the ID token is refreshed before it ends. A refresh that fails shows a status line ("Your sign-in has ended. Your answers are saved in this browser. Sign in again to carry on.") and does not leave the page.
+2. **Save the answers as the person types.** A new module, `web/public/lib/form-draft.js`, written so that other journeys can use it after OCTL1, saves `readValues()` (`fileCompanyTaxReturn.page.js`, line 1150) to `localStorage` one second after the last change. The key holds the user's `sub`, the company number and the period start, so two companies or two people on one browser do not mix. The record holds the values, the time saved and the time it expires. The Government Gateway user ID and password and the Companies House authentication code (`gatewayUserId`, `gatewayPassword`, `companyAuthCode` in `fileCompanyTaxReturn.html`, lines 178 to 230) are outside `returnForm`, so `readValues()` never reads them. A unit test asserts that a saved record holds none of the three.
+3. **Offer them back.** After the company lookup, when a saved record exists for that user, company and period, a notice above the form says when it was saved and offers "Restore my answers" and "Start again". "Start again" deletes the record.
+4. **The person chooses how long.** Beside the notice that the answers are being saved, a choice labelled "Keep my answers in this browser for": "until I close the browser" (`sessionStorage`), 7 days, 28 days (the default), 90 days, or "do not keep". The choice itself is kept in `localStorage`. A record past its expiry is deleted on the next visit to any page that loads the module. A "Delete my saved answers" control removes every record of the person in this browser.
+5. **Delete on filing.** When HMRC accepts the return (and, for a joint filing, both parts), the record is deleted. The existing `persistJoint` resume point stays as it is.
+6. **Tell the person.** The notice says, in plain words, that the answers are kept only in this browser, never on our servers, and that anyone who uses this browser could see them; it suggests "do not keep" on a shared computer. `web/public/privacy.html`, section "Cookies and browser storage" (line 626), adds the saved answers: what is kept, where, for how long, and how to delete them. This storage serves a service the person asked for, so it needs no cookie consent (PECR regulation 6(4)); the assumption is stated in the privacy text's review.
+7. Welsh for every new string. Gates: unit tests of `form-draft.js` (key, expiry, the three excluded fields, delete); browser cases in `web/browser-tests/fileCompanyTaxReturn.browser.test.js` that type, reload, restore and find the values, that choose "do not keep" and find nothing after a reload, and that file and find the record gone; `npm test`, `npx eslint`, `npx prettier --check`. CTS1 follows CTL0 and comes before CTL4 because all three change `fileCompanyTaxReturn.page.js`.
+
+Advice on the default. 28 days suits a personal computer: a company's accounts and return are often prepared over several weeks, and a shorter default would lose answers between sittings. A longer default keeps a company's figures in the browser after they are needed, so 90 days is a choice and not the default. The main risk is a shared computer; the notice and "do not keep" answer it. Saving drafts on our servers would follow the person across devices, but it would hold unfiled financial figures in our tables, and the operator asked for the browser.
 
 ### CTL1. The label register
 
