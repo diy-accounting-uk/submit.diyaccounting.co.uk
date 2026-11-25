@@ -33,9 +33,13 @@
 
 (operator, 2026-11-25)
 
+> For the plan, this form is pretty bad, it should look a bit more like a form like we do for tye comopany accounts, the lableing for this year last year is clumbsy and a poor use of space, it looks lik they should be columns with "Change" next to each figure. and "period of account" looks very odd, these need to match HMRC's field labels and show box numbers (some do but its ugly).
+
+(operator, 2026-11-25, with screenshots of the review step: one row per figure, "Turnover, this year", "Period of account" with ISO dates)
+
 ## Status
 
-v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -83,7 +87,7 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTL2 | The table carries the register: official label, reference, note, source link and workbook cells on every entry of `ct600-fields.js`, with Welsh; the `[id, label]` arrays become objects | CTL1, CTS1 | machine-only | Sonnet | ~6 files |
 | CTL5 | `scripts/ct600-source-shots.mjs`: one WebP for each cell the table names, cut from the published package, with the cell marked | CTL2 | machine-only | Sonnet | ~3 files and the images |
 | CTL4 | The page shows the reference in every label, the note with its link on every field, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells, difference note and screenshot, with Welsh | CTL5 | machine-only | Sonnet | ~6 files |
-| CTL7 | The review step and the receipt show the same labels and references, with Welsh | CTL4 | machine-only | Sonnet | ~4 files |
+| CTL7 | The review step is laid out like a form: the accounts as a table with this year and last year as columns and Change beside each figure, every row labelled with HMRC's term and a Box column, dates in words; the receipt shows the same labels | CTL4 | machine-only | Sonnet | ~4 files |
 | CTV1 | Each section of the CT600 page that a CT600 video shows gets a click-to-load embed of that video, starting where the section first shows, and a link to that second | CTL7 | machine-only | Sonnet | ~7 files |
 | CTF1 | The less used blocks of the form, and the intermediate boxes of "Tax worked out from your answers", fold into closed disclosures that open themselves when they hold an answer, a problem or a book's figure | CTV1 | machine-only | Sonnet | ~8 files |
 | CTN1 | A status message the reader cannot see also shows as a closable bubble at the top right, with a link that jumps to the status area; every page with the status area | nothing | machine-only | Sonnet | ~5 files |
@@ -152,7 +156,12 @@ The `[id, label]` arrays become objects with `id` and `label`. Every use changes
 
 ### CTL7. The review step and the receipt
 
-The review step (`reviewAnswers` in `ct600-fields.js`) and the receipt (`filing-record.js`, `filing-result-record.js`) already read labels from the table. They show the reference beside each label: "Box <n>" for a box, the format item for an accounts line. The tests that hold the review and receipt text change with them.
+The review step (`reviewAnswers` in `ct600-fields.js`) and the receipt (`filing-record.js`, `filing-result-record.js`) already read labels from the table. The operator found the review hard to read (2026-11-25): one row per figure ("Turnover, this year", then "Turnover, last year" much later), "Period of account" with ISO dates, and box numbers in some labels and not others. The change:
+
+1. **The accounts as columns.** The profit and loss account and the balance sheet each become one table with the columns Line, This year, Last year, and a Change link beside each figure that moves focus to that box, as the accounts section of the form already lays them out (`yearLedger` and `microLedger` in `fileCompanyTaxReturn.page.js`). A line with no figure in either year shows "—"; a year with no column (first accounts) has no column.
+2. **HMRC's labels and a Box column.** Every row of the other sections takes its label from the table (CTL2), with the reference in its own narrow column ("Box 3", "Box 30 and 35", "Item C", or empty), so a label never starts "Box n:". "Period of account" becomes HMRC's box 30 and box 35, "Start of the period covered by the return" and "End of the period covered by the return", as two rows.
+3. **Dates in words**: "1 April 2025", as `longDateText` writes them on the page.
+4. The receipt shows the same labels and references. The tests that hold the review and receipt text change with them; a browser case reads the accounts table's columns and follows one Change link to its box; `visual-review` on the review at the phone and desktop widths.
 
 ### CTV1. A video for each section
 
