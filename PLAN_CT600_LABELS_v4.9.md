@@ -61,9 +61,13 @@
 
 (operator, 2026-11-25)
 
+> Same as the CT600 the plan needs to be adding detail to all the form fields
+
+(operator, 2026-11-25, with a screenshot of the balance sheet on the micro-entity accounts page)
+
 ## Status
 
-v4.8 adds CTR2, fill a form from a filed receipt, the operator's request of 2026-11-25, by hand; the operator will widen it for the live test of both filings. v4.7 adds CTA2, the preview features that a new tab forgets, the operator's report of 2026-11-25, by hand. v4.6 adds CTA1, the CT600 in its own section of the activities page, the operator's request of 2026-11-25, by hand. v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.9 adds CTL10, the same field detail on the Companies House accounts pages, the operator's request of 2026-11-25, by hand; the scope is now the CT600 journey and the micro-entity and small company accounts journeys. v4.8 adds CTR2, fill a form from a filed receipt, the operator's request of 2026-11-25, by hand; the operator will widen it for the live test of both filings. v4.7 adds CTA2, the preview features that a new tab forgets, the operator's report of 2026-11-25, by hand. v4.6 adds CTA1, the CT600 in its own section of the activities page, the operator's request of 2026-11-25, by hand. v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -114,6 +118,7 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTL2 | The table carries the register: official label, reference, note, source link and workbook cells on every entry of `ct600-fields.js`, with Welsh; the `[id, label]` arrays become objects | CTL1, CTS1, CTR2 | machine-only | Sonnet | ~6 files |
 | CTL5 | `scripts/ct600-source-shots.mjs`: one WebP for each cell the table names, cut from the published package, with the cell marked | CTL2 | machine-only | Sonnet | ~3 files and the images |
 | CTL4 | The page shows the reference in every label, the note with its link on every field, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells, difference note and screenshot, with Welsh | CTL5 | machine-only | Sonnet | ~6 files |
+| CTL10 | The micro-entity and small company accounts pages get what CTL2 to CTL5 give the CT600: the statutory term with its source, the format item, a note on every field, and the workbook place with its screenshot | CTL4 | machine-only | Sonnet | ~10 files |
 | CTL7 | The review step is laid out like a form: the accounts as a table with this year and last year as columns and Change beside each figure, every row labelled with HMRC's term and a Box column, dates in words; the receipt shows the same labels | CTL4 | machine-only | Sonnet | ~4 files |
 | CTV1 | Each section of the CT600 page that a CT600 video shows gets a click-to-load embed of that video, starting where the section first shows, and a link to that second | CTL7 | machine-only | Sonnet | ~7 files |
 | CTF1 | The less used blocks of the form, and the intermediate boxes of "Tax worked out from your answers", fold into closed disclosures that open themselves when they hold an answer, a problem or a book's figure | CTV1 | machine-only | Sonnet | ~8 files |
@@ -122,7 +127,7 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTN2 | A failure at a step that writes to HMRC or Companies House leaves a detail panel under the status area, until it is closed or replaced: what was sent, what was not, where the answers are now, the kind of failure and the next step for that kind | CTN3, CTF1 | machine-only | Opus then Sonnet | ~8 files |
 | CTN4 | Every long running submission narrates its stages as the VAT submission does, each stage a status message that CTN3 shows as a bubble | CTN2 | machine-only | Sonnet | ~12 files |
 | CTL9 | The filed copy and its parts (the CT600 boxes, the tax computation, the accounts, HMRC's receipt) use one name per concept from the register, no "preview" on a live filing, dates in words, and print without a blank page | CTL7 | machine-only | Sonnet | ~8 files |
-| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1, CTN4, CTL9 | machine-only | Sonnet | screenshots and videos |
+| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1, CTN4, CTL9, CTL10 | machine-only | Sonnet | screenshots and videos |
 | OCTL1 | The operator decides whether to roll the pattern out to the other journeys, from the CT600 page on prod | CTL8 on prod | human-driven | operator | 0 files |
 
 ### CTL0. The worked tax panel goes to £0
@@ -198,6 +203,15 @@ The `[id, label]` arrays become objects with `id` and `label`. Every use changes
 ### CTL4. The page
 
 `hintOf` renders the note with its source link for every field, and the link comes from `termSource` when the field has no box. Each label starts with its reference ("Box 155:", "Balance sheet item C:"). Under the note, a `<details>` element named "In DIY Accounting's spreadsheets" shows the file, the sheet and the cell for this year and last year, the sum when there is one, the difference note and the CTL5 screenshot. The accounts tables and the loan rows get the same note and disclosure for each line. Gates: `web/browser-tests/fileCompanyTaxReturn.browser.test.js` and `fileCompanyTaxReturn.operatorPreview.browser.test.js` (a label with its reference, a note with its link, the disclosure closed, then open with its cells and image), `npm test`, `npx eslint`, `npx prettier --check`.
+
+### CTL10. The Companies House accounts pages
+
+The micro-entity and small company accounts pages (`web/public/companies-house/fileMicroEntityAccounts.html` and `fileSmallCompanyAccounts.html`, with their `.page.js`) take the same accounts lines as the CT600's accounts section, under their own field lists, with no note on any line (the operator's screenshot of 2026-11-25: "Called up share capital not paid (optional)", "Prepayments and accrued income (optional)" and the rest, each a bare label). The register (CTL1) already holds the accounts lines' statutory terms, format items, sources and workbook places, because the CT600's accounts section uses the same lines. CTL10 applies it to these two pages:
+
+1. Each line's label, format item ("Balance sheet item C"), note with its source link, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells and screenshot (CTL5's images), rendered by the same code CTL4 writes for the CT600 page, moved to a shared module so the three pages use one renderer.
+2. The prior-year column that the page fills from the company's last filed accounts at Companies House says so in its note ("From the accounts filed at Companies House for <period>").
+3. A line the register marks as not in the DIY Accounting workbook says that in its disclosure.
+4. Welsh for the new strings. Gates: the two pages' browser tests (a line with its format item and note, the disclosure with its cells), the micro-entity and small company behaviour suites on the simulator lane, `npm test`. CTL10 follows CTL4, because it reuses CTL4's renderer; CTL8's look pass covers both pages, and the videos of both accounts journeys are recorded again with the CT600's.
 
 ### CTL7. The review step and the receipt
 
