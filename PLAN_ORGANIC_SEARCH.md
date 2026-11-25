@@ -911,7 +911,7 @@ Facts for OS24, OS24d and LIM1: The listing register is `web/marketing/marketing
 | --- | --- | --- | --- | --- | --- |
 | OOS17b | machine-ask | ready | the operator's go for the click | nothing | none |
 | OOS17 | machine-only (reads the reply) | blocked | the directory team's review | OOS30 | none |
-| OS18g | machine-only | blocked | OpenAI's review email | nothing | none |
+| OS18g | machine-ask | ready | the operator's yes to publish | nothing | none |
 | OS24 | machine-only | blocked | G2's answer, due by 2026-11-17 | LIM1 | submit |
 | OS24d | machine-only | blocked | Crozdesk's review | nothing | submit |
 | OOS30 | human-driven | blocked | OOS17's listing going live | nothing | none |
@@ -927,7 +927,7 @@ The MCP connector "DIY Accounting Submit" was submitted on 2026-11-14 and shows 
 
 #### OS18g. Read OpenAI's review of plugin 0.1.6, then publish it
 
-The operator submitted 0.1.6 for review on 2026-11-20 (the plugin page reads "0.1.6 · In review": https://platform.openai.com/plugins/manage/plugin_asdk_app_6af90052c7f08191b817bdecceff0362). OpenAI sends its decision by email to the plugin's contact address. A session searches the mail mirror (corpus-loom `search`, source `mail-antony`, or the `.eml` files under `../mail/`) at each `/unblock` and reads the plugin page in Chrome. On approval the session presses Publish on the plugin page in the operator's Chrome, where the operator is signed in (approved by the operator, 2026-11-22). A requested change becomes its own row. The plugin page read "0.1.6 · In review" and "Estimated review completion: Dec 6, 2026" at 08:25 UTC on 2026-11-24, and the mail mirror (pulled 11:42 UTC on 2026-11-23) holds OpenAI's submission notice of 08:54 UTC on 2026-11-20 and no decision. Blocked on OpenAI's review email. **Source**: https://developers.openai.com/plugins/deploy/submission; `PLAN_ORGANIC_SEARCH.md` OOS18 (group 6, assistant connector). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files. **Repository**: none. **Class**: machine-only. **State**: blocked. **Blocked by**: OpenAI's review email. **Unblocks**: nothing.
+The operator submitted 0.1.6 for review on 2026-11-20 (the plugin page reads "0.1.6 · In review": https://platform.openai.com/plugins/manage/plugin_asdk_app_6af90052c7f08191b817bdecceff0362). OpenAI sends its decision by email to the plugin's contact address. A session searches the mail mirror (corpus-loom `search`, source `mail-antony`, or the `.eml` files under `../mail/`) at each `/unblock` and reads the plugin page in Chrome. On approval the session presses Publish on the plugin page in the operator's Chrome, where the operator is signed in (approved by the operator, 2026-11-22). A requested change becomes its own row. The plugin page read "0.1.6 · In review" and "Estimated review completion: Dec 6, 2026" at 08:25 UTC on 2026-11-24, and the mail mirror (pulled 11:42 UTC on 2026-11-23) holds OpenAI's submission notice of 08:54 UTC on 2026-11-20 and no decision. OpenAI approved the plugin on 2026-11-25 13:58 UTC (email "ChatGPT Plugin Submission Approved", to the operator: "Your plugin, DIY Accounting Submit (v1.0.0), has been approved and is ready to publish"). Next: with the operator's yes in the session, press Publish on the plugin page in the operator's Chrome and read the listing in the ChatGPT directory for GB.
 
 #### OS24. G2's address in the listing register
 
