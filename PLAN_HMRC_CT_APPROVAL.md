@@ -17,7 +17,7 @@ Status (2026-11-23): CT34, CT35, CT36, CT38 and CT39 can start. The CT600 and th
 
 ## Board
 
-The rows below are this plan's approval and launch work. `NEXT.md` carries the open ones on the path to prod (CT38, CT39, CT40, OCT8, OCT9, UH7); the recognition track (CT34 to CT37, OCT7, CT25, CT26) is tracked in the section "Open tasks of the recognition track".
+The rows below are this plan's approval and launch work. `NEXT.md` carries the open ones on the path to prod (OCT8, OCT9, UH7); the recognition track (CT34 to CT37, OCT7, CT25, CT26) is tracked in the section "Open tasks of the recognition track".
 
 | Id | What | Files | Model | Blocked by |
 |---|---|---|---|---|
@@ -30,8 +30,7 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
 | CT38 | The CT600 and the joint filing on prod, live, only for a user with `resident-ltd` (by any bundle that includes it), preview features on in the stored account settings, and on the operator list; the "preview" mark on every HMRC company filing not live for the public; the calendar says "preview (operator only)" | ~24 | Opus (design), Sonnet (build) | — |
 | CT39 | DIY Accounting Limited's book for the year to 31 March 2026, by the `company-book` skill | 0 | Sonnet | — |
-| CT40 | A test-in-live submission (`HMRC-CT-CT600-TIL`) of the company's return from the script, which files nothing | ~3 | Sonnet | CT39 |
-| OCT8 | The operator files DIY Accounting Limited's accounts and CT600 for the period ending 31 March 2026 through Submit on prod | 0 | none | CT38 on prod, CT39, CT40 |
+| OCT8 | The operator files DIY Accounting Limited's accounts and CT600 for the period ending 31 March 2026 through Submit on prod | 0 | none | — |
 | OCT9 | The operator decides to open the CT600 and the joint filing to the public | 0 | none | OCT8 |
 | UH7 | Open the CT600 and the joint filing to the public: `prod` on both activities, CT38's operator gate and the "preview" marks removed, the terms (C86) and the calendar say production | ~10 | Sonnet | OCT9 |
 
@@ -91,9 +90,7 @@ The briefs of CT34 to CT36 are in the section "Open tasks of the recognition tra
 
 - [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". The operator approved these test filings on 2026-11-23: the session runs each scenario on the test service it names when the preconditions hold. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's pack, which follows OCT7.
 
-- [ ] **CT40. A test-in-live submission of DIY Accounting Limited's return, which files nothing.** `--til` in `scripts/hmrc-tpvs-ct600.js` posts the return from CT39's book to the live Transaction Engine as `HMRC-CT-CT600-TIL`, with the operator's Government Gateway credentials typed at a prompt. Evidence target: `../private.diyaccounting.co.uk/hmrc/ct/til-<date>/`, masked. Blocked on CT39. **Owner**: Claude Code, Operator (credentials). **Model**: Sonnet.
-
-- [ ] **OCT8. The operator files DIY Accounting Limited's accounts and Company Tax Return for the period ending 31 March 2026, through Submit on prod.** One joint filing or the two filings, with his own Government Gateway and Companies House credentials. The receipts and the acknowledgements go to `../private.diyaccounting.co.uk/hmrc/ct/own-filing-2026-03-31/` and `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/`. The accounts are due by 31 December 2026 and the return by 31 March 2027. Blocked on CT38 on prod, CT39 and CT40. **Owner**: Operator (files), Claude Code (the record). **Model**: none.
+- [ ] **OCT8. The operator files DIY Accounting Limited's accounts and Company Tax Return for the period ending 31 March 2026, through Submit on prod.** One joint filing or the two filings, with his own Government Gateway and Companies House credentials. The receipts and the acknowledgements go to `../private.diyaccounting.co.uk/hmrc/ct/own-filing-2026-03-31/` and `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/`. The accounts are due by 31 December 2026 and the return by 31 March 2027. **Owner**: Operator (files), Claude Code (the record). **Model**: none.
 
 - [ ] **OCT9. The operator decides to open the CT600 and the joint filing to the public.** The one question is OCT8's outcome: can the operator file DIY Accounting Limited's own accounts through Submit? Recognition does not decide it. The decision and its date go into this plan. Blocked on OCT8. **Owner**: Operator. **Model**: none.
 
@@ -101,7 +98,7 @@ The briefs of CT34 to CT36 are in the section "Open tasks of the recognition tra
 
 ## Open tasks of the recognition track
 
-CT34 to CT37, OCT7, CT25 and CT26 are tracked here, not on `NEXT.md`. They do not block opening the CT600 on prod (operator, 2026-11-23). CT38, CT39, CT40, OCT8, OCT9 and UH7, the path to the CT600 on prod, stay on `NEXT.md`. Model, size and repository are in each entry. "Blocked by" lists the tasks not yet on `main`.
+CT34 to CT37, OCT7, CT25 and CT26 are tracked here, not on `NEXT.md`. They do not block opening the CT600 on prod (operator, 2026-11-23). OCT8, OCT9 and UH7, the path to the CT600 on prod, stay on `NEXT.md`. Model, size and repository are in each entry. "Blocked by" lists the tasks not yet on `main`.
 
 **Facts the recognition tasks share (CT34 to CT37 and OCT7).** SDST answered the request for the new applicant's pack on 2026-11-23: recognition is optional, and an application waits until three conditions hold. (1) The technical specifications and the obligations on customers are fully researched, and the product meets them. (2) Testing is comprehensive: extensive use of HMRC's test services, which must include the External Test Service (ETS), and our own thorough product testing. (3) The commercial product is fully matured and ready for release to the market. SDST sends the pack when the operator confirms that the product is ready. SDST's words, the reply's draft, the evidence for each sentence and the review of both are in `../private.diyaccounting.co.uk/hmrc/ct/DRAFT_SDST_CT_RECOGNITION_READINESS_2026-11-23.md`. The ETS user ID, its password and the test UTR stay in the `ci` environment secrets (`HMRC_CT_ETS_SENDER_ID`, `HMRC_CT_ETS_PASSWORD`, `HMRC_CT_ETS_UTR`); no row writes them to a file, a log or a transcript. The release commit is the commit of `main` on which CT34, CT35 and CT36 are merged and no row that changes the Corporation Tax code is open. The CT600 files through HMRC's Transaction Engine XML channel (live `https://transaction-engine.tax.service.gov.uk/submission`, `app/services/hmrcTransactionEngine.js` line 25), authenticated per filing by the company's own Government Gateway user ID and password with Vendor ID 9873 in the URI; the MTD VAT production application's OAuth credentials (CMQAA-531) take no part in it.
 
@@ -159,9 +156,7 @@ flowchart LR
     end
     subgraph Opening
     CT38 --> OCT8
-    CT39 --> CT40
     CT39 --> OCT8
-    CT40 --> OCT8
     OCT8 --> OCT9
     OCT9 --> UH7
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
@@ -172,8 +167,7 @@ flowchart LR
 - CT37: blocked by CT34, CT35 and CT36 (the release commit)
 - OCT7: blocked by CT37
 - CT25: blocked by SDST's pack, which follows OCT7; CT26 by CT25
-- CT40: blocked by CT39
-- OCT8: blocked by CT38 on prod, CT39 and CT40
+- OCT8: nothing blocks it
 - OCT9: blocked by OCT8; UH7 by OCT9
 - Recognition does not block the opening (operator, 2026-11-23)
 
