@@ -57,9 +57,13 @@
 
 (operator, 2026-11-25, with two screenshots of the activities page on prod in two tabs of one browser: one lists the Companies House forms marked "sandbox", the other does not)
 
+> In the ch journey and the hmrc journey allow "fill from HMRC/Companies House submission receipt" to [the "Fill from your books" block] - same plan - we'll expand that for the live test of both.
+
+(operator, 2026-11-25)
+
 ## Status
 
-v4.7 adds CTA2, the preview features that a new tab forgets, the operator's report of 2026-11-25, by hand. v4.6 adds CTA1, the CT600 in its own section of the activities page, the operator's request of 2026-11-25, by hand. v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
+v4.8 adds CTR2, fill a form from a filed receipt, the operator's request of 2026-11-25, by hand; the operator will widen it for the live test of both filings. v4.7 adds CTA2, the preview features that a new tab forgets, the operator's report of 2026-11-25, by hand. v4.6 adds CTA1, the CT600 in its own section of the activities page, the operator's request of 2026-11-25, by hand. v4.5 adds CTL9, one name per concept across the filed copy, the operator's request of 2026-11-25, by hand. v4.4 makes CTL7's review the filed-copy document, the operator's request of 2026-11-25, by hand. v4.3 changes CTF1's "Income and reliefs" by hand, the operator's request of 2026-11-25. v4.2 widens CTL7 to the review's layout, the operator's request of 2026-11-25, by hand. v4.1 adds CTN4, the operator's narration request of 2026-11-25, by hand after the review loop ended. v4 is review round 3 of v3.1. v3.1 adds CTN1 to CTN3, the operator's points 1 to 3 of 2026-11-25 about the status messages, and CTF1, the folded blocks. defined 2026-11-25; v2.1 adds CTL0, the operator's defect of 2026-11-25, v2.2 adds CTV1, the operator's video request, and v2.3 adds CTS1, the saved answers and the session, both of the same day, after review round 1 (plan-review-loop); not on `NEXT.md`.
 
 ## Goals
 
@@ -106,7 +110,8 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTA1 | The activities page lists the Company Tax Return and the joint filing in their own section, "Corporation Tax", after "Income Tax" and before "Companies House" | nothing | machine-only | Sonnet | ~5 files |
 | CTA2 | A new tab shows the same activities as the tab before it: the preview features choice is kept for the account, not for one tab | CTA1 | machine-only | Sonnet | ~5 files |
 | CTL1 | The label register: every field, its official term and source, its reference, the workbook's label and cells, and whether a difference note is needed | nothing | machine-only | Opus | 1 file (this plan's appendix) |
-| CTL2 | The table carries the register: official label, reference, note, source link and workbook cells on every entry of `ct600-fields.js`, with Welsh; the `[id, label]` arrays become objects | CTL1, CTS1 | machine-only | Sonnet | ~6 files |
+| CTR2 | "Fill from your books" also offers "Fill from a filing you made": the person's HMRC Company Tax Return and Companies House accounts receipts, each of which fills the CT600, micro-entity or small company accounts form with the figures it filed | CTS1 | machine-only | Sonnet | ~8 files |
+| CTL2 | The table carries the register: official label, reference, note, source link and workbook cells on every entry of `ct600-fields.js`, with Welsh; the `[id, label]` arrays become objects | CTL1, CTS1, CTR2 | machine-only | Sonnet | ~6 files |
 | CTL5 | `scripts/ct600-source-shots.mjs`: one WebP for each cell the table names, cut from the published package, with the cell marked | CTL2 | machine-only | Sonnet | ~3 files and the images |
 | CTL4 | The page shows the reference in every label, the note with its link on every field, and the "In DIY Accounting's spreadsheets" disclosure with the file, sheet, cells, difference note and screenshot, with Welsh | CTL5 | machine-only | Sonnet | ~6 files |
 | CTL7 | The review step is laid out like a form: the accounts as a table with this year and last year as columns and Change beside each figure, every row labelled with HMRC's term and a Box column, dates in words; the receipt shows the same labels | CTL4 | machine-only | Sonnet | ~4 files |
@@ -166,6 +171,15 @@ One table, written as the appendix of this plan, with one row for each field of 
 - "difference note: yes" when the workbook's label differs from the official term, with the note's text.
 
 Start from what the spreadsheets repository already records: the `sheetCell` values of `app/data/filing/ct600-v3.toml` and `app/data/filing/frs105-formats.toml`, and `CELL_MAP`. Submit's `formEntriesFromBook` (`ct600-fields.js`, line 2068) maps a diya-gl book to the form, and `CELL_MAP` maps the workbook to the book. Where these disagree (for example, `frs105-formats.toml` gives "Other charges" as `PubP&L` F44, and Submit's `microProfitAndLossFromSmall` works it out from the small company lines), the row follows the figure Submit fills in and says so. Last-year cells and cells that none of these name are read from the workbook. CTL1 checks each row's cells against one workbook of the published package. A field whose term or cell the sources leave open is listed at the end of the appendix as a question for the operator.
+
+### CTR2. Fill from a filing you made
+
+The "Fill from your books" block (`web/public/widgets/books-import.js`) fills a form from a DIYA-GL book, a spreadsheets package or iXBRL accounts. A company that has filed one of its two returns has the other's figures already: the CT600's stored record keeps the filed accounts iXBRL (`filed.accountsIxbrl` in the async request, `app/functions/hmrc/hmrcCtReturnPost.js`, line 305), and a Companies House accounts filing keeps its own. The change:
+
+1. The block gains a third choice, "Fill from a filing you made", on the CT600 page and on the micro-entity and small company accounts pages. It lists the person's receipts for the company on the page (HMRC Company Tax Return receipts and Companies House accounts receipts, newest first, each with its period and date), read through the receipts API the receipts page uses.
+2. Choosing one reads that filing's accounts iXBRL from its stored record and fills the form through the iXBRL path the block already has (`formEntriesFromIxbrl` in `web/public/lib/ct600-fields.js`, line 2162, on the CT600 page; the accounts pages' own iXBRL fill). A CT600 receipt also fills the CT600's computation boxes from its stored boxes when the target is the CT600 page.
+3. The figures are the filed ones; the page says which filing they came from and that each box can still be changed before preview. A receipt of another company, or of a period that the form's company cannot take, is not listed.
+4. Welsh for the new strings. Gates: unit tests of the receipt-to-form mapping from a fixture record of each kind; browser cases on the CT600 and micro-entity pages that choose a fixture receipt and read the filled boxes; `npm test`, `npx eslint`, `npx prettier --check`. CTR2 follows CTS1, because both change how the CT600 page fills its form; the operator widens it for the live test of both filings.
 
 ### CTL2. The table carries the register
 
