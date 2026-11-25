@@ -26,7 +26,7 @@ The new Companies House forms join prod's list when the XML team approves each f
 | CHT1 | machine-only | ready | nothing | CHT2 | submit |
 | CHT2 | machine-only | blocked | CHT1 (one worker builds both) | nothing | submit |
 | LOOK1 | machine-only | ready | nothing | nothing | submit |
-| CH60 | machine-only (a read) | blocked | the presenter poll's decision on DIY Accounting Limited's accounts, submission 000001 (filed 2026-11-25 23:26 UTC; NEXT.md OCT8) | nothing | submit |
+| CH60 | machine-only (a read) | blocked | the presenter poll's first run after DIY Accounting Limited's accounts were accepted (submission 000001, accepted 2026-11-25; the run of 2026-11-26 07:00 UTC; NEXT.md OCT8) | nothing | submit |
 
 Model, size and repository are in each entry. "Blocked by" lists the tasks and events not yet done.
 
