@@ -27686,3 +27686,9 @@ cy = '''Nid yw Tŷ’r Cwmnïau wedi mynegeio cyflwyniad {number} eto. Yn gwirio
 [strings."ch.gateway.check-failed"]
 hash = "3a97eaa2e98d"
 cy = '''Anfonwyd cyflwyniad {number} i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys eto: methodd y gwiriad statws ({message}). Dewiswch Gwirio eto i ofyn am y canlyniad.'''
+
+# == The bubble that repeats a message added while the status area is out of view, ids widget.go-to-message ==
+
+[strings."widget.go-to-message"]
+hash = "82c5001ccbe2"
+cy = '''Ewch i’r neges'''

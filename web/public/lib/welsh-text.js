@@ -3204,6 +3204,7 @@ window.WELSH_TEXT = {
   "widget.field-sources":
     "Mae’r diffiniadau’n dod o {cited}. Rydym wedi cyfieithu i’r Gymraeg y rhai sydd yn Saesneg yn unig yn y ffynhonnell.",
   "widget.field-value": "Gwerth",
+  "widget.go-to-message": "Ewch i’r neges",
   "widget.hmrc-auth-failed": "Methodd y mewngofnodi: {reason}",
   "widget.hmrc-auth-redirecting": "Yn eich anfon i CThEF i fewngofnodi yn {url}...",
   "widget.hmrc-auth-starting": "Yn dechrau mewngofnodi gyda CThEF...",

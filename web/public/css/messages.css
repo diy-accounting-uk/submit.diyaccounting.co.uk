@@ -118,6 +118,64 @@
   background-color: var(--c-paper);
 }
 
+/* The bubble that repeats a message added while the status area is out of
+   view, fixed at the top right of the window. */
+.status-bubble {
+  --message-ink: var(--c-info);
+  --message-tint: var(--c-info-tint);
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: min(24rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--message-ink);
+  border-left-width: 4px;
+  border-radius: var(--radius-control);
+  background-color: var(--message-tint);
+  color: var(--c-ink);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+
+.status-bubble[data-kind="success"] {
+  --message-ink: var(--c-ok);
+  --message-tint: var(--c-ok-tint);
+}
+
+.status-bubble[data-kind="error"] {
+  --message-ink: var(--c-error);
+  --message-tint: var(--c-error-tint);
+}
+
+.status-bubble[data-kind="warning"] {
+  --message-ink: var(--c-warn);
+  --message-tint: var(--c-warn-tint);
+}
+
+.status-bubble-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.status-bubble-link {
+  align-self: flex-start;
+  color: var(--c-brand);
+  font-weight: var(--weight-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.status-bubble-link:hover {
+  text-decoration-thickness: 2px;
+}
+
 /* Signed-out panel: what the page does, what signing in gives, and a Log in
    button. A page shows it in place of its form to a signed-out visitor. */
 .signed-out-panel {
