@@ -525,7 +525,7 @@ activity = "file-company-tax-return"
 category = "submission"
 question = "Can I file a Company Tax Return (CT600)?"
 answer = """
-Not yet. The Company Tax Return (CT600) is in **Preview**: you can try the screens, and nothing is sent to HMRC. It prepares the return from a diya-gl book export.
+Yes. You fill in the Company Tax Return (CT600) form, or fill it from a diya-gl book export, check the boxes, and file it with HMRC using the Government Gateway user ID and password for the company's Corporation Tax enrolment.
 
 Filing it needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle.
 
@@ -542,7 +542,7 @@ activity = "file-company-tax-return-with-accounts"
 category = "submission"
 question = "Can I file my accounts and Company Tax Return together?"
 answer = """
-Not yet. Filing both together is in **Preview**. Nothing goes to Companies House or HMRC for real.
+Yes. The accounts go to Companies House and the Company Tax Return to HMRC, as one filing.
 
 On the Company Tax Return form, choose **To Companies House and to HMRC with the Company Tax Return**. You fill in one form. The accounts go to Companies House first. When Companies House accepts them, the Company Tax Return goes to HMRC with the same figures. While Companies House has not answered, you can send the Company Tax Return now or wait. If Companies House then rejects the accounts, a changed figure needs an amended return.
 

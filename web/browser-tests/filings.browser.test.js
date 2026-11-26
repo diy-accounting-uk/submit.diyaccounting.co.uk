@@ -156,7 +156,7 @@ test.describe("Filings page - customer copy", () => {
     await openFiling(page, CT_RECEIPT_NAME, CT_RECEIPT);
 
     const copy = page.locator("#filingContent .customer-copy");
-    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
     await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
     await expect(copy.locator(".customer-copy-submission")).toContainText("RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S");
     await expect(copy.locator("#ct600Box155 td.figure")).toHaveText("£4,500");
@@ -185,9 +185,11 @@ test.describe("Filings page - customer copy", () => {
     await expect(copy).toContainText("Filed 24 October 2026");
   });
 
-  test("a test filing, or one whose receipt does not say, keeps preview in its title", async ({ page }) => {
+  test("a return filed with HMRC's test service says so in its titles, and none says preview", async ({ page }) => {
     await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, gatewayTest: true });
-    await expect(page.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
+    await expect(page.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (HMRC test service)");
+    await expect(page.locator("#filingContent .submission-record h2").first()).toHaveText("Company Tax Return (CT600, HMRC test service)");
+    await expect(page.locator("#filingContent .customer-copy")).not.toContainText("preview");
   });
 
   test("the printed copy has no empty page and keeps each download link with its sentence", async ({ page, browserName }) => {

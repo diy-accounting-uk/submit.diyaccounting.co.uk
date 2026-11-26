@@ -816,11 +816,11 @@ test.describe("Company lookup drill-down edit links", () => {
     await expect(note.locator("a")).toHaveAttribute("href", "https://www.gov.uk/strike-off-your-company-from-companies-register");
   });
 
-  test("on prod, where the Company Tax Return form is not offered, the accounts section has no link to it", async ({ page }) => {
+  test("on prod, where the Company Tax Return form is offered, the accounts section links to it", async ({ page }) => {
     await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#accountsSection .file-this a.btn")).toHaveCount(2, { timeout: 15000 });
-    await expect(page.locator('#accountsSection .file-this[data-activity="file-company-tax-return"]')).toHaveCount(0);
+    await expect(page.locator("#accountsSection .file-this a.btn")).toHaveCount(3, { timeout: 15000 });
+    await expect(page.locator('#accountsSection .file-this[data-activity="file-company-tax-return"]')).toHaveCount(1);
   });
 
   for (const [language, prefix] of [

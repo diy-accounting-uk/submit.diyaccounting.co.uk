@@ -165,8 +165,8 @@ export const AVAILABILITY = [
     activity: "file-company-tax-return",
     video: "ZoUTlFPvUes",
     cells: [
-      ["preview", "operator only on the live site; period of account up to 18 months"],
-      ["preview", "operator only on the live site; book export file"],
+      ["production", "period of account up to 18 months"],
+      ["production", "book export file"],
       NOT_OFFERED,
       NOT_OFFERED,
       NOT_OFFERED,
@@ -212,14 +212,7 @@ export const AVAILABILITY = [
     filing: "Accounts at Companies House and CT600 at HMRC together",
     web: "companies-house/fileCompanyTaxReturn.html",
     activity: "file-company-tax-return-with-accounts",
-    cells: [
-      ["preview", "operator only on the live site"],
-      ["preview", "operator only on the live site; book export file"],
-      NOT_OFFERED,
-      NOT_OFFERED,
-      NOT_OFFERED,
-      NOT_OFFERED,
-    ],
+    cells: [["production"], ["production", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
     filing: "Companies House revised accounts (micro-entity, small company, dormant)",

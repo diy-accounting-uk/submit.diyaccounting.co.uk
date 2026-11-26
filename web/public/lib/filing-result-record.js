@@ -176,7 +176,7 @@ export const IRMARK_MISMATCH_WARNING = siteText(
  * @returns {string}
  */
 export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, dateText, longPeriod }) {
-  const live = outcome.gatewayTest === false;
+  const testService = outcome.gatewayTest === true;
   const ofParts = longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", longPeriod) : "";
   const periodEnd = String(boxes[35] ?? "");
   const heading = recordHeading({
@@ -187,7 +187,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
         siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: company.companyNumber }),
       ),
     ],
-    title: ctRecordTitle(live, ofParts),
+    title: ctRecordTitle(testService, ofParts),
     subtitleHtml: escapeRecordText(
       siteText("ch.ct.record-period", "Period covered by the return {start} to {end}", {
         start: longDate(boxes[30]),
@@ -217,7 +217,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
   });
   const receipt = { ...outcome, utr, successMessage: undefined };
   return customerCopyHtml({
-    title: ctCopyTitle(live, ofParts),
+    title: ctCopyTitle(testService, ofParts),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(outcome.irmarkReceipt ?? outcome.irmark ?? ABSENT),

@@ -1676,12 +1676,8 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#returnIrmark")).toContainText(`Return 1 of 2 IRmark: ${IRMARKS.A1}`);
     await expect(page.locator("#returnIrmark")).toContainText(`Return 2 of 2 IRmark: ${IRMARKS.A2}`);
     await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(2);
-    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText(
-      "Your copy of the Company Tax Return (preview) 1 of 2",
-    );
-    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText(
-      "Your copy of the Company Tax Return (preview) 2 of 2",
-    );
+    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText("Your copy of the Company Tax Return 1 of 2");
+    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText("Your copy of the Company Tax Return 2 of 2");
 
     expect(submission.requests).toHaveLength(2);
     const [first, second] = submission.requests;
@@ -1962,14 +1958,14 @@ test.describe("File Company Tax Return entry form", () => {
 
       const copy = page.locator("#returnRecord .customer-copy");
       await expect(copy).toBeVisible({ timeout: 15_000 });
-      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
+      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
       await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
       await expect(copy.locator(".customer-copy-submission")).toContainText("RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S");
 
       const record = copy.locator(".submission-record").first();
       await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
       await expect(record.locator(".reference").first()).toHaveText("Tax reference 8596148860");
-      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600, preview)");
+      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600)");
       await expect(record.locator(".subtitle")).toHaveText("Period covered by the return 1 April 2025 to 31 March 2026");
       await expect(record.locator("tr", { hasText: "Profit or loss before tax per the accounts" })).toBeVisible();
       await expect(record.locator("thead th.box-reference").first()).toHaveText("Box");

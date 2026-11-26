@@ -6,7 +6,6 @@ import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
-import { _clearOperatorsCache } from "@app/lib/operators.js";
 import {
   INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
   INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
@@ -780,59 +779,12 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
-    describe("on prod, where the joint filing is open only to an operator's own preview", () => {
-      let savedOperatorEmails;
-
-      // The stored account settings the settings item holds, answered to a GetCommand on it.
-      async function storeSettings(settings) {
-        const lib = await import("@aws-sdk/lib-dynamodb");
-        const answerQuery = mockSend.getMockImplementation();
-        mockSend.mockImplementation(async (cmd) => {
-          if (cmd instanceof lib.GetCommand && cmd.input.Key?.bundleId === "#account-settings") return { Item: { settings } };
-          return answerQuery(cmd);
-        });
-      }
-
+    describe("on prod, where the joint filing is listed", () => {
       beforeEach(() => {
         process.env.ENVIRONMENT_NAME = "prod";
-        savedOperatorEmails = process.env.OPERATOR_EMAILS;
-        process.env.OPERATOR_EMAILS = "test@test.submit.diyaccounting.co.uk";
-        _clearOperatorsCache();
       });
 
-      afterEach(() => {
-        if (savedOperatorEmails === undefined) delete process.env.OPERATOR_EMAILS;
-        else process.env.OPERATOR_EMAILS = savedOperatorEmails;
-        _clearOperatorsCache();
-      });
-
-      test("refuses a customer's accounts that carry a joint filing id, before it charges or files", async () => {
-        process.env.OPERATOR_EMAILS = "someone-else@example.com";
-        _clearOperatorsCache();
-        await storeSettings({ previewFeatures: true });
-        const response = await companiesHouseAccountsPostHandler(
-          buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }),
-        );
-        expect(response.statusCode).toBe(403);
-        expect(parseResponseBody(response)).toMatchObject({
-          code: "ACTIVITY_ENVIRONMENT_RESTRICTED",
-          activityId: "file-company-tax-return-with-accounts",
-        });
-        expect(mockPostToGateway).not.toHaveBeenCalled();
-        expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
-      });
-
-      test("refuses an operator's joint filing id while the stored preview features setting is off", async () => {
-        await storeSettings({ previewFeatures: false });
-        const response = await companiesHouseAccountsPostHandler(
-          buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }), headers: { "x-preview-features": "on" } }),
-        );
-        expect(response.statusCode).toBe(403);
-        expect(mockPostToGateway).not.toHaveBeenCalled();
-      });
-
-      test("files the accounts of an operator's joint filing when the stored preview features setting is on", async () => {
-        await storeSettings({ previewFeatures: true });
+      test("files a customer's accounts that carry a joint filing id", async () => {
         const response = await companiesHouseAccountsPostHandler(
           buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }),
         );
@@ -841,8 +793,6 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       });
 
       test("files a customer's accounts sent alone", async () => {
-        process.env.OPERATOR_EMAILS = "someone-else@example.com";
-        _clearOperatorsCache();
         const response = await companiesHouseAccountsPostHandler(buildEvent());
         expect(response.statusCode).toBe(201);
       });

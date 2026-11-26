@@ -35,8 +35,8 @@ describe("the help page", () => {
 
   test("an entry for an activity that prod does not list is not in the committed page", () => {
     const html = readFileSync(HELP_PAGE_PATH, "utf8");
-    expect(html).not.toContain('data-id="company-tax-return-ct600"');
     expect(html).not.toContain('data-id="diya-gl-books"');
+    expect(html).toContain('data-id="company-tax-return-ct600"');
   });
 
   test("a numbered list, a bullet list and a table render as lists and a table", () => {
@@ -86,7 +86,7 @@ describe("the guide page", () => {
 
   test("a journey whose video names an activity that prod does not list is left out", () => {
     const manifest = loadManifest();
-    const unlisted = manifest.videos.find((video) => video.catalogueActivity === "file-company-tax-return");
+    const unlisted = manifest.videos.find((video) => video.catalogueActivity === "file-psc-verification-statement");
     expect(unlisted).toBeDefined();
     expect(renderGuideJourneys(manifest, catalog)).not.toContain(`id="${unlisted.id}"`);
   });

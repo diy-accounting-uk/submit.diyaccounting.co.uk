@@ -15,4 +15,6 @@ export const VIDEO_COVERAGE_ALLOW_LIST = {
   "diya-gl-storage": "no page in this site — the UI that calls this storage API lives in the spreadsheets repository's diya-gl app",
   "file-psc-verification-statement":
     "no page of its own — its PSC data is shown inside file-confirmation-statement's scene script, on the same page",
+  "file-company-tax-return-with-accounts":
+    "no page or path of its own — it is a choice on the Company Tax Return page, which videos/file-company-tax-return-with-accounts.json films",
 };

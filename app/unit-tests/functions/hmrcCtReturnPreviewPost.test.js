@@ -292,7 +292,7 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
   });
 
   test("returns 403 when the environment does not list the matched activity", async () => {
-    process.env.ENVIRONMENT_NAME = "prod";
+    process.env.ENVIRONMENT_NAME = "unlisted-environment";
     const response = await hmrcCtReturnPreviewPostHandler(buildEvent());
     expect(response.statusCode).toBe(403);
   });

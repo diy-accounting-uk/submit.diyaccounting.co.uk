@@ -187,19 +187,19 @@ function boxValueCell(box, value) {
 }
 
 /**
- * The filed copy's title and its record's title. A return that went to HMRC's live service is not a
- * preview; a test filing, or one filed before the receipt said which, keeps "preview".
+ * The filed copy's title and its record's title. A return the receipt marks as filed with HMRC's
+ * test service says so; a live return, or one filed before receipts recorded the service, does not.
  */
-export function ctRecordTitle(live, parts) {
-  return live
-    ? siteText("ch.ct.record-title-live", "Company Tax Return (CT600){parts}", { parts })
-    : siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts });
+export function ctRecordTitle(testService, parts) {
+  return testService
+    ? siteText("ch.ct.record-title-test", "Company Tax Return (CT600, HMRC test service){parts}", { parts })
+    : siteText("ch.ct.record-title-live", "Company Tax Return (CT600){parts}", { parts });
 }
 
-export function ctCopyTitle(live, parts) {
-  return live
-    ? siteText("ch.ct.record-copy-title-live", "Your copy of the Company Tax Return{parts}", { parts })
-    : siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", { parts });
+export function ctCopyTitle(testService, parts) {
+  return testService
+    ? siteText("ch.ct.record-copy-title-test", "Your copy of the Company Tax Return (HMRC test service){parts}", { parts })
+    : siteText("ch.ct.record-copy-title-live", "Your copy of the Company Tax Return{parts}", { parts });
 }
 
 // " 1 of 2" for one of the two returns of a period of account over 12 months.
@@ -262,7 +262,7 @@ function ct600Record(receipt, dateText) {
   return ct600RecordHtml({
     boxes: receipt.filed?.boxes ?? {},
     utr: receipt.utr,
-    title: ctRecordTitle(receipt.gatewayTest === false, longPeriodTitleSuffix(receipt)),
+    title: ctRecordTitle(receipt.gatewayTest === true, longPeriodTitleSuffix(receipt)),
     subtitle: siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText }),
   });
 }
@@ -344,7 +344,7 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
     },
   ];
   return customerCopyHtml({
-    title: ctCopyTitle(receipt.gatewayTest === false, longPeriodTitleSuffix(receipt)),
+    title: ctCopyTitle(receipt.gatewayTest === true, longPeriodTitleSuffix(receipt)),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT),

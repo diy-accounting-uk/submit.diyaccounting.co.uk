@@ -1928,18 +1928,6 @@ cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurfle
 hash = "8a1c6e669367"
 cy = '''Ffurflen Dreth y Cwmni CThEF (CT600)'''
 
-[strings."mtd-calendar.preview-operator-only-on-the-live-ae4b75"]
-hash = "ae4b75dd16c4"
-cy = '''rhagolwg (preview) <span class="calendar-date">gweithredwr yn unig ar y wefan fyw; cyfnod cyfrifon hyd at 18 mis</span>'''
-
-[strings."mtd-calendar.preview-operator-only-on-the-live-3e99b6"]
-hash = "3e99b6891ee9"
-cy = '''rhagolwg (preview) <span class="calendar-date">gweithredwr yn unig ar y wefan fyw; ffeil allforio llyfr</span>'''
-
-[strings."mtd-calendar.preview-operator-only-on-the-live-a3c5ee"]
-hash = "a3c5eecb8a26"
-cy = '''rhagolwg (preview) <span class="calendar-date">gweithredwr yn unig ar y wefan fyw</span>'''
-
 [strings."mtd-calendar.web-form-guide-video-6afae7"]
 hash = "6afae78ffc07"
 cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a> (yn Saesneg)'''
@@ -3795,16 +3783,16 @@ hash = "8a7c8b67fe8b"
 cy = '''Cyfrifon'''
 
 [strings."receipts.kind-ct600"]
-hash = "9f963838b9cd"
-cy = '''Ffurflen Dreth y Cwmni (rhagolwg)'''
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
 
 [strings."receipts.kind-revised-accounts"]
 hash = "fb8e973b6fe9"
 cy = '''Cyfrifon diwygiedig'''
 
 [strings."receipts.kind-amended-ct600"]
-hash = "aa3098747dfb"
-cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio (rhagolwg)'''
+hash = "755b43917dd6"
+cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio'''
 
 [strings."receipts.kind-confirmation-statement"]
 hash = "9e84a7fe6e03"
@@ -12434,20 +12422,12 @@ hash = "fb7099ad8e81"
 cy = '''Gwirio eto'''
 
 [strings."ch-tax-return.title"]
-hash = "809dd115a507"
-cy = '''Ffeilio Ffurflen Dreth y Cwmni (rhagolwg) - DIY Accounting Submit'''
-
-[strings."ch-tax-return.file-a-company-tax-return-preview-48b37f"]
-hash = "48b37f96be01"
-cy = '''Ffeilio Ffurflen Dreth y Cwmni (rhagolwg)'''
+hash = "486ac7c7dc6c"
+cy = '''Ffeilio Ffurflen Dreth y Cwmni - DIY Accounting Submit'''
 
 [strings."ch-tax-return.file-a-small-company-s-ct600-d036c1"]
 hash = "d036c1002ed4"
 cy = '''Ffeilio Ffurflen CT600, cyfrifiannau a chyfrifon cwmni bach gyda CThEF'''
-
-[strings."ch-tax-return.status-preview-you-can-prepare-the-748a37"]
-hash = "748a374a83fa"
-cy = '''<strong>Statws: rhagolwg (preview).</strong> Gallwch baratoi’r Ffurflen a gweld rhagolwg o’i blychau yma. Mae’n rhedeg ar ein hefelychydd a gwasanaeth prawf CThEF yn unig, felly nid oes dim rydych yn ei anfon yn cyrraedd CThEF.'''
 
 [strings."ch-tax-return.which-company-d9aae4"]
 hash = "d9aae49b05ee"
@@ -15345,10 +15325,6 @@ cy = '''Ffurflen Dreth y Cwmni'''
 hash = "011f0b1d6776"
 cy = '''Cyfeirnod treth {utr}'''
 
-[strings."ch.ct.record-title"]
-hash = "5e1c19c60183"
-cy = '''Ffurflen Dreth y Cwmni (CT600, rhagolwg){parts}'''
-
 [strings."ch.ct.record-receipt-name"]
 hash = "0e8001a46645"
 cy = '''Derbynneb CThEF ar gyfer Ffurflen Dreth y Cwmni'''
@@ -15416,10 +15392,6 @@ cy = '''Y cyfrifon fel y cawsant eu ffeilio gyda’r Ffurflen'''
 [strings."ch.ct.record-receipt-explanation"]
 hash = "e980aa28e91b"
 cy = '''Y dderbynneb hon yw prawf y cwmni ei fod wedi ffeilio’r Ffurflen. Cadwch hi gyda chofnodion y cwmni. Mae’r dderbynneb IRmark yn dangos bod CThEF wedi cael y Ffurflen heb newid. Yr ID cydberthynas yw’r cyfeirnod i’w ddyfynnu os byddwch yn holi CThEF am y ffeilio hwn.'''
-
-[strings."ch.ct.record-copy-title"]
-hash = "fb2571db1219"
-cy = '''Eich copi o Ffurflen Dreth y Cwmni (rhagolwg){parts}'''
 
 [strings."ch.ct.record-accepted"]
 hash = "211880accc66"
@@ -20559,10 +20531,6 @@ cy = '''<strong>Hunanasesiad Treth Incwm (Troi Treth yn Ddigidol ar gyfer Treth 
 hash = "afb9adc5ffd4"
 cy = '''<strong>Tŷ’r Cwmnïau.</strong> Chwilio am gwmni. Newid cyfeiriad swyddfa gofrestredig neu gyfeiriad e-bost cofrestredig. Ffeilio cyfrifon micro-endid, cyfrifon cwmni bach a datganiadau cadarnhau. Ffeilio datganiad dilysu PSC. Mae cyfrifon, datganiadau cadarnhau a newidiadau i’r swyddfa gofrestredig a’r cyfeiriad e-bost cofrestredig yn mynd i’r gofrestr fyw. Mae datganiadau dilysu PSC ar gael yn amgylchedd prawf (sandbox) Tŷ’r Cwmnïau nes bydd Tŷ’r Cwmnïau yn cymeradwyo’r Gwasanaeth ar gyfer ffeilio byw.'''
 
-[strings."terms.company-tax-return-ct600-prepare-a-0cdb3b"]
-hash = "0cdb3b1acdc8"
-cy = '''<strong>Ffurflen Dreth y Cwmni (CT600).</strong> Paratoi Ffurflen Dreth y Cwmni ar gyfer CThEF. Rhagolwg (preview) yw hwn.'''
-
 [strings."terms.diya-gl-books-save-and-load-ba7937"]
 hash = "ba79370780b9"
 cy = '''<strong>Llyfrau DIYA-GL.</strong> Cadw a llwytho llyfrau DIYA-GL yn eich cyfrif.'''
@@ -20790,10 +20758,6 @@ cy = '''<strong>Datganiadau dilysu PSC Tŷ’r Cwmnïau:</strong> amgylchedd pra
 [strings."terms.companies-house-registered-office-and-registered-e03168"]
 hash = "e0316824e63f"
 cy = '''<strong>Swyddfa gofrestredig a chyfeiriad e-bost cofrestredig Tŷ’r Cwmnïau:</strong> cynhyrchu.'''
-
-[strings."terms.company-tax-return-ct600-preview-b5d2a1"]
-hash = "b5d2a155a694"
-cy = '''<strong>Ffurflen Dreth y Cwmni (CT600):</strong> rhagolwg (preview).'''
 
 [strings."terms.the-availability-table-shows-the-status-9b6266"]
 hash = "9b6266df14a4"
@@ -27611,14 +27575,6 @@ cy = '''Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.'''
 
 # == The banner on a filing that an operator's own preview opens on the live site, ids chrome.operator-live-* ==
 
-[strings."chrome.operator-live-tag"]
-hash = "b64ac05f17e6"
-cy = '''Byw'''
-
-[strings."chrome.operator-live-text"]
-hash = "3cbfbbb0818f"
-cy = '''Mae’r ffeilio hwn ar agor oherwydd eich bod yn weithredwr gyda nodweddion rhagolwg (preview) ymlaen. Mae’n ffeilio go iawn: mae’r Ffurflen yn mynd i CThEF ac, pan fyddwch yn eu ffeilio gyda’i gilydd, mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau.'''
-
 # == A Companies House status poll of a submission it has not yet indexed, id ch.gateway.not-yet-indexed ==
 
 [strings."ch.gateway.not-yet-indexed"]
@@ -28666,3 +28622,87 @@ cy = '''Dim ateb gan CThEF'''
 [strings."ch.filing.ct-status-no-answer"]
 hash = "b725ac20cec8"
 cy = '''Ni roddodd CThEF ateb terfynol i’r Ffurflen ag ID cydberthyniad {id} yn ystod y 30 diwrnod ar ôl ei hanfon, felly mae Submit wedi rhoi’r gorau i ofyn. Cyn i chi ei ffeilio eto, gofynnwch i Ddesg Gymorth Gwasanaethau Ar-lein CThEF a yw’r Ffurflen ganddi.'''
+
+# == The Company Tax Return open on the live site: its page, receipts, filed record, calendar cells and terms ==
+
+[strings."mtd-calendar.production-period-of-account-up-to-e100e0"]
+hash = "e100e08b5d1b"
+cy = '''cynhyrchu (production) <span class="calendar-date">cyfnod cyfrifon hyd at 18 mis</span>'''
+
+[strings."mtd-calendar.production-book-export-file-9d1f85"]
+hash = "9d1f85a2dbad"
+cy = '''cynhyrchu (production) <span class="calendar-date">ffeil allforio llyfr</span>'''
+
+[strings."terms.company-tax-return-ct600-prepare-a-450369"]
+hash = "4503699c3490"
+cy = '''<strong>Ffurflen Dreth y Cwmni (CT600).</strong> Paratoi Ffurflen Dreth y Cwmni a’i ffeilio gyda CThEF, ar ei phen ei hun neu gyda’r cyfrifon a ffeilir yn Nhŷ’r Cwmnïau.'''
+
+[strings."terms.company-tax-return-ct600-production-0b45aa"]
+hash = "0b45aaf25f19"
+cy = '''<strong>Ffurflen Dreth y Cwmni (CT600):</strong> cynhyrchu.'''
+
+[strings."ch-tax-return.file-a-company-tax-return-f72d4f"]
+hash = "f72d4fc1888f"
+cy = '''Ffeilio Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.record-title-test"]
+hash = "557b6b01bd28"
+cy = '''Ffurflen Dreth y Cwmni (CT600, gwasanaeth prawf CThEF){parts}'''
+
+[strings."ch.ct.record-copy-title-test"]
+hash = "8d1f0cc0f874"
+cy = '''Eich copi o Ffurflen Dreth y Cwmni (gwasanaeth prawf CThEF){parts}'''
+
+# == The help page's Company Tax Return answers, open on the live site ==
+
+[strings."help.can-i-file-a-company-tax-a4ee90"]
+hash = "a4ee90db5ba0"
+cy = '''A allaf ffeilio Ffurflen Dreth y Cwmni (CT600)?'''
+
+[strings."help.yes-you-fill-in-the-company-5f7a14"]
+hash = "5f7a149be660"
+cy = '''Gallwch. Rydych yn llenwi ffurflen Ffurflen Dreth y Cwmni (CT600), neu’n ei llenwi o ffeil allforio llyfr diya-gl, yn gwirio’r blychau, ac yn ei ffeilio gyda CThEF gan ddefnyddio’r ID defnyddiwr a’r cyfrinair Porth y Llywodraeth ar gyfer cofrestriad Treth Gorfforaeth y cwmni.'''
+
+[strings."help.filing-it-needs-the-resident-ltd-2fe9e3"]
+hash = "2fe9e3ecb660"
+cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> i’w ffeilio.'''
+
+[strings."help.you-can-also-file-the-accounts-ab6093"]
+hash = "ab6093a781a5"
+cy = '''Gallwch hefyd ffeilio’r cyfrifon a’r Ffurflen Dreth fel un ffeilio. Gweler <a href="help.html#accounts-and-company-tax-return-together" target="_blank" rel="noopener">ffeilio’r ddau gyda’i gilydd</a>.'''
+
+[strings."help.can-i-file-my-accounts-and-0ce5fc"]
+hash = "0ce5fc6718c6"
+cy = '''A allaf ffeilio fy nghyfrifon a Ffurflen Dreth y Cwmni gyda’i gilydd?'''
+
+[strings."help.yes-the-accounts-go-to-companies-a8224c"]
+hash = "a8224cb4b4fb"
+cy = '''Gallwch. Mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau a Ffurflen Dreth y Cwmni i CThEF, fel un ffeilio.'''
+
+[strings."help.on-the-company-tax-return-form-64c906"]
+hash = "64c9067713f5"
+cy = '''Ar ffurflen Ffurflen Dreth y Cwmni, dewiswch <strong>I Dŷ’r Cwmnïau ac i CThEF gyda Ffurflen Dreth y Cwmni</strong>. Rydych yn llenwi un ffurflen. Mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau yn gyntaf. Pan fydd Tŷ’r Cwmnïau yn eu derbyn, mae Ffurflen Dreth y Cwmni yn mynd i CThEF gyda’r un ffigurau. Tra nad yw Tŷ’r Cwmnïau wedi ateb, gallwch anfon Ffurflen Dreth y Cwmni nawr neu aros. Os bydd Tŷ’r Cwmnïau wedyn yn gwrthod y cyfrifon, mae angen Ffurflen Dreth ddiwygiedig ar gyfer ffigur sydd wedi newid.'''
+
+[strings."help.if-companies-house-rejects-the-accounts-e22cfd"]
+hash = "e22cfde00d12"
+cy = '''Os bydd Tŷ’r Cwmnïau yn gwrthod y cyfrifon neu os bydd ei borth yn methu, nid oes dim yn mynd i CThEF. Newidiwch y cyfrifon yn yr adolygiad ac anfonwch eto. Os bydd CThEF yn gwrthod y Ffurflen Dreth ar ôl i Dŷ’r Cwmnïau dderbyn y cyfrifon, dim ond y Ffurflen Dreth rydych yn ei hanfon eto.'''
+
+[strings."help.if-your-company-is-a-small-952778"]
+hash = "952778023dce"
+cy = '''Os yw eich cwmni’n gwmni bach, mae’r ffurflen yn gofyn pa gopi sy’n mynd i Dŷ’r Cwmnïau: y cyfrifon llawn neu’r cyfrifon wedi’u tocio (filleted). Mae cyfrifon wedi’u tocio yn gadael y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr allan o’r copi cyhoeddus. Mae CThEF yn cael y cyfrifon llawn y naill ffordd neu’r llall. Mae cyfrifon micro-endid yn mynd i Dŷ’r Cwmnïau heb y cyfrif elw a cholled.'''
+
+[strings."help.you-need-the-resident-ltd-resident-bdd762"]
+hash = "bdd762d7875a"
+cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> arnoch, cod dilysu’r cwmni gan Dŷ’r Cwmnïau (6 i 8 nod), a’r ID defnyddiwr a’r cyfrinair Porth y Llywodraeth ar gyfer cofrestriad Treth Gorfforaeth y cwmni.'''
+
+[strings."help.each-filing-costs-one-token-charged-62b068"]
+hash = "62b06838c586"
+cy = '''Mae pob ffeilio yn costio un credyd, a godir pan dderbynnir y ffeilio hwnnw. Mae’r ddau gyda’i gilydd yn costio dau gredyd. Nid yw ffeilio a wrthodir yn costio dim.'''
+
+[strings."help.you-get-two-receipts-under-one-11f19f"]
+hash = "11f19f4d1376"
+cy = '''Rydych yn cael dwy dderbynneb o dan un ffeilio. Dewch o hyd iddynt ar <a href="hmrc/receipt/receipts.html" target="_blank" rel="noopener">Eich derbynebau</a>.'''
+
+[strings."help.see-the-guide-and-the-availability-f4f06a"]
+hash = "f4f06a27fa5b"
+cy = '''Gweler y <a href="guide.html#file-company-tax-return-with-accounts" target="_blank" rel="noopener">canllaw</a> a’r <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">tabl argaeledd</a>.'''
