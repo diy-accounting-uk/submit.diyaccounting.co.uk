@@ -5,7 +5,7 @@
 
 A reviewer with an accounting and audit background reads a diya-gl book and finds each construct that keeps a set of accounts whole stated in code they can review: double entry, a typed chart of accounts mapped to the FRS 102 and FRS 105 taxonomy, a trial balance built from the lines, the year-end close and roll forward, control accounts, journals with a reason and an author, corrections by reversal, period locks after a filing, VAT boxes from the lines, and the ties from trial balance to each filed fact. Facts checked 2026-11-22 against `spreadsheets.diyaccounting.co.uk` main at `24547a929` and `submit.diyaccounting.co.uk` main at `60ab98a8f`.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (GLS4, GLS7, GLS8, GLS10 to GLS15, GLS17 to GLS20) are tracked in section 6.3, and GLV1 in section 6.4, not on `NEXT.md`. Briefs are section 6.2.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. The open tasks (GLS7, GLS8, GLS10 to GLS15, GLS17 to GLS20) are tracked in section 6.3, and GLV1 in section 6.4, not on `NEXT.md`. Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -117,11 +117,11 @@ Each change names its tests and whether a saved book can fail to open or show a 
 
 Add `fast-check` as a dev dependency and a generator of valid Company books, built through the engine's own writers (`buildNewBook`, the edits, `rollForward`, `buildIxbrlSummaryBooks`). First properties: every book the engine writes passes `validateBook` and `validateLines`; every journal entry it writes (journal lines grouped by `documentReference`) balances. Saved book: no effect.
 
-### 3.2 Posting rules and a trial balance from the lines (GLS3, GLS4)
+### 3.2 Posting rules and a trial balance from the lines (GLS3)
 
 A table, `app/lib/posting-rules.js`, states for each line kind the balanced postings it stands for: a sales line debits debtors 1300 with the gross and credits its income account with the net and VAT 2200 with the VAT; a bank line debits or credits its bank account and posts the contra to the account its `diya-gl:bankCode` names (DR 1300, CR 2100, RV 2200, RP 2400, RT 2300, RC 2410, DL 2500, W 2150, DV 3200, LDR 1400, LCR 2600, the transfer letters to a transfer clearing account that feeds TB row 26 and nets to nil when both legs are in the book, `intraTransfers`, `calculators/ltd.js:1749-1760`); a payroll line posts gross, deductions and net; an opening journal line (`OB-`) posts itself. The table also states the year-end postings the calculator takes from the book's registers, not from lines: stock movements, depreciation and disposals from the asset schedule, hire purchase, dividends declared, the share issue, the interest gross-up and the corporation tax charge (`buildTrialBalance` inputs `stock`, `blocks`, `hp`, `dividendDeclared`, `shareIssue`, `calculators/ltd.js:1580-1600`, `:1651-1738`). Each such posting names its register. An in-year journal line (not `OB-`) reaches no calculator row today (A6), so the trial balance lists it apart and does not total it; `book-journal-reaches-no-report` warns on it (GLS5). Without these two rules the tie below fails: precision-code-ltd's JNL-001 repeats the stock register (`examples/precision-code-ltd/book.toml` `[stock]`). The rules come from the TrialBalance formulas in the template XML, by the reconciliation-bug method, never from this paragraph. `postingsOf(book, line)` expands one line. `trialBalance(book, lines, { from, to })` in `app/lib/book-queries.js` sums the postings by account, debit and credit columns, for any date range: the year, a month or a VAT quarter.
 
-Tests: property, for any generated book, the postings of each line balance and the trial balance's debits equal its credits. Tie, for every Ltd example and fixture, the closing balances of the accounts that feed each calculator TrialBalance row sum to that row (a stated account-to-row map; several accounts can feed one row, for example 5800 and 5803 both feed legal and professional, `scenario-extractor.js:46-49`), to the penny. The trial balance stands before the close (A4), so rows 43 and 49 tie together to 3100 (EJ43 + EJ49 = D43, `calculators/ltd.js:924-925`). `results.TrialBalance` holds only the cells in `TRIAL_BALANCE_READS` (`calculators/ltd.js:253-303`, `:1764-1766`), so the tie reads the full `tb` object that `buildTrialBalance` returns, after the tax charge and the close set rows 35, 43, 47 and 49 on it (`:918-926`), exposed without a change to any figure. Breakability: change one bank code and assert the two accounts that move. Saved book: no effect (a query). GLS4 adds the view on the books page and a diya-gl MCP tool.
+Tests: property, for any generated book, the postings of each line balance and the trial balance's debits equal its credits. Tie, for every Ltd example and fixture, the closing balances of the accounts that feed each calculator TrialBalance row sum to that row (a stated account-to-row map; several accounts can feed one row, for example 5800 and 5803 both feed legal and professional, `scenario-extractor.js:46-49`), to the penny. The trial balance stands before the close (A4), so rows 43 and 49 tie together to 3100 (EJ43 + EJ49 = D43, `calculators/ltd.js:924-925`). `results.TrialBalance` holds only the cells in `TRIAL_BALANCE_READS` (`calculators/ltd.js:253-303`, `:1764-1766`), so the tie reads the full `tb` object that `buildTrialBalance` returns, after the tax charge and the close set rows 35, 43, 47 and 49 on it (`:918-926`), exposed without a change to any figure. Breakability: change one bank code and assert the two accounts that move. Saved book: no effect (a query).
 
 ### 3.3 Report-only warnings (GLS5)
 
@@ -230,7 +230,6 @@ A warning `book-bank-statement-differs` compares each `diya-gl:statementBalances
 | --- | --- | --- | --- | --- | --- |
 | GLS2 | Property-test harness and the first properties | nothing | machine-only | Sonnet | ~4 files |
 | GLS3 | Posting rules and the trial balance from the lines | GLS2 | machine-only | Opus | ~5 files |
-| GLS4 | Trial balance view on the books page and an MCP tool | GLS3 | machine-only | Sonnet | ~6 files |
 | GLS5 | Nine report-only warnings | GLS2 | machine-only | Sonnet | ~5 files |
 | GLS6 | Account classes and the account-to-concept map | GLS3 | machine-only | Opus | ~5 files |
 | GLS7 | Statement ties and `accountsFacts` | GLS3, GLS6 | machine-only | Sonnet | ~5 files |
@@ -248,7 +247,7 @@ A warning `book-bank-statement-differs` compares each `diya-gl:statementBalances
 | GLS19 | Concept and account labels, English and Welsh | GLS6, GLS9 | machine-only | Sonnet | ~5 files |
 | GLS20 | Bank statement balances and their warning | GLS3, GLS11 | machine-only | Sonnet | ~3 files |
 
-GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both add to `app/products/ltd/checks/` and `book-checks/ltd.js`; they land one after the other. GLS8 and GLS10 are one Submit pin bump when GLS7 and GLS9 ship in the same release.
+GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both add to `app/products/ltd/checks/` and `book-checks/ltd.js`; they land one after the other. GLS8 and GLS10 are one Submit pin bump when GLS7 and GLS9 ship in the same release.
 
 ### 6.2 Briefs
 
@@ -263,12 +262,6 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 - **Repository**: spreadsheets. **Saved book**: no effect.
 - **Do**: discover each line kind's postings from `Financialaccounts.xlsx` TrialBalance formulas in the Ltd template XML (JSZip) and `app/lib/calculators/ltd.js:1580-1764`. Write `app/lib/posting-rules.js` (the table, `postingsOf` and the register postings of section 3.2; in-year journal lines listed apart, not totalled) and `trialBalance(book, lines, { from, to })` in `app/lib/book-queries.js`; export both from `app/lib/diya-gl-engine.js`. A line kind the table does not know throws, naming the line.
 - **Tests**: property (GLS2 generator): each line's postings balance; the trial balance balances for the year, each month and each VAT quarter. Tie: for precision-code-ltd and brickwork-pro, the accounts that feed each TrialBalance row sum to that row via a stated account-to-row map, to the penny; rows 43 and 49 tie together to 3100. The tie reads the full `tb` object from `buildTrialBalance` after the tax charge and the close (`:918-926`), because `results.TrialBalance` holds only the `TRIAL_BALANCE_READS` cells (`calculators/ltd.js:253-303`); expose it without a change to any figure. Breakability: change one bank code; exactly the two accounts it names move.
-
-#### GLS4. Trial balance view on the books page and an MCP tool
-
-- **Repository**: spreadsheets. **Saved book**: no effect.
-- **Do**: the Trial balance view on the Company books page (`web/diya-gl.co.uk/public/`), the engine's trial balance functions, the `trial_balance` MCP tool and its docs are on spreadsheets `main` (PR #223, diya-gl 1.2.99). Left: run the `visual-review` skill on the view, then fix each fail there or board it.
-- **Done when**: the review passes, or each fail is fixed or boarded.
 
 #### GLS5. Nine report-only warnings
 
@@ -371,7 +364,6 @@ Every task below is Owner Claude Code, source the operator (2026-11-22). Model, 
 
 | Label | Class | State | Waits on | Unblocks | Repository |
 | --- | --- | --- | --- | --- | --- |
-| GLS4 | machine-only | ready | nothing | nothing | spreadsheets |
 | GLS7 | machine-only | ready | nothing | GLS8 | spreadsheets |
 | GLS8 | machine-only | blocked | GLS7 released to npm | nothing | submit |
 | GLS10 | machine-only | ready | nothing | GLS11 | submit |

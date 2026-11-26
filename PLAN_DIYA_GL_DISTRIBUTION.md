@@ -225,7 +225,7 @@ The port in the second line is an example. DIST1 sets the constant.
 | GLX1 (section 6) | GLX1 designs the pages, the account and the storage. This plan delivers the same pages to a local origin and changes none of them. GLX1 decides which stores and sign-ins the pages offer on `http://127.0.0.1:<fixed port>`; DIST1 makes the origin fixed so that choice is possible. Download links on diya-gl.co.uk wait for GLX1's design. |
 | `PLAN_AMENDED_ACCOUNTS.md` section 11, AA26 | `buildBookFromRegister` lands in the engine. Every channel carries it on the next release with no task here. |
 | AA27 | Adds the package download to the pages. The desktop app gets it with the next pages snapshot. Offline use needs the templates in the snapshot (Q3 bundles them). |
-| `PLAN_DIYA_GL_STANDARDS.md` GLS4, GLS17 | GLS4 adds an MCP tool; every MCP channel carries it. GLS17 adds rejecting rules; `diya-gl check` reports them. |
+| `PLAN_DIYA_GL_STANDARDS.md` GLS17 | GLS17 adds rejecting rules; `diya-gl check` reports them. |
 | `PLAN_ORGANIC_SEARCH.md` | Its Claude directory rows cover Submit's plugin. Q4 decides whether a local diya-gl server joins a plugin. |
 
 ## 3. Tasks

@@ -15,7 +15,7 @@ Recorded in the moved rows: the XML team decides test accounts by hand and nobod
 
 The new Companies House forms join prod's list when the XML team approves each form type, and the filing suites run on the proxy lane, on ci and on prod.
 
-**Status**: 6 open tasks (OXF1, XF2, CHT1, CHT2, LOOK1, CH60), tracked here, not on `NEXT.md`. The Companies House approval plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
+**Status**: 5 open tasks (OXF1, XF2, CHT1, CHT2, LOOK1), tracked here, not on `NEXT.md`. The Companies House approval plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 ## Tasks
 
@@ -51,6 +51,3 @@ The `ci` environment holds the secret (set 2026-11-23). `deploy-environment.yml`
 
 The shared register of fictitious companies (`app/http-simulator/fixtures/register.js`) and the scene runner's `{{register:<n>:<field>}}` templates are on `main` (PR #860). Left: the register gives its people no other forenames, so the confirmation statement scene types none. Give them other forenames in the register, use them in the scene script, take the scene's stills again on the simulator lane and run `visual-review` on them. Gates: `npm test`; the confirmation statement browser tests and `test:fileConfirmationStatementBehaviour-simulator`, one suite at a time under the lock. **Source**: the look pass, 2026-11-22. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files. **Repository**: submit. **Class**: machine-only. **State**: ready. **Blocked by**: nothing. **Unblocks**: nothing.
 
-### CH60. A Companies House filing that is still pending reaches the reader's filings when Companies House decides it
-
-Proved on prod on 2026-11-26: the presenter poll recorded DIY Accounting Limited's submission 000001 as ACCEPT at 07:00:35 UTC and wrote its receipt (record `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/README.md`).
