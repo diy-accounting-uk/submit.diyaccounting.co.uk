@@ -102,7 +102,7 @@ State: landed at a987c2445 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445); f
 |---|---|---|---|
 | ct600-page | CTV1 | Sonnet | `fileCompanyTaxReturn.page.js`, `scripts/site-video-capture.js`, `scripts/video-walkthrough.js`, `videos/publish.json`, `web/public/videos/publish.json` |
 
-State: landed at 52fb5ced9 on `claude/cobalt-w07` (from a987c2445; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration); garnet runs the browser gate; jasper reviews CTV1; wave 6's ctl7b joins this branch when it lands, then waves 6 and 7 gate together.
+State: landed at abf54dbea on `claude/cobalt-w07` (CTV1 52fb5ced9, ctv1b abf54dbea) (from a987c2445; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration); garnet runs the browser gate; jasper reviews CTV1; wave 6's ctl7b joins this branch when it lands, then waves 6 and 7 gate together.
 
 ### Wave 8
 
@@ -110,7 +110,7 @@ State: landed at 52fb5ced9 on `claude/cobalt-w07` (from a987c2445; npm test, the
 |---|---|---|---|
 | ct600-page | CTF1, ctl7c | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
 
-State: pending.
+State: integrating: jasper merges CTF1 (2b9177b1f) onto `claude/cobalt-w07-abf54db` (`claude/jasper-integrate-ctf1`); harbour builds ctl7c next.
 
 ### Wave 9
 
