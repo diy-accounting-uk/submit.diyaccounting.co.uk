@@ -812,19 +812,21 @@ Lines that the micro-entity and small company accounts pages define in `accounts
 - Every figure in the published package is 0 or empty, so each cell was checked by its label and formula, not by a value.
 - `CELL_MAP` labels are not always the workbook's text (for example `MnthP&L!B37` is "Charitable Donations" in the workbook and "Charitable Donations (code y)" in `CELL_MAP`). This register uses the workbook's text.
 
-### Questions for the operator
+### The operator's answers (2026-11-26)
 
-1. **Box 85A.** Submit calls it box 85A. The CT600 (2026) form and the guide call it box 85. Should the label say "Box 85"?
-2. **Associated companies.** Submit and the CT600 sheet read `Admin!P14`, which has no label and is empty in the package. Which cell should the disclosure show, and where does a person type the number?
-3. **Computation lines.** The trade name, the three add-backs, the annual investment allowance on the special rate pool and the own working have no term on the CT600 or in its guide. Keep Submit's words, or take them from another source, such as HMRC's computations taxonomy?
-4. **Micro-entity costs.** Submit files cost of raw materials and consumables and staff costs as 0, and puts them in other charges. `frs105-formats.toml` maps them to `PubP&L!F16` and `MnthP&L!B18+B19+B20`. Keep Submit's split, or file the format's lines?
-5. **A difference in a `sheetCell`.** Other charges is `F16+F44` less `E43`. The `sheetCell` form has only `+`. Allow `-` (as written in 4c)?
-6. **Fixed asset classes.** The formats name only "Land and buildings" and "Plant and machinery etc.". No allowed source names fixtures and fittings, computer equipment or motor vehicles. Keep Submit's words?
-7. **FRS names in the regime choice.** FRS 102 Section 1A and FRS 105 are FRC titles. They are not on legislation.gov.uk or gov.uk, so this register did not check them. Keep them in the labels?
-8. **"Filleted accounts".** No statute uses the word. Section 444(1) lets a small company leave out the profit and loss account and the directors' report. Keep "Filleted accounts"?
-9. **Principal activity.** Section 416(1)(b) is omitted, so no statute names this line for a small company. Keep "Principal activity"?
-10. **Date approved.** Section 414 names the approval and the signature, but no date. Keep "Date approved"?
-11. **Box 4.** The guide asks for a number (0 when no type applies). Submit asks Yes or No. Label it "Box 4: Type of company" and keep the Yes or No?
-12. **Average number of employees.** The workbook has no cell; a book counts the employees in its own table. Show "none", or name a cell in `Payslips.xlsx`?
-13. **The declaration.** Submit's text covers "this return and the attached accounts and computations". HMRC's covers "this Company Tax Return and any supplementary pages". Use HMRC's text?
-14. **Losses brought forward.** The field holds the losses available. Box 160 is only the part set against the trading profits. Label the field with box 160's term, or as "Trading losses brought forward" with a reference to box 160?
+The `(Qn)` marks in the appendix point here. CTL1A applies the answers marked "change"; the others keep Submit's current wording and behaviour.
+
+1. Box 85A: label "Box 85". Change.
+2. Associated companies: the disclosure shows "none" (not `Admin!P14`), and the person types the number in Submit's form. Change.
+3. Computation lines: take each term from HMRC's CT computations taxonomy (the `ct-comp` element labels that `app/services/ctComputationsIxbrl.js` already files). Change.
+4. Micro-entity costs: file the format's lines, raw materials and consumables from `PubP&L!F16` and staff costs from `MnthP&L!B18+B19+B20`; other charges falls by the same amount. Change.
+5. `-` in a `sheetCell`: allowed. Keep.
+6. Fixed asset classes: keep all five of Submit's names. Keep.
+7. FRS 102 Section 1A and FRS 105: keep in the labels. Keep.
+8. "Filleted accounts": keep, with a hint that cites CA 444(1). Keep.
+9. "Principal activity": keep. Keep.
+10. "Date approved": keep, with a hint that cites CA 414. Keep.
+11. Box 4: label "Box 4: Type of company", keep Yes or No (No files 0). Keep.
+12. Average number of employees: the disclosure shows "none". Keep.
+13. The declaration: HMRC's text, word for word. Change.
+14. Losses brought forward: "Trading losses brought forward", with a reference that box 160 is the part set against trading profits. Change.

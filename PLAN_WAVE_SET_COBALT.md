@@ -7,11 +7,11 @@
 
 > Create a wave set from all the open tasks on the board that you can and this will not start until CT47 and CT48 are done.
 
-(operator, 2026-11-26.) The answer that finalised the set (2026-11-26): scope A, the machine rows already on `NEXT.md` (26 rows); Bramble stays its own set.
+(operator, 2026-11-26.) The answer that finalised the set (2026-11-26): scope A, the machine rows already on `NEXT.md` (26 rows); Bramble stays its own set. CTP4 and CTL1A joined on the operator's answer of 2026-11-26 (CTP3D B, the CTL1Q answers).
 
 ## Status
 
-defined 2026-11-26; approved 2026-11-26 (the operator's `/collab-loop cobalt`); building wave 1.
+defined 2026-11-26; approved 2026-11-26 (the operator's `/collab-loop cobalt`); building wave 6.
 
 ## The goal
 
@@ -19,13 +19,13 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 
 ## The set
 
-- **submit, 25 rows in waves**: CTL0, CT45, CT46, CH63, CTA1, CTN1, CTN3, CTS1, CTD1, CTD2, CTP3, CTA2, CTR2, CT49, CTL2, CTL5, CTL4, CTL10, CTL7, CTL9, CTV1, CTF1, CTN2, CTN4, CTL8. Each row's brief is its `NEXT.md` row; the CT600 label rows point to their section of `PLAN_CT600_LABELS.md`.
+- **submit, 27 rows in waves**: CTL0, CT45, CT46, CH63, CTA1, CTN1, CTN3, CTS1, CTD1, CTD2, CTP3, CTA2, CTR2, CT49, CTL2, CTL5, CTL4, CTL10, CTL7, CTL9, CTV1, CTF1, CTN2, CTN4, CTP4, CTL1A, CTL8. Each row's brief is its `NEXT.md` row; the CT600 label rows point to their section of `PLAN_CT600_LABELS.md`.
 - **Beside**:
   - CTL1 (Opus): the label register is the appendix of `PLAN_CT600_LABELS.md`, a document pushed to `main`. It must be on `main` before wave 4 starts, because CTL2 reads it.
   - OCT8 (Haiku): the CH60 proof is a read of prod and a note in the private repository.
 - **Left out, with the test that removed each**:
   - UH7 (test 1): the operator opens the CT600 to the public when this set is done (OCT9, 2026-11-26), so it follows the set on prod.
-  - OS18g (test 4): the operator's yes and a click in his Chrome; no pull request.
+  - OS18g (test 4): the operator's yes and a click in his Chrome; no pull request. Not yet (operator, 2026-11-26).
   - CHL1 (test 4): it waits on live filings in December 2026 and January 2027.
   - OCT10, OCT11, OCTL1 (test 4): the operator's own filing, check and decision.
 
@@ -129,7 +129,18 @@ State: pending.
 
 State: pending.
 
-### Wave 11: the look wave
+### Wave 11
+
+| Batch | Rows in order | Model | Files the batch owns |
+|---|---|---|---|
+| ct-poll | CTP4 | Sonnet | `app/data/dynamoDbAsyncRequestRepository.js`, `app/functions/hmrc/hmrcCtReturnPost.js`, the scheduled CT600 status check (new, beside `app/functions/companies-house/companiesHouseSubmissionStatusPoll.js`), its stack and names classes in `infra/`, their tests |
+| ct600-fields | CTL1A | Sonnet | `web/public/lib/ct600-fields.js`, the accounts iXBRL builders for the micro-entity lines, the register appendix of `PLAN_CT600_LABELS.md` (by the laptop), their tests |
+
+CTP4 builds now from wave 6's gated tip and CTL1A from wave 10's gated tip, because CTF1 also changes `ct600-fields.js`. Both land after CTN4.
+
+State: pending.
+
+### Wave 12: the look wave
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
@@ -145,7 +156,7 @@ State: pending.
 
 ## The push
 
-1. Assemble `claude/cobalt-set` at the gated tip of wave 11 and run its gates.
+1. Assemble `claude/cobalt-set` at the gated tip of wave 12 and run its gates.
 2. Read the ci slots, push `claude/cobalt-set`, open one PR whose body lists the rows by wave, and run `/watch`.
 3. **ci proof list**, run inside the set's self-destruct delay:
    - CT45: the CT600 preview and file requests on the ci set pass the WAF (a body over 8 KB to `/api/v1/hmrc/ct/return`), and the status route charges the token after a sandbox acceptance.
@@ -153,6 +164,8 @@ State: pending.
    - CTA1, CTA2: the activities page shows "Corporation Tax", and a second tab lists the same activities.
    - CTN1, CTN3: on the ci CT600 page, an error far down the page shows the bubble.
    - CTL4, CTL10: the Proof section of `PLAN_CT600_LABELS.md` on the CT600 page and the two accounts pages.
+   - CTP4: a sandbox CT600 left pending with no page open gets its receipt from the scheduled check, and its row stays in the receipts table past one hour.
+   - CTL1A: a micro-entity sandbox filing carries the format's raw materials and staff costs lines, and the review shows box 85 and HMRC's declaration.
 4. `/auto-merge` merges with `--merge`. `main`'s deploy is the one prod deploy; `deploy-finish.yml` destroys the outgoing prod set.
 5. **prod proof list**:
    - CT45: the operator's preview of the amended CT600 on prod answers 200 and the file request passes the WAF (OCT10 is the operator's own filing).
