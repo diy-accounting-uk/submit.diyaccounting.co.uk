@@ -9,6 +9,7 @@
 
 import { customerCopyHtml, escapeRecordAttribute, escapeRecordText, recordAmount, recordHeading } from "./submission-record.js";
 import { CT600_BOX_ROWS, TEXT_BOXES } from "./ct600-fields.js";
+import { longDateText } from "./long-period.js";
 
 export const ACCOUNTS_KIND = "companies-house-accounts";
 export const CT_RETURN_KIND = "company-tax-return";
@@ -22,37 +23,6 @@ function siteText(id, english, values) {
   return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 }
 
-// Chromium's Intl has no Welsh, so a Welsh date is written from the month names here.
-const WELSH_MONTHS = [
-  "Ionawr",
-  "Chwefror",
-  "Mawrth",
-  "Ebrill",
-  "Mai",
-  "Mehefin",
-  "Gorffennaf",
-  "Awst",
-  "Medi",
-  "Hydref",
-  "Tachwedd",
-  "Rhagfyr",
-];
-
-/**
- * A date as the customer reads it in the chrome's language, e.g. "24 October 2026" or "24 Hydref 2026".
- * @param {Date} date
- * @param {{utc?: boolean}} [options] - read the day in UTC
- * @returns {string}
- */
-export function longDateText(date, { utc = false } = {}) {
-  if (globalThis.siteLanguage && globalThis.siteLanguage.chrome() === "cy") {
-    const [day, month, year] = utc
-      ? [date.getUTCDate(), date.getUTCMonth(), date.getUTCFullYear()]
-      : [date.getDate(), date.getMonth(), date.getFullYear()];
-    return `${day} ${WELSH_MONTHS[month]} ${year}`;
-  }
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", ...(utc ? { timeZone: "UTC" } : {}) });
-}
 const RECEIPT_TIMESTAMP = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)-/;
 
 /** The filing kinds this module draws a customer copy for. */
@@ -69,7 +39,7 @@ export function filingDateText(receiptName) {
   const match = RECEIPT_TIMESTAMP.exec(String(receiptName ?? ""));
   const date = match ? new Date(match[1]) : null;
   if (!date || Number.isNaN(date.getTime())) return ABSENT;
-  return longDateText(date, { utc: true });
+  return longDateText(match[1].slice(0, 10));
 }
 
 export function page(html) {
@@ -124,7 +94,7 @@ function accountsReceiptRecord(receipt, dateText) {
   });
   const lines = [
     textLine(siteText("ch.record.submission-number", "Submission number"), receipt.submissionNumber),
-    textLine(siteText("ch.record.company-number", "Company registration number"), receipt.companyNumber),
+    textLine(siteText("ch.record.company-number", "Company number"), receipt.companyNumber),
     textLine(
       siteText("ch.record.status", "Status"),
       receipt.statusCode === "ACCEPT" ? siteText("ch.record.accepted", "Accepted by Companies House") : receipt.statusCode,
@@ -203,8 +173,7 @@ export function ct600BoxText(box, value) {
   if (key === 340 || key === 390) return `${value}%`;
   if (key === 329) return siteText("ch.ct.yes", "Yes");
   if (key === 4 && String(value) === "0") return siteText("ch.ct.box-4-none", "Not one of the listed types");
-  if ((key === 30 || key === 35) && /^\d{4}-\d{2}-\d{2}$/.test(String(value)))
-    return longDateText(new Date(`${value}T00:00:00Z`), { utc: true });
+  if ((key === 30 || key === 35) && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) return longDateText(String(value));
   return String(value);
 }
 
@@ -245,7 +214,7 @@ function ct600Record(receipt, dateText) {
       receipt.utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr: receipt.utr })) : "",
       receipt.filed?.boxes?.[2]
         ? escapeRecordText(
-            siteText("ch.record.company-number-line", "Company registration number {number}", { number: receipt.filed.boxes[2] }),
+            siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: receipt.filed.boxes[2] }),
           )
         : "",
     ].filter(Boolean),

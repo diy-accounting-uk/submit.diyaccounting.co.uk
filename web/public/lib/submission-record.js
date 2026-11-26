@@ -68,10 +68,12 @@ export function recordAmount(value, { decimals = 0, deduction = false } = {}) {
 }
 
 /**
- * One statement laid out as printed accounts: a label column, an optional note column and one
- * right-aligned figure column per heading, with a pound sign under each heading.
+ * One statement laid out as printed accounts: an optional reference column, a label column, an
+ * optional note column and one right-aligned figure column per heading, with a pound sign under
+ * each heading.
  *
- * Each row is {label, note?, cells?, style?, indent?}: cells holds one recordFigure() result (or
+ * Each row is {label, reference?, note?, cells?, style?, indent?}: reference is the form box the
+ * row is, such as "Box 440", shown in the reference column; cells holds one recordFigure() result (or
  * null for a blank cell) per column; style is "heading" (a label with no figures), "subtotal" (a
  * rule above the figures) or "total" (a rule above and a double rule below).
  *
@@ -79,10 +81,14 @@ export function recordAmount(value, { decimals = 0, deduction = false } = {}) {
  * @param {string[]} table.columns - the heading of each figure column, e.g. ["2025", "2024"]
  * @param {boolean} [table.notes] - whether the table carries a note column
  * @param {string} [table.noteHeading] - the heading of the note column, in the document's language
+ * @param {string} [table.referenceHeading] - the heading of a reference column; the table has one only when given
  * @param {object[]} table.rows
  * @returns {string}
  */
-export function recordTable({ columns, notes = false, noteHeading = "Note", rows }) {
+export function recordTable({ columns, notes = false, noteHeading = "Note", referenceHeading, rows }) {
+  const references = referenceHeading !== undefined;
+  const referenceHeadingHtml = references ? `<th class="label box-reference">${escapeRecordText(referenceHeading)}</th>` : "";
+  const referenceBlankHtml = references ? '<th class="label box-reference"></th>' : "";
   const noteHeadingHtml = notes ? `<th class="note">${escapeRecordText(noteHeading)}</th>` : "";
   const headings = columns.map((heading) => `<th class="figure">${escapeRecordText(heading)}</th>`).join("");
   const pounds = columns.map(() => '<th class="figure">£</th>').join("");
@@ -92,17 +98,18 @@ export function recordTable({ columns, notes = false, noteHeading = "Note", rows
       const labelClass = row.indent ? ' class="label indent"' : ' class="label"';
       const noteText = row.note ? escapeRecordText(String(row.note)) : "";
       const noteCell = notes ? `<td class="note">${noteText}</td>` : "";
+      const referenceCell = references ? `<td class="label box-reference">${escapeRecordText(row.reference ?? "")}</td>` : "";
       const cells = (row.cells ?? columns.map(() => null))
         .map((cell) => {
           if (!cell) return '<td class="figure"></td>';
           return `<td class="figure${cell.bracketed ? "" : " positive"}">${cell.html}</td>`;
         })
         .join("");
-      return `<tr${rowClass}><td${labelClass}>${escapeRecordText(row.label)}</td>${noteCell}${cells}</tr>`;
+      return `<tr${rowClass}>${referenceCell}<td${labelClass}>${escapeRecordText(row.label)}</td>${noteCell}${cells}</tr>`;
     })
     .join("\n");
   return `<table class="statement">
-<thead><tr><th class="label"></th>${noteHeadingHtml}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
+<thead><tr>${referenceHeadingHtml}<th class="label"></th>${noteHeadingHtml}${headings}</tr><tr>${referenceBlankHtml}<th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
 <tbody>
 ${body}
 </tbody>

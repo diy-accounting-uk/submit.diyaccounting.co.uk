@@ -938,9 +938,9 @@ window.WELSH_TEXT = {
   "ch.ct.record-accounts-frame": "Y cyfrifon fel y cawsant eu ffeilio gyda’r Ffurflen",
   "ch.ct.record-accounts-with-return": "Y cyfrifon a ffeiliwyd gyda’r Ffurflen",
   "ch.ct.record-as-filed": "Y Ffurflen fel y’i ffeiliwyd",
-  "ch.ct.record-box-line": "{label} (blwch {box})",
   "ch.ct.record-boxes-explanation":
     "Dyma flychau’r CT600 a gafodd CThEF. Mae gan bob blwch y rhif sydd ganddo ar ffurflen CThEF. Gwiriwch y ffigurau yn erbyn eich cofnodion.",
+  "ch.ct.record-company-number-line": "Rhif cofrestru’r cwmni {number}",
   "ch.ct.record-computation": "Cyfrifiant treth",
   "ch.ct.record-computations-as-filed": "Y cyfrifiannau treth fel y’u ffeiliwyd",
   "ch.ct.record-computations-explanation": "Dyma’r ddogfen sy’n cyfrifo eich elw trethadwy. Mae CThEF yn ei darllen gyda’r Ffurflen.",
@@ -957,7 +957,7 @@ window.WELSH_TEXT = {
   "ch.ct.record-irmark-sent": "Yr IRmark a anfonwyd gennym",
   "ch.ct.record-name": "Ffurflen Dreth y Cwmni",
   "ch.ct.record-of-parts": " {part} o {parts}",
-  "ch.ct.record-period": "Cyfnod y Ffurflen Dreth {start} i {end}",
+  "ch.ct.record-period": "Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu {start} i {end}",
   "ch.ct.record-period-column": "Cyfnod",
   "ch.ct.record-receipt-explanation":
     "Y dderbynneb hon yw prawf y cwmni ei fod wedi ffeilio’r Ffurflen. Cadwch hi gyda chofnodion y cwmni. Mae’r dderbynneb IRmark yn dangos bod CThEF wedi cael y Ffurflen heb newid. Yr ID cydberthynas yw’r cyfeirnod i’w ddyfynnu os byddwch yn holi CThEF am y ffeilio hwn.",
@@ -1927,8 +1927,8 @@ window.WELSH_TEXT = {
   "ch.record.change-explanation": "Dyma’r hyn y gofynnoch i Dŷ’r Cwmnïau ei gofnodi ar y gofrestr.",
   "ch.record.change-receipt-explanation":
     "Rhoddodd Tŷ’r Cwmnïau rif cyflwyno i’r ffeilio hwn. Dyfynnwch ef os byddwch yn ysgrifennu at Dŷ’r Cwmnïau am y newid hwn.",
-  "ch.record.company-number": "Rhif cofrestru’r cwmni",
-  "ch.record.company-number-line": "Rhif cofrestru’r cwmni {number}",
+  "ch.record.company-number": "Rhif y cwmni",
+  "ch.record.company-number-line": "Rhif y cwmni {number}",
   "ch.record.confirmed": "Wedi’i gadarnhau fel y mae ar y gofrestr",
   "ch.record.cs-as-filed": "Y datganiad fel y’i ffeiliwyd",
   "ch.record.cs-copy-title": "Eich copi o’r datganiad cadarnhau ar gyfer {company}",

@@ -141,7 +141,7 @@ test.describe("Filings page - customer copy", () => {
     const frame = page.frameLocator("iframe.filed-document");
     await expect(frame.locator("body")).toContainText("Balance sheet");
     await expect(copy.locator(".submission-record .entity").first()).toHaveText("Companies House receipt");
-    await expect(copy.locator("tr", { hasText: "Company registration number" }).locator("td.text-value")).toHaveText("00000003");
+    await expect(copy.locator("tr", { hasText: "Company number" }).locator("td.text-value")).toHaveText("00000003");
     await expect(copy.locator(".customer-copy-links a")).toHaveText([
       "File accounts again with corrected figures",
       "Look up another company",
@@ -194,6 +194,17 @@ test.describe("Filings page - customer copy", () => {
     test.skip(browserName !== "chromium", "only Chromium prints to PDF");
     await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, gatewayTest: false });
     await page.emulateMedia({ media: "print" });
+    // Every statement row, on the page and in each filed document's frame, stays on one printed page.
+    const rowBreaks = [];
+    for (const frame of page.frames()) {
+      rowBreaks.push(
+        ...(await frame.evaluate(() =>
+          Array.from(document.querySelectorAll("table.statement tr"), (row) => getComputedStyle(row).breakInside),
+        )),
+      );
+    }
+    expect(rowBreaks.length).toBeGreaterThan(0);
+    expect(new Set(rowBreaks)).toEqual(new Set(["avoid"]));
     const pdfPath = path.join(process.cwd(), "target/screenshots/filed-copy-print/ct-filed-copy.pdf");
     fs.mkdirSync(path.dirname(pdfPath), { recursive: true });
     await page.pdf({ path: pdfPath, format: "A4" });
@@ -319,7 +330,7 @@ test.describe("Filings page - customer copy", () => {
     await expect(page.locator("#filingNotice")).toHaveText(
       "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
     );
-    await expect(page.locator("#filingContent")).toContainText(`Company registration number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
+    await expect(page.locator("#filingContent")).toContainText(`Company number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
     await screenshotAtBothWidths(page, "filing-no-comparatives");
   });
 

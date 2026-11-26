@@ -8,7 +8,8 @@
 // answered, and gets markup back.
 
 import { customerCopyHtml, escapeRecordText, recordAmount, recordHeading, recordTable } from "./submission-record.js";
-import { ABSENT, ctCopyTitle, ctReceiptRecord, ctRecordTitle, longDateText, page, textLine } from "./filing-record.js";
+import { ABSENT, ctCopyTitle, ctReceiptRecord, ctRecordTitle, page, textLine } from "./filing-record.js";
+import { longDateText } from "./long-period.js";
 import { boxRow } from "./ct600-fields.js";
 
 // page-chrome.js gives the text in the chosen language; without it the English stands.
@@ -24,12 +25,12 @@ const TAX_BOXES = [440, 475, 528];
 function longDate(isoDate) {
   const date = new Date(`${isoDate}T00:00:00Z`);
   if (!isoDate || Number.isNaN(date.getTime())) return ABSENT;
-  return longDateText(date, { utc: true });
+  return longDateText(isoDate);
 }
 
 /** Today as the customer reads a date, e.g. "24 October 2026". */
 export function todayText() {
-  return longDateText(new Date());
+  return longDateText(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()));
 }
 
 function textTable(lines) {
@@ -62,9 +63,7 @@ export function confirmationStatementCopyHtml({ company, payload, shareholdingsC
   const heading = recordHeading({
     nameHtml: escapeRecordText(company.companyName),
     referenceHtml: [
-      escapeRecordText(
-        siteText("ch.record.company-number-line", "Company registration number {number}", { number: company.companyNumber }),
-      ),
+      escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: company.companyNumber })),
     ],
     title: siteText("ch.record.cs-title", "Confirmation statement"),
     subtitleHtml: escapeRecordText(siteText("ch.record.made-up-to-line", "Made up to {date}", { date: longDate(payload.reviewDate) })),
@@ -87,7 +86,7 @@ export function confirmationStatementCopyHtml({ company, payload, shareholdingsC
   const confirmation = page(
     `${heading}${textTable([
       [siteText("ch.search.column-company", "Company"), company.companyName],
-      [siteText("ch.record.company-number", "Company registration number"), company.companyNumber],
+      [siteText("ch.record.company-number", "Company number"), company.companyNumber],
       [siteText("ch.record.made-up-to", "Made up to"), longDate(payload.reviewDate)],
       ...answers,
       [siteText("ch.cs.summary-directors", "Directors verifying their identity"), directors.join(", ")],
@@ -185,21 +184,26 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
     referenceHtml: [
       escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr })),
       escapeRecordText(
-        siteText("ch.record.company-number-line", "Company registration number {number}", { number: company.companyNumber }),
+        siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: company.companyNumber }),
       ),
     ],
     title: ctRecordTitle(live, ofParts),
     subtitleHtml: escapeRecordText(
-      siteText("ch.ct.record-period", "Period of the return {start} to {end}", { start: longDate(boxes[30]), end: longDate(periodEnd) }),
+      siteText("ch.ct.record-period", "Period covered by the return {start} to {end}", {
+        start: longDate(boxes[30]),
+        end: longDate(periodEnd),
+      }),
     ),
   });
   const taxRows = TAX_BOXES.filter((box) => boxes[box] !== undefined).map((box) => ({
-    label: siteText("ch.ct.record-box-line", "{label} (box {box})", { box, label: boxRow(box).label }),
+    reference: siteText("ch.ct600.review-box", "Box {box}", { box }),
+    label: boxRow(box).label,
     cells: [figureCell(boxes[box])],
     style: box === TAX_BOXES.findLast((candidate) => boxes[candidate] !== undefined) ? "total" : undefined,
   }));
   const table = recordTable({
     columns: [periodEnd.slice(0, 4) || siteText("ch.ct.record-period-column", "Period")],
+    referenceHeading: siteText("ch.ct.column-box", "Box"),
     rows: [
       { label: siteText("ch.ct.record-computation", "Tax computation"), style: "heading" },
       ...computation.map((line) => ({
@@ -265,7 +269,7 @@ function receiptPage(submissionNumber, companyNumber, statusText, dateText) {
       subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
     })}${textTable([
       [siteText("ch.record.submission-number", "Submission number"), submissionNumber],
-      [siteText("ch.record.company-number", "Company registration number"), companyNumber],
+      [siteText("ch.record.company-number", "Company number"), companyNumber],
       [siteText("ch.record.status", "Status"), statusText],
       [siteText("ch.record.filed-on", "Filed on"), dateText],
     ])}`,
@@ -296,12 +300,10 @@ export function registeredChangeCopyHtml({ title, companyNumber, transaction, de
   const status = transactionStatus(transaction);
   const changeRecord = page(
     `${recordHeading({
-      nameHtml: escapeRecordText(
-        siteText("ch.record.company-number-line", "Company registration number {number}", { number: companyNumber }),
-      ),
+      nameHtml: escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: companyNumber })),
       title,
       subtitleHtml: escapeRecordText(siteText("ch.record.submitted-line", "Submitted {date}", { date: dateText })),
-    })}${textTable([[siteText("ch.record.company-number", "Company registration number"), companyNumber], ...details])}`,
+    })}${textTable([[siteText("ch.record.company-number", "Company number"), companyNumber], ...details])}`,
   );
   const receiptRecord = receiptPage(transaction.transactionId, companyNumber, status.text, dateText);
   return customerCopyHtml({

@@ -82,7 +82,7 @@ describe("buildCtComputations", () => {
     for (const words of [
       "Company registration number:",
       "Tax reference:",
-      "Period of the return:",
+      "Period covered by the return:",
       "Profit or loss before tax per the accounts",
       "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
       "Adjusted trading profit (box 155)",

@@ -34,4 +34,5 @@ table.statement tr.total td { font-weight: bold; }
 table.statement tr.total td.figure { border-top: 1px solid #000; border-bottom: 3px double #000; }
 .approval { margin-top: 6mm; }
 .signature { margin-top: 8mm; }
+table.statement tr { break-inside: avoid; }
 `;

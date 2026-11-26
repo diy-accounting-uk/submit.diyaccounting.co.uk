@@ -181,7 +181,11 @@ test.describe("Accounts documents as a reader sees them", () => {
     await page.screenshot({ path: path.join(SCREENSHOT_DIRECTORY, "ct-computations.png"), fullPage: true });
     const text = await visibleText(page);
     expect(text).not.toMatch(HEADER_TEXT);
-    expectInOrder(text, ["Profit before tax per accounts", "Adjusted profit before capital allowances", "Adjusted trading profit"]);
+    expectInOrder(text, [
+      "Profit or loss before tax per the accounts",
+      "Adjusted profit before capital allowances",
+      "Adjusted trading profit (box 155)",
+    ]);
     expect(text).toContain("Less: capital allowances\t(1,000)");
   });
 

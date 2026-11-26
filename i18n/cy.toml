@@ -14138,8 +14138,8 @@ hash = "7582a6dc98b1"
 cy = '''Rhif cyflwyno'''
 
 [strings."ch.record.company-number"]
-hash = "4cd520c7150d"
-cy = '''Rhif cofrestru’r cwmni'''
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
 
 [strings."ch.record.status"]
 hash = "920e413c7d41"
@@ -14198,8 +14198,8 @@ hash = "89d5c1886850"
 cy = '''Wedi’i gadarnhau fel y mae ar y gofrestr'''
 
 [strings."ch.record.company-number-line"]
-hash = "f1f646794edb"
-cy = '''Rhif cofrestru’r cwmni {number}'''
+hash = "d691cbbac827"
+cy = '''Rhif y cwmni {number}'''
 
 [strings."ch.record.cs-title"]
 hash = "9e84a7fe6e03"
@@ -15458,8 +15458,8 @@ hash = "3e7e7b0930dd"
 cy = '''Derbyniodd CThEF y Ffurflen, ond mae’r IRmark ar dderbynneb CThEF yn wahanol i’r un a gyfrifwyd gennym. Cadwch y dderbynneb. Cysylltwch â’r tîm cymorth os oes angen esbonio’r gwahaniaeth.'''
 
 [strings."ch.ct.record-period"]
-hash = "4093034586db"
-cy = '''Cyfnod y Ffurflen Dreth {start} i {end}'''
+hash = "65c82e17503c"
+cy = '''Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu {start} i {end}'''
 
 [strings."ch.ct.record-period-column"]
 hash = "6e795d4d3cc2"
@@ -28625,10 +28625,6 @@ cy = '''Ffurflen Dreth y Cwmni (CT600){parts}'''
 hash = "ec83b4f3a6e2"
 cy = '''Eich copi o Ffurflen Dreth y Cwmni{parts}'''
 
-[strings."ch.ct.record-box-line"]
-hash = "4a51cfda7e63"
-cy = '''{label} (blwch {box})'''
-
 [strings."ct.section-video-summary"]
 hash = "52e50bb0b7e4"
 cy = '''Gwyliwch y rhan hon'''
@@ -28636,3 +28632,9 @@ cy = '''Gwyliwch y rhan hon'''
 [strings."ct.section-video-link"]
 hash = "49dc0f94c931"
 cy = '''Gwyliwch o {time}'''
+
+# == The company's number on a Company Tax Return record, by box 2's term, ids ch.ct.record-company-number-* ==
+
+[strings."ch.ct.record-company-number-line"]
+hash = "f1f646794edb"
+cy = '''Rhif cofrestru’r cwmni {number}'''

@@ -327,7 +327,7 @@ ${recordHeading({
   ],
   title: "Corporation Tax computation",
   subtitleHtml: `for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}`,
-})}<p>Period of the return: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
+})}<p>Period covered by the return: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
 <p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodOfAccount?.periodStart ?? periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodOfAccount?.periodEnd ?? periodEnd)}</p>
 <h3>Trading profits: ${escapeXmlText(tradeName)}</h3>
 ${computationTable}

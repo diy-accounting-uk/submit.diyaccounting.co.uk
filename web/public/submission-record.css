@@ -132,6 +132,10 @@
 .submission-record .signature {
   margin-top: 8mm;
 }
+/* A statement row stays on one printed page, so no line is cut from its figures. */
+.submission-record table.statement tr {
+  break-inside: avoid;
+}
 /* record:end */
 
 /* The record on a site page: submit.css sets every margin and padding to 0, uses border-box
