@@ -94,7 +94,7 @@ State: pending.
 |---|---|---|---|
 | ct600-page | CTL7, CTL9 | Sonnet | `ct600-fields.js` (`reviewAnswers`), `web/public/lib/filing-record.js`, `web/public/lib/filing-result-record.js`, `fileCompanyTaxReturn.page.js`, `app/services/ctComputationsIxbrl.js`, `app/services/accountsIxbrlCommon.js`, their tests |
 
-State: landed at a987c2445 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445); flint's review found six points: ctl7b (the box reference, the period term, print row breaks, one `longDateText`) builds on flint for this wave, and ctl7c (the review rendered from the filed copy, dates in words) rides wave 8 after CTF1 because it changes the CT600 page; gates on a987c2445: Maven, lint and mcp passed (anvil), Docker passed (laptop), browser 2607 passed and 2 failed on CTL9's renames (accountsDocumentRendering :179, fileConfirmationStatement :823), which ctl7b fixes; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration.
+State: landed at d33151ff8 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445, ctl7b d33151ff8); gated with wave 7 on cc47107d6 (see wave 7).
 
 ### Wave 7
 
@@ -102,7 +102,7 @@ State: landed at a987c2445 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445); f
 |---|---|---|---|
 | ct600-page | CTV1 | Sonnet | `fileCompanyTaxReturn.page.js`, `scripts/site-video-capture.js`, `scripts/video-walkthrough.js`, `videos/publish.json`, `web/public/videos/publish.json` |
 
-State: landed at abf54dbea on `claude/cobalt-w07` (CTV1 52fb5ced9, ctv1b abf54dbea) (from a987c2445; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration); garnet runs the browser gate; jasper reviews CTV1; wave 6's ctl7b joins this branch when it lands, then waves 6 and 7 gate together.
+State: landed at cc47107d6 on `claude/cobalt-w07` (CTV1 52fb5ced9, ctv1b abf54dbea, ctl7b carried from wave 6 cc47107d6). Gates for waves 6 and 7: Maven, lint and mcp passed on a987c2445 and 52fb5ced9 (anvil); browser 2607 passed on a987c2445 with 2 failures that ctl7b fixes; now running on cc47107d6: flint gate-unit-sim-cc47107, Docker passed on the laptop; the browser gate follows garnet's run on 52fb5ced9.
 
 ### Wave 8
 
