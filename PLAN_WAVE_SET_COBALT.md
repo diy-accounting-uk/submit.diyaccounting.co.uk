@@ -11,7 +11,7 @@
 
 ## Status
 
-defined 2026-11-26. Wave 1 starts when CT47 and CT48 are on `main` (batch `claude/birch-ct600`, one PR) and the operator says `/iterate`.
+defined 2026-11-26. CT47 and CT48 are on `main` (PR #874, merge 06950de59); wave 1 branches from `origin/main` when the operator says `/iterate`.
 
 ## The goal
 
@@ -40,7 +40,7 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 
 ## Waves
 
-Batch branches are `claude/cobalt-w<nn>-<batch>`, from the wave branch `claude/cobalt-w<nn>`. Wave 1 branches from `origin/main` after `claude/birch-ct600` has merged.
+Batch branches are `claude/cobalt-w<nn>-<batch>`, from the wave branch `claude/cobalt-w<nn>`. Wave 1 branches from `origin/main`.
 
 ### Wave 1
 
