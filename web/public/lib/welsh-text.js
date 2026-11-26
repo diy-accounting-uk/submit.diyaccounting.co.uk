@@ -630,6 +630,8 @@ window.WELSH_TEXT = {
   "ch.ct.a80": "Blwch A80: treth sy’n daladwy ar fenthyciadau i gyfranogwyr",
   "ch.ct.a80-rule": "Wedi’i gario i flwch 480",
   "ch.ct.about-accounts": "Am y cyfrifon",
+  "ch.ct.accounts-attached-correcting":
+    "Rydych yn cywiro’r cyfrifon sydd ynghlwm wrth y Ffurflen. Mae CThEF yn eu cael gyda’r Ffurflen ddiwygiedig; nid yw Tŷ’r Cwmnïau yn cael dim.",
   "ch.ct.accounts-filed-then": "Mae’r cyfrifon wedi’u ffeilio gyda Thŷ’r Cwmnïau. {message}",
   "ch.ct.accounts-intro":
     "Mae CThEF yn cymryd y cyfrifon llawn gyda’r Ffurflen, felly maent yn rhan o’r ffurflen hon. Rhowch bunnoedd cyfan, er enghraifft 600 neu 1,200.",
@@ -1187,6 +1189,10 @@ window.WELSH_TEXT = {
   "ch.ct600.principal-activity": "Prif weithgarwch",
   "ch.ct600.prior-period-chargeable-profits": "Elw trethadwy’r cyfnod blaenorol (blwch 315 ar ei Ffurflen Dreth)",
   "ch.ct600.prior-period-chargeable-profits-hint": "Dim ond ar gyfer hawliad i gario’n ôl y mae angen hwn.",
+  "ch.ct600.problem-advance-micro-below-nothing":
+    "Mae’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} yn gadael llai na dim yn ddyledus ar y diwedd",
+  "ch.ct600.problem-advance-micro-signer":
+    "Mae cyfrifon micro-endid yn nodi’r blaenswm i’r cyfarwyddwr sy’n eu cymeradwyo: enwch y cyfarwyddwr hwnnw yma",
   "ch.ct600.problem-advance-name": "Enwch y cyfarwyddwr sydd mewn dyled i’r cwmni",
   "ch.ct600.problem-advance-sum":
     "Rhaid i’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} fod yn hafal i’r {end} sy’n ddyledus gan gyfarwyddwyr ar y diwedd",

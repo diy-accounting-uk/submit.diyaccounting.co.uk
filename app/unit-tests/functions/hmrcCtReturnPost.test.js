@@ -761,6 +761,32 @@ describe("hmrcCtReturnPost ingestHandler", () => {
       expect(update.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("amended");
     });
 
+    test("an amended return filed with HMRC alone carries the corrected accounts and leaves Companies House out", async () => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      const { jointFilingId, ...hmrcOnly } = amendedBody();
+      expect(jointFilingId).toBe(JOINT_FILING_ID);
+      const corrected = { ...hmrcOnly, averageEmployees: baseBody.averageEmployees + 4 };
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: corrected }));
+      expect(response.statusCode).toBe(201);
+      const sent = mockPostToTransactionEngine.mock.calls[0][1];
+      expect(sent).toContain('ReturnType="amended"');
+      const accounts = Buffer.from(sent.match(/<EncodedInlineXBRLDocument Filename="accounts.html">([^<]*)</)[1], "base64").toString(
+        "utf8",
+      );
+      expect(accounts.match(/name="core:AverageNumberEmployeesDuringPeriod"[^>]*>([^<]*)</)?.[1]).toBe(
+        String(baseBody.averageEmployees + 4),
+      );
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const commands = mockSend.mock.calls.map(([cmd]) => cmd);
+      const update = commands.find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ amended: true });
+      expect(update.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("jointFilingId");
+      expect(update.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("revision");
+      expect(mockPostToTransactionEngine).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls.map(([url]) => String(url)).filter((url) => /companieshouse|company-information/.test(url))).toEqual([]);
+      fetchSpy.mockRestore();
+    });
+
     test("refuses an amended flag that is not true or false and sends nothing", async () => {
       const response = await hmrcCtReturnPostHandler(buildEvent({ body: { ...amendedBody(), amended: "yes" } }));
       expect(response.statusCode).toBe(400);

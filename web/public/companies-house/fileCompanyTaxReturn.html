@@ -276,9 +276,14 @@
         <div id="returnRecord"></div>
         <section id="amendPanel" aria-labelledby="amendHeading" style="display: none">
           <h3 id="amendHeading">Amend this filing</h3>
-          <p class="hint">
+          <p id="amendBothHint" class="hint">
             Amend the return when a tax answer was wrong. Amend the accounts and the return when a figure in the accounts was wrong:
             Companies House gets revised accounts, then HMRC gets an amended return. Your receipts show the amendments under this filing.
+          </p>
+          <p id="amendHmrcHint" class="hint" hidden>
+            Amend the return when a tax answer was wrong. Amend the accounts attached to the return when a figure in the accounts was wrong:
+            HMRC gets an amended return with the corrected accounts, and Companies House gets nothing. Your receipts show the amendments
+            under this filing.
           </p>
           <p id="amendLongNote" class="hint" hidden>
             The loss claimed in return 2 changes return 1. Amend return 1 so HMRC holds the figures you sent with return 2.
@@ -287,6 +292,9 @@
             <button type="button" id="amendReturnBtn" class="secondary-button">Amend the return</button>
             <button type="button" id="amendAccountsBtn" class="secondary-button" style="display: none">
               Amend the accounts and the return
+            </button>
+            <button type="button" id="amendAttachedAccountsBtn" class="secondary-button" style="display: none">
+              Amend the accounts attached to the return
             </button>
           </div>
         </section>

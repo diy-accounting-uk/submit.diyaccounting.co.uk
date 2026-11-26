@@ -630,6 +630,79 @@ describe("a micro-entity's accounts", () => {
     );
   });
 
+  function withAdvance(values, overrides = {}) {
+    return {
+      ...values,
+      directorsAdvanceName: values.directorName,
+      directorsAdvanceTerms: "Interest free and repayable on demand",
+      directorsAdvanceAtStart: "200",
+      directorsAdvanceMade: "1443",
+      directorsAdvanceRepaid: "1200",
+      ...overrides,
+    };
+  }
+
+  test("a micro value set with an advance gives the note on advances to directors, closing at start plus advanced less repaid", () => {
+    const values = withAdvance(microValues());
+    expect(formProblems(values)).toEqual([]);
+    expect(accountsFromValues(values).directorsAdvances).toEqual([
+      {
+        name: values.directorName,
+        terms: "Interest free and repayable on demand",
+        balanceAtStart: 200,
+        advanced: 1443,
+        repaid: 1200,
+        balanceAtEnd: 443,
+      },
+    ]);
+  });
+
+  test("the micro request carries the advance to the accounts the return attaches", () => {
+    const values = withAdvance(microValues());
+    const fromForm = validated(ct600RequestFromValues(values, COMPANY, bookFigures.workingSheet), PREVIEW);
+    expect(fromForm.errors).toEqual([]);
+    expect(fromForm.request.accounts.directorsAdvances).toEqual(accountsFromValues(values).directorsAdvances);
+    const { accountsIxbrl } = buildCtReturnDocuments(fromForm.request);
+    expect(accountsIxbrl).toContain("AdvancesCreditsDirectors");
+    expect(accountsIxbrl).toContain("Interest free and repayable on demand");
+  });
+
+  test("micro accounts with no advance typed carry no note", () => {
+    expect(accountsFromValues(microValues())).not.toHaveProperty("directorsAdvances");
+  });
+
+  test("names a micro advance to someone other than the director approving the accounts", () => {
+    const problems = formProblems(withAdvance(microValues(), { directorsAdvanceName: "Someone Else" }));
+    expect(problems).toEqual([
+      expect.objectContaining({
+        target: "directorsAdvanceName",
+        message: "Micro-entity accounts state the advance to the director approving them: name that director here",
+      }),
+    ]);
+  });
+
+  test("asks for the terms and the name of a micro advance, and refuses repayments beyond what was owed", () => {
+    const problems = formProblems(
+      withAdvance(microValues(), { directorsAdvanceName: "", directorsAdvanceTerms: "", directorsAdvanceRepaid: "2000" }),
+    );
+    expect(problems.map((problem) => problem.target)).toEqual(["directorsAdvanceName", "directorsAdvanceTerms", "directorsAdvanceRepaid"]);
+    expect(problems[2].message).toBe("Owed at the start 200 plus advanced 1443 less repaid 2000 leaves less than nothing owed at the end");
+  });
+
+  test("the micro review shows the advance fields and none of the small company's text notes", () => {
+    const ids = reviewAnswers(withAdvance(microValues())).flatMap((section) => section.rows.map((row) => row.id));
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        "directorsAdvanceName",
+        "directorsAdvanceTerms",
+        "directorsAdvanceAtStart",
+        "directorsAdvanceMade",
+        "directorsAdvanceRepaid",
+      ]),
+    );
+    for (const id of ["principalActivity", "accountingPolicies", "directors"]) expect(ids).not.toContain(id);
+  });
+
   test("asks for none of the small company's notes", () => {
     const problems = formProblems({ ...microValues(), principalActivity: "", accountingPolicies: "", directors: "" });
     expect(problems).toEqual([]);

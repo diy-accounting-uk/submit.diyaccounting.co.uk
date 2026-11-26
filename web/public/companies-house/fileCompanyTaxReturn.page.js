@@ -126,7 +126,8 @@ let agentClient = null;
 // What the customer chose to send and how far each filing has got. companiesHouse holds the
 // accounts submission once it is sent; its statusCode is PENDING, PARKED, ACCEPT or REJECT.
 // amendment is set while the customer amends an accepted filing: accounts is true when revised
-// accounts go to Companies House before the amended return. revision names the accounts already
+// accounts go to Companies House before the amended return; attachedAccounts is true when a return
+// filed with HMRC alone is amended to correct the accounts it carries. revision names the accounts already
 // filed that the revised accounts replace; both requests carry it once it is set.
 const sending = {
   mode: "hmrc",
@@ -2753,7 +2754,10 @@ function boxesDiffer(filed, current) {
 function chooseAmendedReturns(preview) {
   if (!sending.amendment || !sending.longPeriod) return true;
   const changed = [1, 2].filter(
-    (part) => sending.amendment.accounts || boxesDiffer(filedLongBoxes[part - 1], preview.returns[part - 1].boxes),
+    (part) =>
+      sending.amendment.accounts ||
+      sending.amendment.attachedAccounts ||
+      boxesDiffer(filedLongBoxes[part - 1], preview.returns[part - 1].boxes),
   );
   if (changed.length === 0) {
     window.showStatus(
@@ -2775,6 +2779,9 @@ function showAmendPanel() {
   const accepted = sending.taxReturnAccepted && (sending.mode === "hmrc" || companiesHouseAccepted());
   element("amendPanel").style.display = accepted ? "block" : "none";
   element("amendAccountsBtn").style.display = accepted && sending.mode === "both" && revisedAccountsOffered ? "inline-block" : "none";
+  element("amendAttachedAccountsBtn").style.display = accepted && sending.mode === "hmrc" ? "inline-block" : "none";
+  element("amendBothHint").hidden = sending.mode === "hmrc";
+  element("amendHmrcHint").hidden = sending.mode !== "hmrc";
   const firstReturnChanged =
     Boolean(sending.longPeriod) &&
     !sending.amendment &&
@@ -2787,12 +2794,14 @@ function hideAmendPanel() {
   element("amendPanel").style.display = "none";
 }
 
-// Both amendments reopen the form for the tax answers and send an amended return. Amending the
+// Every amendment reopens the form for the tax answers and sends an amended return. Amending the
 // accounts also reopens the accounts and sends them to Companies House first as revised accounts.
-function startAmendment({ accounts }) {
+// Amending the accounts attached to a return filed with HMRC alone reopens the accounts and sends
+// them with the amended return only.
+function startAmendment({ accounts, attachedAccounts = false }) {
   companiesHousePollWindow++;
   hideAmendPanel();
-  sending.amendment = { accounts, done: [] };
+  sending.amendment = { accounts, attachedAccounts, done: [] };
   sending.taxReturnSent = false;
   sending.taxReturnAccepted = false;
   if (sending.longPeriod) {
@@ -2805,6 +2814,7 @@ function startAmendment({ accounts }) {
     sending.companiesHouse = null;
     unlockAccounts();
   }
+  if (attachedAccounts) noteAttachedAccountsOpen();
   if (sending.longPeriod) lockPeriodDates();
   element("revisionNonCompliance").value = "";
   element("revisionAmendments").value = "";
@@ -2817,6 +2827,23 @@ function startAmendment({ accounts }) {
   persistJoint();
   window.hideStatus();
   showView("formView");
+  if (attachedAccounts) element("section-accounts").scrollIntoView({ block: "start" });
+}
+
+function noteAttachedAccountsOpen() {
+  element("accountsLockNote")?.remove();
+  element("section-accounts")
+    .querySelector("h3")
+    .after(
+      create(
+        "p",
+        { id: "accountsLockNote", class: "hint", role: "status" },
+        siteText(
+          "ch.ct.accounts-attached-correcting",
+          "You are correcting the accounts attached to the return. HMRC gets them with the amended return; Companies House gets nothing.",
+        ),
+      ),
+    );
 }
 
 // The two statements revised accounts make about the original accounts: one problem for each left empty.
@@ -3716,6 +3743,7 @@ element("waitForCompaniesHouseBtn").addEventListener("click", handleWaitForCompa
 element("startAgainBtn").addEventListener("click", startAgain);
 element("amendAccountsBtn").addEventListener("click", () => startAmendment({ accounts: true }));
 element("amendReturnBtn").addEventListener("click", () => startAmendment({ accounts: false }));
+element("amendAttachedAccountsBtn").addEventListener("click", () => startAmendment({ accounts: false, attachedAccounts: true }));
 element("changeCompanyLink").addEventListener("click", (event) => {
   event.preventDefault();
   showView("companyView");

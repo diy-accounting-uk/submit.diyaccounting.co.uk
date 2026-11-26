@@ -612,6 +612,19 @@ export async function startAmendingTheFiling(page, { accounts }, screenshotPath 
   });
 }
 
+export async function correctTheAttachedAccounts(page, { averageEmployees }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user chooses to amend the accounts attached to the return, and changes a figure", async () => {
+    await expect(page.locator("#amendPanel")).toBeVisible();
+    await expect(page.locator("#amendAccountsBtn")).toBeHidden();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-amend-panel-hmrc-alone.png`, readerView: true });
+    await loggedClick(page, "#amendAttachedAccountsBtn", "Amending the accounts attached to the return", { screenshotPath });
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#accountsLockNote")).toContainText("You are correcting the accounts attached to the return");
+    await loggedFill(page, "#averageEmployees", averageEmployees, "Average number of employees");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-attached-accounts-open.png`, readerView: true });
+  });
+}
+
 export async function reviseTheAccounts(page, { approvedOn, averageEmployees }, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the accounts open for revision and changes the approval date and a figure", async () => {
     await expect(page.locator("#accountsLockNote")).toContainText("You are revising the accounts filed at Companies House");

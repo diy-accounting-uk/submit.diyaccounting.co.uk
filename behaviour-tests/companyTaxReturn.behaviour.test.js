@@ -11,6 +11,7 @@ import {
   addOnPageLogging,
   getEnvVarAndLog,
   isSyntheticMode,
+  loggedClick,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -73,6 +74,7 @@ import {
   readReceiptsOfTheFilings,
   captureRequestBodies,
   startAmendingTheFiling,
+  correctTheAttachedAccounts,
   reviseTheAccounts,
   changeTheTaxAnswerAndReview,
   verifyAmendedSendStep,
@@ -626,6 +628,29 @@ test("Click through: amend a Company Tax Return filed to HMRC alone", async ({ p
   expect(returnPosts.bodies).toHaveLength(2);
   expect(returnPosts.bodies[0].amended).toBeUndefined();
   expect(returnPosts.bodies[1].amended).toBe(true);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: amend the accounts attached to a Company Tax Return filed to HMRC alone", async ({ page }, testInfo) => {
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  const accountsPosts = await captureRequestBodies(page, "/api/v1/companies-house/accounts", "POST");
+  await reachPreview(page, testInfo);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyReturnAccepted(page, screenshotPath);
+
+  await correctTheAttachedAccounts(page, { averageEmployees: "9" }, screenshotPath);
+  await loggedClick(page, "#previewBtn", "Going to the review", { screenshotPath });
+  await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
+  await verifyAmendedSendStep(page, { accounts: false }, screenshotPath);
+  await resendTheTaxReturn(page, { password: gatewayCredentials.password }, screenshotPath);
+  await verifyAmendedReturnAccepted(page, screenshotPath);
+
+  expect(returnPosts.bodies).toHaveLength(2);
+  expect(returnPosts.bodies[1]).toMatchObject({ amended: true, averageEmployees: 9 });
+  expect(returnPosts.bodies[1].jointFilingId).toBeUndefined();
+  expect(returnPosts.bodies[1].revision).toBeUndefined();
+  expect(accountsPosts.bodies).toHaveLength(0);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
