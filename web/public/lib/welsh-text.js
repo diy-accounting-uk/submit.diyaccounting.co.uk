@@ -784,6 +784,20 @@ window.WELSH_TEXT = {
   "ch.ct.keep-irmark": "Cadwch yr IRmark. Dyma gofnod CThEF o’r union beth a anfonwyd gennych.",
   "ch.ct.keep-irmarks": "Cadwch yr IRmarks. Dyma gofnod CThEF o’r union beth a anfonwyd gennych.",
   "ch.ct.last-year": "y llynedd",
+  "ch.ct.last-year-accounts-filed": "Ffigurau cyfrifon y llynedd yw’r rhai a ffeiliwyd gyda’r Ffurflen honno.",
+  "ch.ct.last-year-accounts-none":
+    "Nid oes gan y Ffurflen honno na’r gofrestr gyfrifon y llynedd, felly mae eu colofn yn cael ei gadael ar 0.",
+  "ch.ct.last-year-accounts-register": "Ffigurau cyfrifon y llynedd yw cyfrifon y cwmni ar gofrestr Tŷ’r Cwmnïau.",
+  "ch.ct.last-year-failed": "Ni ellid dechrau o Ffurflen y llynedd: {reason}.",
+  "ch.ct.last-year-losses": "Blwch 160 yw’r colledion a gariodd ymlaen.",
+  "ch.ct.last-year-losses-not-worked":
+    "Ni ellid gweithio ei cholledion eto o’r atebion a gadwodd, felly mae blwch 160 yn cael ei adael i chi.",
+  "ch.ct.last-year-no-losses":
+    "Ni chadwodd y Ffurflen honno unrhyw atebion i weithio ei cholledion ohonynt, felly mae blwch 160 yn cael ei adael i chi.",
+  "ch.ct.last-year-offer": "Ffeiliodd Submit Ffurflen Dreth y Cwmni hwn ar gyfer {start} i {end}. Gall Ffurflen eleni ddechrau ohoni.",
+  "ch.ct.last-year-start": "Dechrau o Ffurflen y llynedd",
+  "ch.ct.last-year-started":
+    "Wedi dechrau o’ch Ffurflen Dreth y Cwmni ar gyfer {start} i {end}: y cyfnod ar ei hôl, blwch 326, yr enw masnachu, y datganwr a’r datganiadau fel y llynedd, ac elw trethadwy y llynedd. Teipiwch ffigurau eleni.",
   "ch.ct.last-year-title": "Y llynedd",
   "ch.ct.limits": "Terfynau ar gyfer blwyddyn ariannol {year}",
   "ch.ct.limits-rule": "Y terfyn elw bychan a’r terfyn uchaf, wedi’u graddio i {days} diwrnod y cyfnod cyfrifyddu hwn",

@@ -2304,6 +2304,126 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#declarantName")).toHaveValue("Antony Cartwright");
   });
 
+  test("a company whose last return Submit filed starts this year's from it, with last year's accounts as the prior year", async ({
+    page,
+  }) => {
+    // A loss pool larger than the profit leaves losses to carry forward and no tax to set income tax against.
+    const values = { ...(await filledFormValues(page)), lossesBroughtForward: "1000000000", incomeTaxDeducted: "", taxAlreadyPaid: "0" };
+    const ctName = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+    const submission = {
+      requests: [],
+      status: 200,
+      body: {},
+      receiptList: [
+        {
+          name: ctName,
+          kind: "company-tax-return",
+          companyNumber: "00000007",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-24T11:30:00.000Z",
+        },
+      ],
+      receiptsByName: {
+        [ctName]: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          formRequest: { company: { companyNumber: "00000007", companyName: "Precision Code Ltd" }, values },
+          filed: {
+            boxes: { 2: "00000007", 30: "2025-04-01", 35: "2026-03-31", 315: 41250, 326: 1, 975: values.declarantName, 985: "Director" },
+            accountsIxbrl: ixbrlAccountsFile("small-company-accounts-full").buffer.toString("utf-8"),
+          },
+        },
+      },
+    };
+    await openForm(page, [], submission);
+    const panel = page.locator("#lastYearPanel");
+    await expect(panel).toContainText("Submit filed this company's Company Tax Return for 1 April 2025 to 31 March 2026.");
+
+    await page.getByRole("button", { name: "Start from last year's return" }).click();
+
+    await expect(page.locator("#lastYearStarted")).toContainText("Started from your Company Tax Return for 1 April 2025 to 31 March 2026", {
+      timeout: 60_000,
+    });
+    await expect(page.locator("#lastYearStarted")).toContainText("Box 160 is the losses it carried forward.");
+    await expect(page.locator("#lastYearStarted")).toContainText("Last year's accounts figures are those filed with that return.");
+    await expect(page.locator("#periodStart")).toHaveValue("2026-04-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2027-03-31");
+    await expect(page.locator("#priorPeriodChargeableProfits")).toHaveValue("41250");
+    await expect(page.locator("#associatedCompanies")).toHaveValue("1");
+    await expect(page.locator("#tradeName")).toHaveValue(values.tradeName);
+    await expect(page.locator("#declarantName")).toHaveValue(values.declarantName);
+    await expect(page.locator("#statementSection477Exemption")).toBeChecked();
+    await expect(page.locator("#regimeSmall")).toBeChecked();
+    await expect(page.locator("#priorTurnover")).toHaveValue("8500");
+    await expect(page.locator("#priorCashAtBank")).toHaveValue("5200");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
+    const carried = Number(await page.locator("#lossesBroughtForward").inputValue());
+    expect(carried).toBeGreaterThan(0);
+    expect(carried).toBeLessThan(1000000000);
+  });
+
+  test("a return that kept no accounts takes last year's accounts from the register, and one that kept no answers leaves box 160", async ({
+    page,
+  }) => {
+    const ctName = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+    const submission = {
+      requests: [],
+      status: 200,
+      body: {},
+      receiptList: [
+        {
+          name: ctName,
+          kind: "company-tax-return",
+          companyNumber: "00000007",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-24T11:30:00.000Z",
+        },
+      ],
+      receiptsByName: {
+        [ctName]: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          filed: { boxes: { 2: "00000007", 30: "2025-04-01", 35: "2026-03-31", 326: 0 } },
+        },
+      },
+    };
+    await openForm(page, [], submission);
+    await page.route("**/api/v1/companies-house/company/00000007/last-accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          outcome: "mapped",
+          set: { madeUpDate: "2026-03-31" },
+          accounts: {
+            regime: "micro",
+            balanceSheet: { fixedAssets: 800, currentAssets: 6000, calledUpShareCapital: 100 },
+            profitAndLoss: null,
+          },
+        }),
+      }),
+    );
+
+    await page.getByRole("button", { name: "Start from last year's return" }).click();
+
+    const started = page.locator("#lastYearStarted");
+    await expect(started).toContainText("That return kept no answers to work its losses from, so box 160 is left for you.", {
+      timeout: 60_000,
+    });
+    await expect(started).toContainText("Last year's accounts figures are the company's accounts on the Companies House register.");
+    await expect(page.locator("#regimeMicro")).toBeChecked();
+    await expect(page.locator("#microPriorFixedAssets")).toHaveValue("800");
+    await expect(page.locator("#microPriorCurrentAssets")).toHaveValue("6000");
+    await expect(page.locator("#periodEnd")).toHaveValue("2027-03-31");
+  });
+
+  test("a company with no return filed through Submit is offered no start from last year", async ({ page }) => {
+    await openForm(page, [], { requests: [], status: 200, body: {}, receiptList: [] });
+    await expect(page.locator("#lastYearPanel")).toBeHidden();
+  });
+
   test("a dropped micro-entity iXBRL document opens the micro accounts with its balance sheets", async ({ page }) => {
     await openForm(page);
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("micro-entity-accounts"));

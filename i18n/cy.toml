@@ -28018,3 +28018,45 @@ cy = '''Mae atebion y Ffurflen ei hun fel y’u ffeiliwyd yn llenwi {count}.'''
 [strings."widget.books-filed-failed"]
 hash = "53c063cdfdac"
 cy = '''Ni ellid llenwi o {file}: {reason}.'''
+
+# == Starting a Company Tax Return from last year's, ids ch.ct.last-year-* ==
+
+[strings."ch.ct.last-year-started"]
+hash = "600183457d8e"
+cy = '''Wedi dechrau o’ch Ffurflen Dreth y Cwmni ar gyfer {start} i {end}: y cyfnod ar ei hôl, blwch 326, yr enw masnachu, y datganwr a’r datganiadau fel y llynedd, ac elw trethadwy y llynedd. Teipiwch ffigurau eleni.'''
+
+[strings."ch.ct.last-year-no-losses"]
+hash = "4f0e33685d6b"
+cy = '''Ni chadwodd y Ffurflen honno unrhyw atebion i weithio ei cholledion ohonynt, felly mae blwch 160 yn cael ei adael i chi.'''
+
+[strings."ch.ct.last-year-losses"]
+hash = "987402df9121"
+cy = '''Blwch 160 yw’r colledion a gariodd ymlaen.'''
+
+[strings."ch.ct.last-year-accounts-filed"]
+hash = "6b4bf560ec5d"
+cy = '''Ffigurau cyfrifon y llynedd yw’r rhai a ffeiliwyd gyda’r Ffurflen honno.'''
+
+[strings."ch.ct.last-year-accounts-register"]
+hash = "d9ca5022bdf3"
+cy = '''Ffigurau cyfrifon y llynedd yw cyfrifon y cwmni ar gofrestr Tŷ’r Cwmnïau.'''
+
+[strings."ch.ct.last-year-accounts-none"]
+hash = "1dd69d858a73"
+cy = '''Nid oes gan y Ffurflen honno na’r gofrestr gyfrifon y llynedd, felly mae eu colofn yn cael ei gadael ar 0.'''
+
+[strings."ch.ct.last-year-failed"]
+hash = "956136c1d910"
+cy = '''Ni ellid dechrau o Ffurflen y llynedd: {reason}.'''
+
+[strings."ch.ct.last-year-start"]
+hash = "caa2a5837740"
+cy = '''Dechrau o Ffurflen y llynedd'''
+
+[strings."ch.ct.last-year-offer"]
+hash = "718fd6d1556c"
+cy = '''Ffeiliodd Submit Ffurflen Dreth y Cwmni hwn ar gyfer {start} i {end}. Gall Ffurflen eleni ddechrau ohoni.'''
+
+[strings."ch.ct.last-year-losses-not-worked"]
+hash = "0d5e79e05218"
+cy = '''Ni ellid gweithio ei cholledion eto o’r atebion a gadwodd, felly mae blwch 160 yn cael ei adael i chi.'''

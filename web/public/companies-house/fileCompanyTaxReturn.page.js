@@ -44,6 +44,7 @@ import {
   secondPeriodField,
   ct600RequestFromValues,
   figuresFromValues,
+  applyFormEntries,
   financialYearOf,
   formProblems,
   guideUrl,
@@ -61,6 +62,13 @@ import {
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
+import {
+  carryForwardEntries,
+  lastFiledReturn,
+  lastYearOfFiledAccounts,
+  lastYearOfRegisterAccounts,
+  priorYearEntries,
+} from "../lib/ct600-carry-forward.js";
 import {
   KEEP_DAYS_CHOICES,
   deleteAllDrafts,
@@ -1345,6 +1353,136 @@ function renderDraftPanel() {
   host.hidden = false;
 }
 
+// --- Starting from last year's return ----------------------------------------------------------
+
+function dayText(isoDate) {
+  return isoDate ? longDateText(String(isoDate).slice(0, 10)) : "";
+}
+
+// The losses last year's return carried forward, worked again from the answers it kept: the last
+// return of a long period of account carries them. Null with the reason when they are not known.
+async function lossesCarriedForwardFrom(record) {
+  const values = record.formRequest?.values;
+  const filedCompany = record.formRequest?.company;
+  if (!values || !filedCompany) return { losses: null, why: "no-answers" };
+  try {
+    await ensureTaxData(values.periodStart, values.periodEnd);
+    const figures = withoutOwnWorking(figuresFromValues(values, filedCompany, undefined));
+    const input = { ...figures, ...placeholdersFor(figures) };
+    const derived = figures.accountingPeriods
+      ? state.bundle.deriveLongPeriodReturns(input, taxDataByYear(), { today: today() }).at(-1)
+      : state.bundle.deriveCt600FromFigures(input, taxDataByYear(), { today: today() });
+    return { losses: derived.losses?.totalCarriedForward ?? 0 };
+  } catch (error) {
+    console.warn("Last year's losses carried forward could not be worked again:", error);
+    return { losses: null, why: "not-worked" };
+  }
+}
+
+// Last year's accounts: those filed with the return, or the company's last accounts on the register
+// when they are for the same period. Null when neither holds them.
+async function lastYearAccountsFor(record, periodEnd) {
+  if (record.filed?.accountsIxbrl) {
+    const mapped = state.bundle.mapIxbrlAccounts(record.filed.accountsIxbrl, { regime: "any" });
+    return { accounts: lastYearOfFiledAccounts(mapped), source: "filed" };
+  }
+  const response = await window.fetchWithIdToken(
+    `/api/v1/companies-house/company/${encodeURIComponent(company.companyNumber)}/last-accounts`,
+    {},
+  );
+  if (!response.ok) return null;
+  const answer = await response.json();
+  if (answer.outcome !== "mapped" || answer.set?.madeUpDate !== periodEnd) return null;
+  return { accounts: lastYearOfRegisterAccounts(answer.accounts), source: "register" };
+}
+
+async function startFromLastYear(listed) {
+  const panel = element("lastYearPanel");
+  const button = element("lastYearStartBtn");
+  button.disabled = true;
+  try {
+    const response = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(listed.name)}`, {});
+    if (!response.ok) throw new Error(`the return could not be read (${response.status})`);
+    const record = { ...(await response.json()), periodEnd: listed.periodEnd };
+    await ensureBundle();
+    const { losses: lossesCarriedForward, why } = await lossesCarriedForwardFrom(record);
+    const lastYear = await lastYearAccountsFor(record, listed.periodEnd);
+    applyFormEntries([...carryForwardEntries(record, { lossesCarriedForward }), ...(lastYear ? priorYearEntries(lastYear.accounts) : [])]);
+    setDefaults();
+    refresh();
+    const said = [
+      siteText(
+        "ch.ct.last-year-started",
+        "Started from your Company Tax Return for {start} to {end}: the period after it, box 326, the trade name, the declarant and the statements as last year, and last year's chargeable profits. Type this year's figures.",
+        { start: dayText(listed.periodStart), end: dayText(listed.periodEnd) },
+      ),
+      why === "no-answers"
+        ? siteText("ch.ct.last-year-no-losses", "That return kept no answers to work its losses from, so box 160 is left for you.")
+        : why === "not-worked"
+          ? siteText(
+              "ch.ct.last-year-losses-not-worked",
+              "Its losses could not be worked again from the answers it kept, so box 160 is left for you.",
+            )
+          : siteText("ch.ct.last-year-losses", "Box 160 is the losses it carried forward."),
+      lastYear?.source === "filed"
+        ? siteText("ch.ct.last-year-accounts-filed", "Last year's accounts figures are those filed with that return.")
+        : lastYear?.source === "register"
+          ? siteText(
+              "ch.ct.last-year-accounts-register",
+              "Last year's accounts figures are the company's accounts on the Companies House register.",
+            )
+          : siteText(
+              "ch.ct.last-year-accounts-none",
+              "Neither that return nor the register holds last year's accounts, so their column is left at 0.",
+            ),
+    ];
+    panel.replaceChildren(create("p", { id: "lastYearStarted" }, said.join(" ")));
+  } catch (error) {
+    button.disabled = false;
+    window.showStatus(
+      siteText("ch.ct.last-year-failed", "Could not start from last year's return: {reason}.", {
+        reason: String(error.message).replace(/\.$/, ""),
+      }),
+      "error",
+    );
+  }
+}
+
+// After the company lookup: when Submit filed the company's last Company Tax Return, the form can
+// start from it.
+async function offerLastYear() {
+  const panel = element("lastYearPanel");
+  panel.hidden = true;
+  panel.replaceChildren();
+  const url = agentClient?.clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(agentClient.clientId)}` : "/api/v1/hmrc/receipt";
+  const response = await window.fetchWithIdToken(url, {}).catch(() => null);
+  if (!response?.ok) return;
+  const listed = lastFiledReturn((await response.json()).receipts, company?.companyNumber);
+  if (!listed) return;
+  const button = create(
+    "button",
+    { type: "button", id: "lastYearStartBtn", class: "btn" },
+    siteText("ch.ct.last-year-start", "Start from last year's return"),
+  );
+  button.addEventListener("click", () => startFromLastYear(listed));
+  panel.replaceChildren(
+    create(
+      "p",
+      {},
+      siteText(
+        "ch.ct.last-year-offer",
+        "Submit filed this company's Company Tax Return for {start} to {end}. This year's return can start from it.",
+        {
+          start: dayText(listed.periodStart),
+          end: dayText(listed.periodEnd),
+        },
+      ),
+    ),
+    button,
+  );
+  panel.hidden = false;
+}
+
 // --- Reading the form -----------------------------------------------------------------------
 
 function readValues() {
@@ -2241,6 +2379,7 @@ async function handleCompanySubmit(event) {
     applyClientToForm();
     renderDraftPanel();
     window.booksImport.showFilingsFor(company.companyNumber, agentClient?.clientId);
+    await offerLastYear();
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
