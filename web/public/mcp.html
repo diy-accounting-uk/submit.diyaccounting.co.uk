@@ -13,19 +13,19 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>MCP Server - DIY Accounting Submit</title>
+    <title>MTD VAT Return in ChatGPT, Claude or Gemini - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Connect Claude or Gemini to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
+      content="Work out an MTD VAT return from your bookkeeping in ChatGPT, Claude or Gemini with the DIY Accounting Submit connector, then file it yourself in your browser."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mcp.html" />
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="MCP Server - DIY Accounting Submit" />
+    <meta property="og:title" content="MTD VAT Return in ChatGPT, Claude or Gemini - DIY Accounting Submit" />
     <meta
       property="og:description"
-      content="Connect Claude or Gemini to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
+      content="Work out an MTD VAT return from your bookkeeping in ChatGPT, Claude or Gemini with the DIY Accounting Submit connector, then file it yourself in your browser."
     />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/mcp.html" />
     <meta property="og:site_name" content="DIY Accounting" />
@@ -59,6 +59,7 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
     <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -86,6 +87,22 @@
             for a period, read your stored receipts and give you a link that opens the VAT form with the figures filled in. You check them,
             tick the declaration and file the return yourself, in your browser.
           </p>
+          <h2 id="what-you-need">What you need first</h2>
+          <p>
+            The connector works out a VAT return from a DIYA-GL book saved in your account. Before you add it to an assistant, you need:
+          </p>
+          <ol>
+            <li>
+              A DIY Accounting Submit account. <a href="auth/login.html">Sign in or create one</a>; the assistant signs in with the same
+              account.
+            </li>
+            <li>
+              A DIYA-GL book saved in that account. A DIYA-GL book is one business's sales, purchases and bank lines. Keep your bookkeeping
+              in <a href="https://diya-gl.co.uk/" target="_blank" rel="noopener">DIYA-GL</a>, which runs in your browser, and sign in there
+              with the same account: DIYA-GL saves the book to it.
+            </li>
+            <li>The business registered for VAT, and the book holding the whole of the VAT quarter you want to work out.</li>
+          </ol>
           <h2>What is MCP?</h2>
           <p>The <strong>Model Context Protocol</strong> (MCP) is a standard way for an AI assistant to use another service.</p>
           <p>
@@ -108,6 +125,14 @@
           </p>
           <p>The connector URL is:</p>
           <pre><code>https://submit.diyaccounting.co.uk/mcp</code></pre>
+          <h3>ChatGPT plugin</h3>
+          <p>
+            In ChatGPT, add the DIY Accounting Submit plugin from its listing:
+            <a href="https://chatgpt.com/plugins/plugin_asdk_app_6af90052c7f08191b817bdecceff0362" target="_blank" rel="noopener"
+              >chatgpt.com/plugins/plugin_asdk_app_6af90052c7f08191b817bdecceff0362</a
+            >. Sign in to your account when ChatGPT asks, then ask, for example, &ldquo;Work out my MTD VAT return for the quarter ended 30
+            June 2025.&rdquo;
+          </p>
           <h3>Add it in Claude</h3>
           <p>This works in Claude on the web, in Claude Desktop, on mobile and in Cowork.</p>
           <ol>
