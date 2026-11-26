@@ -259,6 +259,7 @@ export async function fixTheAnswersAndPreview(page, kept, screenshotPath = defau
 // The product works the tax before anything is sent and refuses an answer that contradicts it.
 export async function previewWithAnOwnWorkingTheTaxDoesNotMatch(page, { pictureNamePrefix }, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters a Corporation Tax of their own that differs from the worked tax and sees the product refuse the review", async () => {
+    await openFoldsAround(page, "ownCorporationTax");
     await page.locator("#ownCorporationTax").fill("1");
     await page.locator("#ownCorporationTax").blur();
     await expect(page.locator("#ownCorporationTax-error")).toContainText("disagrees with your own working");
@@ -742,9 +743,23 @@ const LONG_PERIOD_ANSWERS = {
   mainPoolAllowancesAp2: "363",
 };
 
+// The form folds the blocks most returns leave at 0; a person opens a fold, outermost first, before
+// typing into a box inside it.
+async function openFoldsAround(page, id) {
+  const closed = await page.locator(`#${id}`).evaluate((box) => {
+    const folds = [];
+    for (let fold = box.closest("details.form-fold"); fold; fold = fold.parentElement?.closest("details.form-fold")) {
+      if (!fold.open) folds.unshift(fold.id);
+    }
+    return folds;
+  });
+  for (const foldId of closed) await page.locator(`#${foldId} > summary`).click();
+}
+
 export async function typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user types a 15 month period of account, both accounting periods' figures and a loan in the second period", async () => {
     for (const [id, value] of Object.entries(LONG_PERIOD_ANSWERS)) {
+      await openFoldsAround(page, id);
       await loggedFill(page, `#${id}`, value, id);
     }
     await typeInLastYear(page);
@@ -807,6 +822,7 @@ export async function fixASecondColumnFieldAndPreview(page, { fieldId, value }, 
     await expect(page.locator("#currentTurnover")).toBeDisabled();
     await expect(page.locator("#annualInvestmentAllowance")).toBeDisabled();
     await expect(page.locator(`#${fieldId}`)).toBeEnabled();
+    await openFoldsAround(page, fieldId);
     await loggedFill(page, `#${fieldId}`, value, fieldId);
     await loggedClick(page, "#previewBtn", "Going to the review", { screenshotPath });
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });

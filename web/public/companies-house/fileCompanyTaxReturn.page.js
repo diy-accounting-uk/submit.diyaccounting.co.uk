@@ -821,6 +821,7 @@ function workedTaxPanel() {
       siteText("ch.ct.worked-empty", "Fill in the period and the accounts and the tax appears here."),
     ),
     create("dl", { id: "workedTaxRows", class: "worked-tax__list" }),
+    create("div", { id: "workedTaxSteps" }),
     create("div", { id: "workedTaxLong", class: "worked-tax__returns", hidden: "" }),
   );
 }
@@ -847,17 +848,70 @@ const ALLOWANCE_CLASSES = [
   },
 ];
 
-// Each class gets a heading and its boxes side by side where the width allows, so the section reads as six groups.
+// Each class folds under its name with its boxes side by side where the width allows, and the whole
+// section folds too: most companies claim none of them.
 function allowanceClasses(fields) {
   const byId = new Map(
     fields.map((group, index) => [CT600_FORM_FIELDS.filter((field) => field.section === "allowances")[index].id, group]),
   );
-  const grouped = ALLOWANCE_CLASSES.flatMap(({ title, ids }) => [
-    create("h4", {}, title),
-    create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id))),
-  ]);
+  const grouped = ALLOWANCE_CLASSES.map(({ title, ids }, index) =>
+    fold(`foldAllowanceClass${index + 1}`, title, [create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id)))]),
+  );
   const ungrouped = [...byId].filter(([id]) => !ALLOWANCE_CLASSES.some(({ ids }) => ids.includes(id))).map(([, group]) => group);
-  return [...grouped, ...ungrouped];
+  return [fold("foldAllowances", SECTION_TITLE.allowances, [...grouped, ...ungrouped])];
+}
+
+// --- Folds: a block most returns leave at 0, closed until it holds an answer ----------------------
+
+const SECTION_TITLE = Object.fromEntries(SECTIONS.map(({ id, title }) => [id, title]));
+const TRADING_LOSS_IDS = [
+  "lossesBroughtForward",
+  "lossAgainstTotalProfits",
+  "lossesBroughtForwardAgainstTotalProfits",
+  "lossCarriedBack",
+  "priorPeriodChargeableProfits",
+  "lossOutsideUk",
+];
+const OTHER_INCOME_IDS = ["frankedInvestmentIncome"];
+
+function fold(id, title, children) {
+  return create(
+    "details",
+    { id, "class": "form-fold", "data-fold": "" },
+    create("summary", {}, create("span", { class: "form-fold__title" }, title), " ", create("span", { class: "form-fold__count" })),
+    ...children,
+  );
+}
+
+// An answer other than the box's start: a typed figure other than 0, or a choice or tick changed.
+function answered(control) {
+  if (control.disabled) return false;
+  if (control.type === "radio" || control.type === "checkbox") return control.checked !== control.defaultChecked;
+  const value = control.value.trim();
+  return value !== "" && value !== "0" && value !== control.defaultValue;
+}
+
+// Each fold says "All 0" or how many of its boxes hold an answer, and opens itself when that count
+// grows: a value typed, a book or a file filling it, or saved answers restored into it.
+function updateFolds() {
+  for (const details of element("formSections").querySelectorAll("details[data-fold]")) {
+    const targets = new Set(
+      [...details.querySelectorAll("input[data-error-target], select[data-error-target]")]
+        .filter((control) => !control.closest("[hidden]") && answered(control))
+        .map((control) => control.dataset.errorTarget),
+    );
+    const count = targets.size;
+    let countText = siteText("ch.ct.fold-none", "All 0");
+    if (count === 1) countText = siteText("ch.ct.fold-one", "1 answered");
+    if (count > 1) countText = siteText("ch.ct.fold-many", "{count} answered", { count });
+    details.querySelector(".form-fold__count").textContent = countText;
+    if (count > Number(details.dataset.count ?? 0)) details.open = true;
+    details.dataset.count = String(count);
+  }
+}
+
+function openFoldsAround(node) {
+  for (let fold = node?.closest("details"); fold; fold = fold.parentElement?.closest("details")) fold.open = true;
 }
 
 // --- Loans to participators: rows the customer adds and removes -------------------------------
@@ -1092,7 +1146,23 @@ function sectionBody(sectionId) {
     const donationsPaid = pairedFieldGroup(DONATIONS_PAID_FIELD);
     donationsPaid.id = "donationsPaidGroup";
     donationsPaid.hidden = true;
-    return [...fields, donationsPaid];
+    const ids = CT600_FORM_FIELDS.filter((field) => field.section === "reliefs").map((field) => field.id);
+    const groupOf = (id) => fields[ids.indexOf(id)];
+    const open = ids.filter((id) => !TRADING_LOSS_IDS.includes(id) && !OTHER_INCOME_IDS.includes(id));
+    return [
+      ...open.map(groupOf),
+      donationsPaid,
+      fold("foldTradingLosses", siteText("ch.ct.fold-trading-losses", "Trading losses"), TRADING_LOSS_IDS.map(groupOf)),
+      fold("foldOtherIncome", siteText("ch.ct.fold-other-income", "Other income"), OTHER_INCOME_IDS.map(groupOf)),
+    ];
+  }
+  if (sectionId === "payments") {
+    const ids = CT600_FORM_FIELDS.filter((field) => field.section === "payments").map((field) => field.id);
+    const own = fields[ids.indexOf("ownCorporationTax")];
+    return [
+      ...fields.filter((group) => group !== own),
+      fold("foldOwnWorking", siteText("ch.ct.fold-own-working", "Your own working (optional)"), [own]),
+    ];
   }
   if (sectionId === "accounts") return accountsSection();
   if (sectionId === "declaration") {
@@ -1738,7 +1808,7 @@ function loansWorkedRows(page) {
     rows.push(
       create(
         "div",
-        { class: "worked-tax__row", role: "note" },
+        { "class": "worked-tax__row", "role": "note", "data-warning": "" },
         create("dt", {}, siteText("ch.ct.warning", "Warning")),
         create("dd", {}, warning),
       ),
@@ -1757,6 +1827,26 @@ function workedRow(term, value, hint, id) {
   );
 }
 
+// The boxes a reader checks first stay in view; every other row folds under "How these are worked out".
+const KEY_WORKED_BOXES = new Set(["155", "315", "440", "600"]);
+
+function workedSteps(items, openKey) {
+  const key = items.filter((item) => KEY_WORKED_BOXES.has(item.dataset.box) || "warning" in item.dataset);
+  const steps = items.filter((item) => !key.includes(item));
+  // The panel is built again on each change; the fold itself is kept, so a reader opening it is
+  // not undone by a change that lands between pressing and releasing the button.
+  const details =
+    document.querySelector(`details[data-steps="${openKey}"]`) ??
+    create(
+      "details",
+      { "class": "worked-tax__steps", "data-steps": openKey },
+      create("summary", {}, siteText("ch.ct.worked-steps", "How these are worked out")),
+      create("dl", { class: "worked-tax__list" }),
+    );
+  details.querySelector("dl").replaceChildren(...steps);
+  return { key, details };
+}
+
 // The rows of one return: its adjusted profit, each worked box, the loans page, and the loss carried forward or back.
 function workedItems(derived) {
   const items = [
@@ -1772,13 +1862,13 @@ function workedItems(derived) {
   for (const row of CT600_BOX_ROWS.filter(
     (candidate) => candidate.kind === "worked" && candidate.box in derived.boxes && candidate.box > 145,
   )) {
-    items.push(
-      workedRow(
-        siteText("ch.ct.box-label", "Box {box}: {label}", { box: row.box, label: row.label }),
-        workedValue(row.box, derived.boxes[row.box]),
-        row.rule,
-      ),
+    const item = workedRow(
+      siteText("ch.ct.box-label", "Box {box}: {label}", { box: row.box, label: row.label }),
+      workedValue(row.box, derived.boxes[row.box]),
+      row.rule,
     );
+    item.dataset.box = String(row.box);
+    items.push(item);
   }
   if (derived.ct600a) items.push(...loansWorkedRows(derived.ct600a));
   if (derived.losses.totalCarriedForward > 0) {
@@ -1819,6 +1909,12 @@ function placeholdersFor(figures) {
 }
 
 // Both returns side by side: the days and the split, the limits of each period, and the dates tax and the returns fall due.
+// One return's column: its key boxes in view, its other rows under "How these are worked out".
+function longColumnRows(index, items) {
+  const { key, details } = workedSteps(items, `return${index + 1}`);
+  return [create("dl", { class: "worked-tax__list" }, ...key), details];
+}
+
 function longPeriodWorkedTax(values, derivedReturns, periods) {
   const holder = element("workedTaxLong");
   const wholeDays = periods.days;
@@ -1861,9 +1957,7 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
           end: longDateText(period.periodEnd),
         }),
       ),
-      create(
-        "dl",
-        { class: "worked-tax__list" },
+      ...longColumnRows(index, [
         workedRow(
           siteText("ch.ct.days", "Days in this accounting period"),
           siteText("ch.ct.days-value", "{days} of {whole} days", { days: period.days, whole: wholeDays }),
@@ -1887,7 +1981,7 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
           longDateText(returnDueDate(periods.periods[1].periodEnd)),
           siteText("ch.ct.return-due-rule", "Both returns are due 12 months after the period of account ends"),
         ),
-      ),
+      ]),
     );
   });
   holder.replaceChildren(...columns);
@@ -1912,6 +2006,7 @@ function renderWorkedTax(values) {
   rows.hidden = false;
   if (!state.bundle) {
     rows.replaceChildren();
+    element("workedTaxSteps").replaceChildren();
     return;
   }
   const figures = withoutOwnWorking(figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet));
@@ -1925,15 +2020,19 @@ function renderWorkedTax(values) {
   } catch {
     element("workedTaxEmpty").style.display = "block";
     rows.replaceChildren();
+    element("workedTaxSteps").replaceChildren();
     return;
   }
   element("workedTaxEmpty").style.display = "none";
   if (figures.accountingPeriods) {
     longPeriodWorkedTax(values, derived, periods);
     rows.replaceChildren();
+    element("workedTaxSteps").replaceChildren();
     return;
   }
-  rows.replaceChildren(...workedItems(derived));
+  const { key, details } = workedSteps(workedItems(derived), "single");
+  rows.replaceChildren(...key);
+  if (details.parentElement !== element("workedTaxSteps")) element("workedTaxSteps").replaceChildren(details);
 }
 
 // --- Showing problems -----------------------------------------------------------------------
@@ -1981,6 +2080,7 @@ function showTouchedErrors() {
 function focusTarget(target) {
   const field = CT600_FORM_FIELDS.find((candidate) => candidate.id === target);
   const node = element(field?.focus ?? target);
+  openFoldsAround(node);
   node?.focus();
   node?.scrollIntoView?.({ block: "center" });
 }
@@ -2170,6 +2270,7 @@ function refresh() {
   renderWorkedTax(values);
   showTouchedErrors();
   updateSummary();
+  updateFolds();
   ensureTaxData(values.periodStart, values.periodEnd);
 }
 

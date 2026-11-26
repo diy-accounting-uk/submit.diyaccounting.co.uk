@@ -504,9 +504,21 @@
       "still": true,
       "steps": [
         {
+          "action": "click",
+          "target": "#foldAllowances > summary"
+        },
+        {
+          "action": "click",
+          "target": "#foldAllowanceClass1 > summary"
+        },
+        {
           "action": "fill",
           "target": "#annualInvestmentAllowance",
           "value": "12000"
+        },
+        {
+          "action": "click",
+          "target": "#foldAllowanceClass2 > summary"
         },
         {
           "action": "point",

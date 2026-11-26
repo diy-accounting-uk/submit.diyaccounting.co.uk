@@ -131,6 +131,16 @@ test.describe("File Company Tax Return entry form", () => {
   }
 
   async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }, practice = {}) {
+    // Most cases type into boxes the page folds away, as a person would after opening the fold: each
+    // fold and each "How these are worked out" opens as it appears, unless a case keeps them closed.
+    await page.addInitScript(() => {
+      const openFolds = () => {
+        if (window.keepFoldsClosed) return;
+        for (const fold of document.querySelectorAll("details.form-fold:not([open]), details.worked-tax__steps:not([open])"))
+          fold.open = true;
+      };
+      new MutationObserver(openFolds).observe(document, { childList: true, subtree: true });
+    });
     await page.addInitScript((email) => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
@@ -569,13 +579,13 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#loansBookNote")).toContainText("overdrawn by £12,000 at the end and £0 at the start");
     await expect(page.locator("#loanName1")).toHaveValue("Carol Smith");
     await expect(page.locator("#loanAmount1")).toHaveValue("12000");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 480");
+    await expect(page.locator("#workedTax")).toContainText("Box 480");
     await expect(page.locator("#workedLoanTax")).toContainText("£4,050");
-    await expect(page.locator("#workedTaxRows")).toContainText("Section 455 rate for Carol Smith");
-    await expect(page.locator("#workedTaxRows")).toContainText("33.75%");
+    await expect(page.locator("#workedTax")).toContainText("Section 455 rate for Carol Smith");
+    await expect(page.locator("#workedTax")).toContainText("33.75%");
     await page.locator("#loanRate1").fill("35.75");
     await expect(page.locator("#workedLoanTax")).toContainText("£4,290");
-    await expect(page.locator("#workedTaxRows")).toContainText("the rate you entered");
+    await expect(page.locator("#workedTax")).toContainText("the rate you entered");
   });
 
   test("a repayment dated after today shows its error under its own date field", async ({ page }) => {
@@ -627,9 +637,9 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#directorDateApproved"), "a book holds no approval date").toHaveValue("");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 440");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 155");
-    await expect(page.locator("#workedTaxRows")).toContainText("9198");
+    await expect(page.locator("#workedTax")).toContainText("Box 440");
+    await expect(page.locator("#workedTax")).toContainText("Box 155");
+    await expect(page.locator("#workedTax")).toContainText("9198");
     await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
   });
 
@@ -2099,7 +2109,7 @@ test.describe("File Company Tax Return entry form", () => {
 
   async function workedBoxPounds(page, box) {
     const text = await page
-      .locator("#workedTaxRows .worked-tax__row", { hasText: `Box ${box}:` })
+      .locator("#workedTax .worked-tax__row", { hasText: `Box ${box}:` })
       .first()
       .locator("dd")
       .first()
@@ -2118,8 +2128,8 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#ownCorporationTax").blur();
 
     await expect(page.locator("#workedTaxEmpty")).toBeHidden();
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 440:");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 600:");
+    await expect(page.locator("#workedTax")).toContainText("Box 440:");
+    await expect(page.locator("#workedTax")).toContainText("Box 600:");
     expect(await workedBoxPounds(page, 440)).toBe(box440);
   });
 
@@ -2139,6 +2149,80 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(error).toContainText("disagrees with your own working");
     await expect(error).toContainText(box475.toFixed(2));
     await expect(error).toContainText(own.toFixed(2));
+  });
+
+  test("on a blank form the less used blocks are folded and say All 0, and income and reliefs opens with boxes 515 and 305", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.keepFoldsClosed = true;
+    });
+    await openForm(page);
+    for (const id of ["foldAllowances", "foldAllowanceClass1", "foldTradingLosses", "foldOtherIncome", "foldOwnWorking"]) {
+      await expect(page.locator(`#${id}`)).not.toHaveAttribute("open", "");
+    }
+    await expect(page.locator("#foldAllowances > summary")).toHaveText("Capital allowances All 0");
+    await expect(page.locator("#foldTradingLosses > summary")).toHaveText("Trading losses All 0");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeHidden();
+    await expect(page.locator("#incomeTaxDeducted")).toBeVisible();
+    const order = await page.evaluate(() =>
+      ["#incomeTaxDeducted", "#donationsPaidGroup", "#foldTradingLosses", "#foldOtherIncome"].map((selector) =>
+        [...document.querySelectorAll("#section-reliefs *")].indexOf(document.querySelector(selector)),
+      ),
+    );
+    expect(order.every((position) => position >= 0)).toBe(true);
+    expect([...order].sort((first, second) => first - second)).toEqual(order);
+    await expect(page.locator("#taxAlreadyPaid")).toBeVisible();
+  });
+
+  test("a fold opens itself when a book fills a box inside it, and says how many it holds", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.keepFoldsClosed = true;
+    });
+    await openForm(page);
+    await dropBook(page);
+    await expect(page.locator("#foldAllowances")).toHaveAttribute("open", "");
+    await expect(page.locator("#foldAllowanceClass1")).toHaveAttribute("open", "");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeVisible();
+    await expect(page.locator("#foldAllowances > summary .form-fold__count")).toHaveText(/^\d+ answered$/);
+    await expect(page.locator("#foldOtherIncome")).not.toHaveAttribute("open", "");
+  });
+
+  test("a problem in a folded box opens its fold and moves focus there", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.keepFoldsClosed = true;
+    });
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const own = (await workedBoxPounds(page, 440)) + 100;
+    await page.locator("#foldOwnWorking > summary").click();
+    await page.locator("#ownCorporationTax").fill(String(own));
+    await page.locator("#foldOwnWorking > summary").click();
+    await expect(page.locator("#ownCorporationTax")).toBeHidden();
+    await page.locator("#previewBtn").click();
+    const link = page.locator("#ct600-error-summary a", { hasText: "disagrees with your own working" });
+    await link.click();
+    await expect(page.locator("#foldOwnWorking")).toHaveAttribute("open", "");
+    await expect(page.locator("#ownCorporationTax")).toBeFocused();
+  });
+
+  test("the worked tax shows boxes 155, 315, 440 and 600 and folds the other rows under How these are worked out", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.keepFoldsClosed = true;
+    });
+    await openForm(page);
+    await dropBook(page);
+    const boxes = await page.locator("#workedTaxRows .worked-tax__row dt").allTextContents();
+    expect(boxes.map((text) => text.match(/^Box (\d+):/)?.[1])).toEqual(["155", "315", "440", "600"]);
+    const steps = page.locator("#workedTaxSteps details.worked-tax__steps");
+    await expect(steps.locator("summary")).toHaveText("How these are worked out");
+    await expect(steps).not.toHaveAttribute("open", "");
+    await expect(steps.locator(".worked-tax__row", { hasText: "Box 345:" })).toBeHidden();
+    await steps.locator("summary").click();
+    await expect(steps.locator(".worked-tax__row", { hasText: "Box 345:" })).toBeVisible();
+    await page.locator("#utr").fill("8596148860");
+    await expect(page.locator("#workedTaxSteps details.worked-tax__steps")).toHaveAttribute("open", "");
   });
 
   test("the accounts lines of both years and the average number of employees start at 0", async ({ page }) => {
@@ -2174,11 +2258,11 @@ test.describe("File Company Tax Return entry form", () => {
     await openForm(page);
     await dropBook(page);
     for (const box of [155, 315, 345, 430, 440, 525, 600]) {
-      await expect(page.locator("#workedTaxRows")).toContainText(`Box ${box}:`);
+      await expect(page.locator("#workedTax")).toContainText(`Box ${box}:`);
     }
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 430 is box 345 plus box 395");
+    await expect(page.locator("#workedTax")).toContainText("Box 430 is box 345 plus box 395");
     await expect(page.locator("#box440")).toHaveCount(0);
-    await expect(page.locator("#workedTaxRows input")).toHaveCount(0);
+    await expect(page.locator("#workedTax input")).toHaveCount(0);
   });
 
   async function fillALossPeriod(page) {
@@ -2201,19 +2285,19 @@ test.describe("File Company Tax Return entry form", () => {
   test("a trading loss is worked into box 780 and carried forward when no claim is made", async ({ page }) => {
     await openForm(page);
     await fillALossPeriod(page);
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 780: Losses of trades carried on wholly or partly in the UK");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 780 is the computation's adjusted loss");
+    await expect(page.locator("#workedTax")).toContainText("Box 780: Losses of trades carried on wholly or partly in the UK");
+    await expect(page.locator("#workedTax")).toContainText("Box 780 is the computation's adjusted loss");
     await expect(page.locator("#workedCarriedForward")).toContainText("£50,100");
     await expect(page.locator("#workedCarryBack")).toHaveCount(0);
-    await expect(page.locator("#workedTaxRows")).not.toContainText("Box 155:");
+    await expect(page.locator("#workedTax")).not.toContainText("Box 155:");
   });
 
   test("a loss in a trade wholly outside the UK goes in box 790", async ({ page }) => {
     await openForm(page);
     await fillALossPeriod(page);
     await page.locator("#lossOutsideUk").check();
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 790:");
-    await expect(page.locator("#workedTaxRows")).not.toContainText("Box 780:");
+    await expect(page.locator("#workedTax")).toContainText("Box 790:");
+    await expect(page.locator("#workedTax")).not.toContainText("Box 780:");
   });
 
   for (const width of [1280, 390]) {
@@ -2262,8 +2346,8 @@ test.describe("File Company Tax Return entry form", () => {
       await page.locator(`#${id}`).fill(value);
       await page.locator(`#${id}`).blur();
     }
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 305: Qualifying donations");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 155: Trading profits");
+    await expect(page.locator("#workedTax")).toContainText("Box 305: Qualifying donations");
+    await expect(page.locator("#workedTax")).toContainText("Box 155: Trading profits");
   });
 
   async function fillAProfitPeriod(page) {
@@ -2290,12 +2374,12 @@ test.describe("File Company Tax Return entry form", () => {
       await page.setViewportSize({ width, height: 900 });
       await openForm(page);
       await fillAProfitPeriod(page);
-      await expect(page.locator("#workedTaxRows")).toContainText("£60,000");
+      await expect(page.locator("#workedTax")).toContainText("£60,000");
       await page.locator("#fullExpensingAllowances").fill("20000");
       await page.locator("#fullExpensingBalancingCharges").fill("500");
       await page.locator("#fullExpensingBalancingCharges").blur();
-      await expect(page.locator("#workedTaxRows")).toContainText("Box 155: Trading profits");
-      await expect(page.locator("#workedTaxRows")).toContainText("£40,500");
+      await expect(page.locator("#workedTax")).toContainText("Box 155: Trading profits");
+      await expect(page.locator("#workedTax")).toContainText("£40,500");
       await expect(page.locator("#mainPoolAllowances")).toHaveValue("0");
       expect(await pageScrollsSideways(page)).toBe(false);
       const cookieDecline = page.getByRole("button", { name: "Decline" });
@@ -2330,7 +2414,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#specialRateAllowanceExpenditure").fill("6000");
     await page.locator("#specialRateAllowanceExpenditure").blur();
     await expect(page.locator("#specialRateAllowanceExpenditure-error")).toHaveCount(0);
-    await expect(page.locator("#workedTaxRows")).toContainText("£57,000");
+    await expect(page.locator("#workedTax")).toContainText("£57,000");
   });
 
   test("a micro-entity's book opens the micro accounts, and the preview sends the micro request", async ({ page }) => {

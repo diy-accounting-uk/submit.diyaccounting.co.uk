@@ -28633,6 +28633,34 @@ cy = '''Gwyliwch y rhan hon'''
 hash = "49dc0f94c931"
 cy = '''Gwyliwch o {time}'''
 
+[strings."ch.ct.fold-none"]
+hash = "4413a72dcc61"
+cy = '''Pob un yn 0'''
+
+[strings."ch.ct.fold-one"]
+hash = "4b03095131f0"
+cy = '''1 wedi’i ateb'''
+
+[strings."ch.ct.fold-many"]
+hash = "3d3b599279d6"
+cy = '''{count} wedi’u hateb'''
+
+[strings."ch.ct.fold-trading-losses"]
+hash = "0f1047d7534e"
+cy = '''Colledion masnachu'''
+
+[strings."ch.ct.fold-other-income"]
+hash = "fc7b7bd5e266"
+cy = '''Incwm arall'''
+
+[strings."ch.ct.fold-own-working"]
+hash = "d46a2ceb6c72"
+cy = '''Eich cyfrifiad eich hun (dewisol)'''
+
+[strings."ch.ct.worked-steps"]
+hash = "aacb9f7326a9"
+cy = '''Sut y cânt eu cyfrifo'''
+
 # == The company's number on a Company Tax Return record, by box 2's term, ids ch.ct.record-company-number-* ==
 
 [strings."ch.ct.record-company-number-line"]
