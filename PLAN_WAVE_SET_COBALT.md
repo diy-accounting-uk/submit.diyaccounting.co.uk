@@ -52,7 +52,7 @@ Batch branches are `claude/cobalt-w<nn>-<batch>`, from the wave branch `claude/c
 | activities | CTA1 | Sonnet | `web/public/lib/services/catalog-service.js`, `web/public/index.page.js`, their tests |
 | bubble | CTN1, CTN3 | Sonnet | `web/public/lib/utils/status-bubble.js` (new), `web/public/submit.js`, `web/public/widgets/status-messages.js`, `web/public/css/messages.css`, `web/browser-tests/statusBubble.browser.test.js` (new) |
 
-State: building, from `claude/cobalt-w01` at 934e45b8f (2026-11-26 01:50 UTC). Cloud workers, each after its setup task `setup-934e45b`: harbour CTL0; dusk CT45 then CT46; anvil CH63; garnet CTA1; flint CTN1 then CTN3. Integrator: jasper. Beside: CTL1 by a local Opus agent (it reads the spreadsheets repository). Landed on `claude/cobalt-w01`: CTL0 (23ca564fc), CTA1 (7bca4c9c2). harbour has started CTS1 (wave 2) on its CTL0 branch; garnet reviews CTL0.
+State: building, from `claude/cobalt-w01` at 934e45b8f (2026-11-26 01:50 UTC). Cloud workers, each after its setup task `setup-934e45b`: harbour CTL0; dusk CT45 then CT46; anvil CH63; garnet CTA1; flint CTN1 then CTN3. Integrator: jasper. Beside: CTL1 by a local Opus agent (it reads the spreadsheets repository). Landed on `claude/cobalt-w01`: CTL0 (23ca564fc), CTA1 (7bca4c9c2), CH63 (e80cd8676), CT45 (a8c17c191), CH63 follow-up ch63b (fe659cb87), CTN1 (b1cb61566). Queued on jasper: ch63c, CT46, CTN3, ct45b (the WAF exemption matches the two CT600 paths exactly), ch63d, ctn1b; building: ctn3b (flint), ct46b (garnet), each from a review. Wave 2 rows done and held on their workers: CTS1, ctl0b, CTD1 (harbour), cts1b, CTA2, cta2b (dusk); harbour builds CTD2 then CTP3.
 
 ### Wave 2
 
