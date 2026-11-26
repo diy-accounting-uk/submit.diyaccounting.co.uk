@@ -11,7 +11,7 @@
 
 ## Status
 
-defined 2026-11-26. CT47 and CT48 are on `main` (PR #874, merge 06950de59); wave 1 branches from `origin/main` when the operator says `/iterate`.
+defined 2026-11-26; approved 2026-11-26 (the operator's `/collab-loop cobalt`); building wave 1.
 
 ## The goal
 
@@ -52,7 +52,7 @@ Batch branches are `claude/cobalt-w<nn>-<batch>`, from the wave branch `claude/c
 | activities | CTA1 | Sonnet | `web/public/lib/services/catalog-service.js`, `web/public/index.page.js`, their tests |
 | bubble | CTN1, CTN3 | Sonnet | `web/public/lib/utils/status-bubble.js` (new), `web/public/submit.js`, `web/public/widgets/status-messages.js`, `web/public/css/messages.css`, `web/browser-tests/statusBubble.browser.test.js` (new) |
 
-State: pending.
+State: building, from `claude/cobalt-w01` at 934e45b8f (2026-11-26 01:50 UTC). Cloud workers, each after its setup task `setup-934e45b`: harbour CTL0; dusk CT45 then CT46; anvil CH63; garnet CTA1; flint CTN1 then CTN3. Integrator: jasper. Beside: CTL1 by a local Opus agent (it reads the spreadsheets repository).
 
 ### Wave 2
 
