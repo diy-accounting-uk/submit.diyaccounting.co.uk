@@ -133,6 +133,12 @@ async function fillFromTheBook(page) {
   }
 }
 
+// The page's own requests end with hideLoading, so a test that drives the spinner waits for them.
+async function showLoadingOnceSettled(page) {
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => window.showLoading());
+}
+
 async function scrollToFoot(page) {
   await page.locator("#previewBtn").scrollIntoViewIfNeeded();
   await expect(page.locator("#statusMessagesContainer")).not.toBeInViewport();
@@ -352,22 +358,81 @@ test.describe("The working bubble while the page works", () => {
     await expect(bubble).toBeInViewport();
   });
 
-  test("an information message shows as the working bubble with its text, wherever the reader is, until it leaves", async ({ page }) => {
+  test("an information message while the spinner shows is progress: the working bubble shows its text until the work ends", async ({
+    page,
+  }) => {
     await openForm(page);
+    await scrollToFoot(page);
     const working = page.locator(".status-working-bubble");
 
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await showLoadingOnceSettled(page);
     await showMessage(page, "Still processing...", "info");
-    await expect(working).toBeVisible();
+    await expect(working).toBeInViewport();
     await expect(working.locator(".status-working-text")).toHaveText("Still processing...");
+    await expect(page.locator(".status-bubble")).toHaveCount(0);
+
+    await page.evaluate(() => window.hideLoading());
+    await expect(working).toHaveCount(0);
+  });
+
+  test("an information message with no spinner, out of view, shows as a message bubble that closes after eight seconds, not as Working", async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await openForm(page);
+    await scrollToFoot(page);
+    await showMessage(page, "Link copied.", "info");
+    const bubble = page.locator(".status-bubble");
+    await expect(bubble).toHaveAttribute("data-kind", "info");
+    await expect(bubble.locator(".status-bubble-text")).toHaveText("Link copied.");
+    await expect(page.locator(".status-working-bubble")).toHaveCount(0);
+    await expect(page.getByText("Working", { exact: true })).toHaveCount(0);
+    await page.clock.fastForward(7_000);
+    await expect(bubble).toBeVisible();
+    await page.clock.fastForward(1_500);
+    await expect(bubble).toHaveCount(0);
+  });
+
+  test("the working bubble shows only while the status area is out of view", async ({ page }) => {
+    await openForm(page);
+    const working = page.locator(".status-working-bubble");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(page.locator("#statusMessagesContainer")).toBeInViewport();
+    await showLoadingOnceSettled(page);
+    await expect(page.locator("#loadingSpinner")).toBeVisible();
+    await page.waitForTimeout(300);
+    await expect(working).toHaveCount(0);
 
     await scrollToFoot(page);
     await expect(working).toBeInViewport();
-    await expect(page.locator(".status-bubble")).toHaveCount(0);
-
-    await showMessage(page, "The return could not be checked.", "error");
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expect(working).toHaveCount(0);
-    await expect(page.locator(".status-bubble")).toHaveAttribute("data-kind", "error");
+    await page.evaluate(() => window.hideLoading());
+  });
+
+  test("at phone width at the top of the page, no bubble covers a header link or button while the page works or shows a message", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openForm(page);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await showLoadingOnceSettled(page);
+    await showMessage(page, "Still processing...", "info");
+    await showMessage(page, "The company number is not on the register.", "error");
+    await page.waitForTimeout(300);
+    const overlaps = await page.evaluate(() => {
+      const boxes = Array.from(document.querySelectorAll(".status-bubble, .status-working-bubble"), (bubble) =>
+        bubble.getBoundingClientRect(),
+      );
+      const controls = Array.from(document.querySelectorAll("header a, header button")).filter((control) => control.offsetParent !== null);
+      const meet = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      return controls
+        .filter((control) => boxes.some((box) => meet(box, control.getBoundingClientRect())))
+        .map((control) => control.textContent.trim() || control.getAttribute("aria-label"));
+    });
+    expect(overlaps).toEqual([]);
+    expect(await page.locator("header a, header button").count()).toBeGreaterThan(0);
+    await page.evaluate(() => window.hideLoading());
   });
 
   test("the working bubble reads in Welsh on the Welsh page", async ({ page }) => {
@@ -376,7 +441,8 @@ test.describe("The working bubble while the page works", () => {
     await page.locator("#companyNumber").fill("00000007");
     await page.locator("#companyLookupBtn").click();
     await expect(page.locator("#formView")).toBeVisible();
-    await page.evaluate(() => window.showLoading());
+    await scrollToFoot(page);
+    await showLoadingOnceSettled(page);
     await expect(page.locator(".status-working-bubble .status-working-label")).toHaveText("Wrthi’n gweithio");
     await page.evaluate(() => window.hideLoading());
     await expect(page.locator(".status-working-bubble")).toHaveCount(0);

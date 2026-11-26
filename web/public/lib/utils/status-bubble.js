@@ -2,14 +2,13 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // Two bubbles at the top right of the window, so a reader far down a long page sees what the
-// status area at the top says.
-// - The working bubble shows while the page works: while the loading spinner #loadingSpinner shows
-//   (showLoading until hideLoading) and while an information message, which the pages use for
-//   progress, is in #statusMessagesContainer. It shows the information message's text when there
-//   is one.
-// - The message bubble repeats an error, warning or success message added to the container while
-//   the container is out of view, with a link that takes the reader to the message and a close
-//   button.
+// status area at the top says. Both show only while #statusMessagesContainer is out of view; in
+// view, the page's own spinner and messages say it.
+// - The working bubble shows while the loading spinner #loadingSpinner shows (showLoading until
+//   hideLoading). An information message added while the spinner shows is progress: the working
+//   bubble shows its text.
+// - The message bubble repeats any other message added to the container, with a link that takes
+//   the reader to the message and a close button.
 // Neither has a live-region role: the container, and an error's role="alert", already announce
 // each message once.
 
@@ -21,9 +20,9 @@ function siteText(id, english, values) {
 
 export const STATUS_BUBBLE_CLOSE_MS = 8000;
 
-// A success message closes its bubble on its own; an error or a warning stays until the reader
-// closes it, the container comes into view or the message goes.
-const SELF_CLOSING_KINDS = new Set(["success"]);
+// An information or success message closes its bubble on its own; an error or a warning stays until
+// the reader closes it, the container comes into view or the message goes.
+const SELF_CLOSING_KINDS = new Set(["info", "success"]);
 
 function kindOf(message) {
   const kind = Array.from(message.classList).find((name) => name.startsWith("status-") && name !== "status-message");
@@ -121,8 +120,9 @@ export function startStatusBubble() {
   }
 
   function updateWorking() {
-    const progress = Array.from(container.querySelectorAll(".status-message.status-info")).at(-1);
-    if (!spinnerShows() && !progress) {
+    const working = spinnerShows();
+    const progress = working ? Array.from(container.querySelectorAll(".status-message.status-info")).at(-1) : undefined;
+    if (!working || inView(container)) {
       workingBubble?.remove();
       workingBubble = null;
       return;
@@ -150,6 +150,7 @@ export function startStatusBubble() {
 
   new IntersectionObserver((entries) => {
     if (bubble && entries.some((entry) => entry.isIntersecting)) close();
+    updateWorking();
   }).observe(container);
 
   new MutationObserver((records) => {
@@ -160,7 +161,7 @@ export function startStatusBubble() {
         (node) =>
           node.nodeType === Node.ELEMENT_NODE &&
           node.classList.contains("status-message") &&
-          !node.classList.contains("status-info") &&
+          !(node.classList.contains("status-info") && spinnerShows()) &&
           node.isConnected,
       );
     const newest = added.at(-1);
