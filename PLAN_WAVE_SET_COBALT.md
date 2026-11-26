@@ -52,7 +52,7 @@ Batch branches are `claude/cobalt-w<nn>-<batch>`, from the wave branch `claude/c
 | activities | CTA1 | Sonnet | `web/public/lib/services/catalog-service.js`, `web/public/index.page.js`, their tests |
 | bubble | CTN1, CTN3 | Sonnet | `web/public/lib/utils/status-bubble.js` (new), `web/public/submit.js`, `web/public/widgets/status-messages.js`, `web/public/css/messages.css`, `web/browser-tests/statusBubble.browser.test.js` (new) |
 
-State: landed at e36d6a608 (14 commits: CTL0, CTA1, CH63 with ch63b to ch63d, CT45 with ct45b, CT46 with ct46b, CTN1 with ctn1b, CTN3 with ctn3b; the follow-ups came from cross-worker reviews). Wave gate running on `claude/cobalt-w01-e36d6a6`: flint Java and lint, garnet browser, anvil the CT600, micro-entity and confirmation statement simulator suites, dusk npm test, mcp and three simulator suites; the Docker build passed on the laptop. Wave 2 rows done and held: CTS1, ctl0b, CTD1, CTD2, CTP3 (harbour), cts1b, CTA2, cta2b, ctp3b (dusk); wave 3 done on harbour: CTR2, CT49; wave 4: CTL2 done on harbour, CTL5 by a local agent; wave 5: CTL4 building on harbour. Open for the operator: the retention of a pending CT600 request (ctp3b keeps one hour).
+State: gated e36d6a608 (14 commits: CTL0, CTA1, CH63 with ch63b to ch63d, CT45 with ct45b, CT46 with ct46b, CTN1 with ctn1b, CTN3 with ctn3b; the follow-ups came from cross-worker reviews). Gates on e36d6a608, all pass: npm test 15782, mcp 474, ./mvnw clean verify 578, Prettier, Spotless and both ESLint ratchets (flint); test:browser 2542 (garnet); the CT600 (21), micro-entity (16), confirmation statement (5), bundle, registered office and registered email simulator suites (anvil, dusk); the Docker build (laptop). Wave 2 rows done and held: CTS1, ctl0b, CTD1, CTD2, CTP3 (harbour), cts1b, CTA2, cta2b, ctp3b (dusk); wave 3 done on harbour: CTR2, CT49; wave 4: CTL2 done on harbour, CTL5 by a local agent; wave 5: CTL4 building on harbour. Open for the operator: the retention of a pending CT600 request (ctp3b keeps one hour).
 
 ### Wave 2
 
@@ -61,7 +61,7 @@ State: landed at e36d6a608 (14 commits: CTL0, CTA1, CH63 with ch63b to ch63d, CT
 | ct600-page | CTS1, CTD1, CTD2, CTP3 | Sonnet | `fileCompanyTaxReturn.page.js` and `.html`, `web/public/lib/form-draft.js` (new), `web/public/privacy.html`, `web/public/lib/ct600-fields.js`, `fileMicroEntityAccounts.page.js`, `fileSmallCompanyAccounts.page.js`, `web/public/hmrc/receipt/receipts.page.js`, `web/public/companies-house/filings.html` and its page script, their tests |
 | activities | CTA2 | Sonnet | `web/public/lib/services/viewer-settings.js`, `web/public/settings.page.js`, `correlation-utils.js`, their tests |
 
-State: pending.
+State: integrating on `claude/cobalt-w02` from e36d6a608. jasper merges each row tip in order: CTS1, ctl0b, CTD1, CTD2, CTP3 (harbour), cts1b, CTA2, cta2b, ctp3b (dusk).
 
 ### Wave 3
 
