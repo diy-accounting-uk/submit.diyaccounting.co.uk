@@ -207,31 +207,64 @@ function longPeriodTitleSuffix(receipt) {
   return receipt.longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", receipt.longPeriod) : "";
 }
 
-function ct600Record(receipt, dateText) {
+/**
+ * The CT600 boxes as the filed copy shows them: the company, its tax reference and registration
+ * number, a title and subtitle, then a row per box with its number, HMRC's term and its value.
+ * The review before sending renders the same record, with a Change cell on each row.
+ * @param {object} record
+ * @param {object} record.boxes - the CT600 boxes
+ * @param {string} [record.utr]
+ * @param {string} [record.companyName] - box 1 when the boxes hold it
+ * @param {string} [record.companyNumber] - box 2 when the boxes hold it
+ * @param {string} record.title
+ * @param {string} record.subtitle
+ * @param {(box: number|string) => string} [record.rowId] - the id of a box's row
+ * @param {(box: number|string, label: string) => string} [record.changeCellHtml] - a Change cell for a box's row
+ * @param {string} [record.tableId]
+ */
+export function ct600RecordHtml({
+  boxes = {},
+  utr,
+  companyName = boxes[1],
+  companyNumber = boxes[2],
+  title,
+  subtitle,
+  rowId = (box) => `ct600Box${box}`,
+  changeCellHtml,
+  tableId,
+}) {
   const heading = recordHeading({
-    nameHtml: escapeRecordText(receipt.filed?.boxes?.[1] ?? siteText("ch.ct.record-name", "Company Tax Return")),
+    nameHtml: escapeRecordText(companyName ?? siteText("ch.ct.record-name", "Company Tax Return")),
     referenceHtml: [
-      receipt.utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr: receipt.utr })) : "",
-      receipt.filed?.boxes?.[2]
-        ? escapeRecordText(
-            siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: receipt.filed.boxes[2] }),
-          )
+      utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr })) : "",
+      companyNumber
+        ? escapeRecordText(siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: companyNumber }))
         : "",
     ].filter(Boolean),
-    title: ctRecordTitle(receipt.gatewayTest === false, longPeriodTitleSuffix(receipt)),
-    subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
+    title,
+    subtitleHtml: escapeRecordText(subtitle),
   });
-  const boxes = receipt.filed?.boxes ?? {};
   const rows = Object.keys(boxes)
     .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
     .map((key) => {
       const box = /^\d+$/.test(key) ? Number(key) : key;
-      const label = escapeRecordText(CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? ABSENT);
+      const term = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? ABSENT;
       const reference = escapeRecordText(siteText("ch.ct600.review-box", "Box {box}", { box }));
-      return `<tr id="ct600Box${box}"><td class="label box-reference">${reference}</td><td class="label">${label}</td>${boxValueCell(box, boxes[box])}</tr>`;
+      const change = changeCellHtml ? changeCellHtml(box, term) : "";
+      return `<tr id="${escapeRecordAttribute(rowId(box))}"><td class="label box-reference">${reference}</td><td class="label">${escapeRecordText(term)}</td>${boxValueCell(box, boxes[box])}${change}</tr>`;
     })
     .join("\n");
-  return page(`${heading}<table class="statement">\n<tbody>\n${rows}\n</tbody>\n</table>`);
+  const id = tableId ? ` id="${escapeRecordAttribute(tableId)}"` : "";
+  return page(`${heading}<table class="statement"${id}>\n<tbody>\n${rows}\n</tbody>\n</table>`);
+}
+
+function ct600Record(receipt, dateText) {
+  return ct600RecordHtml({
+    boxes: receipt.filed?.boxes ?? {},
+    utr: receipt.utr,
+    title: ctRecordTitle(receipt.gatewayTest === false, longPeriodTitleSuffix(receipt)),
+    subtitle: siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText }),
+  });
 }
 
 export function ctReceiptRecord(receipt, dateText) {

@@ -41,7 +41,6 @@ import {
   PER_PERIOD_LOAN_QUESTION_IDS,
   LONG_PERIOD_DONATIONS_LABEL,
   boxChangeTarget,
-  boxRow,
   lineChangeTarget,
   longPeriodOf,
   periodFieldId,
@@ -66,7 +65,7 @@ import {
 } from "../lib/ct600-fields.js";
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
-import { ct600BoxText } from "../lib/filing-record.js";
+import { ct600RecordHtml } from "../lib/filing-record.js";
 import { addSectionVideos } from "../lib/section-video.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
@@ -2645,19 +2644,30 @@ function sortBoxes(keys) {
   return [...keys].sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || String(a).localeCompare(String(b)));
 }
 
-function boxTableRows(boxes, values, part, idSuffix) {
-  return sortBoxes(Object.keys(boxes)).map((box) => {
-    const label = boxRow(box).label;
-    const target = boxChangeTarget(box, values, part);
-    const change = target ? changeLink(target, siteText("ch.ct.change-box", "box {box}, {label}", { box, label })) : companyChangeLink();
-    const row = tableRow(box, label, "", change);
-    const text = ct600BoxText(box, boxes[box]);
-    if (box === "340" || box === "390") amountCell(row.children[2], text);
-    else if (text !== null) row.children[2].textContent = text;
-    else amountCell(row.children[2], formatPounds(boxes[box]));
-    row.children[2].classList.add("review-table__value-cell");
-    row.id = `review-box-${box}${idSuffix}`;
-    return row;
+// The nodes of record markup that filing-record.js built, escaping every value it holds.
+function recordNodes(html) {
+  return [...new DOMParser().parseFromString(html, "text/html").body.childNodes];
+}
+
+// The CT600 boxes as the filed copy shows them, each row with a Change link to the question that gives it.
+function ct600ReviewRecord(boxes, values, part, idSuffix, tableId) {
+  return ct600RecordHtml({
+    boxes,
+    utr: values.utr,
+    companyName: boxes[1] ?? company?.companyName,
+    companyNumber: boxes[2] ?? company?.companyNumber,
+    title: siteText("ch.ct.review-record-title", "Company Tax Return (CT600)"),
+    subtitle: siteText("ch.ct.record-period", "Period covered by the return {start} to {end}", {
+      start: boxes[30] ? longDateText(boxes[30]) : "",
+      end: boxes[35] ? longDateText(boxes[35]) : "",
+    }),
+    tableId,
+    rowId: (box) => `review-box-${box}${idSuffix}`,
+    changeCellHtml: (box, label) => {
+      const target = boxChangeTarget(String(box), values, part);
+      const link = target ? changeLink(target, siteText("ch.ct.change-box", "box {box}, {label}", { box, label })) : companyChangeLink();
+      return `<td class="change">${link.outerHTML}</td>`;
+    },
   });
 }
 
@@ -2686,9 +2696,7 @@ function renderReview(preview) {
     element("previewIxbrl").textContent = preview.returns.map((part) => part.computationsIxbrl).join("\n");
     return;
   }
-  element("ct600Table")
-    .querySelector("tbody")
-    .replaceChildren(...boxTableRows(preview.boxes, values, 1, ""));
+  element("ct600Record").replaceChildren(...recordNodes(ct600ReviewRecord(preview.boxes, values, 1, "", "ct600Table")));
   element("computationsTable")
     .querySelector("tbody")
     .replaceChildren(...computationTableRows(preview.computationLines, values, 1, ""));
@@ -2696,31 +2704,7 @@ function renderReview(preview) {
 }
 
 function reviewTables(index) {
-  const boxes = create(
-    "table",
-    { id: `ct600Table${index}`, class: "results-table review-table review-table--boxes" },
-    create(
-      "colgroup",
-      {},
-      create("col", { class: "review-table__box" }),
-      create("col"),
-      create("col", { class: "review-table__value" }),
-      create("col", { class: "review-table__change" }),
-    ),
-    create(
-      "thead",
-      {},
-      create(
-        "tr",
-        {},
-        create("th", { scope: "col" }, siteText("ch.ct.column-box", "Box")),
-        create("th", { scope: "col" }, siteText("ch.ct.column-meaning", "Meaning")),
-        create("th", { scope: "col", class: "amount" }, siteText("ch.ct.column-value", "Value (amounts in £)")),
-        create("th", { scope: "col" }, siteText("ch.ct.change", "Change")),
-      ),
-    ),
-    create("tbody"),
-  );
+  const boxes = create("div", { class: "customer-copy-sheet" }, create("div", { class: "submission-record" }));
   const computations = create(
     "table",
     { id: `computationsTable${index}`, class: "results-table review-table" },
@@ -2756,7 +2740,7 @@ function renderLongReviews(preview, values) {
     const suffix = position === 0 ? "" : "Ap2";
     const days = longPeriodOf(values).periods[position].days;
     const { boxes, computations } = reviewTables(part.part);
-    boxes.querySelector("tbody").replaceChildren(...boxTableRows(part.boxes, values, part.part, suffix));
+    boxes.firstChild.replaceChildren(...recordNodes(ct600ReviewRecord(part.boxes, values, part.part, suffix, `ct600Table${part.part}`)));
     computations.querySelector("tbody").replaceChildren(
       ...computationTableRows(part.computationLines, values, part.part, suffix, {
         adjustedProfitBeforeAccountingPeriodAdjustments: siteText(

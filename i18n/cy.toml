@@ -12509,22 +12509,6 @@ cy = '''Gwiriwch eich atebion. Dyma’r ffigurau y bydd CThEF yn eu cael. Nid oe
 hash = "1164a114b062"
 cy = '''Mae’r <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide.cy" target="_blank" rel="noopener">canllaw Ffurflen Dreth y Cwmni</a> yn esbonio pob blwch. Y ffurflen ei hun yw’r <a id="ct600FormLink" href="https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf" target="_blank" rel="noopener">CT600 (2026) Fersiwn 3</a>.'''
 
-[strings."ch-tax-return.ct600-boxes-8feb1a"]
-hash = "8feb1a7518d5"
-cy = '''Blychau’r CT600'''
-
-[strings."ch-tax-return.box-512fd3"]
-hash = "512fd3c6042c"
-cy = '''Blwch'''
-
-[strings."ch-tax-return.meaning-1f5d64"]
-hash = "1f5d64b92820"
-cy = '''Ystyr'''
-
-[strings."ch-tax-return.value-amounts-in-6a4d92"]
-hash = "6a4d923d934a"
-cy = '''Gwerth (symiau mewn £)'''
-
 [strings."ch-tax-return.change-c0bf75"]
 hash = "c0bf75bd78bf"
 cy = '''Newid'''
@@ -14961,14 +14945,6 @@ cy = '''blwch {box}, {label}'''
 hash = "512fd3c6042c"
 cy = '''Blwch'''
 
-[strings."ch.ct.column-meaning"]
-hash = "1f5d64b92820"
-cy = '''Ystyr'''
-
-[strings."ch.ct.column-value"]
-hash = "6a4d923d934a"
-cy = '''Gwerth (symiau mewn £)'''
-
 [strings."ch.ct.line-long-adjusted"]
 hash = "533c461380eb"
 cy = '''Elw wedi’i addasu ar gyfer {days} diwrnod y cyfnod cyfrifon'''
@@ -15544,13 +15520,13 @@ cy = '''Math o gwmni'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 [strings."ch.ct600.box-30"]
-hash = "cb8d9d7ab4a1"
-cy = '''Cyfnod y Ffurflen Dreth: o'''
+hash = "a1e77624c772"
+cy = '''Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu: o'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 [strings."ch.ct600.box-35"]
-hash = "78a112a9a1d8"
-cy = '''Cyfnod y Ffurflen Dreth: i'''
+hash = "b78a234628d0"
+cy = '''Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu: i'''
 
 # HMRC Welsh CT600 form
 [strings."ch.ct600.box-50"]
@@ -16105,8 +16081,8 @@ cy = '''Cwmnïau o dan reolaeth gyffredin gyda’r cwmni hwn. Rhowch 0 os nad oe
 
 # no HMRC Welsh found
 [strings."ch.ct600.period"]
-hash = "c69d26623dd7"
-cy = '''Cyfnod y Ffurflen Dreth'''
+hash = "3670d03d724b"
+cy = '''Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.period-hint"]
@@ -28678,3 +28654,7 @@ cy = '''Mae’r dyddiad hwn ar ôl heddiw. Dim ond hyd at heddiw y mae Tŷ’r C
 [strings."ch.cs.filing-early"]
 hash = "46a3dc5cb483"
 cy = '''Os caiff ei ffeilio nawr, mae’r datganiad wedi’i wneud hyd at heddiw, ac mae’r dyddiad cadarnhau nesaf yn symud i flwyddyn o heddiw.'''
+
+[strings."ch.ct.review-record-title"]
+hash = "45fec261ce04"
+cy = '''Ffurflen Dreth y Cwmni (CT600)'''

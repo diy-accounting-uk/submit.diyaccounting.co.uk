@@ -402,3 +402,32 @@
 .customer-copy-sheet .submission-record .reference {
   font-family: var(--font-figures, inherit);
 }
+
+/* The review's CT600 record: a Change link at the end of each box's row, in a blue that reads on the
+   sheet's white paper in either theme. Below 40rem it sits on its own line under the row. */
+.customer-copy-sheet .submission-record table.statement td.change {
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 1rem;
+}
+.customer-copy-sheet .submission-record table.statement td.change a {
+  color: #1d4f91;
+}
+@media (max-width: 40rem) {
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.75rem;
+  }
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.label:not(.box-reference) {
+    flex: 1 1 60%;
+    min-width: 0;
+  }
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.change {
+    display: block;
+    flex: 1 1 100%;
+    padding: 0 0 0.5rem;
+    text-align: left;
+  }
+}

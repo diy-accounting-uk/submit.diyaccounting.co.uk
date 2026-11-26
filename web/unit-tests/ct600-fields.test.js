@@ -444,7 +444,7 @@ describe("the form's own checks", () => {
         loanAmount1: "£12,000",
         loanRate1: "33.75%",
         repaymentName1: "Carol Smith",
-        repaymentDate1: "2026-06-30",
+        repaymentDate1: "30 June 2026",
         repaymentRepaid1: "£2,000",
       });
     });
@@ -530,8 +530,8 @@ describe("the review", () => {
 
   test("shows answers as the customer reads them", () => {
     expect(rowOf("annualInvestmentAllowance").value).toBe("£52,500");
-    expect(rowOf("period")).toMatchObject({ reference: "Box 30", label: "Period of the return: from", value: "1 April 2025" });
-    expect(rowOf("periodEnd")).toMatchObject({ reference: "Box 35", label: "Period of the return: to", value: "31 March 2026" });
+    expect(rowOf("period")).toMatchObject({ reference: "Box 30", label: "Period covered by the return: from", value: "1 April 2025" });
+    expect(rowOf("periodEnd")).toMatchObject({ reference: "Box 35", label: "Period covered by the return: to", value: "31 March 2026" });
     expect(rowOf("utr")).toMatchObject({ reference: "Box 3", label: "Tax reference" });
     expect(rowOf("currentTurnover").ledger).toEqual({ table: "profitAndLoss", line: "turnover", lineLabel: "Turnover", year: "current" });
     expect(rowOf("loansMade").value).toBe("No");

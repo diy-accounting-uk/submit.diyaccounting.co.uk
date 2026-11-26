@@ -723,6 +723,41 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#currentTurnover")).toBeFocused();
   });
 
+  test("the review shows the CT600 boxes as the filed copy does, each row with a Change link that reaches its question", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.keepFoldsClosed = true;
+    });
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#foldAllowances > summary").click();
+    await expect(page.locator("#foldAllowances")).not.toHaveAttribute("open", "");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    const record = page.locator("#ct600Record");
+    await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
+    await expect(record.locator(".reference").first()).toHaveText("Tax reference 8596148860");
+    await expect(record.locator(".subtitle")).toHaveText(
+      /^Period covered by the return \d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$/,
+    );
+    const box3 = page.locator("#review-box-3");
+    await expect(box3.locator("td").nth(0)).toHaveText("Box 3");
+    await expect(box3.locator("td").nth(1)).toHaveText("Tax reference");
+    await expect(box3.locator("td.text-value")).toHaveText("8596148860");
+    await expect(page.locator("#review-row-directorDateApproved")).toContainText("15 September 2026");
+
+    await page.locator("#review-row-annualInvestmentAllowance a.review-change").click();
+    await expect(page.locator("#foldAllowances")).toHaveAttribute("open", "");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeFocused();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#review-box-3 a.review-change").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#utr")).toBeFocused();
+  });
+
   test("the filled form previews the return with the figures it holds", async ({ page }) => {
     const previewRequests = [];
     await openForm(page, previewRequests);

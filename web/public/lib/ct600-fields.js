@@ -97,7 +97,7 @@ export const CT600_BOX_ROWS = [
   },
   {
     box: 30,
-    label: siteText("ch.ct600.box-30", "Period of the return: from"),
+    label: siteText("ch.ct600.box-30", "Period covered by the return: from"),
     kind: "typed",
     section: "period",
     field: "periodStart",
@@ -106,7 +106,7 @@ export const CT600_BOX_ROWS = [
   },
   {
     box: 35,
-    label: siteText("ch.ct600.box-35", "Period of the return: to"),
+    label: siteText("ch.ct600.box-35", "Period covered by the return: to"),
     kind: "typed",
     section: "period",
     field: "periodEnd",
@@ -883,7 +883,7 @@ export const CT600_FORM_FIELDS = [
     figureKeys: ["periodStart", "periodEnd"],
     box: 30,
     type: "dates",
-    label: siteText("ch.ct600.period", "Period of the return"),
+    label: siteText("ch.ct600.period", "Period covered by the return"),
     hint: siteText(
       "ch.ct600.period-hint",
       "The accounts cover this period. It starts on or after 1 April 2015, ends before today and lasts up to 18 months. A period over 12 months files as two returns.",
@@ -3549,6 +3549,7 @@ function answerText(field, values) {
       : NOT_GIVEN;
   if (field.type === "choice") return values[field.id] === "yes" ? YES : NO;
   if (field.type === "checkbox") return values[field.id] === true ? YES : NO;
+  if (field.type === "date") return values[field.id] ? longDateText(values[field.id]) : NOT_GIVEN;
   const typed = String(values[field.id] ?? "").trim();
   if (typed === "") return NOT_GIVEN;
   return field.type === WHOLE || field.type === "pounds-and-pence" ? poundsAnswer(typed) : typed;
@@ -3614,11 +3615,9 @@ function accountsTextRows(values) {
   const micro = regimeOf(values) === "micro";
   return ACCOUNTS_TEXT_FIELDS.filter((field) => !(micro && field.smallOnly)).map((field) => {
     const typed = String(values[field.id] ?? "").trim();
-    return {
-      id: field.id,
-      label: field.reviewLabel ?? field.label,
-      value: typed === "" ? NOT_GIVEN : typed.replaceAll("\n", ", "),
-    };
+    let value = typed === "" ? NOT_GIVEN : typed.replaceAll("\n", ", ");
+    if (typed !== "" && field.type === "date") value = longDateText(typed);
+    return { id: field.id, label: field.reviewLabel ?? field.label, value };
   });
 }
 
@@ -3670,7 +3669,7 @@ function loanRows(values, part = 1, returnNumber = 0) {
       rows.push({
         id: repaymentId("Date", row, part),
         label: loanRowLabel(returnNumber, siteText("ch.ct600.repayment-date", "Repayment {row}: date", { row })),
-        value: String(values[repaymentId("Date", row, part)] || NOT_GIVEN),
+        value: values[repaymentId("Date", row, part)] ? longDateText(values[repaymentId("Date", row, part)]) : NOT_GIVEN,
       });
       rows.push({
         id: repaymentId("Repaid", row, part),
@@ -3791,7 +3790,7 @@ export function reviewAnswers(values) {
       rows.push({
         id: FIRST_PERIOD_START_FIELD,
         label: siteText("ch.ct600.first-period-start-question", "Does the first accounting period start on {start}?", {
-          start: values.periodStart,
+          start: values.periodStart ? longDateText(values.periodStart) : NOT_GIVEN,
         }),
         value: values[FIRST_PERIOD_START_FIELD] === "no" ? NO : YES,
       });
