@@ -46,16 +46,17 @@ import {
   longPeriodOf,
   periodFieldId,
   secondPeriodField,
+  SECOND_PERIOD_SUFFIX,
   ct600RequestFromValues,
   figuresFromValues,
   applyFormEntries,
   financialYearOf,
   formProblems,
-  guideUrl,
   loanId,
   loanRowNumbers,
   microId,
   noteId,
+  noteSheetCell,
   profitAndLossId,
   regimeOf,
   repaymentId,
@@ -64,6 +65,7 @@ import {
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
+import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
@@ -261,25 +263,19 @@ function amountCell(cell, text, style) {
 
 // --- The form -------------------------------------------------------------------------------
 
-function guideAnchorOf(field) {
-  return field.box ? boxRow(field.box)?.anchor : undefined;
+// The note under a field's label, and under it the disclosure of the spreadsheet cells. A second
+// period's column repeats neither the link nor the disclosure's pictures, so it carries the hint only.
+function hintOf(field) {
+  if (!hasRegisterEntry(field))
+    return create("p", { id: `${field.id}-hint`, class: "hint", ...(field.hint ? {} : { hidden: "" }) }, field.hint ?? "");
+  if (field.id.endsWith(SECOND_PERIOD_SUFFIX)) return create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
+  const fragment = document.createDocumentFragment();
+  fragment.append(noteOf(field), sourceDisclosure(field));
+  return fragment;
 }
 
-function hintOf(field) {
-  const hint = create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
-  const anchor = guideAnchorOf(field);
-  if (!field.hint && !anchor) hint.hidden = true;
-  if (anchor) {
-    const link = create(
-      "a",
-      { href: guideUrl(anchor), target: "_blank", rel: "noopener" },
-      siteText("ch.ct.guide-link", "Company Tax Return guide"),
-    );
-    // GOV.UK's guide is in English only, so a Welsh reader is told before following the link.
-    const inEnglish = window.siteLanguage?.chrome?.() === "cy" ? [" ", create("span", { class: "lang-mark" }, "(yn Saesneg)")] : [];
-    hint.append(field.hint ? " " : "", link, ...inEnglish, ".");
-  }
-  return hint;
+function labelOf(field) {
+  return hasRegisterEntry(field) ? labelWithReference(field) : field.label;
 }
 
 function inputFor(field) {
@@ -315,7 +311,7 @@ function textGroup(field) {
   return create(
     "div",
     { class: "form-group" },
-    create("label", { for: field.id }, field.label),
+    create("label", { for: field.id }, labelOf(field)),
     hintOf(field),
     errorHost(field.id),
     inputFor(field),
@@ -340,12 +336,11 @@ function choiceGroup(field) {
       }),
       create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}` }, text),
     );
-  const hint = field.hint ? hintOf(field) : create("p", { id: `${field.id}-hint`, class: "hint" });
   return create(
     "div",
     { class: "form-group" },
-    create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
-    hint,
+    create("p", { id: field.id, class: "field-label", tabindex: "-1" }, labelOf(field)),
+    hintOf(field),
     errorHost(field.id),
     radio("no", siteText("ch.ct.no", "No"), field.default !== "yes"),
     radio("yes", siteText("ch.ct.yes", "Yes"), field.default === "yes"),
@@ -358,7 +353,7 @@ function datesGroup(field) {
   return create(
     "div",
     { "class": "form-group", "id": field.id, "role": "group", "aria-labelledby": `${field.id}-label`, "tabindex": "-1" },
-    create("p", { id: `${field.id}-label`, class: "field-label" }, field.label),
+    create("p", { id: `${field.id}-label`, class: "field-label" }, labelOf(field)),
     hintOf(field),
     errorHost(field.id),
     dateField("periodStart", siteText("ch.ct.period-start", "Period start")),
@@ -366,19 +361,31 @@ function datesGroup(field) {
   );
 }
 
-function checkboxGroup(id, label, target = id) {
+function checkboxGroup(field, target = field.id) {
+  const { id } = field;
+  const registered = hasRegisterEntry(field);
   return create(
     "div",
     { class: "form-group" },
     errorHost(target),
-    choiceRow(create("input", { "type": "checkbox", id, "name": id, "data-error-target": target }), create("label", { for: id }, label)),
+    choiceRow(
+      create("input", {
+        "type": "checkbox",
+        id,
+        "name": id,
+        "data-error-target": target,
+        ...(registered ? { "aria-describedby": `${id}-hint` } : {}),
+      }),
+      create("label", { for: id }, labelOf(field)),
+    ),
+    ...(registered ? [hintOf(field)] : []),
   );
 }
 
 function fieldGroup(field) {
   if (field.type === "choice") return choiceGroup(field);
   if (field.type === "dates") return datesGroup(field);
-  if (field.type === "checkbox") return checkboxGroup(field.id, field.label);
+  if (field.type === "checkbox") return checkboxGroup(field);
   return textGroup(field);
 }
 
@@ -445,7 +452,7 @@ function ledger({ caption, columns, rows, className }) {
     create(
       "tr",
       {},
-      create("th", { scope: "row" }, row.label, ...row.cells.map((cell) => errorHost(cell.id))),
+      create("th", { scope: "row" }, row.label, ...(row.detail ?? []), ...row.cells.map((cell) => errorHost(cell.id))),
       ...columns.map((column, index) => ledgerCell(column, row.cells[index])),
     ),
   );
@@ -468,15 +475,20 @@ const YEAR_COLUMNS = [
   },
 ];
 
+// An accounts line's row heading: its label led by its reference, its note and its disclosure.
+function lineDetail(line, id) {
+  return { label: labelWithReference(line), detail: [noteOf(line, id), sourceDisclosure(line, { id })] };
+}
+
 function yearLedger(fields, idOf) {
   return ledger({
     className: "ledger--years ledger--one-year",
     columns: YEAR_COLUMNS,
-    rows: fields.map(({ id: field, label }) => ({
-      label,
+    rows: fields.map((line) => ({
+      ...lineDetail(line, idOf("current", line.id)),
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
-        id: idOf(key, field),
-        label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+        id: idOf(key, line.id),
+        label: siteText("ch.ct.cell-label", "{label}, {when}", { label: line.label, when }),
         start: "0",
       })),
     })),
@@ -491,40 +503,53 @@ const NOTE_ROWS = [
   [siteText("ch.ct.note-disposals", "Taken out on disposals"), "disposals", "depreciationOnDisposals"],
 ];
 
-function noteLedger(className, title) {
-  const labelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(({ id: candidate }) => candidate === field).label}`;
-  return ledger({
-    caption: title,
-    columns: NOTE_COLUMNS,
-    rows: NOTE_ROWS.map(([label, ...fields]) => ({
-      label,
-      cells: fields.map((field) => ({ id: noteId(className, field), label: labelOf(field) })),
-    })),
-  });
+function noteLedger(assetClass) {
+  const { id: className, label: title } = assetClass;
+  const cellLabelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(({ id: candidate }) => candidate === field).label}`;
+  const id = `note${className}`;
+  return create(
+    "div",
+    { class: "note-class" },
+    ledger({
+      caption: labelWithReference(assetClass),
+      columns: NOTE_COLUMNS,
+      rows: NOTE_ROWS.map(([label, ...fields]) => ({
+        label,
+        cells: fields.map((field) => ({ id: noteId(className, field), label: cellLabelOf(field) })),
+      })),
+    }),
+    noteOf(assetClass, id),
+    sourceDisclosure(assetClass, {
+      id,
+      rows: FIXED_ASSET_FIELDS.map((field) => ({ title: field.label, value: noteSheetCell(className, field.id) })),
+    }),
+  );
 }
 
-function accountsTextGroup({ id, label, type }) {
+function accountsTextGroup(field) {
+  const { id, type } = field;
   if (type === "textarea") {
     return create(
       "div",
       { class: "form-group" },
-      create("label", { for: id }, label),
+      create("label", { for: id }, labelOf(field)),
+      hintOf(field),
       errorHost(id),
-      create("textarea", { id, "name": id, "rows": "3", "data-error-target": id }),
+      create("textarea", { id, "name": id, "rows": "3", "data-error-target": id, "aria-describedby": `${id}-hint` }),
     );
   }
-  const group = textGroup({ id, label, type, hint: "" });
+  const group = textGroup(field);
   if (id === "directorsAdvanceTerms") {
-    const hint = group.querySelector(`#${id}-hint`);
-    hint.hidden = false;
-    hint.replaceChildren(
-      siteText(
-        "ch.ct.advance-terms-hint",
-        "This is a common arrangement. Change it to the terms the company and the director agreed: the interest rate, any security, and when the advance is repaid. ",
-      ),
-      create("a", { href: SECTION_413_URL, target: "_blank", rel: "noopener" }, siteText("ch.ct.advance-terms-link", "Section 413")),
-      siteText("ch.ct.advance-terms-needs", " needs all three."),
-    );
+    group
+      .querySelector(`#${id}-hint`)
+      .replaceChildren(
+        siteText(
+          "ch.ct.advance-terms-hint",
+          "This is a common arrangement. Change it to the terms the company and the director agreed: the interest rate, any security, and when the advance is repaid. ",
+        ),
+        create("a", { href: SECTION_413_URL, target: "_blank", rel: "noopener" }, siteText("ch.ct.advance-terms-link", "Section 413")),
+        siteText("ch.ct.advance-terms-needs", " needs all three."),
+      );
   }
   if (id === "averageEmployees") {
     const input = group.querySelector("input");
@@ -534,6 +559,7 @@ function accountsTextGroup({ id, label, type }) {
   return group;
 }
 
+const DONATIONS_FIELD = CT600_FORM_FIELDS.find((field) => field.id === "donations");
 const QUESTION = Object.fromEntries(PAGE_QUESTION_FIELDS.map((field) => [field.id, field]));
 const LOAN_FIELD = Object.fromEntries(LOAN_ROW_FIELDS.map((field) => [field.id, field]));
 const REPAYMENT_FIELD = Object.fromEntries(REPAYMENT_ROW_FIELDS.map((field) => [field.id, field]));
@@ -713,11 +739,11 @@ function microLedger(fields, className) {
   return ledger({
     className,
     columns: YEAR_COLUMNS,
-    rows: fields.map(({ id: field, label }) => ({
-      label,
+    rows: fields.map((line) => ({
+      ...lineDetail(line, microId("current", line.id)),
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
-        id: microId(key, field),
-        label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+        id: microId(key, line.id),
+        label: siteText("ch.ct.cell-label", "{label}, {when}", { label: line.label, when }),
         start: "0",
       })),
     })),
@@ -737,7 +763,7 @@ function accountsSection() {
     regimeGroup(),
     companiesHouseCopyGroup(),
     companiesHouseMicroNote(),
-    checkboxGroup("includeComparatives", QUESTION.includeComparatives.label),
+    checkboxGroup(QUESTION.includeComparatives),
     create("p", { "id": "firstAccountsLine", "class": "hint", "aria-live": "polite" }),
     forRegime(
       "small",
@@ -746,11 +772,11 @@ function accountsSection() {
       create("h4", {}, siteText("ch.ct.balance-sheet", "Balance sheet")),
       yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
       create("h4", {}, siteText("ch.ct.fixed-assets-note", "Tangible fixed assets note")),
-      checkboxGroup("includeFixedAssetNote", QUESTION.includeFixedAssetNote.label),
+      checkboxGroup(QUESTION.includeFixedAssetNote),
       create(
         "div",
         { id: "fixedAssetNoteFields", style: "display: none" },
-        ...FIXED_ASSET_CLASSES.map(({ id: className, label: title }) => noteLedger(className, title)),
+        ...FIXED_ASSET_CLASSES.map((assetClass) => noteLedger(assetClass)),
       ),
     ),
     forRegime(
@@ -842,10 +868,6 @@ const loanRows = { 1: 1, 2: 1 };
 const repaymentRows = { 1: 1, 2: 1 };
 const PARTS = [1, 2];
 
-function moneyGroup(id, label, hint) {
-  return textGroup({ id, label, type: "whole-pounds", hint });
-}
-
 function removeButton(kind, row, part, label) {
   return create(
     "button",
@@ -862,20 +884,14 @@ function loanRow(row, part) {
   const group = create(
     "div",
     { "class": "loan-row", "data-loan-row": String(row), "data-part": String(part) },
-    textGroup({ id: loanId("Name", row, part), label: LOAN_FIELD.Name.label, hint: LOAN_FIELD.Name.hint, type: "text", maxlength: 56 }),
-    moneyGroup(loanId("Amount", row, part), LOAN_FIELD.Amount.label, LOAN_FIELD.Amount.hint),
+    textGroup({ ...LOAN_FIELD.Name, id: loanId("Name", row, part), type: "text", maxlength: 56 }),
+    textGroup({ ...LOAN_FIELD.Amount, id: loanId("Amount", row, part), type: "whole-pounds" }),
     create(
       "div",
       { "class": "loan-row__lent", "data-loan-lent": String(row), "hidden": "" },
-      moneyGroup(loanId("Lent", row, part), LOAN_FIELD.Lent.label, LOAN_FIELD.Lent.hint),
+      textGroup({ ...LOAN_FIELD.Lent, id: loanId("Lent", row, part), type: "whole-pounds" }),
     ),
-    textGroup({
-      id: loanId("Rate", row, part),
-      label: LOAN_FIELD.Rate.label,
-      type: "text",
-      hint: LOAN_FIELD.Rate.hint,
-      inputmode: "decimal",
-    }),
+    textGroup({ ...LOAN_FIELD.Rate, id: loanId("Rate", row, part), type: "text", inputmode: "decimal" }),
     removeButton("loan", row, part, siteText("ch.ct.remove-loan", "Remove this loan")),
   );
   registerTargets(group);
@@ -891,14 +907,14 @@ function repaymentRow(row, part) {
     create(
       "div",
       { class: "form-group" },
-      create("label", { for: nameId }, REPAYMENT_FIELD.Name.label),
-      create("p", { id: `${nameId}-hint`, class: "hint" }, REPAYMENT_FIELD.Name.hint),
+      create("label", { for: nameId }, labelOf(REPAYMENT_FIELD.Name)),
+      hintOf({ ...REPAYMENT_FIELD.Name, id: nameId }),
       errorHost(nameId),
       select,
     ),
-    textGroup({ id: repaymentId("Date", row, part), label: REPAYMENT_FIELD.Date.label, hint: REPAYMENT_FIELD.Date.hint, type: "date" }),
-    moneyGroup(repaymentId("Repaid", row, part), REPAYMENT_FIELD.Repaid.label, REPAYMENT_FIELD.Repaid.hint),
-    moneyGroup(repaymentId("Released", row, part), REPAYMENT_FIELD.Released.label, REPAYMENT_FIELD.Released.hint),
+    textGroup({ ...REPAYMENT_FIELD.Date, id: repaymentId("Date", row, part), type: "date" }),
+    textGroup({ ...REPAYMENT_FIELD.Repaid, id: repaymentId("Repaid", row, part), type: "whole-pounds" }),
+    textGroup({ ...REPAYMENT_FIELD.Released, id: repaymentId("Released", row, part), type: "whole-pounds" }),
     removeButton("repayment", row, part, siteText("ch.ct.remove-repayment", "Remove this repayment")),
   );
   registerTargets(group);
@@ -1088,9 +1104,9 @@ function sectionBody(sectionId) {
     return [
       ...fields.slice(0, 2),
       create("h4", {}, siteText("ch.ct.statements", "Statements")),
-      ...STATEMENT_FIELDS.slice(0, 3).map(({ id, label }) => checkboxGroup(id, label)),
-      forRegime("small", checkboxGroup(STATEMENT_FIELDS[3].id, STATEMENT_FIELDS[3].label)),
-      forRegime("micro", checkboxGroup(MICRO_STATEMENT_FIELD.id, MICRO_STATEMENT_FIELD.label)),
+      ...STATEMENT_FIELDS.slice(0, 3).map((field) => checkboxGroup(field)),
+      forRegime("small", checkboxGroup(STATEMENT_FIELDS[3])),
+      forRegime("micro", checkboxGroup(MICRO_STATEMENT_FIELD)),
       create("h4", {}, siteText("ch.ct.declaration", "Declaration")),
       ...fields.slice(2),
     ];
@@ -2133,8 +2149,7 @@ function updateLongPeriod(values) {
       })
     : QUESTION.firstPeriodStart.label;
   const donations = form.querySelector('label[for="donations"]');
-  if (donations)
-    donations.textContent = showing ? LONG_PERIOD_DONATIONS_LABEL : CT600_FORM_FIELDS.find((field) => field.id === "donations").label;
+  if (donations) donations.textContent = labelOf(showing ? { ...DONATIONS_FIELD, label: LONG_PERIOD_DONATIONS_LABEL } : DONATIONS_FIELD);
   if (long && state.bundle) {
     for (const node of form.querySelectorAll("[data-period-hint]")) {
       const [id, part] = node.dataset.periodHint.split(":");
@@ -2297,13 +2312,13 @@ function applyClientToForm() {
 
 function renderAgentAuthorisation() {
   element("agentAuthorisedHost").replaceChildren(
-    checkboxGroup(
-      "agentAuthorised",
-      siteText(
+    checkboxGroup({
+      id: "agentAuthorised",
+      label: siteText(
         "ch.ct.agent-authorised",
         "The company has authorised this practice to act for it for Corporation Tax (form 64-8 or online), and has approved this return.",
       ),
-    ),
+    }),
   );
 }
 

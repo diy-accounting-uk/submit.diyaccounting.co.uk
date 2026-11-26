@@ -28336,3 +28336,115 @@ cy = '''Mae ffigurau’r llynedd yn dangos wrth ymyl rhai eleni. Mae cyfrifon na
 [strings."ch.ct.include-fixed-assets-note-hint"]
 hash = "1b5be6efebb2"
 cy = '''Mae’r nodyn yn rhoi cost a dibrisiant pob dosbarth o ased sefydlog diriaethol.'''
+
+[strings."field.reference-ct600a"]
+hash = "53a7033f79dc"
+cy = '''CT600A {box}'''
+
+[strings."field.reference-balance-sheet"]
+hash = "785181905a8d"
+cy = '''Eitem {item} y fantolen'''
+
+[strings."field.reference-profit-and-loss"]
+hash = "f999c5a24936"
+cy = '''Eitem {item} y cyfrif elw a cholled'''
+
+[strings."field.reference-balance-sheet-note"]
+hash = "a1b249ec6bcb"
+cy = '''Nodyn {note} y fantolen'''
+
+[strings."field.reference-companies-act"]
+hash = "f0e736d63e22"
+cy = '''Deddf Cwmnïau adran {section}'''
+
+[strings."field.reference-regulations"]
+hash = "5957bb11b166"
+cy = '''Atodlen 1 paragraff {paragraph}'''
+
+[strings."field.reference-computations"]
+hash = "25d4d34ff1fd"
+cy = '''Cyfrifiannau'''
+
+[strings."field.reference-notes"]
+hash = "3b39acff6c1b"
+cy = '''Nodiadau i’r cyfrifon'''
+
+[strings."field.reference-declaration"]
+hash = "7609342dc466"
+cy = '''Datganiad'''
+
+[strings."field.reference-accounts-and-computations"]
+hash = "a33affe4a276"
+cy = '''Cyfrifon a chyfrifiannau'''
+
+[strings."field.reference-boxes"]
+hash = "11588c3c8c29"
+cy = '''Blychau {boxes}'''
+
+[strings."field.reference-box"]
+hash = "3d3500c2c85e"
+cy = '''Blwch {box}'''
+
+[strings."field.reference-label"]
+hash = "d6937e8b7d22"
+cy = '''{reference}: {label}'''
+
+[strings."field.source-ct600a-guide"]
+hash = "13c9417912d5"
+cy = '''canllaw CT600A'''
+
+[strings."field.source-life-of-a-company"]
+hash = "fc75aa3e4680"
+cy = '''Bywyd cwmni: cyfrifon'''
+
+[strings."field.source-companies-act"]
+hash = "9d4982a43db4"
+cy = '''Deddf Cwmnïau 2006, adran {section}'''
+
+[strings."field.source-regulations-paragraph"]
+hash = "c33c2b889456"
+cy = '''Y rheoliadau cyfrifon, Atodlen 1, paragraff {paragraph}'''
+
+[strings."field.source-regulations"]
+hash = "30cf22a44cc1"
+cy = '''Y rheoliadau cyfrifon, Atodlen 1'''
+
+[strings."field.source-this-year"]
+hash = "98597183c8c6"
+cy = '''Eleni'''
+
+[strings."field.source-last-year"]
+hash = "5822754796c6"
+cy = '''Y llynedd'''
+
+[strings."field.source-summary"]
+hash = "1418c23ec272"
+cy = '''Yn nhaenlenni DIY Accounting'''
+
+[strings."field.source-none"]
+hash = "b9cdb4fd9c55"
+cy = '''Nid oes gan y taenlenni gell ar gyfer hyn.'''
+
+[strings."field.source-file"]
+hash = "50009ce1da4d"
+cy = '''Ffeil'''
+
+[strings."field.source-sheet"]
+hash = "54bf0ebbfb3e"
+cy = '''Dalen'''
+
+[strings."field.source-sum"]
+hash = "94d0dcb546d0"
+cy = '''{cells} (wedi’i weithio o’r celloedd hyn)'''
+
+[strings."field.source-workbook-label"]
+hash = "f08f5acf4678"
+cy = '''Label y daenlen'''
+
+[strings."field.source-workbook-label-in"]
+hash = "c9506c831ea2"
+cy = '''{label} (yng nghell {cell})'''
+
+[strings."field.source-image-alt"]
+hash = "d02d3a4a8739"
+cy = '''Dalen {sheet} yng nghell {cell}'''

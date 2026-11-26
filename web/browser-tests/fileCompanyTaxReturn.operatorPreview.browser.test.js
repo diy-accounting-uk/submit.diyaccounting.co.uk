@@ -125,6 +125,26 @@ test.describe("The Company Tax Return page on prod and on ci", () => {
     await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
   });
 
+  test("the form's fields carry their reference, the note's link and a closed spreadsheet disclosure, in English and Welsh", async ({
+    page,
+  }) => {
+    await serveSite(page, { environmentName: "ci", operator: false, previewFeatures: false });
+    await openPage(page);
+    await expect(page.locator('label[for="utr"]')).toHaveText("Box 3: Tax reference");
+    await expect(page.locator("#utr-hint a")).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/guidance/the-company-tax-return-guide#tax-reference",
+    );
+    await expect(page.locator("#utr-source")).not.toHaveAttribute("open", "");
+    await expect(page.locator("#utr-source img")).toHaveAttribute("src", "/images/ct600-sources/OpenAccounts-O3.webp");
+
+    await openPage(page, { welsh: true });
+    await expect(page.locator('label[for="utr"]')).toHaveText("Blwch 3: Cyfeirnod treth");
+    await expect(page.locator("#utr-hint")).toContainText("(yn Saesneg)");
+    await expect(page.locator("#utr-source summary")).toHaveText("Yn nhaenlenni DIY Accounting");
+    await expect(page.locator("#currentTurnover-source img").first()).toHaveAttribute("alt", "Dalen PubP&L yng nghell F9");
+  });
+
   test("the Welsh page shows the live banner in Welsh", async ({ page }) => {
     await serveSite(page, { environmentName: "prod", operator: true, previewFeatures: true });
     await openPage(page, { welsh: true });

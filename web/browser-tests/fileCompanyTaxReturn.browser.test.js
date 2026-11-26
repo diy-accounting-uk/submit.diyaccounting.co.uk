@@ -408,6 +408,80 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#repaymentName1")).toHaveCount(0);
   });
 
+  test("a box field's label leads with its box, its note links the guide, and its spreadsheet cell opens from a closed disclosure", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await expect(page.locator('label[for="nonTradingLoanRelationshipCredits"]')).toHaveText(/^Box 170: /);
+    const link = page.locator("#nonTradingLoanRelationshipCredits-hint a");
+    await expect(link).toHaveText("Company Tax Return guide");
+    await expect(link).toHaveAttribute("href", /the-company-tax-return-guide#/);
+    const disclosure = page.locator("#nonTradingLoanRelationshipCredits-source");
+    await expect(disclosure.locator("summary")).toHaveText("In DIY Accounting's spreadsheets");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await expect(disclosure.locator("dl")).toBeHidden();
+    await disclosure.locator("summary").click();
+    await expect(disclosure).toHaveAttribute("open", "");
+    await expect(disclosure.locator("dl")).toContainText("Financialaccounts.xlsx");
+    await expect(disclosure.locator("dl")).toContainText("CorporationTax");
+    await expect(disclosure.locator("dl")).toContainText("K24");
+    await expect(disclosure.locator("dl")).toContainText("Add gross bank interest received");
+    const image = disclosure.locator("img");
+    await expect(image).toHaveAttribute("src", "/images/ct600-sources/CorporationTax-K24.webp");
+    await expect(image).toHaveAttribute("alt", "The CorporationTax sheet at cell K24");
+    await expect(image).toHaveAttribute("loading", "lazy");
+  });
+
+  test("a field with no box leads with its reference and links the source of its term", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator('label[for="tradeName"]')).toHaveText("Computations: Trade name");
+    await expect(page.locator("#tradeName-hint a")).toHaveAttribute("href", /#and-90-accounts-and-computations$/);
+    await expect(page.locator('label[for="includeComparatives"]')).toHaveText("Schedule 1 paragraph 7: Include last year's figures");
+    await expect(page.locator("#includeComparatives-hint a")).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/uksi/2008/409/schedule/1/paragraph/7",
+    );
+    await expect(page.locator('label[for="includeFixedAssetNote"]')).toHaveText(
+      "Schedule 1 paragraph 48: Include the tangible fixed assets note",
+    );
+    await expect(page.locator("#includeFixedAssetNote-source")).toBeAttached();
+  });
+
+  test("each accounts line shows its format item, its note and both years' cells, and a sum names every cell", async ({ page }) => {
+    await openForm(page);
+    const turnover = page.locator("tr", { has: page.locator("#currentTurnover") });
+    await expect(turnover.locator("th")).toContainText("Profit and loss item 1: Turnover");
+    await expect(turnover.locator("#currentTurnover-hint a")).toHaveText("The accounts regulations, Schedule 1");
+    const disclosure = turnover.locator("#currentTurnover-source");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await disclosure.locator("summary").click();
+    await expect(disclosure.locator("dl")).toContainText("This year");
+    await expect(disclosure.locator("dl")).toContainText("F9");
+    await expect(disclosure.locator("dl")).toContainText("Last year");
+    await expect(disclosure.locator("dl")).toContainText("B9");
+    await expect(disclosure.locator("img")).toHaveCount(2);
+    await expect(disclosure.locator("img").first()).toHaveAttribute("src", "/images/ct600-sources/PubP&L-F9.webp");
+    await expect(disclosure.locator("img").last()).toHaveAttribute("src", "/images/ct600-sources/PubP&L-B9.webp");
+
+    const reserve = page.locator("#currentProfitAndLossAccount-source");
+    await reserve.locator("summary").click();
+    await expect(reserve.locator("dl")).toContainText("F37 + F38 (worked from these cells)");
+    await expect(reserve.locator("img")).toHaveCount(4);
+  });
+
+  test("a loan row's fields lead with their CT600A box and carry the note and the disclosure", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#loansMadeYes").check();
+    await expect(page.locator('label[for="loanName1"]')).toHaveText("CT600A A10: Name of participator or associate");
+    await expect(page.locator("#loanName1-hint a")).toHaveText("CT600A guide");
+    const disclosure = page.locator("#loanAmount1-source");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await disclosure.locator("summary").click();
+    await expect(disclosure.locator("dl")).toContainText("PubBalSht!E29 − OpenAccounts!E30 (worked from these cells)");
+    await expect(disclosure.locator("img")).toHaveCount(2);
+    await expect(page.locator("#loanRate1-source")).toContainText("The spreadsheets have no cell for this.");
+  });
+
   test("a loan row's errors wait until its field is left or the return is previewed, not the Yes answer", async ({ page }) => {
     await openForm(page);
     await dropBook(page);

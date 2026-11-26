@@ -441,3 +441,37 @@ textarea.input--error {
   border-left: 3px solid var(--c-rule);
   padding-left: var(--space-3);
 }
+
+/* Where a field's figure sits in DIY Accounting's spreadsheets, closed until the reader opens it. */
+.form-section details.field-source {
+  margin: var(--space-1) 0 var(--space-2);
+  font-weight: normal;
+}
+
+.form-section details.field-source summary {
+  padding: var(--space-1) 0;
+  font-size: 0.9em;
+}
+
+.field-source__cells {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.field-source__cells dt {
+  font-weight: var(--weight-strong);
+}
+
+.field-source__cells dd {
+  margin: 0;
+}
+
+.field-source__image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: var(--space-2);
+  border: 1px solid var(--c-rule);
+}
