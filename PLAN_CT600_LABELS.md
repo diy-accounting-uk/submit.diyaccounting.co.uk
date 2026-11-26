@@ -610,7 +610,7 @@ Notes, by field:
 
 | Field | Official term (source) | Reference | This year | Diff |
 |---|---|---|---|---|
-| `donationsPaid` | Qualifying donations (F box 305; G `#qualifying-donations`) | Box 305 of each return of a long period | `MnthP&L!B37`: Charitable Donations (the whole period) | yes |
+| `donationsPaid` | Qualifying donations (F box 305; G `#qualifying-donations`) | Box 305 of each return of a long period | `MnthP&L!B37`: Charitable Donations (the whole period: the label in row 37 reads "Charitable Donations") | yes |
 
 - **`donationsPaid`.** The spreadsheet shows "Charitable Donations" for the whole period of account. Enter the qualifying donations paid in each accounting period.
 
@@ -730,7 +730,7 @@ The cell of a field is the class's column and the field's row on `PubNotes` (for
 | `statementSection477Exemption` | The company is entitled to exemption from audit under section 477 … | statement of the exemption (CA 475(2); CA 477) | `PubBalSht!C41`: the company was entitled to exemption from audit under section 477 … | yes |
 | `statementMembersNotRequiredAudit` | The members have not required the company to obtain an audit for the year in question. | the members have not required the company to obtain an audit of its accounts for the year in question in accordance with section 476 (CA 475(3)(a)) | `PubBalSht!A44`: a) The members have not required … | no |
 | `statementDirectorsResponsibilities` | The directors acknowledge their responsibilities … | the directors acknowledge their responsibilities for complying with the requirements of this Act with respect to accounting records and the preparation of accounts (CA 475(3)(b)) | `PubBalSht!A46`: b) The directors acknowledge … | no |
-| `statementSmallCompaniesRegime` | These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies regime. | the same words (CA 414(3)(b)) | `PubBalSht!A52`: e) … prepared in accordance with the special provisions of the Companies Act relating to small companies | yes |
+| `statementSmallCompaniesRegime` | These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies regime. | the same words (CA 414(3)(b)) | `PubBalSht!A52`: e) The accounts have been prepared in accordance with the special provisions of the Companies Act relating to small (A52; "companies" is in A53) | yes |
 | `statementMicroEntityProvisions` | … and in accordance with the provisions available to micro-entities. | a statement that the accounts are prepared in accordance with the micro-entity provisions (CA 414(3)(a)) | none | — |
 | `regimeSmall` | Small company accounts (FRS 102 section 1A) | small company accounts (LoC `#small-company`); small companies regime (CA 381) (Q7) | none | — |
 | `regimeMicro` | Micro-entity accounts (FRS 105) | micro-entity accounts (LoC `#micro-entity`); micro-entity (CA 384A) (Q7) | none | — |
