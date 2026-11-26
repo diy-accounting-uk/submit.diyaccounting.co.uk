@@ -17,7 +17,7 @@
 
 ## Status
 
-defined 2026-11-26; its rows are in wave set bramble (`PLAN_WAVE_SET_BRAMBLE.md`), which is off `NEXT.md` until the operator boards it. Run `/plan-review-loop` on this plan before the rows are boarded.
+defined 2026-11-26; its rows are in wave set bramble (`PLAN_WAVE_SET_BRAMBLE.md`), which is off `NEXT.md` until the operator boards it. `/plan-review-loop` is running on this plan.
 
 ## Why
 
@@ -41,12 +41,12 @@ The aim is to keep disputes from happening, more than to win them: card schemes 
 
 ## Tasks
 
-| Id | Task | Model | Size | Bramble wave and batch |
-|---|---|---|---|---|
-| FFP1 | Disputes and early fraud warnings: contest fee disputes with evidence, hold the account | Opus design, Sonnet build | ~6 files | W1 fee-disputes |
-| FFP2 | The fee gate: paid subscribers only, cooling-off, the two caps, authentication on every fee payment | Opus design, Sonnet build | ~13 files | W3 fee-gate (PAY2 owns `DataStack.java` in W2) |
-| FFP3 | The operator dashboard panel and the operator emails | Sonnet | ~8 files | W4 fee-ops (AC7 owns `operatorSnapshotGet.js` in W2; DUE10 and DUE11 own the email files in W2 and W3) |
-| FFP4 | The pages, terms, FAQ and Welsh for the refusals and the rules | Sonnet | ~8 files | W5 fee-ui |
+| Id | Task | Waits on | Model | Size | Bramble wave and batch |
+|---|---|---|---|---|---|
+| FFP1 | Disputes and early fraud warnings: contest fee disputes with evidence, hold the account | none | Opus design, Sonnet build | ~6 files | W1 fee-disputes |
+| FFP2 | The fee gate: paid subscribers only, cooling-off, the two caps, authentication on every fee payment | FFP1 (the hold) | Opus design, Sonnet build | ~13 files | W3 fee-gate (PAY2 owns `DataStack.java` in W2) |
+| FFP3 | The operator dashboard panel and the operator emails | FFP1, FFP2 | Sonnet | ~8 files | W4 fee-ops (AC7 owns `operatorSnapshotGet.js` in W2; DUE10 and DUE11 own the email files in W2 and W3) |
+| FFP4 | The pages, terms, FAQ and Welsh for the refusals and the rules | FFP2 (the refusal codes) | Sonnet | ~8 files | W5 fee-ui |
 
 ### FFP1. Disputes and early fraud warnings
 
