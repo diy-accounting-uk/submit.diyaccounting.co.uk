@@ -69,7 +69,7 @@ State: gated b143d49b8 (9 commits: CTS1, ctl0b, CTD1, CTD2, CTP3, cts1b, CTA2, c
 |---|---|---|---|
 | ct600-page | CTR2, CT49 | Sonnet | `web/public/widgets/books-import.js`, `ct600-fields.js`, `fileCompanyTaxReturn.page.js`, the two accounts page scripts, `web/public/lib/prior-year-fill.js`, their tests |
 
-State: landed at 2fccfabfa (CTR2, CT49). Wave gate running on `claude/cobalt-w03-2fccfab`: npm test 15857, mcp 474 and the micro-entity suite pass (dusk); flint Java, lint and the CT600 suite; jasper the browser suite.
+State: gated 2fccfabfa (CTR2, CT49). Gates on 2fccfabfa, all pass: npm test 15857, mcp 474 and the micro-entity suite (dusk); ./mvnw clean verify 578, the lint gates and the CT600 suite 21 (flint); test:browser 2591 (jasper); the Docker build (laptop).
 
 ### Wave 4
 
@@ -79,7 +79,7 @@ CTL1's register is on `main` (53e74f267).
 |---|---|---|---|
 | ct600-page | CTL2, CTL5 | Sonnet | `ct600-fields.js`, `fileCompanyTaxReturn.page.js`, `web/unit-tests/ct600-fields.test.js`, `scripts/ct600-source-shots.mjs` (new), `web/public/images/ct600-sources/`, `package.json` |
 
-State: pending.
+State: integrating with wave 5 on `claude/cobalt-w04` from 2fccfabfa (harbour's chain carries both): anvil merges CTL2, CTL5, CTL4, CTL10, ctl2b, ctl5b (the fixed asset note cells and the accounts-page lines, built on the laptop), ctl4b.
 
 ### Wave 5
 
