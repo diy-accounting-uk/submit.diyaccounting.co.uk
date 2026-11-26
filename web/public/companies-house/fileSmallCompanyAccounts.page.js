@@ -471,6 +471,7 @@ async function handleCompanySubmit(event) {
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
+    window.booksImport.showFilingsFor(company.companyNumber);
     window.priorYearFill.fill(company.companyNumber, "small", profile);
   } catch (error) {
     console.error("Failed to look up the company:", error);

@@ -2240,6 +2240,7 @@ async function handleCompanySubmit(event) {
     await ensureBundle();
     applyClientToForm();
     renderDraftPanel();
+    window.booksImport.showFilingsFor(company.companyNumber, agentClient?.clientId);
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");

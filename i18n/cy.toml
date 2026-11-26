@@ -27976,3 +27976,45 @@ cy = '''Ffurflen Dreth y Cwmni'''
 [strings."receipts.correlation-id"]
 hash = "f7cee138709a"
 cy = '''ID cydberthyniad {id}'''
+
+# == Fill from a filing you made, in the books card, ids widget.books-filed-* ==
+
+[strings."widget.books-filed-kind-ct600"]
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
+
+[strings."widget.books-filed-kind-accounts"]
+hash = "8c17dac0e08f"
+cy = '''Cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau'''
+
+[strings."widget.books-filed-option"]
+hash = "3ce453ba63e6"
+cy = '''{kind}, {start} i {end}, ffeiliwyd {date}'''
+
+[strings."widget.books-filed-name-ct600"]
+hash = "3c0d1d4694bd"
+cy = '''eich Ffurflen Dreth y Cwmni ar gyfer {start} i {end}'''
+
+[strings."widget.books-filed-name-accounts"]
+hash = "85d3dda85e30"
+cy = '''eich cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar gyfer {start} i {end}'''
+
+[strings."widget.books-filed-use"]
+hash = "e1775610090a"
+cy = '''Llenwi o’r ffeilio hwn'''
+
+[strings."widget.books-filed-label"]
+hash = "1103c9869f07"
+cy = '''Neu llenwch o ffeilio a wnaethoch'''
+
+[strings."widget.books-filed-no-document"]
+hash = "8dfaa2db3175"
+cy = '''Ni chadwodd {file} ddogfen cyfrifon, felly ni lenwyd dim.'''
+
+[strings."widget.books-filed-boxes"]
+hash = "64d808e27d2f"
+cy = '''Mae atebion y Ffurflen ei hun fel y’u ffeiliwyd yn llenwi {count}.'''
+
+[strings."widget.books-filed-failed"]
+hash = "53c063cdfdac"
+cy = '''Ni ellid llenwi o {file}: {reason}.'''

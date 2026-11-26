@@ -319,6 +319,43 @@ describe("data/dynamoDbReceiptRepository", () => {
       expect(receipts.map((receipt) => receipt.longPeriod)).toEqual([null, longPeriod]);
     });
 
+    test("each filing receipt carries its company and period, from its answers or its boxes", async () => {
+      mockSend.mockResolvedValueOnce({
+        Items: [
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-03T00:00:00.000Z-CT1",
+            createdAt: "2026-01-03T00:00:00.000Z",
+            receipt: { kind: "company-tax-return", filed: { boxes: { 2: "00000001", 30: "2025-04-01", 35: "2026-03-31" } } },
+          },
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-02T00:00:00.000Z-00001A",
+            createdAt: "2026-01-02T00:00:00.000Z",
+            receipt: {
+              kind: "companies-house-accounts",
+              companyNumber: "00000003",
+              formRequest: { companyNumber: "00000003", periodStart: "2024-04-01", periodEnd: "2025-03-31" },
+            },
+          },
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-01T00:00:00.000Z-FB1",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            receipt: { formBundleNumber: "FB1" },
+          },
+        ],
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      expect(receipts.map(({ companyNumber, periodStart, periodEnd }) => ({ companyNumber, periodStart, periodEnd }))).toEqual([
+        { companyNumber: "00000001", periodStart: "2025-04-01", periodEnd: "2026-03-31" },
+        { companyNumber: "00000003", periodStart: "2024-04-01", periodEnd: "2025-03-31" },
+        { companyNumber: undefined, periodStart: undefined, periodEnd: undefined },
+      ]);
+    });
+
     test("each receipt carries the byte size of its stored record, whatever its kind", async () => {
       const vatReceipt = { formBundleNumber: "FB1" };
       const ctReceipt = { kind: "company-tax-return", formBundleNumber: "FB2", figures: { turnover: 1000 } };

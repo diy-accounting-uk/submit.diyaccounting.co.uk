@@ -35,6 +35,11 @@
 // the accounts section and sets the depreciation added back to the fixed asset note's charge, and also
 // refuses a document whose period differs from the period the form already holds.
 //
+// The two accounts kinds and the ct600 kind also fill from a filing the person made: once the page
+// names its company (showFilingsFor), the card lists their Company Tax Return and Companies House
+// accounts receipts for that company and the period the form holds, and the chosen one fills the
+// form from the accounts document it filed; a Company Tax Return also gives the ct600 kind its boxes.
+//
 // The annual card also accepts the derived-figures JSON the diya-submit MCP tool
 // derive_itsa_annual_submission writes.
 //
@@ -1121,6 +1126,39 @@
     "small-company-accounts": { fill: fillSmallCompanyAccounts, watched: [] },
   };
 
+  const FILED_RECEIPT_KINDS = {
+    "company-tax-return": () => siteText("widget.books-filed-kind-ct600", "Company Tax Return"),
+    "companies-house-accounts": () => siteText("widget.books-filed-kind-accounts", "Accounts filed at Companies House"),
+  };
+
+  function dayText(isoDate) {
+    if (!isoDate) return "";
+    const welsh = window.siteLanguage?.chrome?.() === "cy";
+    return new Date(`${String(isoDate).slice(0, 10)}T00:00:00Z`).toLocaleDateString(welsh ? "cy-GB" : "en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  }
+
+  function filedReceiptLabel(receipt) {
+    return siteText("widget.books-filed-option", "{kind}, {start} to {end}, filed {date}", {
+      kind: FILED_RECEIPT_KINDS[receipt.kind](),
+      start: dayText(receipt.periodStart),
+      end: dayText(receipt.periodEnd),
+      date: dayText(receipt.timestamp),
+    });
+  }
+
+  // How the status line names the filing the figures came from.
+  function filedReceiptName(receipt) {
+    const dates = { start: dayText(receipt.periodStart), end: dayText(receipt.periodEnd) };
+    return receipt.kind === "company-tax-return"
+      ? siteText("widget.books-filed-name-ct600", "your Company Tax Return for {start} to {end}", dates)
+      : siteText("widget.books-filed-name-accounts", "your accounts filed at Companies House for {start} to {end}", dates);
+  }
+
   function element(tag, attributes = {}, text = "") {
     const created = document.createElement(tag);
     Object.entries(attributes).forEach(([name, value]) => created.setAttribute(name, value));
@@ -1202,7 +1240,20 @@
       siteText("widget.books-saved-use", "Fill from this book"),
     );
     savedBooks.append(savedBooksLabel, savedBooksSelect, savedBooksUse);
-    section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine, unplacedFacts);
+    const filedReceipts = element("div", { id: "filedReceipts", class: "form-group" });
+    filedReceipts.hidden = true;
+    const filedReceiptsSelect = element("select", { id: "filedReceiptsSelect", name: "filedReceiptsSelect" });
+    const filedReceiptsUse = element(
+      "button",
+      { type: "button", id: "filedReceiptsUse", class: "secondary-button" },
+      siteText("widget.books-filed-use", "Fill from this filing"),
+    );
+    filedReceipts.append(
+      element("label", { for: "filedReceiptsSelect" }, siteText("widget.books-filed-label", "Or fill from a filing you made")),
+      filedReceiptsSelect,
+      filedReceiptsUse,
+    );
+    section.append(heading, hint, dropZone, savedBooks, filedReceipts, fileInput, statusLine, unplacedFacts);
     container.replaceChildren(section);
 
     let loaded = null;
@@ -1424,7 +1475,88 @@
     }
     savedBooksUse.addEventListener("click", useSavedBook);
 
-    mountedCard = { applyPendingHandoff, listSavedBooks };
+    // The person's filings for the company on the page, and the period the form holds when it holds one.
+    let filedReceiptsListed = [];
+    let filedReceiptsFor = null;
+    async function listFiledReceipts(companyNumber, clientId) {
+      filedReceiptsFor = { companyNumber, clientId };
+      filedReceipts.hidden = true;
+      filedReceiptsSelect.replaceChildren();
+      filedReceiptsListed = [];
+      if (!takesIxbrl(kind) || !companyNumber) return;
+      try {
+        const url = clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(clientId)}` : "/api/v1/hmrc/receipt";
+        const response = await window.fetchWithIdToken(url, {});
+        if (!response.ok) return;
+        const body = await response.json();
+        const { receiptsForForm } = await import("../lib/filed-receipts.js");
+        filedReceiptsListed = receiptsForForm(body.receipts, {
+          companyNumber,
+          periodStart: fieldValue("periodStart"),
+          periodEnd: fieldValue("periodEnd"),
+        });
+        for (const receipt of filedReceiptsListed) {
+          filedReceiptsSelect.append(element("option", { value: receipt.name }, filedReceiptLabel(receipt)));
+        }
+        filedReceipts.hidden = filedReceiptsListed.length === 0;
+      } catch (error) {
+        console.warn("Could not list the filings for this company:", error);
+      }
+    }
+
+    async function useFiledReceipt() {
+      const receipt = filedReceiptsListed.find((listed) => listed.name === filedReceiptsSelect.value);
+      if (!receipt || working) return;
+      working = true;
+      loaded = null;
+      const fileName = filedReceiptName(receipt);
+      say(siteText("widget.books-reading", "Reading {file}...", { file: fileName }));
+      try {
+        const response = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(receipt.name)}`, {});
+        if (!response.ok) throw new Error(`the filing could not be read (${response.status})`);
+        const record = await response.json();
+        const { filedAccountsDocumentOf, filedBoxesOf } = await import("../lib/filed-receipts.js");
+        const filedDocument = filedAccountsDocumentOf(record);
+        if (!filedDocument) {
+          throw new Refusal(
+            siteText("widget.books-filed-no-document", "{file} kept no accounts document, so nothing filled.", { file: fileName }),
+          );
+        }
+        loaded = { source: { ixbrl: new TextEncoder().encode(filedDocument) }, fileName };
+        const status = await fillFromLoaded();
+        const boxes = kind === "ct600" ? filedBoxesOf(record) : null;
+        if (!boxes) {
+          say(status);
+          return;
+        }
+        const { formEntriesFromFiledBoxes, applyFormEntries } = await import("../lib/ct600-fields.js");
+        const filledBoxes = applyFormEntries(formEntriesFromFiledBoxes(boxes));
+        const boxesSentence = siteText("widget.books-filed-boxes", "The return's own answers as filed fill {count}.", {
+          count: fieldCount(filledBoxes),
+        });
+        say(typeof status === "string" ? `${status} ${boxesSentence}` : { ...status, text: `${status.text} ${boxesSentence}` });
+      } catch (error) {
+        say(
+          error instanceof Refusal
+            ? error.message
+            : siteText("widget.books-filed-failed", "Could not fill from {file}: {reason}.", {
+                file: fileName,
+                reason: withoutFinalStop(error.message),
+              }),
+        );
+      } finally {
+        working = false;
+      }
+    }
+    filedReceiptsUse.addEventListener("click", useFiledReceipt);
+    // A period typed after the lookup narrows the list to the filings of that period.
+    for (const id of ["periodStart", "periodEnd"]) {
+      document.getElementById(id)?.addEventListener("change", () => {
+        if (filedReceiptsFor && !working) listFiledReceipts(filedReceiptsFor.companyNumber, filedReceiptsFor.clientId);
+      });
+    }
+
+    mountedCard = { applyPendingHandoff, listSavedBooks, listFiledReceipts };
     applyPendingHandoff();
 
     // The Drive button exists only where the page's environment carries the Drive configuration.
@@ -1513,6 +1645,12 @@
   }
 
   // The CT600 page calls this when the practice chooses a client, or none, so the card lists that client's saved books.
+  // The pages call this once they know the company, so the card lists the filings made for it.
+  function showFilingsFor(companyNumber, clientId) {
+    if (mountedCard) return mountedCard.listFiledReceipts(companyNumber, clientId);
+    return undefined;
+  }
+
   function showSavedBooksFor(clientId) {
     if (mountedCard) return mountedCard.listSavedBooks(clientId);
     return undefined;
@@ -1523,6 +1661,7 @@
     parseHandoff,
     applyPendingHandoff,
     showSavedBooksFor,
+    showFilingsFor,
     fillMicroEntityFormFromMapped,
     fillSmallCompanyFormFromMapped,
     loadBundle,

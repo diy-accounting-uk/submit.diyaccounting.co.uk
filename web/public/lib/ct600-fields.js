@@ -2269,6 +2269,29 @@ export function formEntriesFromIxbrl(mapped) {
   return entries;
 }
 
+// The kinds of form field a filed box fills back as it was filed.
+const FILED_BOX_TYPES = new Set(["whole-pounds", "pounds-and-pence", "count", "text"]);
+
+/**
+ * The form values a filed Company Tax Return's boxes give back: the period from boxes 30 and 35,
+ * and each form field that files to one box takes that box as filed.
+ * @param {Record<string, string|number>} boxes
+ */
+export function formEntriesFromFiledBoxes(boxes) {
+  const entries = [];
+  const boxValue = (box) => boxes?.[box] ?? boxes?.[String(box)];
+  if (boxValue(30)) entries.push(["periodStart", String(boxValue(30))]);
+  if (boxValue(35)) entries.push(["periodEnd", String(boxValue(35))]);
+  for (const field of CT600_FORM_FIELDS) {
+    if (field.box === undefined || !FILED_BOX_TYPES.has(field.type)) continue;
+    const value = boxValue(field.box);
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value !== "number") entries.push([field.id, String(value)]);
+    else entries.push([field.id, field.type === "pounds-and-pence" ? value.toFixed(2) : text(value)]);
+  }
+  return entries;
+}
+
 /**
  * Set the form's elements from [element id, value] pairs: text for a box, true or false for a
  * checkbox. Each element hears an input and a change event, so the page checks what it holds.

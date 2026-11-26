@@ -2236,6 +2236,74 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#directorName")).toHaveValue("Antony Christopher Cartwright");
   });
 
+  test("a Company Tax Return filed for the company fills the accounts from its document and the return's answers from its boxes", async ({
+    page,
+  }) => {
+    const ctName = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+    const submission = {
+      requests: [],
+      status: 200,
+      body: {},
+      receiptList: [
+        {
+          name: ctName,
+          kind: "company-tax-return",
+          companyNumber: "00000007",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-24T11:30:00.000Z",
+        },
+        {
+          name: "2026-10-25T10:00:00.000Z-00001B.json",
+          kind: "companies-house-accounts",
+          companyNumber: "00000003",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-25T10:00:00.000Z",
+        },
+        { name: "2026-10-26T10:00:00.000Z-VAT1.json", kind: null, timestamp: "2026-10-26T10:00:00.000Z" },
+      ],
+      receiptsByName: {
+        [ctName]: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          correlationId: "ABCDEF0123456789",
+          filed: {
+            boxes: {
+              2: "00000007",
+              3: "8596148860",
+              30: "2025-04-01",
+              35: "2026-03-31",
+              160: 1200,
+              170: 350,
+              975: "Antony Cartwright",
+              440: 9198,
+            },
+            accountsIxbrl: ixbrlAccountsFile("small-company-accounts-full").buffer.toString("utf-8"),
+          },
+        },
+      },
+    };
+    await openForm(page, [], submission);
+    await expect(page.locator("#filedReceiptsSelect option")).toHaveText([
+      "Company Tax Return, 1 April 2025 to 31 March 2026, filed 24 October 2026",
+    ]);
+
+    await page.locator("#filedReceiptsUse").click();
+
+    const status = page.locator("#booksImportStatus");
+    await expect(status).toContainText("your Company Tax Return for 1 April 2025 to 31 March 2026", { timeout: 60_000 });
+    await expect(status).toContainText("The return's own answers as filed fill");
+    await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(page.locator("#currentTurnover")).toHaveValue("8500");
+    await expect(page.locator("#currentCashAtBank")).toHaveValue("5200");
+    await expect(page.locator("#utr")).toHaveValue("8596148860");
+    await expect(page.locator("#lossesBroughtForward")).toHaveValue("1200");
+    await expect(page.locator("#nonTradingLoanRelationshipCredits")).toHaveValue("350");
+    await expect(page.locator("#declarantName")).toHaveValue("Antony Cartwright");
+  });
+
   test("a dropped micro-entity iXBRL document opens the micro accounts with its balance sheets", async ({ page }) => {
     await openForm(page);
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("micro-entity-accounts"));
