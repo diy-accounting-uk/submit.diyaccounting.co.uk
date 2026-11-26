@@ -92,6 +92,47 @@ class EdgeStackTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void oversizedBodyRuleExemptsACt600PostUnderTheCtReturnPath() {
+        Template template = Template.fromStack(synthEdgeStack("prod"));
+        var webAcl = (Map<String, Object>) template.findResources("AWS::WAFv2::WebACL").values().stream()
+                .findFirst()
+                .orElseThrow();
+        var rules = (List<Map<String, Object>>) ((Map<String, Object>) webAcl.get("Properties")).get("Rules");
+        var oversizedBody = rules.stream()
+                .filter(rule -> "OversizedBodyOutsideBookWrite".equals(rule.get("Name")))
+                .findFirst()
+                .orElseThrow();
+        var conditions = (List<Map<String, Object>>)
+                ((Map<String, Object>) ((Map<String, Object>) oversizedBody.get("Statement")).get("AndStatement"))
+                        .get("Statements");
+
+        var ctExemption = conditions.stream()
+                .map(condition -> (Map<String, Object>) condition.get("NotStatement"))
+                .filter(notStatement -> notStatement != null)
+                .map(notStatement -> (Map<String, Object>) notStatement.get("Statement"))
+                .map(statement -> (Map<String, Object>) statement.get("AndStatement"))
+                .filter(andStatement -> andStatement != null)
+                .map(andStatement -> (List<Map<String, Object>>) andStatement.get("Statements"))
+                .filter(parts -> parts.stream()
+                        .anyMatch(part -> part.get("ByteMatchStatement") != null
+                                && "/api/v1/hmrc/ct/return"
+                                        .equals(((Map<String, Object>) part.get("ByteMatchStatement"))
+                                                .get("SearchString"))))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a NOT exemption for the CT600 return path"));
+
+        assertEquals(2, ctExemption.size());
+        var uriMatch = (Map<String, Object>) ctExemption.get(0).get("ByteMatchStatement");
+        assertEquals("STARTS_WITH", uriMatch.get("PositionalConstraint"));
+        assertTrue(((Map<String, Object>) uriMatch.get("FieldToMatch")).containsKey("UriPath"));
+        var methodMatch = (Map<String, Object>) ctExemption.get(1).get("ByteMatchStatement");
+        assertTrue(((Map<String, Object>) methodMatch.get("FieldToMatch")).containsKey("Method"));
+        assertEquals("EXACTLY", methodMatch.get("PositionalConstraint"));
+        assertEquals("POST", methodMatch.get("SearchString"));
+    }
+
+    @Test
     void wafBlockAlarmsWatchTheMetricDimensionsCloudFrontScopeWebAclsPublish() {
         Template template = Template.fromStack(synthEdgeStack("prod"));
         String webAcl = SubmitSharedNames.forDocs().appResourceNamePrefix + "-waf";

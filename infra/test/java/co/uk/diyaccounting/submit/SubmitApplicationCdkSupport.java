@@ -31,7 +31,7 @@ final class SubmitApplicationCdkSupport {
      * A DIYA-GL book write carries a zip far larger than the 8KB CloudFront lets WAF inspect, so
      * the managed SizeRestrictions_BODY rule blocked every save before it reached API Gateway. The
      * fix counts that managed rule and blocks an oversized body from our own rule instead, on every
-     * request except a PUT to a book route. This pins both halves: dropping either one silently
+     * request except a PUT to a book route or a CT600 POST. This pins both halves: dropping either one silently
      * restores the block, or drops the size protection from routes that still need it.
      */
     @SuppressWarnings("unchecked")
@@ -75,7 +75,7 @@ final class SubmitApplicationCdkSupport {
         var conditions = (List<Map<String, Object>>)
                 ((Map<String, Object>) ((Map<String, Object>) oversizedBody.get("Statement")).get("AndStatement"))
                         .get("Statements");
-        org.junit.jupiter.api.Assertions.assertEquals(2, conditions.size());
+        org.junit.jupiter.api.Assertions.assertEquals(3, conditions.size());
 
         var sizeConstraint = (Map<String, Object>) conditions.get(0).get("SizeConstraintStatement");
         org.junit.jupiter.api.Assertions.assertEquals("GT", sizeConstraint.get("ComparisonOperator"));

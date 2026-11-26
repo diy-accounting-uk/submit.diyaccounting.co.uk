@@ -1558,6 +1558,9 @@ public class EdgeStack extends Stack {
                         // second path /api/v1/books/* is the one request shape that legitimately
                         // carries megabytes, and it is authenticated by the books JWT authoriser
                         // before diyaGlPut.js checks the decoded size against DIYA_GL_MAX_BYTES.
+                        // A POST under /api/v1/hmrc/ct/return files a CT600 whose return, computations
+                        // and accounts travel in the body, well past 8KB; it is authenticated before
+                        // the handler reads it.
                         CfnWebACL.RuleProperty.builder()
                                 .name("OversizedBodyOutsideBookWrite")
                                 .priority(5)
@@ -1604,6 +1607,24 @@ public class EdgeStack extends Stack {
                                                                                                                         diyaGlRouteUriPrefixStatement(),
                                                                                                                         methodStatement(
                                                                                                                                 "PUT")))
+                                                                                                        .build())
+                                                                                        .build())
+                                                                        .build())
+                                                                .build(),
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                        .statement(
+                                                                                CfnWebACL.StatementProperty.builder()
+                                                                                        .andStatement(
+                                                                                                CfnWebACL
+                                                                                                        .AndStatementProperty
+                                                                                                        .builder()
+                                                                                                        .statements(
+                                                                                                                List.of(
+                                                                                                                        uriPathStartsWithStatement(
+                                                                                                                                "/api/v1/hmrc/ct/return"),
+                                                                                                                        methodStatement(
+                                                                                                                                "POST")))
                                                                                                         .build())
                                                                                         .build())
                                                                         .build())

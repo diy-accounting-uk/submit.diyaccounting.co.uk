@@ -401,6 +401,21 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void theCt600StatusLambdaCanChargeTheReturnsTokenAndTheFileLambdaOnlyReadsTheBundles() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        assertTrue(
+                BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(
+                        template, stack.hmrcCtReturnGetLambdaProps.ingestFunctionName()),
+                "the CT600 status read charges the return's token once HMRC accepts it");
+        assertTrue(
+                !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(
+                        template, stack.hmrcCtReturnPostLambdaProps.ingestFunctionName()),
+                "the CT600 file route checks the tokens and charges none");
+    }
+
+    @Test
     void onlyTheStatusLambdasThatCanMarkAFeeMayUpdateTheActivityCharges() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);

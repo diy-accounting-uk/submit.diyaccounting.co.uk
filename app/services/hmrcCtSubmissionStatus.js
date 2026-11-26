@@ -15,6 +15,7 @@ import {
   buildDataRequest,
   findHeldSubmission,
   buildDeleteRequest,
+  getTransactionEngineSubmissionUrl,
   parseTransactionEngineResponse,
   postToTransactionEngine,
   isTransientPollError,
@@ -46,14 +47,17 @@ function secondsUntil(isoTime, now) {
 const DELETE_ATTEMPTS = 3;
 const DELETE_RECORD_NOT_FOUND = "2000";
 
-// A DELETE_REQUEST answered with a SUBMISSION_ERROR is sent again; error 2000 means the copy is
-// already gone, so the sending stops. Resolves true when the copy is gone, and false when every
-// attempt of this call failed, so the caller marks the delete as owed and sends it on a later read.
-async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders }) {
+// A DELETE_REQUEST goes to the submission endpoint, which takes the messages a piece of software
+// sends; the poll address answers polls. A delete answered with a SUBMISSION_ERROR is sent again;
+// error 2000 means the copy is already gone, so the sending stops. Resolves true when the copy is
+// gone, and false when every attempt of this call failed, so the caller marks the delete as owed
+// and sends it on a later read.
+async function deleteFromTransactionEngine({ correlationId, gatewayTest, messageClass, extraHeaders }) {
   const deleteRequest = buildDeleteRequest({ correlationId, gatewayTest, messageClass });
+  const submissionUrl = getTransactionEngineSubmissionUrl({ gatewayTest });
   for (let attempt = 1; attempt <= DELETE_ATTEMPTS; attempt++) {
     try {
-      const response = await postToTransactionEngine(pollUrl, deleteRequest, extraHeaders);
+      const response = await postToTransactionEngine(submissionUrl, deleteRequest, extraHeaders);
       if (response.ok === false) throw new Error(`HTTP ${response.status}`);
       const parsed = parseTransactionEngineResponse(response.data);
       if (parsed.qualifier !== "error") return true;
@@ -77,18 +81,8 @@ async function deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest
 
 // Sends the delete for a settled request. When it does not complete, the request keeps a
 // deleteOwed mark with what the next delete needs; when it does, the mark is cleared.
-async function settleDelete({
-  userSub,
-  correlationId,
-  status,
-  data,
-  pollUrl,
-  gatewayTest,
-  messageClass,
-  extraHeaders,
-  asyncRequestsTableName,
-}) {
-  const deleted = await deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders });
+async function settleDelete({ userSub, correlationId, status, data, gatewayTest, messageClass, extraHeaders, asyncRequestsTableName }) {
+  const deleted = await deleteFromTransactionEngine({ correlationId, gatewayTest, messageClass, extraHeaders });
   const owed = !deleted;
   if (owed || data.deleteOwed) {
     const settled = withoutDeleteOwed(data);
@@ -96,7 +90,7 @@ async function settleDelete({
       userSub,
       correlationId,
       status,
-      owed ? { ...settled, deleteOwed: { pollUrl, gatewayTest, messageClass } } : settled,
+      owed ? { ...settled, deleteOwed: { gatewayTest, messageClass } } : settled,
       asyncRequestsTableName,
     );
   }
@@ -202,13 +196,12 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   if (persistedRequest.status === "completed" || persistedRequest.status === "failed") {
     const settled = persistedRequest.data;
     if (settled.deleteOwed) {
-      const { pollUrl, gatewayTest, messageClass } = settled.deleteOwed;
+      const { gatewayTest, messageClass } = settled.deleteOwed;
       await settleDelete({
         userSub,
         correlationId,
         status: persistedRequest.status,
         data: settled,
-        pollUrl,
         gatewayTest,
         messageClass,
         extraHeaders: govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {},
@@ -259,7 +252,6 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
       correlationId,
       status: "failed",
       data: failure,
-      pollUrl,
       gatewayTest,
       messageClass,
       extraHeaders,
@@ -329,7 +321,6 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     correlationId,
     status: "completed",
     data,
-    pollUrl,
     gatewayTest,
     messageClass,
     extraHeaders,

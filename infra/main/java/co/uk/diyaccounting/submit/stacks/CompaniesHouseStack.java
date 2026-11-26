@@ -1397,6 +1397,7 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         receiptsTable.grant(this.hmrcCtReturnGetLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.hmrcCtReturnGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.hmrcCtReturnGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 

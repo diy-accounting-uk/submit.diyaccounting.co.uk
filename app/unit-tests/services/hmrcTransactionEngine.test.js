@@ -187,6 +187,25 @@ describe("buildPollRequest and buildDeleteRequest", () => {
     expect(firstElement(document, "GatewayTest")).toBeUndefined();
   });
 
+  test("delete is the Document Submission Protocol's sample delete request, element for element", () => {
+    const withoutDeclarationOrIndent = (xml) =>
+      xml
+        .replace(/^\s*<\?xml[^?]*\?>/, "")
+        .replace(/>\s+</g, "><")
+        .trim();
+    const built = buildDeleteRequest({
+      correlationId: "46DCD4CC7E194088B99857931C185829",
+      gatewayTest: false,
+      messageClass: "HMRC-SA-SA100",
+    });
+    expect(withoutDeclarationOrIndent(built)).toBe(withoutDeclarationOrIndent(fixture("dsp-delete-request-sample.xml")));
+  });
+
+  test("delete to the External Test Service adds GatewayTest 1 at the end of MessageDetails", () => {
+    const built = buildDeleteRequest({ correlationId: "46DCD4CC7E194088B99857931C185829", gatewayTest: true });
+    expect(built).toContain("<Transformation>XML</Transformation><GatewayTest>1</GatewayTest></MessageDetails><SenderDetails/></Header>");
+  });
+
   test("refuses a CorrelationID that is not upper-case hex", () => {
     expect(() => buildPollRequest({ correlationId: "", gatewayTest: true })).toThrow(/CorrelationID/);
   });

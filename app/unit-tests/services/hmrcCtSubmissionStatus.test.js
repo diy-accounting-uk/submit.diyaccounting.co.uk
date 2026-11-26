@@ -39,7 +39,7 @@ const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.f
 vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 import { pollCtSubmission, findHeldCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
-import { CT_RETURN_KIND } from "@app/services/hmrcTransactionEngine.js";
+import { CT_RETURN_KIND, TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
 import { chargeTokenOnSuccess } from "@app/services/tokenEnforcement.js";
 
 const CORRELATION_ID = "46DCD4CC7E194088B99857931C185829";
@@ -125,6 +125,13 @@ describe("pollCtSubmission", () => {
       expect(deleteCalls()).toHaveLength(3);
     });
 
+    test("sends the delete to the submission endpoint, not the poll address", async () => {
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(mockPost.mock.calls[0][0]).toBe("https://example.test/poll");
+      expect(deleteCalls().map(([url]) => url)).toEqual([TRANSACTION_ENGINE_TEST_SUBMISSION_URL]);
+    });
+
     test("stops sending the delete on error 2000", async () => {
       mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteError("2000"));
       await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
@@ -140,7 +147,7 @@ describe("pollCtSubmission", () => {
     });
 
     describe("after three failed attempts", () => {
-      const OWED = { pollUrl: "https://example.test/poll", gatewayTest: true, messageClass: "HMRC-CT-CT600" };
+      const OWED = { gatewayTest: true, messageClass: "HMRC-CT-CT600" };
 
       function completedWithDeleteOwed(status = "completed") {
         return {
@@ -174,7 +181,7 @@ describe("pollCtSubmission", () => {
         mockPost.mockResolvedValueOnce(deleteResponse());
         const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
         expect(deleteCalls()).toHaveLength(1);
-        expect(deleteCalls()[0][0]).toBe(OWED.pollUrl);
+        expect(deleteCalls()[0][0]).toBe(TRANSACTION_ENGINE_TEST_SUBMISSION_URL);
         expect(data.deleteOwed).toBeUndefined();
         expect(data.statusCode).toBe("ACCEPT");
         expect(mockPutAsyncRequest).toHaveBeenCalledTimes(1);
