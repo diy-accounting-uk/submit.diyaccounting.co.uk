@@ -200,6 +200,75 @@ function renderFilingResult(transaction) {
   container.replaceChildren(...paragraphs);
 }
 
+// Whether Companies House has decided every filing in the transaction: one rejected, or all accepted.
+function transactionDecided(transaction) {
+  const filings = transaction.filings || [];
+  return (
+    filings.some((entry) => entry.status === "rejected") || (filings.length > 0 && filings.every((entry) => entry.status === "accepted"))
+  );
+}
+
+// Reads the closed transaction back and shows its outcome. Start a new filing waits until Companies
+// House has decided the change or the read failed; a change still with Companies House, or a failed
+// read, gets Check again. A rejected access token goes to the caller, which authorises again.
+async function showTransactionOutcome() {
+  const container = document.getElementById("filingResult");
+  const checkAgain = document.getElementById("checkAgainBtn");
+  const startAgainButton = document.getElementById("startAgainBtn");
+  checkAgain.style.display = "none";
+  startAgainButton.style.display = "none";
+  let transaction;
+  try {
+    transaction = await pollTransactionUntilSettled(filing.transactionId);
+  } catch (error) {
+    if (error.status === 401) throw error;
+    console.error("Companies House transaction status check failed:", error);
+    container.className = "outcome";
+    container.replaceChildren(
+      paragraph(
+        window.siteText(
+          "ch.change.check-failed",
+          "The change was sent to Companies House, and its outcome is not known yet: the status check failed ({message}). Choose Check again to ask for the outcome.",
+          { message: error.message },
+        ),
+      ),
+    );
+    checkAgain.style.display = "inline-block";
+    startAgainButton.style.display = "inline-block";
+    showView("resultView");
+    return;
+  }
+  renderFilingResult(transaction);
+  await renderFilingRecord(transaction);
+  if (transactionDecided(transaction)) {
+    startAgainButton.style.display = "inline-block";
+  } else {
+    container.append(
+      paragraph(
+        window.siteText(
+          "ch.change.still-processing",
+          "The change is still with Companies House. Choose Check again to ask for the outcome.",
+        ),
+        "hint",
+      ),
+    );
+    checkAgain.style.display = "inline-block";
+  }
+  showView("resultView");
+}
+
+async function checkTransactionAgain() {
+  showLoading();
+  try {
+    await showTransactionOutcome();
+  } catch (error) {
+    console.error("Companies House transaction status check failed:", error);
+    showStatus(error.message, "error");
+  } finally {
+    hideLoading();
+  }
+}
+
 async function renderFilingRecord(transaction) {
   const { registeredChangeCopyHtml, todayText } = await import("../lib/filing-result-record.js");
   const html = registeredChangeCopyHtml({
@@ -271,13 +340,8 @@ async function runFilingSequence() {
       // so read it back instead of failing the filing.
       if (closeError.status !== 504) throw closeError;
     }
-    const transaction = await pollTransactionUntilSettled(filing.transactionId);
-
-    renderFilingResult(transaction);
-    await renderFilingRecord(transaction);
-    document.getElementById("startAgainBtn").style.display = "inline-block";
+    await showTransactionOutcome();
     clearPendingFiling();
-    showView("resultView");
   } catch (error) {
     if (error.status === 401) {
       console.log("Companies House access token was rejected mid-filing, re-authorising");
@@ -307,6 +371,7 @@ function startAgain() {
   document.getElementById("validationErrors").style.display = "none";
   document.getElementById("filingRecord").replaceChildren();
   document.getElementById("startAgainBtn").style.display = "none";
+  document.getElementById("checkAgainBtn").style.display = "none";
   hideStatus();
   showView("companyView");
 }
@@ -336,6 +401,7 @@ document.getElementById("companyForm").addEventListener("submit", handleCompanyS
 document.getElementById("emailAddressForm").addEventListener("submit", handleFormSubmit);
 document.getElementById("submitFilingBtn").addEventListener("click", runFilingSequence);
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);
+document.getElementById("checkAgainBtn").addEventListener("click", checkTransactionAgain);
 
 if (window.__submitReady__) {
   resumePendingFilingIfReady();

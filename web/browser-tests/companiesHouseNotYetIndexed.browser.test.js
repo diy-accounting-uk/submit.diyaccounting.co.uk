@@ -6,7 +6,8 @@
 // A status poll of a submission Companies House has not yet indexed answers pending with
 // notYetIndexed. The accounts and confirmation statement pages say so while they keep polling. Every
 // Companies House filing page offers Start a new filing only once Companies House has decided the
-// submission or its status check failed, and a failed status check shows the submission as sent.
+// submission or its status check failed, a failed status check shows the submission as sent, and a
+// submission still pending or unread gets Check again.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -244,7 +245,7 @@ test.describe("A submission Companies House has not yet indexed", () => {
     });
   }
 
-  test("a form page still pending after its polls offers no Start a new filing", async ({ page }) => {
+  test("a form page still pending after its polls offers Check again and not Start a new filing", async ({ page }) => {
     await serveSite(page, { language: "en" });
     await page.goto("http://localhost:3000/companies-house/recordsLocation.html", { waitUntil: "load" });
     await page.waitForFunction(() => window.companiesHouseFormPage && window.companiesHouseGatewayPoll);
@@ -253,18 +254,43 @@ test.describe("A submission Companies House has not yet indexed", () => {
     await page.evaluate(
       ({ pending }) => {
         window.submitCompaniesHouseForm = async () => ({ submissionNumber: "000001", pollInterval: 1 });
-        window.pollCompaniesHouseForm = window.pollAnswer([pending]);
+        window.pollCompaniesHouseForm = window.pollAnswer([pending, pending, pending, pending, pending, pending, pending, pending, "hold"]);
         showView("resultView");
-        return window.companiesHouseFormPage.fileAndShowOutcome({
-          kind: "form",
-          form: {},
-          result: document.getElementById("filingResult"),
-        });
+        window.companiesHouseFormPage.fileAndShowOutcome({ kind: "form", form: {}, result: document.getElementById("filingResult") });
       },
       { pending: { submissionNumber: "000001", statusCode: "PENDING", rejections: [] } },
     );
 
-    await expect(page.locator("#filingResult")).toContainText("has not finished checking submission 000001");
+    const result = page.locator("#filingResult");
+    await expect(result).toContainText("has not finished checking submission 000001", { timeout: 20000 });
+    await expect(result).toContainText("Choose Check again");
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
     await expect(page.locator("#startAgainBtn")).toBeHidden();
+
+    await page.locator("#checkAgainBtn").click();
+    await page.waitForFunction(() => typeof window.releasePoll === "function");
+    await page.evaluate(() => window.releasePoll());
+
+    await expect(result).toContainText("Submission 000001 was accepted.", { timeout: 15000 });
+    await expect(page.locator("#checkAgainBtn")).toHaveCount(0);
+    await expect(page.locator("#startAgainBtn")).toBeVisible();
+  });
+
+  test("a form page whose status check fails shows the submission as sent, with Check again", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+    await page.goto("http://localhost:3000/companies-house/removeOfficer.html", { waitUntil: "load" });
+    await page.waitForFunction(() => window.companiesHouseFormPage && window.companiesHouseGatewayPoll);
+    await page.addScriptTag({ content: answerPollsInPage() });
+
+    await page.evaluate(() => {
+      window.submitCompaniesHouseForm = async () => ({ submissionNumber: "000001", pollInterval: 1 });
+      window.pollCompaniesHouseForm = window.pollAnswer(["throw"]);
+      showView("resultView");
+      window.companiesHouseFormPage.fileAndShowOutcome({ kind: "form", form: {}, result: document.getElementById("filingResult") });
+    });
+
+    await expect(page.locator("#filingResult")).toContainText("Submission 000001 was sent to Companies House", { timeout: 15000 });
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeVisible();
   });
 });

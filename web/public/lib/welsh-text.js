@@ -508,12 +508,15 @@ window.WELSH_TEXT = {
   "ch.change-psc.shares": "Cyfranddaliadau: {band}",
   "ch.change-psc.votes": "Hawliau pleidleisio: {band}",
   "ch.change.accepted": "Derbyniodd Tŷ’r Cwmnïau y newid.",
+  "ch.change.check-failed":
+    "Anfonwyd y newid i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys eto: methodd y gwiriad statws ({message}). Dewiswch Gwirio eto i ofyn am y canlyniad.",
   "ch.change.file-failed": "Methwyd â ffeilio’r newid gyda Thŷ’r Cwmnïau.",
   "ch.change.invalid-value": "gwerth annilys",
   "ch.change.processing": "Mae Tŷ’r Cwmnïau yn dal i brosesu’r newid.",
   "ch.change.reference": "Cyfeirnod: {reference}",
   "ch.change.rejected": "Gwrthododd Tŷ’r Cwmnïau y newid.",
   "ch.change.rejected-reasons": "Wedi’i wrthod: {reasons}",
+  "ch.change.still-processing": "Mae’r newid yn dal gyda Thŷ’r Cwmnïau. Dewiswch Gwirio eto i ofyn am y canlyniad.",
   "ch.codes.client-code": "Cod dilysu’r cwmni ar gyfer {client}",
   "ch.codes.expired": "Mae’r ddolen codau hon wedi dod i ben neu nid yw’n bodoli. Gofynnwch am ddolen newydd yn eich sgwrs.",
   "ch.codes.expiry": "Mae’r ddolen hon yn gweithio tan {time}.",
@@ -1474,6 +1477,7 @@ window.WELSH_TEXT = {
     "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
   "ch.first-accounts.prior-year-shown":
     "Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.",
+  "ch.form.check-again": "Gwirio eto",
   "ch.form.gateway-text": "Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}",
   "ch.form.line-break": "toriad llinell",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",

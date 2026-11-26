@@ -27692,3 +27692,25 @@ cy = '''Anfonwyd cyflwyniad {number} i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad 
 [strings."widget.go-to-message"]
 hash = "82c5001ccbe2"
 cy = '''Ewch i’r neges'''
+
+# == Check again on the Companies House form and registered-detail pages, and a change still with Companies House, ids ch.form.check-again, ch.change.* ==
+
+[strings."ch.form.check-again"]
+hash = "fb7099ad8e81"
+cy = '''Gwirio eto'''
+
+[strings."ch-registered-office.check-again-fb7099"]
+hash = "fb7099ad8e81"
+cy = '''Gwirio eto'''
+
+[strings."ch-registered-email.check-again-fb7099"]
+hash = "fb7099ad8e81"
+cy = '''Gwirio eto'''
+
+[strings."ch.change.check-failed"]
+hash = "464422b3a418"
+cy = '''Anfonwyd y newid i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys eto: methodd y gwiriad statws ({message}). Dewiswch Gwirio eto i ofyn am y canlyniad.'''
+
+[strings."ch.change.still-processing"]
+hash = "8c5dc81cd943"
+cy = '''Mae’r newid yn dal gyda Thŷ’r Cwmnïau. Dewiswch Gwirio eto i ofyn am y canlyniad.'''

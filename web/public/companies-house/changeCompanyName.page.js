@@ -325,14 +325,16 @@ async function handleFile() {
   showView("resultView");
   showLoading();
   try {
-    const outcome = await window.companiesHouseFormPage.fileAndShowOutcome({
+    await window.companiesHouseFormPage.fileAndShowOutcome({
       kind: FORM_KIND,
       form,
       result: document.getElementById("filingResult"),
       headers,
       onPaymentRequired: (due) => startCheckout(due, form),
+      onSettled: async (outcome) => {
+        if (outcome.statusCode === "ACCEPT") await showRegisterNow();
+      },
     });
-    if (outcome?.statusCode === "ACCEPT") await showRegisterNow();
   } finally {
     hideLoading();
   }
