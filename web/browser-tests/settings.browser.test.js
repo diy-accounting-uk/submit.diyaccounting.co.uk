@@ -25,7 +25,10 @@ const CONTENT_TYPES = {
 
 // Serves the real site from disk with a signed-in user. The bundles route answers from `account`,
 // which the account settings route changes, so a setting kept on the server survives a navigation.
-async function serveSite(page, { environmentName = "prod", operator = false, signedIn = true, bundleStatus = 200, stored = {} } = {}) {
+async function serveSite(
+  page,
+  { environmentName = "prod", operator = false, signedIn = true, bundleStatus = 200, stored = {}, bundleIds = ["resident-vat"] } = {},
+) {
   const account = { passGeneration: true, ...stored };
   const settingsWrites = [];
   await page.addInitScript((withSignIn) => {
@@ -40,7 +43,7 @@ async function serveSite(page, { environmentName = "prod", operator = false, sig
       if (bundleStatus !== 200) {
         return route.fulfill({ status: bundleStatus, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) });
       }
-      const bundles = [{ bundleId: "resident-vat", allocated: true }];
+      const bundles = bundleIds.map((bundleId) => ({ bundleId, allocated: true }));
       if (operator) bundles.push({ bundleId: "operator", allocated: true });
       return route.fulfill({
         status: 200,
@@ -170,7 +173,9 @@ test.describe("Settings page", () => {
       expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBe("on");
     });
 
-    test("a save the server refuses sets the switch and this browser back and says the setting was not saved", async ({ page }) => {
+    test("a save the server refuses sets the switch back, leaves this browser following the account, and says the setting was not saved", async ({
+      page,
+    }) => {
       await serveSite(page);
       await page.route("**/api/v1/account/settings", (route) =>
         route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) }),
@@ -179,7 +184,52 @@ test.describe("Settings page", () => {
       await page.locator("#previewFeaturesSwitch").click();
       await expect(page.locator("#previewFeaturesSwitch")).not.toBeChecked();
       await expect(page.locator(".status-message")).toContainText("The setting was not saved");
+      expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBeNull();
+    });
+
+    test("a save the server refuses puts back the choice this browser held before", async ({ page }) => {
+      await page.addInitScript(() => {
+        if (!sessionStorage.getItem("choiceSeeded")) {
+          localStorage.setItem("previewFeatures", "off");
+          sessionStorage.setItem("choiceSeeded", "yes");
+        }
+      });
+      await serveSite(page, { stored: { previewFeatures: false } });
+      await page.route("**/api/v1/account/settings", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) }),
+      );
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await page.locator("#previewFeaturesSwitch").click();
+      await expect(page.locator(".status-message")).toContainText("The setting was not saved");
+      await expect(page.locator("#previewFeaturesSwitch")).not.toBeChecked();
       expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBe("off");
+    });
+
+    test("for an operator whose browser holds off and whose account holds on, shows on and lists the Company Tax Return", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        if (!sessionStorage.getItem("choiceSeeded")) {
+          localStorage.setItem("previewFeatures", "off");
+          sessionStorage.setItem("choiceSeeded", "yes");
+        }
+      });
+      await serveSite(page, { operator: true, stored: { previewFeatures: true }, bundleIds: ["resident-ltd"] });
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await expect(page.locator("#previewFeaturesSwitch")).toBeChecked();
+      expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBe("on");
+      await page.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+      await expect(page.locator("#dynamicActivities")).toContainText("File Company Tax Return");
+    });
+
+    test("for an operator whose browser holds off and whose account holds on, the home page lists the Company Tax Return", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => localStorage.setItem("previewFeatures", "off"));
+      await serveSite(page, { operator: true, stored: { previewFeatures: true }, bundleIds: ["resident-ltd"] });
+      await page.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+      await expect(page.locator("#dynamicActivities")).toContainText("File Company Tax Return");
+      expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBe("on");
     });
 
     test("with no choice made in this browser, follows the account's setting without storing a choice", async ({ page }) => {

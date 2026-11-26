@@ -9,6 +9,8 @@
 import {
   isPreviewOn,
   setPreviewOn,
+  readBrowserPreviewChoice,
+  clearBrowserPreviewChoice,
   isOperatorFeaturesOn,
   setOperatorFeaturesOn,
   fetchBundleResponse,
@@ -42,6 +44,7 @@ async function init() {
   // Signed in, the choice is kept on the account and in this browser; signed out, in this browser only.
   previewSwitch.addEventListener("change", async () => {
     const wanted = previewSwitch.checked;
+    const choiceBefore = readBrowserPreviewChoice();
     setPreviewOn(wanted);
     if (!response) return;
     previewSwitch.disabled = true;
@@ -50,8 +53,10 @@ async function init() {
       previewSwitch.checked = stored;
       setPreviewOn(stored);
     } catch (error) {
-      previewSwitch.checked = !wanted;
-      setPreviewOn(!wanted);
+      // A browser that was following the account goes on following it.
+      if (choiceBefore === null) clearBrowserPreviewChoice();
+      else setPreviewOn(choiceBefore === "on");
+      previewSwitch.checked = isPreviewOn();
       showSaveFailure(error);
     } finally {
       previewSwitch.disabled = false;

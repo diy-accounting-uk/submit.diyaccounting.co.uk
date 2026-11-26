@@ -10,6 +10,7 @@
   localStorage.removeItem("cognitoIdToken");
   localStorage.removeItem("cognitoRefreshToken");
   localStorage.removeItem("userInfo");
+  localStorage.removeItem("accountPreviewFeatures");
   localStorage.removeItem("authState");
 })();
 
