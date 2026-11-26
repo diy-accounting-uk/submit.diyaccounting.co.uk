@@ -75,6 +75,9 @@
 #   VAT submission                cyflwyniad TAW
 #   sandbox                       amgylchedd prawf (sandbox)
 #   preview                       rhagolwg (preview)
+#   records                       cofnodion
+#   bookkeeping                   cadw cyfrifon
+#   DIYA-GL book                  llyfr DIYA-GL
 # Sources: https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-vat.cy
 #          https://www.gov.uk/guidance/choose-the-right-software-for-making-tax-digital-for-income-tax.cy
 #          https://www.gov.uk/government/news/sole-traders-and-landlords-earning-more-than-30000-urged-to-act-now.cy
