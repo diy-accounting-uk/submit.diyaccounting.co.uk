@@ -62,7 +62,7 @@ later brief lists the earlier roles' findings and says not to report them again.
 | Role | State file | Pages and journeys |
 | --- | --- | --- |
 | Visitor | `.cache/playwright-mcp/visitor-state.json` (signed out) | root, product, help, guide, legal and video pages; the sign-in prompts; the signed-out panels |
-| Customer | `.cache/playwright-mcp/ci-state.json` | the VAT, Income Tax, Companies House and Corporation Tax journeys as the guide lists them; receipts and submission records; bundles, passes, usage; the books card and the diya-gl pages |
+| Customer | `.cache/playwright-mcp/ci-state.json` | the VAT, Income Tax, Companies House and Corporation Tax journeys as the guide lists them; receipts and submission records; bundles, passes, usage; the Fill from your records card and the diya-gl pages |
 | Practice | `.cache/playwright-mcp/ci-state.json` | `practice.html`, the client list, the codes link, the batch filing harness (`mcp-harness.html`) where the server serves its call endpoint |
 | Operator | `.cache/playwright-mcp/ci-state.json` | `operator/dashboard.html` and the developer-mode overlay once, to check it stays out of the way |
 

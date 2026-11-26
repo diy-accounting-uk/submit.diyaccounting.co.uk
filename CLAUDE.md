@@ -109,6 +109,28 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/orient-archive/SKILL.md` — read before working in `../diy-accounting-archive`: the archived repository, which is history and not a place to develop; invoke as `/orient-archive`
 - `.claude/skills/orient-private/SKILL.md` — read before working in `../private.diyaccounting.co.uk`: the private documents repository, which has no CLAUDE.md of its own; invoke as `/orient-private`
 
+## Customer wording: "records", "bookkeeping", "DIYA-GL book"
+
+In any text a customer or an assistant's user reads (pages, widgets, FAQs, the guide, emails, video
+captions, listings, MCP tool titles and descriptions):
+
+1. The person's accounting data, wherever they keep it, is "your records"; HMRC's word is "digital
+   records".
+2. "Bookkeeping" is the activity and the kind of software ("bookkeeping software", "the bookkeeping
+   you keep in DIY Accounting Submit").
+3. "Book" is the name of one DIYA-GL file and nothing else. Write "DIYA-GL book" the first time a page
+   or a message names it, and say what it is where there is room ("a DIYA-GL book: one business's
+   sales, purchases and bank lines"); after that, "the book".
+4. Never write "books" for a person's records: no "your books", "from books", "the company's books",
+   "keep the books". Several DIYA-GL files are "DIYA-GL books".
+5. A spreadsheet is a "spreadsheet", a "workbook" or a "package zip", never a "book".
+6. "Net book value" and Companies House's "Bookkeeping activities" are terms of art and stay.
+
+Code identifiers keep "book" (`books-import.js`, `/api/v1/books`, `open_book`, `book.toml`).
+
+**Why:** the operator, 2026-11-26: "books" reads as jargon; a sole trader says "my records" or "my
+spreadsheet".
+
 ## Permission Handling
 
 See the shared conventions section at the end of this file for full rules. Common permissions for submit work: git operations, GitHub CLI (`gh`), shell commands (`npm`, `mvnw`, `aws`), external API calls.

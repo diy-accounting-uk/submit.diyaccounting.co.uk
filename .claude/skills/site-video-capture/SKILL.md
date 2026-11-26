@@ -39,6 +39,9 @@ through the site. `videos/scene-script.schema.json` documents the format.
 
 ## Step 1a — the burned-in headline is not the caption
 
+Captions, headlines and titles follow the customer wording section of `CLAUDE.md` ("records",
+"bookkeeping", "DIYA-GL book").
+
 Every step's `caption` goes into the `.vtt` and the transcript — the full narration, read by a
 screen reader or a viewer with sound off — and is never drawn into the frame, so YouTube's
 caption track is the only place the words show. A step can also carry a `headline` (three to six

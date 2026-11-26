@@ -33,6 +33,9 @@ top of them.
 
 ---
 
+Customer text also follows the customer wording section of `CLAUDE.md`: "your records",
+"bookkeeping", and "DIYA-GL book" for one DIYA-GL file, never "your books".
+
 ## 1. Plain English base rules
 
 The foundation. Apply these before worrying about anything else.

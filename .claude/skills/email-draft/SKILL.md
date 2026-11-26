@@ -30,11 +30,11 @@ a draft to a Haiku or Sonnet agent.
 - **The history:** Excel accounting software for UK sole traders and limited companies since
   2006 (`../spreadsheets.diyaccounting.co.uk`, the packages and the `diya-gl` engine).
 - **The product:** DIY Accounting Submit (https://submit.diyaccounting.co.uk), a web service
-  that files from the customer's own books. Live on prod for MTD VAT (HMRC reference
+  that files from the customer's own records. Live on prod for MTD VAT (HMRC reference
   CMQAA-531) and the Companies House registered office and email changes; other filings run
   on sandbox or preview. `web/public/mtd-calendar.html#availability` (built from
   `scripts/build-mtd-calendar.mjs`) is the current list of what files where.
-- **The customer:** a small UK business or limited company that does its own books, without an
+- **The customer:** a small UK business or limited company that does its own bookkeeping, without an
   agent.
 
 ## Where the current status is
