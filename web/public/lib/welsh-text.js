@@ -1187,6 +1187,10 @@ window.WELSH_TEXT = {
   "ch.ct600.principal-activity": "Prif weithgarwch",
   "ch.ct600.prior-period-chargeable-profits": "Elw trethadwy’r cyfnod blaenorol (blwch 315 ar ei Ffurflen Dreth)",
   "ch.ct600.prior-period-chargeable-profits-hint": "Dim ond ar gyfer hawliad i gario’n ôl y mae angen hwn.",
+  "ch.ct600.problem-advance-micro-below-nothing":
+    "Mae’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} yn gadael llai na dim yn ddyledus ar y diwedd",
+  "ch.ct600.problem-advance-micro-signer":
+    "Mae cyfrifon micro-endid yn nodi’r blaenswm i’r cyfarwyddwr sy’n eu cymeradwyo: enwch y cyfarwyddwr hwnnw yma",
   "ch.ct600.problem-advance-name": "Enwch y cyfarwyddwr sydd mewn dyled i’r cwmni",
   "ch.ct600.problem-advance-sum":
     "Rhaid i’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} fod yn hafal i’r {end} sy’n ddyledus gan gyfarwyddwyr ar y diwedd",

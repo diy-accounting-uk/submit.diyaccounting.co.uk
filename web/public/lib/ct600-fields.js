@@ -1204,35 +1204,39 @@ export const ACCOUNTS_TEXT_FIELDS = [
       "Director who owes the company money (when the balance sheet shows amounts owed by directors)",
     ),
     type: "text",
-    smallOnly: true,
   },
   {
     id: "directorsAdvanceTerms",
     label: siteText("ch.ct600.directors-advance-terms", "Interest rate and main conditions of that director's advance"),
     type: "text",
-    smallOnly: true,
   },
   {
     id: "directorsAdvanceAtStart",
     label: siteText("ch.ct600.directors-advance-at-start", "Owed by that director at the start of the period, in whole pounds"),
     type: "count",
-    smallOnly: true,
   },
   {
     id: "directorsAdvanceMade",
     label: siteText("ch.ct600.directors-advance-made", "Advanced to that director in the period, in whole pounds"),
     type: "count",
-    smallOnly: true,
   },
   {
     id: "directorsAdvanceRepaid",
     label: siteText("ch.ct600.directors-advance-repaid", "Repaid by that director in the period, in whole pounds"),
     type: "count",
-    smallOnly: true,
   },
   { id: "averageEmployees", label: siteText("ch.ct600.average-employees", "Average number of employees during the period"), type: "count" },
   { id: "directorName", label: siteText("ch.ct600.director-name", "Director approving the accounts"), type: "text" },
   { id: "directorDateApproved", label: siteText("ch.ct600.director-date-approved", "Date approved"), type: "date" },
+];
+
+// The fields of the note on advances to directors.
+const DIRECTORS_ADVANCE_IDS = [
+  "directorsAdvanceName",
+  "directorsAdvanceTerms",
+  "directorsAdvanceAtStart",
+  "directorsAdvanceMade",
+  "directorsAdvanceRepaid",
 ];
 
 // The ids of the micro-entity accounts' amounts, in the order the form shows them.
@@ -1350,6 +1354,28 @@ function directorsAdvancesOf(values, currentSheet) {
   ];
 }
 
+// Micro-entity accounts show no amounts owed by directors on the balance sheet, so the note is
+// present when any of its fields holds something, and the closing balance is the opening balance
+// plus the advances less the repayments.
+function microDirectorsAdvancesOf(values) {
+  const typed = (id) => String(values[id] ?? "").trim();
+  if (DIRECTORS_ADVANCE_IDS.every((id) => typed(id) === "")) return undefined;
+  const whole = (id) => Number(typed(id) || 0);
+  const balanceAtStart = whole("directorsAdvanceAtStart");
+  const advanced = whole("directorsAdvanceMade");
+  const repaid = whole("directorsAdvanceRepaid");
+  return [
+    {
+      name: typed("directorsAdvanceName"),
+      terms: typed("directorsAdvanceTerms"),
+      balanceAtStart,
+      advanced,
+      repaid,
+      balanceAtEnd: balanceAtStart + advanced - repaid,
+    },
+  ];
+}
+
 function microProfitAndLossOf(values, year) {
   const lines = {};
   for (const [field] of MICRO_PROFIT_AND_LOSS_FIELDS) lines[field] = amountOf(values, microId(year, field), true);
@@ -1451,6 +1477,7 @@ export function depreciationChargeOf(note) {
 export function accountsFromValues(values, dateOfIncorporation) {
   const includePrior = values.includeComparatives === true;
   if (regimeOf(values) === "micro") {
+    const microDirectorsAdvances = microDirectorsAdvancesOf(values);
     return {
       periodStart: values.periodStart,
       periodEnd: values.periodEnd,
@@ -1465,6 +1492,7 @@ export function accountsFromValues(values, dateOfIncorporation) {
         currentYear: microProfitAndLossOf(values, "current"),
         ...(includePrior && hasMicroPriorProfitAndLoss(values) ? { priorYear: microProfitAndLossOf(values, "prior") } : {}),
       },
+      ...(microDirectorsAdvances ? { directorsAdvances: microDirectorsAdvances } : {}),
     };
   }
   const note = values.includeFixedAssetNote === true ? fixedAssetNoteOf(values) : undefined;
@@ -1921,6 +1949,44 @@ function fixedAssetNoteProblems(values, problem) {
   }
 }
 
+// The note on micro-entity accounts states the advance to the director who approves them, as the
+// accounts route requires, and its closing balance cannot be below nothing.
+function microDirectorsAdvancesProblems(values, problem) {
+  const advance = accountsFromValues(values).directorsAdvances?.[0];
+  if (!advance) return;
+  if (advance.name === "")
+    problem("directorsAdvanceName", siteText("ch.ct600.problem-advance-name", "Name the director who owes the company money"));
+  else if (advance.name !== String(values.directorName ?? "").trim()) {
+    problem(
+      "directorsAdvanceName",
+      siteText(
+        "ch.ct600.problem-advance-micro-signer",
+        "Micro-entity accounts state the advance to the director approving them: name that director here",
+      ),
+    );
+  }
+  if (advance.terms === "") {
+    problem(
+      "directorsAdvanceTerms",
+      siteText("ch.ct600.problem-advance-terms", "State the interest rate and the main conditions of the advance"),
+    );
+  }
+  for (const id of ["directorsAdvanceAtStart", "directorsAdvanceMade", "directorsAdvanceRepaid"]) {
+    if (!/^\d*$/.test(String(values[id] ?? "").trim()))
+      problem(id, siteText("ch.ct600.problem-advance-whole", "Enter a whole number of pounds, or leave it empty for none"));
+  }
+  if (advance.balanceAtEnd < 0) {
+    problem(
+      "directorsAdvanceRepaid",
+      siteText(
+        "ch.ct600.problem-advance-micro-below-nothing",
+        "Owed at the start {start} plus advanced {advanced} less repaid {repaid} leaves less than nothing owed at the end",
+        { start: advance.balanceAtStart, advanced: advance.advanced, repaid: advance.repaid },
+      ),
+    );
+  }
+}
+
 const SMALL_ONLY_TEXT = new Set(ACCOUNTS_TEXT_FIELDS.filter((field) => field.smallOnly).map((field) => field.id));
 
 const REQUIRED_TEXT = [
@@ -1966,6 +2032,7 @@ export function formProblems(values, { today = new Date().toISOString().slice(0,
   amountProblems(values, problem);
   if (regimeOf(values) === "micro") {
     microBalanceSheetProblems(values, problem);
+    microDirectorsAdvancesProblems(values, problem);
   } else {
     balanceSheetProblems(values, problem);
     directorsAdvancesProblems(values, problem);

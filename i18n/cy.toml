@@ -16757,6 +16757,16 @@ hash = "7af609fa3709"
 cy = '''Rhowch nifer cyfan o bunnoedd, neu gadewch hwn yn wag os nad oes dim'''
 
 # no HMRC Welsh found
+[strings."ch.ct600.problem-advance-micro-signer"]
+hash = "2f9aa4e94611"
+cy = '''Mae cyfrifon micro-endid yn nodi’r blaenswm i’r cyfarwyddwr sy’n eu cymeradwyo: enwch y cyfarwyddwr hwnnw yma'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-advance-micro-below-nothing"]
+hash = "89e0aa78ef86"
+cy = '''Mae’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} yn gadael llai na dim yn ddyledus ar y diwedd'''
+
+# no HMRC Welsh found
 [strings."ch.ct600.problem-advance-sum"]
 hash = "fb509861c712"
 cy = '''Rhaid i’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} fod yn hafal i’r {end} sy’n ddyledus gan gyfarwyddwyr ar y diwedd'''

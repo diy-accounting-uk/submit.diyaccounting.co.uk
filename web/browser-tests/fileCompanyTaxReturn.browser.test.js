@@ -1796,6 +1796,39 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#review-row-statementMicroEntityProvisions")).toContainText("Yes");
   });
 
+  test("micro-entity accounts ask for the note on advances to directors and the preview sends it", async ({ page }) => {
+    const previewRequests = [];
+    await openForm(page, previewRequests);
+    await dropBook(page, { regime: "micro" });
+    for (const id of [
+      "directorsAdvanceName",
+      "directorsAdvanceTerms",
+      "directorsAdvanceAtStart",
+      "directorsAdvanceMade",
+      "directorsAdvanceRepaid",
+    ]) {
+      await expect(page.locator(`#${id}`), id).toBeVisible();
+    }
+    await expect(page.locator("#principalActivity")).toBeHidden();
+    await expect(page.locator("#accountingPolicies")).toBeHidden();
+    await completeTheAnswersTheBookLeaves(page, { regime: "micro" });
+    const director = await page.locator("#directorName").inputValue();
+    await page.locator("#directorsAdvanceName").fill(director);
+    await page.locator("#directorsAdvanceTerms").fill("Interest free and repayable on demand");
+    await page.locator("#directorsAdvanceAtStart").fill("0");
+    await page.locator("#directorsAdvanceMade").fill("443");
+    await page.locator("#directorsAdvanceRepaid").fill("0");
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    expect(previewRequests).toHaveLength(1);
+    expect(previewRequests[0].directorsAdvances).toEqual([
+      { name: director, terms: "Interest free and repayable on demand", balanceAtStart: 0, advanced: 443, repaid: 0, balanceAtEnd: 443 },
+    ]);
+    await expect(page.locator("#review-row-directorsAdvanceTerms")).toContainText("Interest free and repayable on demand");
+  });
+
   function ixbrlAccountsFile(caseName, overrides = {}) {
     const cases = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), "scripts/fixtures/companies-house-test-service-cases.json"), "utf-8"),
