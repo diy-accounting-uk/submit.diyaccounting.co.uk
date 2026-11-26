@@ -24,10 +24,14 @@ import {
   FIRST_PERIOD_START_FIELD,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
+  LOAN_ROW_FIELDS,
   MICRO_BALANCE_SHEET_FIELDS,
   MICRO_PROFIT_AND_LOSS_FIELDS,
   MICRO_STATEMENT_FIELD,
+  PAGE_QUESTION_FIELDS,
   PROFIT_AND_LOSS_FIELDS,
+  REPAYMENT_ROW_FIELDS,
+  SEND_TO_HMRC_ONLY_HINT,
   SECTIONS,
   STATEMENT_FIELDS,
   TEXT_BOXES,
@@ -468,7 +472,7 @@ function yearLedger(fields, idOf) {
   return ledger({
     className: "ledger--years ledger--one-year",
     columns: YEAR_COLUMNS,
-    rows: fields.map(([field, label]) => ({
+    rows: fields.map(({ id: field, label }) => ({
       label,
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
         id: idOf(key, field),
@@ -488,7 +492,7 @@ const NOTE_ROWS = [
 ];
 
 function noteLedger(className, title) {
-  const labelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(([candidate]) => candidate === field)[1]}`;
+  const labelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(({ id: candidate }) => candidate === field).label}`;
   return ledger({
     caption: title,
     columns: NOTE_COLUMNS,
@@ -530,7 +534,9 @@ function accountsTextGroup({ id, label, type }) {
   return group;
 }
 
-const SEND_TO_HMRC_ONLY_HINT = siteText("ch.ct.send-hmrc-only-hint", "The accounts go to HMRC with the Company Tax Return.");
+const QUESTION = Object.fromEntries(PAGE_QUESTION_FIELDS.map((field) => [field.id, field]));
+const LOAN_FIELD = Object.fromEntries(LOAN_ROW_FIELDS.map((field) => [field.id, field]));
+const REPAYMENT_FIELD = Object.fromEntries(REPAYMENT_ROW_FIELDS.map((field) => [field.id, field]));
 const SEND_TO_BOTH_HINT = siteText(
   "ch.ct.send-both-hint",
   "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.",
@@ -559,12 +565,8 @@ function sendToSection() {
     create(
       "div",
       { class: "form-group" },
-      create(
-        "p",
-        { id: "sendTo", class: "field-label", tabindex: "-1" },
-        siteText("ch.ct.where-sending", "Where are you sending these accounts?"),
-      ),
-      create("p", { id: "sendTo-hint", class: "hint" }, SEND_TO_HMRC_ONLY_HINT),
+      create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, QUESTION.sendTo.label),
+      create("p", { id: "sendTo-hint", class: "hint" }, QUESTION.sendTo.hint),
       errorHost("sendTo"),
       radio("sendToHmrc", "hmrc", siteText("ch.ct.send-to-hmrc", "To HMRC with the Company Tax Return"), true),
       radio("sendToBoth", "both", siteText("ch.ct.send-to-both", "To Companies House and to HMRC with the Company Tax Return"), false),
@@ -648,19 +650,8 @@ function companiesHouseCopyGroup() {
   return create(
     "div",
     { id: "companiesHouseCopyGroup", class: "form-group", hidden: "" },
-    create(
-      "p",
-      { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" },
-      siteText("ch.ct.which-copy", "Which copy goes to Companies House?"),
-    ),
-    create(
-      "p",
-      { id: "companiesHouseCopy-hint", class: "hint" },
-      siteText(
-        "ch.ct.which-copy-hint",
-        "Companies House publishes what it receives. Filleted accounts leave the profit and loss account and the directors' report out of the public copy. HMRC gets the full accounts either way.",
-      ),
-    ),
+    create("p", { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" }, QUESTION.companiesHouseCopy.label),
+    create("p", { id: "companiesHouseCopy-hint", class: "hint" }, QUESTION.companiesHouseCopy.hint),
     errorHost("companiesHouseCopy"),
     radio("copyFull", "full", siteText("ch.ct.full-accounts", "Full accounts"), true),
     radio("copyFilleted", "filleted", siteText("ch.ct.filleted-accounts", "Filleted accounts"), false),
@@ -722,7 +713,7 @@ function microLedger(fields, className) {
   return ledger({
     className,
     columns: YEAR_COLUMNS,
-    rows: fields.map(([field, label]) => ({
+    rows: fields.map(({ id: field, label }) => ({
       label,
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
         id: microId(key, field),
@@ -746,7 +737,7 @@ function accountsSection() {
     regimeGroup(),
     companiesHouseCopyGroup(),
     companiesHouseMicroNote(),
-    checkboxGroup("includeComparatives", siteText("ch.ct.include-comparatives", "Include last year's figures")),
+    checkboxGroup("includeComparatives", QUESTION.includeComparatives.label),
     create("p", { "id": "firstAccountsLine", "class": "hint", "aria-live": "polite" }),
     forRegime(
       "small",
@@ -755,11 +746,11 @@ function accountsSection() {
       create("h4", {}, siteText("ch.ct.balance-sheet", "Balance sheet")),
       yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
       create("h4", {}, siteText("ch.ct.fixed-assets-note", "Tangible fixed assets note")),
-      checkboxGroup("includeFixedAssetNote", siteText("ch.ct.include-fixed-assets-note", "Include the tangible fixed assets note")),
+      checkboxGroup("includeFixedAssetNote", QUESTION.includeFixedAssetNote.label),
       create(
         "div",
         { id: "fixedAssetNoteFields", style: "display: none" },
-        ...FIXED_ASSET_CLASSES.map(([className, title]) => noteLedger(className, title)),
+        ...FIXED_ASSET_CLASSES.map(({ id: className, label: title }) => noteLedger(className, title)),
       ),
     ),
     forRegime(
@@ -871,34 +862,18 @@ function loanRow(row, part) {
   const group = create(
     "div",
     { "class": "loan-row", "data-loan-row": String(row), "data-part": String(part) },
-    textGroup({
-      id: loanId("Name", row, part),
-      label: siteText("ch.ct.loan-name", "Name of participator or associate"),
-      type: "text",
-      maxlength: 56,
-    }),
-    moneyGroup(
-      loanId("Amount", row, part),
-      siteText("ch.ct.loan-amount", "Amount still owed at the end of the period"),
-      siteText("ch.ct.loan-amount-hint", "For example, £12,000"),
-    ),
+    textGroup({ id: loanId("Name", row, part), label: LOAN_FIELD.Name.label, hint: LOAN_FIELD.Name.hint, type: "text", maxlength: 56 }),
+    moneyGroup(loanId("Amount", row, part), LOAN_FIELD.Amount.label, LOAN_FIELD.Amount.hint),
     create(
       "div",
       { "class": "loan-row__lent", "data-loan-lent": String(row), "hidden": "" },
-      moneyGroup(
-        loanId("Lent", row, part),
-        siteText("ch.ct.loan-lent", "Of this, the amount lent on or after the rate change"),
-        siteText("ch.ct.loan-lent-hint", "Leave it empty when none was lent after the change"),
-      ),
+      moneyGroup(loanId("Lent", row, part), LOAN_FIELD.Lent.label, LOAN_FIELD.Lent.hint),
     ),
     textGroup({
       id: loanId("Rate", row, part),
-      label: siteText("ch.ct.loan-rate", "Section 455 rate for this loan, if you want to use another (%)"),
+      label: LOAN_FIELD.Rate.label,
       type: "text",
-      hint: siteText(
-        "ch.ct.loan-rate-hint",
-        "Leave it empty to use the rate shown with the worked tax. A rate you enter is not checked against the tax data.",
-      ),
+      hint: LOAN_FIELD.Rate.hint,
       inputmode: "decimal",
     }),
     removeButton("loan", row, part, siteText("ch.ct.remove-loan", "Remove this loan")),
@@ -909,28 +884,21 @@ function loanRow(row, part) {
 
 function repaymentRow(row, part) {
   const nameId = repaymentId("Name", row, part);
-  const select = create("select", { "id": nameId, "name": nameId, "data-error-target": nameId });
+  const select = create("select", { "id": nameId, "name": nameId, "data-error-target": nameId, "aria-describedby": `${nameId}-hint` });
   const group = create(
     "div",
     { "class": "loan-row", "data-repayment-row": String(row), "data-part": String(part) },
     create(
       "div",
       { class: "form-group" },
-      create("label", { for: nameId }, siteText("ch.ct.participator", "Participator")),
+      create("label", { for: nameId }, REPAYMENT_FIELD.Name.label),
+      create("p", { id: `${nameId}-hint`, class: "hint" }, REPAYMENT_FIELD.Name.hint),
       errorHost(nameId),
       select,
     ),
-    textGroup({ id: repaymentId("Date", row, part), label: siteText("ch.ct.date", "Date"), type: "date" }),
-    moneyGroup(
-      repaymentId("Repaid", row, part),
-      siteText("ch.ct.amount-repaid", "Amount repaid"),
-      siteText("ch.ct.amount-repaid-hint", "Leave it empty when none was repaid"),
-    ),
-    moneyGroup(
-      repaymentId("Released", row, part),
-      siteText("ch.ct.amount-released", "Amount released or written off"),
-      siteText("ch.ct.amount-released-hint", "Leave it empty when none was released or written off"),
-    ),
+    textGroup({ id: repaymentId("Date", row, part), label: REPAYMENT_FIELD.Date.label, hint: REPAYMENT_FIELD.Date.hint, type: "date" }),
+    moneyGroup(repaymentId("Repaid", row, part), REPAYMENT_FIELD.Repaid.label, REPAYMENT_FIELD.Repaid.hint),
+    moneyGroup(repaymentId("Released", row, part), REPAYMENT_FIELD.Released.label, REPAYMENT_FIELD.Released.hint),
     removeButton("repayment", row, part, siteText("ch.ct.remove-repayment", "Remove this repayment")),
   );
   registerTargets(group);
@@ -1085,11 +1053,8 @@ function growRowsFor(entries) {
 function periodStartQuestion() {
   const group = choiceGroup({
     id: FIRST_PERIOD_START_FIELD,
-    label: siteText("ch.ct.first-period-start", "Does the first accounting period start on the first day of the accounts?"),
-    hint: siteText(
-      "ch.ct.first-period-start-hint",
-      "Answer Yes when the company's accounting period began on the first day of these accounts. Submit files a long period only from there.",
-    ),
+    label: QUESTION.firstPeriodStart.label,
+    hint: QUESTION.firstPeriodStart.hint,
     default: "yes",
   });
   group.id = "firstPeriodStartGroup";
@@ -2166,7 +2131,7 @@ function updateLongPeriod(values) {
     ? siteText("ch.ct.first-period-start-on", "Does the first accounting period start on {date}?", {
         date: longDateText(values.periodStart),
       })
-    : siteText("ch.ct.first-period-start", "Does the first accounting period start on the first day of the accounts?");
+    : QUESTION.firstPeriodStart.label;
   const donations = form.querySelector('label[for="donations"]');
   if (donations)
     donations.textContent = showing ? LONG_PERIOD_DONATIONS_LABEL : CT600_FORM_FIELDS.find((field) => field.id === "donations").label;

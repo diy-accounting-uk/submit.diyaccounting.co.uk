@@ -505,7 +505,7 @@ test.describe("File Company Tax Return entry form", () => {
       "declarantStatus",
       ...CT600_FORM_FIELDS.filter((field) => ["whole-pounds", "pounds-and-pence"].includes(field.type) && !field.optional).map((f) => f.id),
       ...accountAmountIds().filter((id) => id.startsWith("current") && !OPTIONAL_CREDITOR_LINES.some((line) => id.endsWith(line))),
-      ...FIXED_ASSET_CLASSES.flatMap(([className]) => FIXED_ASSET_FIELDS.map(([field]) => noteId(className, field))),
+      ...FIXED_ASSET_CLASSES.flatMap(({ id: className }) => FIXED_ASSET_FIELDS.map(({ id: field }) => noteId(className, field))),
       ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id).filter((id) => !id.startsWith("directorsAdvance") && id !== "directorDateApproved"),
     ];
     for (const id of new Set(supplied)) {
@@ -2169,7 +2169,7 @@ test.describe("File Company Tax Return entry form", () => {
     expect(sent.balanceSheet.priorYear.fixedAssets).toBe(182902);
     expect(sent.profitAndLoss.currentYear).toMatchObject({ turnover: 341283, otherIncome: 340, tax: 29062 });
     await expect(page.locator("#review-row-accountsRegime")).toContainText("Micro-entity accounts (FRS 105)");
-    await expect(page.locator("#review-row-microCurrentRawMaterials")).toContainText("Raw materials and consumables, this year");
+    await expect(page.locator("#review-row-microCurrentRawMaterials")).toContainText("Cost of raw materials and consumables, this year");
     await expect(page.locator("#review-row-statementMicroEntityProvisions")).toContainText("Yes");
   });
 

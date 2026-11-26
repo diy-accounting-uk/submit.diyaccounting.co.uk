@@ -62,7 +62,9 @@ export function lastFiledReturn(receipts, companyNumber) {
 }
 
 function entriesOf(idOf, fields, figures) {
-  return fields.filter(([field]) => Number.isFinite(figures?.[field])).map(([field]) => [idOf("prior", field), figureText(figures[field])]);
+  return fields
+    .filter(({ id: field }) => Number.isFinite(figures?.[field]))
+    .map(({ id: field }) => [idOf("prior", field), figureText(figures[field])]);
 }
 
 /**
@@ -74,10 +76,10 @@ export function priorYearEntries({ regime, balanceSheet, profitAndLoss }) {
   const micro = regime === "micro";
   const regimeId = ACCOUNTS_REGIMES.find((choice) => choice.value === (micro ? "micro" : "small")).id;
   if (micro) {
-    const lines = MICRO_BALANCE_SHEET_FIELDS.map(([field]) => field);
+    const lines = MICRO_BALANCE_SHEET_FIELDS.map(({ id: field }) => field);
     return [[regimeId, true], ...entriesOf(microId, MICRO_BALANCE_SHEET_FIELDS, foldBalanceSheetHeadings(balanceSheet, lines))];
   }
-  const lines = BALANCE_SHEET_FIELDS.map(([field]) => field);
+  const lines = BALANCE_SHEET_FIELDS.map(({ id: field }) => field);
   return [
     [regimeId, true],
     ["includeComparatives", true],
