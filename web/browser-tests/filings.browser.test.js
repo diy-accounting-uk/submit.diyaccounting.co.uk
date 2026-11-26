@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
+import { execFileSync } from "child_process";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { accountsDocumentCases, computationsDocumentCase, SMALL_COMPANY_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
@@ -140,7 +141,7 @@ test.describe("Filings page - customer copy", () => {
     const frame = page.frameLocator("iframe.filed-document");
     await expect(frame.locator("body")).toContainText("Balance sheet");
     await expect(copy.locator(".submission-record .entity").first()).toHaveText("Companies House receipt");
-    await expect(copy.locator("tr", { hasText: "Company number" }).locator("td.text-value")).toHaveText("00000003");
+    await expect(copy.locator("tr", { hasText: "Company registration number" }).locator("td.text-value")).toHaveText("00000003");
     await expect(copy.locator(".customer-copy-links a")).toHaveText([
       "File accounts again with corrected figures",
       "Look up another company",
@@ -163,6 +164,47 @@ test.describe("Filings page - customer copy", () => {
     await expect(page.locator("iframe.filed-document")).toHaveCount(2);
     await expect(copy.locator("tr", { hasText: "Correlation ID" }).last().locator("td.text-value")).toHaveText("ABCDEF0123456789");
     await expect(copy.locator(".customer-copy-links a").first()).toHaveAttribute("href", "fileCompanyTaxReturn.html");
+  });
+
+  test("a return filed with HMRC's live service is no preview, and the copy names each concept once", async ({ page }) => {
+    await openFiling(page, CT_RECEIPT_NAME, {
+      ...CT_RECEIPT,
+      gatewayTest: false,
+      filed: { ...CT_RECEIPT.filed, boxes: { ...CT_RECEIPT.filed.boxes, 4: 0 } },
+    });
+    const copy = page.locator("#filingContent .customer-copy");
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
+    await expect(copy).not.toContainText("preview");
+    await expect(copy).toContainText("Tax reference 8596148860");
+    await expect(copy).toContainText("Company registration number 00000003");
+    await expect(copy).not.toContainText("Unique Taxpayer Reference");
+    await expect(copy.locator("#ct600Box4 td.text-value")).toHaveText("Not one of the listed types");
+    await expect(copy.locator("#ct600Box30 td.text-value")).toHaveText("1 April 2025");
+    await expect(copy.locator("#ct600Box35 td.text-value")).toHaveText("31 March 2026");
+    await expect(copy.locator("tr", { hasText: "Filed on" })).toHaveCount(0);
+    await expect(copy).toContainText("Filed 24 October 2026");
+  });
+
+  test("a test filing, or one whose receipt does not say, keeps preview in its title", async ({ page }) => {
+    await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, gatewayTest: true });
+    await expect(page.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
+  });
+
+  test("the printed copy has no empty page and keeps each download link with its sentence", async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "only Chromium prints to PDF");
+    await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, gatewayTest: false });
+    await page.emulateMedia({ media: "print" });
+    const pdfPath = path.join(process.cwd(), "target/screenshots/filed-copy-print/ct-filed-copy.pdf");
+    fs.mkdirSync(path.dirname(pdfPath), { recursive: true });
+    await page.pdf({ path: pdfPath, format: "A4" });
+    const pages = execFileSync("pdftotext", ["-layout", pdfPath, "-"], { encoding: "utf8" })
+      .split("\f")
+      .filter((text, index, all) => index < all.length - 1 || text.trim());
+    expect(pages.length).toBeGreaterThan(1);
+    for (const [index, text] of pages.entries()) {
+      expect(text.replace(/\s+/g, " ").trim().length, `page ${index + 1} holds more than a line`).toBeGreaterThan(80);
+      if (text.includes("Download the")) expect(text, `page ${index + 1} keeps the link with its sentence`).toContain("Save this file");
+    }
   });
 
   test("downloads each filed document as the exact bytes that were filed", async ({ page }) => {
@@ -277,7 +319,7 @@ test.describe("Filings page - customer copy", () => {
     await expect(page.locator("#filingNotice")).toHaveText(
       "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
     );
-    await expect(page.locator("#filingContent")).toContainText(`Company number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
+    await expect(page.locator("#filingContent")).toContainText(`Company registration number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
     await screenshotAtBothWidths(page, "filing-no-comparatives");
   });
 

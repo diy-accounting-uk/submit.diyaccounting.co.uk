@@ -367,7 +367,8 @@ describe("receipt signature", () => {
     const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
     expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "valid" });
     expect(data.irmarkReceiptMismatch).toBeUndefined();
-    expect(mockPutReceipt.mock.calls[0][2]).toMatchObject({ receiptSignature: "valid" });
+    expect(mockPutReceipt.mock.calls[0][2]).toMatchObject({ receiptSignature: "valid", gatewayTest: true });
+    expect(data.gatewayTest).toBe(true);
     expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "submission-receipt",

@@ -107,10 +107,13 @@ const PLACEHOLDER_TEXT = "Placeholder";
 // Each computation line in the order HMRC's computation prints it: a deduction shows in
 // brackets, a subtotal has a rule above it and the total a double rule below it.
 const COMPUTATION_LINES = [
-  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss per the accounts") },
+  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss before tax per the accounts") },
   {
     field: "nonTradingLoanRelationshipCredits",
-    meaning: siteText("ch.ct.line-loan-credits", "Less: non-trading loan relationship credits"),
+    meaning: siteText(
+      "ch.ct.line-loan-credits",
+      "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
+    ),
     deduction: true,
   },
   { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Add: depreciation") },
@@ -129,7 +132,7 @@ const COMPUTATION_LINES = [
     style: "subtotal",
   },
   { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
-  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted profit"), style: "total" },
+  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted trading profit (box 155)"), style: "total" },
 ];
 
 const RETURN_TO_REVIEW = siteText("ch.ct.return-to-review", "Return to the review");

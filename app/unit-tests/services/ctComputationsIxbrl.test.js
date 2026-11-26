@@ -77,6 +77,23 @@ describe("computationLinesFromResults", () => {
 });
 
 describe("buildCtComputations", () => {
+  test("names each concept as the CT600 boxes do, and the box a line feeds", () => {
+    const xml = buildCtComputations(INPUT);
+    for (const words of [
+      "Company registration number:",
+      "Tax reference:",
+      "Period of the return:",
+      "Profit or loss before tax per the accounts",
+      "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
+      "Adjusted trading profit (box 155)",
+    ]) {
+      expect(xml).toContain(words);
+    }
+    for (const words of ["Registered number", "Unique Taxpayer Reference", "Return period", "Profit before tax per accounts"]) {
+      expect(xml).not.toContain(words);
+    }
+  });
+
   test("references the CT computational 2025 entry point", () => {
     const xml = buildCtComputations(INPUT);
     expect(xml).toContain(`<link:schemaRef xlink:type="simple" xlink:href="${CT_COMP_ENTRY_POINT}"/>`);

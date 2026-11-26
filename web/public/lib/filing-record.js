@@ -124,7 +124,7 @@ function accountsReceiptRecord(receipt, dateText) {
   });
   const lines = [
     textLine(siteText("ch.record.submission-number", "Submission number"), receipt.submissionNumber),
-    textLine(siteText("ch.record.company-number", "Company number"), receipt.companyNumber),
+    textLine(siteText("ch.record.company-number", "Company registration number"), receipt.companyNumber),
     textLine(
       siteText("ch.record.status", "Status"),
       receipt.statusCode === "ACCEPT" ? siteText("ch.record.accepted", "Accepted by Companies House") : receipt.statusCode,
@@ -202,6 +202,7 @@ export function ct600BoxText(box, value) {
   if (value === undefined || value === null || value === "") return ABSENT;
   if (key === 340 || key === 390) return `${value}%`;
   if (key === 329) return siteText("ch.ct.yes", "Yes");
+  if (key === 4 && String(value) === "0") return siteText("ch.ct.box-4-none", "Not one of the listed types");
   if ((key === 30 || key === 35) && /^\d{4}-\d{2}-\d{2}$/.test(String(value)))
     return longDateText(new Date(`${value}T00:00:00Z`), { utc: true });
   return String(value);
@@ -216,6 +217,22 @@ function boxValueCell(box, value) {
   return `<td class="figure positive">£${html}</td>`;
 }
 
+/**
+ * The filed copy's title and its record's title. A return that went to HMRC's live service is not a
+ * preview; a test filing, or one filed before the receipt said which, keeps "preview".
+ */
+export function ctRecordTitle(live, parts) {
+  return live
+    ? siteText("ch.ct.record-title-live", "Company Tax Return (CT600){parts}", { parts })
+    : siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts });
+}
+
+export function ctCopyTitle(live, parts) {
+  return live
+    ? siteText("ch.ct.record-copy-title-live", "Your copy of the Company Tax Return{parts}", { parts })
+    : siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", { parts });
+}
+
 // " 1 of 2" for one of the two returns of a period of account over 12 months.
 function longPeriodTitleSuffix(receipt) {
   return receipt.longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", receipt.longPeriod) : "";
@@ -225,12 +242,14 @@ function ct600Record(receipt, dateText) {
   const heading = recordHeading({
     nameHtml: escapeRecordText(receipt.filed?.boxes?.[1] ?? siteText("ch.ct.record-name", "Company Tax Return")),
     referenceHtml: [
-      receipt.utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Unique Taxpayer Reference {utr}", { utr: receipt.utr })) : "",
+      receipt.utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr: receipt.utr })) : "",
       receipt.filed?.boxes?.[2]
-        ? escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: receipt.filed.boxes[2] }))
+        ? escapeRecordText(
+            siteText("ch.record.company-number-line", "Company registration number {number}", { number: receipt.filed.boxes[2] }),
+          )
         : "",
     ].filter(Boolean),
-    title: siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts: longPeriodTitleSuffix(receipt) }),
+    title: ctRecordTitle(receipt.gatewayTest === false, longPeriodTitleSuffix(receipt)),
     subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
   });
   const boxes = receipt.filed?.boxes ?? {};
@@ -259,9 +278,8 @@ export function ctReceiptRecord(receipt, dateText) {
     textLine(siteText("ch.ct.record-irmark-receipt", "IRmark receipt"), receipt.irmarkReceipt),
     textLine(siteText("ch.ct.record-irmark-sent", "IRmark we sent"), receipt.irmark),
     textLine(siteText("ch.ct.record-correlation", "Correlation ID"), receipt.correlationId),
-    textLine(siteText("ch.ct.record-utr", "Unique Taxpayer Reference"), receipt.utr),
+    textLine(siteText("ch.ct.record-utr", "Tax reference"), receipt.utr),
     textLine(siteText("ch.ct.record-hmrc-message", "HMRC's message"), receipt.successMessage),
-    textLine(siteText("ch.record.filed-on", "Filed on"), dateText),
   ].join("\n");
   return page(`${heading}<table class="statement">\n<tbody>\n${lines}\n</tbody>\n</table>`);
 }
@@ -324,9 +342,7 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
     },
   ];
   return customerCopyHtml({
-    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", {
-      parts: longPeriodTitleSuffix(receipt),
-    }),
+    title: ctCopyTitle(receipt.gatewayTest === false, longPeriodTitleSuffix(receipt)),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT),

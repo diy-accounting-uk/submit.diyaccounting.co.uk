@@ -14138,8 +14138,8 @@ hash = "7582a6dc98b1"
 cy = '''Rhif cyflwyno'''
 
 [strings."ch.record.company-number"]
-hash = "8b121bb59819"
-cy = '''Rhif y cwmni'''
+hash = "4cd520c7150d"
+cy = '''Rhif cofrestru’r cwmni'''
 
 [strings."ch.record.status"]
 hash = "920e413c7d41"
@@ -14198,8 +14198,8 @@ hash = "89d5c1886850"
 cy = '''Wedi’i gadarnhau fel y mae ar y gofrestr'''
 
 [strings."ch.record.company-number-line"]
-hash = "d691cbbac827"
-cy = '''Rhif y cwmni {number}'''
+hash = "f1f646794edb"
+cy = '''Rhif cofrestru’r cwmni {number}'''
 
 [strings."ch.record.cs-title"]
 hash = "9e84a7fe6e03"
@@ -14314,12 +14314,12 @@ hash = "0cb32fe2bd5a"
 cy = '''Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa. Dewiswch Gwirio eto i ofyn am y canlyniad. Unwaith y bydd Tŷ’r Cwmnïau yn derbyn y ffeilio, mae eich copi yn eich ffeiliadau.'''
 
 [strings."ch.ct.line-profit-per-accounts"]
-hash = "a62ab0e6fed3"
-cy = '''Elw neu golled yn ôl y cyfrifon'''
+hash = "a55754cf6271"
+cy = '''Elw neu golled cyn treth yn ôl y cyfrifon'''
 
 [strings."ch.ct.line-loan-credits"]
-hash = "50346cff3434"
-cy = '''Llai: credydau perthynas benthyciad anfasnachu'''
+hash = "71f58db9e7c7"
+cy = '''Llai: llog banc, cymdeithas adeiladu neu log arall, ac elw o berthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu (blwch 170)'''
 
 [strings."ch.ct.line-depreciation"]
 hash = "fcfa75e12b50"
@@ -14354,8 +14354,8 @@ hash = "2edc3d0ab603"
 cy = '''Llai: cyfanswm y lwfansau cyfalaf'''
 
 [strings."ch.ct.line-adjusted-profit"]
-hash = "e0024582e885"
-cy = '''Elw wedi’i addasu'''
+hash = "a6fb87bd5dcb"
+cy = '''Elw masnachu wedi’i addasu (blwch 155)'''
 
 [strings."ch.ct.return-to-review"]
 hash = "f67dc0e66860"
@@ -15366,8 +15366,8 @@ hash = "e84474d2d95e"
 cy = '''Ffurflen Dreth y Cwmni'''
 
 [strings."ch.ct.record-utr-line"]
-hash = "790206e6162b"
-cy = '''Cyfeirnod Unigryw y Trethdalwr {utr}'''
+hash = "011f0b1d6776"
+cy = '''Cyfeirnod treth {utr}'''
 
 [strings."ch.ct.record-title"]
 hash = "5e1c19c60183"
@@ -15398,8 +15398,8 @@ hash = "c267c186e80d"
 cy = '''ID cydberthynas'''
 
 [strings."ch.ct.record-utr"]
-hash = "883d9ae8c92b"
-cy = '''Cyfeirnod Unigryw y Trethdalwr'''
+hash = "6905dbb2c6ce"
+cy = '''Cyfeirnod treth'''
 
 [strings."ch.ct.record-hmrc-message"]
 hash = "b42998cfd313"
@@ -15458,8 +15458,8 @@ hash = "3e7e7b0930dd"
 cy = '''Derbyniodd CThEF y Ffurflen, ond mae’r IRmark ar dderbynneb CThEF yn wahanol i’r un a gyfrifwyd gennym. Cadwch y dderbynneb. Cysylltwch â’r tîm cymorth os oes angen esbonio’r gwahaniaeth.'''
 
 [strings."ch.ct.record-period"]
-hash = "3e7d65528834"
-cy = '''Cyfnod y Ffurflen {start} i {end}'''
+hash = "4093034586db"
+cy = '''Cyfnod y Ffurflen Dreth {start} i {end}'''
 
 [strings."ch.ct.record-period-column"]
 hash = "6e795d4d3cc2"
@@ -28612,3 +28612,19 @@ cy = '''Y Ffurflen Dreth rydych ar fin ei ffeilio'''
 [strings."ch.ct600.review-box"]
 hash = "3d3500c2c85e"
 cy = '''Blwch {box}'''
+
+[strings."ch.ct.box-4-none"]
+hash = "6d6d75c4c607"
+cy = '''Nid yw’n un o’r mathau a restrir'''
+
+[strings."ch.ct.record-title-live"]
+hash = "9fa560474380"
+cy = '''Ffurflen Dreth y Cwmni (CT600){parts}'''
+
+[strings."ch.ct.record-copy-title-live"]
+hash = "ec83b4f3a6e2"
+cy = '''Eich copi o Ffurflen Dreth y Cwmni{parts}'''
+
+[strings."ch.ct.record-box-line"]
+hash = "4a51cfda7e63"
+cy = '''{label} (blwch {box})'''

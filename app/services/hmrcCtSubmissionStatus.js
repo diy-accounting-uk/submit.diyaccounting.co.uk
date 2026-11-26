@@ -316,6 +316,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     ...(irmarkReceiptMismatch ? { irmarkReceiptMismatch: true } : {}),
     receiptSignature,
     successMessage: parsed.successMessage,
+    gatewayTest: pending.gatewayTest === true,
   };
   // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.
   const receipt = { ...accepted, ...(pending.filed ? { filed: pending.filed } : {}), ...formRequestFields(pending.formRequest) };

@@ -1868,12 +1868,12 @@ test.describe("File Company Tax Return entry form", () => {
 
       const record = copy.locator(".submission-record").first();
       await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
-      await expect(record.locator(".reference").first()).toHaveText("Unique Taxpayer Reference 8596148860");
+      await expect(record.locator(".reference").first()).toHaveText("Tax reference 8596148860");
       await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600, preview)");
-      await expect(record.locator(".subtitle")).toHaveText("Return period 1 April 2025 to 31 March 2026");
-      await expect(record.locator("tr", { hasText: "Profit or loss per the accounts" })).toBeVisible();
-      await expect(record.locator("tr", { hasText: "Box 440: Corporation Tax chargeable" }).locator("td.figure")).toHaveText("12,345.67");
-      await expect(record.locator("tr", { hasText: "Box 475: Net Corporation Tax liability" })).toHaveClass("total");
+      await expect(record.locator(".subtitle")).toHaveText("Period of the return 1 April 2025 to 31 March 2026");
+      await expect(record.locator("tr", { hasText: "Profit or loss before tax per the accounts" })).toBeVisible();
+      await expect(record.locator("tr", { hasText: "Corporation Tax chargeable (box 440)" }).locator("td.figure")).toHaveText("12,345.67");
+      await expect(record.locator("tr", { hasText: "Net Corporation Tax liability (box 475)" })).toHaveClass("total");
 
       const receipt = copy.locator(".submission-record").nth(1);
       await expect(receipt.locator("tr", { hasText: "IRmark receipt" }).locator("td.text-value")).toHaveText(

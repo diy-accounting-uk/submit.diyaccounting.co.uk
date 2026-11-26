@@ -194,6 +194,7 @@
 .customer-copy-sheet .submission-record table.statement td.label:has(+ td.text-value) {
   overflow-wrap: normal;
   vertical-align: top;
+  min-width: 16em;
 }
 .customer-copy-sheet .submission-record table.statement td.text-value {
   font-weight: 700;
@@ -365,6 +366,16 @@
   .customer-copy-sheet {
     border: none;
     overflow: visible;
+  }
+  /* The CT600 boxes and the receipt print in the filed accounts' type, so the copy reads as one document. */
+  .customer-copy-sheet .submission-record {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+  }
+  /* A download link stays with the frame above it and with its own sentence. */
+  .submission-record .filed-document-download {
+    break-before: avoid;
+    break-inside: avoid;
   }
 }
 

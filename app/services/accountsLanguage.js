@@ -58,7 +58,7 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Unaudited micro-entity accounts": "Cyfrifon micro-endid heb eu harchwilio",
   "Unaudited dormant micro-entity accounts": "Cyfrifon micro-endid segur heb eu harchwilio",
   "{company} - Accounts": "{company} - Cyfrifon",
-  "Registered number: {number}": "Rhif cofrestru: {number}",
+  "Company registration number: {number}": "Rhif cofrestru’r cwmni: {number}",
   "for the {period}": "ar gyfer y {period}",
   "Period from {start} to {end}": "Cyfnod o {start} i {end}",
   "The company's first accounts, from its incorporation on {date}": "Cyfrifon cyntaf y cwmni, o'i gorffori ar {date}",

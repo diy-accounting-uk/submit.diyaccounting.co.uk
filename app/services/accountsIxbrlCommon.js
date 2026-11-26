@@ -832,7 +832,7 @@ export function buildDimensionedContext({ additionalContexts, entityIdentifierXm
 export function pageHeading({ companyName, companyNumber, title, subtitleHtml }) {
   return recordHeading({
     nameHtml: escapeXmlText(companyName),
-    referenceHtml: [escapeXmlText(accountsText("Registered number: {number}", { number: companyNumber }))],
+    referenceHtml: [escapeXmlText(accountsText("Company registration number: {number}", { number: companyNumber }))],
     title,
     subtitleHtml,
   });
@@ -847,7 +847,7 @@ export function pageHeading({ companyName, companyNumber, title, subtitleHtml })
 export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd, dateOfIncorporation }) {
   return `<div class="page cover">
 <p class="cover-name">${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)}</p>
-<p class="cover-line">${accountsText("Registered number: {number}", { number: renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber) })}</p>
+<p class="cover-line">${accountsText("Company registration number: {number}", { number: renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber) })}</p>
 <p class="cover-title">${renderTextFact("reportTitle", refs.current, title)}</p>
 <p class="cover-line">${escapeXmlText(accountsText("for the {period}", { period: periodEndedPhrase(periodStart, periodEnd) }))}</p>
 <p class="cover-line">${accountsText("Period from {start} to {end}", {
