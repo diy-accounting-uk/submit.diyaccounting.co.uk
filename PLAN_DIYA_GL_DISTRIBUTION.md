@@ -15,7 +15,7 @@
 
 - One engine. Every channel ships the npm tarball that `publish-diya-gl.yml` packs and publishes. A channel that wraps it proves that its copy has the same `dist.integrity` as `npm view @diy-accounting-uk/diya-gl@<version> dist.integrity`.
 - The tasks stay in this plan. This plan adds no row to `NEXT.md`.
-- Paths without a repository prefix are in `../spreadsheets.diyaccounting.co.uk/`. Read `.claude/skills/orient-spreadsheets/SKILL.md` before any spreadsheets task.
+- Paths without a repository prefix are in `../spreadsheets.diyaccounting.co.uk/`. Read Submit's `.claude/skills/orient-spreadsheets/SKILL.md` before any spreadsheets task.
 - The spreadsheets gate is `npm test` (the router `scripts/test-scope.mjs`). Name nothing narrower.
 
 ## 1. Current state
@@ -35,7 +35,7 @@ Checked on 2026-11-22 at spreadsheets `a02d3449a` and with the published `@diy-a
 | `diya-gl new-book` | An empty book for a new business | `new-book.js` |
 | `diya-gl roll-forward` | Next year's book; exits 1 when an opening figure disagrees | `roll-forward.js` |
 | `diya-gl view` | Serves the pages on 127.0.0.1 and opens the book | `view.js` |
-| `diya-gl mcp` | The stdio MCP server, ten tools | `diya-gl-mcp.js` |
+| `diya-gl mcp` | The stdio MCP server, twelve tools (`TOOLS` in `app/lib/mcp/diya-gl-tools.js`) | `diya-gl-mcp.js` |
 
 Each command is also its own bin (`diya-gl-recalc`, ..., `diya-gl-mcp`). `diya-gl/bin/diya-gl.js` dispatches the subcommands. `diya-gl/bin/run-dist-bin.js` starts each entry as a child process of `process.execPath`.
 
@@ -73,7 +73,7 @@ It makes no GitHub Release, so there is no place for binary assets.
 - `extract_book` reads any file that `readBookSource` reads (workbook, package zip, diya-gl zip, JSON). Its description names only the workbook and the package zip. It refuses a book directory.
 - `save_workbook` returns the file as base64. A local client cannot ask it to write the file to disk.
 - The server starts with no book. A user cannot start it on one book.
-- Submit's `web/public/mcp.html` says the diya-gl server has "Four tools". It has ten. Capability SS-06 also says four.
+- Submit's `web/public/mcp.html` says the diya-gl server has "Four tools" (line 195). It has twelve. Capability SS-06 also says four.
 
 **CI.**
 
@@ -255,7 +255,7 @@ The port in the second line is an example. DIST1 sets the constant.
 | DIST1, DIST4, DIST6 | Nothing |
 | DIST2 | Nothing |
 | DIST3 | DIST1, DIST4 (both edit `diya-gl/bin/diya-gl.js` and `diya-gl/package.json`) |
-| DIST5 | DIST1 |
+| DIST5 | DIST1, DIST2 (the snapshot the image bundles) |
 | DIST7 | DIST5, then one npm release that carries `mcpName` |
 | DIST8 | DIST2, DIST6, DIST7 |
 | DIST9 | DIST1, DIST2 |
@@ -299,7 +299,7 @@ Every task edits a section of `diya-gl/README.md`. Merge the tasks in order on o
 #### DIST5. Multi-arch, non-root, attested image
 
 - **Files**: `diya-gl/Dockerfile`, `diya-gl/image-smoke.sh`, `.github/workflows/publish-diya-gl.yml`, `.github/workflows/test.yml` (its image build near line 687), `diya-gl/README.md`.
-- **Do**: section 2.6. Use `docker/setup-qemu-action`, `docker/setup-buildx-action` and `docker/build-push-action` pinned by commit, as the repository pins its other actions. Push one index for `linux/amd64,linux/arm64` with `provenance: mode=max` and `sbom: true`. Add `USER node`, `WORKDIR /data`, and the `io.modelcontextprotocol.server.name` label `io.github.diy-accounting-uk/diya-gl`. `image-smoke.sh` runs once per architecture (`--platform`) and also runs `view --host 0.0.0.0 --no-open` and fetches `/_local/ping` through a published port. Copy the pages snapshot to `/opt/diya-gl-web` only when Q3 says bundle.
+- **Do**: section 2.6. Use `docker/setup-qemu-action`, `docker/setup-buildx-action` and `docker/build-push-action` pinned by commit, as the repository pins its other actions. Push one index for `linux/amd64,linux/arm64` with `provenance: mode=max` and `sbom: true`. Add `USER node`, `WORKDIR /data`, and the `io.modelcontextprotocol.server.name` label `io.github.diy-accounting-uk/diya-gl`. `image-smoke.sh` runs once per architecture (`--platform`) and also runs `view --host 0.0.0.0 --no-open` and fetches `/_local/ping` through a published port. Copy DIST2's pages snapshot to `/opt/diya-gl-web` (Q3: bundle). The image build in `.github/workflows/test.yml` is the `docker build` step at line 687, with `image-smoke.sh` after it.
 - **Tests**: `image-smoke.sh` for both architectures; a file the image writes into a mounted directory belongs to the `--user` given.
 - **Gates**: `npm test`; local `docker buildx build --platform linux/amd64,linux/arm64` with `--load` per platform and `image-smoke.sh` on each. No push.
 
@@ -321,7 +321,7 @@ Every task edits a section of `diya-gl/README.md`. Merge the tasks in order on o
 
 - **Files**: `diya-gl/mcpb/manifest.json`, `scripts/build-mcpb.mjs`, `.github/workflows/publish-diya-gl.yml`, `diya-gl/server.json`, `app/test/diya-gl-mcpb.test.js`.
 - **Do**: section 2.4, the One-click bullet. Read the current manifest specification at https://github.com/modelcontextprotocol/mcpb before you write the manifest, and use its current `manifest_version`. Install the packed tarball into `server/` with `npm install --omit=dev`. The entry point is that install's `bin/diya-gl-mcp.js`, with `--write-dir ${user_config.books_folder}`. Validate and pack with the `@anthropic-ai/mcpb` CLI pinned by version. Attach `diya-gl-mcp-<version>.mcpb` to the release, and add the `mcpb` package entry with its `fileSha256` to `server.json`.
-- **Tests**: the built bundle unzips to a tree whose `server/node_modules/@diy-accounting-uk/diya-gl/package.json` version equals the release; the server inside it answers `tools/list` with ten tools (more once GLS4 lands) over stdio.
+- **Tests**: the built bundle unzips to a tree whose `server/node_modules/@diy-accounting-uk/diya-gl/package.json` version equals the release; the server inside it answers `tools/list` with the tools `TOOLS` lists (twelve today) over stdio.
 - **Gates**: `npm test`; one local install into Claude Desktop on this Mac, with the result recorded in the PR body.
 
 #### DIST9. SEA desktop apps and CLI binaries, unsigned

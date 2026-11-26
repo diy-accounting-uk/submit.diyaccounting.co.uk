@@ -31,7 +31,7 @@ Each AWS read that a session needs and that step 1 cannot answer becomes a board
 | Cloud worker credentials | `.github/workflows/cloud-credentials.yml`; `createCloudWorkerRole` in `infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java` (line 643) | OIDC on `main` assumes `submit-ci-cloud-worker-role` for one hour (ci only: `polly:SynthesizeSpeech` and `GetSecretValue` on the proxy secrets); the credentials go back as an age file encrypted to the worker's SSH key |
 | SSH signature check | `app/lib/sshSignature.js` (`verifySshSignature`), used by the collab relay (`app/functions/collab/collabRelay.js`) | verifies an `ssh-keygen -Y sign` signature in a Lambda |
 | Operator gate | `app/lib/operators.js` (the operator email list in Secrets Manager); the operator bundle entitlement in `app/functions/analytics/operatorSnapshotGet.js` | a signed-in Cognito user on the list reads `/api/v1/operator/snapshot` |
-| API auth | `app/functions/auth/customAuthorizer.js` (line 183: `X-Authorization: Bearer <token>`) | Cognito tokens only |
+| API auth | `app/functions/auth/customAuthorizer.js` (line 181: `X-Authorization: Bearer <token>`) | Cognito tokens only |
 | AWS-first guidance | `CLAUDE.md` (7 lines of `aws` commands), 13 skills with `aws --profile`, `scripts/sso-check.sh` in every skill's opening | tells a session to read AWS first |
 
 ## 3. Tasks
@@ -43,7 +43,7 @@ Each AWS read that a session needs and that step 1 cannot answer becomes a board
 | AC3 | `coordinator-credentials.yml` and the ci coordinator role in `IdentityStack.java` | AC2 approved | machine-only | Sonnet | ~6 files |
 | AC4 | `prod-proof.yml`: the Cognito toggle, a named `-prod` suite and the toggle back, under its own OIDC role (D2) | AC2 approved | machine-only | Sonnet | ~5 files |
 | AC5 | `scripts/aws-session.sh`: dispatch, decrypt, write a named profile that expires with the session | AC3 | machine-only | Sonnet | ~3 files |
-| AC6 | Operator public keys: the directory, its deploy, and the token route | D3, D4 | machine-only | Opus then Sonnet | ~10 files |
+| AC6 | Operator public keys: the directory, its deploy, and the token route | nothing | machine-only | Opus then Sonnet | ~10 files |
 | AC7 | The operator routes accept the operator token for reads; `scripts/operator-api.mjs` signs and calls them | AC6 | machine-only | Sonnet | ~6 files |
 | AC8 | Guidance: `CLAUDE.md`, the skills and memory read in section 1's order; the SSO token asks first | AC5, AC7 | machine-only | Sonnet | ~20 files |
 | AC9 | The ask rule for the SSO profiles in `.claude/settings.json` | AC8 | human-driven | operator | 1 file |
@@ -76,10 +76,20 @@ The proposal is a section of this plan; the operator approves it before AC3.
 - `operator-keys/` (D4), one `<handle>.pub` per key holder, read by the deploy into the stack (an SSM parameter or the Lambda's bundle).
 - `POST /api/v1/operator/token`: the client sends its handle, a timestamp and an `ssh-keygen -Y sign -n submit-operator` signature of `token|<handle>|<ts>`; the Lambda checks the key is listed, the timestamp is within 5 minutes and the signature verifies (`verifySshSignature`); it answers a JWT signed by a key in Secrets Manager (D3) that expires in one hour and carries the scope `operator:read`.
 - A key holder can use the token only for reads of operator data that the dashboard shows. It never returns a customer identifier; the snapshot already holds none.
+- **Where it lands.** The Lambda `app/functions/auth/operatorTokenPost.js` goes in `infra/main/java/co/uk/diyaccounting/submit/stacks/AuthStack.java`, beside `customAuthorizer`, with its names in `AuthNames.java`. Copy the `cognitoTokenPost` block (`AuthStack.java` lines 145 to 171): the route has no JWT and no custom authorizer, and it joins `AuthStack`'s `lambdaFunctionProps`, from which `ApiStack` makes the route; `ApiRoutes.java` is not edited. The path matches the `operator-dashboard` activity's `^/api/v1/operator/.*` (`web/public/submit.catalogue.toml` line 938); the token Lambda does not call `enforceBundles`, because the caller has no Cognito sub.
+- **The signing secret.** A `Secret` with a generated value in `AuthStack`, read by the token Lambda and, in AC7, by the authorizer in the same stack. `AuthStack` is an application stack, so each deployment has its own key and a token ends with its deployment.
+- **How the keys reach the Lambda.** The design picks one: CDK reads `operator-keys/*.pub` at synth into an environment variable of the token Lambda (no image change), or the Docker image copies the folder (then `Dockerfile` and `.dockerignore` must include `operator-keys/`).
+- **Counts, from -> to.** `authStackTemplate.resourceCountIs("AWS::Lambda::Function", 2)` -> 3 (`infra/test/java/co/uk/diyaccounting/submit/SubmitApplicationCdkResourceTest.java` line 85); the `assertGroupedStackHealthAlarm(authStackTemplate, List.of("cognito-token-post", "custom-authorizer"), ...)` list gains the token Lambda; an `assertApiRoute` for `POST /api/v1/operator/token`.
+- **Gates.** `npm run bundle` first in a worktree; unit tests of the token Lambda (a listed key, an unlisted key, a timestamp outside 5 minutes, a bad signature) with keys from `app/test-helpers/sshSignatureTestKeys.js`; `npx eslint` and `npx prettier --check` on each changed file; `./mvnw clean verify`; the `auth` simulator suite.
+- **Prod.** The route exists on prod after the deploy and answers only to a key in `operator-keys/`; AC7's prod proof uses it.
 
 ### AC7. The operator routes take the token
 
 `customAuthorizer.js` accepts the operator token for `GET /api/v1/operator/*` only, beside the Cognito token. `scripts/operator-api.mjs <path>` signs with the operator's key (the SSH agent, or a key file the operator names), gets a token, calls the route and prints JSON. Unit tests for the signature, the expiry, a key not listed, a write route refused.
+
+- **The authorizer.** It reads `X-Authorization: Bearer <token>` (`app/functions/auth/customAuthorizer.js` line 181) and answers with `generateAllowPolicy` (line 242). API Gateway caches its answer for 5 minutes, keyed by `X-Authorization` (`resultsCacheTtl`, `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiRoutes.java` line 114). So the allow policy for an operator token names only the `GET /api/v1/operator/*` route ARNs, never the route ARN of the first call alone or a wildcard, and an expired token can pass for up to 5 minutes after its expiry. Grant the authorizer read of AC6's secret in `AuthStack.java`.
+- **The routes.** Two `GET` operator routes exist: `operatorSnapshotGet.js` (`/api/v1/operator/snapshot`) and `operatorConsoleImageGet.js` (`/api/v1/operator/console-image`), both in `app/functions/analytics/`. Each gates with `enforceBundles(event)` (snapshot line 113, console image line 47), which reads the caller's bundles by the Cognito sub; a token has no sub. Each accepts the authorizer context's `scope: operator:read` in place of the bundle check, and keeps the bundle check for a Cognito caller.
+- **Gates.** `npm run bundle` first in a worktree; the authorizer and route unit tests; `npx eslint` and `npx prettier --check` on each changed file; `./mvnw clean verify`; the `auth` simulator suite.
 
 ### AC8. Guidance
 

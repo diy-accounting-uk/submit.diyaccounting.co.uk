@@ -48,7 +48,7 @@ A signed-in reader opens a company on the lookup and reads six plain reports bui
 | A public lookup with a CloudFront cache of 600 seconds and a WAF rule of 60 requests a five-minute window for each address | `FOUND_CACHE_SECONDS`, `PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS`, `PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES` | `app/functions/companies-house/companiesHousePublicDeadlinesGet.js:41`; `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java:134`, `:144`, `:755-767`, `:1673-1690` |
 | The lookup page shows the profile only and a rate-limit message on a 429 | `renderCompanyProfile`, `showSearchError` | `web/public/companies-house/companySearch.page.js:90-101`, `:103-135` |
 | The lookup activity, `default` bundle, every environment | `company-lookup` | `web/public/submit.catalogue.toml:521-528` |
-| The iXBRL reader and the accounts mapping | `readIxbrl`, `mapIxbrlAccounts` from `@diy-accounting-uk/diya-gl` 1.2.94 | `app/unit-tests/services/ixbrlRoundTrip.test.js:9-10`, `:49`, `:108` |
+| The iXBRL reader and the accounts mapping | `readIxbrl`, `mapIxbrlAccounts` from `@diy-accounting-uk/diya-gl` 1.2.99 | `app/unit-tests/services/ixbrlRoundTrip.test.js:9-10`, `:53`, `:103`; `app/services/companiesHouseLastAccounts.js:42` |
 | The Accounts Data Product zip, read by the review script | `--adp-zip` | `scripts/companies-house-review.mjs:24`, `:688-690` |
 
 - Submit has no server cache of Companies House answers today. The only cache is CloudFront's, on the public deadlines route.
@@ -235,8 +235,6 @@ Every report page ends with one line, keyed `ch.reports.source`: "Source: the Co
 
 | Label | Task | Waits on | Class | Model | Size |
 | --- | --- | --- | --- | --- | --- |
-| CR2 | The fetch and cache layer, the cache table and the report route | CL1 (routes agent), WL1 | machine-only | Sonnet | ~16 files |
-| CR3 | The reports views on the drill-down page | CR2, CL1 (page agent) | machine-only | Sonnet | ~8 files |
 | CR4 | Filing record and timeliness | nothing | machine-only | Sonnet | ~6 files |
 | CR5 | People over time | nothing | machine-only | Sonnet | ~6 files |
 | CR6 | Share capital | CR4, CR5, CR9 | machine-only | Sonnet | ~5 files |
@@ -246,9 +244,18 @@ Every report page ends with one line, keyed `ch.reports.source`: "Source: the Co
 | OCR1 | Ask Companies House the licence question | nothing | human-driven | operator | 0 files |
 | CR14 | Copy, privacy line, guide and launch on prod | CR4 to CR9 | machine-only | Sonnet | ~8 files |
 
-CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` and the page script, so they land one after the other and the later one rebuilds the Welsh text. CR10 to CR12 (the Accounts Data Product, the streaming key and the stream that clears the cache) are briefed below and are not tasks until a report needs them (D3, D4). CR2 adds an activity, so it lands after AA3, CL1, WL1 and CP1 in the catalogue order of `NEXT.md`.
+CR4, CR5, CR7 and CR9 run in parallel (wave set bramble, wave 1); CR6 and CR8 follow in wave 2. They share `i18n/cy.toml`, the page script, `REPORT_MODULES`, `wording.js` and the simulator files as append-only registries, and the later one rebuilds the Welsh text. CR10 to CR12 (the Accounts Data Product, the streaming key and the stream that clears the cache) are briefed below and are not tasks until a report needs them (D3, D4).
 
 ### 6.2 Briefs
+
+**What every report task builds on** (CR2 and CR3 are on `main`):
+
+- **The module.** Each report is `app/lib/companyReports/<name>.js`, a function `(companyNumber) => Promise<object>` added to `REPORT_MODULES` in `app/functions/companies-house/companiesHouseCompanyReportGet.js` (line 34; the names are `REPORT_NAMES`, line 29). The route runs it under `withCompaniesHouseCallLimit(LOOKUP_CALLS.report)`, 20 calls (`app/services/companiesHouseLookupLimit.js` line 55), so a module past 20 calls gets a partial answer.
+- **The reads.** `cachedCompaniesHouseGet` (line 278) and `cachedCompaniesHouseGetAllPages` (line 329) in `app/services/companiesHouseCache.js`, with a kind from `KINDS` (line 58): `profile`, `filingHistory`, `officers`, `psc`, `pscStatements`, `charges`, `insolvency`, `figures`. Each kind's trim decides which fields the cache keeps; a field a report needs and the trim drops is added to that trim in the same task.
+- **The view.** `web/public/companies-house/companyReports.page.js` keeps `REPORTS()` (line 17) and the `REPORT_VIEWS` registry (line 170); each task adds its renderer to `REPORT_VIEWS[name]`. Browser test: `web/browser-tests/companyReports.browser.test.js`.
+- **The wording.** `app/lib/companyReports/wording.js` has `BANNED_WORDS`, `REPORT_BANNED_WORDS` (filings, people, capital and charges exist; CR8 adds `history`, CR9 `accounts`) and the Welsh lists.
+- **The simulator.** Routes in `app/http-simulator/routes/companies-house.js`; scenarios in `app/http-simulator/scenarios/companies.js` and `filing-history.js` (`getFilingHistory`, line 238). No charges, insolvency or PSC statements route exists yet.
+- **The journey.** `npm run test:companiesHouseBehaviour-simulator`, one suite at a time under `lockf -k /tmp/submit-simulator.lock`.
 
 #### CR2. The fetch and cache layer, the cache table and the report route
 
@@ -270,37 +277,41 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 #### CR4. Filing record and timeliness
 
 - **Goal.** Report 2.1, at `/reports/filings`.
-- **Files.** `app/lib/companyReports/filings.js` (the module and the time-limit rules from section 2.1, with GOV.UK's two URLs in a comment); its unit tests (first accounts, later accounts, a confirmation statement, an `AA01` in the history, a public company shows days only, a company with no filings); simulator data in `app/http-simulator/scenarios/companies.js` and AA23's filing history scenario (a company with one filing past the usual limit); the view in `companyReports.page.js`; Welsh strings; the browser test.
+- **Files.** `app/lib/companyReports/filings.js` (the module and the time-limit rules from section 2.1, with GOV.UK's two URLs in a comment); its unit tests (first accounts, later accounts, a confirmation statement, an `AA01` in the history, a public company shows days only, a company with no filings); simulator data in `app/http-simulator/scenarios/companies.js` and `app/http-simulator/scenarios/filing-history.js` (a company with one filing past the usual limit); `REPORT_BANNED_WORDS.filings` exists; the view in `companyReports.page.js`; Welsh strings; the browser test.
 - **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
 
 #### CR5. People over time
 
 - **Goal.** Report 2.2, at `/reports/people`.
-- **Files.** `app/lib/companyReports/people.js`; unit tests (pages of officers, resigned officers, a PSC ceased, a PSC statement, the dropped fields absent from the cached value); the simulator's officers and PSC answers gain a resigned officer, a second page and a statement (`app/http-simulator/routes/companies-house.js:101`, `:120`, and a new statements route); the view; Welsh strings, with each nature of control in words; the browser test.
+- **Files.** `app/lib/companyReports/people.js`; unit tests (pages of officers, resigned officers, a PSC ceased, a PSC statement, the dropped fields absent from the cached value); the simulator's officers and PSC answers gain a resigned officer, a second page and a statement (`app/http-simulator/routes/companies-house.js:104`, `:123`, `getOfficers` in `scenarios/companies.js` line 188, and a new `persons-with-significant-control-statements` route); the `officers`, `psc` and `pscStatements` trims already keep what the report shows; the view; Welsh strings, with each nature of control in words; the browser test.
 - **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
 
 #### CR6. Share capital
 
 - **Goal.** Report 2.3, at `/reports/capital`, using what CR2's first step recorded for N4.
-- **Files.** `app/lib/companyReports/capital.js`, which calls the layer for the filing history and the PSC (the entries CR4 and CR5 also read) and calls `cachedAccountsFigures` for the last accounts filing, with `firstAccounts` set by the rule in section 4; unit tests (an allotment with a capital figure, one without, a sole 75%-or-more PSC, no capital filings); simulator capital filings; the view, with the horizon sentence and the confirmation statement links; Welsh strings; the browser test.
+- **Files.** `app/lib/companyReports/capital.js`, which calls the layer for the filing history and the PSC (the entries CR4 and CR5 also read) and calls `cachedAccountsFigures` (written by CR9, with `shareNote` in the `figures` trim) for the last accounts filing, with `firstAccounts` set by the rule in section 4; unit tests (an allotment with a capital figure, one without, a sole 75%-or-more PSC, no capital filings); simulator capital filings; the view, with the horizon sentence and the confirmation statement links; Welsh strings; the browser test.
 - **Waits on**: CR4, CR5, CR9. **Class**: machine-only. **Model**: Sonnet. **Size**: ~5 files.
 
 #### CR7. Charges and insolvency
 
 - **Goal.** Report 2.4, at `/reports/charges`.
-- **Files.** `app/lib/companyReports/charges.js`; unit tests (no `links.charges`, outstanding and satisfied charges, an insolvency case, the practitioner's address dropped); simulator routes for `/company/{n}/charges` and `/company/{n}/insolvency` with one company that has both; the view; Welsh strings for each status and case type; the browser test.
+- **The profile's links.** The `profile` trim drops `links` and keeps `has_charges` and `has_insolvency_history`; read the charges only when `has_charges` is true and the insolvency only when `has_insolvency_history` is true. The `charges` and `insolvency` trims already drop the particulars' free text and the practitioners' addresses.
+- **Files.** `app/lib/companyReports/charges.js`; unit tests (no charges, outstanding and satisfied charges, an insolvency case, the practitioner's address dropped); simulator routes for `/company/{n}/charges` and `/company/{n}/insolvency` with one company that has both; the view; Welsh strings for each status and case type; the browser test.
 - **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~6 files.
 
 #### CR8. Registered office and name history
 
 - **Goal.** Report 2.5, at `/reports/history`.
-- **Files.** `app/lib/companyReports/history.js`; unit tests (previous names, an address change with and without the old address, the dispute and undeliverable flags); simulator data; the view; Welsh strings; the browser test.
+- **The profile trim.** It keeps `previous_company_names` and drops `registered_office_is_in_dispute` and `undeliverable_registered_office_address`; add both to `KINDS.profile` in `app/services/companiesHouseCache.js` (CR9 edits the same file in wave 1, so CR8 starts from its version).
+- **Files.** `app/lib/companyReports/history.js`; the two fields in the `profile` trim; unit tests (previous names, an address change with and without the old address, the dispute and undeliverable flags); simulator data; the view; Welsh strings; the browser test.
 - **Waits on**: CR4. **Class**: machine-only. **Model**: Sonnet. **Size**: ~5 files.
 
 #### CR9. Accounts figures year on year
 
 - **Goal.** Report 2.6, at `/reports/accounts`, and the figure cache fill.
-- **Files.** `app/lib/companyReports/accounts.js` and the fill of `cachedAccountsFigures` through AA23's Document API client functions (metadata, then content as `application/xhtml+xml`); unit tests on Submit's own fixtures (`app/test-helpers/accountsDocumentCases.js`) and on the three real micro-entity and small company documents that CL2 adds (if CL2 has not added them, fetch three and save them as fixtures); cases: a paper filing, a micro-entity with no profit and loss, a filleted small company, a dormant company, an `IxbrlError`, first accounts, a zero earlier figure (no percentage), the figure cache holds no `directors` or `signer`, a 429 from the Document API writes the stop; the simulator serves two iXBRL filings and one PDF-only filing (AA23's scenarios); the view; Welsh strings; the browser test.
+- **`cachedAccountsFigures` does not exist yet.** CR9 writes it in `app/services/companiesHouseCache.js` with `figuresSk` (line 178) and `KINDS.figures`. That trim keeps `transactionId`, `period`, `type`, `regime`, `balanceSheet`, `profitAndLoss`, `filleted` and `dormant`; add `averageEmployees` (this report) and `shareNote` (CR6), and never `directors` or `signer`.
+- **The document.** Reuse `documentOfItem` (`app/services/companiesHouseFiledAccounts.js` line 132), `IXBRL_CONTENT_TYPE` and `MAX_DOCUMENT_RESPONSE_BYTES`, and `companiesHouseDocumentMetadata` and `companiesHouseDocumentContent` (`app/services/companiesHouseDocumentApi.js` lines 49 and 91). `readLastAccounts` (`app/services/companiesHouseLastAccounts.js` line 75) classes a set as mapped, paper, no-ixbrl, too-large or unreadable; follow those outcomes for each column. Submit's diya-gl is 1.2.99 (`package.json` line 412).
+- **Files.** `app/lib/companyReports/accounts.js` and `cachedAccountsFigures`; unit tests on Submit's own fixtures (`app/test-helpers/accountsDocumentCases.js`) and on the real register documents in `app/unit-tests/fixtures/filed-accounts/` (`register-micro-entity-*.xhtml`, `register-small-company-filleted-*.xhtml`, with `expected.json`); cases: a paper filing, a micro-entity with no profit and loss, a filleted small company, a dormant company, an `IxbrlError`, first accounts, a zero earlier figure (no percentage), the figure cache holds no `directors` or `signer`, a 429 from the Document API writes the stop; the simulator serves two iXBRL filings and one PDF-only filing (`getDocumentMetadata` and `getDocumentContent` in `app/http-simulator/scenarios/filing-history.js`, lines 407 and 428); the view; Welsh strings; the browser test.
 - **Waits on**: nothing. **Class**: machine-only. **Model**: Sonnet. **Size**: ~9 files.
 
 #### CR10. Figures from the Accounts Data Product
