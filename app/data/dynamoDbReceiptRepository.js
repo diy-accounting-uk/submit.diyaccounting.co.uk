@@ -11,6 +11,21 @@ import { receiptRetention } from "../lib/recordRetention.js";
 const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" });
 
 /**
+ * The hashed sub a log line names the account by; null when the sub cannot be hashed, so a log line
+ * on a failure path never throws.
+ *
+ * @param {string} userSub - The user's subject identifier
+ * @returns {string|null}
+ */
+function hashedSubForLog(userSub) {
+  try {
+    return hashSub(userSub);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Store a receipt in DynamoDB with 7-year retention (2555 days); a test or synthetic actor's receipt lives 2 days
  * @param {string} userSub - The user's subject identifier
  * @param {string} receiptId - Unique receipt identifier (timestamp-formBundleNumber)
@@ -93,7 +108,7 @@ async function storeReceipt(userSub, receiptId, receipt, actor, clientId, { only
     logger.error({
       message: "Error storing receipt in DynamoDB",
       error: error.message,
-      userSub,
+      hashedSub: hashedSubForLog(userSub),
       receiptId,
     });
     throw error;
@@ -241,13 +256,13 @@ export async function clearReceiptStep(hashedSub, receiptId, step, recordedAt) {
 export async function getReceipt(userSub, receiptId) {
   logger.info({
     message: `DynamoDB enabled, proceeding with getReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
-    userSub,
+    hashedSub: hashedSubForLog(userSub),
     receiptId,
   });
 
   try {
     const hashedSub = hashSub(userSub);
-    logger.info({ message: "Retrieving receipt from DynamoDB", userSub, hashedSub, receiptId });
+    logger.info({ message: "Retrieving receipt from DynamoDB", hashedSub, receiptId });
     const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
 
     const response = await executeDynamoDbCommand(
@@ -291,7 +306,7 @@ export async function getReceipt(userSub, receiptId) {
     logger.error({
       message: "Error retrieving receipt from DynamoDB",
       error: error.message,
-      userSub,
+      hashedSub: hashedSubForLog(userSub),
       receiptId,
     });
     throw error;
@@ -308,7 +323,7 @@ export async function getReceipt(userSub, receiptId) {
 export async function listUserReceipts(userSub, clientId) {
   logger.info({
     message: `DynamoDB enabled, proceeding with listUserReceipts [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
-    userSub,
+    hashedSub: hashedSubForLog(userSub),
   });
 
   try {
@@ -396,7 +411,7 @@ export async function listUserReceipts(userSub, clientId) {
     logger.error({
       message: "Error retrieving receipts from DynamoDB",
       error: error.message,
-      userSub,
+      hashedSub: hashedSubForLog(userSub),
     });
     throw error;
   }

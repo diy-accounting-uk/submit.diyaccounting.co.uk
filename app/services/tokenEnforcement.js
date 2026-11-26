@@ -133,7 +133,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
   const result = await consumeToken(userId, qualifyingBundle.bundleId, tokenCost);
   logger.info({
     message: "Token consumption result",
-    userId,
+    hashedSub: hashedSubForLog(userId),
     activityId,
     bundleId: qualifyingBundle.bundleId,
     consumed: result.consumed,
@@ -149,7 +149,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
         if (recorded?.reason === BUNDLE_MISSING) {
           logger.warn({
             message: "Token event not recorded: bundle item missing",
-            userId,
+            hashedSub: hashedSubForLog(userId),
             activityId,
             bundleId: qualifyingBundle.bundleId,
           });

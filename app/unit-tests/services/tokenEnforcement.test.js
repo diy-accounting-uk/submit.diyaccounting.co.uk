@@ -16,13 +16,14 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
   consumeToken: vi.fn().mockResolvedValue({ consumed: true, tokensRemaining: 2 }),
   recordTokenEvent: vi.fn().mockResolvedValue(),
+  BUNDLE_MISSING: "bundle-missing",
   putBundle: vi.fn(),
   deleteBundle: vi.fn(),
   deleteAllBundles: vi.fn(),
   resetTokens: vi.fn(),
 }));
 
-const { getUserBundles, consumeToken } = await import("@app/data/dynamoDbBundleRepository.js");
+const { getUserBundles, consumeToken, recordTokenEvent } = await import("@app/data/dynamoDbBundleRepository.js");
 const { consumeTokenForActivity, hasTokensForActivity, chargeTokenOnSuccess } = await import("../../services/tokenEnforcement.js");
 
 const baseCatalog = {
@@ -281,6 +282,33 @@ describe("tokenEnforcement", () => {
         const line = loggedLine("warn", "Token charge skipped after HMRC success - no qualifying bundle at charge time");
         expect(line).toMatchObject({ hashedSub: hashSub(SUB) });
         expect(JSON.stringify(mockLogger.info.mock.calls.concat(mockLogger.warn.mock.calls))).not.toContain(SUB);
+      });
+
+      it("when a token is consumed", async () => {
+        getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 }]);
+        consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 2 });
+        recordTokenEvent.mockResolvedValueOnce({ updated: true });
+
+        const result = await consumeTokenForActivity(SUB, "submit-vat", baseCatalog);
+
+        expect(result.consumed).toBe(true);
+        expect(loggedLine("info", "Token consumption result")).toMatchObject({ hashedSub: hashSub(SUB), activityId: "submit-vat" });
+        await vi.waitFor(() => expect(recordTokenEvent).toHaveBeenCalled());
+        const everyLine = [mockLogger.info, mockLogger.warn, mockLogger.error, mockLogger.debug].flatMap((level) => level.mock.calls);
+        expect(JSON.stringify(everyLine)).not.toContain(SUB);
+      });
+
+      it("when the consumed token's event finds no bundle item", async () => {
+        getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 }]);
+        consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 2 });
+        recordTokenEvent.mockResolvedValueOnce({ updated: false, reason: "bundle-missing" });
+
+        await consumeTokenForActivity(SUB, "submit-vat", baseCatalog);
+
+        await vi.waitFor(() => expect(loggedLine("warn", "Token event not recorded: bundle item missing")).toBeDefined());
+        const line = loggedLine("warn", "Token event not recorded: bundle item missing");
+        expect(line).toMatchObject({ hashedSub: hashSub(SUB), activityId: "submit-vat" });
+        expect(JSON.stringify(line)).not.toContain(SUB);
       });
     });
   });

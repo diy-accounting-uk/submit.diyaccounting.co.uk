@@ -183,6 +183,21 @@ export function prepareRedirect() {
 }
 
 /**
+ * Whether a fetch URL resolves to this page's origin. A protocol-relative URL ("//host/path") and a
+ * host that only begins with this origin ("https://submit.example.other") are other origins.
+ * @param {string} url - The URL a fetch was given
+ * @returns {boolean}
+ */
+function isSameOriginUrl(url) {
+  if (typeof url !== "string" || url === "") return false;
+  try {
+    return new URL(url, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Install the correlation fetch interceptor
  * Adds traceparent and x-request-id headers to all backend requests
  */
@@ -198,9 +213,7 @@ export function installCorrelationInterceptor() {
     window.fetch = async function (input, init) {
       const req = init || {};
       const url = typeof input === "string" ? input : input?.url || "";
-      const isRelative = typeof url === "string" && (url.startsWith("/") || url.startsWith("./") || url.startsWith("../"));
-      const isSameOrigin = typeof url === "string" && url.startsWith(window.location.origin);
-      const isBackendCall = isRelative || isSameOrigin;
+      const isBackendCall = isSameOriginUrl(url);
 
       // Normalize headers
       const existingHeaders = req.headers || (typeof input !== "string" ? input?.headers : undefined) || {};

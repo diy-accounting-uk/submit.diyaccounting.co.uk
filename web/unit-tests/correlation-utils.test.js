@@ -91,4 +91,20 @@ describe("the fetch wrapper's traceparent", () => {
 
     expect(sentTraceparent(0)).toBeUndefined();
   });
+
+  it("sends no traceparent to a protocol-relative URL or to a host that only begins with this origin", async () => {
+    await window.fetch("//elsewhere.example/thing");
+    await window.fetch("https://submit.example.elsewhere.example/thing");
+
+    expect(sentTraceparent(0)).toBeUndefined();
+    expect(sentTraceparent(1)).toBeUndefined();
+  });
+
+  it("sends a traceparent to a relative path and to this origin's absolute URL", async () => {
+    await window.fetch("./api/v1/bundle");
+    await window.fetch("https://submit.example/api/v1/bundle");
+
+    expect(sentTraceparent(0)).toMatch(TRACEPARENT);
+    expect(sentTraceparent(1)).toMatch(TRACEPARENT);
+  });
 });
