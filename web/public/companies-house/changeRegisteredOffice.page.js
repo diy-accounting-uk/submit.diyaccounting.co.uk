@@ -197,8 +197,9 @@ function transactionDecided(transaction) {
 }
 
 // Reads the closed transaction back and shows its outcome. Start a new filing waits until Companies
-// House has decided the change or the read failed; a change still with Companies House, or a failed
-// read, gets Check again. A rejected access token goes to the caller, which authorises again.
+// House has decided the change, so a second change cannot start while the first may still be with
+// Companies House; a change still with Companies House, or a failed read, gets Check again. A
+// rejected access token goes to the caller, which authorises again.
 async function showTransactionOutcome() {
   const container = document.getElementById("filingResult");
   const checkAgain = document.getElementById("checkAgainBtn");
@@ -222,7 +223,6 @@ async function showTransactionOutcome() {
       ),
     );
     checkAgain.style.display = "inline-block";
-    startAgainButton.style.display = "inline-block";
     showView("resultView");
     return;
   }

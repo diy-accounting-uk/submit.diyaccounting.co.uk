@@ -370,7 +370,9 @@ test.describe("Change Registered Office Address page", () => {
     await expect(page.locator("#checkAgainBtn")).toBeHidden();
   });
 
-  test("a failed read of the closed transaction shows the change as sent, with Check again and Start a new filing", async ({ page }) => {
+  test("a failed read of the closed transaction shows the change as sent, with Check again and not Start a new filing", async ({
+    page,
+  }) => {
     setupPage(page);
     await setupRoutes(page);
     await answerTransactionReads(page, ["throw"]);
@@ -388,7 +390,7 @@ test.describe("Change Registered Office Address page", () => {
       { timeout: 15000 },
     );
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
-    await expect(page.locator("#startAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
     expect(await page.evaluate(() => window.__statusMessages)).toEqual([]);
   });
 });

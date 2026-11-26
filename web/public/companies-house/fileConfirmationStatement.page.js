@@ -1131,9 +1131,21 @@ function pollUntilSettled(submission, extraHeaders) {
   });
 }
 
+// For a submission whose outcome is not known yet: Check again, or, when the gateway asked for no
+// more polls of it, Start a new filing. Never both, so a second filing cannot start while the first
+// may still be pending.
+function offerNextStep(submission, checkOutcomeAgain) {
+  if (window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+    const checkAgain = document.getElementById("checkAgainBtn");
+    checkAgain.onclick = checkOutcomeAgain;
+    checkAgain.style.display = "inline-block";
+  } else {
+    document.getElementById("startAgainBtn").style.display = "inline-block";
+  }
+}
+
 // Polls for the outcome and shows it with the filing record. Pending after the last poll, the page
-// says so and offers Check again; it offers Start a new filing only once the outcome is known or the
-// status check failed.
+// says so and offers Check again; it offers Start a new filing only once the outcome is known.
 async function checkOutcome(submission, headers, payload) {
   const checkAgain = document.getElementById("checkAgainBtn");
   const startAgainButton = document.getElementById("startAgainBtn");
@@ -1149,17 +1161,13 @@ async function checkOutcome(submission, headers, payload) {
     console.error("Companies House confirmation statement status check failed:", error);
     result.replaceChildren(element("p", {}, window.companiesHouseGatewayPoll.checkFailedNote(submission.submissionNumber, error.message)));
     result.className = "outcome";
-    checkAgain.onclick = () => checkOutcome(submission, headers, payload);
-    checkAgain.style.display = "inline-block";
-    startAgainButton.style.display = "inline-block";
+    offerNextStep(submission, () => checkOutcome(submission, headers, payload));
     return;
   }
   if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
     result.replaceChildren(element("p", {}, window.companiesHouseGatewayPoll.pendingNote(submission)));
     result.className = "outcome";
-    if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
-    checkAgain.onclick = () => checkOutcome(submission, headers, payload);
-    checkAgain.style.display = "inline-block";
+    offerNextStep(submission, () => checkOutcome(submission, headers, payload));
     return;
   }
   const notReceived = window.companiesHouseRejections.notReceivedHeadline(outcome);

@@ -34,7 +34,7 @@ vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
 }));
 
 const { pollPresenterSubmissions } = await import("@app/services/companiesHousePresenterPoll.js");
-const { pollSubmission } = await import("@app/services/companiesHouseSubmissionStatus.js");
+const { pollSubmission, NEVER_RECEIVED_REJECT_CODE } = await import("@app/services/companiesHouseSubmissionStatus.js");
 
 // The live gateway's answer to a poll of a submission it has not yet indexed.
 function gatewayErrorAnswer({ number, text }) {
@@ -66,6 +66,12 @@ function gatewayErrorAnswer({ number, text }) {
 }
 
 const NOT_YET_INDEXED = { number: 8023, text: "EF documents not found" };
+const OTHER_FATAL = { number: 502, text: "Authentication failure" };
+
+// One more GovTalk error, for an answer that carries two.
+function errorElement({ number, text }) {
+  return `<Error><RaisedBy>CompaniesHouse</RaisedBy><Number>${number}</Number><Type>fatal</Type><Text>${text}</Text></Error>`;
+}
 
 const SENT_AT = new Date("2026-11-25T23:26:50Z");
 const MINUTE_MS = 60 * 1000;
@@ -131,6 +137,73 @@ describe("a gateway answer that the submission is not yet indexed", () => {
       expect.objectContaining({ message: "Companies House gateway returned errors while polling", submissionNumber: "000001" }),
     );
     expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+  });
+
+  test("the page poll returns Error 8023 beside another error as an error", async () => {
+    pendingFiling();
+    mockPostToGateway.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: gatewayErrorAnswer(NOT_YET_INDEXED).replace("</GovTalkErrors>", `${errorElement(OTHER_FATAL)}</GovTalkErrors>`),
+      headers: {},
+      duration: 1,
+    });
+
+    const result = await pollSubmission({
+      userSub: "user-1",
+      submissionNumber: "000001",
+      kind: "accounts",
+      now: new Date(SENT_AT.getTime() + 5000),
+    });
+
+    expect(result).toEqual({
+      errors: [expect.objectContaining({ number: 8023 }), expect.objectContaining({ number: 502 })],
+      submissionNumber: "000001",
+    });
+    expect(mockLogger.error).toHaveBeenCalled();
+    expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+  });
+
+  test("the page poll of a request that is not pending returns Error 8023 as an error inside the hour", async () => {
+    mockGetAsyncRequest.mockResolvedValue({
+      status: "failed",
+      createdAt: SENT_AT.toISOString(),
+      data: {
+        kind: "accounts",
+        submissionNumber: "000001",
+        statusCode: "REJECT",
+        rejections: [
+          { rejectCode: NEVER_RECEIVED_REJECT_CODE, description: "Companies House did not receive this filing.", instanceNumber: "1" },
+        ],
+      },
+    });
+    answer(NOT_YET_INDEXED);
+
+    const result = await pollSubmission({
+      userSub: "user-1",
+      submissionNumber: "000001",
+      kind: "accounts",
+      now: new Date(SENT_AT.getTime() + 5000),
+    });
+
+    expect(result).toEqual({ errors: [expect.objectContaining({ number: 8023 })], submissionNumber: "000001" });
+    expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+  });
+
+  test("the presenter poll returns another error beside Error 8023 as errors and acknowledges nothing", async () => {
+    mockPostToGateway.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: gatewayErrorAnswer(NOT_YET_INDEXED).replace("</GovTalkErrors>", `${errorElement(OTHER_FATAL)}</GovTalkErrors>`),
+      headers: {},
+      duration: 1,
+    });
+
+    const result = await pollPresenterSubmissions();
+
+    expect(result).toEqual({ polled: true, acknowledged: false, errors: [expect.objectContaining({ number: 502 })] });
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.objectContaining({ errors: [expect.objectContaining({ number: 502 })] }));
+    expect(mockPostToGateway).toHaveBeenCalledTimes(1);
   });
 
   test("the presenter poll records and acknowledges nothing for Error 8023 and logs no error", async () => {

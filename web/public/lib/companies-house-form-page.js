@@ -82,10 +82,11 @@
     return button;
   }
 
-  // Polls a submission the gateway took and shows its outcome. Start a new filing waits until
-  // Companies House has decided the submission or its status could not be read; a submission still
-  // pending after the polls, or whose status could not be read, gets Check again unless the gateway
-  // asked for no more polls. Resolves with the settled outcome, or null.
+  // Polls a submission the gateway took and shows its outcome. A submission still pending after the
+  // polls, or whose status could not be read, gets Check again; Start a new filing waits until
+  // Companies House has decided it, or the gateway asked for no more polls and Check again is not
+  // offered, so a second filing cannot start while the first may still be pending. Resolves with the
+  // settled outcome, or null.
   async function pollAndShowOutcome({ kind, submission, result, headers, onSettled }) {
     const poll = window.companiesHouseGatewayPoll;
     const startAgainButton = document.getElementById("startAgainBtn");
@@ -103,7 +104,7 @@
         paragraph(poll.checkFailedNote(submission.submissionNumber, errorText(error)), "error-message"),
         ...(poll.mayCheckAgain(submission) ? [checkAgainButton(askAgain)] : []),
       );
-      startAgainButton.style.display = "";
+      if (!poll.mayCheckAgain(submission)) startAgainButton.style.display = "";
       return null;
     }
     if (!poll.isSettled(outcome)) {
@@ -111,6 +112,7 @@
         paragraph(poll.pendingNote(submission)),
         ...(poll.mayCheckAgain(submission) ? [checkAgainButton(askAgain)] : []),
       );
+      if (!poll.mayCheckAgain(submission)) startAgainButton.style.display = "";
       return null;
     }
     const accepted = outcome.statusCode === "ACCEPT";

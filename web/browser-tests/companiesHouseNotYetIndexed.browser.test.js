@@ -6,8 +6,8 @@
 // A status poll of a submission Companies House has not yet indexed answers pending with
 // notYetIndexed. The accounts and confirmation statement pages say so while they keep polling. Every
 // Companies House filing page offers Start a new filing only once Companies House has decided the
-// submission or its status check failed, a failed status check shows the submission as sent, and a
-// submission still pending or unread gets Check again.
+// submission, or when the gateway asked for no more polls; a failed status check shows the submission
+// as sent, and a submission still pending or unread gets Check again.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -140,7 +140,9 @@ test.describe("A submission Companies House has not yet indexed", () => {
     await expect(page.locator("#filingResult")).toContainText("has not finished checking submission 000001");
   });
 
-  test("the small company page shows a submission whose first status check fails as sent, with Check again", async ({ page }) => {
+  test("the small company page shows a submission whose first status check fails as sent, with Check again and not Start a new filing", async ({
+    page,
+  }) => {
     await serveSite(page, { language: "en" });
 
     await fileWithPolls(page, "companies-house/fileSmallCompanyAccounts.html", ["throw", { ...NOT_YET_INDEXED, notYetIndexed: false }]);
@@ -150,6 +152,7 @@ test.describe("A submission Companies House has not yet indexed", () => {
       timeout: 15000,
     });
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
     await expect(page.locator("#statusMessagesContainer")).not.toContainText("Failed to file");
     await expect(page.locator("#resultView")).toBeVisible();
   });
@@ -169,13 +172,14 @@ test.describe("A submission Companies House has not yet indexed", () => {
     await expect(page.locator("#startAgainBtn")).toBeVisible();
   });
 
-  test("the micro-entity page offers Check again after a failed status check", async ({ page }) => {
+  test("the micro-entity page offers Check again after a failed status check and not Start a new filing", async ({ page }) => {
     await serveSite(page, { language: "en" });
 
     await fileWithPolls(page, "companies-house/fileMicroEntityAccounts.html", ["throw"]);
 
     await expect(page.locator("#filingResult")).toContainText("The status check failed", { timeout: 15000 });
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
   });
 
   test("the confirmation statement page says a submission is not indexed and offers no Start a new filing while it is pending", async ({
@@ -204,7 +208,9 @@ test.describe("A submission Companies House has not yet indexed", () => {
     await expect(result).toContainText("has not finished checking submission 000001");
   });
 
-  test("the confirmation statement page shows a submission whose status check fails as sent, with Check again", async ({ page }) => {
+  test("the confirmation statement page shows a submission whose status check fails as sent, with Check again and not Start a new filing", async ({
+    page,
+  }) => {
     await serveSite(page, { language: "en" });
     await page.goto("http://localhost:3000/companies-house/fileConfirmationStatement.html", { waitUntil: "load" });
     await page.waitForFunction(() => typeof window.handleSubmitFiling === "function" || typeof handleSubmitFiling === "function");
@@ -219,6 +225,7 @@ test.describe("A submission Companies House has not yet indexed", () => {
 
     await expect(page.locator("#filingResult")).toContainText("Submission 000001 was sent to Companies House", { timeout: 15000 });
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
     await expect(page.locator("#statusMessagesContainer")).not.toContainText("Failed to file");
   });
 
@@ -276,7 +283,9 @@ test.describe("A submission Companies House has not yet indexed", () => {
     await expect(page.locator("#startAgainBtn")).toBeVisible();
   });
 
-  test("a form page whose status check fails shows the submission as sent, with Check again", async ({ page }) => {
+  test("a form page whose status check fails shows the submission as sent, with Check again and not Start a new filing", async ({
+    page,
+  }) => {
     await serveSite(page, { language: "en" });
     await page.goto("http://localhost:3000/companies-house/removeOfficer.html", { waitUntil: "load" });
     await page.waitForFunction(() => window.companiesHouseFormPage && window.companiesHouseGatewayPoll);
@@ -291,6 +300,24 @@ test.describe("A submission Companies House has not yet indexed", () => {
 
     await expect(page.locator("#filingResult")).toContainText("Submission 000001 was sent to Companies House", { timeout: 15000 });
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+  });
+
+  test("a form page whose gateway asked for no more polls offers Start a new filing and no Check again", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+    await page.goto("http://localhost:3000/companies-house/removeOfficer.html", { waitUntil: "load" });
+    await page.waitForFunction(() => window.companiesHouseFormPage && window.companiesHouseGatewayPoll);
+    await page.addScriptTag({ content: answerPollsInPage() });
+
+    await page.evaluate(() => {
+      window.submitCompaniesHouseForm = async () => ({ submissionNumber: "000001", pollInterval: 0 });
+      window.pollCompaniesHouseForm = window.pollAnswer([{ submissionNumber: "000001", statusCode: "PENDING", rejections: [] }]);
+      showView("resultView");
+      window.companiesHouseFormPage.fileAndShowOutcome({ kind: "form", form: {}, result: document.getElementById("filingResult") });
+    });
+
+    await expect(page.locator("#filingResult")).toContainText("has not finished checking submission 000001", { timeout: 15000 });
+    await expect(page.locator("#checkAgainBtn")).toHaveCount(0);
     await expect(page.locator("#startAgainBtn")).toBeVisible();
   });
 });

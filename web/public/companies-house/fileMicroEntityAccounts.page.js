@@ -439,7 +439,9 @@ function pollUntilSettled(submission, extraHeaders) {
 }
 
 // Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check
-// again; it offers Start a new filing only once the outcome is known or the status check failed.
+// again; it offers Start a new filing only once the outcome is known, or when the gateway asked for no
+// more polls and Check again is not offered, so a second filing cannot start while the first may
+// still be pending.
 async function checkOutcome(submission, headers) {
   const checkAgain = document.getElementById("checkAgainBtn");
   const startAgainButton = document.getElementById("startAgainBtn");
@@ -475,16 +477,20 @@ async function checkOutcome(submission, headers) {
     );
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);
-    if (settled) startAgainButton.style.display = "inline-block";
-    if (!settled && window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+    const mayCheckAgain = window.companiesHouseGatewayPoll.mayCheckAgain(submission);
+    if (settled || !mayCheckAgain) startAgainButton.style.display = "inline-block";
+    if (!settled && mayCheckAgain) {
       checkAgain.onclick = () => checkOutcome(submission, headers);
       checkAgain.style.display = "inline-block";
     }
   } catch (error) {
     console.error("Companies House accounts status check failed:", error);
-    checkAgain.onclick = () => checkOutcome(submission, headers);
-    checkAgain.style.display = "inline-block";
-    startAgainButton.style.display = "inline-block";
+    if (window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+      checkAgain.onclick = () => checkOutcome(submission, headers);
+      checkAgain.style.display = "inline-block";
+    } else {
+      startAgainButton.style.display = "inline-block";
+    }
     showFilingResult(
       window.siteText("ch.accounts.not-confirmed", "Your accounts were submitted. Companies House has not confirmed the outcome yet."),
       window.siteText("ch.accounts.check-failed", "Submission number {number}. The status check failed: {message}.", {

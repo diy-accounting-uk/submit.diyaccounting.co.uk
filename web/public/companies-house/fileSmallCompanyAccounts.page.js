@@ -757,8 +757,21 @@ function pollUntilSettled(submission, extraHeaders) {
   });
 }
 
+// For a submission whose outcome is not known yet: Check again, or, when the gateway asked for no
+// more polls of it, Start a new filing. Never both, so a second filing cannot start while the first
+// may still be pending.
+function offerNextStep(submission, checkOutcomeAgain) {
+  if (window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+    const checkAgain = document.getElementById("checkAgainBtn");
+    checkAgain.onclick = checkOutcomeAgain;
+    checkAgain.style.display = "inline-block";
+  } else {
+    document.getElementById("startAgainBtn").style.display = "inline-block";
+  }
+}
+
 // Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check
-// again; it offers Start a new filing only once the outcome is known or the status check failed.
+// again; it offers Start a new filing only once the outcome is known.
 async function checkOutcome(submission, headers) {
   const checkAgain = document.getElementById("checkAgainBtn");
   const startAgainButton = document.getElementById("startAgainBtn");
@@ -776,9 +789,7 @@ async function checkOutcome(submission, headers) {
       paragraphWithValues(window.companiesHouseGatewayPoll.checkFailedNote(submission.submissionNumber, error.message), {}),
     );
     result.className = "outcome";
-    checkAgain.onclick = () => checkOutcome(submission, headers);
-    checkAgain.style.display = "inline-block";
-    startAgainButton.style.display = "inline-block";
+    offerNextStep(submission, () => checkOutcome(submission, headers));
     return;
   }
   if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
@@ -786,9 +797,7 @@ async function checkOutcome(submission, headers) {
     note.textContent = window.companiesHouseGatewayPoll.pendingNote(submission);
     result.replaceChildren(note);
     result.className = "outcome";
-    if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
-    checkAgain.onclick = () => checkOutcome(submission, headers);
-    checkAgain.style.display = "inline-block";
+    offerNextStep(submission, () => checkOutcome(submission, headers));
     return;
   }
   const notReceived = window.companiesHouseRejections.notReceivedHeadline(outcome);
