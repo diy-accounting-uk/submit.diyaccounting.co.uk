@@ -52,7 +52,7 @@ State: queued on harbour after CTN2.
 |---|---|---|---|
 | ct600-fields | CTL1A, CTL1B | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
 
-CTL1A builds now from cobalt's wave 8 head and rebases after CTN4 (operator, 2026-11-26). CTL1B waits on the taxonomy package (the operator passes the National Archives check).
+CTL1A builds now from cobalt's wave 8 head and rebases after CTN4 (operator, 2026-11-26). CTL1B takes its labels from HMRC's CT2024 package, because HMRC publishes no CT2025 package (operator, 2026-11-26).
 
 State: CTL1A built (`claude/dusk-ctl1a` 7fb42dff0) but answer 3; ctl1a-b building on dusk.
 
