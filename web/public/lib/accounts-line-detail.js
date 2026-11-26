@@ -9,7 +9,7 @@
 // from the formats of Schedule 1 to the Small Companies Regulations. A row shows the note and the
 // disclosure once, on this year's figure.
 
-import { BALANCE_SHEET_FIELDS, MICRO_BALANCE_SHEET_FIELDS, PROFIT_AND_LOSS_FIELDS, REGULATIONS_URL } from "./ct600-fields.js";
+import { BALANCE_SHEET_FIELDS, MICRO_BALANCE_SHEET_FIELDS, PROFIT_AND_LOSS_FIELDS, REGULATIONS_URL, sheetCell } from "./ct600-fields.js";
 import { labelWithReference, noteOf, sourceDisclosure } from "./field-detail.js";
 
 function siteText(id, english, values) {
@@ -19,8 +19,8 @@ function siteText(id, english, values) {
 
 const byId = (fields) => Object.fromEntries(fields.map((field) => [field.id, field]));
 
-function line(id, label, hint, reference) {
-  return { id, label, hint, reference, termSource: REGULATIONS_URL };
+function line(id, label, hint, reference, source) {
+  return { id, label, hint, reference, termSource: REGULATIONS_URL, ...(source ? { source } : {}) };
 }
 
 export const MICRO_PAGE_LINES = {
@@ -69,6 +69,7 @@ export const MICRO_PAGE_LINES = {
       "Called up share capital plus the profit and loss account. It equals the net assets.",
     ),
     "μBS1 K",
+    { thisYear: sheetCell("PubBalSht!F39"), lastYear: sheetCell("PubBalSht!B39"), workbookLabel: "Shareholders' Funds" },
   ),
 };
 
@@ -87,6 +88,7 @@ export const SMALL_PAGE_LINES = {
       "Closing stocks of finished goods and work in progress less opening stocks. A fall is a minus figure.",
     ),
     "PL2 2",
+    { thisYear: sheetCell("PubP&L!E14-E12"), lastYear: sheetCell("PubP&L!A14-A12"), workbookLabel: "Less Closing Stock at" },
   ),
   ownWorkCapitalised: line(
     "ownWorkCapitalised",
@@ -102,12 +104,14 @@ export const SMALL_PAGE_LINES = {
       "Income from the company's operations other than its sales, such as rent received or grants.",
     ),
     "PL2 4",
+    { thisYear: sheetCell("PubP&L!F8"), lastYear: sheetCell("PubP&L!B8"), workbookLabel: "Investment Grants received" },
   ),
   rawMaterialsConsumables: line(
     "rawMaterialsConsumables",
     siteText("accounts-line.raw-materials-consumables", "Raw materials and consumables"),
     siteText("accounts-line.raw-materials-consumables-hint", "The cost of materials and consumables used in the period."),
     "PL2 5(a)",
+    { thisYear: sheetCell("PubP&L!E13+E29"), lastYear: sheetCell("PubP&L!A13+A29"), workbookLabel: "Purchases" },
   ),
   otherExternalCharges: line(
     "otherExternalCharges",
@@ -117,18 +121,21 @@ export const SMALL_PAGE_LINES = {
       "Other costs bought in from outside the company, such as subcontractors and rent.",
     ),
     "PL2 5(b)",
+    { thisYear: sheetCell("PubP&L!F15"), lastYear: sheetCell("PubP&L!B15"), workbookLabel: "Sub contractors" },
   ),
   staffCosts: line(
     "staffCosts",
     siteText("accounts-line.staff-costs", "Staff costs"),
     siteText("accounts-line.staff-costs-hint", "Wages and salaries, employer's National Insurance and pension contributions."),
     "PL2 6",
+    { thisYear: sheetCell("PubP&L!E21+E22+E23"), lastYear: sheetCell("PubP&L!A21+A22+A23"), workbookLabel: "Wages and Salaries" },
   ),
   depreciation: line(
     "depreciation",
     siteText("accounts-line.depreciation", "Depreciation and other amounts written off tangible and intangible fixed assets"),
     siteText("accounts-line.depreciation-hint", "The depreciation and amortisation charged on the company's fixed assets in the period."),
     "PL2 7(a)",
+    { thisYear: sheetCell("PubP&L!E43"), lastYear: sheetCell("PubP&L!A43"), workbookLabel: "Depreciation" },
   ),
   otherOperatingExpenses: line(
     "otherOperatingExpenses",
@@ -141,12 +148,14 @@ export const SMALL_PAGE_LINES = {
     siteText("accounts-line.interest-payable", "Interest payable and similar expenses"),
     siteText("accounts-line.interest-payable-hint", "Interest the company paid on loans and overdrafts."),
     "PL2 14",
+    { thisYear: sheetCell("PubP&L!E38"), lastYear: sheetCell("PubP&L!A38"), workbookLabel: "Bank Interest Paid" },
   ),
   tradeDebtors: line(
     "tradeDebtors",
     siteText("accounts-line.trade-debtors", "Of which, trade debtors"),
     siteText("accounts-line.trade-debtors-hint", "The part of debtors that customers owe for sales."),
     "BS1 C.II.1",
+    { thisYear: sheetCell("PubBalSht!E11"), lastYear: sheetCell("PubBalSht!A11"), workbookLabel: "Trade Debtors" },
   ),
   otherDebtors: line(
     "otherDebtors",
@@ -174,6 +183,12 @@ export const SMALL_PAGE_LINES = {
     siteText("accounts-line.amounts-owed-to-directors", "Of which, amounts owed to directors"),
     siteText("accounts-line.amounts-owed-to-directors-hint", "The part of those amounts the company owes its directors."),
     "BS1 H.4",
+    {
+      thisYear: sheetCell("PubBalSht!E29"),
+      lastYear: sheetCell("PubBalSht!A29"),
+      workbookLabel: "Directors Loan Account",
+      differenceNote: "A figure above 0 is owed to a director. A figure below 0 is owed by a director, and goes in debtors.",
+    },
   ),
   amountsOwedToGroupUndertakings: line(
     "amountsOwedToGroupUndertakings",

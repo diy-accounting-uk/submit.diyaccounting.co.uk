@@ -126,11 +126,12 @@ export function parseSheetCells(value) {
 }
 
 // The cells with a picture cut from the published workbook: every cell a `source` names.
-const PICTURED_CELLS = new Set(namedCells().map(({ sheet, cell }) => `${sheet}!${cell}`));
+let picturedCells = null;
 
 /** A cell's picture, or null when no picture of it has been cut. */
 export function sourceImagePath({ sheet, cell }) {
-  return PICTURED_CELLS.has(`${sheet}!${cell}`) ? sourceImageUrl({ sheet, cell }) : null;
+  picturedCells ??= new Set(namedCells().map((named) => `${named.sheet}!${named.cell}`));
+  return picturedCells.has(`${sheet}!${cell}`) ? sourceImageUrl({ sheet, cell }) : null;
 }
 
 function cellsText(cells) {

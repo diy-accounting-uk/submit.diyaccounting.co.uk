@@ -119,13 +119,14 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
     expect(sourceDisclosure(rate, { id: "loanRate1" }).textContent).toContain("The spreadsheets have no cell for this.");
   });
 
-  test("every picture a disclosure shows is a file in the site, and a cell with no picture shows none", () => {
+  test("every picture a disclosure shows is a file in the site, fixed asset note cells included", () => {
     const disclosures = [...CT600_BOX_ROWS.filter((row) => row.source), ...FIELDS].map((field) => sourceDisclosure(field, { id: "x" }));
     const sources = disclosures.flatMap((disclosure) => [...disclosure.querySelectorAll("img")].map((image) => image.getAttribute("src")));
     expect(sources.length).toBeGreaterThan(90);
     for (const src of sources) expect(existsSync(join(process.cwd(), "web/public", src)), src).toBe(true);
     const [{ sheet, cell }] = parseSheetCells(noteSheetCell("plantMachinery", "additions"));
-    expect(sourceImagePath({ sheet, cell })).toBeNull();
+    expect(sourceImagePath({ sheet, cell })).toBe("/images/ct600-sources/PubNotes-C9.webp");
+    expect(sourceImagePath({ sheet: "PubNotes", cell: "Z99" })).toBeNull();
   });
 
   test("separate cells read as a list, not a sum", () => {

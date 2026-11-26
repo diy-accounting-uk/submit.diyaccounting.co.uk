@@ -6,6 +6,7 @@
 // { file, sheet, cell } records and gives each cell its screenshot's file name and URL.
 
 import * as fields from "./ct600-fields.js";
+import * as pageLines from "./accounts-line-detail.js";
 
 export const SOURCE_IMAGE_DIRECTORY = "images/ct600-sources";
 
@@ -57,10 +58,24 @@ export function allSources(exported = fields) {
   return sources;
 }
 
-// One record per distinct cell the table names, with the entries that name it.
-export function namedCells(exported = fields) {
+// The fixed asset note's figures have no `source` of their own; each is the class's column on the field's row.
+function noteSources(exported) {
+  const { FIXED_ASSET_CLASSES: classes, FIXED_ASSET_FIELDS: noteFields, noteSheetCell } = exported;
+  if (!classes || !noteFields || !noteSheetCell) return [];
+  return classes.flatMap(({ id: className }) =>
+    noteFields.map(({ id: field, source }) => ({
+      thisYear: noteSheetCell(className, field),
+      workbookLabel: source.workbookLabel,
+      labelCell: source.labelCell,
+    })),
+  );
+}
+
+// One record per distinct cell the table, the fixed asset note and the accounts pages' own lines name, with the entries that name it.
+export function namedCells(exported = fields, accountsPageLines = pageLines) {
   const byKey = new Map();
-  for (const source of allSources(exported)) {
+  const sources = new Set([...allSources(exported), ...allSources(accountsPageLines), ...noteSources(exported)]);
+  for (const source of sources) {
     for (const key of ["thisYear", "lastYear"]) {
       for (const record of cellsOfReference(source[key])) {
         const id = `${record.file}!${record.sheet}!${record.cell}`;
