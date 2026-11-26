@@ -61,7 +61,7 @@ State: gated e36d6a608 (14 commits: CTL0, CTA1, CH63 with ch63b to ch63d, CT45 w
 | ct600-page | CTS1, CTD1, CTD2, CTP3 | Sonnet | `fileCompanyTaxReturn.page.js` and `.html`, `web/public/lib/form-draft.js` (new), `web/public/privacy.html`, `web/public/lib/ct600-fields.js`, `fileMicroEntityAccounts.page.js`, `fileSmallCompanyAccounts.page.js`, `web/public/hmrc/receipt/receipts.page.js`, `web/public/companies-house/filings.html` and its page script, their tests |
 | activities | CTA2 | Sonnet | `web/public/lib/services/viewer-settings.js`, `web/public/settings.page.js`, `correlation-utils.js`, their tests |
 
-State: integrating on `claude/cobalt-w02` from e36d6a608. jasper merges each row tip in order: CTS1, ctl0b, CTD1, CTD2, CTP3 (harbour), cts1b, CTA2, cta2b, ctp3b (dusk).
+State: landed at b143d49b8 (9 commits: CTS1, ctl0b, CTD1, CTD2, CTP3, cts1b, CTA2, cta2b, ctp3b). Wave gate running on `claude/cobalt-w02-b143d49`: flint Java and lint, garnet browser, anvil the CT600, micro-entity and confirmation statement simulator suites, dusk npm test, mcp, bundle and registered office suites; the Docker build passed on the laptop. Open for the operator: the retention of a pending CT600 request (ctp3b keeps one hour).
 
 ### Wave 3
 
@@ -69,7 +69,7 @@ State: integrating on `claude/cobalt-w02` from e36d6a608. jasper merges each row
 |---|---|---|---|
 | ct600-page | CTR2, CT49 | Sonnet | `web/public/widgets/books-import.js`, `ct600-fields.js`, `fileCompanyTaxReturn.page.js`, the two accounts page scripts, `web/public/lib/prior-year-fill.js`, their tests |
 
-State: pending.
+State: integrating on `claude/cobalt-w03` from b143d49b8 while wave 2's gate runs: jasper merges CTR2, then CT49.
 
 ### Wave 4
 
