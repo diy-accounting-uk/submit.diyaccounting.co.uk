@@ -75,6 +75,22 @@ export function resolveTarget(page, target) {
   throw new Error(`resolveTarget: unrecognised target shape ${JSON.stringify(target)}`);
 }
 
+/**
+ * The id of the page section that holds a step's target, read before the step runs, so a page can
+ * start its video at the part about that section. It counts the target first and never waits for
+ * one that is not on the page yet: a step with no target, or a target not on the page, has none.
+ * A target of a shape resolveTarget does not know throws.
+ * @param {import("playwright").Page} page
+ * @param {string|object|undefined} target - the step's target
+ * @returns {Promise<string|null>}
+ */
+export async function formSectionOf(page, target) {
+  if (target === undefined || target === null) return null;
+  const locator = resolveTarget(page, target);
+  if ((await locator.count()) === 0) return null;
+  return locator.evaluate((node) => node.closest("section.form-section")?.id ?? null);
+}
+
 async function writeFailureStill(page, ctx) {
   try {
     fs.mkdirSync(ctx.stillsDir, { recursive: true });

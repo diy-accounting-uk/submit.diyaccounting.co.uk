@@ -499,3 +499,10 @@ details.section-video summary {
   border: 0;
   margin: var(--space-2) 0;
 }
+
+/* A printed form leaves out the video panels. */
+@media print {
+  details.section-video {
+    display: none;
+  }
+}

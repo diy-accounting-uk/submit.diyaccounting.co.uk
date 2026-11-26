@@ -657,6 +657,25 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(panel.locator("a.section-video__link")).toHaveAttribute("href", `https://youtu.be/${typed.videoId}?t=83`);
   });
 
+  test("a printed form leaves out the Watch this part panels", async ({ page }) => {
+    await serveRealSite(page);
+    const list = JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/public/videos/publish.json"), "utf8"));
+    list.videos.find((video) => video.id === "file-company-tax-return-typed").sections = { "section-allowances": 83 };
+    await page.route("**/videos/publish.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(list) }),
+    );
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    const panel = page.locator("#section-allowances > details.section-video");
+    await expect(panel).toBeVisible();
+    await panel.locator("summary").click();
+    await page.emulateMedia({ media: "print" });
+    await expect(panel).toBeHidden();
+    await page.emulateMedia({ media: "screen" });
+    await expect(panel).toBeVisible();
+  });
+
   test("the review is the return about to be filed: a Box column, the period in words, and the accounts as tables whose Change links open their box", async ({
     page,
   }) => {
