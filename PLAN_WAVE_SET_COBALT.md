@@ -94,7 +94,7 @@ State: pending.
 |---|---|---|---|
 | ct600-page | CTL7, CTL9 | Sonnet | `ct600-fields.js` (`reviewAnswers`), `web/public/lib/filing-record.js`, `web/public/lib/filing-result-record.js`, `fileCompanyTaxReturn.page.js`, `app/services/ctComputationsIxbrl.js`, `app/services/accountsIxbrlCommon.js`, their tests |
 
-State: integrating on `claude/cobalt-w06` from 4d28c4090: CTL7 landed; jasper merges CTL9; ctl10b (2535e818d on wave 4) follows as its own commit.
+State: landed at a987c2445 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445); gate running: garnet gate-browser-a987c24, anvil gate-java-lint-a987c24; Docker passed on the laptop; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration.
 
 ### Wave 7
 
@@ -102,7 +102,7 @@ State: integrating on `claude/cobalt-w06` from 4d28c4090: CTL7 landed; jasper me
 |---|---|---|---|
 | ct600-page | CTV1 | Sonnet | `fileCompanyTaxReturn.page.js`, `scripts/site-video-capture.js`, `scripts/video-walkthrough.js`, `videos/publish.json`, `web/public/videos/publish.json` |
 
-State: pending.
+State: integrating: jasper merges CTV1 (adeced7af) onto `claude/cobalt-w06-a987c24` (`claude/jasper-integrate-ctv1`).
 
 ### Wave 8
 
