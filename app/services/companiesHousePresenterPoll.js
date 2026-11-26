@@ -15,6 +15,7 @@ import {
   summariseGatewayResponse,
   redactPresenterCredentials,
   isNothingCompletedError,
+  isNotYetIndexedError,
 } from "./companiesHouseXmlGateway.js";
 import { getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { claimPresenterPollSlot, deferPresenterPoll } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
@@ -113,10 +114,18 @@ export async function pollPresenterSubmissions({ now = new Date() } = {}) {
     await deferPresenterPoll(nowSeconds + parsed.pollInterval);
   }
 
-  const errors = parsed.errors.filter((error) => error.text !== NO_TRANSACTION_FOUND && !isNothingCompletedError(error));
+  // Error 8023 names a submission Companies House has not yet indexed: it is still pending, so the
+  // poll records and acknowledges nothing, and asks again on the next run.
+  const errors = parsed.errors.filter(
+    (error) => error.text !== NO_TRANSACTION_FOUND && !isNothingCompletedError(error) && !isNotYetIndexedError(error),
+  );
   if (errors.length) {
     logger.error({ message: "Companies House gateway returned errors for the presenter poll", errors });
     return { polled: true, acknowledged: false, errors };
+  }
+  if (parsed.errors.some(isNotYetIndexedError)) {
+    logger.info({ message: "Companies House presenter poll: a submission is not yet indexed" });
+    return { polled: true, acknowledged: false, outcomes: [] };
   }
   if (parsed.errors.some(isNothingCompletedError)) {
     logger.info({ message: "Companies House presenter poll: nothing accepted or rejected since the last acknowledged poll" });

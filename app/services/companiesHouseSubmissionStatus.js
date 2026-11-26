@@ -17,6 +17,7 @@ import {
   summariseGatewayResponse,
   redactPresenterCredentials,
   isNothingCompletedError,
+  isNotYetIndexedError,
 } from "./companiesHouseXmlGateway.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
@@ -122,6 +123,10 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
       if (stillAsking) return { data: withoutPendingRequest(persistedRequest.data) };
       return { data: { submissionNumber, statusCode: "PENDING", rejections: [] } };
     }
+    if (notYetIndexed({ persistedRequest, errors: parsed.errors, now })) {
+      logger.info({ message: "Companies House has not yet indexed the submission", submissionNumber });
+      return { data: { submissionNumber, statusCode: "PENDING", rejections: [], notYetIndexed: true } };
+    }
     logger.error({ message: "Companies House gateway returned errors while polling", submissionNumber, errors: parsed.errors });
     return { errors: parsed.errors, submissionNumber };
   }
@@ -149,6 +154,17 @@ function neverReceived({ persistedRequest, errors, now }) {
   if (!errors.every((error) => error.text === "No Transaction Found")) return false;
   const age = now.getTime() - new Date(persistedRequest.createdAt).getTime();
   return age >= NEVER_RECEIVED_MARGIN_MS && age < NO_STATUS_AFTER_MS;
+}
+
+// Companies House can answer a poll just after a submission with Error 8023 until it has indexed
+// the submission, so in the first hour that answer means the filing is still pending.
+export const NOT_YET_INDEXED_WINDOW_MS = 60 * 60 * 1000;
+
+// A filing still pending, sent less than NOT_YET_INDEXED_WINDOW_MS ago, whose poll Companies House
+// answered with Error 8023 alone.
+function notYetIndexed({ persistedRequest, errors, now }) {
+  if (persistedRequest.status !== "pending" || !errors.every(isNotYetIndexedError)) return false;
+  return now.getTime() - new Date(persistedRequest.createdAt).getTime() < NOT_YET_INDEXED_WINDOW_MS;
 }
 
 // Whether Companies House can still answer a status poll for a filing: option 1 answers "No

@@ -429,20 +429,23 @@ function pollUntilSettled(submission, extraHeaders) {
     poll: () => window.pollMicroEntityAccounts(submissionNumber, extraHeaders),
     onPending: (result) =>
       showFilingResult(
-        window.companiesHouseGatewayPoll.statusText(
+        window.companiesHouseGatewayPoll.pendingProgressText(
           window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
           submissionNumber,
-          result.statusCode,
+          result,
         ),
       ),
   });
 }
 
-// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check again.
+// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check
+// again; it offers Start a new filing only once the outcome is known or the status check failed.
 async function checkOutcome(submission, headers) {
   const checkAgain = document.getElementById("checkAgainBtn");
+  const startAgainButton = document.getElementById("startAgainBtn");
   checkAgain.style.display = "none";
   checkAgain.onclick = null;
+  startAgainButton.style.display = "none";
   try {
     const outcome = await pollUntilSettled(submission, headers);
     const outcomeHeadlines = revision
@@ -472,12 +475,14 @@ async function checkOutcome(submission, headers) {
     );
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);
+    if (settled) startAgainButton.style.display = "inline-block";
     if (!settled && window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
       checkAgain.onclick = () => checkOutcome(submission, headers);
       checkAgain.style.display = "inline-block";
     }
   } catch (error) {
     console.error("Companies House accounts status check failed:", error);
+    startAgainButton.style.display = "inline-block";
     showFilingResult(
       window.siteText("ch.accounts.not-confirmed", "Your accounts were submitted. Companies House has not confirmed the outcome yet."),
       window.siteText("ch.accounts.check-failed", "Submission number {number}. The status check failed: {message}.", {
@@ -586,7 +591,6 @@ async function handleSubmitFiling() {
     const presenterHeaders = ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
     await checkOutcome(submission, { ...govTestScenarioHeaders, ...presenterHeaders });
   } finally {
-    document.getElementById("startAgainBtn").style.display = "inline-block";
     hideLoading();
   }
 }

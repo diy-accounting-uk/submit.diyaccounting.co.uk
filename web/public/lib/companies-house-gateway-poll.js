@@ -85,6 +85,24 @@
     ];
   }
 
+  // The sentence shown between polls: Companies House's word for the status in the page's template,
+  // or, while Companies House has not yet indexed the submission, a sentence that says so.
+  function pendingProgressSentence(template, number, result) {
+    if (result.notYetIndexed) {
+      return [
+        siteText("ch.gateway.not-yet-indexed", "Companies House has not indexed submission {number} yet. Checking again..."),
+        { number },
+      ];
+    }
+    return statusSentence(template, number, result.statusCode);
+  }
+
+  // pendingProgressSentence's sentence with its values in place, for a page that shows it as plain text.
+  function pendingProgressText(template, number, result) {
+    const [text, values] = pendingProgressSentence(template, number, result);
+    return text.replace(/\{([a-z]+)\}/g, (whole, name) => (name in values ? String(values[name]) : whole));
+  }
+
   // The sentence for a status code with no word here, with the code and the submission number in place.
   function unknownStatusText(number, statusCode) {
     return siteText("ch.gateway.status-unknown", "Companies House answered {code} for submission {number}.", {
@@ -107,6 +125,8 @@
     statusWord,
     statusSentence,
     statusText,
+    pendingProgressSentence,
+    pendingProgressText,
     unknownStatusText,
     MAX_GATEWAY_POLLS,
   };

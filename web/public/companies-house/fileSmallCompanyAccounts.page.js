@@ -747,21 +747,24 @@ function pollUntilSettled(submission, extraHeaders) {
         .getElementById("filingResult")
         .replaceChildren(
           paragraphWithValues(
-            ...window.companiesHouseGatewayPoll.statusSentence(
+            ...window.companiesHouseGatewayPoll.pendingProgressSentence(
               window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
               submissionNumber,
-              result.statusCode,
+              result,
             ),
           ),
         ),
   });
 }
 
-// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check again.
+// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check
+// again; it offers Start a new filing only once the outcome is known or the status check failed.
 async function checkOutcome(submission, headers) {
   const checkAgain = document.getElementById("checkAgainBtn");
+  const startAgainButton = document.getElementById("startAgainBtn");
   checkAgain.style.display = "none";
   checkAgain.onclick = null;
+  startAgainButton.style.display = "none";
   const outcome = await pollUntilSettled(submission, headers);
   const result = document.getElementById("filingResult");
   if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
@@ -773,6 +776,7 @@ async function checkOutcome(submission, headers) {
     checkAgain.onclick = () =>
       checkOutcome(submission, headers).catch((error) => {
         console.error("Companies House accounts status check failed:", error);
+        startAgainButton.style.display = "inline-block";
         showStatus(error.message, "error");
       });
     checkAgain.style.display = "inline-block";
@@ -795,6 +799,7 @@ async function checkOutcome(submission, headers) {
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
   showFilingCopyLink(outcome);
+  startAgainButton.style.display = "inline-block";
 }
 
 // The reader's language choice goes with a filing, so the receipt email of an accepted filing is in it.
@@ -839,7 +844,6 @@ async function handleSubmitFiling() {
     showView("resultView");
 
     await checkOutcome(submission, govTestScenarioHeaders);
-    document.getElementById("startAgainBtn").style.display = "inline-block";
   } catch (error) {
     console.error("Companies House accounts filing failed:", error);
     const tokensExhausted = error.status === 403 && error.reason === "tokens_exhausted";

@@ -27674,3 +27674,9 @@ cy = '''Byw'''
 [strings."chrome.operator-live-text"]
 hash = "3cbfbbb0818f"
 cy = '''Mae’r ffeilio hwn ar agor oherwydd eich bod yn weithredwr gyda nodweddion rhagolwg (preview) ymlaen. Mae’n ffeilio go iawn: mae’r Ffurflen yn mynd i CThEF ac, pan fyddwch yn eu ffeilio gyda’i gilydd, mae’r cyfrifon yn mynd i Dŷ’r Cwmnïau.'''
+
+# == A Companies House status poll of a submission it has not yet indexed, id ch.gateway.not-yet-indexed ==
+
+[strings."ch.gateway.not-yet-indexed"]
+hash = "3dffc68d666a"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi mynegeio cyflwyniad {number} eto. Yn gwirio eto...'''

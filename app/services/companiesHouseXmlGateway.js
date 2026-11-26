@@ -507,6 +507,20 @@ export function isNothingCompletedError(error) {
   return error?.number === NOTHING_COMPLETED_ERROR_NUMBER;
 }
 
+// GovTalk Error 8023, "EF documents not found": a GetSubmissionStatus poll for a submission number
+// Companies House has not yet indexed. Its first poll after a submission can get it.
+export const NOT_YET_INDEXED_ERROR_NUMBER = 8023;
+
+/**
+ * Whether a GovTalk error is Error 8023, which a poll of a submission Companies House has not yet
+ * indexed gets.
+ * @param {{number?: number}} error
+ * @returns {boolean}
+ */
+export function isNotYetIndexedError(error) {
+  return error?.number === NOT_YET_INDEXED_ERROR_NUMBER;
+}
+
 /**
  * Parse a GovTalk response envelope (an acknowledgement, a GetSubmissionStatus answer, or a
  * GovTalkErrors block) into a plain object.
