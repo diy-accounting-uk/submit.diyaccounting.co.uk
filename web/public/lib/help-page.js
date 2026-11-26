@@ -112,6 +112,7 @@ class HelpPage {
     }, 150);
 
     this.searchInput.addEventListener("input", handleSearch);
+    this.searchInput.dataset.searchReady = "true";
 
     this.showWelshMessagesLine();
 
