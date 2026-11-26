@@ -2345,6 +2345,8 @@ window.WELSH_TEXT = {
   "consent.reject": "Gwrthod",
   "consent.shared":
     "Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein",
+  "ct.section-video-link": "Gwyliwch o {time}",
+  "ct.section-video-summary": "Gwyliwch y rhan hon",
   "field.reference-balance-sheet": "Eitem {item} y fantolen",
   "field.reference-balance-sheet-note": "Nodyn {note} y fantolen",
   "field.reference-box": "Blwch {box}",

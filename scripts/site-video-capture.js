@@ -49,7 +49,7 @@ import {
   suppress as overlaySuppress,
   readEvents,
 } from "./lib/video/overlay.js";
-import { executeAction, SceneStepError } from "./lib/video/actions.js";
+import { executeAction, resolveTarget, SceneStepError } from "./lib/video/actions.js";
 import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { isFastForward } from "./lib/video/fastForward.js";
 import { createCapture } from "./lib/video/capture.js";
@@ -178,6 +178,19 @@ function describeTarget(target) {
 function describeValue(step, field, values, now) {
   if (step.secret) return "a hidden value";
   return `"${substituteValues(step[field], values, now)}"`;
+}
+
+// The id of the page section that holds a step's target, read before the step runs, so a page can
+// start its video at the part about that section. A target that is not on the page has none.
+async function formSectionOf(page, step) {
+  if (typeof step.target !== "string") return null;
+  try {
+    return await resolveTarget(page, step.target).evaluate((node) => node.closest("section.form-section")?.id ?? null, null, {
+      timeout: 1000,
+    });
+  } catch {
+    return null;
+  }
 }
 
 function describeStep(step, waitMs, values, now) {
@@ -589,6 +602,7 @@ async function main() {
         };
         const startMs = elapsed();
         const frameStart = capture?.frames.length ?? null;
+        const section = await formSectionOf(page, step);
         const group = groupFor(step.action);
         // A step's caption is never burned into the frame: the uploaded .vtt track carries the
         // words. Its hold and narration still run here. A goto's caption describes the page it
@@ -763,6 +777,7 @@ async function main() {
           endMs,
           frameStart,
           frameEnd,
+          ...(section ? { section } : {}),
         });
 
         console.log(`  [${scene.id}#${stepIndex}] ${step.action} waitMs=${waitMs.toFixed(0)} elapsed=${(endMs / 1000).toFixed(1)}s`);

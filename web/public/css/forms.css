@@ -481,3 +481,21 @@ details.field-source summary {
   margin-top: var(--space-2);
   border: 1px solid var(--c-rule);
 }
+
+/* Under a section's heading: the part of a published video that shows the section. */
+details.section-video {
+  margin: var(--space-1) 0 var(--space-3);
+}
+
+details.section-video summary {
+  padding: var(--space-1) 0;
+  font-size: 0.9em;
+}
+
+.section-video__frame iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  margin: var(--space-2) 0;
+}

@@ -28628,3 +28628,11 @@ cy = '''Eich copi o Ffurflen Dreth y Cwmni{parts}'''
 [strings."ch.ct.record-box-line"]
 hash = "4a51cfda7e63"
 cy = '''{label} (blwch {box})'''
+
+[strings."ct.section-video-summary"]
+hash = "52e50bb0b7e4"
+cy = '''Gwyliwch y rhan hon'''
+
+[strings."ct.section-video-link"]
+hash = "49dc0f94c931"
+cy = '''Gwyliwch o {time}'''

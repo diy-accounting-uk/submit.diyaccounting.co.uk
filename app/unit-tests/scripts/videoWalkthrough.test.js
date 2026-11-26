@@ -10,6 +10,7 @@ import {
   ensureArtifact,
   parseArgs,
   planWalkthrough,
+  sectionTimes,
   buildWalkthroughEntries,
   untimedTimeline,
   walkthroughWithScriptText,
@@ -358,4 +359,23 @@ describe("the instructions of every scene file that the guide shows", () => {
       expect(walkthrough.map((entry) => entry.instruction)).toEqual(plan.map((item) => item.instruction));
     });
   }
+});
+
+describe("the second each form section first shows", () => {
+  it("takes the start of the first step in each section, in whole seconds, and leaves out steps with none", () => {
+    const timeline = {
+      steps: [
+        { sceneId: "company", stepIndex: 0, startMs: 1200 },
+        { sceneId: "company", stepIndex: 1, startMs: 4900, section: "section-company" },
+        { sceneId: "company", stepIndex: 2, startMs: 7100, section: "section-company" },
+        { sceneId: "allowances", stepIndex: 0, startMs: 83999, section: "section-allowances" },
+        { sceneId: "period", stepIndex: 0, startMs: 12500, section: "section-period" },
+      ],
+    };
+    expect(sectionTimes(timeline)).toEqual({ "section-company": 4, "section-period": 12, "section-allowances": 83 });
+  });
+
+  it("gives no times for a recording made before steps named their section", () => {
+    expect(sectionTimes({ steps: [{ sceneId: "a", stepIndex: 0, startMs: 0 }] })).toEqual({});
+  });
 });

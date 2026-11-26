@@ -67,6 +67,7 @@ import {
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
 import { ct600BoxText } from "../lib/filing-record.js";
+import { addSectionVideos } from "../lib/section-video.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
@@ -1119,6 +1120,7 @@ function renderForm() {
     repaymentRows[part] = 1;
   }
   element("formSections").replaceChildren(...sections);
+  addSectionVideos(document);
   state.targets = new Set([...element("formSections").querySelectorAll("[data-error-target]")].map((node) => node.dataset.errorTarget));
   state.targets.add(WORKED_TAX_ID);
   state.touched = new Set();

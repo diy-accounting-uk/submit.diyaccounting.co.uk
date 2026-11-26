@@ -633,6 +633,30 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
   });
 
+  test("a section a published video shows has a closed Watch this part that loads the player at its second", async ({ page }) => {
+    await serveRealSite(page);
+    const list = JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/public/videos/publish.json"), "utf8"));
+    const typed = list.videos.find((video) => video.id === "file-company-tax-return-typed");
+    typed.sections = { "section-allowances": 83 };
+    await page.route("**/videos/publish.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(list) }),
+    );
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+
+    const panel = page.locator("#section-allowances > details.section-video");
+    await expect(panel.locator("summary")).toHaveText("Watch this part");
+    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(panel.locator("iframe")).toHaveCount(0);
+    await expect(page.locator("#section-company > details.section-video")).toHaveCount(0);
+    await panel.locator("summary").click();
+    await expect(panel.locator("iframe")).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${typed.videoId}?start=83`);
+    await expect(panel.locator("a.section-video__link")).toHaveText("Watch from 1:23");
+    await expect(panel.locator("a.section-video__link")).toHaveAttribute("href", `https://youtu.be/${typed.videoId}?t=83`);
+  });
+
   test("the review is the return about to be filed: a Box column, the period in words, and the accounts as tables whose Change links open their box", async ({
     page,
   }) => {
