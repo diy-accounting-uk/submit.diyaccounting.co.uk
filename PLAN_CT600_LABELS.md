@@ -350,4 +350,461 @@ When CTL8 is on prod, the operator uses the CT600 page and says whether the patt
 
 ## Appendix: the label register
 
-Written by CTL1.
+One row for each field of the CT600 journey: 198 fields in 8 groups. CTL2 copies each row into the field's entry in `web/public/lib/ct600-fields.js`.
+
+### How to read the tables
+
+- **Cells.** Every cell is in `Financialaccounts.xlsx` of the published package `GB Accounts Company 2026-03-31 (Mar26) Excel 2007`. A cell written `PubP&L!F9` has the `sheetCell` `Financialaccounts.xlsx!PubP&L!F9`. A `+` joins the cells of a sum. Each cell and its label were read in that workbook with the diya-gl reader.
+- **Labels.** The workbook label is the text in the same row as the cell. A † marks a cell whose label is in another row; the label cell follows in brackets. CTL5 checks the cell's row for the label, so it needs the bracketed cell for these.
+- **Last year.** A CT600 box has no last-year cell: the workbook holds one year's return. The accounts tables give both years.
+- **Official terms.** A box term is the CT600 form's wording without its sum ("– box 155 minus box 160"). Where the form and the guide's heading differ, the table gives the form's.
+- **Submit's figure.** When a book fills a field from another cell than the spreadsheets repository's files name, the row gives the cell Submit reads and says so.
+- **Difference notes.** "yes" points to a note below the table, under the row's key.
+
+### Sources
+
+| Key | Source | URL |
+|---|---|---|
+| F | CT600 (2026) Version 3, HMRC 04/26 | https://assets.publishing.service.gov.uk/media/69c543424a06660f085442bd/ct600.pdf |
+| G | The Company Tax Return guide | https://www.gov.uk/guidance/the-company-tax-return-guide (`#<anchor>`) |
+| FA | CT600A (2026) Version 3, HMRC 04/26 | https://assets.publishing.service.gov.uk/media/69cbe2a9a60a12ca3913c668/CT600A.pdf |
+| GA | Completing the CT600A page | https://www.gov.uk/guidance/supplementary-pages-ct600a-2015-version-3-close-company-loans-and-arrangements-to-confer-benefits-on-participators (`#<anchor>`) |
+| R | SI 2008/409, Schedule 1, Part 1 | https://www.legislation.gov.uk/uksi/2008/409/schedule/1/part/1 |
+| R7, R44, R48 | SI 2008/409, Schedule 1, paragraphs 7, 44, 48 | https://www.legislation.gov.uk/uksi/2008/409/schedule/1/paragraph/48 (7 and 44 the same way) |
+| CA | Companies Act 2006, section `<n>` | https://www.legislation.gov.uk/ukpga/2006/46/section/475 (other sections the same way) |
+| LoC | Life of a company: Part 1 accounts | https://www.gov.uk/government/publications/life-of-a-company-annual-requirements/life-of-a-company-part-1-accounts (`#small-company`, `#micro-entity`) |
+
+Item codes of R: "BS1 C.II" is Section B, balance sheet Format 1, item C.II. "PL1 10" is Section B, profit and loss account Format 1, item 10. "μBS1 E" and "μPL F" are Section C, the micro-entity balance sheet Format 1 and profit and loss account format.
+
+### 1. CT600 boxes (`CT600_BOX_ROWS`, 64 rows)
+
+The term and the guide anchor. "ok" means that the anchor in `CT600_BOX_ROWS` is the box's heading in G. A named anchor replaces one that G does not have, or is more exact.
+
+| Box | Submit label | Official term (F) | G anchor |
+|---|---|---|---|
+| 1 | Company name | Company name | ok |
+| 2 | Company registration number | Company registration number | ok |
+| 3 | Tax reference (Unique Taxpayer Reference) | Tax reference | ok |
+| 4 | Type of company | Type of company | ok |
+| 30 | Start of the period covered by the return | Period of the return: from | ok |
+| 35 | End of the period covered by the return | Period of the return: to | ok |
+| 50 | Making more than one return for this company now | same | ok |
+| 85A | Accounts attached are for a different period | I attach accounts and computations for a different period (box 85) | ok |
+| 95 | Supplementary page CT600A, loans to participators | Loans and arrangements to participators by close companies – form CT600A | ok |
+| 145 | Total turnover from trade | same | ok |
+| 155 | Trading profits | same | ok |
+| 160 | Trading losses brought forward set against trading profits | same | ok |
+| 275 | Trading losses of this or a later accounting period | Total trading losses of this or a later accounting period | ok |
+| 280 | Amounts carried back from later accounting periods are included in box 275 | Put an 'X' in box 280 if amounts carried back from later accounting periods are included in box 275 | ok |
+| 285 | Trading losses carried forward and claimed against total profits | same | ok |
+| 295 | Total of deductions and reliefs | same | ok |
+| 305 | Qualifying donations | same | ok |
+| 780 | Losses of trades carried on wholly or partly in the UK: amount arising | same | `losses-of-trades-carried-on-wholly-or-partly-in-the-uk-amount` |
+| 790 | Losses of trades carried on wholly outside the UK: amount arising | same | `losses-of-trades-carried-on-wholly-outside-the-uk-amount` |
+| 165 | Net trading profits | same | ok |
+| 170 | Bank, building society or other interest, and profits from non-trading loan relationships | same | ok |
+| 235 | Profits before other deductions and reliefs | same | ok |
+| 300 | Profits before qualifying donations and group relief | same | ok |
+| 315 | Profits chargeable to Corporation Tax | same | ok |
+| 326 | Number of associated companies in this period | same | ok |
+| 327 | Number of associated companies in the first financial year | same | ok |
+| 328 | Number of associated companies in the second financial year | same | ok |
+| 329 | Small profit rate or marginal relief entitlement | Put an 'X' in box 329 if the company is chargeable at the small profit rate or is entitled to marginal relief | ok |
+| 330 | Financial year of the first tax rate | Financial year (yyyy), first row | ok |
+| 335 | Amount of profit chargeable at the first rate | Amount of profit, first row | ok |
+| 340 | First rate of tax | Rate of tax %, first row | ok |
+| 345 | Tax at the first rate | Tax, first row | ok |
+| 380 | Financial year of the second tax rate | Financial year (yyyy), fourth row | ok |
+| 385 | Amount of profit chargeable at the second rate | Amount of profit, fourth row | ok |
+| 390 | Second rate of tax | Rate of tax %, fourth row | ok |
+| 395 | Tax at the second rate | Tax, fourth row | ok |
+| 430 | Corporation Tax | same | ok |
+| 435 | Marginal relief | same | ok |
+| 440 | Corporation Tax chargeable | same | ok |
+| 475 | Net Corporation Tax liability | same | ok |
+| 480 | Tax payable on loans to participators | Tax payable on loans and arrangements to participators | `tax-payable-on-loans-and-arrangements-to-participators` |
+| 485 | Relief due on loans repaid after the CT600A period | Put an 'X' in box 485 if you completed box A70 in the supplementary pages CT600A | `box-a70-in-ct600a` |
+| 510 | Tax chargeable | same | ok |
+| 515 | Income Tax deducted from gross income included in profits | same | ok |
+| 525 | Self-assessment of tax payable before restitution tax and coronavirus support scheme overpayments | same | ok |
+| 528 | Self-assessment of tax payable | same | ok |
+| 595 | Tax already paid (and not already repaid) | same | ok |
+| 600 | Tax outstanding | same | ok |
+| 620 | Franked investment income or exempt ABGH distributions | Franked investment income/Exempt ABGH distributions | ok |
+| 690 | Annual investment allowance | Annual investment allowance: capital allowances | ok |
+| 705 | Machinery and plant, main pool: allowances | Machinery and plant – main pool: capital allowances | ok |
+| 710 | Machinery and plant, main pool: balancing charges | Machinery and plant – main pool: balancing charges | ok |
+| 688 | Full expensing: allowances | Full expensing: capital allowances | ok |
+| 689 | Full expensing: balancing charges | same | ok |
+| 693 | Machinery and plant, special rate allowance: allowances | Machinery and plant – special rate allowance: capital allowances | ok |
+| 694 | Machinery and plant, special rate allowance: balancing charges | Machinery and plant – special rate allowance: balancing charges | ok |
+| 695 | Machinery and plant, special rate pool: allowances | Machinery and plant – special rate pool: capital allowances | ok |
+| 700 | Machinery and plant, special rate pool: balancing charges | Machinery and plant – special rate pool: balancing charges | ok |
+| 735 | Annual investment allowance outside the calculation of trading profits | Annual investment allowance (allowances not included in the calculation of trading profits and losses) | `annual-investment-allowance-1` |
+| 760 | Machinery and plant on which first year allowance is claimed | same | ok |
+| 773 | Machinery and plant, special rate allowance: qualifying expenditure | Machinery and plant – special rate allowance (qualifying expenditure) | `machinery-and-plant--special-rate-allowance` |
+| 775 | Other machinery and plant: qualifying expenditure | Other machinery and plant (qualifying expenditure) | ok |
+| 975 | Name of the person signing the declaration | Name (declaration) | `name` |
+| 985 | Status of the person signing the declaration | Status (declaration) | `status` |
+
+The workbook place. "Submit: …" says where a book's figure for the box comes from, when the cell is not Submit's.
+
+| Box | This year | Workbook label | Diff |
+|---|---|---|---|
+| 1 | `OpenAccounts!E2` | Company Name (including Limited) | yes |
+| 2 | `OpenAccounts!E3` | Company registration number | no |
+| 3 | `OpenAccounts!O3` † (O2) | Tax Reference per CT603 Notice | yes |
+| 4 | none | — | — |
+| 30 | `CT600!B33` † (B32) | from (dd / mm / yyyy) | no |
+| 35 | `CT600!M33` † (M32) | to (dd / mm / yyyy) | no |
+| 50, 85A, 95 | none | — | — |
+| 145 | `CT600!AK66` | Total turnover from trade or profession | yes |
+| 155 | `CT600!Z70` | Trading and professional profits | yes |
+| 160 | `CT600!Z72` | Trading losses brought forward claimed against profits | yes |
+| 275 | `CT600!Z98` | Trading losses of this or a later accounting period | yes |
+| 280, 285, 295, 300 | none | — | — |
+| 305 | `MnthP&L!B37` | Charitable Donations | yes |
+| 780 | `CT600!Q206` † (D205) | Trading losses Case 1 | yes |
+| 790 | none | — | — |
+| 165 | `CT600!AJ74` | Net trading and professional profits | yes |
+| 170 | `CorporationTax!K24` | Add gross bank interest received | yes |
+| 235 | `CT600!AJ92` | Profits before other deductions and reliefs | no |
+| 315 | `CT600!AJ110` | Profits chargeable to corporation tax | no |
+| 326 | `Admin!P14` | none in the row | open (Q2) |
+| 327 | `CT600!Y118` | Associated companies in the first financial year | yes |
+| 328 | `CT600!Y120` | Associated companies in the second financial year | yes |
+| 329 | `CT600!AI122` | Put an 'X' in box 22 if the company claims to be charged at the starting rate… | yes |
+| 330 | `CT600!C126` † (B125) | Financial year (yyyy) | no |
+| 335 | `CT600!N126` † (L125) | Amount of profit | no |
+| 340 | `CT600!AA126` † (Y125) | Rate of tax | no |
+| 345 | `CT600!AJ126` † (AH125) | Tax | no |
+| 380 | `CT600!C128` † (B125) | Financial year (yyyy) | no |
+| 385 | `CT600!N128` † (L125) | Amount of profit | no |
+| 390 | `CT600!AA128` † (Y125) | Rate of tax | no |
+| 395 | `CT600!AJ128` † (AH125) | Tax | no |
+| 430 | `CT600!AJ131` | Corporation tax | no |
+| 435 | `CT600!Y133` | Marginal rate relief | yes |
+| 440 | `CT600!Y135` | Corporation tax net of marginal rate relief | yes |
+| 475 | `CT600!AJ145` | Corporation tax chargeable | yes |
+| 480, 485 | none | — | — |
+| 510 | `CT600!AJ145` | Corporation tax chargeable | yes |
+| 515 | `CorporationTax!K37` | Deduct Income tax deducted from gross bank interest | yes |
+| 525 | `CT600!AJ159` | Tax payable - this is your self-assessment of tax payable | yes |
+| 528 | `CT600!AJ159` | Tax payable - this is your self-assessment of tax payable | yes |
+| 595 | `CT600!AJ163` | Tax already paid (and not already repaid) | no |
+| 600 | `CT600!AJ166` † (C165) | Tax outstanding | no |
+| 620 | `CorporationTax!K29` | Add franked investment income (exempt distributions received) | yes |
+| 690 | `CorporationTax!I15` | Annual Investment Allowances plant & equipment bought | yes |
+| 705 | `CorporationTax!I16+I17` | Writing Down Allowance cars bought between; … assets purchased prior to | yes |
+| 710 | `CorporationTax!I18` | Balancing charges on assets disposed of between | yes |
+| 688, 689, 693, 694, 695, 700, 735 | none | — | — |
+| 760 | `CT600!AL194` | Expenditure on machinery and plant on which first year allowance is claimed | yes |
+| 773, 775 | none | — | — |
+| 975 | `OpenAccounts!E5` | First Director's Name | yes |
+| 985 | none | — | — |
+
+Notes, by box:
+
+- **Every `CT600!` cell.** The spreadsheet's CT600 sheet copies the old CT600 (Short) (2008) Version 2 form (cell X6), so its box numbers are not HMRC's: its box 3 is HMRC's box 155. Use the box number on this page.
+- **1.** The spreadsheet asks for the company name including "Limited". It is the same name. Submit takes it from the company lookup.
+- **3.** The spreadsheet calls this the "Tax Reference per CT603 Notice". It is the company's 10-digit Unique Taxpayer Reference. A book does not fill it; type it.
+- **145.** The spreadsheet's box 1 says "trade or profession". HMRC's box 145 is "Total turnover from trade". Enter the same figure.
+- **155.** The spreadsheet's box 3, "Trading and professional profits", is HMRC's box 155, "Trading profits". Submit works box 155 out from the computation.
+- **160.** The spreadsheet's box 4, "Trading losses brought forward claimed against profits", is HMRC's box 160. Its figure is `OpenAccounts!Q5`, "Loss brought forward".
+- **165.** The spreadsheet's box 5, "Net trading and professional profits", is HMRC's box 165.
+- **170.** The spreadsheet calls this "Add gross bank interest received"; its CT600 sheet repeats it in `CT600!AJ76`. HMRC's box 170 also takes other interest and profits from non-trading loan relationships. Submit reads `CorporationTax!K24`, where `ct600-v3.toml` names `CT600!AJ76`; both show the same figure.
+- **275.** The spreadsheet's box 30 sets a trading loss against bank interest by itself. A book fills Submit's box 275 with 0. Enter the spreadsheet's figure when the company makes this claim.
+- **305.** The spreadsheet calls this "Charitable Donations". HMRC's box 305 is "Qualifying donations"; only donations that qualify go here.
+- **780.** The spreadsheet's box 122, "Trading losses Case 1", is HMRC's box 780. Submit works box 780 out from the computation.
+- **327, 328.** The spreadsheet's boxes 40 and 41 leave out "Number of". Both show `Admin!P14`, the number of associated companies, which Submit reads for box 326.
+- **329.** The spreadsheet's box 42 asks about the starting rate and the small companies' rate. HMRC's box 329 asks about the small profit rate or marginal relief. Submit ticks box 329 by itself.
+- **435.** The spreadsheet calls this "Marginal rate relief". HMRC calls it "Marginal relief".
+- **440.** The spreadsheet's box 65, "Corporation tax net of marginal rate relief", is HMRC's box 440, "Corporation Tax chargeable".
+- **475.** The spreadsheet's box 70 is called "Corporation tax chargeable", but it is HMRC's box 475, "Net Corporation Tax liability". HMRC's "Corporation Tax chargeable" is box 440.
+- **510.** The spreadsheet's box 70 also gives HMRC's box 510, "Tax chargeable", when there is no tax on loans to participators.
+- **515.** The spreadsheet calls this "Deduct Income tax deducted from gross bank interest". HMRC's box 515 takes Income Tax deducted from any gross income in the profits. Submit reads `CorporationTax!K37`, where `ct600-v3.toml` names `CT600!AJ154`; both show the same figure.
+- **525, 528.** The spreadsheet's box 86, "Tax payable - this is your self-assessment of tax payable", gives HMRC's boxes 525 and 528.
+- **595.** A book fills Submit's box 595 with 0. Enter the spreadsheet's figure.
+- **620.** The spreadsheet calls this "Add franked investment income (exempt distributions received)". It is HMRC's box 620. Submit reads `CorporationTax!K29`, where `ct600-v3.toml` names `CT600!Z114`; both show the same figure.
+- **690.** The spreadsheet calls this "Annual Investment Allowances plant & equipment bought". It is HMRC's box 690.
+- **705.** The spreadsheet splits the writing down allowance into cars (I16) and assets bought before the period (I17). HMRC's box 705 takes both, and a balancing allowance in I18 when I18 is above 0.
+- **710.** The spreadsheet's I18 is a balancing charge when it is below 0. HMRC's box 710 takes that charge as a positive figure.
+- **760.** The spreadsheet's box 118 adds "Expenditure on". A book fills Submit's box 760 with 0. Enter the spreadsheet's figure.
+- **975.** The spreadsheet calls this "First Director's Name". HMRC's box 975 is the name of the person who makes the declaration.
+
+### 2. Form fields (`CT600_FORM_FIELDS`, 40 rows)
+
+A field with a box takes its box row's term, anchor and workbook place from group 1. "Box term" in the Note column means the field's label should be the box row's term.
+
+| Field | Box | Submit label | Note |
+|---|---|---|---|
+| `utr` | 3 | Box 3: Tax reference (Unique Taxpayer Reference) | Box term |
+| `companyType` | 4 | Is the company one of the types listed for box 4? | Box term; G asks for a number (Q11) |
+| `associatedCompanies` | 326 | Box 326: Number of associated companies in this period | Box term; also boxes 327 and 328 |
+| `period` | 30, 35 | Period of account | G names boxes 30 and 35 "Period of the return"; G does not use "period of account" |
+| `tradeName` | none | Trade name | Table 2a |
+| `nonTradingLoanRelationshipCredits` | 170 | Box 170: Bank, building society … | Box term |
+| `depreciation` | none | Depreciation added back | Table 2a |
+| `amortisation` | none | Amortisation added back | Table 2a |
+| `entertaining` | none | Entertaining added back | Table 2a |
+| `donations` | 305 | Box 305: Donations added back and claimed | Computation add-back that also gives box 305; workbook `MnthP&L!B37` |
+| `annualInvestmentAllowance` | 690 | Box 690: Annual investment allowance | Box term |
+| `mainPoolAllowances` | 705 | Box 705: Main pool writing down and balancing allowances | Box term |
+| `mainPoolBalancingCharges` | 710 | Box 710: Machinery and plant, main pool: balancing charges | Box term |
+| `fullExpensingAllowances` | 688 | Box 688: Full expensing allowances | Box term |
+| `fullExpensingBalancingCharges` | 689 | Box 689: Full expensing: balancing charges | Box term |
+| `specialRateAllowances` | 693 | Box 693: … special rate allowance: allowances | Box term |
+| `specialRateBalancingCharges` | 694 | Box 694: … special rate allowance: balancing charges | Box term |
+| `specialRateAllowanceExpenditure` | 773 | Box 773: … special rate allowance: qualifying expenditure | Box term |
+| `specialRatePoolAllowances` | 695 | Box 695: Special rate pool writing down allowances | Box term |
+| `specialRatePoolAnnualInvestmentAllowance` | none | Annual investment allowance claimed on the special rate pool | Table 2a |
+| `specialRatePoolBalancingCharges` | 700 | Box 700: … special rate pool: balancing charges | Box term |
+| `annualInvestmentAllowanceOutsideTrade` | 735 | Box 735: Annual investment allowance outside … | Box term |
+| `firstYearAllowanceExpenditure` | 760 | Box 760: Machinery and plant on which first year allowance is claimed | Box term |
+| `otherMachineryAndPlantExpenditure` | 775 | Box 775: Other machinery and plant: qualifying expenditure | Box term |
+| `lossesBroughtForward` | 160 | Box 160: Trading losses brought forward | The field holds the losses available; box 160 is the part set against trading profits (Q14) |
+| `lossAgainstTotalProfits` | 275 | Box 275: Trading losses of this or a later accounting period | Box term |
+| `lossesBroughtForwardAgainstTotalProfits` | 285 | Box 285: Trading losses carried forward … | Box term |
+| `lossCarriedBack` | none | Trading loss carried back to the previous period | Table 2a |
+| `priorPeriodChargeableProfits` | none | Previous period's chargeable profits (box 315 of its return) | Table 2a |
+| `lossOutsideUk` | none | The trade is carried on wholly outside the UK … | Table 2a |
+| `frankedInvestmentIncome` | 620 | Box 620: Franked investment income or exempt ABGH distributions | Box term |
+| `incomeTaxDeducted` | 515 | Box 515: Income Tax deducted from gross income included in profits | Box term |
+| `taxAlreadyPaid` | 595 | Box 595: Tax already paid (and not already repaid) | Box term |
+| `ownCorporationTax` | none | Corporation Tax per your own working (optional) | Table 2a |
+| `loansMade` | none | Did the company lend money to a director, shareholder or their associate …? | Table 2a |
+| `releasedBeforeEnd` | none | Were any loans made in the period repaid, released or written off …? | Table 2a |
+| `repaidSince` | none | Has any of it been repaid, released or written off since …? | Table 2a |
+| `declarantName` | 975 | Box 975: Name of the person signing the declaration | Box term |
+| `declarantStatus` | 985 | Box 985: Status of the person signing the declaration | Box term |
+| `declarationAccepted` | none | I declare that the information in this return and the attached accounts and computations is correct … | Table 2a |
+
+A field of `PER_PERIOD_FIELD_IDS` and its `Ap2` copy for the second return take the same row.
+
+#### 2a. Form fields with no box (13 rows)
+
+| Field | Official term (source) | Reference | This year | Diff |
+|---|---|---|---|---|
+| `tradeName` | none on F or in G (Q3) | Computations | `OpenAccounts!E8`: The principal activity of the company is | yes |
+| `depreciation` | none on F or in G (Q3) | Computation; feeds box 155 | `CorporationTax!I8`: Add back depreciation charged during the year | no |
+| `amortisation` | none on F or in G (Q3) | Computation; feeds box 155 | `CorporationTax!I7`: Add back goodwill written off | yes |
+| `entertaining` | none on F or in G (Q3) | Computation; feeds box 155 | `CorporationTax!I9`: Add back business entertainment | no |
+| `specialRatePoolAnnualInvestmentAllowance` | none on F (Q3) | Part of boxes 690 and 695 | none | — |
+| `lossCarriedBack` | carry back claim (G `#amounts-carried-back-from-later-accounting-periods`) | Box 275 and 280 of the previous period's return | none | — |
+| `priorPeriodChargeableProfits` | Profits chargeable to Corporation Tax (F box 315) | Box 315 of the previous return | none | — |
+| `lossOutsideUk` | Losses of trades carried on wholly outside the UK (F box 790) | Box 780 or 790 | none | — |
+| `ownCorporationTax` | none on F (Q3) | Checks box 440 | `CorporationTax!K35`: Corporation Tax chargeable | yes |
+| `loansMade` | Outstanding loans and arrangements made (FA A10; GA `#a10-outstanding-loans-and-arrangements-made`) | CT600A A10; box 95 | `PubBalSht!E29`: Directors Loan Account | yes |
+| `releasedBeforeEnd` | loans made during the period repaid, released, or written off, before the end of the period (FA A5; GA `#a5-loans-repaid-released-or-written-off-or-return-payments`) | CT600A A5 | none | — |
+| `repaidSince` | Relief for amounts repaid, released or written off (FA Parts 2 and 3) | CT600A A25 or A50; box 485 | none | — |
+| `declarationAccepted` | I declare that the information I have given on this Company Tax Return and any supplementary pages is correct and complete to the best of my knowledge and belief. (F, Declaration; G `#declaration`) | Declaration | none | — |
+
+Notes, by field:
+
+- **`tradeName`.** The spreadsheet holds the principal activity, and Submit starts the trade name from it. Change it when the trade has another name.
+- **`amortisation`.** The spreadsheet adds back only goodwill written off. Add any other amortisation to the spreadsheet's figure.
+- **`ownCorporationTax`.** The spreadsheet's own working of the tax is "Corporation Tax chargeable" in `CorporationTax!K35`. A book does not fill this field; type K35 here to check Submit's box 440.
+- **`loansMade`.** The spreadsheet shows the director's loan account; a figure below 0 means the director owes the company. When the director owes more at the end than at the start (`OpenAccounts!E30`), a book answers Yes and fills one loan row.
+
+### 3. Donations paid (`DONATIONS_PAID_FIELD`, 1 row)
+
+| Field | Official term (source) | Reference | This year | Diff |
+|---|---|---|---|---|
+| `donationsPaid` | Qualifying donations (F box 305; G `#qualifying-donations`) | Box 305 of each return of a long period | `MnthP&L!B37`: Charitable Donations (the whole period) | yes |
+
+- **`donationsPaid`.** The spreadsheet shows "Charitable Donations" for the whole period of account. Enter the qualifying donations paid in each accounting period.
+
+### 4. Accounts lines (32 rows)
+
+The format's term and item, the cell for this year and last year, and the workbook label. Last year's balance sheet: Submit reads the book's opening balance, the figures `OpenAccounts!E13` to `E35` hold; `PubBalSht` columns A and B show the same figures. Last year's profit and loss account: a book holds none, so Submit leaves it for the person to type; the workbook shows it in `PubP&L` column B.
+
+#### 4a. Small company profit and loss account (`PROFIT_AND_LOSS_FIELDS`, 5 rows)
+
+| Field | Submit label | Official term (R) | This year: cell, label | Last year | Diff |
+|---|---|---|---|---|---|
+| `turnover` | Turnover | Turnover (PL1 1; feeds box 145) | `PubP&L!F9`: Sales Turnover | `PubP&L!B9` | yes |
+| `costOfSales` | Cost of sales | Cost of sales (PL1 2) | `PubP&L!F16`: Cost of Sales | `PubP&L!B16` | no |
+| `administrativeExpenses` | Administrative expenses | Administrative expenses (PL1 5) | `PubP&L!F44`: Administrative Expenses | `PubP&L!B44` | no |
+| `interestReceivable` | Interest receivable and similar income | Other interest receivable and similar income (PL1 10; feeds box 170) | `PubP&L!F48`: Other Income | `PubP&L!B48` | yes |
+| `tax` | Tax on profit on ordinary activities | Tax on profit or loss (PL1 13) | `PubP&L!F50`: Corporation tax | `PubP&L!B50` | yes |
+
+- **`turnover`.** The spreadsheet calls this "Sales Turnover", and it includes investment grants received (F8). The format calls it "Turnover".
+- **`interestReceivable`.** The spreadsheet calls this "Other Income"; it is the interest received. The format calls it "Other interest receivable and similar income". Submit works it out as profit before tax (F49) less the operating profit, which gives F48.
+- **`tax`.** The spreadsheet calls this "Corporation tax". The format calls it "Tax on profit or loss". Submit's label uses the old term "on ordinary activities".
+
+#### 4b. Small company balance sheet (`BALANCE_SHEET_FIELDS`, 14 rows)
+
+| Field | Submit label | Official term (R) | This year: cell, label | Last year | Diff |
+|---|---|---|---|---|---|
+| `fixedAssets` | Fixed assets | Fixed assets (BS1 B) | `PubBalSht!F6`: Fixed Assets | `PubBalSht!B6` | no |
+| `stocks` | Stocks | Stocks (BS1 C.I) | `PubBalSht!E10`: Stock at cost | `PubBalSht!A10` | yes |
+| `debtors` | Debtors | Debtors (BS1 C.II) | `PubBalSht!E11`: Trade Debtors | `PubBalSht!A11` | yes |
+| `amountsOwedByDirectors` | Of which, amounts owed by directors | advances and credits granted by the company to its directors (CA 413(1)) | `PubBalSht!E29`: Directors Loan Account | `PubBalSht!A29` | yes |
+| `cashAtBank` | Cash at bank and in hand | Cash at bank and in hand (BS1 C.IV) | `PubBalSht!E12`: Cash at bank and in hand | `PubBalSht!A12` | no |
+| `bankLoansOverdrafts` | Bank loans and overdrafts (due within one year) | Bank loans and overdrafts (BS1 E.1) | `PubBalSht!E19`: Bank Overdraft | `PubBalSht!A19` | yes |
+| `tradeCreditors` | Trade creditors (due within one year) | Trade creditors (BS1 E.2) | `PubBalSht!E16`: Trade Creditors | `PubBalSht!A16` | yes |
+| `corporationTax` | Corporation tax (due within one year) | no item; part of taxation and social security (R, note 7) | `PubBalSht!E17`: Corporation Tax | `PubBalSht!A17` | no |
+| `taxationSocialSecurity` | Taxation and social security (due within one year) | taxation and social security (R, note 7) | `PubBalSht!E18`: Taxation and Social Security | `PubBalSht!A18` | no |
+| `otherCreditors` | Other creditors (due within one year) | Other creditors (BS1 E.4) | none | none | — |
+| `creditorsAfterOneYear` | Creditors: amounts falling due after more than one year | same (BS1 H) | `PubBalSht!F31` † (C30): Creditors (falling due after more than one year) | `PubBalSht!B31` | yes |
+| `bankLoansAfterOneYear` | Of which, bank loans | Bank loans and overdrafts (BS1 H.1) | none | none | — |
+| `calledUpShareCapital` | Called up share capital | Called up share capital (BS1 K.I) | `PubBalSht!F36`: Called up share capital 2 ordinary shares of £1.00 each | `PubBalSht!B36` | no |
+| `profitAndLossAccount` | Profit and loss account reserve | Profit and loss account (BS1 K.V) | `PubBalSht!F37+F38`: Retained Profit and Loss account; Capital Reserves | `PubBalSht!B37+B38` | yes |
+
+- **`stocks`.** The spreadsheet calls this "Stock at cost". The format calls it "Stocks".
+- **`debtors`.** The spreadsheet shows "Trade Debtors" only. Submit adds the director's loan account when the director owes the company (E29 below 0), because the format's "Debtors" includes it.
+- **`amountsOwedByDirectors`.** The spreadsheet shows the director's loan account; a figure below 0 is owed by the director. Section 413 calls this an advance or credit to a director. Submit fills the amount owed, with the sign turned.
+- **`bankLoansOverdrafts`.** The spreadsheet calls this "Bank Overdraft". The format calls it "Bank loans and overdrafts".
+- **`tradeCreditors`.** The spreadsheet's "Trade Creditors" also holds net wages, wage deductions and dividends due. A book fills Submit's other creditors with 0 this year; move those amounts to other creditors if the company shows them apart.
+- **`creditorsAfterOneYear`.** The spreadsheet's F31 adds the director's loan account (E29) to the creditors due after more than one year (E30). When the director owes the company, Submit moves that amount to debtors.
+- **`profitAndLossAccount`.** The spreadsheet shows "Retained Profit and Loss account" and "Capital Reserves". The format calls the reserve "Profit and loss account". Submit takes shareholders' funds (F39) less share capital, which is F37 and F38.
+
+#### 4c. Micro-entity profit and loss account (`MICRO_PROFIT_AND_LOSS_FIELDS`, 7 rows)
+
+Submit fills these from the small company lines (`microProfitAndLossFromSmall`). Where `frs105-formats.toml` names another cell, the note says so (Q4).
+
+| Field | Submit label | Official term (R) | This year: cell, label | Last year | Diff |
+|---|---|---|---|---|---|
+| `turnover` | Turnover | Turnover (μPL A; feeds box 145) | `PubP&L!F9`: Sales Turnover | `PubP&L!B9` | yes |
+| `otherIncome` | Other income | Other income (μPL B) | `PubP&L!F48`: Other Income | `PubP&L!B48` | no |
+| `rawMaterials` | Raw materials and consumables | Cost of raw materials and consumables (μPL C) | none: Submit fills 0 | none | — |
+| `staffCosts` | Staff costs | Staff costs (μPL D) | none: Submit fills 0 | none | — |
+| `depreciation` | Depreciation and other amounts written off assets | same (μPL E) | `PubP&L!E43`: Depreciation | `PubP&L!A43` | yes |
+| `otherCharges` | Other charges | Other charges (μPL F) | `PubP&L!F16+F44-E43`: Cost of Sales; Administrative Expenses; Depreciation | `PubP&L!B16+B44-A43` | yes |
+| `tax` | Tax | Tax (μPL G) | `PubP&L!F50`: Corporation tax | `PubP&L!B50` | yes |
+
+- **`turnover`.** The spreadsheet calls this "Sales Turnover". The format calls it "Turnover".
+- **`rawMaterials`.** Submit puts the cost of sales in other charges, so this line is 0. `frs105-formats.toml` names `PubP&L!F16`.
+- **`staffCosts`.** Submit puts staff costs in other charges, so this line is 0. `frs105-formats.toml` names `MnthP&L!B18+B19+B20`.
+- **`depreciation`.** The spreadsheet's "Depreciation" (E43) is the figure Submit reads through `CorporationTax!I8`. A loss on disposal of assets (E42) stays in other charges. `frs105-formats.toml` names `MnthP&L!B39+B40`, which adds that loss.
+- **`otherCharges`.** The format's "Other charges" is the spreadsheet's cost of sales and administrative expenses, less the depreciation. `frs105-formats.toml` names `PubP&L!F44` only.
+- **`tax`.** The spreadsheet calls this "Corporation tax". The format calls it "Tax".
+
+#### 4d. Micro-entity balance sheet (`MICRO_BALANCE_SHEET_FIELDS`, 6 rows)
+
+| Field | Submit label | Official term (R) | This year: cell, label | Last year | Diff |
+|---|---|---|---|---|---|
+| `fixedAssets` | Fixed assets | Fixed assets (μBS1 B) | `PubBalSht!F6`: Fixed Assets | `PubBalSht!B6` | no |
+| `currentAssets` | Current assets | Current assets (μBS1 C) | `PubBalSht!E13`: Current Assets | `PubBalSht!A13` | no |
+| `creditorsWithinOneYear` | Creditors: amounts falling due within one year | same (μBS1 E) | `PubBalSht!E20`: Current Liabilities | `PubBalSht!A20` | yes |
+| `creditorsAfterOneYear` | Creditors: amounts falling due after more than one year | same (μBS1 H) | `PubBalSht!F31` † (C30): Creditors (falling due after more than one year) | `PubBalSht!B31` | yes |
+| `calledUpShareCapital` | Called up share capital | part of Capital and reserves (μBS1 K); named at BS1 K.I | `PubBalSht!F36`: Called up share capital 2 ordinary shares of £1.00 each | `PubBalSht!B36` | no |
+| `profitAndLossAccount` | Profit and loss account reserve | part of Capital and reserves (μBS1 K); named Profit and loss account at BS1 K.V | `PubBalSht!F37+F38`: Retained Profit and Loss account; Capital Reserves | `PubBalSht!B37+B38` | yes |
+
+- **`currentAssets`.** Submit adds the director's loan account to the spreadsheet's figure when the director owes the company (E29 below 0).
+- **`creditorsWithinOneYear`.** The spreadsheet calls this "Current Liabilities". The format calls it "Creditors: amounts falling due within one year".
+- **`creditorsAfterOneYear`.** As in 4b.
+- **`profitAndLossAccount`.** As in 4b.
+
+### 5. Fixed asset note (`FIXED_ASSET_CLASSES` × `FIXED_ASSET_FIELDS`, 30 fields)
+
+The cell of a field is the class's column and the field's row on `PubNotes` (for example, plant and machinery additions is `PubNotes!C9`). The note has no last-year cells. The note's heading in the workbook is "1. Tangible Assets" (`PubNotes!A3`); R48 heads it "Fixed assets".
+
+| Class | Submit label | Official term (R) | Column: label | Diff |
+|---|---|---|---|---|
+| `landBuildings` | Land and buildings | Land and buildings (BS1 B.II.1) | B: Land and Buildings | no |
+| `plantMachinery` | Plant and machinery | Plant and machinery etc. (BS1 B.II.2) | C: Plant and Machinery | no |
+| `furnitureFittings` | Fixtures and fittings | none in R (Q6) | D: Fixtures & Fittings | no |
+| `computerEquipment` | Computer equipment | none in R (Q6) | E: Computer Equipment | no |
+| `motorVehicles` | Motor vehicles | none in R (Q6) | F: Motor Vehicles | no |
+
+| Field | Submit label | Official term (R48) | Row: label | Diff |
+|---|---|---|---|---|
+| `costAtStart` | Cost at the start of the period | amounts as at the beginning of the financial year, at purchase price or production cost (48(1)(a), 48(2)(a)) | 8 † (A7): Original Cost | yes |
+| `additions` | Additions | acquisitions (48(1)(b)(ii)) | 9: Additions | yes |
+| `disposals` | Disposals (cost) | disposals (48(1)(b)(iii)) | 10: Disposals | no |
+| `depreciationAtStart` | Depreciation at the start of the period | cumulative amount of provisions for depreciation, at the beginning of the year (48(3)(a)) | 14 † (A13): Depreciation | yes |
+| `depreciationCharge` | Depreciation charge for the period | provisions made in respect of the financial year (48(3)(b)) | 15: Charge for the year | yes |
+| `depreciationOnDisposals` | Depreciation on disposals | adjustments in consequence of the disposal of any assets (48(3)(c)) | 16: On Disposals | yes |
+
+- **`costAtStart`.** The spreadsheet heads the rows "Original Cost" and shows the start date in A8. Enter row 8.
+- **`additions`.** The spreadsheet and Submit say "Additions". The Regulations call them acquisitions.
+- **`depreciationAtStart`.** The spreadsheet heads the rows "Depreciation" and shows the start date in A14. Enter row 14.
+- **`depreciationCharge`.** The spreadsheet calls this "Charge for the year". It is the depreciation provided for the year.
+- **`depreciationOnDisposals`.** The spreadsheet calls this "On Disposals". It is the depreciation taken off for the assets disposed of.
+
+### 6. Statements, regime and text fields (18 rows)
+
+| Field | Submit label (short) | Official term (source) | This year: cell, label | Diff |
+|---|---|---|---|---|
+| `statementSection477Exemption` | The company is entitled to exemption from audit under section 477 … | statement of the exemption (CA 475(2); CA 477) | `PubBalSht!C41`: the company was entitled to exemption from audit under section 477 … | yes |
+| `statementMembersNotRequiredAudit` | The members have not required the company to obtain an audit for the year in question. | the members have not required the company to obtain an audit of its accounts for the year in question in accordance with section 476 (CA 475(3)(a)) | `PubBalSht!A44`: a) The members have not required … | no |
+| `statementDirectorsResponsibilities` | The directors acknowledge their responsibilities … | the directors acknowledge their responsibilities for complying with the requirements of this Act with respect to accounting records and the preparation of accounts (CA 475(3)(b)) | `PubBalSht!A46`: b) The directors acknowledge … | no |
+| `statementSmallCompaniesRegime` | These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies regime. | the same words (CA 414(3)(b)) | `PubBalSht!A52`: e) … prepared in accordance with the special provisions of the Companies Act relating to small companies | yes |
+| `statementMicroEntityProvisions` | … and in accordance with the provisions available to micro-entities. | a statement that the accounts are prepared in accordance with the micro-entity provisions (CA 414(3)(a)) | none | — |
+| `regimeSmall` | Small company accounts (FRS 102 section 1A) | small company accounts (LoC `#small-company`); small companies regime (CA 381) (Q7) | none | — |
+| `regimeMicro` | Micro-entity accounts (FRS 105) | micro-entity accounts (LoC `#micro-entity`); micro-entity (CA 384A) (Q7) | none | — |
+| `principalActivity` | Principal activity | none: CA 416(1)(b) is omitted (Q9) | `OpenAccounts!E8`: The principal activity of the company is | no |
+| `accountingPolicies` | Accounting policies | accounting policies adopted by the company (R44) | none | — |
+| `directors` | Directors who held office during the period | the names of the persons who, at any time during the financial year, were directors of the company (CA 416(1)(a)) | `OpenAccounts!E5`, `E6`: First Director's Name; Second Director's Name | yes |
+| `directorsAdvanceName` | Director who owes the company money … | advances and credits granted by the company to its directors (CA 413(1)) | `OpenAccounts!E5`: First Director's Name | yes |
+| `directorsAdvanceTerms` | Interest rate and main conditions of that director's advance | an indication of the interest rate; its main conditions (CA 413(3)(b), (c)) | none | — |
+| `directorsAdvanceAtStart` | Owed by that director at the start of the period … | none named in CA 413(3) | `OpenAccounts!E30`: Directors Loan Account | yes |
+| `directorsAdvanceMade` | Advanced to that director in the period … | its amount (CA 413(3)(a)) | `PubBalSht!E29` less `OpenAccounts!E30` | yes |
+| `directorsAdvanceRepaid` | Repaid by that director in the period … | any amounts repaid (CA 413(3)(d)) | `OpenAccounts!E30` less `PubBalSht!E29` | yes |
+| `averageEmployees` | Average number of employees during the period | the average number of persons employed by the company in the financial year (CA 411(1)) | none (Q12) | — |
+| `directorName` | Director approving the accounts | signed on behalf of the board by a director of the company (CA 414(1)) | `PubBalSht!C56`: Name of Director | yes |
+| `directorDateApproved` | Date approved | none named in CA 414 (Q10) | `PubBalSht!C57`: Date Signed | yes |
+
+- **`statementSection477Exemption`.** The spreadsheet says the company "was entitled" to the exemption "for year end" and its date. The statement on the accounts says it "is entitled".
+- **`statementSmallCompaniesRegime`.** The spreadsheet's statement (e) says "special provisions of the Companies Act relating to small companies". Section 414(3)(b) asks for the words in Submit's label. The spreadsheet's statement (d) uses those words for the accounts as delivered.
+- **`directors`.** The spreadsheet names up to two directors, first and second. List every director who held office in the period.
+- **`directorsAdvanceName`.** A book names the first director (`OpenAccounts!E5`). Change it when another director owes the company.
+- **`directorsAdvanceAtStart`.** The spreadsheet's opening director's loan account (`OpenAccounts!E30`) is below 0 when the director owes the company. Submit fills the amount owed, with the sign turned.
+- **`directorsAdvanceMade`, `directorsAdvanceRepaid`.** The spreadsheet holds the balance at the start and at the end only. A book fills the increase as advanced, or the decrease as repaid; enter the amounts when there were both.
+- **`directorName`.** The spreadsheet's "Name of Director" (`PubBalSht!C56`) shows the first director (`OpenAccounts!E5`).
+- **`directorDateApproved`.** The spreadsheet's "Date Signed" shows today's date (`TODAY()`). A book does not fill this field; enter the date the board approved the accounts.
+
+### 7. Loan rows (`LOAN_ROW_FIELDS`, `REPAYMENT_ROW_FIELDS`, 8 rows)
+
+Labels from `fileCompanyTaxReturn.page.js`. A repayment row goes to CT600A Part 2 (A25) or Part 3 (A50) by its date.
+
+| Field | Submit label | Official term (FA) | Reference | This year | Diff |
+|---|---|---|---|---|---|
+| `loanName` | Name of participator or associate | Name of participator or associate | A10 column A | `OpenAccounts!E5`: First Director's Name | yes |
+| `loanAmount` | Amount still owed at the end of the period | Amount of loan/benefit | A10 column B; sum A15 | `PubBalSht!E29` less `OpenAccounts!E30` | yes |
+| `loanLent` | Of this, the amount lent on or after the rate change | none on FA | A20 | none | — |
+| `loanRate` | Section 455 rate for this loan, if you want to use another (%) | rate applicable | A20 | none | — |
+| `repaymentName` | Participator | Name of participator or associate | A25 or A50 column A | none | — |
+| `repaymentDate` | Date | Date of repayment, release or write–off | A25 or A50 column D | none | — |
+| `repaymentRepaid` | Amount repaid | Amount repaid | A25 or A50 column B; A30 or A55 | none | — |
+| `repaymentReleased` | Amount released or written off | Amount released or written off | A25 or A50 column C; A35 or A60 | none | — |
+
+- **`loanName`.** A book names the first director (`OpenAccounts!E5`) for the one loan row it fills.
+- **`loanAmount`.** The spreadsheet holds the director's loan account at the start and at the end. A book fills the increase in the amount the director owes. Enter each loan made in the period and still owed.
+
+### 8. Questions the page defines (5 rows)
+
+| Field | Submit label | Official term (source) | Reference | This year | Diff |
+|---|---|---|---|---|---|
+| `sendTo` | Where are you sending these accounts? | none | none | none | — |
+| `companiesHouseCopy` | Which copy goes to Companies House? (Full accounts; Filleted accounts) | a small company need not deliver its profit and loss account and directors' report (CA 444(1)) (Q8) | none | none | — |
+| `includeComparatives` | Include last year's figures | the corresponding amount for the immediately preceding financial year (R7(1)) | none | `PubP&L` column B; `PubBalSht` columns A and B | no |
+| `includeFixedAssetNote` | Include the tangible fixed assets note | Fixed assets (R48) | none | `PubNotes!A3`: 1. Tangible Assets | yes |
+| `firstPeriodStart` | Does the first accounting period start on the first day of the accounts? | accounting period (F boxes 275, 280); the period of the return (G `#and-35-period-of-the-return`) | Box 30 of return 1 | none | — |
+
+- **`includeFixedAssetNote`.** The spreadsheet calls the note "1. Tangible Assets". The Regulations' note is on fixed assets; Submit's note covers the tangible ones.
+
+### Cells not confirmed
+
+- `Admin!P14`: the cell Submit reads for associated companies. It is empty in the published package and has no label in its row.
+- The † cells (`CT600!B33`, `M33`, `Q206`, `C126` to `AJ128`, `AJ166`; `OpenAccounts!O3`; `PubBalSht!F31`; `PubNotes` rows 8 and 14): each label was read in the cell in brackets, not in the cell's row.
+- Every figure in the published package is 0 or empty, so each cell was checked by its label and formula, not by a value.
+- `CELL_MAP` labels are not always the workbook's text (for example `MnthP&L!B37` is "Charitable Donations" in the workbook and "Charitable Donations (code y)" in `CELL_MAP`). This register uses the workbook's text.
+
+### Questions for the operator
+
+1. **Box 85A.** Submit calls it box 85A. The CT600 (2026) form and the guide call it box 85. Should the label say "Box 85"?
+2. **Associated companies.** Submit and the CT600 sheet read `Admin!P14`, which has no label and is empty in the package. Which cell should the disclosure show, and where does a person type the number?
+3. **Computation lines.** The trade name, the three add-backs, the annual investment allowance on the special rate pool and the own working have no term on the CT600 or in its guide. Keep Submit's words, or take them from another source, such as HMRC's computations taxonomy?
+4. **Micro-entity costs.** Submit files cost of raw materials and consumables and staff costs as 0, and puts them in other charges. `frs105-formats.toml` maps them to `PubP&L!F16` and `MnthP&L!B18+B19+B20`. Keep Submit's split, or file the format's lines?
+5. **A difference in a `sheetCell`.** Other charges is `F16+F44` less `E43`. The `sheetCell` form has only `+`. Allow `-` (as written in 4c)?
+6. **Fixed asset classes.** The formats name only "Land and buildings" and "Plant and machinery etc.". No allowed source names fixtures and fittings, computer equipment or motor vehicles. Keep Submit's words?
+7. **FRS names in the regime choice.** FRS 102 Section 1A and FRS 105 are FRC titles. They are not on legislation.gov.uk or gov.uk, so this register did not check them. Keep them in the labels?
+8. **"Filleted accounts".** No statute uses the word. Section 444(1) lets a small company leave out the profit and loss account and the directors' report. Keep "Filleted accounts"?
+9. **Principal activity.** Section 416(1)(b) is omitted, so no statute names this line for a small company. Keep "Principal activity"?
+10. **Date approved.** Section 414 names the approval and the signature, but no date. Keep "Date approved"?
+11. **Box 4.** The guide asks for a number (0 when no type applies). Submit asks Yes or No. Label it "Box 4: Type of company" and keep the Yes or No?
+12. **Average number of employees.** The workbook has no cell; a book counts the employees in its own table. Show "none", or name a cell in `Payslips.xlsx`?
+13. **The declaration.** Submit's text covers "this return and the attached accounts and computations". HMRC's covers "this Company Tax Return and any supplementary pages". Use HMRC's text?
+14. **Losses brought forward.** The field holds the losses available. Box 160 is only the part set against the trading profits. Label the field with box 160's term, or as "Trading losses brought forward" with a reference to box 160?
