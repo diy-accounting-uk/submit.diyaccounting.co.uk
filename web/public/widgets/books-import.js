@@ -1418,14 +1418,19 @@
       }
     }
     // A practice filing for a client sees that client's saved books; the chosen version is read as a dropped file is.
+    // Each call counts as the latest; an answer to an earlier call that lands after it is dropped, so
+    // the list holds only the books of the client now chosen.
+    let savedBooksRequest = 0;
     async function listSavedBooks(clientId) {
+      const request = ++savedBooksRequest;
       savedBooks.hidden = true;
       savedBooksSelect.replaceChildren();
       if (!clientId) return;
       try {
         const response = await window.fetchWithIdToken(`/api/v1/diya-gl?clientId=${encodeURIComponent(clientId)}`, {});
-        if (!response.ok) return;
+        if (request !== savedBooksRequest || !response.ok) return;
         const body = await response.json();
+        if (request !== savedBooksRequest) return;
         const books = Array.isArray(body.books) ? body.books : [];
         for (const book of books) {
           const option = element(
@@ -1478,7 +1483,11 @@
     // The person's filings for the company on the page, and the period the form holds when it holds one.
     let filedReceiptsListed = [];
     let filedReceiptsFor = null;
+    // Each call counts as the latest; an answer to an earlier call that lands after it is dropped, so
+    // the block shows only the filings of the company now on the page.
+    let filedReceiptsRequest = 0;
     async function listFiledReceipts(companyNumber, clientId) {
+      const request = ++filedReceiptsRequest;
       filedReceiptsFor = { companyNumber, clientId };
       filedReceipts.hidden = true;
       filedReceiptsSelect.replaceChildren();
@@ -1487,9 +1496,10 @@
       try {
         const url = clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(clientId)}` : "/api/v1/hmrc/receipt";
         const response = await window.fetchWithIdToken(url, {});
-        if (!response.ok) return;
+        if (request !== filedReceiptsRequest || !response.ok) return;
         const body = await response.json();
         const { receiptsForForm } = await import("../lib/filed-receipts.js");
+        if (request !== filedReceiptsRequest) return;
         filedReceiptsListed = receiptsForForm(body.receipts, {
           companyNumber,
           periodStart: fieldValue("periodStart"),

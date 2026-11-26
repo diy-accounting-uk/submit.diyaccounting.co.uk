@@ -66,8 +66,11 @@ const CONTENT_TYPES = {
   ".json": "application/json",
 };
 
-// The real site from disk, signed in, with the receipts and the company answered here.
-async function openForm(page, requestedUrls = []) {
+// The real site from disk, signed in, with the receipts and the company answered here. With
+// holdFirstReceipts, the first receipts request waits until the test calls the release function
+// it puts in holdFirstReceipts.release.
+async function openForm(page, requestedUrls = [], holdFirstReceipts = null) {
+  let receiptsRequests = 0;
   await page.addInitScript((email) => {
     localStorage.setItem("cognitoIdToken", "mock-id-token");
     localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
@@ -78,7 +81,17 @@ async function openForm(page, requestedUrls = []) {
     if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     const pathname = decodeURIComponent(url.pathname);
     if (pathname.startsWith("/api/")) requestedUrls.push(pathname);
-    if (pathname === "/api/v1/hmrc/receipt") return json(route, { receipts: RECEIPT_LIST, filingsInProgress: [] });
+    if (pathname === "/api/v1/hmrc/receipt") {
+      receiptsRequests += 1;
+      if (holdFirstReceipts && receiptsRequests === 1) {
+        await new Promise((resolve) => {
+          holdFirstReceipts.release = resolve;
+        });
+        holdFirstReceipts.answered = json(route, { receipts: RECEIPT_LIST, filingsInProgress: [] });
+        return holdFirstReceipts.answered;
+      }
+      return json(route, { receipts: RECEIPT_LIST, filingsInProgress: [] });
+    }
     if (pathname === `/api/v1/hmrc/receipt/${ACCOUNTS_NAME}`) return json(route, ACCOUNTS_RECORD);
     if (pathname === `/api/v1/companies-house/company/${JOINERY.number}`) {
       return json(route, { companyNumber: JOINERY.number, companyName: JOINERY.name, jurisdiction: "england-wales" });
@@ -131,5 +144,20 @@ test.describe("File micro-entity accounts page - fill from a filing you made", (
     await openForm(page);
     await page.evaluate(() => window.booksImport.showFilingsFor("00000005"));
     await expect(page.locator("#filedReceipts")).toBeHidden();
+  });
+
+  test("an answer for the company looked up first that lands after another company's shows no filing choice", async ({ page }) => {
+    const holdFirstReceipts = {};
+    await openForm(page, [], holdFirstReceipts);
+    await expect.poll(() => typeof holdFirstReceipts.release).toBe("function");
+
+    await page.evaluate(() => window.booksImport.showFilingsFor("00000005"));
+    await expect(page.locator("#filedReceipts")).toBeHidden();
+    holdFirstReceipts.release();
+    await holdFirstReceipts.answered;
+    await page.waitForLoadState("networkidle");
+
+    await expect(page.locator("#filedReceipts")).toBeHidden();
+    await expect(page.locator("#filedReceiptsSelect option")).toHaveCount(0);
   });
 });
