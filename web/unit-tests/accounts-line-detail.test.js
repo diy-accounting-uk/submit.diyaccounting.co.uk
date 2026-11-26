@@ -8,7 +8,8 @@
 import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { MICRO_PAGE_LINES, SMALL_PAGE_LINES, renderAccountsLines } from "../public/lib/accounts-line-detail.js";
+import { renderAccountsLines } from "../public/lib/accounts-line-detail.js";
+import { MICRO_PAGE_LINES, SMALL_PAGE_LINES } from "../public/lib/accounts-page-lines.js";
 import { referenceText } from "../public/lib/field-detail.js";
 
 function pageDocument(name) {

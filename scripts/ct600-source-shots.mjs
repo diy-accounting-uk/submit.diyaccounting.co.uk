@@ -7,7 +7,7 @@
 // - **Does:** ct600-source-shots.mjs reads the published package's Financialaccounts.xlsx with the diya-gl workbook reader, checks that each single cell's row (or its label cell's row) holds the entry's workbookLabel, draws the rows around the cell as a grid with the sheet's own column letters, row numbers and labels, marks the cell, takes a PNG with Playwright and writes a WebP with ffmpeg-static to web/public/images/ct600-sources/<sheet>-<cell>.webp. It fails on a label that is missing.
 // - **Run:** `npm run ct600:source-shots`; `npm run ct600:source-shots -- --package <package directory>`
 // - **Entry:** `scripts/ct600-source-shots.mjs`
-// - **Files:** scripts/ct600-source-shots.mjs, web/public/lib/ct600-source-cells.js, web/public/lib/ct600-fields.js, web/unit-tests/ct600SourceCells.test.js, web/public/images/ct600-sources/
+// - **Files:** scripts/ct600-source-shots.mjs, web/public/lib/ct600-source-cells.js, web/public/lib/ct600-fields.js, web/public/lib/accounts-page-lines.js, web/unit-tests/ct600SourceCells.test.js, web/public/images/ct600-sources/
 // - **Keywords:** ct600, workbook cell, screenshot, source, label check, webp, spreadsheets disclosure
 // - **Related:** OPS-139
 // @end-capability

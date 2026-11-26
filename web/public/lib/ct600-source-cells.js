@@ -6,7 +6,7 @@
 // { file, sheet, cell } records and gives each cell its screenshot's file name and URL.
 
 import * as fields from "./ct600-fields.js";
-import * as pageLines from "./accounts-line-detail.js";
+import * as pageLines from "./accounts-page-lines.js";
 
 export const SOURCE_IMAGE_DIRECTORY = "images/ct600-sources";
 
