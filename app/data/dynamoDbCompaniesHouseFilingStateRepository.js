@@ -21,7 +21,7 @@ import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { calculateTtl } from "../lib/dateUtils.js";
 import { hashSub } from "../services/subHasher.js";
 import { COMPANIES_HOUSE_FORM_KINDS } from "../../web/public/lib/companies-house-forms.js";
-import { CT_RETURN_KIND } from "../services/ctReturnKind.js";
+import { CT_RETURN_KIND, CT_NO_ANSWER_STATUS_CODE } from "../services/ctReturnKind.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbCompaniesHouseFilingStateRepository.js" });
 
@@ -294,13 +294,14 @@ export async function listFilingsInProgress(userSub, clientId) {
 }
 
 /**
- * The reader's Company Tax Returns that HMRC has not answered finally yet: the requests of the
- * Company Tax Return kind still pending, read by a Query on the reader's own partition. As
- * listFilingsInProgress does, a practice client's returns answer for that client's id, and only the
- * returns made for no client otherwise. The filed documents are not read.
+ * The reader's Company Tax Returns that HMRC has not answered finally: the requests of the Company
+ * Tax Return kind still pending, and those HMRC gave no answer to in the 30 days Submit waits
+ * (status "no-answer"), read by a Query on the reader's own partition. As listFilingsInProgress
+ * does, a practice client's returns answer for that client's id, and only the returns made for no
+ * client otherwise. The filed documents are not read.
  * @param {string} userSub
  * @param {string} [clientId] - one of the practice's clients
- * @returns {Promise<Array<{correlationId: string, status: "pending", submittedAt: string|undefined, lastCheckedAt: string|undefined, utr: string|undefined, companyName: string|undefined, companyNumber: string|undefined, periodStart: string|undefined, periodEnd: string|undefined, clientId: string|null}>>}
+ * @returns {Promise<Array<{correlationId: string, status: "pending"|"no-answer", submittedAt: string|undefined, lastCheckedAt: string|undefined, utr: string|undefined, companyName: string|undefined, companyNumber: string|undefined, periodStart: string|undefined, periodEnd: string|undefined, clientId: string|null}>>}
  */
 export async function listCompanyTaxReturnsInProgress(userSub, clientId) {
   const hashedSub = hashSub(userSub);
@@ -313,9 +314,9 @@ export async function listCompanyTaxReturnsInProgress(userSub, clientId) {
         new module.QueryCommand({
           TableName: filingStateTableName(),
           KeyConditionExpression: "hashedSub = :hashedSub",
-          FilterExpression: "#data.#kind = :ctReturn AND #status = :pending",
+          FilterExpression: "#data.#kind = :ctReturn AND (#status = :pending OR (#status = :failed AND #data.#statusCode = :noAnswer))",
           ProjectionExpression:
-            "requestId, #status, createdAt, #data.#clientId, #data.#utr, #data.#lastCheckedAt, " +
+            "requestId, #status, createdAt, #data.#clientId, #data.#utr, #data.#lastCheckedAt, #data.#statusCode, " +
             "#data.#formRequest.#company.#companyName, #data.#formRequest.#company.#companyNumber, " +
             "#data.#filed.#boxes.#periodStart, #data.#filed.#boxes.#periodEnd",
           ExpressionAttributeNames: {
@@ -325,6 +326,7 @@ export async function listCompanyTaxReturnsInProgress(userSub, clientId) {
             "#clientId": "clientId",
             "#utr": "utr",
             "#lastCheckedAt": "lastCheckedAt",
+            "#statusCode": "statusCode",
             "#formRequest": "formRequest",
             "#company": "company",
             "#companyName": "companyName",
@@ -335,7 +337,13 @@ export async function listCompanyTaxReturnsInProgress(userSub, clientId) {
             "#periodStart": "30",
             "#periodEnd": "35",
           },
-          ExpressionAttributeValues: { ":hashedSub": hashedSub, ":ctReturn": CT_RETURN_KIND, ":pending": "pending" },
+          ExpressionAttributeValues: {
+            ":hashedSub": hashedSub,
+            ":ctReturn": CT_RETURN_KIND,
+            ":pending": "pending",
+            ":failed": "failed",
+            ":noAnswer": CT_NO_ANSWER_STATUS_CODE,
+          },
           ExclusiveStartKey: exclusiveStartKey,
         }),
     );
@@ -346,7 +354,7 @@ export async function listCompanyTaxReturnsInProgress(userSub, clientId) {
       const boxes = item.data?.filed?.boxes;
       returns.push({
         correlationId: item.requestId,
-        status: "pending",
+        status: item.status === "pending" ? "pending" : "no-answer",
         submittedAt: item.createdAt,
         lastCheckedAt: item.data?.lastCheckedAt,
         utr: item.data?.utr,

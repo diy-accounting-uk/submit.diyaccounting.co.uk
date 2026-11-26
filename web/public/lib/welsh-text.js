@@ -1665,8 +1665,10 @@ window.WELSH_TEXT = {
   "ch.filing.ct-status-gone":
     "Nid yw’r Ffurflen ag ID cydberthyniad {id} yn aros am CThEF mwyach. Mae ei derbynneb yn eich derbynebau unwaith y bydd CThEF yn ei derbyn.",
   "ch.filing.ct-status-how":
-    "Mae Submit yn gofyn i CThEF am ei ateb pan fyddwch yn pwyso Gwirio nawr. Fel arfer, mae CThEF yn ateb o fewn munudau.",
+    "Mae Submit yn gofyn i CThEF am ei ateb bob 15 munud, a phan fyddwch yn pwyso Gwirio nawr. Fel arfer, mae CThEF yn ateb o fewn munudau.",
   "ch.filing.ct-status-last-asked": "Gofynnodd Submit i CThEF ddiwethaf",
+  "ch.filing.ct-status-no-answer":
+    "Ni roddodd CThEF ateb terfynol i’r Ffurflen ag ID cydberthyniad {id} yn ystod y 30 diwrnod ar ôl ei hanfon, felly mae Submit wedi rhoi’r gorau i ofyn. Cyn i chi ei ffeilio eto, gofynnwch i Ddesg Gymorth Gwasanaethau Ar-lein CThEF a yw’r Ffurflen ganddi.",
   "ch.filing.ct-status-pending": "Mae’r Ffurflen gan CThEF ac nid yw wedi rhoi ei ateb terfynol eto.",
   "ch.filing.ct-status-period": "Cyfnod",
   "ch.filing.ct-status-receipt": "eich copi o’r Ffurflen a derbynneb CThEF",
@@ -3098,6 +3100,7 @@ window.WELSH_TEXT = {
   "receipts.col-date": "Dyddiad",
   "receipts.col-receipt": "Derbynneb",
   "receipts.correlation-id": "ID cydberthyniad {id}",
+  "receipts.ct-no-answer-tag": "Dim ateb gan CThEF",
   "receipts.details": "Manylion y dderbynneb",
   "receipts.download": "Lawrlwytho’r dderbynneb",
   "receipts.download-failed": "Methu lawrlwytho’r dderbynneb",

@@ -120,6 +120,23 @@ describe("dynamoDbAsyncRequestRepository", () => {
     }
   });
 
+  test("putAsyncRequest counts the retention from retention.from when it is given, and from now otherwise", async () => {
+    const { putAsyncRequest } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockResolvedValue({});
+    const sentAt = "2026-01-01T00:00:00.000Z";
+
+    await putAsyncRequest("user-123", "req-1", "pending", { a: 1 }, "t", { days: 30, from: sentAt });
+    const fromSent = mockSend.mock.calls[0][0].input.ExpressionAttributeValues;
+    expect(fromSent[":ttl"]).toBe(Math.floor(Date.parse(sentAt) / 1000) + 30 * 86400);
+    expect(fromSent[":ttl_datestamp"]).toBe("2026-01-31T00:00:00.000Z");
+
+    const before = Math.floor(Date.now() / 1000);
+    await putAsyncRequest("user-123", "req-1", "completed", { a: 1 }, "t");
+    const fromNow = mockSend.mock.calls[1][0].input.ExpressionAttributeValues[":ttl"];
+    expect(fromNow).toBeGreaterThanOrEqual(before + 3600);
+    expect(fromNow).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 3600);
+  });
+
   test("recordStatusCheck sets data.lastCheckedAt in place on a request that is still pending", async () => {
     const { recordStatusCheck } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
     const { hashSub } = await import("../../services/subHasher.js");

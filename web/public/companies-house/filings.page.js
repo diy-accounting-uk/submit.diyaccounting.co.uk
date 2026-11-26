@@ -367,6 +367,17 @@ function showCtDecision(result, correlationId) {
     element("filingStatusWarning").hidden = true;
     return;
   }
+  if (result.statusCode === "NO_ANSWER") {
+    check.hidden = true;
+    answer.textContent = window.siteText(
+      "ch.filing.ct-status-no-answer",
+      "HMRC gave no final answer to the return with correlation ID {id} in the 30 days after it was sent, so Submit has stopped asking. Before you file it again, ask HMRC's Online Services Helpdesk whether it has the return.",
+      { id: correlationId },
+    );
+    element("filingStatusWarning").hidden = true;
+    element("filingStatusHow").hidden = true;
+    return;
+  }
   answer.textContent = ctPendingAnswer();
 }
 
@@ -462,7 +473,7 @@ async function showCtReturnStatus(correlationId, clientId) {
       { class: "hint", id: "filingStatusHow" },
       window.siteText(
         "ch.filing.ct-status-how",
-        "Submit asks HMRC for its answer when you press Check now. HMRC usually answers within minutes.",
+        "Submit asks HMRC for its answer every 15 minutes, and when you press Check now. HMRC usually answers within minutes.",
       ),
     ),
     create(
@@ -477,6 +488,7 @@ async function showCtReturnStatus(correlationId, clientId) {
     create("button", { type: "button", id: "checkNowBtn", class: "btn" }, window.siteText("ch.filing.status-check-now", "Check now")),
   );
   element("checkNowBtn").addEventListener("click", () => checkCtNow(filing.correlationId, filing.clientId ?? clientId));
+  if (filing.status === "no-answer") showCtDecision({ statusCode: "NO_ANSWER" }, filing.correlationId);
   panel.hidden = false;
 }
 

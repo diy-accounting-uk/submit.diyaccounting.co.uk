@@ -95,9 +95,12 @@ const IRMARK_ERROR = engineXml({
 });
 const DELETE_RESPONSE = engineXml({ qualifier: "response", messageFunction: "delete" });
 
+const SENT_AT = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
 function pendingRecord(overrides = {}) {
   return {
     status: "pending",
+    createdAt: SENT_AT,
     data: {
       kind: "company-tax-return",
       pollUrl: POLL_URL,
@@ -188,6 +191,7 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     const [update] = await commands("UpdateCommand");
     expect(update.input.ExpressionAttributeValues[":status"]).toBe("pending");
     expect(Date.parse(update.input.ExpressionAttributeValues[":data"].nextPollAt)).toBeGreaterThan(Date.now());
+    expect(update.input.ExpressionAttributeValues[":ttl"]).toBe(Math.floor(Date.parse(SENT_AT) / 1000) + 30 * 86400);
   });
 
   test("writes the receipt, completes the request and sends the delete request on HMRC's success response", async () => {
@@ -266,6 +270,23 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", receiptId: "r-1" });
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
     expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+  });
+
+  test("answers a stored no answer from HMRC from the record without asking HMRC", async () => {
+    storedRecord = { status: "failed", data: { kind: "company-tax-return", statusCode: "NO_ANSWER", correlationId: CORRELATION_ID } };
+    const response = await hmrcCtReturnGetHandler(buildEvent());
+    expect(parseResponseBody(response)).toMatchObject({ statusCode: "NO_ANSWER", correlationId: CORRELATION_ID });
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+  });
+
+  test("records no answer from HMRC on a read 30 days after the return was sent", async () => {
+    storedRecord = pendingRecord({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 - 1000).toISOString() });
+    const response = await hmrcCtReturnGetHandler(buildEvent());
+    expect(parseResponseBody(response)).toMatchObject({ statusCode: "NO_ANSWER" });
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    const [update] = await commands("UpdateCommand");
+    expect(update.input.ExpressionAttributeValues[":status"]).toBe("failed");
   });
 
   test("answers 404 without polling when the caller has no request for the correlation id", async () => {

@@ -178,8 +178,8 @@ function filingInProgressEntry(filing) {
   return entry;
 }
 
-// A Company Tax Return HMRC has not answered finally yet. Its correlation ID, the number HMRC's
-// Transaction Engine knows it by, links to its status page, which can ask HMRC again.
+// A Company Tax Return HMRC has not answered finally yet, or gave no answer to in the 30 days Submit
+// waits. Its correlation ID, the number HMRC's Transaction Engine knows it by, links to its status page.
 function ctReturnStatusHref(ctReturn) {
   const query = new URLSearchParams({ filing: ctReturn.correlationId, kind: "ct600" });
   if (ctReturn.clientId) query.set("clientId", ctReturn.clientId);
@@ -195,7 +195,10 @@ function ctReturnInProgressEntry(ctReturn) {
   title.textContent = `${siteText("receipts.kind-company-tax-return", "Company Tax Return")}: `;
   const status = document.createElement("span");
   status.className = "filing-status";
-  status.textContent = siteText("receipts.filing-pending-tag", "Pending");
+  status.textContent =
+    ctReturn.status === "no-answer"
+      ? siteText("receipts.ct-no-answer-tag", "No answer from HMRC")
+      : siteText("receipts.filing-pending-tag", "Pending");
   const link = document.createElement("a");
   link.className = "submission-number";
   link.href = ctReturnStatusHref(ctReturn);

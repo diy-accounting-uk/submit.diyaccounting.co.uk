@@ -234,11 +234,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresFortySixLambdas() {
+    void stackWiresFortySevenLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 46);
+        template.resourceCountIs("AWS::Lambda::Function", 47);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -283,7 +283,8 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseOfficerAppointmentPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficerChangePostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAllotmentOfSharesPostLambdaProps.ingestFunctionName(),
-                pollFunctionName())) {
+                pollFunctionName(),
+                ctStatusCheckFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -293,7 +294,7 @@ class CompaniesHouseStackTest {
     void presenterPollRunsEveryFifteenMinutesInOfficeHoursOnWeekdays() {
         Template template = Template.fromStack(synthCompaniesHouseStack());
 
-        template.resourceCountIs("AWS::Events::Rule", 1);
+        template.resourceCountIs("AWS::Events::Rule", 2);
         template.hasResourceProperties(
                 "AWS::Events::Rule",
                 Match.objectLike(Map.of(
@@ -304,6 +305,70 @@ class CompaniesHouseStackTest {
         template.hasResourceProperties(
                 "AWS::Lambda::Permission",
                 Match.objectLike(Map.of("Action", "lambda:InvokeFunction", "Principal", "events.amazonaws.com")));
+    }
+
+    @Test
+    void ct600StatusCheckRunsEveryFifteenMinutesAllDay() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+
+        template.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name", ctStatusCheckFunctionName() + "-schedule", "ScheduleExpression", "rate(15 minutes)")));
+        template.hasResourceProperties(
+                "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", ctStatusCheckFunctionName())));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void ct600StatusCheckQueriesOnlyTheMarkerPartitionAndNeverScans() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        String functionName = ctStatusCheckFunctionName();
+        String asyncTable = SubmitSharedNames.forDocs().data.companiesHouseAccountsAsyncRequestsTableName;
+
+        var actions = actionsOnRole(template, functionName);
+        assertFalse(actions.contains("dynamodb:Scan"), "the status check must not scan any table");
+        assertEquals(
+                java.util.Set.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query", "dynamodb:UpdateItem"),
+                actionsOnTable(template, functionName, asyncTable),
+                "the status check reads and writes the requests and markers by key and queries the markers");
+        var queryStatements = statementsOnRole(template, functionName).stream()
+                .filter(statement -> "dynamodb:Query".equals(statement.get("Action")))
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("table/" + asyncTable))
+                .toList();
+        assertEquals(1, queryStatements.size());
+        assertEquals(
+                Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("hmrc-ct-pending"))),
+                queryStatements.get(0).get("Condition"),
+                "the Query reaches the marker partition and no user's partition");
+        assertTrue(actions.contains("dynamodb:PutItem"), "the status check writes the receipt");
+        assertTrue(actions.contains("events:PutEvents"), "the status check publishes the accepted event");
+        assertTrue(actions.contains("secretsmanager:GetSecretValue"), "the status check opens the sealed filer");
+        assertTrue(
+                BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, functionName),
+                "the status check charges the return's token on acceptance");
+        for (String variable : List.of(
+                "MCP_OAUTH_BLOB_KEY_SECRET_ARN",
+                "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                "RECEIPTS_DYNAMODB_TABLE_NAME",
+                "ACTIVITY_BUS_NAME",
+                "BUNDLE_DYNAMODB_TABLE_NAME")) {
+            assertHasEnvironmentVariable(template, functionName, variable);
+        }
+    }
+
+    @Test
+    void theCt600FileRouteSealsTheFilerIntoTheMarkerTheStatusCheckReads() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+        String functionName = stack.hmrcCtReturnPostLambdaProps.ingestFunctionName();
+        assertHasEnvironmentVariable(template, functionName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
+        assertTrue(actionsOnRole(template, functionName).contains("secretsmanager:GetSecretValue"));
+        assertFalse(actionsOnTable(
+                        template,
+                        functionName,
+                        SubmitSharedNames.forDocs().data.companiesHouseAccountsAsyncRequestsTableName)
+                .contains("dynamodb:Query"));
     }
 
     @Test
@@ -923,7 +988,7 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        // The 44 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
+        // The 45 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
         // enforceBundles(), and the OAuth token exchange publishes activity events, which label
         // an operator's events from the same list.
         var operatorEmailsArn = Match.objectLike(Map.of(
@@ -936,7 +1001,7 @@ class CompaniesHouseStackTest {
                 Match.objectLike(Map.of(
                         "PolicyDocument",
                         Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
-                44);
+                45);
     }
 
     @Test
@@ -990,8 +1055,9 @@ class CompaniesHouseStackTest {
         // route, the officer change of details route, the allotment of shares route and
         // the shared
         // form poll, all gated by enforceBundles(), and
-        // the presenter poll, whose token charge reads the filer's bundles. The token exchange has
-        // no authorizer and so no user to check a bundle entitlement against.
+        // the presenter poll and the CT600 status check, whose token charges read the filer's
+        // bundles. The token exchange has no authorizer and so no user to check a bundle entitlement
+        // against.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1000,7 +1066,7 @@ class CompaniesHouseStackTest {
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(
                                         Map.of("Action", Match.arrayWith(List.of("dynamodb:Query")))))))))),
-                43);
+                44);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1008,7 +1074,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                44);
+                45);
     }
 
     @Test
@@ -1673,6 +1739,25 @@ class CompaniesHouseStackTest {
                 resources.size() < 500,
                 "CompaniesHouseStack synths " + resources.size()
                         + " resources, approaching CloudFormation's 500-per-stack limit");
+    }
+
+    private static String ctStatusCheckFunctionName() {
+        return SubmitSharedNames.forDocs().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaFunctionName;
+    }
+
+    // Every IAM statement on the Lambda's own role, across all its policies.
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> statementsOnRole(Template template, String functionName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        return template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .toList();
     }
 
     private static String pollFunctionName() {

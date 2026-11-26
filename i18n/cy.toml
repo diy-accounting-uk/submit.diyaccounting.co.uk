@@ -27918,8 +27918,8 @@ hash = "573203ea0e3d"
 cy = '''Gofynnoch i CThEF am '''
 
 [strings."ch.filing.ct-status-how"]
-hash = "771ae4b976d0"
-cy = '''Mae Submit yn gofyn i CThEF am ei ateb pan fyddwch yn pwyso Gwirio nawr. Fel arfer, mae CThEF yn ateb o fewn munudau.'''
+hash = "e7626f961b94"
+cy = '''Mae Submit yn gofyn i CThEF am ei ateb bob 15 munud, a phan fyddwch yn pwyso Gwirio nawr. Fel arfer, mae CThEF yn ateb o fewn munudau.'''
 
 [strings."ch.filing.ct-status-warning"]
 hash = "09ccd8e09480"
@@ -28658,3 +28658,11 @@ cy = '''Os caiff ei ffeilio nawr, mae’r datganiad wedi’i wneud hyd at heddiw
 [strings."ch.ct.review-record-title"]
 hash = "45fec261ce04"
 cy = '''Ffurflen Dreth y Cwmni (CT600)'''
+
+[strings."receipts.ct-no-answer-tag"]
+hash = "c28037ec602f"
+cy = '''Dim ateb gan CThEF'''
+
+[strings."ch.filing.ct-status-no-answer"]
+hash = "b725ac20cec8"
+cy = '''Ni roddodd CThEF ateb terfynol i’r Ffurflen ag ID cydberthyniad {id} yn ystod y 30 diwrnod ar ôl ei hanfon, felly mae Submit wedi rhoi’r gorau i ofyn. Cyn i chi ei ffeilio eto, gofynnwch i Ddesg Gymorth Gwasanaethau Ar-lein CThEF a yw’r Ffurflen ganddi.'''

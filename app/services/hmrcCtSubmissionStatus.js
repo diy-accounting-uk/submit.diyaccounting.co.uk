@@ -6,7 +6,8 @@
 // it. The async request holds the poll end point and the earliest time the next poll may go out,
 // so a call that arrives inside the poll interval answers from the record and sends nothing. The
 // final response writes the receipt, then a DELETE_REQUEST tells the Transaction Engine to drop
-// its copy.
+// its copy. A pending return is kept 30 days from when it was sent, however often it is polled; a
+// return HMRC has not answered by then is recorded as having no answer from HMRC.
 
 import { setTimeout as sleep } from "node:timers/promises";
 import { createLogger, context } from "../lib/logger.js";
@@ -21,7 +22,7 @@ import {
   isTransientPollError,
   irmarkReceiptMatches,
 } from "./hmrcTransactionEngine.js";
-import { CT_RETURN_KIND } from "./ctReturnKind.js";
+import { CT_RETURN_KIND, CT_NO_ANSWER_STATUS_CODE } from "./ctReturnKind.js";
 import {
   verifyReceiptSignature,
   parseTrustedFingerprints,
@@ -104,6 +105,22 @@ function withoutDeleteOwed({ deleteOwed: _owed, ...data }) {
 const DATA_REQUEST_ATTEMPTS = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// How long Submit waits for HMRC's final answer to a return, counted from when it was sent.
+export const CT_ANSWER_WAIT_DAYS = 30;
+// A no-answer record stays this long after it is written, so the receipts list and the status page
+// show it.
+const CT_NO_ANSWER_RETENTION = { days: CT_ANSWER_WAIT_DAYS };
+
+/**
+ * The retention of a pending return: CT_ANSWER_WAIT_DAYS from when it was sent, so a poll that
+ * writes the request again does not move it.
+ * @param {Date|string} sentAt
+ * @returns {{days: number, from: Date}}
+ */
+export function ctPendingRetention(sentAt) {
+  return { days: CT_ANSWER_WAIT_DAYS, from: new Date(sentAt) };
+}
+
 /**
  * Find out whether the Transaction Engine holds a submission whose reply never reached us. The
  * Transaction Engine is asked with a DATA_REQUEST after the poll interval, as the protocol says,
@@ -170,7 +187,7 @@ export async function findHeldCtSubmission({
 }
 
 // Called once the Transaction Engine has answered a poll, so lastCheckedAt is when Submit last asked.
-async function pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: hmrcInterval, asyncRequestsTableName }) {
+async function pendingAgain({ userSub, correlationId, pending, sentAt, pollIntervalSeconds: hmrcInterval, asyncRequestsTableName }) {
   const pollIntervalSeconds = hmrcInterval ?? pending.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
   const checkedAt = new Date();
   const nextPollAt = new Date(checkedAt.getTime() + pollIntervalSeconds * 1000).toISOString();
@@ -181,8 +198,32 @@ async function pendingAgain({ userSub, correlationId, pending, pollIntervalSecon
     "pending",
     { ...pending, nextPollAt, pollIntervalSeconds, lastCheckedAt },
     asyncRequestsTableName,
+    ctPendingRetention(sentAt),
   );
   return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark, pollIntervalSeconds } };
+}
+
+// HMRC gave no final answer in CT_ANSWER_WAIT_DAYS: the request records that, and nothing more is asked.
+async function recordNoAnswer({ userSub, correlationId, pending, jointFiling, sentAt, asyncRequestsTableName }) {
+  const noAnswer = {
+    kind: CT_RETURN_KIND,
+    statusCode: CT_NO_ANSWER_STATUS_CODE,
+    ...(pending.clientId ? { clientId: pending.clientId } : {}),
+    ...jointFiling,
+    correlationId,
+    utr: pending.utr,
+    irmark: pending.irmark,
+    ...(pending.lastCheckedAt ? { lastCheckedAt: pending.lastCheckedAt } : {}),
+    ...formRequestFields(pending.formRequest),
+    ...(pending.filed?.boxes ? { filed: { boxes: pending.filed.boxes } } : {}),
+  };
+  logger.warn({
+    message: "HMRC gave no final answer to the Company Tax Return in time; Submit stops asking",
+    hmrcCorrelationId: correlationId,
+    sentAt,
+  });
+  await putAsyncRequest(userSub, correlationId, "failed", noAnswer, asyncRequestsTableName, CT_NO_ANSWER_RETENTION);
+  return { data: noAnswer };
 }
 
 /**
@@ -192,9 +233,12 @@ async function pendingAgain({ userSub, correlationId, pending, pollIntervalSecon
  * @param {string} input.userSub
  * @param {string} input.correlationId - the Transaction Engine CorrelationID, the async request id
  * @param {string} [input.govTestScenario] - forwarded to the Transaction Engine as Gov-Test-Scenario
+ * @param {number} [input.noAnswerLeadSeconds] - how long before the end of CT_ANSWER_WAIT_DAYS the
+ *   return counts as unanswered: a scheduled caller passes its interval, so its last run comes before
+ *   the pending request's retention ends
  * @returns {Promise<{data: object}|{errors: object[], correlationId: string}|{notFound: true, correlationId: string}>}
  */
-export async function pollCtSubmission({ userSub, correlationId, govTestScenario }) {
+export async function pollCtSubmission({ userSub, correlationId, govTestScenario, noAnswerLeadSeconds = 0 }) {
   context.set("hmrcCorrelationId", correlationId);
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const persistedRequest = await getAsyncRequest(userSub, correlationId, asyncRequestsTableName);
@@ -228,6 +272,10 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     ...amendedFields(pending.amended === true),
   };
   const now = Date.now();
+  const sentAt = persistedRequest.createdAt;
+  if (now + noAnswerLeadSeconds * 1000 >= Date.parse(sentAt) + CT_ANSWER_WAIT_DAYS * DAY_MS) {
+    return recordNoAnswer({ userSub, correlationId, pending, jointFiling, sentAt, asyncRequestsTableName });
+  }
   if (pending.nextPollAt && Date.parse(pending.nextPollAt) > now) {
     return {
       data: { statusCode: "PENDING", correlationId, irmark: pending.irmark, pollIntervalSeconds: secondsUntil(pending.nextPollAt, now) },
@@ -245,7 +293,14 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
       hmrcCorrelationId: correlationId,
       errors: parsed.errors,
     });
-    return pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: parsed.pollIntervalSeconds, asyncRequestsTableName });
+    return pendingAgain({
+      userSub,
+      correlationId,
+      pending,
+      sentAt,
+      pollIntervalSeconds: parsed.pollIntervalSeconds,
+      asyncRequestsTableName,
+    });
   }
 
   if (parsed.qualifier === "error" || parsed.errors.length > 0) {
@@ -275,7 +330,14 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   }
 
   if (parsed.qualifier === "acknowledgement") {
-    return pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: parsed.pollIntervalSeconds, asyncRequestsTableName });
+    return pendingAgain({
+      userSub,
+      correlationId,
+      pending,
+      sentAt,
+      pollIntervalSeconds: parsed.pollIntervalSeconds,
+      asyncRequestsTableName,
+    });
   }
 
   const irmarkReceiptMismatch = !irmarkReceiptMatches(pending.irmark, parsed.irmarkReceipt);

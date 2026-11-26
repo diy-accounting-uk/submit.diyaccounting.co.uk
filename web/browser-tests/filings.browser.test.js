@@ -696,6 +696,25 @@ test.describe("Filings page - a Company Tax Return HMRC has not answered", () =>
     await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
   });
 
+  test("Check now on a return HMRC gave no answer to says Submit stopped asking and offers no more checks", async ({ page }) => {
+    await openCtStatus(page, { statusAnswers: [{ statusCode: "NO_ANSWER", correlationId: CT_PENDING.correlationId }] });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toHaveText(
+      `HMRC gave no final answer to the return with correlation ID ${CT_PENDING.correlationId} in the 30 days after it was sent, so Submit has stopped asking. Before you file it again, ask HMRC's Online Services Helpdesk whether it has the return.`,
+    );
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+    await expect(page.locator("#filingStatusWarning")).toBeHidden();
+  });
+
+  test("a return stored as no answer from HMRC opens with that answer and no Check now", async ({ page }) => {
+    await openCtStatus(page, { companyTaxReturnsInProgress: [{ ...CT_PENDING, status: "no-answer" }] });
+    await expect(page.locator("#filingStatusAnswer")).toContainText("HMRC gave no final answer to the return");
+    await expect(page.locator("#filingStatusSent")).toHaveText("Wednesday, 25 November 2026 at 10:00");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+    await expect(page.locator("#filingStatusHow")).toBeHidden();
+    expect(await page.evaluate(() => window.requestedUrls)).not.toContain(`/api/v1/hmrc/ct/return/${CT_PENDING.correlationId}`);
+  });
+
   test("a failed check says to try again and keeps Check now", async ({ page }) => {
     await openCtStatus(page, { statusAnswers: [] });
     await page.getByRole("button", { name: "Check now" }).click();

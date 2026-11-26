@@ -211,6 +211,29 @@ test.describe("Receipts page - receipt details", () => {
     await expect(rows.nth(1).locator("td").nth(1)).toContainText("AAA");
   });
 
+  test("a Company Tax Return HMRC gave no answer to in 30 days is a row that says so, linking its status page", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const companyTaxReturnsInProgress = [
+        { correlationId: "46DCD4CC7E194088B99857931C185829", status: "no-answer", submittedAt: "2026-10-01T10:00:00.000Z", clientId: null },
+      ];
+      window.fetchWithIdToken = async () => ({
+        ok: true,
+        json: async () => ({ receipts: [], filingsInProgress: [], companyTaxReturnsInProgress }),
+      });
+      await window.fetchReceipts();
+    });
+
+    const row = page.locator("#receiptsTable tbody tr");
+    await expect(row).toHaveAttribute("data-status", "no-answer");
+    await expect(row).toContainText("Company Tax Return: No answer from HMRC, correlation ID 46DCD4CC7E194088B99857931C185829");
+    await expect(row.getByRole("link")).toHaveAttribute(
+      "href",
+      "../../companies-house/filings.html?filing=46DCD4CC7E194088B99857931C185829&kind=ct600",
+    );
+  });
+
   test("a client's pending Company Tax Return links its status page with the client, and alone shows the table", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
     await page.evaluate(async () => {

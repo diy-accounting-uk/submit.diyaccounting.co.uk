@@ -27,7 +27,8 @@ const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.j
  * @param {string} status - Request status: 'pending', 'processing', 'completed', 'failed'
  * @param {object} data - Optional data (result for completed, error for failed)
  * @param {string} tableName - Optional table name (defaults to env var)
- * @param {{days?: number, hours?: number}} [retention] - How long the item lives, one hour unless given
+ * @param {{days?: number, hours?: number, from?: Date|string}} [retention] - How long the item lives, one hour unless
+ *   given, counted from retention.from when it is given and from now otherwise
  */
 export async function putAsyncRequest(userId, requestId, status, data = null, tableName = null, retention = { hours: 1 }) {
   const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
@@ -47,7 +48,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     const now = new Date();
     const isoNow = now.toISOString();
 
-    const { ttl, ttl_datestamp: ttlDatestamp } = calculateTtl(now, retention);
+    const { ttl, ttl_datestamp: ttlDatestamp } = calculateTtl(retention.from ? new Date(retention.from) : now, retention);
 
     const expressionAttributeNames = {
       "#status": "status",

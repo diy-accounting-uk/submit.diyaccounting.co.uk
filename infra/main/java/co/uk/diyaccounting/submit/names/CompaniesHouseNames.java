@@ -180,6 +180,11 @@ public class CompaniesHouseNames {
     public boolean hmrcCtReturnGetLambdaJwtAuthorizer;
     public boolean hmrcCtReturnGetLambdaCustomAuthorizer;
 
+    public String hmrcCtReturnStatusCheckIngestLambdaHandler;
+    public String hmrcCtReturnStatusCheckIngestLambdaFunctionName;
+    public String hmrcCtReturnStatusCheckIngestLambdaArn;
+    public String hmrcCtReturnStatusCheckIngestProvisionedConcurrencyLambdaAliasArn;
+
     public String companiesHouseOfficersGetIngestLambdaHandler;
     public String companiesHouseOfficersGetIngestLambdaFunctionName;
     public String companiesHouseOfficersGetIngestLambdaArn;
@@ -893,6 +898,19 @@ public class CompaniesHouseNames {
                 "Polls HMRC's Transaction Engine for the outcome of a submitted Company Tax Return",
                 "getHmrcCtReturn",
                 List.of(new ApiParameter("correlationId", "path", true, "The Transaction Engine correlation id"))));
+
+        // The scheduled Company Tax Return status check: no route, an EventBridge schedule invokes it.
+        var hmrcCtReturnStatusCheckLambdaHandlerName = "hmrcCtReturnStatusCheck.handler";
+        var hmrcCtReturnStatusCheckLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnStatusCheckLambdaHandlerName);
+        this.hmrcCtReturnStatusCheckIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, hmrcCtReturnStatusCheckLambdaHandlerDashed);
+        this.hmrcCtReturnStatusCheckIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(root.appLambdaHandlerPrefix, hmrcCtReturnStatusCheckLambdaHandlerName);
+        this.hmrcCtReturnStatusCheckIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, hmrcCtReturnStatusCheckLambdaHandlerDashed);
+        this.hmrcCtReturnStatusCheckIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcCtReturnStatusCheckIngestLambdaArn, root.provisionedConcurrencyAliasName);
 
         this.companiesHouseOfficersGetLambdaHttpMethod = HttpMethod.GET;
         this.companiesHouseOfficersGetLambdaUrlPath = "/api/v1/companies-house/company/{companyNumber}/officers";

@@ -334,11 +334,28 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
       ":ctReturn": "company-tax-return",
       ":pending": "pending",
     });
-    // A completed or failed request is final and left out by the filter.
-    expect(query.input.FilterExpression).toBe("#data.#kind = :ctReturn AND #status = :pending");
+    // A completed request, or a failed one other than no answer from HMRC, is left out by the filter.
+    expect(query.input.FilterExpression).toBe(
+      "#data.#kind = :ctReturn AND (#status = :pending OR (#status = :failed AND #data.#statusCode = :noAnswer))",
+    );
+    expect(query.input.ExpressionAttributeValues).toMatchObject({ ":failed": "failed", ":noAnswer": "NO_ANSWER" });
     expect(query.input.ProjectionExpression).not.toMatch(/accountsIxbrl|computationsIxbrl|#data\.#filed(?!\.#boxes\.#period)/);
     expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "46DCD4CC7E194088B99857931C185829" });
     expect(mockSend.mock.calls.every(([command]) => command.name !== "Scan")).toBe(true);
+  });
+
+  test("answers a return HMRC gave no answer to as no-answer, with when it was sent", async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        { requestId: "AAA1", status: "pending", createdAt: "2026-11-25T10:00:00.000Z", data: {} },
+        { requestId: "AAA2", status: "failed", createdAt: "2026-10-01T10:00:00.000Z", data: { statusCode: "NO_ANSWER" } },
+      ],
+    });
+    const returns = await listCompanyTaxReturnsInProgress("filer-sub-1");
+    expect(returns.map(({ correlationId, status, submittedAt }) => ({ correlationId, status, submittedAt }))).toEqual([
+      { correlationId: "AAA1", status: "pending", submittedAt: "2026-11-25T10:00:00.000Z" },
+      { correlationId: "AAA2", status: "no-answer", submittedAt: "2026-10-01T10:00:00.000Z" },
+    ]);
   });
 
   test("answers a practice client's Company Tax Returns in progress for its id, and the returns made for no client without one", async () => {
