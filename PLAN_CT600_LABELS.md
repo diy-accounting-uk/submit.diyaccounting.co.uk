@@ -785,6 +785,26 @@ Labels from `fileCompanyTaxReturn.page.js`. A repayment row goes to CT600A Part 
 
 - **`includeFixedAssetNote`.** The spreadsheet calls the note "1. Tangible Assets". The Regulations' note is on fixed assets; Submit's note covers the tangible ones.
 
+### 9. Accounts pages only (`MICRO_PAGE_LINES`, `SMALL_PAGE_LINES`, 20 rows)
+
+Lines that the micro-entity and small company accounts pages define in `accounts-line-detail.js` and the CT600 does not have. Cells are in `Financialaccounts.xlsx` of the published package. Last year is column A or B of the same row.
+
+| Field | Page | Official term (R) | This year: cell, label | Last year | Diff |
+|---|---|---|---|---|---|
+| `capitalAndReserves` | micro | Capital and reserves (μBS1 K) | `PubBalSht!F39`: Shareholders' Funds | `PubBalSht!B39` | no |
+| `changeInStocks` | small | Increase or decrease in stocks (PL2 2) | `PubP&L!E14-E12`: Less Closing Stock at (closing less opening) | `PubP&L!A14-A12` | no |
+| `otherOperatingIncome` | small | Other operating income (PL2 4) | `PubP&L!F8`: Investment Grants received | `PubP&L!B8` | no |
+| `rawMaterialsConsumables` | small | Raw materials and consumables (PL2 5(a)) | `PubP&L!E13+E29`: Purchases, Consumable Materials | `PubP&L!A13+A29` | no |
+| `otherExternalCharges` | small | Other external charges (PL2 5(b)) | `PubP&L!F15`: Sub contractors | `PubP&L!B15` | no |
+| `staffCosts` | small | Staff costs (PL2 6) | `PubP&L!E21+E22+E23`: Wages and Salaries, Directors Wages, National Insurance | `PubP&L!A21+A22+A23` | no |
+| `depreciation` | small | Depreciation (PL2 7(a)) | `PubP&L!E43`: Depreciation | `PubP&L!A43` | no |
+| `interestPayable` | small | Interest payable (PL2 14) | `PubP&L!E38`: Bank Interest Paid | `PubP&L!A38` | no |
+| `tradeDebtors` | small | Trade debtors (BS1 C.II.1) | `PubBalSht!E11`: Trade Debtors | `PubBalSht!A11` | no |
+| `amountsOwedToDirectors` | small | Other creditors after one year (BS1 H.4) | `PubBalSht!E29`: Directors Loan Account | `PubBalSht!A29` | yes |
+| `calledUpShareCapitalNotPaid`, `prepaymentsAccruedIncome`, `provisionsForLiabilities` (both pages), `accrualsDeferredIncome`, `ownWorkCapitalised`, `otherOperatingExpenses`, `otherDebtors`, `prepayments`, `accruals`, `amountsOwedToGroupUndertakings` | both or small | μBS1 A, D, I, J; PL2 3, 8; BS1 C.II.3, D, E.4, H.3 | none | none | — |
+
+- **`amountsOwedToDirectors`.** A figure above 0 in the Directors Loan Account is owed to a director. A figure below 0 is owed by a director and goes in debtors.
+
 ### Cells not confirmed
 
 - `Admin!P14`: the cell Submit reads for associated companies. It is empty in the published package and has no label in its row.
