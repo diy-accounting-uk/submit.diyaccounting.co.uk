@@ -25,7 +25,7 @@ As for cobalt: the rows are built and gated in local waves, then submit pays for
 
 ## The set
 
-- **submit, 11 rows in waves**: CTN2, CTN4, CTL1A, CTL1B, CTL8; and for discovery in the assistants' directories DSC1, DSC2, DSC3, DSC4, DSC5 (wave 1) and DSC6 (wave 3, on the operator's go). Each row's brief is its `NEXT.md` row; the CT600 rows also point to their section of `PLAN_CT600_LABELS.md`.
+- **submit, 11 rows in waves**: CTN2, CTN4, CTL1A, CTL1B, CTL8; and for discovery in the assistants' directories DSC1, DSC2, DSC3, DSC4, DSC5 (wave 1) and DSC6 (wave 3; the operator's go, 2026-11-26). Each row's brief is its `NEXT.md` row; the CT600 rows also point to their section of `PLAN_CT600_LABELS.md`.
 - **Beside** (no pull request): DSC2b, the ChatGPT half of the sweep's baseline, read in the operator's Chrome. It runs any time before ODSC1 publishes 0.1.7.
 - **After the prod deploy**: ODSC1 (the operator submits plugin 0.1.7; it follows DSC1, DSC3 and DSC4 on prod and DSC2b), then DSC7 (the sweep that judges the name rule; it follows ODSC1 and DSC5 on prod). ODSC2 (the Claude listing text) waits on OOS17's listing and on DSC1 on `main`, not on this deploy. ODSC3 (Google's Connected Apps preview) waits on nothing in this set. DSC8 to DSC11 belong to the set after comet (the report's section 5.3).
 
@@ -61,7 +61,7 @@ State: CTN4 built on harbour (`claude/harbour-ctn4` d0b0bab33, on CTN2's commit)
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| mcp-tools | DSC6 (on the operator's go) | Sonnet | `mcp/lib/hosted-tools.js` (`PROD_HOSTED_TOOL_NAMES`, the instructions), `mcp/lib/server.js` (the new deadlines tool), `mcp/test/hosted-tools.test.js`, `mcp/test/plugin.test.js`, `app/system-tests/mcpHosted.system.test.js`, `web/public/mcp.html`, `scripts/build-mtd-calendar.mjs` and the generated calendar |
+| mcp-tools | DSC6 | Sonnet | `mcp/lib/hosted-tools.js` (`PROD_HOSTED_TOOL_NAMES`, the instructions), `mcp/lib/server.js` (the new deadlines tool), `mcp/test/hosted-tools.test.js`, `mcp/test/plugin.test.js`, `app/system-tests/mcpHosted.system.test.js`, `web/public/mcp.html`, `scripts/build-mtd-calendar.mjs` and the generated calendar |
 | ct600-fields | CTL1A, CTL1B | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
 
 CTL1A builds now from cobalt's wave 8 head and rebases after CTN4 (operator, 2026-11-26). CTL1B takes its labels from HMRC's CT2024 package, because HMRC publishes no CT2025 package (operator, 2026-11-26).
