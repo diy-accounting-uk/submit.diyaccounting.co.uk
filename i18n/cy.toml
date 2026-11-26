@@ -12509,10 +12509,6 @@ cy = '''Gwiriwch eich atebion. Dyma’r ffigurau y bydd CThEF yn eu cael. Nid oe
 hash = "1164a114b062"
 cy = '''Mae’r <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide.cy" target="_blank" rel="noopener">canllaw Ffurflen Dreth y Cwmni</a> yn esbonio pob blwch. Y ffurflen ei hun yw’r <a id="ct600FormLink" href="https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf" target="_blank" rel="noopener">CT600 (2026) Fersiwn 3</a>.'''
 
-[strings."ch-tax-return.your-answers-5feb1f"]
-hash = "5feb1f08d245"
-cy = '''Eich atebion'''
-
 [strings."ch-tax-return.ct600-boxes-8feb1a"]
 hash = "8feb1a7518d5"
 cy = '''Blychau’r CT600'''
@@ -28608,3 +28604,11 @@ cy = '''Ffigurau’r llynedd: o’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar
 [strings."field.reference-companies-act-two"]
 hash = "234e86b27244"
 cy = '''Deddf Cwmnïau adrannau {first} a {second}'''
+
+[strings."ch-tax-return.the-return-you-are-about-to-96a313"]
+hash = "96a3138121f7"
+cy = '''Y Ffurflen Dreth rydych ar fin ei ffeilio'''
+
+[strings."ch.ct600.review-box"]
+hash = "3d3500c2c85e"
+cy = '''Blwch {box}'''

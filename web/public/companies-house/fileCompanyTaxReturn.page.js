@@ -35,7 +35,6 @@ import {
   SEND_TO_HMRC_ONLY_HINT,
   SECTIONS,
   STATEMENT_FIELDS,
-  TEXT_BOXES,
   accountsFromValues,
   balanceSheetId,
   PER_PERIOD_FIELD_IDS,
@@ -67,6 +66,7 @@ import {
 } from "../lib/ct600-fields.js";
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
+import { ct600BoxText } from "../lib/filing-record.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
@@ -2376,36 +2376,111 @@ function companyChangeLink() {
   return link;
 }
 
-function reviewTable(id, title, rows) {
+function answersTable(rows) {
   const body = rows.map((row) => {
-    const tr = tableRow(row.label, row.value, changeLink(row.id, row.label));
+    const tr = tableRow(row.reference ?? "", row.label, row.value, changeLink(row.id, row.label));
+    tr.children[0].classList.add("review-table__box-cell");
     tr.id = `review-row-${row.id}`;
     tr.tabIndex = -1;
     return tr;
   });
   return create(
+    "table",
+    { class: "results-table review-table review-table--boxes review-table--answers" },
+    create("colgroup", {}, ...["box", "question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
+    create(
+      "thead",
+      {},
+      create(
+        "tr",
+        {},
+        ...[
+          siteText("ch.ct.column-box", "Box"),
+          siteText("ch.ct.column-question", "Question"),
+          siteText("ch.ct.column-answer", "Answer"),
+          siteText("ch.ct.change", "Change"),
+        ].map((text) => create("th", { scope: "col" }, text)),
+      ),
+    ),
+    create("tbody", {}, ...body),
+  );
+}
+
+const ABSENT_FIGURE = "—";
+const NOT_GIVEN_TEXT = siteText("ch.ct600.not-given", "Not given");
+
+const LEDGER_TITLES = {
+  profitAndLoss: siteText("ch.ct.profit-and-loss", "Profit and loss account"),
+  balanceSheet: siteText("ch.ct.balance-sheet", "Balance sheet"),
+};
+
+// One statement of the accounts as the form lays it out: a row per line, a column per year, each
+// figure with its own Change link. A line with no figure shows "—"; a year with no figures has no column.
+function ledgerReviewTable(table, rows) {
+  const years = YEAR_COLUMNS.filter(({ key }) => rows.some((row) => row.ledger.year === key));
+  const lines = [...new Map(rows.map((row) => [row.ledger.line, row.ledger.lineLabel])).entries()];
+  const body = lines.map(([line, lineLabel]) =>
+    create(
+      "tr",
+      {},
+      create("th", { scope: "row" }, lineLabel),
+      ...years.map(({ key, title }) => {
+        const row = rows.find((candidate) => candidate.ledger.line === line && candidate.ledger.year === key);
+        if (!row) return create("td", { "class": "amount review-table__figure", "data-column": title }, ABSENT_FIGURE);
+        const typed = row.value !== NOT_GIVEN_TEXT;
+        const cell = create(
+          "td",
+          { "id": `review-row-${row.id}`, "tabindex": "-1", "class": "amount review-table__figure", "data-column": title },
+          create("span", {}, typed ? row.value : ABSENT_FIGURE),
+          " ",
+          changeLink(row.id, row.label),
+        );
+        return cell;
+      }),
+    ),
+  );
+  return create(
+    "table",
+    { "class": "results-table review-table review-table--ledger", "data-ledger": table },
+    create("caption", {}, LEDGER_TITLES[table]),
+    create(
+      "thead",
+      {},
+      create(
+        "tr",
+        {},
+        create("th", { scope: "col" }, siteText("ch.ct.column-line", "Line")),
+        ...years.map(({ title }) => create("th", { scope: "col", class: "amount" }, title)),
+      ),
+    ),
+    create("tbody", {}, ...body),
+  );
+}
+
+// A review section: its answers with their box, and the accounts' figures as their statements.
+function reviewTable(id, title, rows) {
+  const parts = [];
+  let answers = [];
+  const ledgers = new Map();
+  for (const row of rows) {
+    if (!row.ledger) {
+      answers.push(row);
+      continue;
+    }
+    if (answers.length > 0) parts.push(answersTable(answers));
+    answers = [];
+    if (!ledgers.has(row.ledger.table)) {
+      ledgers.set(row.ledger.table, []);
+      parts.push(row.ledger.table);
+    }
+    ledgers.get(row.ledger.table).push(row);
+  }
+  if (answers.length > 0) parts.push(answersTable(answers));
+  return create(
     "section",
     { id: `review-${id}` },
     create("h4", {}, title),
-    create(
-      "table",
-      { class: "results-table review-table" },
-      create("colgroup", {}, ...["question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
-      create(
-        "thead",
-        {},
-        create(
-          "tr",
-          {},
-          ...[
-            siteText("ch.ct.column-question", "Question"),
-            siteText("ch.ct.column-answer", "Answer"),
-            siteText("ch.ct.change", "Change"),
-          ].map((text) => create("th", { scope: "col" }, text)),
-        ),
-      ),
-      create("tbody", {}, ...body),
-    ),
+    ...parts.map((part) => (typeof part === "string" ? ledgerReviewTable(part, ledgers.get(part)) : part)),
   );
 }
 
@@ -2470,9 +2545,9 @@ function boxTableRows(boxes, values, part, idSuffix) {
     const target = boxChangeTarget(box, values, part);
     const change = target ? changeLink(target, siteText("ch.ct.change-box", "box {box}, {label}", { box, label })) : companyChangeLink();
     const row = tableRow(box, label, "", change);
-    if (box === "340" || box === "390") amountCell(row.children[2], `${boxes[box]}%`);
-    else if (box === "329") row.children[2].textContent = siteText("ch.ct.yes", "Yes");
-    else if (TEXT_BOXES.has(Number(box)) || TEXT_BOXES.has(box)) row.children[2].textContent = boxes[box];
+    const text = ct600BoxText(box, boxes[box]);
+    if (box === "340" || box === "390") amountCell(row.children[2], text);
+    else if (text !== null) row.children[2].textContent = text;
     else amountCell(row.children[2], formatPounds(boxes[box]));
     row.children[2].classList.add("review-table__value-cell");
     row.id = `review-box-${box}${idSuffix}`;

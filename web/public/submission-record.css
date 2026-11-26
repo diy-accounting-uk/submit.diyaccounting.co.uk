@@ -87,6 +87,10 @@
 .submission-record table.statement td.label {
   text-align: left;
 }
+.submission-record table.statement td.box-reference {
+  width: 16mm;
+  white-space: nowrap;
+}
 .submission-record table.statement td.indent {
   padding-left: 8mm;
 }

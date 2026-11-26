@@ -22,7 +22,11 @@
 }
 
 .review-table .review-table__box {
-  width: 4.5rem;
+  width: 5.5rem;
+}
+
+.review-table--boxes td:first-child {
+  white-space: nowrap;
 }
 
 .review-table .review-table__value {
@@ -118,11 +122,11 @@
   }
 
   .review-table--boxes td:first-child {
-    flex: 0 0 3rem;
+    flex: 0 0 4rem;
   }
 
   .review-table--boxes td:nth-child(2) {
-    flex: 1 1 calc(100% - 3rem - var(--space-3));
+    flex: 1 1 calc(100% - 4rem - var(--space-3));
     min-width: 0;
     font-weight: var(--weight-strong);
   }
@@ -159,4 +163,53 @@
 
 .send-step .form-group {
   max-width: 28rem;
+}
+
+/* The accounts in a review: a row per line, a column per year, each figure with its Change link. */
+.review-table--ledger caption {
+  text-align: left;
+  font-weight: var(--weight-strong);
+  padding: var(--space-2) 0;
+}
+
+.review-table--ledger th[scope="row"] {
+  font-weight: var(--weight-text);
+  text-align: left;
+}
+
+.review-table--ledger td.review-table__figure .review-change {
+  margin-left: var(--space-2);
+}
+
+@media (max-width: 600px) {
+  .review-table--answers td.review-table__box-cell:empty {
+    display: none;
+  }
+
+  .review-table--ledger caption {
+    display: block;
+  }
+
+  .review-table--ledger th[scope="row"] {
+    flex: 1 1 100%;
+    padding: 0;
+    font-weight: var(--weight-strong);
+  }
+
+  .review-table--ledger td.review-table__figure,
+  .results-table.review-table--ledger td.amount {
+    display: flex;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-left: 0;
+    font-weight: var(--weight-text);
+  }
+
+  .review-table--ledger td.review-table__figure::before {
+    content: attr(data-column);
+    margin-right: auto;
+    color: var(--c-ink-muted);
+    font-family: var(--font-text);
+  }
 }

@@ -22,6 +22,7 @@ h3 { font-size: 11pt; margin: 6mm 0 2mm 0; }
 table.statement { width: 100%; border-collapse: collapse; margin: 4mm 0; }
 table.statement th, table.statement td { padding: 1mm 2mm; vertical-align: bottom; }
 table.statement th.label, table.statement td.label { text-align: left; }
+table.statement td.box-reference { width: 16mm; white-space: nowrap; }
 table.statement td.indent { padding-left: 8mm; }
 table.statement th.note, table.statement td.note { width: 10mm; text-align: center; }
 table.statement th.figure { text-align: right; width: 24mm; font-weight: bold; }

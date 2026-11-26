@@ -8,7 +8,7 @@
 // that read the form's values into the figures model and check what the model does not.
 // The form, the review and the help read this one table, so a box has one label everywhere.
 
-import { accountingPeriodDates } from "./long-period.js";
+import { accountingPeriodDates, longDateText } from "./long-period.js";
 import { dateOfIncorporationFor } from "./first-accounts.js";
 import { foldBalanceSheetHeadings } from "./balance-sheet-headings.js";
 
@@ -3565,7 +3565,12 @@ function poundsAnswer(typed) {
 }
 
 function amountRows(ids, values) {
-  return ids.map(({ id, label }) => ({ id, label, value: answerText({ id, type: WHOLE }, values) }));
+  return ids.map(({ id, label, ledger }) => ({ id, label, value: answerText({ id, type: WHOLE }, values), ...(ledger ? { ledger } : {}) }));
+}
+
+// Where an accounts figure sits in the review's tables: which statement, which line, which year.
+function ledgerOf(table, line, year) {
+  return { table, line: line.id, lineLabel: line.label, year };
 }
 
 function microAccountsRows(values) {
@@ -3575,7 +3580,11 @@ function microAccountsRows(values) {
     const when = year === "current" ? THIS_YEAR : LAST_YEAR;
     rows.push(
       ...amountRows(
-        MICRO_PROFIT_AND_LOSS_FIELDS.map(({ id: field, label }) => ({ id: microId(year, field), label: yearLabel(label, when) })),
+        MICRO_PROFIT_AND_LOSS_FIELDS.map((line) => ({
+          id: microId(year, line.id),
+          label: yearLabel(line.label, when),
+          ledger: ledgerOf("profitAndLoss", line, year),
+        })),
         values,
       ),
     );
@@ -3584,7 +3593,11 @@ function microAccountsRows(values) {
     const when = year === "current" ? THIS_YEAR : LAST_YEAR;
     rows.push(
       ...amountRows(
-        MICRO_BALANCE_SHEET_FIELDS.map(({ id: field, label }) => ({ id: microId(year, field), label: yearLabel(label, when) })),
+        MICRO_BALANCE_SHEET_FIELDS.map((line) => ({
+          id: microId(year, line.id),
+          label: yearLabel(line.label, when),
+          ledger: ledgerOf("balanceSheet", line, year),
+        })),
         values,
       ),
     );
@@ -3690,11 +3703,19 @@ function accountsRows(values) {
   for (const [prefix, when] of years) {
     rows.push(
       ...amountRows(
-        PROFIT_AND_LOSS_FIELDS.map(({ id: field, label }) => ({ id: profitAndLossId(prefix, field), label: yearLabel(label, when) })),
+        PROFIT_AND_LOSS_FIELDS.map((line) => ({
+          id: profitAndLossId(prefix, line.id),
+          label: yearLabel(line.label, when),
+          ledger: ledgerOf("profitAndLoss", line, prefix),
+        })),
         values,
       ),
       ...amountRows(
-        BALANCE_SHEET_FIELDS.map(({ id: field, label }) => ({ id: balanceSheetId(prefix, field), label: yearLabel(label, when) })),
+        BALANCE_SHEET_FIELDS.map((line) => ({
+          id: balanceSheetId(prefix, line.id),
+          label: yearLabel(line.label, when),
+          ledger: ledgerOf("balanceSheet", line, prefix),
+        })),
         values,
       ),
     );
@@ -3721,6 +3742,31 @@ function accountsRows(values) {
  * @param {Record<string, string|boolean>} values - the form's values
  * @returns {Array<{id: string, title: string, rows: Array<{id: string, label: string, value: string}>}>}
  */
+// A review row names its box in a column of its own, so its label is the box row's term alone.
+function reviewLabel(field) {
+  if (field.box === undefined) return field.label;
+  const prefix = siteText("ch.ct600.box-label", "Box {box}: {label}", { box: field.box, label: "" });
+  return field.label.startsWith(prefix) ? field.label.slice(prefix.length) : field.label;
+}
+
+function reviewReference(field) {
+  return field.box !== undefined ? siteText("ch.ct600.review-box", "Box {box}", { box: field.box }) : "";
+}
+
+// The period as HMRC's boxes 30 and 35, each a row with its date in words. The first row keeps the
+// period's id, the one the boxes' Change links and the form's checks name.
+function periodRows(values) {
+  return [
+    ["period", "periodStart", 30],
+    ["periodEnd", "periodEnd", 35],
+  ].map(([id, value, box]) => ({
+    id,
+    reference: siteText("ch.ct600.review-box", "Box {box}", { box }),
+    label: boxRow(box).label,
+    value: values[value] ? longDateText(values[value]) : NOT_GIVEN,
+  }));
+}
+
 function returnOneLabel(label) {
   return siteText("ch.ct600.return-1-label", "{label} (return 1)", { label });
 }
@@ -3729,14 +3775,16 @@ export function reviewAnswers(values) {
   const long = Boolean(longPeriodOf(values));
   return SECTIONS.map(({ id, title }) => {
     const rows = CT600_FORM_FIELDS.filter((field) => field.section === id).flatMap((field) => {
+      if (field.type === "dates") return periodRows(values);
+      const reference = reviewReference(field);
       if (!long || !isPerPeriodField(field.id)) {
-        const label = long && field.id === "donations" ? LONG_PERIOD_DONATIONS_LABEL : field.label;
-        return [{ id: field.id, label, value: answerText(field, values) }];
+        const label = long && field.id === "donations" ? LONG_PERIOD_DONATIONS_LABEL : reviewLabel(field);
+        return [{ id: field.id, reference, label, value: answerText(field, values) }];
       }
-      const second = secondPeriodField(field);
+      const second = secondPeriodField({ ...field, label: reviewLabel(field) });
       return [
-        { id: field.id, label: returnOneLabel(field.label), value: answerText(field, values) },
-        { id: second.id, label: second.label, value: answerText(second, values) },
+        { id: field.id, reference, label: returnOneLabel(reviewLabel(field)), value: answerText(field, values) },
+        { id: second.id, reference, label: second.label, value: answerText(second, values) },
       ];
     });
     if (long && id === "period") {

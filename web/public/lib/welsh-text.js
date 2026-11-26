@@ -1415,6 +1415,7 @@ window.WELSH_TEXT = {
   "ch.ct600.return-2-label": "{label} (Ffurflen 2)",
   "ch.ct600.return-row-label": "Ffurflen {part}, {label}",
   "ch.ct600.review-accounts": "Y cyfrifon",
+  "ch.ct600.review-box": "Blwch {box}",
   "ch.ct600.section-accounts": "Cyfrifon",
   "ch.ct600.section-allowances": "Lwfansau cyfalaf",
   "ch.ct600.section-company": "Cwmni",

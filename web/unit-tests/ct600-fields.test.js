@@ -530,7 +530,10 @@ describe("the review", () => {
 
   test("shows answers as the customer reads them", () => {
     expect(rowOf("annualInvestmentAllowance").value).toBe("£52,500");
-    expect(rowOf("period").value).toBe("2025-04-01 to 2026-03-31");
+    expect(rowOf("period")).toMatchObject({ reference: "Box 30", label: "Period of the return: from", value: "1 April 2025" });
+    expect(rowOf("periodEnd")).toMatchObject({ reference: "Box 35", label: "Period of the return: to", value: "31 March 2026" });
+    expect(rowOf("utr")).toMatchObject({ reference: "Box 3", label: "Tax reference" });
+    expect(rowOf("currentTurnover").ledger).toEqual({ table: "profitAndLoss", line: "turnover", lineLabel: "Turnover", year: "current" });
     expect(rowOf("loansMade").value).toBe("No");
     expect(rowOf("declarationAccepted").value).toBe("Yes");
     expect(rowOf("statementSection477Exemption").value).toBe("No");

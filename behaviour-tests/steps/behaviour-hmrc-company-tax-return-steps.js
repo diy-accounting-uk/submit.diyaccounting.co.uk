@@ -181,7 +181,7 @@ export async function typeInCompanyTaxReturnForm(page, screenshotPath = defaultS
 
 export async function changeAnAnswerFromTheReview(page, { fieldId, value }, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user changes ${fieldId} from the review and returns to the review with that answer focused`, async () => {
-    await expect(page.locator("#previewView")).toContainText("Your answers");
+    await expect(page.locator("#previewView")).toContainText("The return you are about to file");
     await page
       .locator(`#review-row-${fieldId}`)
       .getByRole("link", { name: /Change/ })

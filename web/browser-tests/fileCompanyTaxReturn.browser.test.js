@@ -633,6 +633,43 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
   });
 
+  test("the review is the return about to be filed: a Box column, the period in words, and the accounts as tables whose Change links open their box", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#previewView h3").first()).toHaveText("The return you are about to file");
+    const utr = page.locator("#review-row-utr td");
+    await expect(utr.nth(0)).toHaveText("Box 3");
+    await expect(utr.nth(1)).toHaveText("Tax reference");
+    await expect(page.locator("#review-row-period td").nth(0)).toHaveText("Box 30");
+    await expect(page.locator("#review-row-period td").nth(2)).toHaveText(/^\d{1,2} [A-Z][a-z]+ \d{4}$/);
+    await expect(page.locator("#review-row-periodEnd td").nth(0)).toHaveText("Box 35");
+    await expect(page.locator("#reviewAnswers td")).not.toHaveText([/^Box \d+: /]);
+
+    const profitAndLoss = page.locator('table[data-ledger="profitAndLoss"]');
+    await expect(profitAndLoss.locator("caption")).toHaveText("Profit and loss account");
+    const columns = await profitAndLoss.locator("thead th").allTextContents();
+    expect(columns.slice(0, 2)).toEqual(["Line", "This year"]);
+    expect(columns.length).toBeLessThanOrEqual(3);
+    const turnover = profitAndLoss.locator("tbody tr", { has: page.locator("#review-row-currentTurnover") });
+    await expect(turnover.locator("th")).toHaveText("Turnover");
+    await expect(page.locator("#review-row-currentTurnover")).toContainText(/£[\d,]+/);
+    await expect(page.locator('table[data-ledger="balanceSheet"] tbody tr').first().locator("th")).toHaveText("Fixed assets");
+
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.locator("#previewView").screenshot({ path: `target/screenshots/ct600-review/review-${width}.png` });
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.locator("#review-row-currentTurnover a.review-change").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#currentTurnover")).toBeFocused();
+  });
+
   test("the filled form previews the return with the figures it holds", async ({ page }) => {
     const previewRequests = [];
     await openForm(page, previewRequests);
@@ -1930,9 +1967,10 @@ test.describe("File Company Tax Return entry form", () => {
   test("the review lists every answer with a Change link whose hidden text names the row", async ({ page }) => {
     await reachReview(page);
     const row = page.locator("#review-row-annualInvestmentAllowance");
-    await expect(row).toContainText("Box 690: Annual investment allowance");
+    await expect(row.locator("td").nth(0)).toHaveText("Box 690");
+    await expect(row.locator("td").nth(1)).toHaveText("Annual investment allowance: capital allowances");
     await expect(row).toContainText("£52,500");
-    await expect(row.getByRole("link", { name: "Change Box 690: Annual investment allowance" })).toBeVisible();
+    await expect(row.getByRole("link", { name: "Change Annual investment allowance: capital allowances" })).toBeVisible();
     await expect(page.locator("#review-row-currentTurnover")).toContainText("Turnover, this year");
     await expect(page.locator("#review-row-declarationAccepted")).toContainText("Yes");
     await expect(page.locator("#review-box-440").getByRole("link", { name: /^Change box 440/ })).toBeVisible();

@@ -192,13 +192,24 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
   });
 }
 
+/**
+ * A CT600 box's value as the review and the filed copy show it: a rate with its %, box 329 as Yes,
+ * the period's dates in words, other coded boxes as filed; null for an amount.
+ */
+export function ct600BoxText(box, value) {
+  const key = /^\d+$/.test(String(box)) ? Number(box) : box;
+  if (!TEXT_BOXES.has(key)) return null;
+  if (value === undefined || value === null || value === "") return ABSENT;
+  if (key === 340 || key === 390) return `${value}%`;
+  if (key === 329) return siteText("ch.ct.yes", "Yes");
+  if ((key === 30 || key === 35) && /^\d{4}-\d{2}-\d{2}$/.test(String(value)))
+    return longDateText(new Date(`${value}T00:00:00Z`), { utc: true });
+  return String(value);
+}
+
 function boxValueCell(box, value) {
-  if (TEXT_BOXES.has(box)) {
-    let text = value;
-    if (box === 340 || box === 390) text = `${value}%`;
-    if (box === 329) text = siteText("ch.ct.yes", "Yes");
-    return `<td class="label text-value">${escapeRecordText(text ?? ABSENT)}</td>`;
-  }
+  const text = ct600BoxText(box, value);
+  if (text !== null) return `<td class="label text-value">${escapeRecordText(text)}</td>`;
   const amount = Number(value);
   if (!Number.isFinite(amount)) return `<td class="label text-value">${ABSENT}</td>`;
   const { html } = recordAmount(amount, { decimals: Number.isInteger(amount) ? 0 : 2 });
@@ -227,9 +238,9 @@ function ct600Record(receipt, dateText) {
     .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
     .map((key) => {
       const box = /^\d+$/.test(key) ? Number(key) : key;
-      const label = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? siteText("ch.ct.column-box", "Box");
-      const boxLabel = escapeRecordText(siteText("ch.ct.box-label", "Box {box}: {label}", { box, label }));
-      return `<tr id="ct600Box${box}"><td class="label">${boxLabel}</td>${boxValueCell(box, boxes[box])}</tr>`;
+      const label = escapeRecordText(CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? ABSENT);
+      const reference = escapeRecordText(siteText("ch.ct600.review-box", "Box {box}", { box }));
+      return `<tr id="ct600Box${box}"><td class="label box-reference">${reference}</td><td class="label">${label}</td>${boxValueCell(box, boxes[box])}</tr>`;
     })
     .join("\n");
   return page(`${heading}<table class="statement">\n<tbody>\n${rows}\n</tbody>\n</table>`);
