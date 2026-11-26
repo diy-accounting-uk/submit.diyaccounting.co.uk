@@ -26,7 +26,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
-import { listFilingsInProgress } from "../../data/dynamoDbCompaniesHouseFilingStateRepository.js";
+import { listFilingsInProgress, listCompanyTaxReturnsInProgress } from "../../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -142,6 +142,8 @@ export async function ingestHandler(event) {
       // The Companies House filings that Companies House has not accepted yet, narrowed to the client
       // as the receipts are: the client's for a clientId, the caller's own otherwise.
       const filingsInProgress = await listFilingsInProgress(userSub, clientId);
+      // The Company Tax Returns still waiting for HMRC's final answer, narrowed the same way.
+      const companyTaxReturnsInProgress = await listCompanyTaxReturnsInProgress(userSub, clientId);
       await publishActivityEvent({
         event: "receipts-viewed",
         summary: "Receipts viewed",
@@ -151,7 +153,7 @@ export async function ingestHandler(event) {
       return http200OkResponse({
         request,
         headers: { ...responseHeaders },
-        data: { receipts, filingsInProgress },
+        data: { receipts, filingsInProgress, companyTaxReturnsInProgress },
       });
     }
   } catch (error) {

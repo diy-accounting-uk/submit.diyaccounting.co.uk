@@ -18,7 +18,11 @@ import {
   isNotYetIndexedError,
 } from "./companiesHouseXmlGateway.js";
 import { getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
-import { claimPresenterPollSlot, deferPresenterPoll } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
+import {
+  claimPresenterPollSlot,
+  deferPresenterPoll,
+  recordPresenterPollAsked,
+} from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { getPendingFiling } from "../data/dynamoDbCompaniesHousePendingFilerRepository.js";
 import { recordSubmissionStatus, isGatewayTest, hasStoredFinalStatus } from "./companiesHouseSubmissionStatus.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
@@ -109,6 +113,7 @@ export async function pollPresenterSubmissions({ now = new Date() } = {}) {
     status: gatewayResponse.status,
     ...summariseGatewayResponse(parsed),
   });
+  await recordPresenterPollAsked(now);
 
   if (parsed.pollInterval > MINIMUM_PRESENTER_POLL_SECONDS) {
     await deferPresenterPoll(nowSeconds + parsed.pollInterval);

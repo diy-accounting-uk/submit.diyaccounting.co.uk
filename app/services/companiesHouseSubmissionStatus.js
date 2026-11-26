@@ -19,7 +19,7 @@ import {
   isNothingCompletedError,
   isNotYetIndexedError,
 } from "./companiesHouseXmlGateway.js";
-import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
+import { putAsyncRequest, getAsyncRequest, recordStatusCheck } from "../data/dynamoDbAsyncRequestRepository.js";
 import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { recordFiledReceiptForSubmission } from "./filedReceipt.js";
 import { markReceiptStepDone, clearReceiptStep } from "../data/dynamoDbReceiptRepository.js";
@@ -109,6 +109,8 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     status: gatewayResponse.status,
     ...summariseGatewayResponse(parsed),
   });
+  // The filing's status page shows when Submit last asked Companies House about it.
+  if (persistedRequest.status === "pending") await recordStatusCheck(userSub, submissionNumber, now, asyncRequestsTableName);
 
   if (parsed.errors?.length) {
     if (stillAsking && parsed.errors.every((error) => error.text === "No Transaction Found")) {

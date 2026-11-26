@@ -119,4 +119,27 @@ describe("dynamoDbAsyncRequestRepository", () => {
       expect(fields).not.toHaveProperty("requestId");
     }
   });
+
+  test("recordStatusCheck sets data.lastCheckedAt in place on a request that is still pending", async () => {
+    const { recordStatusCheck } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    const { hashSub } = await import("../../services/subHasher.js");
+    mockSend.mockResolvedValue({});
+
+    await recordStatusCheck("user-123", "00001A", new Date("2026-11-26T09:20:00.000Z"), "test-async-requests");
+
+    const [[command]] = mockSend.mock.calls;
+    expect(command.input.Key).toEqual({ hashedSub: hashSub("user-123"), requestId: "00001A" });
+    expect(command.input.UpdateExpression).toBe("SET #data.#lastCheckedAt = :checkedAt");
+    expect(command.input.ConditionExpression).toBe("#status = :pending");
+    expect(command.input.ExpressionAttributeValues).toEqual({ ":checkedAt": "2026-11-26T09:20:00.000Z", ":pending": "pending" });
+  });
+
+  test("recordStatusCheck leaves a request that is no longer pending, and throws any other failure", async () => {
+    const { recordStatusCheck } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    await expect(recordStatusCheck("user-123", "00001A", new Date(), "test-async-requests")).resolves.toBeUndefined();
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
+    await expect(recordStatusCheck("user-123", "00001A", new Date(), "test-async-requests")).rejects.toThrow("throttled");
+  });
 });

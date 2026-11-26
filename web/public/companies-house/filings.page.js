@@ -141,13 +141,23 @@ function rejectionList(rejections) {
   );
 }
 
-// The filing as the receipts route lists it, or null when it is no longer waiting or rejected.
-async function filingInProgress(submissionNumber, clientId) {
+const CT600_KIND = "ct600";
+
+// The filing as the receipts route lists it, or null when it is no longer waiting or rejected. A
+// Company Tax Return (kind ct600) is found by its correlation ID among the returns in progress.
+async function filingInProgress(id, kind, clientId) {
   const url = clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(clientId)}` : "/api/v1/hmrc/receipt";
   const res = await window.fetchWithIdToken(url, {});
   if (!res.ok) return { failed: true };
   const json = await res.json();
-  return { filing: (json.filingsInProgress ?? []).find((filing) => filing.submissionNumber === submissionNumber) ?? null };
+  if (kind === CT600_KIND) {
+    return { filing: (json.companyTaxReturnsInProgress ?? []).find((ctReturn) => ctReturn.correlationId === id) ?? null };
+  }
+  return { filing: (json.filingsInProgress ?? []).find((filing) => filing.submissionNumber === id) ?? null };
+}
+
+function notAskedYet() {
+  return window.siteText("ch.filing.status-not-asked-yet", "Not yet");
 }
 
 function pendingAnswer(submissionNumber, result) {
@@ -211,7 +221,7 @@ async function checkNow(kind, submissionNumber) {
 async function showFilingStatus(submissionNumber, kind, clientId) {
   const { COMPANIES_HOUSE_FORMS } = await import("../lib/companies-house-forms.js");
   const { scheduledChecks } = await import("../lib/presenter-poll-schedule.js");
-  const { failed, filing } = await filingInProgress(submissionNumber, clientId);
+  const { failed, filing } = await filingInProgress(submissionNumber, kind, clientId);
   if (failed) {
     showNotice(window.siteText("ch.filing.load-failed", "We could not load this filing. Go back to your receipts and try again."));
     return;
@@ -232,8 +242,11 @@ async function showFilingStatus(submissionNumber, kind, clientId) {
       ? form.receiptTitleCy
       : form.receiptTitle
     : window.siteText("ch.filing.status-filing", "Companies House filing");
-  const { last, next } = scheduledChecks(new Date());
+  const { next } = scheduledChecks(new Date());
   const pending = filing.status === "pending";
+  // A filing under the customer's own presenter is answered only to that presenter, so the
+  // scheduled poll never asks about it.
+  const onSchedule = filing.askedOnSchedule !== false;
   const panel = element("filingStatus");
   panel.replaceChildren(
     create("h2", { id: "filingStatusHeading" }, title),
@@ -255,12 +268,12 @@ async function showFilingStatus(submissionNumber, kind, clientId) {
             statusRow(
               "filingStatusLastAsked",
               window.siteText("ch.filing.status-last-asked", "Submit last asked Companies House"),
-              last ? momentText(last) : "",
+              filing.lastCheckedAt ? momentText(filing.lastCheckedAt) : notAskedYet(),
             ),
             statusRow(
               "filingStatusNextAsk",
               window.siteText("ch.filing.status-next-ask", "Submit asks next"),
-              next ? momentText(next) : "",
+              onSchedule ? (next ? momentText(next) : "") : window.siteText("ch.filing.status-next-ask-own", "When you press Check now"),
             ),
           ]
         : []),
@@ -274,11 +287,16 @@ async function showFilingStatus(submissionNumber, kind, clientId) {
     ),
     create(
       "p",
-      { class: "hint" },
-      window.siteText(
-        "ch.filing.status-how",
-        "Submit asks Companies House for its decision every 15 minutes on weekdays from 07:00 to 18:45 UTC, the hours it checks filings by hand. Companies House emails the company when it decides.",
-      ),
+      { class: "hint", id: "filingStatusHow" },
+      onSchedule
+        ? window.siteText(
+            "ch.filing.status-how",
+            "Submit asks Companies House for its decision every 15 minutes on weekdays from 07:00 to 18:45 UTC, the hours it checks filings by hand. Companies House emails the company when it decides.",
+          )
+        : window.siteText(
+            "ch.filing.status-how-own",
+            "This filing went under your own presenter ID, so Companies House answers only to you: Submit asks when you press Check now. Companies House emails the company when it decides.",
+          ),
     ),
     create(
       "p",
@@ -300,11 +318,176 @@ async function showFilingStatus(submissionNumber, kind, clientId) {
   panel.hidden = false;
 }
 
+// --- A Company Tax Return HMRC has not answered finally yet -----------------------------------
+
+function ctReturnStatusPath(correlationId, clientId) {
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  return `/api/v1/hmrc/ct/return/${encodeURIComponent(correlationId)}${query}`;
+}
+
+function ctPendingAnswer() {
+  return window.siteText("ch.filing.ct-status-pending", "HMRC has the return and has not given its final answer yet.");
+}
+
+function ctErrorList(result) {
+  const entries = [...(result.errors ?? []), ...(result.businessErrors ?? [])];
+  return create(
+    "ul",
+    { id: "filingStatusReasons" },
+    ...entries.map((entry) =>
+      create("li", {}, window.siteText("ch.ct.error-line", "Error {number}: {text}", { number: entry.number, text: entry.text })),
+    ),
+  );
+}
+
+function showCtDecision(result, correlationId) {
+  const answer = element("filingStatusAnswer");
+  const check = element("checkNowBtn");
+  element("filingStatusReasons")?.remove();
+  if (result.statusCode === "ACCEPT") {
+    check.hidden = true;
+    answer.replaceChildren(
+      window.siteText("ch.filing.ct-status-accepted", "HMRC accepted the return. Open "),
+      create(
+        "a",
+        { href: `filings.html?receipt=${encodeURIComponent(result.receiptId + ".json")}`, id: "filingStatusReceiptLink" },
+        window.siteText("ch.filing.ct-status-receipt", "your copy of the return and HMRC's receipt"),
+      ),
+      ".",
+    );
+    element("filingStatusWarning").hidden = true;
+    return;
+  }
+  if (result.statusCode === "REJECT") {
+    check.hidden = true;
+    answer.textContent =
+      result.message ||
+      window.siteText("ch.filing.ct-status-rejected", "HMRC rejected the return with correlation ID {id}:", { id: correlationId });
+    answer.after(ctErrorList(result));
+    element("filingStatusWarning").hidden = true;
+    return;
+  }
+  answer.textContent = ctPendingAnswer();
+}
+
+async function checkCtNow(correlationId, clientId) {
+  const check = element("checkNowBtn");
+  check.disabled = true;
+  try {
+    const res = await window.fetchWithIdToken(ctReturnStatusPath(correlationId, clientId), { method: "GET" });
+    element("filingStatusYouAsked").hidden = false;
+    element("filingStatusYouAskedAt").textContent = momentText(new Date());
+    if (res.status === 404) {
+      element("filingStatusAnswer").textContent = ctGoneText(correlationId);
+      check.hidden = true;
+      return;
+    }
+    if (!res.ok) {
+      element("filingStatusAnswer").textContent = window.siteText(
+        "ch.filing.ct-status-check-failed",
+        "Submit could not ask HMRC just now. Try again in a few minutes.",
+      );
+      return;
+    }
+    showCtDecision(await res.json(), correlationId);
+  } finally {
+    check.disabled = false;
+  }
+}
+
+function ctGoneText(correlationId) {
+  return window.siteText(
+    "ch.filing.ct-status-gone",
+    "The return with correlation ID {id} is no longer waiting for HMRC. Its receipt is in your receipts once HMRC accepts it.",
+    { id: correlationId },
+  );
+}
+
+async function showCtReturnStatus(correlationId, clientId) {
+  const { failed, filing } = await filingInProgress(correlationId, CT600_KIND, clientId);
+  if (failed) {
+    showNotice(window.siteText("ch.filing.load-failed", "We could not load this filing. Go back to your receipts and try again."));
+    return;
+  }
+  if (!filing) {
+    showNotice(ctGoneText(correlationId));
+    return;
+  }
+  const { longDateText } = await import("../lib/long-period.js");
+  const company = [filing.companyName, filing.companyNumber].filter(Boolean).join(", ");
+  const panel = element("filingStatus");
+  panel.replaceChildren(
+    create("h2", { id: "filingStatusHeading" }, window.siteText("ch.filing.ct-status-title", "Company Tax Return")),
+    create("p", { id: "filingStatusAnswer" }, ctPendingAnswer()),
+    create(
+      "dl",
+      { class: "filing-status-list" },
+      ...(company ? [statusRow("filingStatusCompany", window.siteText("ch.filing.ct-status-company", "Company"), company)] : []),
+      ...(filing.utr
+        ? [statusRow("filingStatusUtr", window.siteText("ch.filing.ct-status-utr", "Unique Taxpayer Reference"), filing.utr)]
+        : []),
+      ...(filing.periodStart && filing.periodEnd
+        ? [
+            statusRow(
+              "filingStatusPeriod",
+              window.siteText("ch.filing.ct-status-period", "Period"),
+              window.siteText("widget.date-range", "{start} to {end}", {
+                start: longDateText(filing.periodStart),
+                end: longDateText(filing.periodEnd),
+              }),
+            ),
+          ]
+        : []),
+      statusRow(
+        "filingStatusSent",
+        window.siteText("ch.filing.status-sent", "Sent"),
+        filing.submittedAt ? momentText(filing.submittedAt) : "",
+      ),
+      statusRow("filingStatusNumber", window.siteText("ch.filing.ct-status-correlation-id", "Correlation ID"), filing.correlationId),
+      statusRow(
+        "filingStatusLastAsked",
+        window.siteText("ch.filing.ct-status-last-asked", "Submit last asked HMRC"),
+        filing.lastCheckedAt ? momentText(filing.lastCheckedAt) : notAskedYet(),
+      ),
+    ),
+    create(
+      "p",
+      { id: "filingStatusYouAsked", hidden: "" },
+      window.siteText("ch.filing.ct-status-you-asked", "You asked HMRC at "),
+      create("span", { id: "filingStatusYouAskedAt" }),
+      ".",
+    ),
+    create(
+      "p",
+      { class: "hint", id: "filingStatusHow" },
+      window.siteText(
+        "ch.filing.ct-status-how",
+        "Submit asks HMRC for its answer when you press Check now. HMRC usually answers within minutes.",
+      ),
+    ),
+    create(
+      "p",
+      { id: "filingStatusWarning", class: "filing-notice" },
+      window.siteText(
+        "ch.filing.ct-status-warning",
+        "Do not file it again while it waits: a new return for this company and period would go to HMRC beside the return with correlation ID {id}.",
+        { id: filing.correlationId },
+      ),
+    ),
+    create("button", { type: "button", id: "checkNowBtn", class: "btn" }, window.siteText("ch.filing.status-check-now", "Check now")),
+  );
+  element("checkNowBtn").addEventListener("click", () => checkCtNow(filing.correlationId, filing.clientId ?? clientId));
+  panel.hidden = false;
+}
+
 function start() {
   const query = new URLSearchParams(window.location.search);
   const receiptName = query.get("receipt");
   if (!localStorage.getItem("cognitoIdToken")) {
     return;
+  }
+  if (!receiptName && query.get("filing") && query.get("kind") === CT600_KIND) {
+    return showCtReturnStatus(query.get("filing"), query.get("clientId"));
   }
   if (!receiptName && query.get("filing")) {
     return showFilingStatus(query.get("filing"), query.get("kind"), query.get("clientId"));
@@ -319,6 +502,7 @@ function start() {
 element("printFilingBtn").addEventListener("click", () => window.print());
 window.showFiling = showFiling;
 window.showFilingStatus = showFilingStatus;
+window.showCtReturnStatus = showCtReturnStatus;
 
 if (window.__submitReady__) {
   start();

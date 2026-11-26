@@ -40,8 +40,8 @@ import {
   getTransactionEngineSubmissionUrl,
   redactGatewayCredentials,
   CT600_CLASS,
-  CT_RETURN_KIND,
 } from "../../services/hmrcTransactionEngine.js";
+import { CT_RETURN_KIND } from "../../services/ctReturnKind.js";
 import { findHeldCtSubmission, CT_RETURN_ACTIVITY_ID } from "../../services/hmrcCtSubmissionStatus.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";

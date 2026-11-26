@@ -1491,6 +1491,24 @@ window.WELSH_TEXT = {
   "ch.email.status-blocks": "Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.",
   "ch.email.type-not-covered": "Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.",
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
+  "ch.filing.ct-status-accepted": "Derbyniodd CThEF y Ffurflen. Agorwch ",
+  "ch.filing.ct-status-check-failed": "Ni allai Submit ofyn i CThEF ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.",
+  "ch.filing.ct-status-company": "Cwmni",
+  "ch.filing.ct-status-correlation-id": "ID cydberthyniad",
+  "ch.filing.ct-status-gone":
+    "Nid yw’r Ffurflen ag ID cydberthyniad {id} yn aros am CThEF mwyach. Mae ei derbynneb yn eich derbynebau unwaith y bydd CThEF yn ei derbyn.",
+  "ch.filing.ct-status-how":
+    "Mae Submit yn gofyn i CThEF am ei ateb pan fyddwch yn pwyso Gwirio nawr. Fel arfer, mae CThEF yn ateb o fewn munudau.",
+  "ch.filing.ct-status-last-asked": "Gofynnodd Submit i CThEF ddiwethaf",
+  "ch.filing.ct-status-pending": "Mae’r Ffurflen gan CThEF ac nid yw wedi rhoi ei ateb terfynol eto.",
+  "ch.filing.ct-status-period": "Cyfnod",
+  "ch.filing.ct-status-receipt": "eich copi o’r Ffurflen a derbynneb CThEF",
+  "ch.filing.ct-status-rejected": "Gwrthododd CThEF y Ffurflen ag ID cydberthyniad {id}:",
+  "ch.filing.ct-status-title": "Ffurflen Dreth y Cwmni",
+  "ch.filing.ct-status-utr": "Cyfeirnod Unigryw y Trethdalwr",
+  "ch.filing.ct-status-warning":
+    "Peidiwch â’i ffeilio eto tra mae’n aros: byddai Ffurflen newydd ar gyfer y cwmni a’r cyfnod hwn yn mynd i CThEF ochr yn ochr â’r Ffurflen ag ID cydberthyniad {id}.",
+  "ch.filing.ct-status-you-asked": "Gofynnoch i CThEF am ",
   "ch.filing.load-failed": "Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.",
   "ch.filing.no-comparatives-why":
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
@@ -1504,8 +1522,12 @@ window.WELSH_TEXT = {
     "Nid yw cyflwyniad {number} yn aros am Dŷ’r Cwmnïau mwyach. Mae ei dderbynneb, neu ei wrthod, yn eich derbynebau.",
   "ch.filing.status-how":
     "Mae Submit yn gofyn i Dŷ’r Cwmnïau am ei benderfyniad bob 15 munud ar ddyddiau’r wythnos rhwng 07:00 a 18:45 UTC, yr oriau y mae’n gwirio ffeiliau â llaw. Mae Tŷ’r Cwmnïau yn anfon e-bost at y cwmni pan fydd yn penderfynu.",
+  "ch.filing.status-how-own":
+    "Aeth y ffeilio hwn o dan eich ID cyflwynydd eich hun, felly mae Tŷ’r Cwmnïau yn ateb i chi yn unig: mae Submit yn gofyn pan fyddwch yn pwyso Gwirio nawr. Mae Tŷ’r Cwmnïau yn anfon e-bost at y cwmni pan fydd yn penderfynu.",
   "ch.filing.status-last-asked": "Gofynnodd Submit i Dŷ’r Cwmnïau ddiwethaf",
   "ch.filing.status-next-ask": "Mae Submit yn gofyn nesaf",
+  "ch.filing.status-next-ask-own": "Pan fyddwch yn pwyso Gwirio nawr",
+  "ch.filing.status-not-asked-yet": "Ddim eto",
   "ch.filing.status-not-indexed":
     "Mae Tŷ’r Cwmnïau wedi cael cyflwyniad {number} ac nid yw wedi’i ychwanegu at ei gofnodion eto. Mae’n gwneud hynny o fewn yr awr; gofynnwch eto bryd hynny.",
   "ch.filing.status-number": "Rhif y cyflwyniad",
@@ -2878,6 +2900,7 @@ window.WELSH_TEXT = {
   "receipts.back": "Yn ôl i’ch derbynebau",
   "receipts.col-date": "Dyddiad",
   "receipts.col-receipt": "Derbynneb",
+  "receipts.correlation-id": "ID cydberthyniad {id}",
   "receipts.details": "Manylion y dderbynneb",
   "receipts.download": "Lawrlwytho’r dderbynneb",
   "receipts.download-failed": "Methu lawrlwytho’r dderbynneb",
@@ -2914,6 +2937,7 @@ window.WELSH_TEXT = {
   "receipts.kind-allotment-of-shares": "Dychwelyd cyfrannau a glustnodwyd",
   "receipts.kind-amended-ct600": "Ffurflen Dreth y Cwmni wedi’i diwygio (rhagolwg)",
   "receipts.kind-change-of-name": "Newid enw’r cwmni",
+  "receipts.kind-company-tax-return": "Ffurflen Dreth y Cwmni",
   "receipts.kind-confirmation-statement": "Datganiad cadarnhau",
   "receipts.kind-ct600": "Ffurflen Dreth y Cwmni (rhagolwg)",
   "receipts.kind-filing": "Ffeilio gyda Thŷ’r Cwmnïau",

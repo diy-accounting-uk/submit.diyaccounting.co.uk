@@ -39,7 +39,8 @@ const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.f
 vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 import { pollCtSubmission, findHeldCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
-import { CT_RETURN_KIND, TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
+import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
+import { CT_RETURN_KIND } from "@app/services/ctReturnKind.js";
 import { chargeTokenOnSuccess } from "@app/services/tokenEnforcement.js";
 import { publishActivityEvent } from "@app/lib/activityAlert.js";
 
@@ -94,6 +95,36 @@ describe("pollCtSubmission", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAsyncRequest.mockResolvedValue(pendingRequest());
+  });
+
+  describe("when Submit last asked", () => {
+    const acknowledgement = () => message("acknowledgement", "submit");
+
+    test("an acknowledgement keeps the request pending and records when the Transaction Engine was asked", async () => {
+      mockPost.mockResolvedValueOnce(acknowledgement());
+      const before = new Date().toISOString();
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      const [[, , status, data]] = mockPutAsyncRequest.mock.calls;
+      expect(status).toBe("pending");
+      expect(data.lastCheckedAt >= before).toBe(true);
+      expect(data).toMatchObject({ kind: CT_RETURN_KIND, utr: "8596148860" });
+    });
+
+    test("a transient error records when the Transaction Engine was asked", async () => {
+      mockPost.mockResolvedValueOnce(gatewayError("1000"));
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(mockPutAsyncRequest.mock.calls[0][3].lastCheckedAt).toEqual(expect.any(String));
+    });
+
+    test("a read inside the poll interval asks nothing and records nothing", async () => {
+      const request = pendingRequest();
+      request.data.nextPollAt = new Date(Date.now() + 60000).toISOString();
+      request.data.lastCheckedAt = "2026-11-26T09:00:00.000Z";
+      mockGetAsyncRequest.mockResolvedValueOnce(request);
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(mockPost).not.toHaveBeenCalled();
+      expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+    });
   });
 
   describe("transient poll errors", () => {

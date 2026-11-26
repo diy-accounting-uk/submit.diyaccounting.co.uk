@@ -182,6 +182,56 @@ test.describe("Receipts page - receipt details", () => {
     );
   });
 
+  test("a Company Tax Return waiting for HMRC is a pending row of the receipts table, linking its status page", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const companyTaxReturnsInProgress = [
+        { correlationId: "46DCD4CC7E194088B99857931C185829", status: "pending", submittedAt: "2026-11-25T10:00:00.000Z", clientId: null },
+      ];
+      const receipts = [
+        { name: "2026-11-17T12:00:00.000Z-AAA.json", timestamp: "2026-11-17T12:00:00.000Z", formBundleNumber: "AAA", kind: null },
+      ];
+      window.fetchWithIdToken = async () => ({
+        ok: true,
+        json: async () => ({ receipts, filingsInProgress: [], companyTaxReturnsInProgress }),
+      });
+      await window.fetchReceipts();
+    });
+
+    const rows = page.locator("#receiptsTable tbody tr");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toHaveClass(/filing-in-progress/);
+    await expect(rows.nth(0)).toHaveAttribute("data-status", "pending");
+    await expect(rows.nth(0)).toContainText("Company Tax Return: Pending, correlation ID 46DCD4CC7E194088B99857931C185829");
+    await expect(rows.nth(0).getByRole("link", { name: "correlation ID 46DCD4CC7E194088B99857931C185829" })).toHaveAttribute(
+      "href",
+      "../../companies-house/filings.html?filing=46DCD4CC7E194088B99857931C185829&kind=ct600",
+    );
+    await expect(rows.nth(1).locator("td").nth(1)).toContainText("AAA");
+  });
+
+  test("a client's pending Company Tax Return links its status page with the client, and alone shows the table", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const companyTaxReturnsInProgress = [
+        { correlationId: "ABC123", status: "pending", submittedAt: "2026-11-25T10:00:00.000Z", clientId: "client-1" },
+      ];
+      window.fetchWithIdToken = async () => ({
+        ok: true,
+        json: async () => ({ receipts: [], filingsInProgress: [], companyTaxReturnsInProgress }),
+      });
+      await window.fetchReceipts();
+    });
+
+    await expect(page.locator("#emptyState")).toBeHidden();
+    await expect(page.locator("#receiptsTable tbody tr").getByRole("link")).toHaveAttribute(
+      "href",
+      "../../companies-house/filings.html?filing=ABC123&kind=ct600&clientId=client-1",
+    );
+  });
+
   test("with no filing waiting and no receipt the page says there are no receipts", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
     await page.evaluate(async () => {

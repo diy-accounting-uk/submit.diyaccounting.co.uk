@@ -20,8 +20,8 @@ import {
   postToTransactionEngine,
   isTransientPollError,
   irmarkReceiptMatches,
-  CT_RETURN_KIND,
 } from "./hmrcTransactionEngine.js";
+import { CT_RETURN_KIND } from "./ctReturnKind.js";
 import {
   verifyReceiptSignature,
   parseTrustedFingerprints,
@@ -169,10 +169,19 @@ export async function findHeldCtSubmission({
   return { state: "unknown" };
 }
 
+// Called once the Transaction Engine has answered a poll, so lastCheckedAt is when Submit last asked.
 async function pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: hmrcInterval, asyncRequestsTableName }) {
   const pollIntervalSeconds = hmrcInterval ?? pending.pollIntervalSeconds ?? DEFAULT_POLL_INTERVAL_SECONDS;
-  const nextPollAt = new Date(Date.now() + pollIntervalSeconds * 1000).toISOString();
-  await putAsyncRequest(userSub, correlationId, "pending", { ...pending, nextPollAt, pollIntervalSeconds }, asyncRequestsTableName);
+  const checkedAt = new Date();
+  const nextPollAt = new Date(checkedAt.getTime() + pollIntervalSeconds * 1000).toISOString();
+  const lastCheckedAt = checkedAt.toISOString();
+  await putAsyncRequest(
+    userSub,
+    correlationId,
+    "pending",
+    { ...pending, nextPollAt, pollIntervalSeconds, lastCheckedAt },
+    asyncRequestsTableName,
+  );
   return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark, pollIntervalSeconds } };
 }
 

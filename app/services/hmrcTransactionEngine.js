@@ -18,8 +18,6 @@ import { parseXmlTree, canonicaliseElement, childElement, localName } from "../l
 const logger = createLogger({ source: "app/services/hmrcTransactionEngine.js" });
 
 export const CT600_CLASS = "HMRC-CT-CT600";
-// Marks the async request record of a Company Tax Return, so a poll never reads another form's record.
-export const CT_RETURN_KIND = "company-tax-return";
 export const CT600_TEST_IN_LIVE_CLASS = "HMRC-CT-CT600-TIL";
 
 export const TRANSACTION_ENGINE_LIVE_SUBMISSION_URL = "https://transaction-engine.tax.service.gov.uk/submission";

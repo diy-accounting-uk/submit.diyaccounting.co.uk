@@ -57,6 +57,7 @@ async function fetchReceipts() {
   }
   const json = await res.json();
   const filingsInProgress = Array.isArray(json.filingsInProgress) ? json.filingsInProgress : [];
+  const ctReturnsInProgress = Array.isArray(json.companyTaxReturnsInProgress) ? json.companyTaxReturnsInProgress : [];
   const items = Array.isArray(json.receipts) ? json.receipts : [];
   const { accountingPeriodDates, longDateText } = await import("../../lib/long-period.js");
   describeLongPeriodReturn = (longPeriod) => {
@@ -68,7 +69,7 @@ async function fetchReceipts() {
     return siteText("receipts.part-of", "{part} of {parts}", { part: longPeriod.part, parts: longPeriod.parts }) + dates;
   };
   tbody.innerHTML = "";
-  if (items.length === 0 && filingsInProgress.length === 0) {
+  if (items.length === 0 && filingsInProgress.length === 0 && ctReturnsInProgress.length === 0) {
     table.style.display = "none";
     empty.textContent = siteText("receipts.none", "No receipts yet.");
     empty.style.display = "block";
@@ -78,13 +79,19 @@ async function fetchReceipts() {
   empty.style.display = "none";
   table.style.display = "table";
   exportControls.style.display = items.length ? "block" : "none";
-  // A filing Companies House has not accepted is a row of its own, beside the receipts by date.
+  // A filing Companies House has not accepted, or a Company Tax Return HMRC has not answered
+  // finally, is a row of its own, beside the receipts by date.
   const rows = [
     ...groupByJointFiling(items).map((group) => ({
       timestamp: group[0].timestamp,
       entries: group.map((it) => receiptEntry(it, group.length > 1)),
     })),
     ...filingsInProgress.map((filing) => ({ timestamp: filing.submittedAt, entries: [filingInProgressEntry(filing)], inProgress: filing })),
+    ...ctReturnsInProgress.map((ctReturn) => ({
+      timestamp: ctReturn.submittedAt,
+      entries: [ctReturnInProgressEntry(ctReturn)],
+      inProgress: ctReturn,
+    })),
   ];
   rows.sort((first, second) => String(second.timestamp ?? "").localeCompare(String(first.timestamp ?? "")));
   for (const row of rows) {
@@ -168,6 +175,32 @@ function filingInProgressEntry(filing) {
     }
     entry.appendChild(reasons);
   }
+  return entry;
+}
+
+// A Company Tax Return HMRC has not answered finally yet. Its correlation ID, the number HMRC's
+// Transaction Engine knows it by, links to its status page, which can ask HMRC again.
+function ctReturnStatusHref(ctReturn) {
+  const query = new URLSearchParams({ filing: ctReturn.correlationId, kind: "ct600" });
+  if (ctReturn.clientId) query.set("clientId", ctReturn.clientId);
+  return `../../companies-house/filings.html?${query}`;
+}
+
+function ctReturnInProgressEntry(ctReturn) {
+  const entry = document.createElement("div");
+  entry.className = "receipt-entry filing-in-progress";
+  entry.dataset.status = ctReturn.status;
+  const title = document.createElement("span");
+  title.className = "receipt-kind";
+  title.textContent = `${siteText("receipts.kind-company-tax-return", "Company Tax Return")}: `;
+  const status = document.createElement("span");
+  status.className = "filing-status";
+  status.textContent = siteText("receipts.filing-pending-tag", "Pending");
+  const link = document.createElement("a");
+  link.className = "submission-number";
+  link.href = ctReturnStatusHref(ctReturn);
+  link.textContent = siteText("receipts.correlation-id", "correlation ID {id}", { id: ctReturn.correlationId });
+  entry.append(title, status, ", ", link);
   return entry;
 }
 

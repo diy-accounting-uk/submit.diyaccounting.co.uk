@@ -27896,3 +27896,83 @@ cy = '''Yn aros'''
 [strings."settings.preview-two-settings"]
 hash = "8f754530fb7a"
 cy = '''Mae’r switsh hwn yn gosod dau beth: yn y porwr hwn, mae’n rhestru’r gweithgareddau nad yw’r wefan hon yn eu cynnig eto; gyda’ch cyfrif, mae’n agor Ffurflen Dreth y Cwmni i weithredwr.'''
+
+[strings."ch.filing.status-not-asked-yet"]
+hash = "a9549d7d0636"
+cy = '''Ddim eto'''
+
+[strings."ch.filing.status-next-ask-own"]
+hash = "5f6db6b65aab"
+cy = '''Pan fyddwch yn pwyso Gwirio nawr'''
+
+[strings."ch.filing.status-how-own"]
+hash = "899e0150514c"
+cy = '''Aeth y ffeilio hwn o dan eich ID cyflwynydd eich hun, felly mae Tŷ’r Cwmnïau yn ateb i chi yn unig: mae Submit yn gofyn pan fyddwch yn pwyso Gwirio nawr. Mae Tŷ’r Cwmnïau yn anfon e-bost at y cwmni pan fydd yn penderfynu.'''
+
+[strings."ch.filing.ct-status-pending"]
+hash = "5ed42b56815f"
+cy = '''Mae’r Ffurflen gan CThEF ac nid yw wedi rhoi ei ateb terfynol eto.'''
+
+[strings."ch.filing.ct-status-accepted"]
+hash = "4fc130aac1f6"
+cy = '''Derbyniodd CThEF y Ffurflen. Agorwch '''
+
+[strings."ch.filing.ct-status-receipt"]
+hash = "5c09e6af6912"
+cy = '''eich copi o’r Ffurflen a derbynneb CThEF'''
+
+[strings."ch.filing.ct-status-rejected"]
+hash = "9fdcfad45648"
+cy = '''Gwrthododd CThEF y Ffurflen ag ID cydberthyniad {id}:'''
+
+[strings."ch.filing.ct-status-check-failed"]
+hash = "9b4498fce8b6"
+cy = '''Ni allai Submit ofyn i CThEF ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.filing.ct-status-gone"]
+hash = "66e223902df7"
+cy = '''Nid yw’r Ffurflen ag ID cydberthyniad {id} yn aros am CThEF mwyach. Mae ei derbynneb yn eich derbynebau unwaith y bydd CThEF yn ei derbyn.'''
+
+[strings."ch.filing.ct-status-title"]
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
+
+[strings."ch.filing.ct-status-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.filing.ct-status-utr"]
+hash = "883d9ae8c92b"
+cy = '''Cyfeirnod Unigryw y Trethdalwr'''
+
+[strings."ch.filing.ct-status-period"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+[strings."ch.filing.ct-status-correlation-id"]
+hash = "c267c186e80d"
+cy = '''ID cydberthyniad'''
+
+[strings."ch.filing.ct-status-last-asked"]
+hash = "bf3f17761b95"
+cy = '''Gofynnodd Submit i CThEF ddiwethaf'''
+
+[strings."ch.filing.ct-status-you-asked"]
+hash = "573203ea0e3d"
+cy = '''Gofynnoch i CThEF am '''
+
+[strings."ch.filing.ct-status-how"]
+hash = "771ae4b976d0"
+cy = '''Mae Submit yn gofyn i CThEF am ei ateb pan fyddwch yn pwyso Gwirio nawr. Fel arfer, mae CThEF yn ateb o fewn munudau.'''
+
+[strings."ch.filing.ct-status-warning"]
+hash = "09ccd8e09480"
+cy = '''Peidiwch â’i ffeilio eto tra mae’n aros: byddai Ffurflen newydd ar gyfer y cwmni a’r cyfnod hwn yn mynd i CThEF ochr yn ochr â’r Ffurflen ag ID cydberthyniad {id}.'''
+
+[strings."receipts.kind-company-tax-return"]
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
+
+[strings."receipts.correlation-id"]
+hash = "f7cee138709a"
+cy = '''ID cydberthyniad {id}'''

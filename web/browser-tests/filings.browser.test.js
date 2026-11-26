@@ -369,26 +369,34 @@ test.describe("Filings page - a filing Companies House has not decided", () => {
     clientId: null,
   };
 
-  async function openStatus(page, { filingsInProgress = [PENDING], statusAnswers = [], query = "filing=00001A&kind=accounts" } = {}) {
+  async function openStatus(
+    page,
+    { filingsInProgress = [PENDING], companyTaxReturnsInProgress = [], statusAnswers = [], query = "filing=00001A&kind=accounts" } = {},
+  ) {
     await page.addInitScript(
-      ({ inProgress, answers }) => {
+      ({ inProgress, ctInProgress, answers }) => {
         localStorage.setItem("cognitoIdToken", "token");
         window.requestedUrls = [];
         window.fetchWithIdToken = async (url) => {
           window.requestedUrls.push(url);
           if (url.startsWith("/api/v1/hmrc/receipt"))
-            return { ok: true, json: async () => ({ receipts: [], filingsInProgress: inProgress }) };
+            return {
+              ok: true,
+              json: async () => ({ receipts: [], filingsInProgress: inProgress, companyTaxReturnsInProgress: ctInProgress }),
+            };
           const answer = answers.shift();
-          return answer ? { ok: true, json: async () => answer } : { ok: false, status: 502, json: async () => ({}) };
+          if (answer?.httpStatus) return { ok: false, status: answer.httpStatus, json: async () => ({}) };
+          return answer ? { ok: true, status: 200, json: async () => answer } : { ok: false, status: 502, json: async () => ({}) };
         };
       },
-      { inProgress: filingsInProgress, answers: statusAnswers },
+      { inProgress: filingsInProgress, ctInProgress: companyTaxReturnsInProgress, answers: statusAnswers },
     );
     await page.route("**/*.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
     for (const file of [
       "lib/companies-house-forms.js",
       "lib/presenter-poll-schedule.js",
       "lib/companies-house-rejections.js",
+      "lib/long-period.js",
       "companies-house/filings.page.js",
     ]) {
       await page.route(`**/${file}`, (route) =>
@@ -417,6 +425,25 @@ test.describe("Filings page - a filing Companies House has not decided", () => {
     await expect(page.getByRole("button", { name: "Check now" })).toBeVisible();
     await expect(panel).not.toContainText("Start a new filing");
     expect(await pageScrollsSideways(page)).toBe(false);
+  });
+
+  test("says when Submit last asked Companies House from the time the list records", async ({ page }) => {
+    await openStatus(page, { filingsInProgress: [{ ...PENDING, askedOnSchedule: true, lastCheckedAt: "2026-11-25T10:15:00.000Z" }] });
+    await expect(page.locator("#filingStatusLastAsked")).toHaveText("Wednesday, 25 November 2026 at 10:15");
+    await expect(page.locator("#filingStatusNextAsk")).not.toBeEmpty();
+  });
+
+  test("a filing Submit has not asked about yet says so", async ({ page }) => {
+    await openStatus(page);
+    await expect(page.locator("#filingStatusLastAsked")).toHaveText("Not yet");
+  });
+
+  test("a filing under the customer's own presenter says Submit asks when Check now is pressed, not on the schedule", async ({ page }) => {
+    await openStatus(page, { filingsInProgress: [{ ...PENDING, askedOnSchedule: false, lastCheckedAt: "2026-11-25T10:02:00.000Z" }] });
+    await expect(page.locator("#filingStatusLastAsked")).toHaveText("Wednesday, 25 November 2026 at 10:02");
+    await expect(page.locator("#filingStatusNextAsk")).toHaveText("When you press Check now");
+    await expect(page.locator("#filingStatusHow")).toContainText("under your own presenter ID");
+    await expect(page.locator("#filingStatusHow")).not.toContainText("every 15 minutes");
   });
 
   test("Check now asks the filing's own status route and reads a submission not yet indexed as pending", async ({ page }) => {
@@ -489,6 +516,164 @@ test.describe("Filings page - a filing Companies House has not decided", () => {
     await expect(page.locator("#filingNotice")).toHaveText(
       "Submission 00001A is no longer waiting for Companies House. Its receipt, or its rejection, is in your receipts.",
     );
+    await expect(page.locator("#filingStatus")).toBeHidden();
+  });
+});
+
+test.describe("Filings page - a Company Tax Return HMRC has not answered", () => {
+  const html = fs.readFileSync(path.join(PUBLIC_DIR, "companies-house/filings.html"), "utf-8");
+  const CT_PENDING = {
+    correlationId: "46DCD4CC7E194088B99857931C185829",
+    status: "pending",
+    submittedAt: "2026-11-25T10:00:00.000Z",
+    lastCheckedAt: "2026-11-25T10:05:00.000Z",
+    utr: "8596148860",
+    companyName: "EXAMPLE LIMITED",
+    companyNumber: "00000001",
+    periodStart: "2025-04-01",
+    periodEnd: "2026-03-31",
+    clientId: null,
+  };
+  const QUERY = `filing=${CT_PENDING.correlationId}&kind=ct600`;
+
+  async function openCtStatus(page, { companyTaxReturnsInProgress = [CT_PENDING], statusAnswers = [], query = QUERY } = {}) {
+    await page.addInitScript(
+      ({ ctInProgress, answers }) => {
+        localStorage.setItem("cognitoIdToken", "token");
+        window.requestedUrls = [];
+        window.fetchWithIdToken = async (url) => {
+          window.requestedUrls.push(url);
+          if (url.startsWith("/api/v1/hmrc/receipt"))
+            return { ok: true, json: async () => ({ receipts: [], filingsInProgress: [], companyTaxReturnsInProgress: ctInProgress }) };
+          const answer = answers.shift();
+          if (answer?.httpStatus) return { ok: false, status: answer.httpStatus, json: async () => ({}) };
+          return answer ? { ok: true, status: 200, json: async () => answer } : { ok: false, status: 502, json: async () => ({}) };
+        };
+      },
+      { ctInProgress: companyTaxReturnsInProgress, answers: statusAnswers },
+    );
+    await page.route("**/*.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+    for (const file of [
+      "lib/companies-house-forms.js",
+      "lib/presenter-poll-schedule.js",
+      "lib/long-period.js",
+      "companies-house/filings.page.js",
+    ]) {
+      await page.route(`**/${file}`, (route) =>
+        route.fulfill({ status: 200, contentType: "application/javascript", body: fs.readFileSync(path.join(PUBLIC_DIR, file), "utf-8") }),
+      );
+    }
+    await serveSiteStyles(page);
+    await page.route("**/companies-house/filings.html**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+    await page.goto(`http://localhost:3000/companies-house/filings.html?${query}`, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => document.dispatchEvent(new Event("submit-ready")));
+  }
+
+  test("says where the return is, when Submit last asked HMRC, and warns against filing it again", async ({ page }) => {
+    await openCtStatus(page);
+    const panel = page.locator("#filingStatus");
+    await expect(panel).toBeVisible();
+    await expect(page.locator("#filingStatusHeading")).toHaveText("Company Tax Return");
+    await expect(page.locator("#filingStatusAnswer")).toHaveText("HMRC has the return and has not given its final answer yet.");
+    await expect(page.locator("#filingStatusCompany")).toHaveText("EXAMPLE LIMITED, 00000001");
+    await expect(page.locator("#filingStatusUtr")).toHaveText("8596148860");
+    await expect(page.locator("#filingStatusPeriod")).toHaveText("1 April 2025 to 31 March 2026");
+    await expect(page.locator("#filingStatusNumber")).toHaveText(CT_PENDING.correlationId);
+    await expect(page.locator("#filingStatusLastAsked")).toHaveText("Wednesday, 25 November 2026 at 10:05");
+    await expect(page.locator("#filingStatusWarning")).toContainText(`beside the return with correlation ID ${CT_PENDING.correlationId}`);
+    await expect(page.getByRole("button", { name: "Check now" })).toBeVisible();
+    expect(await pageScrollsSideways(page)).toBe(false);
+  });
+
+  test("a return Submit has not asked HMRC about yet says so", async ({ page }) => {
+    const { lastCheckedAt: _lastCheckedAt, ...neverAsked } = CT_PENDING;
+    await openCtStatus(page, { companyTaxReturnsInProgress: [neverAsked] });
+    await expect(page.locator("#filingStatusLastAsked")).toHaveText("Not yet");
+  });
+
+  test("Check now asks the Company Tax Return status route and reads pending", async ({ page }) => {
+    await openCtStatus(page, {
+      statusAnswers: [{ statusCode: "PENDING", correlationId: CT_PENDING.correlationId, pollIntervalSeconds: 10 }],
+    });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusYouAsked")).toBeVisible();
+    await expect(page.locator("#filingStatusAnswer")).toHaveText("HMRC has the return and has not given its final answer yet.");
+    expect(await page.evaluate(() => window.requestedUrls)).toContain(`/api/v1/hmrc/ct/return/${CT_PENDING.correlationId}`);
+    await expect(page.getByRole("button", { name: "Check now" })).toBeVisible();
+  });
+
+  test("Check now on an accepted return links its copy and receipt and offers no more checks", async ({ page }) => {
+    await openCtStatus(page, {
+      statusAnswers: [{ statusCode: "ACCEPT", correlationId: CT_PENDING.correlationId, receiptId: "2026-11-25T10:06:00.000Z-46DCD4CC" }],
+    });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toContainText("HMRC accepted the return.");
+    await expect(page.locator("#filingStatusReceiptLink")).toHaveAttribute(
+      "href",
+      `filings.html?receipt=${encodeURIComponent("2026-11-25T10:06:00.000Z-46DCD4CC.json")}`,
+    );
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+    await expect(page.locator("#filingStatusWarning")).toBeHidden();
+  });
+
+  test("Check now on a rejected return shows HMRC's errors", async ({ page }) => {
+    await openCtStatus(page, {
+      statusAnswers: [
+        {
+          statusCode: "REJECT",
+          correlationId: CT_PENDING.correlationId,
+          errors: [
+            {
+              number: "3001",
+              text: "The submission of this document has failed due to departmental specific business logic in the Body tag.",
+            },
+          ],
+          businessErrors: [{ number: "9284", text: "Box 145 must be present" }],
+        },
+      ],
+    });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toHaveText(
+      `HMRC rejected the return with correlation ID ${CT_PENDING.correlationId}:`,
+    );
+    await expect(page.locator("#filingStatusReasons li")).toHaveText([
+      "Error 3001: The submission of this document has failed due to departmental specific business logic in the Body tag.",
+      "Error 9284: Box 145 must be present",
+    ]);
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+  });
+
+  test("a failed check says to try again and keeps Check now", async ({ page }) => {
+    await openCtStatus(page, { statusAnswers: [] });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toHaveText("Submit could not ask HMRC just now. Try again in a few minutes.");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeEnabled();
+  });
+
+  test("a return the status route no longer finds says it is no longer waiting", async ({ page }) => {
+    await openCtStatus(page, { statusAnswers: [{ httpStatus: 404 }] });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toContainText("is no longer waiting for HMRC");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+  });
+
+  test("a client's return is asked about for that client", async ({ page }) => {
+    await openCtStatus(page, {
+      companyTaxReturnsInProgress: [{ ...CT_PENDING, clientId: "client-1" }],
+      statusAnswers: [{ statusCode: "PENDING", correlationId: CT_PENDING.correlationId }],
+      query: `${QUERY}&clientId=client-1`,
+    });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusYouAsked")).toBeVisible();
+    expect(await page.evaluate(() => window.requestedUrls)).toEqual([
+      "/api/v1/hmrc/receipt?clientId=client-1",
+      `/api/v1/hmrc/ct/return/${CT_PENDING.correlationId}?clientId=client-1`,
+    ]);
+  });
+
+  test("a return no longer waiting says so", async ({ page }) => {
+    await openCtStatus(page, { companyTaxReturnsInProgress: [] });
+    await expect(page.locator("#filingNotice")).toContainText(`correlation ID ${CT_PENDING.correlationId} is no longer waiting for HMRC`);
     await expect(page.locator("#filingStatus")).toBeHidden();
   });
 });

@@ -199,3 +199,30 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
     throw error;
   }
 }
+
+/**
+ * Record when a status poll last asked about a request that is still pending: data.lastCheckedAt,
+ * set in place. A request that is no longer pending, or not found, is left as it is.
+ * @param {string} userId - The user ID
+ * @param {string} requestId - The request ID
+ * @param {Date} checkedAt - When the poll asked
+ * @param {string} tableName
+ */
+export async function recordStatusCheck(userId, requestId, checkedAt, tableName) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub: hashSub(userId), requestId },
+          UpdateExpression: "SET #data.#lastCheckedAt = :checkedAt",
+          ConditionExpression: "#status = :pending",
+          ExpressionAttributeNames: { "#data": "data", "#lastCheckedAt": "lastCheckedAt", "#status": "status" },
+          ExpressionAttributeValues: { ":checkedAt": checkedAt.toISOString(), ":pending": "pending" },
+        }),
+    );
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return;
+    throw error;
+  }
+}
