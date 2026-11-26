@@ -79,7 +79,7 @@ CTL1's register is on `main` (53e74f267).
 |---|---|---|---|
 | ct600-page | CTL2, CTL5 | Sonnet | `ct600-fields.js`, `fileCompanyTaxReturn.page.js`, `web/unit-tests/ct600-fields.test.js`, `scripts/ct600-source-shots.mjs` (new), `web/public/images/ct600-sources/`, `package.json` |
 
-State: integrating with wave 5 on `claude/cobalt-w04` from 2fccfabfa (harbour's chain carries both): anvil merges CTL2, CTL5, CTL4, CTL10, ctl2b, ctl5b (the fixed asset note cells and the accounts-page lines, built on the laptop), ctl4b.
+State: gated with wave 5 at 2535e818d (harbour's chain carries both): CTL2, CTL5, CTL4, CTL10, ctl2b, ctl5b, ctl4b, and three fixes the integration and its gate found: ctr2b (a stale receipts answer listed another company's filings), ctl5c (an import cycle the ESLint ratchet counts), ctl10b (the books card named fields by the new row heading). Gates: ./mvnw clean verify 578, the CT600 suite 21 (flint); npm test 16275, mcp 474, the micro-entity suite 16 (dusk); test:browser 2600 with the three label failures ctl10b fixes and one guide test that passes 110 of 110 alone (garnet, anvil); each fix's own npm test, ESLint (0 cycles, ratchets at 0) and browser tests (anvil); the Docker build (laptop).
 
 ### Wave 5
 
@@ -95,7 +95,7 @@ State: pending.
 |---|---|---|---|
 | ct600-page | CTL7, CTL9 | Sonnet | `ct600-fields.js` (`reviewAnswers`), `web/public/lib/filing-record.js`, `web/public/lib/filing-result-record.js`, `fileCompanyTaxReturn.page.js`, `app/services/ctComputationsIxbrl.js`, `app/services/accountsIxbrlCommon.js`, their tests |
 
-State: pending.
+State: integrating on `claude/cobalt-w06` from 4d28c4090: CTL7 landed; jasper merges CTL9; ctl10b (2535e818d on wave 4) follows as its own commit.
 
 ### Wave 7
 
