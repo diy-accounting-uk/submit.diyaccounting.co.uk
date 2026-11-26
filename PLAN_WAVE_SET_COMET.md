@@ -21,7 +21,7 @@ As for cobalt: the rows are built and gated in local waves, then submit pays for
 
 ## The set
 
-- **submit, 4 rows in waves**: CTN2, CTN4, CTL1A, CTL8. Each row's brief is its `NEXT.md` row and its section of `PLAN_CT600_LABELS.md`.
+- **submit, 5 rows in waves**: CTN2, CTN4, CTL1A, CTL1B, CTL8. Each row's brief is its `NEXT.md` row and its section of `PLAN_CT600_LABELS.md`.
 
 ## Rules for this set
 
@@ -36,7 +36,7 @@ As for cobalt: the rows are built and gated in local waves, then submit pays for
 |---|---|---|---|
 | ct600-page | CTN2 (Opus writes the failure classes and their text, then Sonnet builds the panel) | Opus, then Sonnet | `fileCompanyTaxReturn.page.js`, `web/public/lib/utils/dom-utils.js`, `messages.css`, the failure classes module (new), `web/public/lib/services/hmrc-ct-return-service.js` |
 
-State: building on harbour after ctl7c and ctf1b (`claude/harbour-ctn2`).
+State: CTN2 built on harbour (`claude/harbour-ctn2` 4f06c130d); CTN4 building next.
 
 ### Wave 2
 
@@ -50,11 +50,11 @@ State: queued on harbour after CTN2.
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| ct600-fields | CTL1A | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
+| ct600-fields | CTL1A, CTL1B | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
 
-CTL1A builds now from cobalt's wave 8 head and rebases after CTN4 (operator, 2026-11-26).
+CTL1A builds now from cobalt's wave 8 head and rebases after CTN4 (operator, 2026-11-26). CTL1B waits on the taxonomy package (the operator passes the National Archives check).
 
-State: building.
+State: CTL1A built (`claude/dusk-ctl1a` 7fb42dff0) but answer 3; ctl1a-b building on dusk.
 
 ### Wave 4: the look wave
 
