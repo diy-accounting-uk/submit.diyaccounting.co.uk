@@ -905,12 +905,13 @@
   }
 
   // A prior-year field as the reader finds it in the form's table: its line's name, or for a sub-line
-  // ("Of which, ..."), the line it is part of and its own name.
+  // ("Of which, ..."), the line it is part of and its own name. A row heading that leads with its
+  // format item keeps the plain label in data-line-label; a heading without one is named by its text.
   function priorFieldName(input) {
     const row = input.closest("tr");
     const heading = row?.querySelector("th");
     if (!heading) return (document.querySelector(`label[for="${input.id}"]`)?.textContent ?? input.id).trim();
-    const text = (cell) => cell.textContent.replace(/\s+/g, " ").trim();
+    const text = (cell) => (cell.dataset.lineLabel ?? cell.textContent).replace(/\s+/g, " ").trim();
     if (!heading.classList.contains("ledger__part")) return text(heading);
     let lineRow = row.previousElementSibling;
     while (lineRow && lineRow.querySelector("th")?.classList.contains("ledger__part")) lineRow = lineRow.previousElementSibling;
