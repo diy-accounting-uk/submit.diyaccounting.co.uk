@@ -27734,3 +27734,69 @@ cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn. Cyfeirnod: {reference
 [strings."widget.working"]
 hash = "a92f0449a9f7"
 cy = '''Wrthi’n gweithio'''
+
+# == Answers saved in this browser on the Company Tax Return page, ids ch.ct.draft-* and the privacy page's entry ==
+
+[strings."ch.ct.draft-saved-at"]
+hash = "f5f22909cdb4"
+cy = '''{date} am {time}'''
+
+[strings."ch.ct.draft-no-period"]
+hash = "7e5a3a55f3fc"
+cy = '''heb gyfnod wedi’i nodi eto'''
+
+[strings."ch.ct.draft-period"]
+hash = "74e98ae4fcb3"
+cy = '''ar gyfer y cyfnod {start} i {end}'''
+
+[strings."ch.ct.draft-restore"]
+hash = "66e3b5a2ca83"
+cy = '''Adfer fy atebion'''
+
+[strings."ch.ct.draft-discard"]
+hash = "962e64b76196"
+cy = '''Dechrau eto'''
+
+[strings."ch.ct.draft-restored"]
+hash = "4e4115bdb4ea"
+cy = '''Mae’ch atebion a gadwyd yn ôl yn y ffurflen.'''
+
+[strings."ch.ct.draft-heading"]
+hash = "bbf68af0db16"
+cy = '''Atebion a gadwyd yn y porwr hwn'''
+
+[strings."ch.ct.draft-found"]
+hash = "ed9cb12c55bf"
+cy = '''Mae gan y porwr hwn atebion ar gyfer y cwmni hwn {period}, a gadwyd ar {saved}.'''
+
+[strings."ch.ct.draft-keep-none"]
+hash = "241953e70667"
+cy = '''Peidio â’u cadw'''
+
+[strings."ch.ct.draft-keep-days"]
+hash = "a2246fbc2542"
+cy = '''{days} diwrnod'''
+
+[strings."ch.ct.draft-none-kept"]
+hash = "982f15e02579"
+cy = '''Nid yw’ch atebion yn cael eu cadw yn y porwr hwn.'''
+
+[strings."ch.ct.draft-delete-all"]
+hash = "c045fef9a47a"
+cy = '''Dileu fy atebion a gadwyd'''
+
+[strings."ch.ct.draft-deleted"]
+hash = "0d402bc1b734"
+cy = '''Mae’ch atebion a gadwyd wedi’u dileu o’r porwr hwn.'''
+
+[strings."ch.ct.draft-keep-label"]
+hash = "05ad7d3b7347"
+cy = '''Cadw fy atebion yn y porwr hwn am'''
+
+[strings."ch.ct.draft-keep-hint"]
+hash = "b2fedb83946a"
+cy = '''Caiff eich atebion eu cadw wrth i chi deipio, felly ni chollir dim os bydd tab yn cau neu os byddwch yn mewngofnodi eto. Dim ond yn y porwr hwn y cânt eu cadw, byth ar ein gweinyddion, a gallai unrhyw un sy’n defnyddio’r porwr hwn eu gweld. Ar gyfrifiadur a rennir, dewiswch Peidio â’u cadw.'''
+
+[strings."privacy.formdraft-the-answers-you-type-into-1c9280"]
+hash = "1c9280e534e8"
+cy = '''<strong><code>formDraft.*</code></strong >: Yr atebion a deipiwch i’r Ffurflen Dreth i Gwmnïau, wedi’u cadw wrth i chi deipio fel nad oes dim yn cael ei golli os bydd tab yn cau neu os byddwch yn mewngofnodi eto: un cofnod ar gyfer pob cwmni, gyda’i gyfnod, pryd y’i cadwyd a phryd y daw i ben. Ni chaiff ID defnyddiwr a chyfrinair Porth y Llywodraeth na chod dilysu Tŷ’r Cwmnïau byth eu cadw. Mae’r atebion yn aros yn y porwr hwn ac nid ydynt byth yn cael eu hanfon i’n gweinyddion. Rydych yn dewis ar y ffurflen am ba hyd y cânt eu cadw (7, 28 neu 90 diwrnod, 28 yn ddiofyn) neu nad ydynt yn cael eu cadw, ac mae "Dileu fy atebion a gadwyd" yn eu dileu. Cânt eu dileu pan fydd CThEF yn derbyn y Ffurflen, ac ar yr ymweliad cyntaf ar ôl iddynt ddod i ben. Gallai unrhyw un sy’n defnyddio’r porwr hwn eu gweld, felly dewiswch "Peidio â’u cadw" ar gyfrifiadur a rennir. Maent yn gwasanaethu’r ffeilio y gofynnoch amdano, felly cânt eu cadw heb ofyn am gydsyniad.'''

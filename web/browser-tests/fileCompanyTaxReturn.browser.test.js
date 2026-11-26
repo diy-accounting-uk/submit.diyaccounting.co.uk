@@ -784,6 +784,127 @@ test.describe("File Company Tax Return entry form", () => {
     return { submission, accountsPosts };
   }
 
+  const DRAFT_KEY = "formDraft.ct600.user1.00000007";
+
+  async function savedDraft(page) {
+    return page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "null"), DRAFT_KEY);
+  }
+
+  async function lookUpAgain(page) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+  }
+
+  test("typed answers are saved in this browser and come back after a reload with Restore my answers", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator("#draftKeepDays")).toHaveValue("28");
+    await page.locator("#periodStart").fill("2025-04-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await page.locator("#currentTurnover").fill("123456");
+    await expect.poll(async () => (await savedDraft(page))?.values?.currentTurnover).toBe("123456");
+    const record = await savedDraft(page);
+    expect(record.period).toEqual({ periodStart: "2025-04-01", periodEnd: "2026-03-31" });
+    for (const secret of ["gatewayUserId", "gatewayPassword", "companyAuthCode"]) expect(record.values).not.toHaveProperty(secret);
+
+    await lookUpAgain(page);
+    const notice = page.locator("#draftRestore");
+    await expect(notice).toContainText("Answers saved in this browser");
+    await expect(notice).toContainText("for the period 1 April 2025 to 31 March 2026");
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await page.getByRole("button", { name: "Restore my answers" }).click();
+    await expect(page.locator("#currentTurnover")).toHaveValue("123456");
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(notice).toHaveCount(0);
+  });
+
+  test("Start again deletes the saved answers and leaves the form empty", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#currentTurnover").fill("123456");
+    await expect.poll(() => savedDraft(page)).not.toBeNull();
+
+    await lookUpAgain(page);
+    await page.getByRole("button", { name: "Start again" }).click();
+    await expect(page.locator("#draftRestore")).toHaveCount(0);
+    expect(await savedDraft(page)).toBeNull();
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+  });
+
+  test("with Do not keep chosen, nothing is in this browser after a reload", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#currentTurnover").fill("123456");
+    await expect.poll(() => savedDraft(page)).not.toBeNull();
+    await page.locator("#draftKeepDays").selectOption("0");
+    await expect(page.locator("#draftDeleted")).toHaveText("Your answers are not kept in this browser.");
+    expect(await savedDraft(page)).toBeNull();
+    await page.locator("#currentTurnover").fill("654321");
+    await page.waitForTimeout(1500);
+
+    await lookUpAgain(page);
+    await expect(page.locator("#draftRestore")).toHaveCount(0);
+    await expect(page.locator("#draftKeepDays")).toHaveValue("0");
+    expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("formDraft.ct600.")))).toEqual([]);
+  });
+
+  test("the saved answers are deleted when HMRC accepts the return", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await expect.poll(async () => (await savedDraft(page))?.values?.declarationAccepted).toBe(true);
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    await expect.poll(() => savedDraft(page)).toBeNull();
+  });
+
+  test("a joint filing's saved answers are deleted once Companies House and HMRC have both accepted", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await expect.poll(async () => (await savedDraft(page))?.values?.sendTo).toBe("both");
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    await expect.poll(() => savedDraft(page)).toBeNull();
+  });
+
   test("a return filed with HMRC alone can be amended to correct its attached accounts, with nothing sent to Companies House", async ({
     page,
   }) => {

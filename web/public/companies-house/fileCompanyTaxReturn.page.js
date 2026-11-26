@@ -61,6 +61,16 @@ import {
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import {
+  KEEP_DAYS_CHOICES,
+  deleteAllDrafts,
+  deleteDraft,
+  draftSaver,
+  keepDays,
+  loadDraft,
+  saveDraft,
+  setKeepDays,
+} from "../lib/form-draft.js";
+import {
   DEFAULT_AGENT_STATUS,
   agentRequestFields,
   clientChoices,
@@ -1146,6 +1156,167 @@ function toggleSections() {
   element("fixedAssetNoteFields").style.display = element("includeFixedAssetNote").checked ? "block" : "none";
 }
 
+// --- Answers saved in this browser ------------------------------------------------------------
+
+const DRAFT_JOURNEY = "ct600";
+
+function browserStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function signedInSub() {
+  try {
+    return JSON.parse(localStorage.getItem("userInfo") ?? "null")?.sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function draftScope() {
+  return { journey: DRAFT_JOURNEY, sub: signedInSub(), companyNumber: company?.companyNumber };
+}
+
+// Saved one second after the last change, while the return is still being prepared.
+function saveAnswers() {
+  const storage = browserStorage();
+  if (!storage || !company || sending.taxReturnSent) return;
+  const values = readValues();
+  saveDraft(storage, { ...draftScope(), period: { periodStart: values.periodStart, periodEnd: values.periodEnd }, values });
+}
+
+const answersSaver = draftSaver(saveAnswers);
+
+// The filing is accepted: the saved answers have done their work.
+function forgetSavedAnswers() {
+  answersSaver.cancel();
+  const storage = browserStorage();
+  if (storage) deleteDraft(storage, draftScope());
+}
+
+function savedAtText(iso) {
+  const saved = new Date(iso);
+  const pad = (number) => String(number).padStart(2, "0");
+  const day = `${saved.getFullYear()}-${pad(saved.getMonth() + 1)}-${pad(saved.getDate())}`;
+  return siteText("ch.ct.draft-saved-at", "{date} at {time}", {
+    date: longDateText(day),
+    time: `${pad(saved.getHours())}:${pad(saved.getMinutes())}`,
+  });
+}
+
+function draftPeriodText(period) {
+  if (!period?.periodStart || !period?.periodEnd) return siteText("ch.ct.draft-no-period", "with no period entered yet");
+  return siteText("ch.ct.draft-period", "for the period {start} to {end}", {
+    start: longDateText(period.periodStart),
+    end: longDateText(period.periodEnd),
+  });
+}
+
+function restoreNotice(storage, record) {
+  const restore = create(
+    "button",
+    { type: "button", id: "draftRestoreBtn", class: "btn" },
+    siteText("ch.ct.draft-restore", "Restore my answers"),
+  );
+  const discard = create(
+    "button",
+    { type: "button", id: "draftDiscardBtn", class: "secondary-button" },
+    siteText("ch.ct.draft-discard", "Start again"),
+  );
+  restore.addEventListener("click", () => {
+    fillValues(record.values);
+    setDefaults();
+    refresh();
+    element("draftRestore").remove();
+    window.showStatus(siteText("ch.ct.draft-restored", "Your saved answers are back in the form."), "info");
+  });
+  discard.addEventListener("click", () => {
+    deleteDraft(storage, draftScope());
+    element("draftRestore").remove();
+  });
+  return create(
+    "section",
+    { "id": "draftRestore", "class": "form-section", "aria-labelledby": "draftRestoreHeading" },
+    create("h3", { id: "draftRestoreHeading" }, siteText("ch.ct.draft-heading", "Answers saved in this browser")),
+    create(
+      "p",
+      {},
+      siteText("ch.ct.draft-found", "This browser holds answers for this company {period}, saved on {saved}.", {
+        period: draftPeriodText(record.period),
+        saved: savedAtText(record.savedAt),
+      }),
+    ),
+    create("div", { class: "button-row" }, restore, " ", discard),
+  );
+}
+
+function keepChoice(storage) {
+  const select = create("select", { "id": "draftKeepDays", "aria-describedby": "draftKeepDays-hint" });
+  const chosen = keepDays(storage);
+  for (const days of KEEP_DAYS_CHOICES) {
+    const option = create(
+      "option",
+      { value: String(days) },
+      days === 0 ? siteText("ch.ct.draft-keep-none", "Do not keep") : siteText("ch.ct.draft-keep-days", "{days} days", { days }),
+    );
+    if (days === chosen) option.selected = true;
+    select.append(option);
+  }
+  const deleted = create("p", { "id": "draftDeleted", "class": "hint", "aria-live": "polite" });
+  select.addEventListener("change", () => {
+    const days = Number(select.value);
+    setKeepDays(storage, days, { sub: signedInSub() });
+    deleted.textContent = days === 0 ? siteText("ch.ct.draft-none-kept", "Your answers are not kept in this browser.") : "";
+    if (days === 0) element("draftRestore")?.remove();
+  });
+  const deleteAll = create(
+    "button",
+    { type: "button", id: "draftDeleteAllBtn", class: "secondary-button" },
+    siteText("ch.ct.draft-delete-all", "Delete my saved answers"),
+  );
+  deleteAll.addEventListener("click", () => {
+    answersSaver.cancel();
+    deleteAllDrafts(storage, signedInSub());
+    element("draftRestore")?.remove();
+    deleted.textContent = siteText("ch.ct.draft-deleted", "Your saved answers are deleted from this browser.");
+  });
+  return create(
+    "div",
+    { class: "form-group", id: "draftKeep" },
+    create("label", { for: "draftKeepDays" }, siteText("ch.ct.draft-keep-label", "Keep my answers in this browser for")),
+    create(
+      "p",
+      { id: "draftKeepDays-hint", class: "hint" },
+      siteText(
+        "ch.ct.draft-keep-hint",
+        "Your answers are saved as you type, so a closed tab or a new sign-in loses nothing. They are kept only in this browser, never on our servers, and anyone who uses this browser could see them. On a shared computer, choose Do not keep.",
+      ),
+    ),
+    select,
+    " ",
+    deleteAll,
+    deleted,
+  );
+}
+
+// After the company lookup: the choice of how long answers are kept, and the answers saved for
+// this company, if there are any.
+function renderDraftPanel() {
+  const host = element("draftPanel");
+  const storage = browserStorage();
+  if (!storage || !company || !signedInSub()) {
+    host.hidden = true;
+    host.replaceChildren();
+    return;
+  }
+  const record = loadDraft(storage, draftScope());
+  host.replaceChildren(...(record ? [restoreNotice(storage, record)] : []), keepChoice(storage));
+  host.hidden = false;
+}
+
 // --- Reading the form -----------------------------------------------------------------------
 
 function readValues() {
@@ -1849,6 +2020,7 @@ function handleFormInput(event) {
   if (control.id === "periodStart") toggleSections();
   setDefaults();
   refresh();
+  answersSaver.schedule();
 }
 
 function handleFormLeave(event) {
@@ -1863,6 +2035,7 @@ function handleFormChange(event) {
     setDefaults();
     refresh();
   }
+  answersSaver.schedule();
 }
 
 // --- The company and the card -------------------------------------------
@@ -2014,6 +2187,7 @@ async function handleCompanySubmit(event) {
     showView("formView");
     await ensureBundle();
     applyClientToForm();
+    renderDraftPanel();
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
@@ -2472,8 +2646,10 @@ async function showOutcome(outcome) {
     element("startAgainBtn").style.display = "inline-block";
     sending.taxReturnAccepted = true;
     if (sending.mode === "both") renderCompaniesHouse();
-    if (!sending.companiesHouse || companiesHouseAccepted()) forgetJoint();
-    else persistJoint();
+    if (!sending.companiesHouse || companiesHouseAccepted()) {
+      forgetJoint();
+      forgetSavedAnswers();
+    } else persistJoint();
     await renderReturnRecord(outcome);
     showAmendPanel();
     return;
@@ -3007,6 +3183,7 @@ async function resumeLongReturns() {
   }
   if (longQueue().length === 0) {
     sending.taxReturnAccepted = true;
+    if (!sending.companiesHouse || companiesHouseAccepted()) forgetSavedAnswers();
     await renderLongRecords();
     showAmendPanel();
     return;
@@ -3155,8 +3332,10 @@ async function waitForCompaniesHouse(headers) {
     lockAccounts();
     configureSendStep();
   }
-  if (statusCode === "ACCEPT" && sending.taxReturnAccepted) forgetJoint();
-  else persistJoint();
+  if (statusCode === "ACCEPT" && sending.taxReturnAccepted) {
+    forgetJoint();
+    forgetSavedAnswers();
+  } else persistJoint();
   if (statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
   return statusCode === "ACCEPT";
 }
@@ -3266,8 +3445,10 @@ async function settleLongReturn(part, outcome) {
   if (outcome.statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
   if (outcome.statusCode === "ACCEPT") await renderLongRecords();
   if (sending.mode === "both") renderCompaniesHouse();
-  if (finished && (!sending.companiesHouse || companiesHouseAccepted())) forgetJoint();
-  else persistJoint();
+  if (finished && (!sending.companiesHouse || companiesHouseAccepted())) {
+    forgetJoint();
+    forgetSavedAnswers();
+  } else persistJoint();
   if (parts[0]?.statusCode === "ACCEPT" && !sending.amendment && !finished) lockFirstReturn();
   if (finished) showAmendPanel();
   return outcome.statusCode === "ACCEPT";
