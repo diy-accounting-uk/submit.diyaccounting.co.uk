@@ -8,7 +8,7 @@ description: Work out a UK MTD VAT return from the user's saved books and show H
 
 Use the DIY Accounting Submit connector. It works out the return. The user files it in the browser.
 
-1. Call `list_books` to list the user's saved books. Ask which book and which VAT quarter if the user has not said.
+1. Call `list_books` to list the user's saved DIYA-GL books. Ask which book and which VAT quarter if the user has not said.
 2. Call `open_book` with that book's `bookId`. Say which business and period the book covers. Stop if the book is not VAT registered.
 3. Call `derive_vat_return` with `periodEnd` set to the last day of the quarter, as `YYYY-MM-DD`. The book must carry that month end. If the tool refuses, give its reason in plain words and ask for another period.
 4. Show the nine boxes in a table: box number, what it holds, amount. Boxes 1 to 5 are in pounds and pence. Boxes 6 to 9 are in whole pounds. Say that the figures come from the user's own book, and name the three or four largest lines behind boxes 1 and 4.
@@ -26,3 +26,4 @@ What you never do:
 - Never tick or describe the legal declaration for the user. The user reads it and ticks it.
 - Never guess a period, a VAT registration number or a figure. Ask.
 - Never give tax advice. Say what the book shows and where the rule lives on gov.uk.
+- Say "your DIYA-GL book" or "your records" to the user, never "your books".

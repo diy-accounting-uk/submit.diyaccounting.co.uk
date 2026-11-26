@@ -9,7 +9,7 @@ It is for a VAT-registered UK business that keeps its bookkeeping in DIY Account
 
 ## Use it
 
-Connect the DIY Accounting Submit connector and sign in. Ask Claude to work out your VAT return for a quarter. Claude opens the book you name, shows the nine boxes with the lines behind them, and gives you a link to the VAT form with the figures filled in. You open the link and file the return yourself on the Submit page, where you tick the declaration. Ask Claude to read the receipt when you are done.
+Connect the DIY Accounting Submit connector and sign in. Ask Claude to work out your VAT return for a quarter. Claude opens the DIYA-GL book you name, shows the nine boxes with the lines behind them, and gives you a link to the VAT form with the figures filled in. You open the link and file the return yourself on the Submit page, where you tick the declaration. Ask Claude to read the receipt when you are done.
 
 ## Data
 

@@ -66,7 +66,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>MCP server</h1>
-      <p class="subtitle">Read and edit a book, and file from it</p>
+      <p class="subtitle">Work out a VAT return from your bookkeeping in an AI assistant</p>
     </header>
 
     <main id="mainContent">
@@ -83,9 +83,9 @@
         <div class="mcp-intro">
           <h2>Can an AI assistant file my VAT return?</h2>
           <p>
-            Not through the hosted connector. It lets an assistant such as Claude open your saved books, work out the nine VAT return boxes
-            for a period, read your stored receipts and give you a link that opens the VAT form with the figures filled in. You check them,
-            tick the declaration and file the return yourself, in your browser.
+            Not through the hosted connector. It lets an assistant such as Claude open a DIYA-GL book you saved, work out the nine VAT
+            return boxes for a period, read your stored receipts and give you a link that opens the VAT form with the figures filled in. You
+            check them, tick the declaration and file the return yourself, in your browser.
           </p>
           <h2 id="what-you-need">What you need first</h2>
           <p>
@@ -107,7 +107,7 @@
           <p>The <strong>Model Context Protocol</strong> (MCP) is a standard way for an AI assistant to use another service.</p>
           <p>
             DIY Accounting offers three ways in: the hosted connector, which a chat client reaches with one URL; the diya-gl MCP server for
-            reading and editing a book; and the submission MCP you run yourself for filing VAT returns<span
+            reading and editing a DIYA-GL book; and the submission MCP you run yourself for filing VAT returns<span
               data-listed-activity="file-micro-entity-accounts"
               hidden
             >
@@ -120,8 +120,8 @@
           <span class="mcp-status mcp-status-available">Available now</span>
           <h2>The hosted connector</h2>
           <p>
-            The hosted connector gives a chat client your saved books and the VAT derivation, with nothing to install. It signs in with the
-            same account as the web app.
+            The hosted connector gives a chat client your saved DIYA-GL books and the VAT derivation, with nothing to install. It signs in
+            with the same account as the web app.
           </p>
           <p>The connector URL is:</p>
           <pre><code>https://submit.diyaccounting.co.uk/mcp</code></pre>
@@ -147,10 +147,10 @@
             <li>Sign in to your account. Claude returns to the connector page, which now shows Disconnect.</li>
           </ol>
           <p>
-            In a new chat, open the + menu, choose Connectors and check that DIY Accounting Submit is on. Then ask, for example, &ldquo;List
-            my books with the DIY Accounting Submit connector.&rdquo; Claude asks before it uses each tool. Choose Allow once, or Always
-            allow for a tool you trust. Claude shows the nine boxes of a VAT return as a card, with a link to open the VAT form with the
-            figures filled in.
+            In a new chat, open the + menu, choose Connectors and check that DIY Accounting Submit is on. Then ask, for example, &ldquo;Work
+            out my MTD VAT return for the quarter ended 30 June 2025.&rdquo; Claude asks before it uses each tool. Choose Allow once, or
+            Always allow for a tool you trust. Claude shows the nine boxes of a VAT return as a card, with a link to open the VAT form with
+            the figures filled in.
           </p>
           <p>In Claude Code, run:</p>
           <pre><code>claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp</code></pre>
@@ -173,16 +173,16 @@
             </li>
           </ol>
           <p>
-            The connector now shows under Custom apps. In a new chat, ask &ldquo;List my books with DIY Accounting Submit.&rdquo; Gemini
-            answers with a table of your books.
+            The connector now shows under Custom apps. In a new chat, ask &ldquo;Work out my MTD VAT return for the quarter ended 30 June
+            2025.&rdquo; Gemini asks which DIYA-GL book to use, then shows the nine boxes.
           </p>
           <h3>Tools</h3>
           <p>The connector has six tools. It does not reach HMRC and it files nothing.</p>
           <dl>
             <dt><code>list_books</code></dt>
-            <dd>List the books saved in your DIYA cloud, most recently updated first.</dd>
+            <dd>List the DIYA-GL books saved in your account, most recently updated first.</dd>
             <dt><code>open_book</code></dt>
-            <dd>Open a saved cloud book by its id. It reports the product, the period covered and the book's checks.</dd>
+            <dd>Open a saved DIYA-GL book by its id. It reports the product, the period covered and the book's checks.</dd>
             <dt><code>derive_vat_return</code></dt>
             <dd>The nine VAT return boxes for one period of the open book, with the lines that fed them.</dd>
             <dt><code>prepare_vat_return</code></dt>
@@ -234,7 +234,7 @@
           <span class="mcp-status mcp-status-available">Available now</span>
           <h2>The submission MCP on your computer</h2>
           <p>
-            The submission MCP takes a customer's book and files the VAT return to HMRC<span
+            The submission MCP takes a customer's DIYA-GL book and files the VAT return to HMRC<span
               data-listed-activity="file-micro-entity-accounts"
               hidden
             >
@@ -288,7 +288,7 @@
           <h3>Tools</h3>
           <dl>
             <dt><code>open_book</code>, <code>save_book</code></dt>
-            <dd>Open a book from a file or from the DIYA cloud, and save it back in any of the four formats.</dd>
+            <dd>Open a book from a file or from your account, and save it back in any of the four formats.</dd>
             <dt><code>list_vat_obligations</code></dt>
             <dd>The open and fulfilled VAT obligations HMRC holds for a business.</dd>
             <dt><code>derive_vat_return</code></dt>
