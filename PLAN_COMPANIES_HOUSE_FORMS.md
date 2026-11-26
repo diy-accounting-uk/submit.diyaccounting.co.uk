@@ -26,7 +26,6 @@ The new Companies House forms join prod's list when the XML team approves each f
 | CHT1 | machine-only | ready | nothing | CHT2 | submit |
 | CHT2 | machine-only | blocked | CHT1 (one worker builds both) | nothing | submit |
 | LOOK1 | machine-only | ready | nothing | nothing | submit |
-| CH60 | machine-only (a read) | blocked | the presenter poll's first run after DIY Accounting Limited's accounts were accepted (submission 000001, accepted 2026-11-25; the run of 2026-11-26 07:00 UTC; NEXT.md OCT8) | nothing | submit |
 
 Model, size and repository are in each entry. "Blocked by" lists the tasks and events not yet done.
 
@@ -54,5 +53,4 @@ The shared register of fictitious companies (`app/http-simulator/fixtures/regist
 
 ### CH60. A Companies House filing that is still pending reaches the reader's filings when Companies House decides it
 
-The scheduled presenter poll is live on prod (`cron(0/15 7-18 ? * MON-FRI *)`): it asks the gateway for every completed submission of the presenter, writes the receipt on ACCEPT, records the reject reasons on REJECT and emails the reader. Left: the proof on prod, on the first live accounts filing that answers pending. Read, with no filing page opened: `aws --profile diya-submit-prod --region eu-west-2 dynamodb query --table-name prod-env-companies-house-accounts-async-requests --key-condition-expression 'hashedSub = :h' --expression-attribute-values '{":h":{"S":"companies-house-xmlgw"}}'` lists the presenter's items; a filing that answered pending is an item `requestId = "pending#<submission number>"`, and after the gateway decides it the item carries the final status and the reader's receipts hold the filing. An ACCEPT or REJECT in the poll's log ("Companies House presenter GetSubmissionStatus response") with no record after it is a defect. At 17:15 UTC on 2026-11-23 the partition held only `presenter-poll-state`, so no live filing has answered pending. The ci proof is closed: the four test submissions of 2026-11-19 (00006W to 00006Z) wait on the XML team, which decides test accounts by hand, and nobody asks it to (operator, 2026-11-20: no email). Blocked on a live accounts filing on prod that answers pending. **Source**: the ridge set gate, 2026-11-18 (dusk's report on the gateway polling change). **Owner**: Claude Code. **Model**: Haiku (the remainder is a read). **Size**: 0 files. **Repository**: submit. **Class**: machine-only (a read). **State**: blocked. **Blocked by**: a live accounts filing on prod that answers pending. **Unblocks**: nothing.
-
+Proved on prod on 2026-11-26: the presenter poll recorded DIY Accounting Limited's submission 000001 as ACCEPT at 07:00:35 UTC and wrote its receipt (record `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/README.md`).
