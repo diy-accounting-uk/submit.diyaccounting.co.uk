@@ -27680,3 +27680,9 @@ cy = '''Mae’r ffeilio hwn ar agor oherwydd eich bod yn weithredwr gyda nodwedd
 [strings."ch.gateway.not-yet-indexed"]
 hash = "3dffc68d666a"
 cy = '''Nid yw Tŷ’r Cwmnïau wedi mynegeio cyflwyniad {number} eto. Yn gwirio eto...'''
+
+# == A failed status check of a Companies House submission the gateway took, id ch.gateway.check-failed ==
+
+[strings."ch.gateway.check-failed"]
+hash = "3a97eaa2e98d"
+cy = '''Anfonwyd cyflwyniad {number} i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys eto: methodd y gwiriad statws ({message}). Dewiswch Gwirio eto i ofyn am y canlyniad.'''

@@ -1479,6 +1479,8 @@ window.WELSH_TEXT = {
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.form.receipt-link": "Gweld y dderbynneb ar gyfer y ffeilio hwn",
   "ch.form.sent": "Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...",
+  "ch.gateway.check-failed":
+    "Anfonwyd cyflwyniad {number} i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys eto: methodd y gwiriad statws ({message}). Dewiswch Gwirio eto i ofyn am y canlyniad.",
   "ch.gateway.not-yet-indexed": "Nid yw Tŷ’r Cwmnïau wedi mynegeio cyflwyniad {number} eto. Yn gwirio eto...",
   "ch.gateway.pending":
     "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa.",

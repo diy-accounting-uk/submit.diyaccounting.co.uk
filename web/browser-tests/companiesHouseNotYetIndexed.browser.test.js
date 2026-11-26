@@ -4,8 +4,9 @@
 // web/browser-tests/companiesHouseNotYetIndexed.browser.test.js
 //
 // A status poll of a submission Companies House has not yet indexed answers pending with
-// notYetIndexed. The accounts pages say so while they keep polling, and offer Start a new filing
-// only once Companies House has decided the submission.
+// notYetIndexed. The accounts and confirmation statement pages say so while they keep polling. Every
+// Companies House filing page offers Start a new filing only once Companies House has decided the
+// submission or its status check failed, and a failed status check shows the submission as sent.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -57,26 +58,36 @@ async function serveSite(page, { language, apiBodies = {} }) {
   }, language);
 }
 
-// Files on the real page with the submit answered in the page and each poll answered by the next
-// entry of answers; an entry of "hold" waits until the test releases it. Does not wait for the outcome.
+// Answers each poll by the next entry of answers, the last repeating: "hold" waits until the test
+// calls window.releasePoll and then answers ACCEPT, "throw" fails the poll, anything else is the answer.
+function answerPollsInPage() {
+  return `window.pollAnswer = (pollAnswers) => {
+    let polls = 0;
+    window.releasePoll = null;
+    return async () => {
+      const next = pollAnswers[Math.min(polls++, pollAnswers.length - 1)];
+      if (next === "throw") throw new Error("Companies House gateway returned an error while polling this submission");
+      if (next === "hold") {
+        await new Promise((resolve) => {
+          window.releasePoll = resolve;
+        });
+        return { statusCode: "ACCEPT", submissionNumber: "000001", rejections: [], receiptId: "receipt-1" };
+      }
+      return next;
+    };
+  };`;
+}
+
+// Files on the real accounts page with the submit answered in the page and each poll answered by
+// answerPollsInPage's rule. Does not wait for the outcome.
 async function fileWithPolls(page, pagePath, answers) {
   await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
   await page.waitForFunction(() => typeof window.handleSubmitFiling === "function" || typeof handleSubmitFiling === "function");
+  await page.addScriptTag({ content: answerPollsInPage() });
   await page.evaluate(
     ({ pollAnswers, companyName }) => {
-      let polls = 0;
-      window.releasePoll = null;
       window.submitMicroEntityAccounts = async () => ({ submissionNumber: "000001", pollInterval: 1 });
-      window.pollMicroEntityAccounts = async () => {
-        const next = pollAnswers[Math.min(polls++, pollAnswers.length - 1)];
-        if (next === "hold") {
-          await new Promise((resolve) => {
-            window.releasePoll = resolve;
-          });
-          return { statusCode: "ACCEPT", submissionNumber: "000001", rejections: [], receiptId: "receipt-1" };
-        }
-        return next;
-      };
+      window.pollMicroEntityAccounts = window.pollAnswer(pollAnswers);
       window.buildAccountsPayload = () => ({});
       company = { companyNumber: "00000001", companyName };
       showView("previewView");
@@ -126,5 +137,134 @@ test.describe("A submission Companies House has not yet indexed", () => {
     await expect(page.locator("#checkAgainBtn")).toBeVisible({ timeout: 20000 });
     await expect(page.locator("#startAgainBtn")).toBeHidden();
     await expect(page.locator("#filingResult")).toContainText("has not finished checking submission 000001");
+  });
+
+  test("the small company page shows a submission whose first status check fails as sent, with Check again", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+
+    await fileWithPolls(page, "companies-house/fileSmallCompanyAccounts.html", ["throw", { ...NOT_YET_INDEXED, notYetIndexed: false }]);
+
+    const result = page.locator("#filingResult");
+    await expect(result).toContainText("Submission 000001 was sent to Companies House, and its outcome is not known yet", {
+      timeout: 15000,
+    });
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#statusMessagesContainer")).not.toContainText("Failed to file");
+    await expect(page.locator("#resultView")).toBeVisible();
+  });
+
+  test("Check again after a failed status check on the small company page shows Companies House's decision", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+
+    await fileWithPolls(page, "companies-house/fileSmallCompanyAccounts.html", ["throw", "hold"]);
+    await expect(page.locator("#checkAgainBtn")).toBeVisible({ timeout: 15000 });
+
+    await page.locator("#checkAgainBtn").click();
+    await page.waitForFunction(() => typeof window.releasePoll === "function");
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+    await page.evaluate(() => window.releasePoll());
+
+    await expect(page.locator("#filingResult")).toHaveText("Submission 000001 was accepted.", { timeout: 15000 });
+    await expect(page.locator("#startAgainBtn")).toBeVisible();
+  });
+
+  test("the micro-entity page offers Check again after a failed status check", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+
+    await fileWithPolls(page, "companies-house/fileMicroEntityAccounts.html", ["throw"]);
+
+    await expect(page.locator("#filingResult")).toContainText("The status check failed", { timeout: 15000 });
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
+  });
+
+  test("the confirmation statement page says a submission is not indexed and offers no Start a new filing while it is pending", async ({
+    page,
+  }) => {
+    await serveSite(page, { language: "en" });
+    await page.goto("http://localhost:3000/companies-house/fileConfirmationStatement.html", { waitUntil: "load" });
+    await page.waitForFunction(() => typeof window.handleSubmitFiling === "function" || typeof handleSubmitFiling === "function");
+    await page.addScriptTag({ content: answerPollsInPage() });
+    await page.evaluate(
+      ({ notYetIndexed }) => {
+        window.submitConfirmationStatement = async () => ({ submissionNumber: "000001", pollInterval: 1 });
+        window.pollConfirmationStatement = window.pollAnswer([notYetIndexed]);
+        window.buildStatementPayload = () => ({ companyNumber: "00000001" });
+        companyAuthCode = "ABC123";
+        handleSubmitFiling();
+      },
+      { notYetIndexed: NOT_YET_INDEXED },
+    );
+
+    const result = page.locator("#filingResult");
+    await expect(result).toHaveText("Companies House has not indexed submission 000001 yet. Checking again...", { timeout: 15000 });
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+    await expect(page.locator("#checkAgainBtn")).toBeVisible({ timeout: 20000 });
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+    await expect(result).toContainText("has not finished checking submission 000001");
+  });
+
+  test("the confirmation statement page shows a submission whose status check fails as sent, with Check again", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+    await page.goto("http://localhost:3000/companies-house/fileConfirmationStatement.html", { waitUntil: "load" });
+    await page.waitForFunction(() => typeof window.handleSubmitFiling === "function" || typeof handleSubmitFiling === "function");
+    await page.addScriptTag({ content: answerPollsInPage() });
+    await page.evaluate(() => {
+      window.submitConfirmationStatement = async () => ({ submissionNumber: "000001", pollInterval: 1 });
+      window.pollConfirmationStatement = window.pollAnswer(["throw"]);
+      window.buildStatementPayload = () => ({ companyNumber: "00000001" });
+      companyAuthCode = "ABC123";
+      handleSubmitFiling();
+    });
+
+    await expect(page.locator("#filingResult")).toContainText("Submission 000001 was sent to Companies House", { timeout: 15000 });
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#statusMessagesContainer")).not.toContainText("Failed to file");
+  });
+
+  for (const formPage of ["allotShares", "appointOfficer", "changeCompanyName", "notifyPsc"]) {
+    test(`${formPage} offers Start a new filing only once Companies House decides`, async ({ page }) => {
+      await serveSite(page, { language: "en" });
+      await page.goto(`http://localhost:3000/companies-house/${formPage}.html`, { waitUntil: "load" });
+      await page.waitForFunction(() => window.companiesHouseFormPage && window.companiesHouseGatewayPoll);
+      await page.addScriptTag({ content: answerPollsInPage() });
+
+      await page.evaluate(() => {
+        window.submitCompaniesHouseForm = async () => ({ submissionNumber: "000001", pollInterval: 1 });
+        window.pollCompaniesHouseForm = window.pollAnswer(["hold"]);
+        showView("resultView");
+        window.companiesHouseFormPage.fileAndShowOutcome({ kind: "form", form: {}, result: document.getElementById("filingResult") });
+      });
+      await page.waitForFunction(() => typeof window.releasePoll === "function");
+      await expect(page.locator("#startAgainBtn")).toBeHidden();
+
+      await page.evaluate(() => window.releasePoll());
+
+      await expect(page.locator("#filingResult")).toContainText("Submission 000001 was accepted.", { timeout: 15000 });
+      await expect(page.locator("#startAgainBtn")).toBeVisible();
+    });
+  }
+
+  test("a form page still pending after its polls offers no Start a new filing", async ({ page }) => {
+    await serveSite(page, { language: "en" });
+    await page.goto("http://localhost:3000/companies-house/recordsLocation.html", { waitUntil: "load" });
+    await page.waitForFunction(() => window.companiesHouseFormPage && window.companiesHouseGatewayPoll);
+    await page.addScriptTag({ content: answerPollsInPage() });
+
+    await page.evaluate(
+      ({ pending }) => {
+        window.submitCompaniesHouseForm = async () => ({ submissionNumber: "000001", pollInterval: 1 });
+        window.pollCompaniesHouseForm = window.pollAnswer([pending]);
+        showView("resultView");
+        return window.companiesHouseFormPage.fileAndShowOutcome({
+          kind: "form",
+          form: {},
+          result: document.getElementById("filingResult"),
+        });
+      },
+      { pending: { submissionNumber: "000001", statusCode: "PENDING", rejections: [] } },
+    );
+
+    await expect(page.locator("#filingResult")).toContainText("has not finished checking submission 000001");
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
   });
 });

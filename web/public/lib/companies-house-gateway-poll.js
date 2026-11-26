@@ -61,6 +61,16 @@
     );
   }
 
+  // What a reader is told when a status check of a submission the gateway took fails: the filing was
+  // sent, its outcome is not known, and Check again asks for it.
+  function checkFailedNote(submissionNumber, message) {
+    return siteText(
+      "ch.gateway.check-failed",
+      "Submission {number} was sent to Companies House, and its outcome is not known yet: the status check failed ({message}). Choose Check again to ask for the outcome.",
+      { number: submissionNumber, message },
+    );
+  }
+
   // A Companies House status code in the word a sentence about the submission reads it as, in the
   // chosen language, or null for a code with no word here. The gateway answers ACCEPT, REJECT,
   // PENDING or PARKED.
@@ -120,6 +130,7 @@
   window.companiesHouseGatewayPoll = {
     pollGatewayUntilSettled,
     pendingNote,
+    checkFailedNote,
     mayCheckAgain,
     isSettled,
     statusWord,

@@ -482,6 +482,8 @@ async function checkOutcome(submission, headers) {
     }
   } catch (error) {
     console.error("Companies House accounts status check failed:", error);
+    checkAgain.onclick = () => checkOutcome(submission, headers);
+    checkAgain.style.display = "inline-block";
     startAgainButton.style.display = "inline-block";
     showFilingResult(
       window.siteText("ch.accounts.not-confirmed", "Your accounts were submitted. Companies House has not confirmed the outcome yet."),

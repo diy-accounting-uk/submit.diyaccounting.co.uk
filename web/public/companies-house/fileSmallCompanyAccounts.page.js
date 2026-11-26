@@ -765,20 +765,29 @@ async function checkOutcome(submission, headers) {
   checkAgain.style.display = "none";
   checkAgain.onclick = null;
   startAgainButton.style.display = "none";
-  const outcome = await pollUntilSettled(submission, headers);
   const result = document.getElementById("filingResult");
+  let outcome;
+  try {
+    outcome = await pollUntilSettled(submission, headers);
+  } catch (error) {
+    // The gateway took the submission, so a failed status check leaves its outcome unknown, not failed.
+    console.error("Companies House accounts status check failed:", error);
+    result.replaceChildren(
+      paragraphWithValues(window.companiesHouseGatewayPoll.checkFailedNote(submission.submissionNumber, error.message), {}),
+    );
+    result.className = "outcome";
+    checkAgain.onclick = () => checkOutcome(submission, headers);
+    checkAgain.style.display = "inline-block";
+    startAgainButton.style.display = "inline-block";
+    return;
+  }
   if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
     const note = document.createElement("p");
     note.textContent = window.companiesHouseGatewayPoll.pendingNote(submission);
     result.replaceChildren(note);
     result.className = "outcome";
     if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
-    checkAgain.onclick = () =>
-      checkOutcome(submission, headers).catch((error) => {
-        console.error("Companies House accounts status check failed:", error);
-        startAgainButton.style.display = "inline-block";
-        showStatus(error.message, "error");
-      });
+    checkAgain.onclick = () => checkOutcome(submission, headers);
     checkAgain.style.display = "inline-block";
     return;
   }

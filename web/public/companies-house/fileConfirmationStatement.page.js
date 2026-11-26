@@ -1122,32 +1122,43 @@ function pollUntilSettled(submission, extraHeaders) {
     poll: () => window.pollConfirmationStatement(submissionNumber, extraHeaders),
     onPending: (result) =>
       showSubmissionProgress(
-        ...window.companiesHouseGatewayPoll.statusSentence(
+        ...window.companiesHouseGatewayPoll.pendingProgressSentence(
           window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
           submissionNumber,
-          result.statusCode,
+          result,
         ),
       ),
   });
 }
 
 // Polls for the outcome and shows it with the filing record. Pending after the last poll, the page
-// says so and offers Check again.
+// says so and offers Check again; it offers Start a new filing only once the outcome is known or the
+// status check failed.
 async function checkOutcome(submission, headers, payload) {
   const checkAgain = document.getElementById("checkAgainBtn");
+  const startAgainButton = document.getElementById("startAgainBtn");
   checkAgain.style.display = "none";
   checkAgain.onclick = null;
-  const outcome = await pollUntilSettled(submission, headers);
+  startAgainButton.style.display = "none";
   const result = document.getElementById("filingResult");
+  let outcome;
+  try {
+    outcome = await pollUntilSettled(submission, headers);
+  } catch (error) {
+    // The gateway took the submission, so a failed status check leaves its outcome unknown, not failed.
+    console.error("Companies House confirmation statement status check failed:", error);
+    result.replaceChildren(element("p", {}, window.companiesHouseGatewayPoll.checkFailedNote(submission.submissionNumber, error.message)));
+    result.className = "outcome";
+    checkAgain.onclick = () => checkOutcome(submission, headers, payload);
+    checkAgain.style.display = "inline-block";
+    startAgainButton.style.display = "inline-block";
+    return;
+  }
   if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
     result.replaceChildren(element("p", {}, window.companiesHouseGatewayPoll.pendingNote(submission)));
     result.className = "outcome";
     if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
-    checkAgain.onclick = () =>
-      checkOutcome(submission, headers, payload).catch((error) => {
-        console.error("Companies House confirmation statement status check failed:", error);
-        showStatus(error.message, "error");
-      });
+    checkAgain.onclick = () => checkOutcome(submission, headers, payload);
     checkAgain.style.display = "inline-block";
     return;
   }
@@ -1169,6 +1180,7 @@ async function checkOutcome(submission, headers, payload) {
   if (outcome.statusCode === "ACCEPT") {
     renderPscFollowUp();
   }
+  startAgainButton.style.display = "inline-block";
 }
 
 function confirmedOfficers() {
@@ -1233,7 +1245,6 @@ async function handleSubmitFiling() {
     showView("resultView");
 
     await checkOutcome(submission, { ...govTestScenarioHeaders, ...ownPresenterHeaders() }, payload);
-    document.getElementById("startAgainBtn").style.display = "inline-block";
   } catch (error) {
     // A fresh 402 from the submit route (the payment period is unpaid and no activity
     // charge has been paid for this company/reviewDate) sends the customer to Stripe

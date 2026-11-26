@@ -96,6 +96,9 @@
       return null;
     }
     const poll = window.companiesHouseGatewayPoll;
+    // Start a new filing waits until Companies House has decided the submission or its status could not be read.
+    const startAgainButton = document.getElementById("startAgainBtn");
+    startAgainButton.style.display = "none";
     result.replaceChildren(
       paragraph(
         siteText("ch.form.sent", "Submission {number} was taken by the gateway. Waiting for Companies House...", {
@@ -112,6 +115,7 @@
       });
     } catch (error) {
       result.replaceChildren(paragraph(errorText(error), "error-message"));
+      startAgainButton.style.display = "";
       return null;
     }
     if (!poll.isSettled(outcome)) {
@@ -131,6 +135,7 @@
     ];
     if (accepted && outcome.receiptId) lines.push(receiptLink(outcome.receiptId));
     result.replaceChildren(...lines);
+    startAgainButton.style.display = "";
     return outcome;
   }
 
