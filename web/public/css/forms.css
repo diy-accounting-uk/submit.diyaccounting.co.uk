@@ -531,3 +531,9 @@ details.worked-tax__steps > summary {
   padding: var(--space-2) 0;
   color: var(--c-brand);
 }
+
+details.form-fold > summary > h4.form-fold__title {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}

@@ -56,6 +56,7 @@ import {
   microId,
   noteId,
   noteSheetCell,
+  parsePounds,
   profitAndLossId,
   regimeOf,
   repaymentId,
@@ -854,7 +855,9 @@ function allowanceClasses(fields) {
     fields.map((group, index) => [CT600_FORM_FIELDS.filter((field) => field.section === "allowances")[index].id, group]),
   );
   const grouped = ALLOWANCE_CLASSES.map(({ title, ids }, index) =>
-    fold(`foldAllowanceClass${index + 1}`, title, [create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id)))]),
+    fold(`foldAllowanceClass${index + 1}`, title, [create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id)))], {
+      heading: "h4",
+    }),
   );
   const ungrouped = [...byId].filter(([id]) => !ALLOWANCE_CLASSES.some(({ ids }) => ids.includes(id))).map(([, group]) => group);
   return [fold("foldAllowances", SECTION_TITLE.allowances, [...grouped, ...ungrouped])];
@@ -873,27 +876,37 @@ const TRADING_LOSS_IDS = [
 ];
 const OTHER_INCOME_IDS = ["frankedInvestmentIncome"];
 
-function fold(id, title, children) {
+// A fold's summary reads "<title>, All 0" to a screen reader; a fold named as a heading (an allowance
+// class) keeps its title as that heading, so heading navigation still finds it.
+function fold(id, title, children, { heading } = {}) {
+  const titleNode = create(heading ?? "span", { class: "form-fold__title" }, title);
   return create(
     "details",
     { id, "class": "form-fold", "data-fold": "" },
-    create("summary", {}, create("span", { class: "form-fold__title" }, title), " ", create("span", { class: "form-fold__count" })),
+    create("summary", {}, titleNode, create("span", { class: "visually-hidden" }, ","), " ", create("span", { class: "form-fold__count" })),
     ...children,
   );
 }
 
-// An answer other than the box's start: a typed figure other than 0, or a choice or tick changed.
+// An answer other than the box's start: a figure other than 0 however it is written ("0.00", "£0"),
+// text other than its start, or a choice or tick changed.
 function answered(control) {
   if (control.disabled) return false;
   if (control.type === "radio" || control.type === "checkbox") return control.checked !== control.defaultChecked;
   const value = control.value.trim();
-  return value !== "" && value !== "0" && value !== control.defaultValue;
+  if (value === "" || value === control.defaultValue) return false;
+  const amount = parsePounds(value);
+  return amount === null || amount !== 0;
 }
 
 // Each fold says "All 0" or how many of its boxes hold an answer, and opens itself when that count
-// grows: a value typed, a book or a file filling it, or saved answers restored into it.
+// grows (a value typed, a book or a file filling it, saved answers restored into it), and stays open
+// while one of its boxes shows a problem. A fold the reader closed stays closed until one of those happens.
 function updateFolds() {
+  const shown = new Set(state.problems.filter((problem) => state.touched.has(problem.target)).map((problem) => problem.target));
   for (const details of element("formSections").querySelectorAll("details[data-fold]")) {
+    const showsProblem = [...details.querySelectorAll("[data-error-target]")].some((control) => shown.has(control.dataset.errorTarget));
+    if (showsProblem) details.open = true;
     const targets = new Set(
       [...details.querySelectorAll("input[data-error-target], select[data-error-target]")]
         .filter((control) => !control.closest("[hidden]") && answered(control))
