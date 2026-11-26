@@ -17,7 +17,7 @@
 
 ## Status
 
-defined 2026-11-26; approved 2026-11-26 (the operator's `/collab-loop cobalt`); set gate running on fb76c331f.
+defined 2026-11-26; approved 2026-11-26 (the operator's `/collab-loop cobalt`); set branch `claude/cobalt-set` at 5a0e62839 gated and pushed, PR #877; next: the ci proof list.
 
 ## The goal
 
@@ -127,7 +127,7 @@ State: landed at c30bc685e on `claude/cobalt-w08` (CTF1 9db929d6f, ctl7c fe4c706
 
 AL37 and CTP4 are built (`claude/anvil-al37c` 3bc704d0e, `claude/dusk-ctp4` 2c693df9b); UH7 builds on flint from 9db929d6f (operator, 2026-11-26: "do UH7 in the last wave of cobolt").
 
-State: landed at fb76c331f on `claude/cobalt-w09` (AL37 7cebceb4a, ctl7c 87f9bc6f0, ctf1b bed0c8039, CTP4 43e16bd00, ctp4b a64cbc8f2, UH7 fb76c331f); a64cbc8f2 was gated in full; the set gate on fb76c331f runs: browser (garnet), Maven, lint and mcp (anvil), npm test, the Welsh build and three simulator suites (jasper), every other simulator suite (flint), Docker (laptop).
+State: gated 5a0e62839 on `claude/cobalt-w09` (AL37 7cebceb4a, ctl7c 87f9bc6f0, ctf1b bed0c8039, CTP4 43e16bd00, ctp4b a64cbc8f2, UH7 fb76c331f, the help search race 5a0e62839). Gates: npm test 16332, Welsh build, the CT600, micro-entity and confirmation statement suites (jasper); Maven 581, lint, mcp 474 (anvil); browser 2626 (garnet); the other 39 simulator suites (flint, and dusk, harbour, jasper on 5a0e62839); the micro-entity proxy suite 6 passed, its two failures (a context teardown timeout and the server it took down) pass alone; Docker (laptop).
 
 ## Gates
 

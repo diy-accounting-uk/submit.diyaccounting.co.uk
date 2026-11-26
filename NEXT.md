@@ -43,6 +43,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
+Wave set cobalt's 25 rows below are on `claude/cobalt-set` at 5a0e62839, PR #877; next: its ci proof list, `/auto-merge`, the prod proof list.
+
 - [ ] **CTL0. The worked tax panel keeps its figures when the own working disagrees, and hides the two-return block when the period is 12 months again.** The brief, its call sites and its gates are section CTL0 of `PLAN_CT600_LABELS.md`. In flight: landed and gated on the wave branch `claude/cobalt-w01` (e36d6a608), built on the cloud workers; it reaches `main` with the set's one pull request. **Source**: operator, 2026-11-25; `PLAN_CT600_LABELS.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files. **Repository**: submit. **Wave set**: cobalt W1 ct600-page.
 
 - [ ] **CTA1. The activities page lists the Company Tax Return and the joint filing in their own section, "Corporation Tax", after "Income Tax" and before "Companies House".** The brief, its call sites and its gates are section CTA1 of `PLAN_CT600_LABELS.md`. In flight: landed and gated on the wave branch `claude/cobalt-w01` (e36d6a608), built on the cloud workers; it reaches `main` with the set's one pull request. **Source**: operator, 2026-11-25; `PLAN_CT600_LABELS.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files. **Repository**: submit. **Wave set**: cobalt W1 activities.
