@@ -17,7 +17,7 @@
 
 ## Status
 
-defined 2026-11-26; approved 2026-11-26 (the operator's `/collab-loop cobalt`); set branch `claude/cobalt-set` at 5a0e62839 gated and pushed, PR #877; next: the ci proof list.
+merged and proved 2026-11-26: PR #877 (merge 7790dda02) is on prod as prod-7790dda; the ci proof list passed on ci-set1 and the prod proof list passed (CT45's WAF pass, CTA1, UH7 and AL37 checked in the operator's signed-in session; CH63 shows on the next live accounts filing). Candidate for `../private.diyaccounting.co.uk/engineering/submit/archive/`.
 
 ## The goal
 
