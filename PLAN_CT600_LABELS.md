@@ -139,10 +139,12 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTF1 | The less used blocks of the form, and the intermediate boxes of "Tax worked out from your answers", fold into closed disclosures that open themselves when they hold an answer, a problem or a book's figure | CTV1 | machine-only | Sonnet | ~8 files |
 | CTN1 | A status message the reader cannot see also shows as a closable bubble at the top right, with a link that jumps to the status area; every page with the status area | nothing | machine-only | Sonnet | ~5 files |
 | CTN3 | The working signs (the `showLoading` spinner and "working" messages) show as a bubble on every page, so the reader sees that the button did something | CTN1 | machine-only | Sonnet | ~4 files |
-| CTN2 | A failure at a step that writes to HMRC or Companies House leaves a detail panel under the status area, until it is closed or replaced: what was sent, what was not, where the answers are now, the kind of failure and the next step for that kind | CTN3, CTF1 | machine-only | Opus then Sonnet | ~8 files |
+| CTN2 | A failure at a step that writes to HMRC or Companies House leaves a detail panel under the status area, until it is closed or replaced: what was sent, what was not, where the answers are now, the kind of failure and the next step for that kind | nothing | machine-only | Opus then Sonnet | ~8 files |
 | CTN4 | Every long running submission narrates its stages as the VAT submission does, each stage a status message that CTN3 shows as a bubble | CTN2 | machine-only | Sonnet | ~12 files |
+| CTL1A | The operator's register answers 1, 2, 4, 13 and 14 on the CT600 journey; the brief is its row on `NEXT.md` | CTN4 | machine-only | Sonnet | ~8 files |
+| CTL1B | The computation lines take their labels from HMRC's CT2024 taxonomy package (answer 3); the brief is its row on `NEXT.md` | CTL1A (one batch, in that order) | machine-only | Sonnet | ~4 files |
 | CTL9 | The filed copy and its parts (the CT600 boxes, the tax computation, the accounts, HMRC's receipt) use one name per concept from the register, no "preview" on a live filing, dates in words, and print without a blank page | CTL7 | machine-only | Sonnet | ~8 files |
-| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTL7, CTV1, CTN2, CTN3, CTF1, CTN4, CTL9, CTL10 | machine-only | Sonnet | screenshots and videos |
+| CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTN2, CTN4, CTL1A, CTL1B | machine-only | Sonnet | screenshots and videos |
 | OCTL1 | The operator decides whether to roll the pattern out to the other journeys, from the CT600 page on prod | CTL8 on prod | human-driven | operator | 0 files |
 
 ### CTL0. The worked tax panel goes to £0
@@ -336,6 +338,8 @@ The operator's saved filed copy of 2026-11-25 (six printed pages: the CT600 boxe
 ### CTL8. The look pass
 
 The definition of done for a major visual change, in this order: the Welsh proof (`scripts/welsh-proof.mjs`) on the page; `visual-review` on the passing run's screenshots; the `file-company-tax-return-*` videos recorded again on the simulator (`site-video-capture`) and published unlisted for the operator to watch (`video-publish`); then, with the new recordings in `publish.json`, `npm run video:walkthrough` for the CT600 guide, which also writes the CTV1 section times; `ui-ux-pro-max` on those frames.
+
+The row starts when comet waves 1 to 3 are on the set branch (CTN2, CTN4, CTL1A, CTL1B), because each changes what a recording shows. The Welsh proof of the wave runs against the simulator, `node scripts/welsh-proof.mjs --base <the simulator's address> --only ch`, which signs in through the mock identity provider; the proof on prod follows the deploy. The four recordings are `videos/file-company-tax-return-typed.json`, `-with-accounts.json`, `-book.json` and `-long-period.json`. `scripts/site-video-capture.js` records the time of each section, and no entry of `videos/publish.json` or `web/public/videos/publish.json` carries `sections` today, so CTV1's "Watch this part" panels show only after this row.
 
 ### OCTL1. The roll-out decision
 
@@ -828,7 +832,7 @@ Lines that the micro-entity and small company accounts pages define in `accounts
 
 ### The operator's answers (2026-11-26)
 
-The `(Qn)` marks in the appendix point here. CTL1A applies the answers marked "change"; the others keep Submit's current wording and behaviour.
+The `(Qn)` marks in the appendix point here. CTL1A applies the answers marked "change", except answer 3, which is CTL1B: its labels come from HMRC's CT2024 taxonomy package, because HMRC publishes no CT2025 package (the brief is CTL1B's row on `NEXT.md`). The others keep Submit's current wording and behaviour.
 
 1. Box 85A: label "Box 85". Change.
 2. Associated companies: the disclosure shows "none" (not `Admin!P14`), and the person types the number in Submit's form. Change.

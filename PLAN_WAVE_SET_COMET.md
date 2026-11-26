@@ -17,7 +17,7 @@
 
 ## Status
 
-approved 2026-11-26 (the operator's words above); building: the rows build now on the cloud workers, and the waves land on cobalt's merge commit on `main`.
+approved 2026-11-26 (the operator's words above); building. Cobalt is on `main` at 7790dda02, so wave 1 can land. Built on the workers and waiting for their rebase: CTN2, CTN4, CTL1A. Not started: CTL1B, DSC1 to DSC5. DSC6 waits for the operator's go.
 
 ## The goal
 
@@ -25,13 +25,16 @@ As for cobalt: the rows are built and gated in local waves, then submit pays for
 
 ## The set
 
-- **submit, 11 rows in waves**: CTN2, CTN4, CTL1A, CTL1B, CTL8; and for discovery in the assistants' directories DSC1, DSC2, DSC3, DSC4, DSC5 (wave 1) and DSC6 (wave 3, on the operator's go).
-- **After the prod deploy**: ODSC1 (the operator submits plugin 0.1.7), ODSC2 (the Claude listing text), ODSC3 (Google's Connected Apps preview), then DSC7 (the sweep that judges the name rule). DSC8 to DSC11 belong to the set after comet (the report's section 5.3). Each row's brief is its `NEXT.md` row and its section of `PLAN_CT600_LABELS.md`.
+- **submit, 11 rows in waves**: CTN2, CTN4, CTL1A, CTL1B, CTL8; and for discovery in the assistants' directories DSC1, DSC2, DSC3, DSC4, DSC5 (wave 1) and DSC6 (wave 3, on the operator's go). Each row's brief is its `NEXT.md` row; the CT600 rows also point to their section of `PLAN_CT600_LABELS.md`.
+- **Beside** (no pull request): DSC2b, the ChatGPT half of the sweep's baseline, read in the operator's Chrome. It runs any time before ODSC1 publishes 0.1.7.
+- **After the prod deploy**: ODSC1 (the operator submits plugin 0.1.7; it follows DSC1, DSC3 and DSC4 on prod and DSC2b), then DSC7 (the sweep that judges the name rule; it follows ODSC1 and DSC5 on prod). ODSC2 (the Claude listing text) waits on OOS17's listing and on DSC1 on `main`, not on this deploy. ODSC3 (Google's Connected Apps preview) waits on nothing in this set. DSC8 to DSC11 belong to the set after comet (the report's section 5.3).
 
 ## Rules for this set
 
 - The rules of `PLAN_WAVE_SET_COBALT.md` carry over: one batch owns `fileCompanyTaxReturn.page.js` and its browser test in every wave; `i18n/cy.toml` is a registry.
-- Wave 1 branches from `main` once cobalt has merged. Rows built before then rebase onto it before they land.
+- Wave 1 branches from `main` at cobalt's merge, 7790dda02. CTN2, CTN4 and CTL1A were built from cobalt's wave heads; each rebases onto its wave branch before it lands.
+- **The MCP files have one owner in a wave.** In wave 1 `plugin-listing` owns `plugins/**`, `mcp/test/plugin.test.js`, `web/public/mcp.html` and the sweep script; `mcp-tools` owns `mcp/lib/server.js`, `mcp/lib/hosted-tools.js`, `mcp/test/hosted-tools.test.js`, `mcp/test/prod-tool-answers.test.js` and the golden prompt set; `mcp-measure` owns `app/functions/mcp/mcpHttp.js`, `app/data/dynamoDbMcpSessionRepository.js`, `mcp/lib/handoff-tools.js`, `app/functions/analytics/dynamoStreamToFirehose.js` and the analytics Java. DSC3's sentence for an account with no book is in `hosted-tools.js`, so DSC4 writes it.
+- **One row of a wave adds a capability comment** (DSC2 in wave 1), because `REPORT_CAPABILITIES.md` is generated and two branches that regenerate it conflict.
 
 ## Waves
 
@@ -39,12 +42,12 @@ As for cobalt: the rows are built and gated in local waves, then submit pays for
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| plugin-listing | DSC1, DSC2, DSC3 | Sonnet | the plugin listing files DSC1 names, `scripts/plugin-directory-sweep.mjs` (new), `web/public/mcp.html` |
-| mcp-tools | DSC4 | Sonnet | the prod tools' descriptions in `mcp/lib/`, the golden prompt set, `mcp/test/` |
-| mcp-measure | DSC5 | Sonnet | the MCP sign-in record by client, the lake table and view DSC5 names, the hand-off link's client parameter |
+| plugin-listing | DSC1, DSC3, DSC2 | Sonnet | `plugins/diya-submit-chatgpt/**`, `plugins/diya-submit/**`, `mcp/test/plugin.test.js`, `web/public/mcp.html`, `scripts/plugin-directory-sweep.mjs` (new) and its unit test |
+| mcp-tools | DSC4 (Opus writes the six descriptions and the prompt set, then Sonnet lands them) | Opus, then Sonnet | `mcp/lib/server.js`, `mcp/lib/hosted-tools.js`, `mcp/test/hosted-tools.test.js`, `mcp/test/prod-tool-answers.test.js`, `mcp/test/fixtures/golden-prompts.json` (new) and its test |
+| mcp-measure | DSC5 | Sonnet | `app/functions/mcp/mcpHttp.js`, `app/data/dynamoDbMcpSessionRepository.js`, `mcp/lib/handoff-tools.js`, `app/functions/analytics/dynamoStreamToFirehose.js`, `TableChangeDelivery.java`, `BusinessViews.java`, the new view and the three count tests |
 | ct600-page | CTN2 (Opus writes the failure classes and their text, then Sonnet builds the panel) | Opus, then Sonnet | `fileCompanyTaxReturn.page.js`, `web/public/lib/utils/dom-utils.js`, `messages.css`, the failure classes module (new), `web/public/lib/services/hmrc-ct-return-service.js` |
 
-State: CTN2 built on harbour (`claude/harbour-ctn2` 4f06c130d); CTN4 building next.
+State: CTN2 built on harbour (`claude/harbour-ctn2` 4f06c130d), to rebase onto `main`; DSC1 to DSC5 not started.
 
 ### Wave 2
 
@@ -52,18 +55,18 @@ State: CTN2 built on harbour (`claude/harbour-ctn2` 4f06c130d); CTN4 building ne
 |---|---|---|---|
 | ct600-page | CTN4 | Sonnet | the pages that call `showLoading()` (CT600, accounts, confirmation statement, the Companies House forms, `web/public/hmrc/itsa/`), their browser tests |
 
-State: queued on harbour after CTN2.
+State: CTN4 built on harbour (`claude/harbour-ctn4` d0b0bab33, on CTN2's commit).
 
 ### Wave 3
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| mcp-tools | DSC6 (on the operator's go) | Sonnet | the company read tools on prod's hosted set (`mcp/lib/hosted-tools.js` `PROD_HOSTED_TOOL_NAMES`), their tests |
+| mcp-tools | DSC6 (on the operator's go) | Sonnet | `mcp/lib/hosted-tools.js` (`PROD_HOSTED_TOOL_NAMES`, the instructions), `mcp/lib/server.js` (the new deadlines tool), `mcp/test/hosted-tools.test.js`, `mcp/test/plugin.test.js`, `app/system-tests/mcpHosted.system.test.js`, `web/public/mcp.html`, `scripts/build-mtd-calendar.mjs` and the generated calendar |
 | ct600-fields | CTL1A, CTL1B | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
 
 CTL1A builds now from cobalt's wave 8 head and rebases after CTN4 (operator, 2026-11-26). CTL1B takes its labels from HMRC's CT2024 package, because HMRC publishes no CT2025 package (operator, 2026-11-26).
 
-State: CTL1A built (`claude/dusk-ctl1a` 7fb42dff0) but answer 3; ctl1a-b building on dusk.
+State: CTL1A built on dusk (`claude/dusk-ctl1a-b` 1e4a8a06c, on `claude/dusk-ctl1a` 7fb42dff0); it rebases onto wave 2. CTL1B not started. DSC6 waits for the operator's go; without the go by the time wave 3 is gated, DSC6 leaves the set and the other rows ship.
 
 ### Wave 4: the look wave
 
@@ -75,14 +78,16 @@ State: pending.
 
 ## Gates
 
-As for cobalt: each wave's generators, the split gates on the workers, the Docker build on the laptop, and the simulator suites the wave reaches; the set branch `claude/comet-set` runs every simulator suite.
+As for cobalt: each wave's generators, the split gates on the workers, the Docker build on the laptop, and the simulator suites the wave reaches; the set branch `claude/comet-set` runs every simulator suite. The discovery rows add: `npm ci` and `npm test` in `mcp/` (DSC1, DSC3, DSC4, DSC6), `npm run build:chatgpt-plugin` (DSC1, DSC3), `npm run capabilities:check` (DSC2), `./mvnw clean verify` once for the wave (DSC5), and `npm run test:mcpPrepareVatReturnBehaviour-simulator` and `npm run test:mcpHostedBehaviour-simulator` (DSC5, DSC6).
 
 ## The push
 
 1. Assemble `claude/comet-set` at the gated tip of wave 4, run its gates, push once, open one PR, `/watch`.
-2. **ci proof list**: CTN1 and CTN2: a failure far down the CT600 page shows the bubble and the detail panel; CTL1A: a micro-entity sandbox filing carries the format's raw materials and staff costs lines, and the review shows box 85 and HMRC's declaration.
+2. **ci proof list**: CTN1 and CTN2: a failure far down the CT600 page shows the bubble and the detail panel; CTL1A: a micro-entity sandbox filing carries the format's raw materials and staff costs lines, and the review shows box 85 and HMRC's declaration; DSC3: the tagged `mcp.html` address answers 200 and the session beacon carries the source; DSC4: the six descriptions that `tools/list` answers equal the committed text; DSC5: a session from Claude writes a lake row with client `claude`, and `v_mcp_sessions_by_client` returns it; DSC6: the reviewer account gets the due dates of a real company number and the micro-entity figures of `Precision Code Ltd`.
 3. `/auto-merge`, then the prod deploy.
+4. **prod proof list**: DSC6: prod's connector lists the eleven tools to the reviewer account; DSC4 and DSC6: OpenAI's scan shows no held tool (ODSC1's step 2).
 
 ## After the deploy
 
 - CTL8's recordings go to the channel unlisted for the operator to watch (`video-publish`); public only after he has watched.
+- ODSC1, then DSC7, as the set's list says.
