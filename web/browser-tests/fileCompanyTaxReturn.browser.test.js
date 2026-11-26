@@ -432,10 +432,11 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(image).toHaveAttribute("loading", "lazy");
   });
 
-  test("a field with no box leads with its reference and links the source of its term", async ({ page }) => {
+  test("a field with no box leads with its reference and links the source of its term, or has neither", async ({ page }) => {
     await openForm(page);
-    await expect(page.locator('label[for="tradeName"]')).toHaveText("Computations: Trade name");
-    await expect(page.locator("#tradeName-hint a")).toHaveAttribute("href", /#and-90-accounts-and-computations$/);
+    await expect(page.locator('label[for="tradeName"]')).toHaveText("Trade name");
+    await expect(page.locator("#tradeName-hint a")).toHaveCount(0);
+    await expect(page.locator("#tradeName-source")).toContainText("E8");
     await expect(page.locator('label[for="includeComparatives"]')).toHaveText("Schedule 1 paragraph 7: Include last year's figures");
     await expect(page.locator("#includeComparatives-hint a")).toHaveAttribute(
       "href",

@@ -235,7 +235,7 @@
           "caption": "Type the Unique Taxpayer Reference.",
           "headline": "Enter the UTR",
           "keyWord": "UTR",
-          "instruction": "Enter the Tax reference (Unique Taxpayer Reference)."
+          "instruction": "Enter the Tax reference."
         },
         {
           "action": "fill",

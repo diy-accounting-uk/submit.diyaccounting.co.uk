@@ -54,11 +54,19 @@ const FIELDS = [
 ];
 
 describe("the reference, the note and the spreadsheet disclosure of a field", () => {
-  test.each(FIELDS.map((field) => [field.id, field]))("%s has a reference, a label led by it and a source link", (id, field) => {
-    expect(referenceText(field)).toMatch(/\S/);
-    expect(labelWithReference(field)).toContain(field.label);
-    expect(sourceLinkOf(field)?.href).toMatch(/^https:\/\//);
-  });
+  test.each(FIELDS.map((field) => [field.id, field]))(
+    "%s has a reference, a label led by it and a source link, or neither",
+    (id, field) => {
+      expect(labelWithReference(field)).toContain(field.label);
+      if (field.box === undefined && field.reference === undefined) {
+        expect(labelWithReference(field)).toBe(field.label);
+        expect(sourceLinkOf(field)).toBeNull();
+        return;
+      }
+      expect(referenceText(field)).toMatch(/\S/);
+      expect(sourceLinkOf(field)?.href).toMatch(/^https:\/\//);
+    },
+  );
 
   test("references read as the format's items, the Act's sections, the CT600A's boxes and the return's boxes", () => {
     const line = (list, id) => list.find((field) => field.id === id);
@@ -67,7 +75,8 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
     expect(labelWithReference(line(MICRO_PROFIT_AND_LOSS_FIELDS, "otherCharges"))).toBe("Profit and loss item F: Other charges");
     expect(referenceText(line(LOAN_ROW_FIELDS, "Amount"))).toBe("CT600A A10");
     expect(referenceText(line(ACCOUNTS_TEXT_FIELDS, "averageEmployees"))).toBe("Companies Act section 411");
-    expect(referenceText(line(CT600_FORM_FIELDS, "specialRatePoolAnnualInvestmentAllowance"))).toBe("Boxes 690 and 695");
+    expect(referenceText(line(CT600_FORM_FIELDS, "lossCarriedBack"))).toBe("Boxes 275 and 280");
+    expect(labelWithReference(line(CT600_FORM_FIELDS, "tradeName"))).toBe("Trade name");
     expect(referenceText({ id: "turnover", box: 145 })).toBe("Box 145");
     expect(() => referenceText({ id: "unknown", reference: "Somewhere else" })).toThrow("unknown");
   });
@@ -117,5 +126,12 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
     for (const src of sources) expect(existsSync(join(process.cwd(), "web/public", src)), src).toBe(true);
     const [{ sheet, cell }] = parseSheetCells(noteSheetCell("plantMachinery", "additions"));
     expect(sourceImagePath({ sheet, cell })).toBeNull();
+  });
+
+  test("separate cells read as a list, not a sum", () => {
+    const directors = ACCOUNTS_TEXT_FIELDS.find(({ id }) => id === "directors");
+    const disclosure = sourceDisclosure(directors, { id: "directors" });
+    expect(disclosure.querySelector("dl").textContent).toContain("E5, E6");
+    expect(disclosure.querySelector("dl").textContent).not.toContain("worked from these cells");
   });
 });

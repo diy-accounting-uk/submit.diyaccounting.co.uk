@@ -251,7 +251,7 @@
           "caption": "Set the accounting period.",
           "headline": "Set the accounting period",
           "keyWord": "period",
-          "instruction": "Enter the Tax reference (Unique Taxpayer Reference), then the Period start and Period end."
+          "instruction": "Enter the Tax reference, then the Period start and Period end."
         },
         {
           "action": "hold",

@@ -2339,13 +2339,11 @@ window.WELSH_TEXT = {
   "consent.reject": "Gwrthod",
   "consent.shared":
     "Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein",
-  "field.reference-accounts-and-computations": "Cyfrifon a chyfrifiannau",
   "field.reference-balance-sheet": "Eitem {item} y fantolen",
   "field.reference-balance-sheet-note": "Nodyn {note} y fantolen",
   "field.reference-box": "Blwch {box}",
   "field.reference-boxes": "Blychau {boxes}",
   "field.reference-companies-act": "Deddf Cwmnïau adran {section}",
-  "field.reference-computations": "Cyfrifiannau",
   "field.reference-ct600a": "CT600A {box}",
   "field.reference-declaration": "Datganiad",
   "field.reference-label": "{reference}: {label}",

@@ -13,8 +13,10 @@ const CELL_PATTERN = /^[A-Z]{1,3}\d{1,5}$/;
 
 // "Financialaccounts.xlsx!CorporationTax!I16+I17" gives the cells I16 and I17 of CorporationTax.
 // "Financialaccounts.xlsx!PubBalSht!E29-Financialaccounts.xlsx!OpenAccounts!E30" gives one cell on each sheet.
+// A list of references names separate cells, such as the first and the second director's names.
 export function cellsOfReference(reference) {
   if (!reference) return [];
+  if (Array.isArray(reference)) return reference.flatMap((one) => cellsOfReference(one).map((cell) => ({ ...cell, isSum: false })));
   const cells = [];
   let file = null;
   let sheet = null;

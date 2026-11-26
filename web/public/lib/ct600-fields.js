@@ -897,8 +897,6 @@ export const CT600_FORM_FIELDS = [
     type: "text",
     label: siteText("ch.ct600.trade-name", "Trade name"),
     hint: siteText("ch.ct600.trade-name-hint", "The name of the trade, shown in the computations. It starts as the principal activity."),
-    reference: "Computations",
-    termSource: guideUrl("and-90-accounts-and-computations"),
     source: {
       thisYear: sheetCell("OpenAccounts!E8"),
       workbookLabel: "The principal activity of the company is",
@@ -924,8 +922,6 @@ export const CT600_FORM_FIELDS = [
     label: siteText("ch.ct600.depreciation", "Depreciation added back"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.depreciation-hint", "It starts as the note's charge for the year, when a note is given.")}`,
     default: "0",
-    reference: "Computation; feeds box 155",
-    termSource: guideUrl("and-90-accounts-and-computations"),
     source: { thisYear: sheetCell("CorporationTax!I8"), workbookLabel: "Add back depreciation charged during the year" },
   },
   {
@@ -936,8 +932,6 @@ export const CT600_FORM_FIELDS = [
     label: siteText("ch.ct600.amortisation", "Amortisation added back"),
     hint: MONEY_HINT,
     default: "0",
-    reference: "Computation; feeds box 155",
-    termSource: guideUrl("and-90-accounts-and-computations"),
     source: {
       thisYear: sheetCell("CorporationTax!I7"),
       workbookLabel: "Add back goodwill written off",
@@ -952,8 +946,6 @@ export const CT600_FORM_FIELDS = [
     label: siteText("ch.ct600.entertaining", "Entertaining added back"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.entertaining-hint", "No more than the cost of sales plus administrative expenses.")}`,
     default: "0",
-    reference: "Computation; feeds box 155",
-    termSource: guideUrl("and-90-accounts-and-computations"),
     source: { thisYear: sheetCell("CorporationTax!I9"), workbookLabel: "Add back business entertainment" },
   },
   {
@@ -1067,8 +1059,6 @@ export const CT600_FORM_FIELDS = [
     ),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.special-rate-pool-annual-investment-allowance-hint", "Part of the annual investment allowance in box 690. Box 695 includes it and box 705 leaves it out.")}`,
     default: "0",
-    reference: "Part of boxes 690 and 695",
-    termSource: guideUrl("annual-investment-allowance"),
   },
   {
     id: "specialRatePoolBalancingCharges",
@@ -1216,8 +1206,6 @@ export const CT600_FORM_FIELDS = [
       "A check only. If it differs from box 440 by more than £5, the review stops and names both figures.",
     ),
     optional: true,
-    reference: "Checks box 440",
-    termSource: guideUrl("and-90-accounts-and-computations"),
     source: {
       thisYear: sheetCell("CorporationTax!K35"),
       workbookLabel: "Corporation Tax chargeable",
@@ -1924,24 +1912,18 @@ export const FIXED_ASSET_CLASSES = [
     id: "furnitureFittings",
     label: siteText("ch.ct600.asset-class-furniture-fittings", "Fixtures and fittings"),
     hint: siteText("ch.ct600.asset-class-furniture-fittings-hint", "Furniture and fittings in the company's premises."),
-    reference: "Part of BS1 B.II.2",
-    termSource: regulationsParagraph(48),
     source: { workbookLabel: "Fixtures & Fittings", column: "D" },
   },
   {
     id: "computerEquipment",
     label: siteText("ch.ct600.asset-class-computer-equipment", "Computer equipment"),
     hint: siteText("ch.ct600.asset-class-computer-equipment-hint", "Computers and the equipment used with them."),
-    reference: "Part of BS1 B.II.2",
-    termSource: regulationsParagraph(48),
     source: { workbookLabel: "Computer Equipment", column: "E" },
   },
   {
     id: "motorVehicles",
     label: siteText("ch.ct600.asset-class-motor-vehicles", "Motor vehicles"),
     hint: siteText("ch.ct600.asset-class-motor-vehicles-hint", "Cars, vans and other vehicles the company owns."),
-    reference: "Part of BS1 B.II.2",
-    termSource: regulationsParagraph(48),
     source: { workbookLabel: "Motor Vehicles", column: "F" },
   },
 ];
@@ -2055,7 +2037,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
     reference: "CA 416(1)(a)",
     termSource: companiesActSection(416),
     source: {
-      thisYear: sheetCell("OpenAccounts!E5+E6"),
+      thisYear: [sheetCell("OpenAccounts!E5"), sheetCell("OpenAccounts!E6")],
       workbookLabel: "First Director's Name; Second Director's Name",
       differenceNote: "The spreadsheet names up to two directors, first and second. List every director who held office in the period.",
     },
@@ -2681,8 +2663,6 @@ export const PAGE_QUESTION_FIELDS = [
     id: "sendTo",
     label: siteText("ch.ct.where-sending", "Where are you sending these accounts?"),
     hint: SEND_TO_HMRC_ONLY_HINT,
-    reference: "Accounts and computations",
-    termSource: guideUrl("and-90-accounts-and-computations"),
   },
   {
     id: "companiesHouseCopy",

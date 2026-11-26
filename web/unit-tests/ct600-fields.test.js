@@ -925,6 +925,19 @@ describe("the label register", () => {
     "page questions": PAGE_QUESTION_FIELDS,
   };
   const fields = Object.entries(groups).flatMap(([group, list]) => list.map((field) => [`${group}: ${field.id}`, field]));
+  // The register gives these no official term and no reference, until the operator chooses one.
+  const NO_TERM = new Set([
+    "form fields: tradeName",
+    "form fields: depreciation",
+    "form fields: amortisation",
+    "form fields: entertaining",
+    "form fields: specialRatePoolAnnualInvestmentAllowance",
+    "form fields: ownCorporationTax",
+    "page questions: sendTo",
+    "fixed asset classes: furnitureFittings",
+    "fixed asset classes: computerEquipment",
+    "fixed asset classes: motorVehicles",
+  ]);
 
   test.each(fields)("%s has a label, a reference, a hint and a source link", (name, field) => {
     expect(field.label, name).toMatch(/\S/);
@@ -932,6 +945,9 @@ describe("the label register", () => {
     if (field.box !== undefined) {
       expect(field.reference, name).toBeUndefined();
       expect(boxRow(field.box)?.anchor, name).toMatch(/^[a-z0-9-]+$/);
+    } else if (NO_TERM.has(name)) {
+      expect(field.reference, name).toBeUndefined();
+      expect(field.termSource, name).toBeUndefined();
     } else {
       expect(field.reference, name).toMatch(/\S/);
       expect(field.termSource, name).toMatch(/^https:\/\/www\.(gov\.uk|legislation\.gov\.uk)\//);
@@ -947,8 +963,16 @@ describe("the label register", () => {
 
   test.each(sources)("every sheetCell of %s is <file>!<sheet>!<cell> joined by + or -", (name, { source }) => {
     expect(source.thisYear ?? source.workbookLabel, name).toBeTruthy();
-    for (const key of ["thisYear", "lastYear", "labelCell"])
-      if (source[key] !== undefined) expect(source[key], `${name} ${key}`).toMatch(SHEET_CELL);
+    for (const key of ["thisYear", "lastYear", "labelCell"]) {
+      for (const cell of [source[key] ?? []].flat()) expect(cell, `${name} ${key}`).toMatch(SHEET_CELL);
+    }
+  });
+
+  test("the directors' names are two cells, not a sum", () => {
+    expect(ACCOUNTS_TEXT_FIELDS.find(({ id }) => id === "directors").source.thisYear).toEqual([
+      "Financialaccounts.xlsx!OpenAccounts!E5",
+      "Financialaccounts.xlsx!OpenAccounts!E6",
+    ]);
   });
 
   test("each fixed asset note figure has the cell of its class's column and its line's row", () => {

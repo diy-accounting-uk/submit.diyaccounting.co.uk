@@ -31,10 +31,8 @@ const REFERENCE_PATTERNS = [
   [/\bR, note (\d+)/, ([, note]) => siteText("field.reference-balance-sheet-note", "Balance sheet note {note}", { note })],
   [/^CA (\d+[A-Z]?)/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
   [/^R(\d+)/, ([, paragraph]) => siteText("field.reference-regulations", "Schedule 1 paragraph {paragraph}", { paragraph })],
-  [/^Computations?\b/, () => siteText("field.reference-computations", "Computations")],
   [/^Notes$/, () => siteText("field.reference-notes", "Notes to the accounts")],
   [/^Declaration$/, () => siteText("field.reference-declaration", "Declaration")],
-  [/^Accounts and computations$/, () => siteText("field.reference-accounts-and-computations", "Accounts and computations")],
   [/\b[Bb]oxes (\d+ (?:and|or) \d+)/, ([, boxes]) => siteText("field.reference-boxes", "Boxes {boxes}", { boxes })],
   [/\b[Bb]ox (\d+ or \d+|\d+)/, ([, box]) => siteText("field.reference-box", "Box {box}", { box })],
 ];
@@ -49,8 +47,12 @@ export function referenceText(field) {
   throw new Error(`No reference text for ${field.id}: ${field.reference}`);
 }
 
-/** The label led by its reference; a label that already names its box number, in either language, keeps its words. */
+/**
+ * The label led by its reference. A label that already names its box number, in either language,
+ * keeps its words, and so does a field the register gives no reference.
+ */
 export function labelWithReference(field) {
+  if (field.box === undefined && field.reference === undefined) return field.label;
   if (field.box !== undefined && new RegExp(`(^|\\D)${field.box}(\\D|$)`).test(field.label)) return field.label;
   return siteText("field.reference-label", "{reference}: {label}", { reference: referenceText(field), label: field.label });
 }
@@ -110,6 +112,7 @@ export function noteOf(field, id = field.id) {
  * own file and sheet. Each cell carries its sign.
  */
 export function parseSheetCells(value) {
+  if (Array.isArray(value)) return value.flatMap((one) => parseSheetCells(one).map((cell) => ({ ...cell, separate: true })));
   const cells = [];
   let file;
   let sheet;
@@ -132,6 +135,7 @@ export function sourceImagePath({ sheet, cell }) {
 
 function cellsText(cells) {
   const oneSheet = new Set(cells.map(({ sheet }) => sheet)).size === 1;
+  if (cells.every(({ separate }) => separate)) return cells.map(({ sheet, cell }) => (oneSheet ? cell : `${sheet}!${cell}`)).join(", ");
   return cells
     .map(({ sign, sheet, cell }, index) => {
       const name = oneSheet ? cell : `${sheet}!${cell}`;
@@ -177,7 +181,13 @@ export function sourceDisclosure(field, { id = field.id, rows } = {}) {
   }
   for (const row of listed) {
     const text = cellsText(row.cells);
-    term(list, row.title, row.cells.length > 1 ? siteText("field.source-sum", "{cells} (worked from these cells)", { cells: text }) : text);
+    term(
+      list,
+      row.title,
+      row.cells.length > 1 && !row.cells[0].separate
+        ? siteText("field.source-sum", "{cells} (worked from these cells)", { cells: text })
+        : text,
+    );
   }
   if (source.workbookLabel) {
     const labelCell = source.labelCell ? parseSheetCells(source.labelCell)[0] : null;
@@ -210,5 +220,5 @@ export function sourceDisclosure(field, { id = field.id, rows } = {}) {
 
 /** Whether a field carries a register entry to disclose. */
 export function hasRegisterEntry(field) {
-  return field.box !== undefined || field.reference !== undefined;
+  return field.box !== undefined || field.reference !== undefined || field.source !== undefined;
 }

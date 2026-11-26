@@ -210,7 +210,7 @@ export async function verifyMicroEntityReview(page, screenshotPath = defaultScre
 export async function verifyLargeCompanyReviewWithLoans(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the loan to a participator, supplementary page CT600A and the main rate in the review", async () => {
     await expect(page.locator("#review-row-loansMade")).toContainText("Yes");
-    await expect(page.locator("#ct600Table")).toContainText("Tax payable on loans to participators");
+    await expect(page.locator("#ct600Table")).toContainText("Tax payable on loans and arrangements to participators");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-review-large-company.png`, readerView: true });
   });
 }

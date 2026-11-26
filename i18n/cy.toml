@@ -28361,10 +28361,6 @@ cy = '''Deddf Cwmnïau adran {section}'''
 hash = "5957bb11b166"
 cy = '''Atodlen 1 paragraff {paragraph}'''
 
-[strings."field.reference-computations"]
-hash = "25d4d34ff1fd"
-cy = '''Cyfrifiannau'''
-
 [strings."field.reference-notes"]
 hash = "3b39acff6c1b"
 cy = '''Nodiadau i’r cyfrifon'''
@@ -28372,10 +28368,6 @@ cy = '''Nodiadau i’r cyfrifon'''
 [strings."field.reference-declaration"]
 hash = "7609342dc466"
 cy = '''Datganiad'''
-
-[strings."field.reference-accounts-and-computations"]
-hash = "a33affe4a276"
-cy = '''Cyfrifon a chyfrifiannau'''
 
 [strings."field.reference-boxes"]
 hash = "11588c3c8c29"
