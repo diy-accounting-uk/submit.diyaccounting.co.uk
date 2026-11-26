@@ -18,10 +18,11 @@ window.siteText =
 // its [[activities.prices]] amount - keep both in step with that row if the price changes.
 const CONFIRMATION_STATEMENT_ACTIVITY_ID = "file-confirmation-statement";
 const CONFIRMATION_STATEMENT_FEE_DISPLAY = "£61.35";
-// Non-secret: the company number a checkout redirect is resumed for. The company
-// authentication code and every director's personal code are never written here - see the
-// note above - so a return from checkout re-collects them through the normal authView step.
-const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNumber";
+// Non-secret: the company number a checkout redirect is resumed for and the statement date its fee
+// was paid for, as JSON. The company authentication code and every director's personal code are
+// never written here - see the note above - so a return from checkout re-collects them through the
+// normal authView step.
+const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResume";
 
 // Companies House shows a personal code in groups for readability but the XML Gateway takes 11
 // characters with no separator - a code typed with hyphens, spaces or slashes needs them stripped before
@@ -188,8 +189,24 @@ function renderPublicPscs(pscs) {
   );
 }
 
+// The statement date a fee was paid for, kept from a checkout return: an early filing is made up to
+// the day it is filed, and the fee is keyed by that date, so a filing finished on a later day keeps
+// the date that was paid for.
+let paidStatement = null;
+
+// The date this company's statement is made up to: the date its fee was paid for, while that is not
+// after today, or else the register's next date, or today when that is still to come.
+function statementDateToFile(profile) {
+  const today = window.companiesHouseLabels.todayInTheUnitedKingdom();
+  if (paidStatement && paidStatement.companyNumber === profile.companyNumber && paidStatement.reviewDate <= today) {
+    return paidStatement.reviewDate;
+  }
+  return window.companiesHouseLabels.confirmationStatementDateToFile(profile.confirmationStatementNextMadeUpTo);
+}
+
 async function handleCompanySubmit(event) {
   event.preventDefault();
+  paidStatement = null;
   if (!window.formErrors.requireFields(["companyNumber"])) return;
   const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
   await lookUpCompany(companyNumber);
@@ -223,9 +240,20 @@ async function lookUpCompany(companyNumber) {
     document.getElementById("authNextDue").textContent = textOrDash(
       window.companiesHouseLabels.formatCompanyDate(company.confirmationStatementNextDue),
     );
-    document.getElementById("authNextMadeUpTo").textContent = textOrDash(
-      window.companiesHouseLabels.formatCompanyDate(company.confirmationStatementNextMadeUpTo),
+    const dateToFile = statementDateToFile(company);
+    document.getElementById("authNextMadeUpTo").textContent = textOrDash(window.companiesHouseLabels.formatCompanyDate(dateToFile));
+    const earlyLine = document.getElementById("authFilingEarly");
+    earlyLine.hidden = !(
+      dateToFile &&
+      dateToFile === window.companiesHouseLabels.todayInTheUnitedKingdom() &&
+      dateToFile < company.confirmationStatementNextMadeUpTo
     );
+    earlyLine.textContent = earlyLine.hidden
+      ? ""
+      : window.siteText(
+          "ch.cs.filing-early",
+          "Filed now, the statement is made up to today, and the next confirmation date moves to a year from today.",
+        );
     renderPublicOfficers(officersResult.officers);
     renderPublicPscs(pscsResult.pscs);
     showView("authView");
@@ -492,6 +520,28 @@ function renderShareholdings(shareholdings) {
   (shareholdings || []).forEach((holding) => addShareholdingRow(holding));
 }
 
+// The made-up date comes from the register and shows as text, so its message sits under that line.
+function showMadeUpDateError() {
+  const dateLine = document.getElementById("authNextMadeUpTo").closest("p");
+  document.getElementById("authNextMadeUpTo-error")?.remove();
+  const message = document.createElement("p");
+  message.id = "authNextMadeUpTo-error";
+  message.className = "error-message";
+  message.tabIndex = -1;
+  const prefix = document.createElement("span");
+  prefix.className = "visually-hidden";
+  prefix.textContent = window.siteText("widget.error-prefix", "Error: ");
+  message.append(
+    prefix,
+    window.siteText(
+      "ch.cs.made-up-date-after-today",
+      "This date is after today. Companies House reads the register only up to today, so file this statement on or after the date it is made up to.",
+    ),
+  );
+  dateLine.after(message);
+  message.focus();
+}
+
 async function handleAuthSubmit(event) {
   event.preventDefault();
   const codeInput = document.getElementById("companyAuthCode");
@@ -512,7 +562,7 @@ async function handleAuthSubmit(event) {
     return;
   }
   window.formErrors.clearFormErrors();
-  const madeUpDate = company.confirmationStatementNextMadeUpTo;
+  const madeUpDate = statementDateToFile(company);
   if (!madeUpDate) {
     showStatus(
       window.siteText("ch.cs.no-next-date", "Companies House has not published a next confirmation statement date for this company."),
@@ -537,7 +587,7 @@ async function handleAuthSubmit(event) {
     originalShareholdings = filingData.shareholdings || [];
     originalRegisteredEmailAddress = filingData.registeredEmailAddress || "";
 
-    document.getElementById("reviewDate").value = company.confirmationStatementNextMadeUpTo;
+    document.getElementById("reviewDate").value = madeUpDate;
     document.getElementById("reviewDate").max = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
     document.getElementById("sicCodes").value = originalSicCodes.join(", ");
     document.getElementById("registeredEmailAddress").value = originalRegisteredEmailAddress;
@@ -564,6 +614,10 @@ async function handleAuthSubmit(event) {
     console.error("Failed to read the confirmation statement filing data:", error);
     if (error.status === 400 && error.body?.reason === "invalid-company-authentication-code") {
       window.formErrors.showFormErrors([{ input: codeInput, message: error.message }]);
+      return;
+    }
+    if (error.status === 400 && error.body?.reason === "made-up-date-after-today") {
+      showMadeUpDateError();
       return;
     }
     showStatus(error.message || window.siteText("ch.cs.read-failed", "Failed to read the confirmation statement filing data."), "error");
@@ -1300,7 +1354,7 @@ async function startActivityCheckout(companyNumber, reviewDate) {
       );
       return;
     }
-    sessionStorage.setItem(CHECKOUT_RESUME_KEY, companyNumber);
+    sessionStorage.setItem(CHECKOUT_RESUME_KEY, JSON.stringify({ companyNumber, reviewDate }));
     window.location.href = body.checkoutUrl;
   } catch (error) {
     console.error("Failed to start the confirmation statement payment:", error);
@@ -1310,7 +1364,8 @@ async function startActivityCheckout(companyNumber, reviewDate) {
   }
 }
 
-async function resumeAfterActivityCheckout(companyNumber) {
+async function resumeAfterActivityCheckout({ companyNumber, reviewDate }) {
+  paidStatement = { companyNumber, reviewDate };
   await lookUpCompany(companyNumber);
   if (company) {
     showStatus(
@@ -1329,6 +1384,7 @@ window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibilit
 
 function startAgain() {
   company = null;
+  paidStatement = null;
   companyAuthCode = "";
   ownPresenter = null;
   filingData = null;
@@ -1377,10 +1433,10 @@ function resumeAfterCheckoutIfReady() {
     return;
   }
 
-  const pendingCompanyNumber = sessionStorage.getItem(CHECKOUT_RESUME_KEY);
+  const pending = JSON.parse(sessionStorage.getItem(CHECKOUT_RESUME_KEY) ?? "null");
   sessionStorage.removeItem(CHECKOUT_RESUME_KEY);
-  if (pendingCompanyNumber) {
-    resumeAfterActivityCheckout(pendingCompanyNumber);
+  if (pending?.companyNumber) {
+    resumeAfterActivityCheckout(pending);
   }
 }
 

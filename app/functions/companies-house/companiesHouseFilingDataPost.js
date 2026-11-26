@@ -19,8 +19,11 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import {
   hasInvalidCompanyAuthenticationCodeError,
+  hasMadeUpDateAfterTodayError,
   INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
   INVALID_COMPANY_AUTHENTICATION_CODE_REASON,
+  MADE_UP_DATE_AFTER_TODAY_MESSAGE,
+  MADE_UP_DATE_AFTER_TODAY_REASON,
 } from "../../lib/companiesHouseGatewayErrors.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -42,6 +45,17 @@ import { initializeSalt } from "../../services/subHasher.js";
 import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseFilingDataPost.js" });
+
+const todayInUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+
+function madeUpDateAfterTodayResponse(request, responseHeaders, gatewayErrors) {
+  return http400BadRequestResponse({
+    request,
+    headers: { ...responseHeaders },
+    message: MADE_UP_DATE_AFTER_TODAY_MESSAGE,
+    error: { reason: MADE_UP_DATE_AFTER_TODAY_REASON, ...(gatewayErrors ? { errors: gatewayErrors } : {}) },
+  });
+}
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
@@ -123,6 +137,12 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  // The gateway reads the register only up to today, so a later date never reaches it.
+  if (madeUpDate > todayInUk()) {
+    logger.info({ message: "The confirmation statement date is after today", companyNumber, madeUpDate });
+    return madeUpDateAfterTodayResponse(request, responseHeaders);
+  }
+
   // The customer's own presenter, when the request carries one, stands in for ours for this request only.
   const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
@@ -152,6 +172,9 @@ export async function ingestHandler(event) {
         message: INVALID_COMPANY_AUTHENTICATION_CODE_MESSAGE,
         error: { reason: INVALID_COMPANY_AUTHENTICATION_CODE_REASON, errors: companyDataParsed.errors },
       });
+    }
+    if (hasMadeUpDateAfterTodayError(companyDataParsed.errors)) {
+      return madeUpDateAfterTodayResponse(request, responseHeaders, companyDataParsed.errors);
     }
     return http500ServerErrorResponse({
       request,

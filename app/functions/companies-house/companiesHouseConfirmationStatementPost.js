@@ -172,7 +172,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     errorMessages.push("Invalid or missing dateSigned - must be YYYY-MM-DD");
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
   if (!reviewDate || !isValidIsoDate(reviewDate)) {
     errorMessages.push("Invalid or missing reviewDate - must be YYYY-MM-DD");
   } else if (reviewDate > today) {

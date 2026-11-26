@@ -28666,3 +28666,15 @@ cy = '''Sut y cânt eu cyfrifo'''
 [strings."ch.ct.record-company-number-line"]
 hash = "f1f646794edb"
 cy = '''Rhif cofrestru’r cwmni {number}'''
+
+# == The confirmation statement whose made-up date is after today, ids ch.cs.made-up-date-after-today ==
+
+[strings."ch.cs.made-up-date-after-today"]
+hash = "6249b2489864"
+cy = '''Mae’r dyddiad hwn ar ôl heddiw. Dim ond hyd at heddiw y mae Tŷ’r Cwmnïau yn darllen y gofrestr, felly ffeiliwch y datganiad hwn ar y dyddiad y mae wedi’i wneud hyd ato neu ar ôl hynny.'''
+
+# == A confirmation statement filed before its next made-up date, ids ch.cs.filing-early ==
+
+[strings."ch.cs.filing-early"]
+hash = "46a3dc5cb483"
+cy = '''Os caiff ei ffeilio nawr, mae’r datganiad wedi’i wneud hyd at heddiw, ac mae’r dyddiad cadarnhau nesaf yn symud i flwyddyn o heddiw.'''

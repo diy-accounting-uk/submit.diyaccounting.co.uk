@@ -597,6 +597,8 @@ window.WELSH_TEXT = {
     "Mae Tŷ’r Cwmnïau yn codi ei ffi ar y cyfrif credyd y tu ôl i’ch cyflwynydd. Nid yw Submit yn codi ffi ei hun.",
   "ch.cs.fee-paid": "Dim ffi: mae’r cyfnod talu hwn wedi’i dalu eisoes.",
   "ch.cs.file-failed": "Methwyd â ffeilio’r datganiad cadarnhau gyda Thŷ’r Cwmnïau.",
+  "ch.cs.filing-early":
+    "Os caiff ei ffeilio nawr, mae’r datganiad wedi’i wneud hyd at heddiw, ac mae’r dyddiad cadarnhau nesaf yn symud i flwyddyn o heddiw.",
   "ch.cs.holder-amalgamated": "Neu enw cyfunol (yn lle cyfenw/enw cyntaf)",
   "ch.cs.holder-forename": "Enw cyntaf y cyfranddeiliad",
   "ch.cs.holder-post-town": "Tref bost",
@@ -610,6 +612,8 @@ window.WELSH_TEXT = {
   "ch.cs.joint-hint": "Mae daliad a ddelir ar y cyd yn cynnwys pob cyd-ddeiliad isod, hyd at {max}.",
   "ch.cs.joint-holder-n": "Cyd-ddeiliad {n}",
   "ch.cs.lawful-required": "Rhaid derbyn y datganiad pwrpas cyfreithiol cyn gweld y rhagolwg.",
+  "ch.cs.made-up-date-after-today":
+    "Mae’r dyddiad hwn ar ôl heddiw. Dim ond hyd at heddiw y mae Tŷ’r Cwmnïau yn darllen y gofrestr, felly ffeiliwch y datganiad hwn ar y dyddiad y mae wedi’i wneud hyd ato neu ar ôl hynny.",
   "ch.cs.max-joint-holders": "Gall cyfranddaliad gynnwys {max} cyd-ddeiliad ar y mwyaf.",
   "ch.cs.max-transfers": "Gall cyfranddaliad gynnwys {max} trosglwyddiad ar y mwyaf.",
   "ch.cs.mismatch-hint": "Dim ond pan fydd yr enw y gwnaeth y cyfarwyddwr hwn ei wirio oddi tano yn wahanol i enw’r gofrestr uchod.",

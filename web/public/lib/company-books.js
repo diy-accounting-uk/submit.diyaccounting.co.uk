@@ -219,7 +219,13 @@ function capitalForm(onCode) {
       status.textContent = siteText("ch.books.capital-added", "The shareholders and the share capital are in the book.");
     } catch (error) {
       console.error("Could not add the shareholders and capital to the book:", error);
-      status.textContent = error.message;
+      status.textContent =
+        error.body?.reason === "made-up-date-after-today"
+          ? siteText(
+              "ch.cs.made-up-date-after-today",
+              "This date is after today. Companies House reads the register only up to today, so file this statement on or after the date it is made up to.",
+            )
+          : error.message;
     } finally {
       button.disabled = false;
     }
@@ -279,7 +285,7 @@ export async function renderCompanyBooks(holder, { profile, diyaGlBaseUrl, forma
     capitalForm(async (companyAuthCode) => {
       const filingData = await deps.getFilingData(profile.companyNumber, {
         companyAuthCode,
-        madeUpDate: profile.confirmationStatementNextMadeUpTo,
+        madeUpDate: window.companiesHouseLabels.confirmationStatementDateToFile(profile.confirmationStatementNextMadeUpTo),
       });
       await renderBooks(holder, { profile, diyaGlBaseUrl, formatDate }, await companyBooks(bundle, { ...register, filingData }));
     }),

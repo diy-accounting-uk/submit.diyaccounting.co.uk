@@ -3,7 +3,7 @@
 
 // app/unit-tests/lib/companiesHouseGatewayErrors.test.js
 import { describe, test, expect } from "vitest";
-import { hasInvalidCompanyAuthenticationCodeError } from "@app/lib/companiesHouseGatewayErrors.js";
+import { hasInvalidCompanyAuthenticationCodeError, hasMadeUpDateAfterTodayError } from "@app/lib/companiesHouseGatewayErrors.js";
 
 describe("hasInvalidCompanyAuthenticationCodeError", () => {
   test("is true for the gateway's invalid authentication code text", () => {
@@ -17,5 +17,22 @@ describe("hasInvalidCompanyAuthenticationCodeError", () => {
   test("is false for no errors", () => {
     expect(hasInvalidCompanyAuthenticationCodeError(undefined)).toBe(false);
     expect(hasInvalidCompanyAuthenticationCodeError([])).toBe(false);
+  });
+});
+
+describe("hasMadeUpDateAfterTodayError", () => {
+  test("is true for the gateway's request date text, with either apostrophe", () => {
+    expect(hasMadeUpDateAfterTodayError([{ number: 9999, text: "Request date must be today's date or before 30/06/2016" }])).toBe(true);
+    expect(hasMadeUpDateAfterTodayError([{ number: 9999, text: "Request date must be today’s date or before 30/06/2016" }])).toBe(true);
+  });
+
+  test("is false for the invalid authentication code and other errors numbered 9999", () => {
+    expect(hasMadeUpDateAfterTodayError([{ number: 9999, text: "Invalid CompanyAuthenticationCode" }])).toBe(false);
+    expect(hasMadeUpDateAfterTodayError([{ number: 9999, text: "No presenter ID supplied" }])).toBe(false);
+  });
+
+  test("is false for no errors", () => {
+    expect(hasMadeUpDateAfterTodayError(undefined)).toBe(false);
+    expect(hasMadeUpDateAfterTodayError([])).toBe(false);
   });
 });

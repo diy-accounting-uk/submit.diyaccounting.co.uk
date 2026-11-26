@@ -66,10 +66,17 @@ test.describe("File Confirmation Statement page", () => {
 
   async function setupRoutes(
     page,
-    { profile = COMPANY_PROFILE, lookupError = null, filingData = FILING_DATA, feeDueOnSubmit = false, filingDataError = null } = {},
+    {
+      profile = COMPANY_PROFILE,
+      lookupError = null,
+      filingData = FILING_DATA,
+      feeDueOnSubmit = false,
+      filingDataError = null,
+      paidReviewDate = null,
+    } = {},
   ) {
     await page.addInitScript(
-      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg, feeDueOnSubmitArg, filingDataErrorArg }) => {
+      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg, feeDueOnSubmitArg, filingDataErrorArg, paidReviewDateArg }) => {
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
@@ -131,7 +138,9 @@ test.describe("File Confirmation Statement page", () => {
         };
         window.submitConfirmationStatement = (statement) => {
           window.__submitCalls.push(statement);
-          if (feeDueOnSubmitArg) {
+          // With a paid date, the fee is paid only for a statement made up to that date, as the
+          // submit route keys the fee by company number and statement date.
+          if (feeDueOnSubmitArg || (paidReviewDateArg && statement.reviewDate !== paidReviewDateArg)) {
             const error = new Error("Payment required");
             error.status = 402;
             return Promise.reject(error);
@@ -157,6 +166,7 @@ test.describe("File Confirmation Statement page", () => {
         filingDataArg: filingData,
         feeDueOnSubmitArg: feeDueOnSubmit,
         filingDataErrorArg: filingDataError,
+        paidReviewDateArg: paidReviewDate,
       },
     );
 
@@ -274,6 +284,75 @@ test.describe("File Confirmation Statement page", () => {
     const codeBox = await page.locator("#companyAuthCode").boundingBox();
     const errorBox = await fieldError.boundingBox();
     expect(codeBox.y - (errorBox.y + errorBox.height)).toBeLessThan(40);
+  });
+
+  test("a company whose next confirmation date is still to come files made up to today, says so, and reads the register to today", async ({
+    page,
+  }) => {
+    const ukDate = (date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(date);
+    const today = ukDate(new Date());
+    const nextMadeUpTo = ukDate(new Date(Date.now() + 40 * 86_400_000));
+    const longDate = (isoDate) =>
+      new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+    setupPage(page);
+    await setupRoutes(page, { profile: { ...COMPANY_PROFILE, confirmationStatementNextMadeUpTo: nextMadeUpTo } });
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await expect(page.locator("#authNextMadeUpTo")).toHaveText(longDate(today));
+    const earlyLine = page.locator("#authFilingEarly");
+    await expect(earlyLine).toBeVisible();
+    await expect(earlyLine).toHaveText(
+      "Filed now, the statement is made up to today, and the next confirmation date moves to a year from today.",
+    );
+
+    await enterAuthCode(page);
+    const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
+    expect(filingDataCalls[0].madeUpDate).toBe(today);
+    await expect(page.locator("#reviewView")).toBeVisible();
+    await expect(page.locator("#reviewDate")).toHaveValue(today);
+  });
+
+  test("a company whose next confirmation date has come files made up to that date, with no line about filing early", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await expect(page.locator("#authNextMadeUpTo")).toHaveText("21 September 2026");
+    await expect(page.locator("#authFilingEarly")).toBeHidden();
+    await enterAuthCode(page);
+    const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
+    expect(filingDataCalls[0].madeUpDate).toBe("2026-09-21");
+    await expect(page.locator("#reviewDate")).toHaveValue("2026-09-21");
+  });
+
+  test("shows the made-up date message under the made-up date when Companies House answers that the date is after today", async ({
+    page,
+  }) => {
+    const message = "The confirmation statement date is after today.";
+    setupPage(page);
+    await setupRoutes(page, {
+      filingDataError: { status: 400, message, body: { reason: "made-up-date-after-today", message } },
+    });
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await enterAuthCode(page, "SIMCS01");
+
+    await expect(page.locator("#authView")).toBeVisible();
+    await expect(page.locator("#reviewView")).toBeHidden();
+    const dateError = page.locator("#authNextMadeUpTo-error");
+    await expect(dateError).toBeVisible();
+    await expect(dateError).toContainText("This date is after today.");
+    await expect(dateError).toBeFocused();
+    const dateLine = page.locator("p", { has: page.locator("#authNextMadeUpTo") });
+    const lineBox = await dateLine.boundingBox();
+    const errorBox = await dateError.boundingBox();
+    expect(errorBox.y - (lineBox.y + lineBox.height)).toBeLessThan(40);
+
+    await enterAuthCode(page, "SIMCS01");
+    await expect(page.locator("#authNextMadeUpTo-error")).toHaveCount(1);
   });
 
   test("moves to the review view with the register data pre-filled after reading filing data", async ({ page }) => {
@@ -546,15 +625,20 @@ test.describe("File Confirmation Statement page", () => {
     expect(page.activityCheckoutRequests).toHaveLength(1);
     expect(page.activityCheckoutRequests[0].activityId).toBe("file-confirmation-statement");
     expect(page.activityCheckoutRequests[0].subjectKey).toBe("00000001:2026-09-21");
-    const resumeCompanyNumber = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResumeCompanyNumber"));
-    expect(resumeCompanyNumber).toBe("00000001");
+    const resume = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResume"));
+    expect(JSON.parse(resume)).toEqual({ companyNumber: "00000001", reviewDate: "2026-09-21" });
   });
 
   test("resumes the lookup and shows a payment-received banner when returning from checkout", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);
     await loadPage(page);
-    await page.evaluate(() => sessionStorage.setItem("companiesHouseConfirmationStatementResumeCompanyNumber", "00000001"));
+    await page.evaluate(() =>
+      sessionStorage.setItem(
+        "companiesHouseConfirmationStatementResume",
+        JSON.stringify({ companyNumber: "00000001", reviewDate: "2026-09-21" }),
+      ),
+    );
 
     await page.goto("http://localhost:3000/companies-house/fileConfirmationStatement.html?checkout=success&session_id=sim_1", {
       waitUntil: "domcontentloaded",
@@ -565,8 +649,61 @@ test.describe("File Confirmation Statement page", () => {
     const messages = await page.evaluate(() => window.__statusMessages);
     expect(messages.some((m) => m.message.includes("Payment received"))).toBe(true);
     expect(page.url()).not.toContain("checkout=success");
-    const resumeCompanyNumber = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResumeCompanyNumber"));
-    expect(resumeCompanyNumber).toBeNull();
+    const resume = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResume"));
+    expect(resume).toBeNull();
+  });
+
+  test("an early filing paid for on one day and finished on the next keeps the date its fee was paid for", async ({ page }) => {
+    const paidDay = "2026-11-26";
+    const nextDay = "2026-11-27";
+    setupPage(page);
+    await page.clock.setFixedTime(new Date(`${paidDay}T22:30:00Z`));
+    await setupRoutes(page, {
+      profile: { ...COMPANY_PROFILE, confirmationStatementNextMadeUpTo: "2027-01-15" },
+      paidReviewDate: paidDay,
+    });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await expect(page.locator("#reviewDate")).toHaveValue(paidDay);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.evaluate(() => {
+      window.submitConfirmationStatement = () => {
+        const error = new Error("Payment required");
+        error.status = 402;
+        return Promise.reject(error);
+      };
+    });
+    await page.click("#submitFilingBtn");
+    await page.waitForURL(/simulator\/activity-checkout/, { timeout: 10_000 });
+    expect(page.activityCheckoutRequests[0].subjectKey).toBe(`00000001:${paidDay}`);
+
+    await page.clock.setFixedTime(new Date(`${nextDay}T00:30:00Z`));
+    await page.goto("http://localhost:3000/companies-house/fileConfirmationStatement.html?checkout=success&session_id=sim_1", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.locator("#authView")).toBeVisible();
+    await expect(page.locator("#authNextMadeUpTo")).toHaveText("26 November 2026");
+    await expect(page.locator("#authFilingEarly")).toBeHidden();
+    await enterAuthCode(page);
+    const filingDataCalls = await page.evaluate(() => window.__filingDataCalls);
+    expect(filingDataCalls.map((call) => call.madeUpDate)).toEqual([paidDay]);
+    await expect(page.locator("#reviewDate")).toHaveValue(paidDay);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+
+    await expect(page.locator("#resultView")).toBeVisible({ timeout: 10_000 });
+    const submitCalls = await page.evaluate(() => window.__submitCalls);
+    expect(submitCalls.map((call) => call.reviewDate)).toEqual([paidDay]);
+    expect(page.url()).not.toContain("activity-checkout");
   });
 
   test("keeps the own presenter fields hidden until the option is ticked", async ({ page }) => {

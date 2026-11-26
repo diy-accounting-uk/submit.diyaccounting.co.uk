@@ -211,6 +211,14 @@
     );
   }
 
+  // The date a confirmation statement filed today is made up to: the next made-up date the register
+  // gives, or today when that date is still to come, since Companies House takes no date after the
+  // day of filing. Both are ISO dates.
+  function confirmationStatementDateToFile(nextMadeUpTo, today = todayInTheUnitedKingdom()) {
+    if (!nextMadeUpTo) return nextMadeUpTo;
+    return nextMadeUpTo > today ? today : nextMadeUpTo;
+  }
+
   // A person's name as the register writes it: the title as given, then every forename and the
   // surname in capitals.
   function personName({ title, forename, otherForenames, surname }) {
@@ -222,6 +230,7 @@
     personName,
     formatCompanyDate,
     todayInTheUnitedKingdom,
+    confirmationStatementDateToFile,
     formatMonthYear,
     companyStatusLabel: (value) => labelFrom(companyStatuses(), value),
     companyTypeLabel: (value) => labelFrom(companyTypes(), value),
