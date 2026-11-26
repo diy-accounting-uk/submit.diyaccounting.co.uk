@@ -115,7 +115,7 @@ State: gated cc47107d6 (CTV1 52fb5ced9, ctv1b abf54dbea, ctl7b cc47107d6): brows
 |---|---|---|---|
 | ct600-page | CTF1, ctl7c, ctf1b | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
 
-State: CTF1 landed at 9db929d6f on `claude/cobalt-w08` (from cc47107d6); ctl7c and ctf1b build on harbour and land next; then the wave's gate.
+State: CTF1 9db929d6f and ctl7c fe4c70622 landed on `claude/cobalt-w08` (ctl7c merged by garnet, keeping ctl7b's lines); ctf1b builds on harbour; then the wave's gate.
 
 ### Wave 9
 
@@ -127,7 +127,7 @@ State: CTF1 landed at 9db929d6f on `claude/cobalt-w08` (from cc47107d6); ctl7c a
 
 AL37 and CTP4 are built (`claude/anvil-al37c` 3bc704d0e, `claude/dusk-ctp4` 2c693df9b); UH7 builds on flint from 9db929d6f (operator, 2026-11-26: "do UH7 in the last wave of cobolt").
 
-State: integrating: jasper lands AL37 then CTP4 on 9db929d6f; UH7 building on flint.
+State: on `claude/cobalt-w09` from 9db929d6f: AL37 7cebceb4a, ctl7c carried 87f9bc6f0; jasper merges CTP4; a review found a race that records one acceptance twice, and anvil builds its fix ctp4b; UH7 builds on flint.
 
 ## Gates
 
