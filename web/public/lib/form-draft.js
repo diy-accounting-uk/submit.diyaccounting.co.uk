@@ -20,10 +20,14 @@ export const NEVER_SAVED_FIELDS = ["gatewayUserId", "gatewayPassword", "companyA
 
 const DAY_MS = 86_400_000;
 
-// A record whose expiry is missing or unreadable counts as expired.
-function isLive(record, now) {
+// A record whose expiry is missing or unreadable counts as expired. A record also expires when the
+// person's current choice, counted from when it was saved, has passed, so a shorter choice shortens
+// the records already kept.
+function isLive(record, now, days) {
   const expiresAt = Date.parse(record.expiresAt);
-  return Number.isFinite(expiresAt) && expiresAt > now;
+  const savedAt = Date.parse(record.savedAt);
+  if (!Number.isFinite(expiresAt) || expiresAt <= now) return false;
+  return Number.isFinite(savedAt) && savedAt + days * DAY_MS > now;
 }
 
 function storageKeys(storage) {
@@ -111,7 +115,7 @@ export function loadDraft(storage, { journey, sub, companyNumber }, now = Date.n
   const key = draftKey({ journey, sub, companyNumber });
   const record = readRecord(storage, key);
   if (!record) return null;
-  if (!isLive(record, now)) {
+  if (!isLive(record, now, keepDays(storage))) {
     removeKey(storage, key);
     return null;
   }
@@ -136,10 +140,11 @@ export function deleteAllDrafts(storage, sub) {
 
 /** Deletes every record past its expiry, whoever saved it; returns how many. */
 export function deleteExpiredDrafts(storage, now = Date.now()) {
+  const days = keepDays(storage);
   const expired = storageKeys(storage).filter((key) => {
     if (!key.startsWith(DRAFT_KEY_PREFIX) || key === KEEP_DAYS_KEY) return false;
     const record = readRecord(storage, key);
-    return !record || !isLive(record, now);
+    return !record || !isLive(record, now, days);
   });
   for (const key of expired) removeKey(storage, key);
   return expired.length;

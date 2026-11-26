@@ -86,6 +86,21 @@ describe("form-draft", () => {
     expect(storage.getItem(draftKey(SCOPE))).toBeNull();
   });
 
+  test("a shorter choice shortens a record already saved, counted from when it was saved", () => {
+    const storage = memoryStorage();
+    setKeepDays(storage, 90);
+    saveDraft(storage, { ...SCOPE, period: PERIOD, values: { a: "1" } }, NOW);
+    const other = { ...SCOPE, companyNumber: "00000002" };
+    saveDraft(storage, { ...other, period: PERIOD, values: { b: "2" } }, NOW);
+    setKeepDays(storage, 7);
+
+    expect(loadDraft(storage, SCOPE, NOW + 6 * DAY)?.values).toEqual({ a: "1" });
+    expect(loadDraft(storage, SCOPE, NOW + 8 * DAY)).toBeNull();
+    expect(storage.getItem(draftKey(SCOPE))).toBeNull();
+    expect(deleteExpiredDrafts(storage, NOW + 8 * DAY)).toBe(1);
+    expect(storage.getItem(draftKey(other))).toBeNull();
+  });
+
   test("do not keep saves nothing and deletes the person's records", () => {
     const storage = memoryStorage();
     saveDraft(storage, { ...SCOPE, period: PERIOD, values: { a: "1" } }, NOW);
