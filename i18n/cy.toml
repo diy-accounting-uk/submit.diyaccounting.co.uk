@@ -27800,3 +27800,25 @@ cy = '''Caiff eich atebion eu cadw wrth i chi deipio, felly ni chollir dim os by
 [strings."privacy.formdraft-the-answers-you-type-into-1c9280"]
 hash = "1c9280e534e8"
 cy = '''<strong><code>formDraft.*</code></strong >: Yr atebion a deipiwch i’r Ffurflen Dreth i Gwmnïau, wedi’u cadw wrth i chi deipio fel nad oes dim yn cael ei golli os bydd tab yn cau neu os byddwch yn mewngofnodi eto: un cofnod ar gyfer pob cwmni, gyda’i gyfnod, pryd y’i cadwyd a phryd y daw i ben. Ni chaiff ID defnyddiwr a chyfrinair Porth y Llywodraeth na chod dilysu Tŷ’r Cwmnïau byth eu cadw. Mae’r atebion yn aros yn y porwr hwn ac nid ydynt byth yn cael eu hanfon i’n gweinyddion. Rydych yn dewis ar y ffurflen am ba hyd y cânt eu cadw (7, 28 neu 90 diwrnod, 28 yn ddiofyn) neu nad ydynt yn cael eu cadw, ac mae "Dileu fy atebion a gadwyd" yn eu dileu. Cânt eu dileu pan fydd CThEF yn derbyn y Ffurflen, ac ar yr ymweliad cyntaf ar ôl iddynt ddod i ben. Gallai unrhyw un sy’n defnyddio’r porwr hwn eu gweld, felly dewiswch "Peidio â’u cadw" ar gyfrifiadur a rennir. Maent yn gwasanaethu’r ffeilio y gofynnoch amdano, felly cânt eu cadw heb ofyn am gydsyniad.'''
+
+# == The note on the default terms of an advance to a director, on the accounts pages and the Company Tax Return ==
+
+[strings."ch-micro-entity.this-is-a-common-arrangement-change-6b70fa"]
+hash = "6b70fa36c6ee"
+cy = '''Trefniant cyffredin yw hwn. Newidiwch ef i’r telerau y cytunodd y cwmni a’r cyfarwyddwr arnynt: y gyfradd llog, unrhyw sicrhad, a phryd y caiff y blaenswm ei ad-dalu. Mae <a href="https://www.legislation.gov.uk/ukpga/2006/46/section/413" target="_blank" rel="noopener">Adran 413</a> yn gofyn am y tri.'''
+
+[strings."ch-small-company.this-is-a-common-arrangement-change-6b70fa"]
+hash = "6b70fa36c6ee"
+cy = '''Trefniant cyffredin yw hwn. Newidiwch ef i’r telerau y cytunodd y cwmni a’r cyfarwyddwr arnynt: y gyfradd llog, unrhyw sicrhad, a phryd y caiff y blaenswm ei ad-dalu. Mae <a href="https://www.legislation.gov.uk/ukpga/2006/46/section/413" target="_blank" rel="noopener">Adran 413</a> yn gofyn am y tri.'''
+
+[strings."ch.ct.advance-terms-hint"]
+hash = "914dfefc2595"
+cy = '''Trefniant cyffredin yw hwn. Newidiwch ef i’r telerau y cytunodd y cwmni a’r cyfarwyddwr arnynt: y gyfradd llog, unrhyw sicrhad, a phryd y caiff y blaenswm ei ad-dalu. Mae '''
+
+[strings."ch.ct.advance-terms-link"]
+hash = "33b449ee53d6"
+cy = '''Adran 413'''
+
+[strings."ch.ct.advance-terms-needs"]
+hash = "c78d2fbdd8ec"
+cy = ''' yn gofyn am y tri.'''

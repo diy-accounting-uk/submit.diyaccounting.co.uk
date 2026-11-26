@@ -159,6 +159,25 @@ test.describe("File small company accounts page", () => {
     expect(payload.smallCompany.balanceSheet.currentYear.fixedAssets).toBe(0);
   });
 
+  test("each advance row's terms start from a common arrangement while that row has an amount", async ({ page }) => {
+    await openFormView(page);
+    await page.fill("#directorsAdvanceMade", "500");
+    await expect(page.locator("#directorsAdvanceTerms")).toHaveValue(
+      "Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.",
+    );
+    await page.click("#addDirectorsAdvance");
+    await expect(page.locator("#directorsAdvanceTerms-2")).toHaveValue("");
+    await page.fill("#directorsAdvanceAtStart-2", "300");
+    await expect(page.locator("#directorsAdvanceTerms-2")).toHaveValue(
+      "Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.",
+    );
+    await page.fill("#directorsAdvanceMade", "0");
+    await expect(page.locator("#directorsAdvanceTerms")).toHaveValue("");
+    await expect(page.locator("#directorsAdvanceTerms-2")).toHaveValue(
+      "Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.",
+    );
+  });
+
   test("the request is full accounts with no comparatives and no fixed asset note by default", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);

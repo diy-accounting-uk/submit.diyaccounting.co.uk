@@ -333,6 +333,9 @@ function comparativesIncluded() {
 // Accounts show the prior year unless they are the company's first, which the company's profile and
 // the period start show. The box follows that rule, and the line under it says which it is.
 let firstAccountsRule = null;
+// The terms of an advance to a director start from a common arrangement while the advance has an amount.
+import("../lib/advance-terms.js").then(({ followAdvanceTerms }) => followAdvanceTerms(document));
+
 import("../lib/first-accounts.js").then((module) => {
   firstAccountsRule = module;
   toggleSections();

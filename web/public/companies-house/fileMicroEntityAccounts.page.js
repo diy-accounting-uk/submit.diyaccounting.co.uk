@@ -87,6 +87,9 @@ let latestYearTotals = 0;
 // company's profile and the period start show. The prior year column follows that rule, and the
 // line above the balance sheet says which it is.
 let firstAccountsRule = null;
+// The terms of an advance to a director start from a common arrangement while the advance has an amount.
+import("../lib/advance-terms.js").then(({ followAdvanceTerms }) => followAdvanceTerms(document));
+
 import("../lib/first-accounts.js").then((module) => {
   firstAccountsRule = module;
   applyFirstAccountsRule();

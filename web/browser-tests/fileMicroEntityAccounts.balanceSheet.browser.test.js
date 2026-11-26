@@ -259,6 +259,34 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     expect(await page.evaluate(() => window.rendered.length)).toBe(0);
   });
 
+  test("an advance fills the terms with a common arrangement, and the note links section 413", async ({ page }) => {
+    await openFormView(page);
+    const terms = page.locator("#directorsAdvanceTerms");
+    await expect(terms).toHaveValue("");
+    await page.fill("#directorsAdvanceMade", "500");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+    await expect(page.locator("#directorsAdvanceTerms-hint")).toContainText("This is a common arrangement.");
+    await expect(page.locator("#directorsAdvanceTerms-hint").getByRole("link", { name: "Section 413" })).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/413",
+    );
+    await page.fill("#directorsAdvanceMade", "0");
+    await expect(terms).toHaveValue("");
+    await page.fill("#directorsAdvanceAtStart", "1200");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+  });
+
+  test("terms the person types stay when the amounts change", async ({ page }) => {
+    await openFormView(page);
+    await page.fill("#directorsAdvanceMade", "500");
+    const terms = page.locator("#directorsAdvanceTerms");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+    await terms.fill("4% a year, secured on the director's car, repaid by March");
+    await page.fill("#directorsAdvanceMade", "0");
+    await page.fill("#directorsAdvanceMade", "800");
+    await expect(terms).toHaveValue("4% a year, secured on the director's car, repaid by March");
+  });
+
   test("renders accounts that add up", async ({ page }) => {
     await openFormView(page);
     await fillForm(page, CONSISTENT_YEARS);

@@ -2639,7 +2639,19 @@ In accordance with your instructions, we have compiled these unaudited financial
                 </div>
                 <div class="form-group">
                   <label for="directorsAdvanceTerms">Interest rate and main conditions of the advance</label>
-                  <input type="text" id="directorsAdvanceTerms" data-advance-field="terms" name="directorsAdvanceTerms" />
+                  <input
+                    type="text"
+                    id="directorsAdvanceTerms"
+                    data-advance-field="terms"
+                    name="directorsAdvanceTerms"
+                    aria-describedby="directorsAdvanceTerms-hint"
+                  />
+                  <p id="directorsAdvanceTerms-hint" class="hint">
+                    This is a common arrangement. Change it to the terms the company and the director agreed: the interest rate, any
+                    security, and when the advance is repaid.
+                    <a href="https://www.legislation.gov.uk/ukpga/2006/46/section/413" target="_blank" rel="noopener">Section 413</a> needs
+                    all three.
+                  </p>
                 </div>
                 <p id="ledgerHintAdvances" class="hint">Whole pounds. For example, £600 or £1,200.</p>
                 <table class="ledger ledger--one-year">

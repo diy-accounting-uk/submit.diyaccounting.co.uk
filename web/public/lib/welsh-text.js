@@ -644,6 +644,10 @@ window.WELSH_TEXT = {
     "Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau. Newidiwch y ffigurau a’r dyddiad y mae’r cyfarwyddwyr yn cymeradwyo’r cyfrifon diwygiedig.",
   "ch.ct.add-participator": "Ychwanegu cyfranogwr arall",
   "ch.ct.add-repayment": "Ychwanegu ad-daliad arall",
+  "ch.ct.advance-terms-hint":
+    "Trefniant cyffredin yw hwn. Newidiwch ef i’r telerau y cytunodd y cwmni a’r cyfarwyddwr arnynt: y gyfradd llog, unrhyw sicrhad, a phryd y caiff y blaenswm ei ad-dalu. Mae ",
+  "ch.ct.advance-terms-link": "Adran 413",
+  "ch.ct.advance-terms-needs": " yn gofyn am y tri.",
   "ch.ct.agent-authorised":
     "Mae’r cwmni wedi awdurdodi’r practis hwn i weithredu ar ei ran ar gyfer Treth Gorfforaeth (ffurflen 64-8 neu ar-lein), ac mae wedi cymeradwyo’r Ffurflen hon.",
   "ch.ct.aia-most": " Yr uchafswm ar gyfer {range} yw £{amount}.",

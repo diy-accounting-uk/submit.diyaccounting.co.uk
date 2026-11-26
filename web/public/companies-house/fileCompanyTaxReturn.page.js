@@ -60,6 +60,7 @@ import {
 } from "../lib/ct600-fields.js";
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
+import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
   KEEP_DAYS_CHOICES,
   deleteAllDrafts,
@@ -501,6 +502,18 @@ function accountsTextGroup({ id, label, type }) {
     );
   }
   const group = textGroup({ id, label, type, hint: "" });
+  if (id === "directorsAdvanceTerms") {
+    const hint = group.querySelector(`#${id}-hint`);
+    hint.hidden = false;
+    hint.replaceChildren(
+      siteText(
+        "ch.ct.advance-terms-hint",
+        "This is a common arrangement. Change it to the terms the company and the director agreed: the interest rate, any security, and when the advance is repaid. ",
+      ),
+      create("a", { href: SECTION_413_URL, target: "_blank", rel: "noopener" }, siteText("ch.ct.advance-terms-link", "Section 413")),
+      siteText("ch.ct.advance-terms-needs", " needs all three."),
+    );
+  }
   if (id === "averageEmployees") {
     const input = group.querySelector("input");
     input.setAttribute("value", "0");
@@ -1356,6 +1369,29 @@ function isIsoDate(text) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text ?? "") && !Number.isNaN(Date.parse(text));
 }
 
+// The terms of an advance to a director: a common arrangement while the advance has an amount and
+// the field is empty, until the customer types in it. The amount owed at the end is worked out for
+// micro-entity accounts and is the balance sheet's amount owed by directors for small company ones.
+function followAdvanceTerms(values) {
+  const whole = (id) =>
+    Number(
+      String(values[id] ?? "")
+        .replaceAll(",", "")
+        .replace("£", "")
+        .trim() || 0,
+    );
+  const atEnd =
+    regimeOf(values) === "micro"
+      ? whole("directorsAdvanceAtStart") + whole("directorsAdvanceMade") - whole("directorsAdvanceRepaid")
+      : whole(balanceSheetId("current", "amountsOwedByDirectors"));
+  const next = followedTerms({
+    terms: values.directorsAdvanceTerms,
+    amounts: [values.directorsAdvanceAtStart, values.directorsAdvanceMade, String(atEnd)],
+    typed: state.edited.has("directorsAdvanceTerms"),
+  });
+  if (next !== null) element("directorsAdvanceTerms").value = next;
+}
+
 // Defaults follow what they come from until the customer types in them.
 function setDefaults() {
   const follow = (id, text) => {
@@ -1365,6 +1401,7 @@ function setDefaults() {
   follow("nonTradingLoanRelationshipCredits", Number.isFinite(interest) && interest > 0 ? String(interest) : "0");
   follow("tradeName", element("principalActivity").value.trim());
   const values = readValues();
+  followAdvanceTerms(values);
   if (regimeOf(values) === "micro") {
     follow("depreciation", element(microId("current", "depreciation")).value.trim() || "0");
     return;

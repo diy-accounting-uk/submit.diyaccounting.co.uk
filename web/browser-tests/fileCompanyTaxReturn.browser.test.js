@@ -1904,6 +1904,25 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#directorsAdvanceMade")).toHaveValue("");
   });
 
+  test("an advance fills the terms with a common arrangement until they are typed, and clears with every amount at 0", async ({ page }) => {
+    await openForm(page);
+    const terms = page.locator("#directorsAdvanceTerms");
+    await expect(terms).toHaveValue("");
+    await page.locator("#directorsAdvanceMade").fill("500");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+    await expect(page.locator("#directorsAdvanceTerms-hint").getByRole("link", { name: "Section 413" })).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/413",
+    );
+    await page.locator("#directorsAdvanceMade").fill("0");
+    await expect(terms).toHaveValue("");
+
+    await page.locator("#directorsAdvanceMade").fill("500");
+    await terms.fill("Interest at 2.25%; unsecured; repaid by 31 December");
+    await page.locator("#directorsAdvanceMade").fill("0");
+    await expect(terms).toHaveValue("Interest at 2.25%; unsecured; repaid by 31 December");
+  });
+
   test("a worked box has no input and shows its rule", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
