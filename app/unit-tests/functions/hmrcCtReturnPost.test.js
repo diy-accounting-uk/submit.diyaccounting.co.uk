@@ -138,6 +138,12 @@ function buildEvent({
   return buildLambdaEvent(options);
 }
 
+const submittedActivityDetails = () =>
+  mockEventBridgeSend.mock.calls
+    .flatMap(([command]) => command.input?.Entries ?? [])
+    .map((entry) => JSON.parse(entry.Detail))
+    .filter((detail) => detail.event === "hmrc-ct-return-submitted");
+
 describe("hmrcCtReturnPost ingestHandler", () => {
   beforeAll(async () => {
     const body = await buildCtReturnBodyFromBook();
@@ -207,6 +213,22 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
     expect(JSON.stringify(update.input)).not.toContain(PASSWORD);
     expect(JSON.stringify(update.input)).not.toContain(USER_ID);
+  });
+
+  test("the submitted activity event carries HMRC's correlation ID and the IRmark, and sets the lake columns", async () => {
+    const response = await hmrcCtReturnPostHandler(buildEvent());
+    const body = parseResponseBody(response);
+    const submitted = submittedActivityDetails();
+    expect(submitted).toHaveLength(1);
+    expect(submitted[0]).toMatchObject({
+      outcome: "success",
+      activityId: "file-company-tax-return",
+      hmrcStatus: "acknowledgement",
+      correlationId: CORRELATION_ID,
+      irmark: body.irmark,
+      transactionId: body.transactionId,
+    });
+    expect(submitted[0].receiptId).toBeUndefined();
   });
 
   test("resolves a relative poll end point against the submission URL and forwards Gov-Test-Scenario", async () => {
@@ -356,6 +378,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
         irmark: body.irmark,
       });
       expect(activityEvents()).not.toContain(PASSWORD);
+      expect(submittedActivityDetails()[0]).toMatchObject({ hmrcStatus: "held", correlationId: CORRELATION_ID, irmark: body.irmark });
     });
 
     test("recovers from an HTTP 504 and from an unreadable reply the same way", async () => {

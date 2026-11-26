@@ -27714,3 +27714,17 @@ cy = '''Anfonwyd y newid i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys et
 [strings."ch.change.still-processing"]
 hash = "8c5dc81cd943"
 cy = '''Mae’r newid yn dal gyda Thŷ’r Cwmnïau. Dewiswch Gwirio eto i ofyn am y canlyniad.'''
+
+# == The message when the site's firewall blocks a request, ids widget.failure-firewall*, widget.request-blocked ==
+
+[strings."widget.request-blocked"]
+hash = "22d58e03e132"
+cy = '''Cais wedi’i rwystro'''
+
+[strings."widget.failure-firewall"]
+hash = "92d27c9b45db"
+cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn.'''
+
+[strings."widget.failure-firewall-reference"]
+hash = "fc21e70bd1b7"
+cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn. Cyfeirnod: {reference}.'''

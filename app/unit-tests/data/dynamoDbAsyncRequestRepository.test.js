@@ -7,6 +7,8 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { _setTestSalt, _clearSalt } from "../../services/subHasher.js";
 
 const mockSend = vi.fn();
+const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }));
+vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 vi.mock("@aws-sdk/lib-dynamodb", () => {
   class PutCommand {
@@ -102,5 +104,19 @@ describe("dynamoDbAsyncRequestRepository", () => {
     expect(input.UpdateExpression).toContain("REMOVE #data");
     expect(input.ExpressionAttributeNames["#data"]).toBe("data");
     expect(input.ExpressionAttributeValues[":data"]).toBeUndefined();
+  });
+
+  test("putAsyncRequest logs the item's key as asyncRequestId and leaves requestId to the request context", async () => {
+    const { putAsyncRequest } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await putAsyncRequest("user-123", "46DCD4CC7E194088B99857931C185829", "pending", { kind: "company-tax-return" });
+
+    const logged = mockLogger.info.mock.calls.map(([fields]) => fields);
+    expect(logged.length).toBeGreaterThan(0);
+    for (const fields of logged) {
+      expect(fields.asyncRequestId).toBe("46DCD4CC7E194088B99857931C185829");
+      expect(fields).not.toHaveProperty("requestId");
+    }
   });
 });

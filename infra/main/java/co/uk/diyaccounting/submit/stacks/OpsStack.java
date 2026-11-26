@@ -519,7 +519,10 @@ public class OpsStack extends Stack {
         // swallows the error when a token charge fails after HMRC has already accepted the
         // submission: the customer keeps the filing but the ledger under-counts the charge.
         // chargeTokenOnSuccess is called from a shared submit function that either a Lambda's
-        // ingest handler (the no-queue path) or its worker handler (the SQS path) can reach. The
+        // ingest handler (the no-queue path) or its worker handler (the SQS path) can reach; a
+        // Company Tax Return is charged when its status read finds HMRC's acceptance, so the CT600
+        // status Lambda is a source too. The Companies House status Lambdas are not: a failed
+        // charge there is unrecorded and the next poll charges it again. The
         // Lambda construct gives a worker the same log group as its ingest function (see
         // AsyncApiLambda: `.logGroup(this.logGroup)`), and no `/aws/lambda/<worker>` group is
         // ever created, so one metric filter per endpoint on the ingest log group covers both
@@ -573,7 +576,10 @@ public class OpsStack extends Stack {
                         props.sharedNames().hmrcItsa.hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaForeignPropertyAnnualPutIngest",
-                        props.sharedNames().hmrcItsa.hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName));
+                        props.sharedNames().hmrcItsa.hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "CtReturnGetIngest",
+                        props.sharedNames().companiesHouse.hmrcCtReturnGetIngestLambdaFunctionName));
 
         for (TokenChargeSource source : tokenChargeSources) {
             ILogGroup lambdaLogGroup = LogGroup.fromLogGroupName(

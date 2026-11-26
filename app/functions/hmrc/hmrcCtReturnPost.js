@@ -7,7 +7,7 @@
 // types go into the message's IDAuthentication only, are never logged or stored, and are dropped
 // once this call returns. HMRC answers with an acknowledgement; the GET Lambda polls for the result.
 
-import { createLogger } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import {
   extractRequest,
@@ -284,6 +284,7 @@ export async function ingestHandler(event) {
       });
     }
 
+    context.set("hmrcCorrelationId", correlationId);
     await putAsyncRequest(
       userSub,
       correlationId,
@@ -317,6 +318,15 @@ export async function ingestHandler(event) {
       summary: "HMRC Company Tax Return submitted",
       userSub,
       clientId,
+      // No receipt exists until HMRC accepts the return; the accepted event carries its id.
+      detail: {
+        outcome: "success",
+        activityId: CT_RETURN_ACTIVITY_ID,
+        hmrcStatus: acknowledged ? "acknowledgement" : "held",
+        correlationId,
+        irmark: irmark.base32,
+        transactionId,
+      },
     });
 
     return http201CreatedResponse({

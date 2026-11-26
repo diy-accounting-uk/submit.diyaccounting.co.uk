@@ -331,12 +331,15 @@ const logger = pino(
       const traceparent = store?.get("traceparent") || null;
 
       const correlationId = store?.get("correlationId") || null;
+
+      const hmrcCorrelationId = store?.get("hmrcCorrelationId") || null;
       return {
         time: new Date().toISOString(),
         ...(requestId ? { requestId } : {}),
         ...(amznTraceId ? { amznTraceId } : {}),
         ...(traceparent ? { traceparent } : {}),
         ...(correlationId ? { correlationId } : {}),
+        ...(hmrcCorrelationId ? { hmrcCorrelationId } : {}),
       };
     },
     // formatters: {

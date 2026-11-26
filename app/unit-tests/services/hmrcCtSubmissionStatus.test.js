@@ -41,6 +41,7 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOrigi
 import { pollCtSubmission, findHeldCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
 import { CT_RETURN_KIND, TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
 import { chargeTokenOnSuccess } from "@app/services/tokenEnforcement.js";
+import { publishActivityEvent } from "@app/lib/activityAlert.js";
 
 const CORRELATION_ID = "46DCD4CC7E194088B99857931C185829";
 // base64 of 20 bytes 0x00..0x13 and the same bytes in base32
@@ -227,13 +228,34 @@ describe("pollCtSubmission", () => {
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data).toMatchObject({ statusCode: "ACCEPT", irmarkReceiptMismatch: true });
       expect(mockPutReceipt.mock.calls[0][2].irmarkReceiptMismatch).toBe(true);
-      expect(mockLogger.error).toHaveBeenCalledWith(expect.objectContaining({ correlationId: CORRELATION_ID, sentIrmark: IRMARK_BASE32 }));
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ hmrcCorrelationId: CORRELATION_ID, sentIrmark: IRMARK_BASE32 }),
+      );
     });
 
     test("a response without a receipt IRmark is a mismatch", async () => {
       mockPost.mockResolvedValueOnce(message("response", "submit", { body: "<SuccessResponse/>" })).mockResolvedValueOnce(deleteResponse());
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data.irmarkReceiptMismatch).toBe(true);
+    });
+  });
+
+  describe("accepted activity event", () => {
+    test("carries HMRC's correlation ID, the IRmark and the receipt id, and sets the lake columns", async () => {
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      const accepted = publishActivityEvent.mock.calls
+        .map(([params]) => params)
+        .find((params) => params.event === "hmrc-ct-return-accepted");
+      expect(accepted.detail).toEqual({
+        outcome: "success",
+        activityId: "file-company-tax-return",
+        hmrcStatus: "ACCEPT",
+        correlationId: CORRELATION_ID,
+        irmark: IRMARK_BASE32,
+        receiptId: data.receiptId,
+      });
+      expect(data.receiptId).toMatch(new RegExp(`-${CORRELATION_ID}$`));
     });
   });
 
@@ -309,7 +331,7 @@ describe("receipt signature", () => {
     delete process.env.HMRC_RECEIPT_CERTIFICATE_SHA256;
   });
 
-  test("a trusted certificate is stored as valid and logged with the correlation ID and receipt IRmark", async () => {
+  test("a trusted certificate is stored as valid and logged with HMRC's correlation ID and the receipt IRmark", async () => {
     process.env.HMRC_RECEIPT_CERTIFICATE_SHA256 = TRUSTED_SHA256;
     const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
     expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "valid" });
@@ -324,7 +346,7 @@ describe("receipt signature", () => {
       }),
     );
     expect(logged("info", "receipt signature")[0]).toMatchObject({
-      correlationId: CORRELATION_ID,
+      hmrcCorrelationId: CORRELATION_ID,
       receiptIrmark: "XwHjMbO6v3X19HZ5W3M1WuioQPE=",
       receiptSignature: "valid",
       certificateSha256: TRUSTED_SHA256,
@@ -336,7 +358,7 @@ describe("receipt signature", () => {
     expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "unknown-certificate" });
     expect(logged("warn", "receipt signature")[0]).toMatchObject({
       receiptSignature: "unknown-certificate",
-      correlationId: CORRELATION_ID,
+      hmrcCorrelationId: CORRELATION_ID,
     });
     expect(deleteCalls()).toHaveLength(1);
   });
@@ -355,7 +377,7 @@ describe("receipt signature", () => {
     expect(data.receiptSignature).toBe("digest-not-reproduced");
     expect(mockPutReceipt).toHaveBeenCalledTimes(1);
     expect(logged("info", "receipt signature")[0]).toMatchObject({
-      correlationId: CORRELATION_ID,
+      hmrcCorrelationId: CORRELATION_ID,
       receiptSignature: "digest-not-reproduced",
       computedDigest: expect.stringMatching(/^[0-9a-f]{40}$/),
       signedDigest: expect.stringMatching(/^[0-9a-f]{40}$/),

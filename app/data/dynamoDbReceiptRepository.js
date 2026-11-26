@@ -44,7 +44,7 @@ async function storeReceipt(userSub, receiptId, receipt, actor, clientId, { only
 
   try {
     const hashedSub = hashSub(userSub);
-    logger.info({ message: "Storing receipt", hashedSub, userSub, receiptId });
+    logger.info({ message: "Storing receipt", hashedSub, receiptId });
 
     const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
 

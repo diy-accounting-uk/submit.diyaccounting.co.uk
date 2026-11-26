@@ -32,12 +32,12 @@ const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.j
 export async function putAsyncRequest(userId, requestId, status, data = null, tableName = null, retention = { hours: 1 }) {
   const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (!actualTableName) {
-    logger.warn({ message: "putAsyncRequest called but no table name provided or in env", requestId });
+    logger.warn({ message: "putAsyncRequest called but no table name provided or in env", asyncRequestId: requestId });
     return;
   }
   logger.info({
     message: `putAsyncRequest [table: ${actualTableName}]`,
-    requestId,
+    asyncRequestId: requestId,
     status,
   });
 
@@ -96,7 +96,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     logger.info({
       message: "AsyncRequest stored in DynamoDB",
       hashedSub,
-      requestId,
+      asyncRequestId: requestId,
       status,
       tableName: actualTableName,
     });
@@ -104,7 +104,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     logger.error({
       message: "Error storing AsyncRequest in DynamoDB",
       error: error.message,
-      requestId,
+      asyncRequestId: requestId,
       status,
       tableName: actualTableName,
     });
@@ -122,12 +122,12 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
 export async function getAsyncRequest(userId, requestId, tableName = null) {
   const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (!actualTableName) {
-    logger.warn({ message: "getAsyncRequest called but no table name provided or in env", requestId });
+    logger.warn({ message: "getAsyncRequest called but no table name provided or in env", asyncRequestId: requestId });
     return null;
   }
   logger.info({
     message: `getAsyncRequest [table: ${actualTableName}]`,
-    requestId,
+    asyncRequestId: requestId,
   });
 
   try {
@@ -149,7 +149,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
       logger.info({
         message: "AsyncRequest retrieved from DynamoDB",
         hashedSub,
-        requestId,
+        asyncRequestId: requestId,
         status: result.Item.status,
         tableName: actualTableName,
       });
@@ -175,7 +175,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
           message: "Found async request at old salt version",
           version,
           hashedSub: oldHash,
-          requestId,
+          asyncRequestId: requestId,
           tableName: actualTableName,
         });
         return fallbackResult.Item;
@@ -185,7 +185,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
     logger.info({
       message: "AsyncRequest not found in DynamoDB",
       hashedSub,
-      requestId,
+      asyncRequestId: requestId,
       tableName: actualTableName,
     });
     return null;
@@ -193,7 +193,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
     logger.error({
       message: "Error retrieving AsyncRequest from DynamoDB",
       error: error.message,
-      requestId,
+      asyncRequestId: requestId,
       tableName: actualTableName,
     });
     throw error;

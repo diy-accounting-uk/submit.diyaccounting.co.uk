@@ -1036,7 +1036,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-17 Trace and secure client requests
 
 - **Use when:** a fetch needs a W3C traceparent and request id stamped on it, or a random value for OAuth state.
-- **Does:** correlation-utils.js generates and stores a W3C traceparent and an x-request-id per session. It installs a window.fetch wrapper that stamps both onto same-origin requests. crypto-utils.js supplies the underlying random values, used both for that tracing and for the OAuth state parameter in the login flow.
+- **Does:** correlation-utils.js keeps one W3C trace id per session and stamps each same-origin request, through a window.fetch wrapper, with a traceparent under that trace id with its own parent id, and a fresh x-request-id. crypto-utils.js supplies the underlying random values, used both for that tracing and for the OAuth state parameter in the login flow.
 - **Run:** no command; see Does and Entry
 - **Entry:** `web/public/lib/utils/correlation-utils.js:installCorrelationInterceptor`; `web/public/lib/utils/crypto-utils.js:generateRandomState`
 - **Files:** web/public/lib/utils/correlation-utils.js, web/public/lib/utils/crypto-utils.js

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import { prepareRedirect, nextRedirectRequestId } from "../public/lib/utils/correlation-utils.js";
+import { prepareRedirect, nextRedirectRequestId, installCorrelationInterceptor } from "../public/lib/utils/correlation-utils.js";
 
 function makeSessionStorage() {
   const store = new Map();
@@ -50,5 +50,45 @@ describe("prepareRedirect", () => {
 
     expect(id.startsWith("test_")).toBe(false);
     expect(nextRedirectRequestId()).toBe(id);
+  });
+});
+
+describe("the fetch wrapper's traceparent", () => {
+  const TRACEPARENT = /^00-([0-9a-f]{32})-([0-9a-f]{16})-01$/;
+  let originalFetch;
+
+  beforeEach(() => {
+    originalFetch = vi.fn().mockResolvedValue({ headers: { get: () => null } });
+    vi.stubGlobal("window", {
+      sessionStorage: makeSessionStorage(),
+      location: { origin: "https://submit.example" },
+      crypto: { getRandomValues: (bytes) => globalThis.crypto.getRandomValues(bytes), randomUUID: () => globalThis.crypto.randomUUID() },
+      fetch: originalFetch,
+      dispatchEvent: () => true,
+    });
+    installCorrelationInterceptor();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const sentTraceparent = (call) => originalFetch.mock.calls[call][1].headers.traceparent;
+
+  it("sends a valid traceparent with the session's trace id and a new parent id on each request", async () => {
+    await window.fetch("/api/v1/bundle");
+    await window.fetch("/api/v1/hmrc/ct/return", { method: "POST", headers: { "Content-Type": "application/json" } });
+
+    const [, firstTraceId, firstParentId] = sentTraceparent(0).match(TRACEPARENT);
+    const [, secondTraceId, secondParentId] = sentTraceparent(1).match(TRACEPARENT);
+    expect(secondTraceId).toBe(firstTraceId);
+    expect(secondParentId).not.toBe(firstParentId);
+    expect(window.sessionStorage.getItem("traceparent").split("-")[1]).toBe(firstTraceId);
+  });
+
+  it("sends no traceparent to another origin", async () => {
+    await window.fetch("https://elsewhere.example/thing");
+
+    expect(sentTraceparent(0)).toBeUndefined();
   });
 });

@@ -9,7 +9,7 @@
 // its copy.
 
 import { setTimeout as sleep } from "node:timers/promises";
-import { createLogger } from "../lib/logger.js";
+import { createLogger, context } from "../lib/logger.js";
 import {
   buildPollRequest,
   buildDataRequest,
@@ -64,17 +64,17 @@ async function deleteFromTransactionEngine({ correlationId, gatewayTest, message
       if (parsed.errors.some((error) => error.number === DELETE_RECORD_NOT_FOUND)) return true;
       logger.warn({
         message: "Transaction Engine delete request answered with an error",
-        correlationId,
+        hmrcCorrelationId: correlationId,
         attempt,
         errorNumbers: parsed.errors.map((error) => error.number),
       });
     } catch (error) {
-      logger.warn({ message: "Transaction Engine delete request failed", correlationId, attempt, error: error.message });
+      logger.warn({ message: "Transaction Engine delete request failed", hmrcCorrelationId: correlationId, attempt, error: error.message });
     }
   }
   logger.warn({
     message: "Transaction Engine delete request not completed; it is owed and goes out on the next status read",
-    correlationId,
+    hmrcCorrelationId: correlationId,
   });
   return false;
 }
@@ -156,7 +156,7 @@ export async function findHeldCtSubmission({
         logger.info({
           message: "Transaction Engine holds the submission whose reply was lost",
           transactionId,
-          correlationId: held.correlationId,
+          hmrcCorrelationId: held.correlationId,
         });
         return { state: "held", correlationId: held.correlationId, status: held.status };
       }
@@ -186,11 +186,12 @@ async function pendingAgain({ userSub, correlationId, pending, pollIntervalSecon
  * @returns {Promise<{data: object}|{errors: object[], correlationId: string}|{notFound: true, correlationId: string}>}
  */
 export async function pollCtSubmission({ userSub, correlationId, govTestScenario }) {
+  context.set("hmrcCorrelationId", correlationId);
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const persistedRequest = await getAsyncRequest(userSub, correlationId, asyncRequestsTableName);
 
   if (!persistedRequest || persistedRequest.data?.kind !== CT_RETURN_KIND) {
-    logger.warn({ message: "Company Tax Return status poll for a submission this user did not make", correlationId });
+    logger.warn({ message: "Company Tax Return status poll for a submission this user did not make", hmrcCorrelationId: correlationId });
     return { notFound: true, correlationId };
   }
   if (persistedRequest.status === "completed" || persistedRequest.status === "failed") {
@@ -230,7 +231,11 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   const parsed = parseTransactionEngineResponse(response.data);
 
   if (parsed.qualifier === "error" && isTransientPollError(parsed)) {
-    logger.warn({ message: "Transient Transaction Engine error on a poll; polling again later", correlationId, errors: parsed.errors });
+    logger.warn({
+      message: "Transient Transaction Engine error on a poll; polling again later",
+      hmrcCorrelationId: correlationId,
+      errors: parsed.errors,
+    });
     return pendingAgain({ userSub, correlationId, pending, pollIntervalSeconds: parsed.pollIntervalSeconds, asyncRequestsTableName });
   }
 
@@ -268,7 +273,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   if (irmarkReceiptMismatch) {
     logger.error({
       message: "The IRmark in HMRC's receipt differs from the IRmark sent",
-      correlationId,
+      hmrcCorrelationId: correlationId,
       sentIrmark: pending.irmark,
       receiptIrmark: parsed.irmarkReceipt,
     });
@@ -283,7 +288,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   const informational = receiptSignature === RECEIPT_SIGNATURE_VALID || receiptSignature === RECEIPT_SIGNATURE_DIGEST_NOT_REPRODUCED;
   logger[informational ? "info" : "warn"]({
     message: `HMRC receipt signature: ${receiptSignature}`,
-    correlationId,
+    hmrcCorrelationId: correlationId,
     receiptIrmark: parsed.irmarkReceipt,
     receiptSignature,
     ...signatureDetail,
@@ -331,6 +336,14 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     summary: "HMRC Company Tax Return accepted",
     userSub,
     clientId: pending.clientId,
+    detail: {
+      outcome: "success",
+      activityId: CT_RETURN_ACTIVITY_ID,
+      hmrcStatus: accepted.statusCode,
+      correlationId,
+      irmark: pending.irmark,
+      receiptId,
+    },
   });
   // Each accepted return costs its own token, alone or as half of a pair; the pair costs two. The two
   // returns of a long period of account cost one token between them: part 1 takes it and part 2 takes none.

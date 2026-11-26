@@ -4,8 +4,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
+import { _setTestSalt, hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
+
+const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }));
+vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 // Mock the bundle repository
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
@@ -245,6 +249,39 @@ describe("tokenEnforcement", () => {
 
       expect(result.consumed).toBe(false);
       expect(result.reason).toBe("charge_error");
+    });
+
+    describe("the log line names the account by its hashed sub only", () => {
+      const SUB = "raw-cognito-sub-0001";
+
+      beforeEach(() => {
+        _setTestSalt("test-salt-for-unit-tests");
+      });
+
+      const loggedLine = (level, message) =>
+        mockLogger[level].mock.calls.map(([fields]) => fields).find((fields) => fields.message === message);
+
+      it("when the charge fails after HMRC success", async () => {
+        getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-pro", tokensGranted: 100, tokensConsumed: 10 }]);
+        consumeToken.mockRejectedValueOnce(new Error("write failed"));
+
+        await chargeTokenOnSuccess(SUB, "self-employed");
+
+        const line = loggedLine("error", "Token charge failed after HMRC success");
+        expect(line).toMatchObject({ hashedSub: hashSub(SUB), activityId: "self-employed" });
+        expect(line).not.toHaveProperty("userId");
+        expect(JSON.stringify(line)).not.toContain(SUB);
+      });
+
+      it("when the charge is skipped after HMRC success", async () => {
+        getUserBundles.mockResolvedValueOnce([]);
+
+        await chargeTokenOnSuccess(SUB, "self-employed");
+
+        const line = loggedLine("warn", "Token charge skipped after HMRC success - no qualifying bundle at charge time");
+        expect(line).toMatchObject({ hashedSub: hashSub(SUB) });
+        expect(JSON.stringify(mockLogger.info.mock.calls.concat(mockLogger.warn.mock.calls))).not.toContain(SUB);
+      });
     });
   });
 });
