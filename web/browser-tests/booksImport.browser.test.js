@@ -957,7 +957,7 @@ test.describe("books import on the micro-entity accounts page", () => {
       `precision-code.diya-gl.zip is for company ${PRECISION.number}; this form is for company ${JOINERY.number}. Nothing filled.`,
       { timeout: 60_000 },
     );
-    await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
   });
 
   test("a book with no turnover, no costs and no change in reserves ticks the dormant box", async ({ page }) => {
@@ -1031,7 +1031,7 @@ test.describe("books import of the small company prior year", () => {
       await expect(page.locator("#includeComparatives")).toBeChecked();
       await expect(page.locator("#priorStocks")).toHaveValue("10000");
       await expect(page.locator("#priorCalledUpShareCapital")).toHaveValue("100");
-      await expect(page.locator("#priorTurnover")).toHaveValue("");
+      await expect(page.locator("#priorTurnover")).toHaveValue("0");
       await status.screenshot({ path: `target/screenshots/first-accounts/books-small-prior-${width}.png` });
     });
 
@@ -1071,7 +1071,7 @@ test.describe("books import of the small company prior year", () => {
     const status = page.locator("#booksImportStatus");
     await expect(status).toContainText("These are the company's first accounts, so there is no prior year to fill.", { timeout: 60_000 });
     await expect(page.locator("#includeComparatives")).not.toBeChecked();
-    await expect(page.locator("#priorStocks")).toHaveValue("");
+    await expect(page.locator("#priorStocks")).toHaveValue("0");
   });
 });
 
@@ -1296,13 +1296,13 @@ test.describe("books import of an iXBRL accounts document", () => {
     }
   });
 
-  test("a filleted small company document selects the filleted copy and leaves the profit and loss account empty", async ({ page }) => {
+  test("a filleted small company document selects the filleted copy and leaves the profit and loss account at 0", async ({ page }) => {
     await openAccountsPage(page, SMALL_URL, PRECISION.number);
     await chooseFile(page, "filleted.xhtml", builtAccountsDocument("small-company-accounts-filleted"), "application/xhtml+xml");
 
     await expect(page.locator("#booksImportStatus")).toContainText("from filleted.xhtml", { timeout: 60_000 });
     await expect(page.locator("#copyFilleted")).toBeChecked();
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
     await expect(page.locator("#currentFixedAssets")).toHaveValue("800");
     await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
   });
@@ -1315,7 +1315,7 @@ test.describe("books import of an iXBRL accounts document", () => {
       `This file is for company ${PRECISION.number}; the company looked up is ${JOINERY.number}. Nothing filled.`,
       { timeout: 60_000 },
     );
-    await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
   });
 
   test("a small company document on the micro-entity page fills nothing", async ({ page }) => {
@@ -1323,7 +1323,7 @@ test.describe("books import of an iXBRL accounts document", () => {
     await chooseFile(page, "accounts.xhtml", builtAccountsDocument("small-company-accounts-full"), "application/xhtml+xml");
 
     await expect(page.locator("#booksImportStatus")).toContainText("this page takes a micro-entity's accounts", { timeout: 60_000 });
-    await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
   });
 });
 
@@ -1347,7 +1347,7 @@ test.describe("books import of an iXBRL document set", () => {
     });
     await expect(page.locator("#currentTurnover")).toHaveValue("50000");
     await expect(page.locator("#currentCostOfSales")).toHaveValue("20000");
-    await expect(page.locator("#currentFixedAssets")).not.toHaveValue("");
+    await expect(page.locator("#currentFixedAssets")).not.toHaveValue(/^0?$/);
   });
 
   test("a set whose files state one fact with two values is refused with a title, a cause and a next step", async ({ page }) => {
@@ -1358,7 +1358,7 @@ test.describe("books import of an iXBRL document set", () => {
     await expect(page.locator(".status-message-cause")).toContainText("TurnoverRevenue");
     await expect(page.locator(".status-message-next")).toHaveText("Choose the files again");
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled.");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
   });
 });
 
@@ -1445,7 +1445,7 @@ test.describe("books import of a Company book's package on the accounts forms", 
       await chooseFile(page, filename, buffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
       await expect(page.locator("#booksImportStatus")).toContainText("upload the package zip", { timeout: 120_000 });
-      await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+      await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
     });
   }
 });

@@ -139,6 +139,26 @@ test.describe("File small company accounts page", () => {
     await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Does not match");
   });
 
+  test("each required line of both years and the average number of employees start at 0, and the request reads them as 0", async ({
+    page,
+  }) => {
+    await openFormView(page, { established: true });
+    for (const id of [
+      "currentTurnover",
+      "currentFixedAssets",
+      "currentCalledUpShareCapital",
+      "priorTurnover",
+      "priorCashAtBank",
+      "averageEmployees",
+    ]) {
+      await expect(page.locator(`#${id}`), id).toHaveValue("0");
+    }
+    const payload = await page.evaluate(() => buildAccountsPayload());
+    expect(payload.averageEmployees).toBe(0);
+    expect(payload.smallCompany.profitAndLoss.currentYear.turnover).toBe(0);
+    expect(payload.smallCompany.balanceSheet.currentYear.fixedAssets).toBe(0);
+  });
+
   test("the request is full accounts with no comparatives and no fixed asset note by default", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);
@@ -725,8 +745,8 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("#revisionOriginalDate")).toHaveValue("2026-09-15");
       await expect(page.locator("#formCompanyNumber")).toHaveText("04549236");
       await expect(page.locator("#copyFull")).toBeChecked();
-      await expect(page.locator("#currentTurnover")).not.toHaveValue("");
-      await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
+      await expect(page.locator("#currentTurnover")).not.toHaveValue(/^0?$/);
+      await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue(/^0?$/);
       expect((await page.locator("#revisionCopyNote").innerText()).trim()).toBe(
         "The accounts filed were a full copy. You can file the revision as a full or a filleted copy below.",
       );
@@ -748,8 +768,8 @@ test.describe("File small company accounts page - revising accounts from a recei
     const statement = (await page.locator("#revisionCopyNote").innerText()).trim();
     expect(statement).toMatch(/^The accounts filed were a filleted copy, which holds no profit and loss account\./);
     expect(statement).not.toContain("were a full copy");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
-    await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
+    await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue(/^0?$/);
     await expect(page.locator("#revisionDownloads")).toContainText(
       "The filed copy is filleted and holds no profit and loss account, so the book has one line for the year's profit.",
     );

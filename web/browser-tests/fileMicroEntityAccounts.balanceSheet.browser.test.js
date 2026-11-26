@@ -233,6 +233,32 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     expect(accounts.directorsAdvances).toBeUndefined();
   });
 
+  test("a form left at its starting 0s previews, with every amount and the average number of employees at 0", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#averageEmployees")).toHaveValue("0");
+    await fillForm(page, {});
+    await page.fill("#averageEmployees", "0");
+    await page.click("#previewBtn");
+
+    await expect(page.locator("#previewView")).toBeVisible();
+    const accounts = await page.evaluate(() => window.rendered[0]);
+    expect(accounts.averageEmployees).toBe(0);
+    expect(JSON.stringify(accounts)).not.toContain("NaN");
+  });
+
+  test("an amount that is not a number is refused before the preview", async ({ page }) => {
+    await openFormView(page);
+    await fillForm(page, CONSISTENT_YEARS);
+    await page.fill("#currentFixedAssets", "lots");
+    await page.click("#previewBtn");
+
+    await expect(page.locator("#previewView")).toBeHidden();
+    await expect(page.locator("#currentFixedAssets")).toHaveAttribute("aria-invalid", "true");
+    expect(await page.evaluate(() => window.rendered.length)).toBe(0);
+  });
+
   test("renders accounts that add up", async ({ page }) => {
     await openFormView(page);
     await fillForm(page, CONSISTENT_YEARS);

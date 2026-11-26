@@ -17850,32 +17850,32 @@ hash = "b2c586e4541c"
 cy = '''Cyfrifon micro-endid oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar'''
 
 [strings."ch.prior.none"]
-hash = "529b801a89f0"
-cy = '''Nid oes gan Dŷ’r Cwmnïau unrhyw gyfrifon ar gyfer y cwmni hwn, felly mae’r flwyddyn flaenorol yn wag.'''
+hash = "1f03e06efccd"
+cy = '''Nid oes gan Dŷ’r Cwmnïau unrhyw gyfrifon ar gyfer y cwmni hwn, felly mae’r flwyddyn flaenorol yn aros ar 0.'''
 
 [strings."ch.prior.paper"]
-hash = "674525d3af04"
-cy = '''Cafodd cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, eu ffeilio ar bapur. Mae Tŷ’r Cwmnïau yn eu cadw fel dogfen wedi’i sganio yn unig, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+hash = "4383e0c89835"
+cy = '''Cafodd cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, eu ffeilio ar bapur. Mae Tŷ’r Cwmnïau yn eu cadw fel dogfen wedi’i sganio yn unig, felly mae’r flwyddyn flaenorol yn aros ar 0: teipiwch hi o’r cyfrifon hynny.'''
 
 [strings."ch.prior.no-ixbrl"]
-hash = "d99b86d7b037"
-cy = '''Mae Tŷ’r Cwmnïau yn cadw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, heb ddogfen iXBRL, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+hash = "1d679c315e8c"
+cy = '''Mae Tŷ’r Cwmnïau yn cadw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, heb ddogfen iXBRL, felly mae’r flwyddyn flaenorol yn aros ar 0: teipiwch hi o’r cyfrifon hynny.'''
 
 [strings."ch.prior.too-large"]
-hash = "31f17a0081db"
-cy = '''Mae cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn rhy fawr i’w darllen yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+hash = "64089c533281"
+cy = '''Mae cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn rhy fawr i’w darllen yma, felly mae’r flwyddyn flaenorol yn aros ar 0: teipiwch hi o’r cyfrifon hynny.'''
 
 [strings."ch.prior.unreadable"]
-hash = "3fcfc5f6e501"
-cy = '''Nid yw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn darllen fel cyfrifon yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+hash = "df9716fbd622"
+cy = '''Nid yw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn darllen fel cyfrifon yma, felly mae’r flwyddyn flaenorol yn aros ar 0: teipiwch hi o’r cyfrifon hynny.'''
 
 [strings."ch.prior.reserves"]
 hash = "9992012a2d2f"
 cy = '''Mae’r cyfrifon hynny’n dangos cyfalaf a chronfeydd wrth gefn o {capital}, ond mae cyfalaf cyfranddaliadau wedi’i alw a’r cyfrif elw a cholled yn dod i {sum}: mae’r gwahaniaeth mewn cronfeydd wrth gefn nad oes llinell ar eu cyfer ar y ffurflen hon. Cywirwch gyfrif elw a cholled y flwyddyn flaenorol fel bod y ddau yn cytuno cyn gweld y rhagolwg.'''
 
 [strings."ch.prior.read-failed"]
-hash = "5dea5b012a08"
-cy = '''Nid oedd modd darllen cyfrifon diwethaf y cwmni gan Dŷ’r Cwmnïau, felly mae’r flwyddyn flaenorol yn wag.'''
+hash = "f51cd8fe6249"
+cy = '''Nid oedd modd darllen cyfrifon diwethaf y cwmni gan Dŷ’r Cwmnïau, felly mae’r flwyddyn flaenorol yn aros ar 0.'''
 
 [strings."ch.prior.placed-approved"]
 hash = "6207266da188"
@@ -17886,18 +17886,18 @@ hash = "26a385c7c047"
 cy = '''Mae {count} ffigur ar gyfer y flwyddyn flaenorol wedi’u llenwi o gyfrifon diwethaf y cwmni, a luniwyd hyd at {date}. Gwiriwch nhw yn erbyn y cyfrifon hynny.'''
 
 [strings."ch.prior.left-empty"]
-hash = "e783616427e8"
-cy = '''Wedi’u gadael yn wag, heb ffigur yn y cyfrifon hynny: {lines}.'''
+hash = "6dc79684cc43"
+cy = '''Wedi’u gadael ar 0, heb ffigur yn y cyfrifon hynny: {lines}.'''
 
 # == The prior year from the last accounts only when they end the day before this period: ids ch.prior.year-gap, ch.prior.no-next-period, ch.prior.filing-history ==
 
 [strings."ch.prior.year-gap"]
-hash = "a5363003a39a"
-cy = '''Lluniwyd y cyfrifon diwethaf a ffeiliwyd hyd at {made}, ac mae’r cyfnod hwn yn dechrau ar {start}, felly nid yw’r flwyddyn rhyngddynt ar y gofrestr ac mae’r flwyddyn flaenorol yn wag. Gweler'''
+hash = "9fd18b38cb6e"
+cy = '''Lluniwyd y cyfrifon diwethaf a ffeiliwyd hyd at {made}, ac mae’r cyfnod hwn yn dechrau ar {start}, felly nid yw’r flwyddyn rhyngddynt ar y gofrestr ac mae’r flwyddyn flaenorol yn aros ar 0. Gweler'''
 
 [strings."ch.prior.no-next-period"]
-hash = "995e0f61c98e"
-cy = '''Nid yw Tŷ’r Cwmnïau yn nodi cyfnod cyfrifyddu nesaf ar gyfer y cwmni hwn, felly ni ellir paru blwyddyn y ffurflen hon â’r cyfrifon diwethaf ac mae’r flwyddyn flaenorol yn wag.'''
+hash = "e368e6e8600e"
+cy = '''Nid yw Tŷ’r Cwmnïau yn nodi cyfnod cyfrifyddu nesaf ar gyfer y cwmni hwn, felly ni ellir paru blwyddyn y ffurflen hon â’r cyfrifon diwethaf ac mae’r flwyddyn flaenorol yn aros ar 0.'''
 
 [strings."ch.prior.filing-history"]
 hash = "2ecd6e3f7e86"

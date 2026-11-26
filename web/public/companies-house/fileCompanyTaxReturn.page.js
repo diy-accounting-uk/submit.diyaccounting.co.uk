@@ -401,9 +401,16 @@ function pairedFieldGroup(field) {
 
 // A ledger: one row per line of the accounts, one column per year or movement. Every input
 // carries its full name in a hidden label, so a screen reader hears "Turnover, last year".
+// A cell with a start holds it as its value and its default, so a fill from a book or the register
+// counts it as holding no figure of its own.
 function ledgerCell(column, cell) {
   const input = inputFor({ id: cell.id, type: "whole-pounds" });
-  input.querySelector("input").removeAttribute("aria-describedby");
+  const field = input.querySelector("input");
+  field.removeAttribute("aria-describedby");
+  if (cell.start !== undefined) {
+    field.setAttribute("value", cell.start);
+    field.value = cell.start;
+  }
   return create(
     "td",
     { "class": ["ledger__figure", column.className].filter(Boolean).join(" "), "data-column": column.title },
@@ -457,6 +464,7 @@ function yearLedger(fields, idOf) {
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
         id: idOf(key, field),
         label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+        start: "0",
       })),
     })),
   });
@@ -492,7 +500,13 @@ function accountsTextGroup({ id, label, type }) {
       create("textarea", { id, "name": id, "rows": "3", "data-error-target": id }),
     );
   }
-  return textGroup({ id, label, type, hint: "" });
+  const group = textGroup({ id, label, type, hint: "" });
+  if (id === "averageEmployees") {
+    const input = group.querySelector("input");
+    input.setAttribute("value", "0");
+    input.value = "0";
+  }
+  return group;
 }
 
 const SEND_TO_HMRC_ONLY_HINT = siteText("ch.ct.send-hmrc-only-hint", "The accounts go to HMRC with the Company Tax Return.");
@@ -692,6 +706,7 @@ function microLedger(fields, className) {
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
         id: microId(key, field),
         label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+        start: "0",
       })),
     })),
   });

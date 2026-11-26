@@ -104,7 +104,7 @@ describe("prior-year fill", () => {
     expect(note.textContent).toContain(
       "6 prior-year figures are filled in from the company's last accounts, made up to 30 April 2098 and approved on 20 October 2098.",
     );
-    expect(note.textContent).toContain("Left empty, with no figure in those accounts: Provisions for liabilities.");
+    expect(note.textContent).toContain("Left at 0, with no figure in those accounts: Provisions for liabilities.");
   });
 
   it("fills nothing and names both dates, with the filing history, when the last accounts do not end the day before this period", async () => {
@@ -115,7 +115,7 @@ describe("prior-year fill", () => {
     );
     expect(value("priorFixedAssets")).toBe("");
     expect(note.textContent).toContain(
-      "The last accounts filed were made up to 30 April 2098, and this period starts on 1 May 2099, so the year between is not on the register and the prior year is left empty. See the company's filing history.",
+      "The last accounts filed were made up to 30 April 2098, and this period starts on 1 May 2099, so the year between is not on the register and the prior year is left at 0. See the company's filing history.",
     );
     expect(note.querySelector("a").getAttribute("href")).toBe("/companies-house/company/00000001/filing-history");
   });
@@ -142,7 +142,7 @@ describe("prior-year fill", () => {
       `${row("priorTradeDebtors", "Of which, trade debtors")}</table>`,
     );
     const { note } = await fill(form, { outcome: "mapped", set: SET, accounts: MICRO_ACCOUNTS });
-    expect(note.textContent).toContain("Left empty, with no figure in those accounts: Provisions for liabilities, Trade debtors.");
+    expect(note.textContent).toContain("Left at 0, with no figure in those accounts: Provisions for liabilities, Trade debtors.");
   });
 
   it("keeps a prior-year figure already entered", async () => {
@@ -208,22 +208,22 @@ describe("prior-year fill", () => {
   });
 
   it.each([
-    [{ outcome: "none" }, "Companies House holds no accounts for this company, so the prior year is left empty."],
+    [{ outcome: "none" }, "Companies House holds no accounts for this company, so the prior year is left at 0."],
     [
       { outcome: "paper", set: { ...SET, paperFiled: true } },
-      "The company's last accounts, made up to 30 April 2098, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left empty: type it from those accounts.",
+      "The company's last accounts, made up to 30 April 2098, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left at 0: type it from those accounts.",
     ],
     [
       { outcome: "no-ixbrl", set: SET },
-      "Companies House holds the company's last accounts, made up to 30 April 2098, without an iXBRL document, so the prior year is left empty: type it from those accounts.",
+      "Companies House holds the company's last accounts, made up to 30 April 2098, without an iXBRL document, so the prior year is left at 0: type it from those accounts.",
     ],
     [
       { outcome: "too-large", set: SET },
-      "The company's last accounts, made up to 30 April 2098, are too large to read here, so the prior year is left empty: type it from those accounts.",
+      "The company's last accounts, made up to 30 April 2098, are too large to read here, so the prior year is left at 0: type it from those accounts.",
     ],
     [
       { outcome: "unreadable", set: SET, reason: "This file has no balance sheet for its own year." },
-      "The company's last accounts, made up to 30 April 2098, do not read as accounts here, so the prior year is left empty: type it from those accounts.",
+      "The company's last accounts, made up to 30 April 2098, do not read as accounts here, so the prior year is left at 0: type it from those accounts.",
     ],
   ])("leaves the form empty and says why for %j", async (body, text) => {
     const { note } = await fill(MICRO_FORM, body);
@@ -238,7 +238,7 @@ describe("prior-year fill", () => {
 
   it("says the last accounts could not be read when the route fails", async () => {
     const { note } = await fill(MICRO_FORM, { message: "Too many requests" }, { status: 429 });
-    expect(note.textContent).toBe("The company's last accounts could not be read from Companies House, so the prior year is left empty.");
+    expect(note.textContent).toBe("The company's last accounts could not be read from Companies House, so the prior year is left at 0.");
   });
 
   it("names the profit and loss account to correct when the filled prior year holds reserves the micro-entity form has no line for", async () => {

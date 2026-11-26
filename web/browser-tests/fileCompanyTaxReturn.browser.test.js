@@ -485,6 +485,10 @@ test.describe("File Company Tax Return entry form", () => {
 
   test("a dropped precision-code-ltd zip fills every field the book supplies and works the tax", async ({ page }) => {
     await openForm(page);
+    // The accounts lines and the employees count start at 0; blanked, a value after the drop is the book's.
+    await page.evaluate(() => {
+      for (const input of document.querySelectorAll("#formSections input")) if (input.defaultValue === "0") input.value = "";
+    });
     await dropBook(page);
 
     const supplied = [
@@ -812,7 +816,7 @@ test.describe("File Company Tax Return entry form", () => {
     const notice = page.locator("#draftRestore");
     await expect(notice).toContainText("Answers saved in this browser");
     await expect(notice).toContainText("for the period 1 April 2025 to 31 March 2026");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
     await page.getByRole("button", { name: "Restore my answers" }).click();
     await expect(page.locator("#currentTurnover")).toHaveValue("123456");
     await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
@@ -828,7 +832,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.getByRole("button", { name: "Start again" }).click();
     await expect(page.locator("#draftRestore")).toHaveCount(0);
     expect(await savedDraft(page)).toBeNull();
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
   });
 
   test("with Do not keep chosen, nothing is in this browser after a reload", async ({ page }) => {
@@ -1890,6 +1894,16 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(error).toContainText(own.toFixed(2));
   });
 
+  test("the accounts lines of both years and the average number of employees start at 0", async ({ page }) => {
+    await openForm(page);
+    for (const id of ["currentTurnover", "priorTurnover", "currentFixedAssets", "currentCalledUpShareCapital", "averageEmployees"]) {
+      await expect(page.locator(`#${id}`), id).toHaveValue("0");
+    }
+    await page.locator("#regimeMicro").check();
+    await expect(page.locator("#microCurrentTurnover")).toHaveValue("0");
+    await expect(page.locator("#directorsAdvanceMade")).toHaveValue("");
+  });
+
   test("a worked box has no input and shows its rule", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
@@ -2169,7 +2183,7 @@ test.describe("File Company Tax Return entry form", () => {
       .setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: OTHER_COMPANY_NUMBER }));
     await expect(page.locator("#booksImportStatus")).toContainText(OTHER_COMPANY_NUMBER, { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
     await expect(page.locator("#periodStart")).toHaveValue("");
   });
 
@@ -2180,7 +2194,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full"));
     await expect(page.locator("#booksImportStatus")).toContainText("end on 2026-03-31", { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
     await expect(page.locator("#periodEnd")).toHaveValue("2024-12-31");
   });
 
