@@ -439,6 +439,15 @@ export function companiesHouseFormPollPath(kind, submissionNumber) {
   return `/api/v1/companies-house/forms/${kind}/${submissionNumber}`;
 }
 
+/**
+ * The path that asks Companies House once for one filing's decision, as the filing's own page asks:
+ * the shared forms route for a form whose row says sharedPoll, and the form's own route otherwise.
+ */
+export function companiesHouseStatusPath(kind, submissionNumber) {
+  const number = encodeURIComponent(submissionNumber);
+  return COMPANIES_HOUSE_FORMS[kind]?.sharedPoll ? companiesHouseFormPollPath(kind, number) : `${companiesHouseFormPath(kind)}/${number}`;
+}
+
 /** The receipt title of each kind in a language, "en" or "cy". */
 export function companiesHouseReceiptTitles(language) {
   return Object.fromEntries(

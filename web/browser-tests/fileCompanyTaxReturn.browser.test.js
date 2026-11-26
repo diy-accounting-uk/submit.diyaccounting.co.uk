@@ -909,6 +909,56 @@ test.describe("File Company Tax Return entry form", () => {
     await expect.poll(() => savedDraft(page)).toBeNull();
   });
 
+  test("a joint filing offers Start a new filing only once Companies House has decided the accounts, and names the submission meanwhile", async ({
+    page,
+  }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    let companiesHouseStatus = "PENDING";
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: companiesHouseStatus, submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#sendCtNowBtn")).toBeVisible({ timeout: 30_000 });
+
+    await page.locator("#sendCtNowBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+    await expect(page.locator("#startAgainPendingNote")).toHaveText(
+      "Companies House has not decided the accounts yet (submission 00001A). A new filing for this company and period waits until it does, so the accounts are not filed twice.",
+    );
+
+    companiesHouseStatus = "ACCEPT";
+    await page.locator("#waitForCompaniesHouseBtn").click();
+    await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the accounts", { timeout: 30_000 });
+    await expect(page.locator("#startAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainPendingNote")).toBeHidden();
+  });
+
   test("a return filed with HMRC alone can be amended to correct its attached accounts, with nothing sent to Companies House", async ({
     page,
   }) => {

@@ -117,7 +117,9 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(1)).toContainText("BBB");
   });
 
-  test("lists a pending Companies House filing and a rejected one with their submission numbers, above the receipts", async ({ page }) => {
+  test("a pending Companies House filing and a rejected one are rows of the receipts table, each linking its status page", async ({
+    page,
+  }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
     await page.evaluate(async () => {
       localStorage.setItem("cognitoIdToken", "token");
@@ -131,25 +133,56 @@ test.describe("Receipts page - receipt details", () => {
           rejections: [{ rejectCode: "11686", description: "You must provide the name of each shareholder" }],
         },
       ];
+      const receipts = [
+        { name: "2026-11-17T12:00:00.000Z-AAA.json", timestamp: "2026-11-17T12:00:00.000Z", formBundleNumber: "AAA", kind: null },
+      ];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts, filingsInProgress }) });
+      await window.fetchReceipts();
+    });
+
+    await expect(page.locator(".filings-in-progress")).toHaveCount(0);
+    const rows = page.locator("#receiptsTable tbody tr");
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(0)).toHaveClass(/filing-in-progress/);
+    await expect(rows.nth(0)).toContainText("Accounts: Pending, submission number 00001A");
+    await expect(rows.nth(0).getByRole("link", { name: "submission number 00001A" })).toHaveAttribute(
+      "href",
+      "../../companies-house/filings.html?filing=00001A&kind=accounts",
+    );
+    await expect(rows.nth(1).locator("td").nth(1)).toContainText("AAA");
+    await expect(rows.nth(2)).toContainText("Confirmation statement: Rejected by Companies House, submission number 00001B");
+    await expect(rows.nth(2)).toContainText("You must provide the name of each shareholder");
+    await expect(rows.nth(2).getByRole("link", { name: "submission number 00001B" })).toHaveAttribute(
+      "href",
+      "../../companies-house/filings.html?filing=00001B&kind=confirmation-statement",
+    );
+    await expect(page.locator("#emptyState")).toBeHidden();
+  });
+
+  test("a client's pending filing links its status page with the client", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const filingsInProgress = [
+        {
+          submissionNumber: "00002A",
+          kind: "psc-cessation",
+          status: "pending",
+          submittedAt: "2026-11-18T10:00:00.000Z",
+          clientId: "client-1",
+        },
+      ];
       window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: [], filingsInProgress }) });
       await window.fetchReceipts();
     });
 
-    const section = page.locator("#filingsInProgress");
-    await expect(section).toBeVisible();
-    const entries = section.locator("li.filing-in-progress");
-    await expect(entries).toHaveCount(2);
-    await expect(entries.nth(0)).toContainText("Accounts");
-    await expect(entries.nth(0)).toContainText("submission number 00001A");
-    await expect(entries.nth(0)).toContainText("Waiting for Companies House");
-    await expect(entries.nth(1)).toContainText("Confirmation statement");
-    await expect(entries.nth(1)).toContainText("submission number 00001B");
-    await expect(entries.nth(1)).toContainText("Rejected by Companies House");
-    await expect(entries.nth(1)).toContainText("You must provide the name of each shareholder");
-    await expect(page.locator("#emptyState")).toHaveText("No receipts yet.");
+    await expect(page.locator("#receiptsTable tbody tr").getByRole("link")).toHaveAttribute(
+      "href",
+      "../../companies-house/filings.html?filing=00002A&kind=psc-cessation&clientId=client-1",
+    );
   });
 
-  test("shows no filings-in-progress section when every filing is a receipt", async ({ page }) => {
+  test("with no filing waiting and no receipt the page says there are no receipts", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
     await page.evaluate(async () => {
       localStorage.setItem("cognitoIdToken", "token");
@@ -157,7 +190,8 @@ test.describe("Receipts page - receipt details", () => {
       await window.fetchReceipts();
     });
 
-    await expect(page.locator("#filingsInProgress")).toBeHidden();
+    await expect(page.locator("#emptyState")).toHaveText("No receipts yet.");
+    await expect(page.locator("#receiptsTable")).toBeHidden();
   });
 
   test("lists the accounts and both returns of a long period of account under one row, titled by return and dates", async ({ page }) => {
@@ -608,13 +642,13 @@ test.describe("Receipts page - a practice's clients", () => {
       `${BAKERY.name} (${BAKERY.number})`,
       `${PROPERTIES.name} (${PROPERTIES.number})`,
     ]);
-    await expect(page.locator("#filingsInProgress")).toContainText("00003A");
-    await expect(page.locator("#filingsInProgress")).not.toContainText("00003B");
+    await expect(page.locator("#receiptsTable")).toContainText("00003A");
+    await expect(page.locator("#receiptsTable")).not.toContainText("00003B");
 
     await choice.selectOption("client-1");
-    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
-    await expect(page.locator("#filingsInProgress")).toContainText("The company authentication code is wrong");
-    await expect(page.locator("#filingsInProgress")).not.toContainText("00003A");
+    await expect(page.locator("#receiptsTable")).toContainText("00003B");
+    await expect(page.locator("#receiptsTable")).toContainText("The company authentication code is wrong");
+    await expect(page.locator("#receiptsTable")).not.toContainText("00003A");
     expect(await page.evaluate(() => window.requestedUrls.at(-1))).toBe("/api/v1/hmrc/receipt?clientId=client-1");
 
     fs.mkdirSync("target/prc1", { recursive: true });
@@ -633,11 +667,11 @@ test.describe("Receipts page - a practice's clients", () => {
     });
 
     await page.locator("#receiptsClient").selectOption("client-1");
-    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#receiptsTable")).toContainText("00003B");
     await page.evaluate(() => window.ownListDrawn);
 
-    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
-    await expect(page.locator("#filingsInProgress")).not.toContainText("00003A");
+    await expect(page.locator("#receiptsTable")).toContainText("00003B");
+    await expect(page.locator("#receiptsTable")).not.toContainText("00003A");
   });
 
   test("the Welsh page offers the same choice in Welsh", async ({ page }) => {
@@ -645,8 +679,8 @@ test.describe("Receipts page - a practice's clients", () => {
     await expect(page.locator("#receiptsClientChoice")).toBeVisible();
     await expect(page.locator("#receiptsClient option").first()).not.toHaveText("My own filings");
     await page.locator("#receiptsClient").selectOption("client-1");
-    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
-    await expect(page.locator("#filingsInProgress")).not.toContainText("Companies House filings not accepted yet");
+    await expect(page.locator("#receiptsTable")).toContainText("00003B");
+    await expect(page.locator("#receiptsTable")).not.toContainText("Rejected by Companies House");
     fs.mkdirSync("target/prc1", { recursive: true });
     await page.screenshot({ path: "target/prc1/receipts-practice-client-cy.png", fullPage: true });
   });
@@ -658,7 +692,7 @@ test.describe("Receipts page - a practice's clients", () => {
     test(`${label} sees no client choice and their own filings`, async ({ page }) => {
       await openReceipts(page, { clients });
       await expect(page.locator("#receiptsClientChoice")).toBeHidden();
-      await expect(page.locator("#filingsInProgress")).toContainText("00003A");
+      await expect(page.locator("#receiptsTable")).toContainText("00003A");
       expect(await page.evaluate(() => window.requestedUrls.filter((url) => url.startsWith("/api/v1/hmrc/receipt")))).toEqual([
         "/api/v1/hmrc/receipt",
       ]);

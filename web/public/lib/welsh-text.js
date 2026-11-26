@@ -953,6 +953,8 @@ window.WELSH_TEXT = {
   "ch.ct.sending-both": "Tŷ’r Cwmnïau yn gyntaf, yna CThEF gyda Ffurflen Dreth y Cwmni",
   "ch.ct.sending-hmrc": "CThEF gyda Ffurflen Dreth y Cwmni",
   "ch.ct.sending-to": "Anfon y cyfrifon i",
+  "ch.ct.start-again-pending":
+    "Nid yw Tŷ’r Cwmnïau wedi penderfynu ar y cyfrifon eto (cyflwyniad {number}). Mae ffeilio newydd ar gyfer y cwmni a’r cyfnod hwn yn aros nes iddo wneud, fel nad yw’r cyfrifon yn cael eu ffeilio ddwywaith.",
   "ch.ct.statements": "Datganiadau",
   "ch.ct.status-accept": "wedi’i derbyn",
   "ch.ct.status-pending": "yn aros i gael ei gwirio",
@@ -1493,6 +1495,27 @@ window.WELSH_TEXT = {
   "ch.filing.no-comparatives-why":
     "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
+  "ch.filing.status-accepted": "Derbyniodd Tŷ’r Cwmnïau y ffeilio. Mae ei dderbynneb yn eich derbynebau: ",
+  "ch.filing.status-check-failed": "Ni allai Submit ofyn i Dŷ’r Cwmnïau ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.",
+  "ch.filing.status-check-now": "Gwirio nawr",
+  "ch.filing.status-company": "Rhif y cwmni",
+  "ch.filing.status-filing": "Ffeilio Tŷ’r Cwmnïau",
+  "ch.filing.status-gone":
+    "Nid yw cyflwyniad {number} yn aros am Dŷ’r Cwmnïau mwyach. Mae ei dderbynneb, neu ei wrthod, yn eich derbynebau.",
+  "ch.filing.status-how":
+    "Mae Submit yn gofyn i Dŷ’r Cwmnïau am ei benderfyniad bob 15 munud ar ddyddiau’r wythnos rhwng 07:00 a 18:45 UTC, yr oriau y mae’n gwirio ffeiliau â llaw. Mae Tŷ’r Cwmnïau yn anfon e-bost at y cwmni pan fydd yn penderfynu.",
+  "ch.filing.status-last-asked": "Gofynnodd Submit i Dŷ’r Cwmnïau ddiwethaf",
+  "ch.filing.status-next-ask": "Mae Submit yn gofyn nesaf",
+  "ch.filing.status-not-indexed":
+    "Mae Tŷ’r Cwmnïau wedi cael cyflwyniad {number} ac nid yw wedi’i ychwanegu at ei gofnodion eto. Mae’n gwneud hynny o fewn yr awr; gofynnwch eto bryd hynny.",
+  "ch.filing.status-number": "Rhif y cyflwyniad",
+  "ch.filing.status-pending": "Mae’r ffeilio gan Dŷ’r Cwmnïau ac nid yw wedi penderfynu eto.",
+  "ch.filing.status-receipts": "eich derbynebau",
+  "ch.filing.status-rejected": "Gwrthododd Tŷ’r Cwmnïau gyflwyniad {number}:",
+  "ch.filing.status-sent": "Anfonwyd",
+  "ch.filing.status-warning":
+    "Peidiwch â’i ffeilio eto tra mae’n aros: byddai ffeilio newydd ar gyfer y cwmni a’r cyfnod hwn yn mynd i Dŷ’r Cwmnïau ochr yn ochr â chyflwyniad {number}.",
+  "ch.filing.status-you-asked": "Gofynnoch i Dŷ’r Cwmnïau am ",
   "ch.first-accounts.first":
     "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
   "ch.first-accounts.prior-year-shown":
@@ -2884,12 +2907,8 @@ window.WELSH_TEXT = {
   "receipts.field-total-due": "Treth Incwm ac Yswiriant Gwladol sy’n ddyledus",
   "receipts.field-vrn": "Rhif cofrestru TAW",
   "receipts.filing-not-received": "Ni chafodd Tŷ’r Cwmnïau ef",
-  "receipts.filing-pending": "Yn aros am Dŷ’r Cwmnïau",
+  "receipts.filing-pending-tag": "Yn aros",
   "receipts.filing-rejected": "Gwrthodwyd gan Dŷ’r Cwmnïau",
-  "receipts.filing-sent": "anfonwyd {date},",
-  "receipts.in-progress-heading": "Ffeilio gyda Thŷ’r Cwmnïau sydd heb ei dderbyn eto",
-  "receipts.in-progress-hint":
-    "Mae Tŷ’r Cwmnïau yn gwirio rhai ffeilio â llaw, yn ystod oriau swyddfa. Rydym yn gofyn iddo am ei benderfyniad bob 15 munud yn ystod oriau swyddfa, ac yn anfon y dderbynneb atoch drwy e-bost pan fydd yn derbyn y ffeilio.",
   "receipts.kind-accounting-reference-date": "Newid dyddiad cyfeirnod cyfrifyddu",
   "receipts.kind-accounts": "Cyfrifon",
   "receipts.kind-allotment-of-shares": "Dychwelyd cyfrannau a glustnodwyd",

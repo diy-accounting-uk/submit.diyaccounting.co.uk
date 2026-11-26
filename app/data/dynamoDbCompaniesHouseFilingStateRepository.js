@@ -149,7 +149,7 @@ const FORM_KIND_VALUES = Object.fromEntries(COMPANIES_HOUSE_FORM_KINDS.map((kind
  * filings made for no client otherwise.
  * @param {string} userSub
  * @param {string} [clientId] - one of the practice's clients
- * @returns {Promise<Array<{submissionNumber: string, kind: string|undefined, status: "pending"|"rejected", submittedAt: string|undefined, rejections: Array, clientId: string|null}>>}
+ * @returns {Promise<Array<{submissionNumber: string, kind: string|undefined, companyNumber: string|undefined, status: "pending"|"rejected", submittedAt: string|undefined, rejections: Array, clientId: string|null}>>}
  */
 export async function listFilingsInProgress(userSub, clientId) {
   const hashedSub = hashSub(userSub);
@@ -167,11 +167,13 @@ export async function listFilingsInProgress(userSub, clientId) {
             `#data.#kind IN (${FORM_KIND_PLACEHOLDERS.join(", ")}) AND ` +
             "(#status = :pending OR (#status = :failed AND #data.#statusCode = :reject))",
           // The pending item carries the filed document; only the fields the list shows are read.
-          ProjectionExpression: "requestId, #status, createdAt, #data.#kind, #data.#statusCode, #data.#rejections, #data.#clientId",
+          ProjectionExpression:
+            "requestId, #status, createdAt, #data.#kind, #data.#companyNumber, #data.#statusCode, #data.#rejections, #data.#clientId",
           ExpressionAttributeNames: {
             "#status": "status",
             "#data": "data",
             "#kind": "kind",
+            "#companyNumber": "companyNumber",
             "#statusCode": "statusCode",
             "#rejections": "rejections",
             "#clientId": "clientId",
@@ -192,6 +194,7 @@ export async function listFilingsInProgress(userSub, clientId) {
       filings.push({
         submissionNumber: item.requestId,
         kind: item.data?.kind,
+        companyNumber: item.data?.companyNumber,
         status: item.status === "pending" ? "pending" : "rejected",
         submittedAt: item.createdAt,
         rejections: item.data?.rejections ?? [],

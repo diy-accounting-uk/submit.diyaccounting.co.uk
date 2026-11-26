@@ -8,7 +8,9 @@ window.siteText =
   ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
 
 // Your copy of one Companies House accounts filing or Company Tax Return: the stored receipt,
-// drawn as the customer copy. The list of filings is the receipts page; its rows link here.
+// drawn as the customer copy. The list of filings is the receipts page; its rows link here. A filing
+// Companies House has not decided yet opens here too, as its status: where it is, when Submit asks
+// Companies House, and Check now.
 
 const element = (id) => document.getElementById(id);
 
@@ -104,10 +106,208 @@ async function showFiling(receiptName) {
   element("filingActions").style.display = "flex";
 }
 
+// --- A filing Companies House has not decided yet ------------------------------------------------
+
+const isWelsh = () => window.siteLanguage?.chrome?.() === "cy";
+
+function momentText(value) {
+  return new Date(value).toLocaleString(isWelsh() ? "cy-GB" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/London",
+  });
+}
+
+function create(tag, attributes = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+  node.append(...children);
+  return node;
+}
+
+function statusRow(id, term, value) {
+  return create("div", { class: "filing-status-row" }, create("dt", {}, term), create("dd", { id }, value));
+}
+
+function rejectionList(rejections) {
+  return create(
+    "ul",
+    { id: "filingStatusReasons" },
+    ...(rejections ?? []).map((rejection) => create("li", {}, window.companiesHouseRejections.rejectionDescription(rejection))),
+  );
+}
+
+// The filing as the receipts route lists it, or null when it is no longer waiting or rejected.
+async function filingInProgress(submissionNumber, clientId) {
+  const url = clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(clientId)}` : "/api/v1/hmrc/receipt";
+  const res = await window.fetchWithIdToken(url, {});
+  if (!res.ok) return { failed: true };
+  const json = await res.json();
+  return { filing: (json.filingsInProgress ?? []).find((filing) => filing.submissionNumber === submissionNumber) ?? null };
+}
+
+function pendingAnswer(submissionNumber, result) {
+  if (result?.notYetIndexed) {
+    return window.siteText(
+      "ch.filing.status-not-indexed",
+      "Companies House has received submission {number} and has not yet added it to its records. It does so within the hour; ask again then.",
+      { number: submissionNumber },
+    );
+  }
+  return window.siteText("ch.filing.status-pending", "Companies House has the filing and has not decided yet.");
+}
+
+function showDecision(result, submissionNumber) {
+  const answer = element("filingStatusAnswer");
+  const check = element("checkNowBtn");
+  element("filingStatusReasons")?.remove();
+  if (result.statusCode === "ACCEPT") {
+    check.hidden = true;
+    answer.replaceChildren(
+      window.siteText("ch.filing.status-accepted", "Companies House accepted the filing. Its receipt is in your receipts: "),
+      create("a", { href: "../hmrc/receipt/receipts.html" }, window.siteText("ch.filing.status-receipts", "your receipts")),
+      ".",
+    );
+    element("filingStatusWarning").hidden = true;
+    return;
+  }
+  if (result.statusCode === "REJECT") {
+    check.hidden = true;
+    answer.textContent = window.siteText("ch.filing.status-rejected", "Companies House rejected submission {number}:", {
+      number: submissionNumber,
+    });
+    answer.after(rejectionList(result.rejections));
+    element("filingStatusWarning").hidden = true;
+    return;
+  }
+  answer.textContent = pendingAnswer(submissionNumber, result);
+}
+
+async function checkNow(kind, submissionNumber) {
+  const check = element("checkNowBtn");
+  check.disabled = true;
+  try {
+    const { companiesHouseStatusPath } = await import("../lib/companies-house-forms.js");
+    const res = await window.fetchWithIdToken(companiesHouseStatusPath(kind, submissionNumber), { method: "GET" });
+    element("filingStatusYouAsked").hidden = false;
+    element("filingStatusYouAskedAt").textContent = momentText(new Date());
+    if (!res.ok) {
+      element("filingStatusAnswer").textContent = window.siteText(
+        "ch.filing.status-check-failed",
+        "Submit could not ask Companies House just now. Try again in a few minutes.",
+      );
+      return;
+    }
+    showDecision(await res.json(), submissionNumber);
+  } finally {
+    check.disabled = false;
+  }
+}
+
+async function showFilingStatus(submissionNumber, kind, clientId) {
+  const { COMPANIES_HOUSE_FORMS } = await import("../lib/companies-house-forms.js");
+  const { scheduledChecks } = await import("../lib/presenter-poll-schedule.js");
+  const { failed, filing } = await filingInProgress(submissionNumber, clientId);
+  if (failed) {
+    showNotice(window.siteText("ch.filing.load-failed", "We could not load this filing. Go back to your receipts and try again."));
+    return;
+  }
+  if (!filing) {
+    showNotice(
+      window.siteText(
+        "ch.filing.status-gone",
+        "Submission {number} is no longer waiting for Companies House. Its receipt, or its rejection, is in your receipts.",
+        { number: submissionNumber },
+      ),
+    );
+    return;
+  }
+  const form = COMPANIES_HOUSE_FORMS[filing.kind ?? kind];
+  const title = form
+    ? isWelsh()
+      ? form.receiptTitleCy
+      : form.receiptTitle
+    : window.siteText("ch.filing.status-filing", "Companies House filing");
+  const { last, next } = scheduledChecks(new Date());
+  const pending = filing.status === "pending";
+  const panel = element("filingStatus");
+  panel.replaceChildren(
+    create("h2", { id: "filingStatusHeading" }, title),
+    create("p", { id: "filingStatusAnswer" }),
+    create(
+      "dl",
+      { class: "filing-status-list" },
+      ...(filing.companyNumber
+        ? [statusRow("filingStatusCompany", window.siteText("ch.filing.status-company", "Company number"), filing.companyNumber)]
+        : []),
+      statusRow(
+        "filingStatusSent",
+        window.siteText("ch.filing.status-sent", "Sent"),
+        filing.submittedAt ? momentText(filing.submittedAt) : "",
+      ),
+      statusRow("filingStatusNumber", window.siteText("ch.filing.status-number", "Submission number"), filing.submissionNumber),
+      ...(pending
+        ? [
+            statusRow(
+              "filingStatusLastAsked",
+              window.siteText("ch.filing.status-last-asked", "Submit last asked Companies House"),
+              last ? momentText(last) : "",
+            ),
+            statusRow(
+              "filingStatusNextAsk",
+              window.siteText("ch.filing.status-next-ask", "Submit asks next"),
+              next ? momentText(next) : "",
+            ),
+          ]
+        : []),
+    ),
+    create(
+      "p",
+      { id: "filingStatusYouAsked", hidden: "" },
+      window.siteText("ch.filing.status-you-asked", "You asked Companies House at "),
+      create("span", { id: "filingStatusYouAskedAt" }),
+      ".",
+    ),
+    create(
+      "p",
+      { class: "hint" },
+      window.siteText(
+        "ch.filing.status-how",
+        "Submit asks Companies House for its decision every 15 minutes on weekdays from 07:00 to 18:45 UTC, the hours it checks filings by hand. Companies House emails the company when it decides.",
+      ),
+    ),
+    create(
+      "p",
+      { id: "filingStatusWarning", class: "filing-notice" },
+      window.siteText(
+        "ch.filing.status-warning",
+        "Do not file it again while it waits: a new filing for this company and period would go to Companies House beside submission {number}.",
+        { number: filing.submissionNumber },
+      ),
+    ),
+    create("button", { type: "button", id: "checkNowBtn", class: "btn" }, window.siteText("ch.filing.status-check-now", "Check now")),
+  );
+  if (pending) {
+    element("filingStatusAnswer").textContent = pendingAnswer(filing.submissionNumber);
+    element("checkNowBtn").addEventListener("click", () => checkNow(filing.kind ?? kind, filing.submissionNumber));
+  } else {
+    showDecision({ statusCode: "REJECT", rejections: filing.rejections }, filing.submissionNumber);
+  }
+  panel.hidden = false;
+}
+
 function start() {
-  const receiptName = new URLSearchParams(window.location.search).get("receipt");
+  const query = new URLSearchParams(window.location.search);
+  const receiptName = query.get("receipt");
   if (!localStorage.getItem("cognitoIdToken")) {
     return;
+  }
+  if (!receiptName && query.get("filing")) {
+    return showFilingStatus(query.get("filing"), query.get("kind"), query.get("clientId"));
   }
   if (!receiptName) {
     showNotice(window.siteText("ch.filing.choose", "Choose a filing from your receipts to see your copy of it."));
@@ -118,6 +318,7 @@ function start() {
 
 element("printFilingBtn").addEventListener("click", () => window.print());
 window.showFiling = showFiling;
+window.showFilingStatus = showFilingStatus;
 
 if (window.__submitReady__) {
   start();

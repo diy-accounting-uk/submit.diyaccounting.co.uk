@@ -356,3 +356,139 @@ test.describe("Filings page - customer copy", () => {
     });
   }
 });
+
+test.describe("Filings page - a filing Companies House has not decided", () => {
+  const html = fs.readFileSync(path.join(PUBLIC_DIR, "companies-house/filings.html"), "utf-8");
+  const PENDING = {
+    submissionNumber: "00001A",
+    kind: "accounts",
+    companyNumber: "00000001",
+    status: "pending",
+    submittedAt: "2026-11-25T10:00:00.000Z",
+    rejections: [],
+    clientId: null,
+  };
+
+  async function openStatus(page, { filingsInProgress = [PENDING], statusAnswers = [], query = "filing=00001A&kind=accounts" } = {}) {
+    await page.addInitScript(
+      ({ inProgress, answers }) => {
+        localStorage.setItem("cognitoIdToken", "token");
+        window.requestedUrls = [];
+        window.fetchWithIdToken = async (url) => {
+          window.requestedUrls.push(url);
+          if (url.startsWith("/api/v1/hmrc/receipt"))
+            return { ok: true, json: async () => ({ receipts: [], filingsInProgress: inProgress }) };
+          const answer = answers.shift();
+          return answer ? { ok: true, json: async () => answer } : { ok: false, status: 502, json: async () => ({}) };
+        };
+      },
+      { inProgress: filingsInProgress, answers: statusAnswers },
+    );
+    await page.route("**/*.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+    for (const file of [
+      "lib/companies-house-forms.js",
+      "lib/presenter-poll-schedule.js",
+      "lib/companies-house-rejections.js",
+      "companies-house/filings.page.js",
+    ]) {
+      await page.route(`**/${file}`, (route) =>
+        route.fulfill({ status: 200, contentType: "application/javascript", body: fs.readFileSync(path.join(PUBLIC_DIR, file), "utf-8") }),
+      );
+    }
+    await serveSiteStyles(page);
+    await page.route("**/companies-house/filings.html**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+    await page.goto(`http://localhost:3000/companies-house/filings.html?${query}`, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => document.dispatchEvent(new Event("submit-ready")));
+  }
+
+  test("says where a pending filing is, when Submit asks Companies House, and warns against filing it again", async ({ page }) => {
+    await openStatus(page);
+    const panel = page.locator("#filingStatus");
+    await expect(panel).toBeVisible();
+    await expect(page.locator("#filingStatusHeading")).toHaveText("Annual accounts");
+    await expect(page.locator("#filingStatusAnswer")).toHaveText("Companies House has the filing and has not decided yet.");
+    await expect(page.locator("#filingStatusCompany")).toHaveText("00000001");
+    await expect(page.locator("#filingStatusNumber")).toHaveText("00001A");
+    await expect(page.locator("#filingStatusSent")).toContainText("2026");
+    await expect(page.locator("#filingStatusLastAsked")).not.toBeEmpty();
+    await expect(page.locator("#filingStatusNextAsk")).not.toBeEmpty();
+    await expect(panel).toContainText("Companies House emails the company when it decides.");
+    await expect(page.locator("#filingStatusWarning")).toContainText("beside submission 00001A");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeVisible();
+    await expect(panel).not.toContainText("Start a new filing");
+    expect(await pageScrollsSideways(page)).toBe(false);
+  });
+
+  test("Check now asks the filing's own status route and reads a submission not yet indexed as pending", async ({ page }) => {
+    await openStatus(page, { statusAnswers: [{ submissionNumber: "00001A", statusCode: "PENDING", rejections: [], notYetIndexed: true }] });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toContainText("has not yet added it to its records");
+    await expect(page.locator("#filingStatusYouAsked")).toBeVisible();
+    expect(await page.evaluate(() => window.requestedUrls)).toContain("/api/v1/companies-house/accounts/00001A");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeVisible();
+  });
+
+  test("Check now on an accepted filing sends the reader to the receipt and offers no more checks", async ({ page }) => {
+    await openStatus(page, { statusAnswers: [{ submissionNumber: "00001A", statusCode: "ACCEPT", rejections: [] }] });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toContainText("Companies House accepted the filing.");
+    await expect(page.locator("#filingStatusAnswer").getByRole("link", { name: "your receipts" })).toHaveAttribute(
+      "href",
+      "../hmrc/receipt/receipts.html",
+    );
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+    await expect(page.locator("#filingStatusWarning")).toBeHidden();
+  });
+
+  test("Check now on a rejected filing shows Companies House's reasons", async ({ page }) => {
+    await openStatus(page, {
+      statusAnswers: [
+        {
+          submissionNumber: "00001A",
+          statusCode: "REJECT",
+          rejections: [{ rejectCode: "9999", description: "The company number is wrong" }],
+        },
+      ],
+    });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toHaveText("Companies House rejected submission 00001A:");
+    await expect(page.locator("#filingStatusReasons")).toContainText("The company number is wrong");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+  });
+
+  test("a failed check says to try again and keeps Check now", async ({ page }) => {
+    await openStatus(page, { statusAnswers: [] });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusAnswer")).toHaveText(
+      "Submit could not ask Companies House just now. Try again in a few minutes.",
+    );
+    await expect(page.getByRole("button", { name: "Check now" })).toBeEnabled();
+  });
+
+  test("a form on the shared poll asks on the forms route", async ({ page }) => {
+    await openStatus(page, {
+      filingsInProgress: [{ ...PENDING, submissionNumber: "00002B", kind: "psc-cessation" }],
+      statusAnswers: [{ submissionNumber: "00002B", statusCode: "PENDING", rejections: [] }],
+      query: "filing=00002B&kind=psc-cessation",
+    });
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.locator("#filingStatusYouAsked")).toBeVisible();
+    expect(await page.evaluate(() => window.requestedUrls)).toContain("/api/v1/companies-house/forms/psc-cessation/00002B");
+  });
+
+  test("a rejected filing opens with its reasons and no Check now", async ({ page }) => {
+    await openStatus(page, {
+      filingsInProgress: [{ ...PENDING, status: "rejected", rejections: [{ rejectCode: "1", description: "No shareholders named" }] }],
+    });
+    await expect(page.locator("#filingStatusReasons")).toContainText("No shareholders named");
+    await expect(page.getByRole("button", { name: "Check now" })).toBeHidden();
+  });
+
+  test("a filing no longer waiting says its receipt or rejection is in the receipts", async ({ page }) => {
+    await openStatus(page, { filingsInProgress: [] });
+    await expect(page.locator("#filingNotice")).toHaveText(
+      "Submission 00001A is no longer waiting for Companies House. Its receipt, or its rejection, is in your receipts.",
+    );
+    await expect(page.locator("#filingStatus")).toBeHidden();
+  });
+});

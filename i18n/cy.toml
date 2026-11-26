@@ -3822,29 +3822,17 @@ cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
 hash = "3b6014a2cff4"
 cy = '''rhif cyflwyniad {number}'''
 
-[strings."receipts.filing-sent"]
-hash = "c6c92d7127f0"
-cy = '''anfonwyd {date},'''
 
 [strings."receipts.filing-rejected"]
 hash = "16d9cafed33f"
 cy = '''Gwrthodwyd gan Dŷ’r Cwmnïau'''
 
-[strings."receipts.filing-pending"]
-hash = "503ac787bdd5"
-cy = '''Yn aros am Dŷ’r Cwmnïau'''
 
 [strings."receipts.filing-not-received"]
 hash = "9ce2eac27b43"
 cy = '''Ni chafodd Tŷ’r Cwmnïau ef'''
 
-[strings."receipts.in-progress-heading"]
-hash = "fa66b460081d"
-cy = '''Ffeilio gyda Thŷ’r Cwmnïau sydd heb ei dderbyn eto'''
 
-[strings."receipts.in-progress-hint"]
-hash = "50484fbeccc7"
-cy = '''Mae Tŷ’r Cwmnïau yn gwirio rhai ffeilio â llaw, yn ystod oriau swyddfa. Rydym yn gofyn iddo am ei benderfyniad bob 15 munud yn ystod oriau swyddfa, ac yn anfon y dderbynneb atoch drwy e-bost pan fydd yn derbyn y ffeilio.'''
 
 [strings."receipts.unnamed"]
 hash = "2ad0d52676d4"
@@ -27735,6 +27723,7 @@ cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn. Cyfeirnod: {reference
 hash = "a92f0449a9f7"
 cy = '''Wrthi’n gweithio'''
 
+
 # == Answers saved in this browser on the Company Tax Return page, ids ch.ct.draft-* and the privacy page's entry ==
 
 [strings."ch.ct.draft-saved-at"]
@@ -27822,3 +27811,82 @@ cy = '''Adran 413'''
 [strings."ch.ct.advance-terms-needs"]
 hash = "c78d2fbdd8ec"
 cy = ''' yn gofyn am y tri.'''
+
+
+# == A filing Companies House has not decided yet: its row in the receipts, its status page and Start a new filing ==
+
+[strings."ch.ct.start-again-pending"]
+hash = "0be82b094ec3"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi penderfynu ar y cyfrifon eto (cyflwyniad {number}). Mae ffeilio newydd ar gyfer y cwmni a’r cyfnod hwn yn aros nes iddo wneud, fel nad yw’r cyfrifon yn cael eu ffeilio ddwywaith.'''
+
+[strings."ch.filing.status-not-indexed"]
+hash = "ede0f9aca81e"
+cy = '''Mae Tŷ’r Cwmnïau wedi cael cyflwyniad {number} ac nid yw wedi’i ychwanegu at ei gofnodion eto. Mae’n gwneud hynny o fewn yr awr; gofynnwch eto bryd hynny.'''
+
+[strings."ch.filing.status-pending"]
+hash = "a2e6550afb25"
+cy = '''Mae’r ffeilio gan Dŷ’r Cwmnïau ac nid yw wedi penderfynu eto.'''
+
+[strings."ch.filing.status-accepted"]
+hash = "79f309b3af0c"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y ffeilio. Mae ei dderbynneb yn eich derbynebau: '''
+
+[strings."ch.filing.status-receipts"]
+hash = "09045ea143bd"
+cy = '''eich derbynebau'''
+
+[strings."ch.filing.status-rejected"]
+hash = "fa3279fad486"
+cy = '''Gwrthododd Tŷ’r Cwmnïau gyflwyniad {number}:'''
+
+[strings."ch.filing.status-check-failed"]
+hash = "8fdad020cdf5"
+cy = '''Ni allai Submit ofyn i Dŷ’r Cwmnïau ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.filing.status-gone"]
+hash = "4634e2f30728"
+cy = '''Nid yw cyflwyniad {number} yn aros am Dŷ’r Cwmnïau mwyach. Mae ei dderbynneb, neu ei wrthod, yn eich derbynebau.'''
+
+[strings."ch.filing.status-filing"]
+hash = "23439992c152"
+cy = '''Ffeilio Tŷ’r Cwmnïau'''
+
+[strings."ch.filing.status-company"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch.filing.status-sent"]
+hash = "c16bc82bf1f0"
+cy = '''Anfonwyd'''
+
+[strings."ch.filing.status-number"]
+hash = "7582a6dc98b1"
+cy = '''Rhif y cyflwyniad'''
+
+[strings."ch.filing.status-last-asked"]
+hash = "bca5ceaf540d"
+cy = '''Gofynnodd Submit i Dŷ’r Cwmnïau ddiwethaf'''
+
+[strings."ch.filing.status-next-ask"]
+hash = "3681a1f0cfc3"
+cy = '''Mae Submit yn gofyn nesaf'''
+
+[strings."ch.filing.status-you-asked"]
+hash = "b5610e85cd57"
+cy = '''Gofynnoch i Dŷ’r Cwmnïau am '''
+
+[strings."ch.filing.status-how"]
+hash = "978e1d7df080"
+cy = '''Mae Submit yn gofyn i Dŷ’r Cwmnïau am ei benderfyniad bob 15 munud ar ddyddiau’r wythnos rhwng 07:00 a 18:45 UTC, yr oriau y mae’n gwirio ffeiliau â llaw. Mae Tŷ’r Cwmnïau yn anfon e-bost at y cwmni pan fydd yn penderfynu.'''
+
+[strings."ch.filing.status-warning"]
+hash = "3144df07627e"
+cy = '''Peidiwch â’i ffeilio eto tra mae’n aros: byddai ffeilio newydd ar gyfer y cwmni a’r cyfnod hwn yn mynd i Dŷ’r Cwmnïau ochr yn ochr â chyflwyniad {number}.'''
+
+[strings."ch.filing.status-check-now"]
+hash = "2937cffb37ab"
+cy = '''Gwirio nawr'''
+
+[strings."receipts.filing-pending-tag"]
+hash = "331551b0de41"
+cy = '''Yn aros'''

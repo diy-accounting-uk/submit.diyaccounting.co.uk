@@ -2662,7 +2662,7 @@ async function showOutcome(outcome) {
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
   element("tryAgainBtn").style.display = "none";
-  element("startAgainBtn").style.display = "none";
+  showStartAgain(false);
   if (outcome.statusCode === "ACCEPT") {
     setOutcome("ok");
     element("returnResult").replaceChildren(
@@ -2695,8 +2695,8 @@ async function showOutcome(outcome) {
       ),
     );
     element("returnIrmark").style.display = "block";
-    element("startAgainBtn").style.display = "inline-block";
     sending.taxReturnAccepted = true;
+    showStartAgain(true);
     if (sending.mode === "both") renderCompaniesHouse();
     if (!sending.companiesHouse || companiesHouseAccepted()) {
       forgetJoint();
@@ -2737,6 +2737,30 @@ async function showOutcome(outcome) {
 
 function companiesHouseAccepted() {
   return sending.companiesHouse?.statusCode === "ACCEPT";
+}
+
+// Start a new filing is offered once the filing has nothing waiting: while Companies House has not
+// decided the accounts, a new filing for the same company and period could file them twice, so the
+// page names the submission that waits instead.
+function showStartAgain(ready) {
+  const button = element("startAgainBtn");
+  const waiting = Boolean(sending.companiesHouse) && !["ACCEPT", "REJECT"].includes(sending.companiesHouse.statusCode);
+  button.style.display = ready && !waiting ? "inline-block" : "none";
+  let note = document.getElementById("startAgainPendingNote");
+  if (!(ready && waiting)) {
+    if (note) note.hidden = true;
+    return;
+  }
+  if (!note) {
+    note = create("p", { id: "startAgainPendingNote", class: "hint" });
+    button.before(note);
+  }
+  note.hidden = false;
+  note.textContent = siteText(
+    "ch.ct.start-again-pending",
+    "Companies House has not decided the accounts yet (submission {number}). A new filing for this company and period waits until it does, so the accounts are not filed twice.",
+    { number: sending.companiesHouse.submissionNumber },
+  );
 }
 
 // The review opens one joint filing: both sends carry its id. Once the accounts are with Companies House
@@ -3060,7 +3084,7 @@ function startAmendment({ accounts, attachedAccounts = false }) {
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
   element("returnIrmark").style.display = "none";
-  element("startAgainBtn").style.display = "none";
+  showStartAgain(false);
   element("jointProgress").style.display = "none";
   setOutcome();
   persistJoint();
@@ -3360,7 +3384,7 @@ function showJointResult() {
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
   element("tryAgainBtn").style.display = "none";
-  element("startAgainBtn").style.display = "none";
+  showStartAgain(false);
   setOutcome();
   showView("resultView");
 }
@@ -3389,6 +3413,7 @@ async function waitForCompaniesHouse(headers) {
     forgetSavedAnswers();
   } else persistJoint();
   if (statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
+  if (sending.taxReturnAccepted) showStartAgain(true);
   return statusCode === "ACCEPT";
 }
 
@@ -3601,7 +3626,7 @@ function renderLongOutcome() {
   } else {
     element("returnIrmark").style.display = "none";
   }
-  element("startAgainBtn").style.display = longQueue().length === 0 && anyAccepted ? "inline-block" : "none";
+  showStartAgain(longQueue().length === 0 && anyAccepted);
 }
 
 async function renderLongRecords() {

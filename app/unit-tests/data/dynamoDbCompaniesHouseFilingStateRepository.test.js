@@ -108,7 +108,12 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
   test("the filings in progress are the reader's own pending and rejected requests, read without the filed document", async () => {
     mockSend.mockResolvedValueOnce({
       Items: [
-        { requestId: "00001A", status: "pending", createdAt: "2026-11-18T10:00:00.000Z", data: { kind: "accounts" } },
+        {
+          requestId: "00001A",
+          status: "pending",
+          createdAt: "2026-11-18T10:00:00.000Z",
+          data: { kind: "accounts", companyNumber: "00000001" },
+        },
         {
           requestId: "00001B",
           status: "failed",
@@ -126,6 +131,7 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
       {
         submissionNumber: "00001A",
         kind: "accounts",
+        companyNumber: "00000001",
         status: "pending",
         submittedAt: "2026-11-18T10:00:00.000Z",
         rejections: [],

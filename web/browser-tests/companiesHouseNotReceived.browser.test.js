@@ -165,7 +165,7 @@ test.describe("A filing Companies House never received", () => {
 
     await page.goto("http://localhost:3000/cy/hmrc/receipt/receipts.html", { waitUntil: "load" });
 
-    const section = page.locator("#filingsInProgress");
+    const section = page.locator("#receiptsTable");
     await expect(section).toBeVisible({ timeout: 15000 });
     await expect(section.locator(".filing-status")).toHaveText("Ni chafodd Tŷ’r Cwmnïau ef");
     await expect(section.locator("li").last()).toHaveText(WELSH_MESSAGE);
