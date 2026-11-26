@@ -52,7 +52,7 @@ Batch branches are `claude/cobalt-w<nn>-<batch>`, from the wave branch `claude/c
 | activities | CTA1 | Sonnet | `web/public/lib/services/catalog-service.js`, `web/public/index.page.js`, their tests |
 | bubble | CTN1, CTN3 | Sonnet | `web/public/lib/utils/status-bubble.js` (new), `web/public/submit.js`, `web/public/widgets/status-messages.js`, `web/public/css/messages.css`, `web/browser-tests/statusBubble.browser.test.js` (new) |
 
-State: building, from `claude/cobalt-w01` at 934e45b8f (2026-11-26 01:50 UTC). Cloud workers, each after its setup task `setup-934e45b`: harbour CTL0; dusk CT45 then CT46; anvil CH63; garnet CTA1; flint CTN1 then CTN3. Integrator: jasper. Beside: CTL1 by a local Opus agent (it reads the spreadsheets repository).
+State: building, from `claude/cobalt-w01` at 934e45b8f (2026-11-26 01:50 UTC). Cloud workers, each after its setup task `setup-934e45b`: harbour CTL0; dusk CT45 then CT46; anvil CH63; garnet CTA1; flint CTN1 then CTN3. Integrator: jasper. Beside: CTL1 by a local Opus agent (it reads the spreadsheets repository). Landed on `claude/cobalt-w01`: CTL0 (23ca564fc), CTA1 (7bca4c9c2). harbour has started CTS1 (wave 2) on its CTL0 branch; garnet reviews CTL0.
 
 ### Wave 2
 
