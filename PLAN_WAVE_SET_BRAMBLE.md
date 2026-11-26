@@ -13,6 +13,8 @@
 
 (operator, 2026-11-26: the rows of `PLAN_VAT_PAYMENTS.md` join this set.)
 
+(operator, 2026-11-26: the rows of `PLAN_FILING_FEE_PROTECTION.md` join this set too.)
+
 ## Status
 
 defined 2026-11-25; its rows are off `NEXT.md` (operator, 2026-11-25), so nothing of it is dispatched. Boarding them again needs the operator's word; wave 1 then branches from `origin/main`.
@@ -25,6 +27,7 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 
 - **submit, 18 rows**: CR4, CR5, CR6, CR7, CR8, CR9 (`PLAN_COMPANY_REPORTS.md`); CL4, DUE5 to DUE13 (`PLAN_DUE_LIST.md`); AC6, AC7 (`PLAN_AGENT_CREDENTIALS.md`). AC3, AC4, AC5 join waves 3 and 4 when AC2 is approved before wave 3 starts.
 - **submit, VAT payments, 6 rows**: PAY1, PAY2, PAY3, PAY4, PAY5, PAY6 (`PLAN_VAT_PAYMENTS.md`).
+- **submit, filing fee protection, 4 rows**: FFP1, FFP2, FFP3, FFP4 (`PLAN_FILING_FEE_PROTECTION.md`).
 - **spreadsheets, 7 rows**: DIST1, DIST2, DIST3, DIST4, DIST5, DIST6, DIST9 (`PLAN_DIYA_GL_DISTRIBUTION.md`; the code is in `../spreadsheets.diyaccounting.co.uk`).
 - **Beside**: AC1 (the inventory, private repository; not yet written, and AC2 follows it, so AC1 runs in wave 1 for AC3 to AC5 to join), AC2 (the permission set; the operator approves it), GLX1 (design rounds with the operator; `PLAN_DIYA_GL_PRODUCT.md` at the workspace root). OPAY1 (the operator adds Initiate payment to the production application; `PLAN_VAT_PAYMENTS.md`).
 - **Left out, with the test that removed each**:
@@ -58,6 +61,7 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 | W1 | cl4 | CL4 | Sonnet | `web/public/companies-house/companySearch.page.js` and `companySearch.html` |
 | W1 | ac6 | AC6 (Opus design, then Sonnet build) | Opus, Sonnet | `operator-keys/`, `app/functions/auth/operatorTokenPost.js` (new), `AuthStack.java` (the Lambda and the signing secret) |
 | W1 | pay-client | PAY1 | Sonnet | `app/services/hmrcPaymentClient.js` (new), `app/http-simulator/routes/hmrc-make-payment.js` (new) and its line in `app/http-simulator/server.js`, their tests |
+| W1 | fee-disputes | FFP1 | Opus, Sonnet | `app/functions/billing/billingWebhookPost.js` (the dispute and early fraud warning cases), `app/services/disputeEvidence.js` (new), the webhook enabled events, their tests |
 | W2 | cr8 | CR8 | Sonnet | `app/lib/companyReports/history.js`, the `profile` trim in `app/services/companiesHouseCache.js`, their tests |
 | W2 | cr6 | CR6 | Sonnet | `app/lib/companyReports/capital.js`, its tests |
 | W2 | due-page | DUE6 | Sonnet | `web/public/due.html`, its page script, `web/browser-tests/dueList.browser.test.js` |
@@ -68,12 +72,15 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 | W3 | due-mail | DUE11 | Sonnet | `app/functions/account/accountSettingsPut.js`, `dueListRefresh.js`, `AccountStack.java`, the settings and email files |
 | W3 | ac3 | AC3 (if AC2 approved) | Sonnet | `.github/workflows/coordinator-credentials.yml`, `IdentityStack.java` |
 | W3 | pay-panel | PAY3 | Sonnet | `web/public/widgets/vat-ways-to-pay.js` (new), its links module and browser test; `i18n/cy.toml` by union |
+| W3 | fee-gate | FFP2 | Opus, Sonnet | `app/services/filingFeeGate.js` (new), `billingActivityCheckoutPost.js`, `companiesHouseConfirmationStatementPost.js`, `companiesHouseFormFiling.js`, the fee ledger table in `DataStack.java` and `DataNames.java`, `mockBilling.js`, the counts in `infra/test/java` |
 | W3 | pay-mcp | PAY5 | Sonnet | `mcp/lib/handoff-tools.js`, `mcp/lib/hosted-tools.js` (`HOSTED_TOOL_NAMES` only), `mcp/lib/tool-annotations.js`, `mcp/test/`, on comet's versions of them |
 | W4 | due-page | DUE8 | Sonnet | the due page and its script |
 | W4 | ac4 | AC4, then AC5 (if AC2 approved) | Sonnet | `.github/workflows/prod-proof.yml`, `IdentityStack.java`, `scripts/aws-session.sh` |
 | W4 | pay-pages | PAY4 | Sonnet | `web/public/hmrc/vat/submitVat.page.js` (`displayReceipt`), `web/public/hmrc/receipt/receipts.page.js`, `web/public/hmrc/vat/vatLiabilities.page.js`, `vatPayments.page.js`, their browser tests, the submitVat simulator step |
+| W4 | fee-ops | FFP3 | Sonnet | `operatorSnapshotGet.js` (the `filingFees` block), the dashboard panel, `customerEmailSend.js`, `customerEmailTemplates.js` (the operator kinds) |
 | W5 | due-page | DUE9 | Sonnet | `app/functions/account/dueListUserRowPut.js`, `AccountStack.java`, the due page |
 | W5 | pay-proof | PAY6 | Sonnet | the submitVat proxy and mcpPrepareVatReturn simulator suites (a worker with ci credentials for the HMRC sandbox) |
+| W5 | fee-ui | FFP4 | Sonnet | `fileConfirmationStatement.page.js` and the change of company name page, `terms.html` section 10, `faqs.toml`, `i18n/cy.toml` by union |
 | W6 | due-page | DUE12 | Sonnet | `app/functions/account/dueListCalendarFeedPost.js`, `dueListCalendarGet.js`, `app/lib/dueListIcs.js`, `AccountStack.java`, `EdgeStack.java`, `scripts/delete-user-data.js`, the due page |
 | W7 | look | DUE13, then the look pass | Sonnet | `web/public/company-filing-deadlines.html`, `get-started.html`, `index.html`, `web/public/lib/guide-journeys.js`; the guide screenshots (`npm run video:walkthrough`), `visual-review` and `ui-ux-pro-max` on the reports views, the due page and the drill-down |
 
@@ -114,6 +121,7 @@ W1 state: pending.
    - AC6, AC7: a token from a listed key reads `/api/v1/operator/snapshot` on ci; an unlisted key gets 401, and an expired token gets 401 once the authorizer's 5-minute result cache has passed.
    - ODUE2: the operator tries the due list on the ci set (`PLAN_DUE_LIST.md` ODUE2).
    - PAY6: a sandbox payment journey started from the ci receipt reaches HMRC's sandbox journey, its status reads back on the receipt, the journey record reads by key, and the `hmrc-vat-payment-*` events are in the ci lake.
+   - FFP1 to FFP4: a subscriber within 72 hours of subscribing is refused a fee checkout (`fee-cooling-off`); a pass-only account is refused (`fee-needs-paid-subscription`); with ci's caps set low, a second fee is refused (`fee-subscriber-cap`); a Stripe test dispute on a used fee payment is contested with evidence and holds the account; the dashboard panel and the operator email show it.
 4. `/auto-merge` with `--merge`; `/watch` over `main`; `deploy-finish.yml` destroys the outgoing prod set.
 5. prod proofs: the deploy is healthy and no new activity is listed (`company-reports` and `due-list` list no `prod`); AC7's `scripts/operator-api.mjs /api/v1/operator/snapshot` returns the prod snapshot with the operator's key.
 6. spreadsheets: its PR merges after submit's; its `test.yml` builds the pages snapshot (DIST2), the multi-arch image (DIST5) and the unsigned desktop apps (DIST9) in build-only mode.
