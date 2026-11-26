@@ -9,6 +9,10 @@
 
 (operator, 2026-11-25.) Answers to the questions that finalised the set (2026-11-25): CR14 is held for the next set, so the operator looks at the reports on ci first; AC3 to AC5 join waves 3 and 4 if the operator approves AC2's permission set before wave 3 starts, otherwise they start the next set.
 
+> the vat payments plan should be included in PLAN_WAVE_SET_BRAMBLE.md
+
+(operator, 2026-11-26: the rows of `PLAN_VAT_PAYMENTS.md` join this set.)
+
 ## Status
 
 defined 2026-11-25; its rows are off `NEXT.md` (operator, 2026-11-25), so nothing of it is dispatched. Boarding them again needs the operator's word; wave 1 then branches from `origin/main`.
@@ -20,14 +24,16 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 ## The set
 
 - **submit, 18 rows**: CR4, CR5, CR6, CR7, CR8, CR9 (`PLAN_COMPANY_REPORTS.md`); CL4, DUE5 to DUE13 (`PLAN_DUE_LIST.md`); AC6, AC7 (`PLAN_AGENT_CREDENTIALS.md`). AC3, AC4, AC5 join waves 3 and 4 when AC2 is approved before wave 3 starts.
+- **submit, VAT payments, 6 rows**: PAY1, PAY2, PAY3, PAY4, PAY5, PAY6 (`PLAN_VAT_PAYMENTS.md`).
 - **spreadsheets, 7 rows**: DIST1, DIST2, DIST3, DIST4, DIST5, DIST6, DIST9 (`PLAN_DIYA_GL_DISTRIBUTION.md`; the code is in `../spreadsheets.diyaccounting.co.uk`).
-- **Beside**: AC1 (the inventory, private repository), AC2 (the permission set; the operator approves it), GLX1 (design rounds with the operator; `PLAN_DIYA_GL_PRODUCT.md` at the workspace root).
+- **Beside**: AC1 (the inventory, private repository), AC2 (the permission set; the operator approves it), GLX1 (design rounds with the operator; `PLAN_DIYA_GL_PRODUCT.md` at the workspace root). OPAY1 (the operator adds Initiate payment to the production application; `PLAN_VAT_PAYMENTS.md`).
 - **Left out, with the test that removed each**:
   - CR14 (test 4, the operator's answer): the reports launch in the next set, after the operator's look on ci.
   - ODUE2 (test 4): the operator tries the due list on this set's ci deploy; DUE14 (the launch) follows it in the next set.
   - DIST7 (test 1): it needs an npm release that carries `mcpName`, which only the merge of this set makes. DIST8 and DIST13 follow DIST7.
   - DIST10, DIST11, DIST12 (test 4): the operator's go on the signing costs (about £79 a year for Apple, about £95 a year for Microsoft) and the vendor accounts.
   - AC8, AC10 (test 1): they follow AC5 and AC7 live. AC9 (test 4): the operator's settings file.
+  - PAY7 (test 1): the payments launch (privacy text, availability, the prod MCP tool set, the listing text) waits on PAY6 on ci and OPAY1; it goes in the next set, as CR14 and DUE14 do.
   - OCR1 (test 4): the operator posts the licence question.
 
 ## Rules for this set
@@ -49,17 +55,23 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 | W1 | due5 | DUE5 | Sonnet | `app/services/dueListCompaniesHouse.js`, `app/functions/account/dueListRefresh.js`, `app/functions/companies-house/companiesHouseCompanyGet.js`, `AccountStack.java` |
 | W1 | cl4 | CL4 | Sonnet | `web/public/companies-house/companySearch.page.js` and `companySearch.html` |
 | W1 | ac6 | AC6 (Opus design, then Sonnet build) | Opus, Sonnet | `operator-keys/`, the token Lambda, its stack entry, `ApiRoutes.java` |
+| W1 | pay-client | PAY1 | Sonnet | `app/services/hmrcPaymentClient.js` (new), `app/http-simulator/server.js` (the payment routes), their tests |
 | W2 | cr8 | CR8 | Sonnet | `app/lib/companyReports/history.js`, its tests |
 | W2 | cr6 | CR6 | Sonnet | `app/lib/companyReports/capital.js`, its tests |
 | W2 | due-page | DUE6 | Sonnet | `web/public/due.html`, its page script, `web/browser-tests/dueList.browser.test.js` |
 | W2 | due-mail | DUE10 | Sonnet | `app/functions/account/dueListReminders.js`, `app/lib/accountSettings.js`, `web/public/settings.html`, `app/lib/customerEmailTemplates.js`, `app/lib/customerEmailRequest.js`, `app/data/dynamoDbDueListRepository.js`, `AccountStack.java` |
 | W2 | ac7 | AC7 | Sonnet | `app/functions/auth/customAuthorizer.js`, `scripts/operator-api.mjs`, `app/functions/analytics/operatorSnapshotGet.js` |
+| W2 | pay-routes | PAY2 | Sonnet | the two payment Lambdas, `HmrcStack.java`, `HmrcNames.java`, `DataStack.java`, `DataNames.java`, `ApiRoutes.java`, `app/bin/server.js`, the counts in `infra/test/java`, `scripts/delete-user-data.js` |
 | W3 | due-page | DUE7 | Sonnet | the due page and its script |
 | W3 | due-mail | DUE11 | Sonnet | `app/functions/account/accountSettingsPut.js`, `dueListRefresh.js`, `AccountStack.java`, the settings and email files |
 | W3 | ac3 | AC3 (if AC2 approved) | Sonnet | `.github/workflows/coordinator-credentials.yml`, `IdentityStack.java` |
+| W3 | pay-panel | PAY3 | Sonnet | `web/public/widgets/vat-ways-to-pay.js` (new), its links module and browser test; `i18n/cy.toml` by union |
+| W3 | pay-mcp | PAY5 | Sonnet | `mcp/lib/handoff-tools.js`, `mcp/lib/hosted-tools.js` (`HOSTED_TOOL_NAMES` only), `mcp/lib/tool-annotations.js`, `mcp/test/` |
 | W4 | due-page | DUE8 | Sonnet | the due page and its script |
 | W4 | ac4 | AC4, then AC5 (if AC2 approved) | Sonnet | `.github/workflows/prod-proof.yml`, `IdentityStack.java`, `scripts/aws-session.sh` |
+| W4 | pay-pages | PAY4 | Sonnet | `web/public/hmrc/receipt/receipts.page.js`, `web/public/hmrc/vat/vatLiabilities.page.js`, `vatPayments.page.js`, their browser tests, the submitVat simulator step |
 | W5 | due-page | DUE9 | Sonnet | `app/functions/account/dueListUserRowPut.js`, `ApiRoutes.java`, the due page |
+| W5 | pay-proof | PAY6 | Sonnet | the submitVat proxy and mcpPrepareVatReturn simulator suites (a worker with ci credentials for the HMRC sandbox) |
 | W6 | due-page | DUE12 | Sonnet | `app/functions/account/dueListCalendarFeedPost.js`, `dueListCalendarGet.js`, `app/lib/dueListIcs.js`, `EdgeStack.java`, `ApiRoutes.java`, `scripts/delete-user-data.js`, the due page |
 | W7 | look | DUE13, then the look pass | Sonnet | `web/public/company-filing-deadlines.html`, `get-started.html`, `index.html`, `web/public/lib/guide-journeys.js`; the guide screenshots (`npm run video:walkthrough`), `visual-review` and `ui-ux-pro-max` on the reports views, the due page and the drill-down |
 
@@ -99,13 +111,14 @@ W1 state: pending.
    - DUE10, DUE11: the reminder job runs with the setting off and sends nothing; with it on, one email reaches the synthetic test user.
    - AC6, AC7: a token from a listed key reads `/api/v1/operator/snapshot` on ci; an unlisted key and an expired token get 401.
    - ODUE2: the operator tries the due list on the ci set (`PLAN_DUE_LIST.md` ODUE2).
+   - PAY6: a sandbox payment journey started from the ci receipt reaches HMRC's sandbox journey, its status reads back on the receipt, the journey record reads by key, and the `hmrc-vat-payment-*` events are in the ci lake.
 4. `/auto-merge` with `--merge`; `/watch` over `main`; `deploy-finish.yml` destroys the outgoing prod set.
 5. prod proofs: the deploy is healthy and no new activity is listed (`company-reports` and `due-list` list no `prod`); AC7's `scripts/operator-api.mjs /api/v1/operator/snapshot` returns the prod snapshot with the operator's key.
 6. spreadsheets: its PR merges after submit's; its `test.yml` builds the pages snapshot (DIST2), the multi-arch image (DIST5) and the unsigned desktop apps (DIST9) in build-only mode.
 
 ## After the deploy
 
-- The next set: CR14 (reports launch), DUE14 (due list launch, after ODUE2, with DUE10's privacy text), DIST7 then DIST8 and DIST13, AC8 and AC10 (after AC5 and AC7 are live), and AC3 to AC5 if AC2 was approved after wave 3 started.
+- The next set: PAY7 (the payments launch, after PAY6 on ci and OPAY1), CR14 (reports launch), DUE14 (due list launch, after ODUE2, with DUE10's privacy text), DIST7 then DIST8 and DIST13, AC8 and AC10 (after AC5 and AC7 are live), and AC3 to AC5 if AC2 was approved after wave 3 started.
 - AC9 is the operator's: the ask rule in `.claude/settings.json`.
 
 ## When the set branch fails
