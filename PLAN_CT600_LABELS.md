@@ -339,7 +339,21 @@ The definition of done for a major visual change, in this order: the Welsh proof
 
 ### OCTL1. The roll-out decision
 
-When CTL8 is on prod, the operator uses the CT600 page and says whether the pattern goes to the other journeys (VAT, the micro-entity and small company accounts pages, Income Tax). A yes becomes a plan for each journey; each uses the same table pattern and its own product's workbook cells.
+When CTL8 is on prod, the operator uses the CT600 page and decides the roll-out. The roll-out covers at least every place where Submit writes data to HMRC, Companies House or Stripe, so that every write journey behaves the same way (operator, 2026-11-26). Each journey gets:
+
+1. the field pattern where the journey has a form: the reference and note on each field, the workbook place, and the worked panels, from its own product's workbook cells;
+2. the failure detail panel of CTN2: what was sent and what was not, where the answers are, the kind of failure and its next step;
+3. the staged narration of CTN4: one `info` status message per stage, which CTN3 shows as the working bubble, and a `pollPendingMessage` that names the service it waits for.
+
+The write journeys, by service:
+
+| Service | Journeys (page, then the route it calls) |
+|---|---|
+| HMRC | the VAT return (`submitVat.page.js`, `hmrcVatReturnPost.js`); the Income Tax pages in `web/public/hmrc/itsa/`; the CT600 and the joint filing (CT600 page, `hmrcCtReturnPost.js`) |
+| Companies House | the micro-entity, small company, dormant and revised accounts; the confirmation statement; the forms in `web/public/companies-house/` (registered office, registered email and the rest) |
+| Stripe | the bundle checkout (`billingCheckoutPost.js`), the activity checkout (`billingActivityCheckoutPost.js`), the recovery of a paid checkout (`billingRecoverPost.js`), the billing portal (`billingPortalGet.js`) |
+
+The first step of the roll-out is an inventory of every route in `app/functions/hmrc/`, `app/functions/companies-house/` and `app/functions/billing/` that writes to the service, against the page that calls it and which of the three parts it has today; a write the table above misses joins it. Each journey then becomes a plan row; journeys of one service that share a page script run in one batch.
 
 ## Proof
 
