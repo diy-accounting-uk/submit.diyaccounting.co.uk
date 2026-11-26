@@ -17,7 +17,7 @@
 
 ## Status
 
-defined 2026-11-25; its rows are off `NEXT.md` (operator, 2026-11-25), so nothing of it is dispatched. Boarding them again needs the operator's word; wave 1 then branches from `origin/main`.
+defined 2026-11-25; its rows are off `NEXT.md`. Board them when comet merges, after `/plan-review-loop` on `PLAN_VAT_PAYMENTS.md` and `PLAN_FILING_FEE_PROTECTION.md` (operator, 2026-11-26); wave 1 then branches from `origin/main`.
 
 ## The goal
 
