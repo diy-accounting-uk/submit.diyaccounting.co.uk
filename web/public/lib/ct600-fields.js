@@ -1329,7 +1329,7 @@ export const DONATIONS_PAID_FIELD = {
   default: "0",
   source: {
     thisYear: sheetCell("MnthP&L!B37"),
-    workbookLabel: "Charitable Donations (the whole period)",
+    workbookLabel: "Charitable Donations",
     differenceNote:
       'The spreadsheet shows "Charitable Donations" for the whole period of account. Enter the qualifying donations paid in each accounting period.',
   },
@@ -1397,7 +1397,8 @@ export const STATEMENT_FIELDS = [
     termSource: companiesActSection(414),
     source: {
       thisYear: sheetCell("PubBalSht!A52"),
-      workbookLabel: "e) … prepared in accordance with the special provisions of the Companies Act relating to small companies",
+      workbookLabel:
+        "e) The accounts have been prepared in accordance with the special provisions of the Companies Act relating to small …",
       differenceNote:
         "The spreadsheet's statement (e) says \"special provisions of the Companies Act relating to small companies\". Section 414(3)(b) asks for the words in Submit's label. The spreadsheet's statement (d) uses those words for the accounts as delivered.",
     },

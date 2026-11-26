@@ -81,6 +81,7 @@
     "google:reconsent": "node scripts/google-reconsent.js",
     "video:embed-check": "node scripts/video-embed-check.js",
     "video:walkthrough": "node scripts/video-walkthrough.js",
+    "ct600:source-shots": "node scripts/ct600-source-shots.mjs",
     "video:stale": "node scripts/video-stale.js",
     "test:allBehaviour": "bash -c 'set -o pipefail; playwright test --project=allBehaviour 2>&1 | tee allBehaviour.log'",
     "test:allBehaviour-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- npm run test:allBehaviour 2>&1 | tee allBehaviour-proxy.log'",
