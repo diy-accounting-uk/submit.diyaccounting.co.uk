@@ -9,7 +9,7 @@ that follows them, including the joint accounts and CT600 filing on prod (CT38 f
 for the public). Companies House
 filing and the Companies House forms' unhide on prod (UH4) are live; their plan is `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
-Status (2026-11-25): the CT600 and the joint filing are on prod for an operator with preview features on (CT38). HMRC accepted DIY Accounting Limited's Company Tax Return for the period to 31 March 2026 on 2026-11-25 through Submit on prod (record `../private.diyaccounting.co.uk/hmrc/ct/own-filing-2026-03-31/README.md`); its amendment is NEXT.md OCT10, after CT45, CT47 and CT48. Companies House accepted the accounts the same night (submission 000001; record `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/README.md`). The public opening (UH7) follows the operator's decision OCT9 on that outcome. Recognition (CT34 to CT37, OCT7, CT25, CT26) is its own track and does not block it (operator, 2026-11-23). The recognition tasks are tracked in this plan, not on `NEXT.md`.
+Status (2026-11-25): the CT600 and the joint filing are on prod for an operator with preview features on (CT38). HMRC accepted DIY Accounting Limited's Company Tax Return for the period to 31 March 2026 on 2026-11-25 through Submit on prod (record `../private.diyaccounting.co.uk/hmrc/ct/own-filing-2026-03-31/README.md`); its amendment is NEXT.md OCT10, after CT45, CT47 and CT48. Companies House accepted the accounts the same night (submission 000001; record `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/README.md`). The operator decided OCT9 on 2026-11-26: the CT600 and the joint filing open to the public when wave set cobalt (`PLAN_WAVE_SET_COBALT.md`) is on prod and its prod proofs pass; UH7 then runs. Recognition (CT34 to CT37, OCT7, CT25, CT26) is its own track and does not block it (operator, 2026-11-23). The recognition tasks are tracked in this plan, not on `NEXT.md`.
 
 ## User assertions
 
@@ -31,8 +31,8 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | CT38 | The CT600 and the joint filing on prod, live, only for a user with `resident-ltd` (by any bundle that includes it), preview features on in the stored account settings, and on the operator list; the "preview" mark on every HMRC company filing not live for the public; the calendar says "preview (operator only)" | ~24 | Opus (design), Sonnet (build) | — |
 | CT39 | DIY Accounting Limited's book for the year to 31 March 2026, by the `company-book` skill | 0 | Sonnet | — |
 | OCT8 | The operator files DIY Accounting Limited's accounts and CT600 for the period ending 31 March 2026 through Submit on prod | 0 | none | — |
-| OCT9 | The operator decides to open the CT600 and the joint filing to the public | 0 | none | OCT8 |
-| UH7 | Open the CT600 and the joint filing to the public: `prod` on both activities, CT38's operator gate and the "preview" marks removed, the terms (C86) and the calendar say production | ~10 | Sonnet | OCT9 |
+| OCT9 | The operator decides to open the CT600 and the joint filing to the public | 0 | none | decided 2026-11-26 |
+| UH7 | Open the CT600 and the joint filing to the public: `prod` on both activities, CT38's operator gate and the "preview" marks removed, the terms (C86) and the calendar say production | ~10 | Sonnet | wave set cobalt on prod |
 
 ### The approval path
 
@@ -92,9 +92,9 @@ The briefs of CT34 to CT36 are in the section "Open tasks of the recognition tra
 
 - [ ] **OCT8. The operator files DIY Accounting Limited's accounts and Company Tax Return for the period ending 31 March 2026, through Submit on prod.** One joint filing or the two filings, with his own Government Gateway and Companies House credentials. The receipts and the acknowledgements go to `../private.diyaccounting.co.uk/hmrc/ct/own-filing-2026-03-31/` and `../private.diyaccounting.co.uk/companies-house/own-filing-2026-03-31/`. The accounts are due by 31 December 2026 and the return by 31 March 2027. **Owner**: Operator (files), Claude Code (the record). **Model**: none.
 
-- [ ] **OCT9. The operator decides to open the CT600 and the joint filing to the public.** The one question is OCT8's outcome: can the operator file DIY Accounting Limited's own accounts through Submit? Recognition does not decide it. The decision and its date go into this plan. Blocked on OCT8. **Owner**: Operator. **Model**: none.
+- [x] **OCT9. The operator decides to open the CT600 and the joint filing to the public.** Decided 2026-11-26, after both of DIY Accounting Limited's filings were accepted: "oct9, yes when wave set wave set cobalt is done." The CT600 and the joint filing open to the public when wave set cobalt is on prod and its prod proofs pass. **Owner**: Operator. **Model**: none.
 
-- [ ] **UH7. Open the CT600 and the joint filing to the public on prod.** OCT9's machine part: `prod` on both activities, CT38's operator gate removed, the "preview" marks off in English and Welsh, the terms describe CT600 filing as live (C86), and the availability table on `web/public/mtd-calendar.html` says production, in one change. Its gate is OCT8's outcome, through OCT9; recognition (OCT7, CT25, CT26, CT34 to CT37) is its own track (operator, 2026-11-23). The page guard reads the catalogue, so it needs no edit. Agent filing stays behind the `practice` activity (UH1). Blocked on OCT9. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan; operator, 2026-11-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
+- [ ] **UH7. Open the CT600 and the joint filing to the public on prod.** OCT9's machine part: `prod` on both activities, CT38's operator gate removed, the "preview" marks off in English and Welsh, the terms describe CT600 filing as live (C86), and the availability table on `web/public/mtd-calendar.html` says production, in one change. Its gate is OCT8's outcome, through OCT9; recognition (OCT7, CT25, CT26, CT34 to CT37) is its own track (operator, 2026-11-23). The page guard reads the catalogue, so it needs no edit. Agent filing stays behind the `practice` activity (UH1). Blocked on wave set cobalt on prod and its prod proofs (OCT9, decided 2026-11-26). Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan; operator, 2026-11-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
 
 ## Open tasks of the recognition track
 
@@ -168,7 +168,7 @@ flowchart LR
 - OCT7: blocked by CT37
 - CT25: blocked by SDST's pack, which follows OCT7; CT26 by CT25
 - OCT8: nothing blocks it
-- OCT9: blocked by OCT8; UH7 by OCT9
+- OCT9: decided 2026-11-26; UH7 blocked by wave set cobalt on prod
 - Recognition does not block the opening (operator, 2026-11-23)
 
 ## Designs

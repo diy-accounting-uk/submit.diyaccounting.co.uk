@@ -24,7 +24,7 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
   - CTL1 (Opus): the label register is the appendix of `PLAN_CT600_LABELS.md`, a document pushed to `main`. It must be on `main` before wave 4 starts, because CTL2 reads it.
   - OCT8 (Haiku): the CH60 proof is a read of prod and a note in the private repository.
 - **Left out, with the test that removed each**:
-  - UH7 (test 4): it waits on the operator's decision OCT9.
+  - UH7 (test 1): the operator opens the CT600 to the public when this set is done (OCT9, 2026-11-26), so it follows the set on prod.
   - OS18g (test 4): the operator's yes and a click in his Chrome; no pull request.
   - CHL1 (test 4): it waits on live filings in December 2026 and January 2027.
   - OCT10, OCT11, OCTL1 (test 4): the operator's own filing, check and decision.
@@ -162,6 +162,7 @@ State: pending.
 ## After the deploy
 
 - OCT10: the operator files the amended CT600 on prod.
+- UH7: when the prod proof list passes, open the CT600 and the joint filing to the public, in its own PR (OCT9, decided 2026-11-26).
 - CTL8's recordings go to the channel unlisted for the operator to watch (`video-publish`); public only after he has watched.
 - OCTL1: the operator's roll-out decision, from the page on prod.
 
