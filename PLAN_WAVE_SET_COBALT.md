@@ -7,6 +7,10 @@
 
 > Create a wave set from all the open tasks on the board that you can and this will not start until CT47 and CT48 are done.
 
+> Push a prefix: waves 1 to 8 plus AL37 and CTP4 ship first, and CTN2, CTN4, CTL1A and CTL8 start the next set.
+
+(operator, 2026-11-26, 10:40 UTC, replacing waves 9 to 12; the next set is `PLAN_WAVE_SET_COMET.md`.)
+
 (operator, 2026-11-26.) The answer that finalised the set (2026-11-26): scope A, the machine rows already on `NEXT.md` (26 rows); Bramble stays its own set. CTP4 and CTL1A joined on the operator's answer of 2026-11-26 (CTP3D B, the CTL1Q answers), and AL37 on his answer of the same day.
 
 ## Status
@@ -19,7 +23,7 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 
 ## The set
 
-- **submit, 28 rows in waves**: CTL0, CT45, CT46, CH63, CTA1, CTN1, CTN3, CTS1, CTD1, CTD2, CTP3, CTA2, CTR2, CT49, CTL2, CTL5, CTL4, CTL10, CTL7, CTL9, CTV1, CTF1, CTN2, CTN4, CTP4, CTL1A, AL37, CTL8. Each row's brief is its `NEXT.md` row; the CT600 label rows point to their section of `PLAN_CT600_LABELS.md`.
+- **submit, 24 rows in waves**: CTL0, CT45, CT46, CH63, CTA1, CTN1, CTN3, CTS1, CTD1, CTD2, CTP3, CTA2, CTR2, CT49, CTL2, CTL5, CTL4, CTL10, CTL7, CTL9, CTV1, CTF1, AL37, CTP4. Each row's brief is its `NEXT.md` row; the CT600 label rows point to their section of `PLAN_CT600_LABELS.md`. CTN2, CTN4, CTL1A and CTL8 moved to wave set comet (operator, 2026-11-26).
 - **Beside**:
   - CTL1 (Opus): the label register is the appendix of `PLAN_CT600_LABELS.md`, a document pushed to `main`. It must be on `main` before wave 4 starts, because CTL2 reads it.
 - **Left out, with the test that removed each**:
@@ -108,7 +112,7 @@ State: landed at cc47107d6 on `claude/cobalt-w07` (CTV1 52fb5ced9, ctv1b abf54db
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| ct600-page | CTF1, ctl7c | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
+| ct600-page | CTF1, ctl7c, ctf1b | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
 
 State: integrating: jasper merges CTF1 (2b9177b1f) onto `claude/cobalt-w07-abf54db` (`claude/jasper-integrate-ctf1`); harbour builds ctl7c next.
 
@@ -116,35 +120,10 @@ State: integrating: jasper merges CTF1 (2b9177b1f) onto `claude/cobalt-w07-abf54
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| ct600-page | CTN2 (Opus writes the failure classes and their text, then Sonnet builds the panel, on one worktree) | Opus, then Sonnet | `fileCompanyTaxReturn.page.js`, `web/public/lib/utils/dom-utils.js`, `messages.css`, the failure classes module (new), `web/public/lib/services/hmrc-ct-return-service.js` |
+| ch-filing-data | AL37 (al37, al37b, al37c) | Sonnet | `app/functions/companies-house/companiesHouseFilingDataPost.js`, `app/lib/companiesHouseGatewayErrors.js`, `web/public/lib/services/companies-house-confirmation-service.js`, `web/public/companies-house/fileConfirmationStatement.page.js`, `web/public/lib/company-books.js`, `app/functions/companies-house/companiesHouseConfirmationStatementPost.js`, their tests |
+| ct-poll | CTP4 | Sonnet | `app/data/dynamoDbAsyncRequestRepository.js`, `app/functions/hmrc/hmrcCtReturnPost.js`, the scheduled CT600 status check, `receipts.page.js`, `filings.page.js`, its stack and names classes in `infra/`, their tests |
 
-State: pending.
-
-### Wave 10
-
-| Batch | Rows in order | Model | Files the batch owns |
-|---|---|---|---|
-| ct600-page | CTN4 | Sonnet | the pages that call `showLoading()` (CT600, accounts, confirmation statement, the Companies House forms, `web/public/hmrc/itsa/`), their browser tests |
-
-State: pending.
-
-### Wave 11
-
-| Batch | Rows in order | Model | Files the batch owns |
-|---|---|---|---|
-| ct-poll | CTP4 | Sonnet | `app/data/dynamoDbAsyncRequestRepository.js`, `app/functions/hmrc/hmrcCtReturnPost.js`, the scheduled CT600 status check (new, beside `app/functions/companies-house/companiesHouseSubmissionStatusPoll.js`), its stack and names classes in `infra/`, their tests; never the CT600 page or `hmrc-ct-return-service.js` |
-| ch-filing-data | AL37 | Sonnet | `app/functions/companies-house/companiesHouseFilingDataPost.js`, `app/lib/companiesHouseGatewayErrors.js`, `web/public/lib/services/companies-house-confirmation-service.js`, `web/public/companies-house/fileConfirmationStatement.page.js`, their tests |
-| ct600-fields | CTL1A | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
-
-CTP4 and AL37 build now from wave 6's tip and CTL1A from wave 10's gated tip, because CTF1 also changes `ct600-fields.js`. Both land after CTN4.
-
-State: pending.
-
-### Wave 12: the look wave
-
-| Batch | Rows in order | Model | Files the batch owns |
-|---|---|---|---|
-| look | CTL8 | Sonnet | the guide and site screenshots, the `file-company-tax-return-*` and accounts recordings on the simulator, the CTV1 section times in both `publish.json` copies |
+Both are built (`claude/anvil-al37c` 3bc704d0e, `claude/dusk-ctp4` 2c693df9b) and land on wave 8's head through the integrator.
 
 State: pending.
 
@@ -156,7 +135,7 @@ State: pending.
 
 ## The push
 
-1. Assemble `claude/cobalt-set` at the gated tip of wave 12 and run its gates.
+1. Assemble `claude/cobalt-set` at the gated tip of wave 9 and run its gates.
 2. Read the ci slots, push `claude/cobalt-set`, open one PR whose body lists the rows by wave, and run `/watch`.
 3. **ci proof list**, run inside the set's self-destruct delay:
    - CT45: the CT600 preview and file requests on the ci set pass the WAF (a body over 8 KB to `/api/v1/hmrc/ct/return`), and the status route charges the token after a sandbox acceptance.
@@ -166,7 +145,6 @@ State: pending.
    - CTL4, CTL10: the Proof section of `PLAN_CT600_LABELS.md` on the CT600 page and the two accounts pages.
    - CTP4: a sandbox CT600 left pending with no page open gets its receipt from the scheduled check, and its row stays in the receipts table past one hour.
    - AL37: a filing-data request with a made-up date after today answers 400 on the ci set, and no error-level log follows.
-   - CTL1A: a micro-entity sandbox filing carries the format's raw materials and staff costs lines, and the review shows box 85 and HMRC's declaration.
 4. `/auto-merge` merges with `--merge`. `main`'s deploy is the one prod deploy; `deploy-finish.yml` destroys the outgoing prod set.
 5. **prod proof list**:
    - CT45: the operator's preview of the amended CT600 on prod answers 200 and the file request passes the WAF (OCT10 is the operator's own filing).
@@ -177,7 +155,6 @@ State: pending.
 
 - OCT10: the operator files the amended CT600 on prod.
 - UH7: when the prod proof list passes, open the CT600 and the joint filing to the public, in its own PR (OCT9, decided 2026-11-26).
-- CTL8's recordings go to the channel unlisted for the operator to watch (`video-publish`); public only after he has watched.
 - OCTL1: the operator's roll-out decision, from the page on prod.
 
 ## When the set branch fails
