@@ -9,9 +9,14 @@ import { join } from "node:path";
 
 const mockGetAsyncRequest = vi.fn();
 const mockPutAsyncRequest = vi.fn();
+const mockClaimRecording = vi.fn();
+const mockReleaseRecording = vi.fn();
 vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
   getAsyncRequest: (...args) => mockGetAsyncRequest(...args),
   putAsyncRequest: (...args) => mockPutAsyncRequest(...args),
+  claimRecording: (...args) => mockClaimRecording(...args),
+  releaseRecording: (...args) => mockReleaseRecording(...args),
+  RECORDING_CLAIM_STALE_MINUTES: 20,
 }));
 
 const mockPutReceipt = vi.fn();
@@ -90,6 +95,11 @@ function pendingRequest() {
 
 const deleteCalls = () => mockPost.mock.calls.filter(([, xml]) => xml.includes("<Function>delete</Function>"));
 const statusWrites = () => mockPutAsyncRequest.mock.calls.map((call) => call[2]);
+
+beforeEach(() => {
+  mockClaimRecording.mockResolvedValue(true);
+  mockReleaseRecording.mockResolvedValue(undefined);
+});
 
 describe("pollCtSubmission", () => {
   beforeEach(() => {
@@ -352,8 +362,8 @@ describe("retention and the wait for HMRC's answer", () => {
     vi.clearAllMocks();
   });
 
-  test("a pending return keeps 30 days counted from when it was sent", () => {
-    expect(ctPendingRetention("2026-01-01T00:00:00.000Z")).toEqual({ days: 30, from: new Date("2026-01-01T00:00:00.000Z") });
+  test("a pending return keeps a day past the 30-day wait, counted from when it was sent", () => {
+    expect(ctPendingRetention("2026-01-01T00:00:00.000Z")).toEqual({ days: 31, from: new Date("2026-01-01T00:00:00.000Z") });
   });
 
   test("a poll that finds the return still pending keeps the retention counted from sending, not from the poll", async () => {
@@ -363,7 +373,7 @@ describe("retention and the wait for HMRC's answer", () => {
     await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
     const [[, , status, , , retention]] = mockPutAsyncRequest.mock.calls;
     expect(status).toBe("pending");
-    expect(retention).toEqual({ days: 30, from: new Date(request.createdAt) });
+    expect(retention).toEqual({ days: 31, from: new Date(request.createdAt) });
   });
 
   test("a transient error keeps the retention counted from sending too", async () => {
@@ -371,7 +381,7 @@ describe("retention and the wait for HMRC's answer", () => {
     mockGetAsyncRequest.mockResolvedValue(request);
     mockPost.mockResolvedValueOnce(gatewayError("1000"));
     await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
-    expect(mockPutAsyncRequest.mock.calls[0][5]).toEqual({ days: 30, from: new Date(request.createdAt) });
+    expect(mockPutAsyncRequest.mock.calls[0][5]).toEqual({ days: 31, from: new Date(request.createdAt) });
   });
 
   test("an accepted return takes the retention of a finished request", async () => {
@@ -411,9 +421,9 @@ describe("retention and the wait for HMRC's answer", () => {
     expect(mockPost).toHaveBeenCalledTimes(1);
   });
 
-  test("a scheduled caller's lead brings the no-answer forward by its interval", async () => {
-    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(29, 23.9 * 3600));
-    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID, noAnswerLeadSeconds: 900 });
+  test("a return still held in the day after the 30-day wait is recorded as no answer by the next poll", async () => {
+    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(30, 20 * 3600));
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
     expect(data.statusCode).toBe("NO_ANSWER");
     expect(mockPost).not.toHaveBeenCalled();
   });
@@ -582,5 +592,52 @@ describe("findHeldCtSubmission", () => {
     await findHeldCtSubmission({ ...input, extraHeaders: { "Gov-Test-Scenario": "CT600_LOST_REPLY" } });
     expect(mockPost.mock.calls[0][2]).toEqual({ "Gov-Test-Scenario": "CT600_LOST_REPLY" });
     expect(JSON.stringify([...mockLogger.warn.mock.calls, ...mockLogger.info.mock.calls])).not.toContain("pass1");
+  });
+});
+
+describe("one record of an accepted return", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockClaimRecording.mockResolvedValue(true);
+  });
+
+  test("a poll that finds another poll recording the answer waits and asks HMRC nothing", async () => {
+    mockGetAsyncRequest.mockResolvedValue({ ...pendingRequest(), status: "recording", recordingSince: new Date().toISOString() });
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("PENDING");
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test("a recording claim older than its stale time is taken over by the next poll", async () => {
+    mockGetAsyncRequest.mockResolvedValue({
+      ...pendingRequest(),
+      status: "recording",
+      recordingSince: new Date(Date.now() - 21 * 60 * 1000).toISOString(),
+    });
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("ACCEPT");
+    expect(mockPutReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  test("a poll that loses the claim answers from the stored acceptance and records nothing", async () => {
+    mockClaimRecording.mockResolvedValue(false);
+    mockGetAsyncRequest
+      .mockResolvedValueOnce(pendingRequest())
+      .mockResolvedValueOnce({ status: "completed", data: { kind: CT_RETURN_KIND, statusCode: "ACCEPT", receiptId: "r-1" } });
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64));
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data).toMatchObject({ statusCode: "ACCEPT", receiptId: "r-1" });
+    expect(mockPutReceipt).not.toHaveBeenCalled();
+    expect(chargeTokenOnSuccess).not.toHaveBeenCalled();
+    expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+  });
+
+  test("a record that fails part-way gives the claim back for the next poll", async () => {
+    mockGetAsyncRequest.mockResolvedValue(pendingRequest());
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64));
+    mockPutReceipt.mockRejectedValueOnce(new Error("throttled"));
+    await expect(pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID })).rejects.toThrow("throttled");
+    expect(mockReleaseRecording).toHaveBeenCalledWith("u", CORRELATION_ID, expect.anything());
   });
 });

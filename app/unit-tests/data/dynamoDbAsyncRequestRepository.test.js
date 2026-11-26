@@ -159,4 +159,45 @@ describe("dynamoDbAsyncRequestRepository", () => {
     mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
     await expect(recordStatusCheck("user-123", "00001A", new Date(), "test-async-requests")).rejects.toThrow("throttled");
   });
+
+  test("claimRecording turns a pending request to recording, or takes over a stale claim, with one conditional write", async () => {
+    const { claimRecording } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    const { hashSub } = await import("../../services/subHasher.js");
+    mockSend.mockResolvedValue({});
+
+    await expect(claimRecording("user-123", "CORR1", "test-async-requests", { now: new Date("2026-11-26T10:00:00.000Z") })).resolves.toBe(
+      true,
+    );
+
+    const command = mockSend.mock.calls.at(-1)[0];
+    expect(command.input.Key).toEqual({ hashedSub: hashSub("user-123"), requestId: "CORR1" });
+    expect(command.input.ConditionExpression).toBe("#status = :pending OR (#status = :recording AND #recordingSince < :staleBefore)");
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ":recording": "recording",
+      ":pending": "pending",
+      ":now": "2026-11-26T10:00:00.000Z",
+      ":staleBefore": "2026-11-26T09:40:00.000Z",
+    });
+  });
+
+  test("claimRecording answers false when another poll holds the claim or the request is settled, and throws any other failure", async () => {
+    const { claimRecording } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    await expect(claimRecording("user-123", "CORR1", "test-async-requests")).resolves.toBe(false);
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
+    await expect(claimRecording("user-123", "CORR1", "test-async-requests")).rejects.toThrow("throttled");
+  });
+
+  test("releaseRecording puts a recording request back to pending, and leaves a settled one", async () => {
+    const { releaseRecording } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockResolvedValueOnce({});
+    await releaseRecording("user-123", "CORR1", "test-async-requests");
+    const command = mockSend.mock.calls.at(-1)[0];
+    expect(command.input.UpdateExpression).toBe("SET #status = :pending REMOVE #recordingSince");
+    expect(command.input.ConditionExpression).toBe("#status = :recording");
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    await expect(releaseRecording("user-123", "CORR1", "test-async-requests")).resolves.toBeUndefined();
+  });
 });

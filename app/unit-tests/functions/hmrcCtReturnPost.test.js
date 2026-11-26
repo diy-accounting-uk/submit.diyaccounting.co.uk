@@ -218,15 +218,15 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(JSON.stringify(update.input)).not.toContain(USER_ID);
   });
 
-  test("keeps the pending request 30 days from sending and gives the scheduled check a marker with the sealed filer", async () => {
+  test("keeps the pending request 31 days from sending and gives the scheduled check a marker with the sealed filer", async () => {
     const before = Math.floor(Date.now() / 1000);
     const response = await hmrcCtReturnPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);
     const lib = await import("@aws-sdk/lib-dynamodb");
     const [pending, marker] = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
     const ttl = pending.input.ExpressionAttributeValues[":ttl"];
-    expect(ttl).toBeGreaterThanOrEqual(before + 30 * 86400);
-    expect(ttl).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 30 * 86400);
+    expect(ttl).toBeGreaterThanOrEqual(before + 31 * 86400);
+    expect(ttl).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 31 * 86400);
     expect(marker.input.Key).toEqual({ hashedSub: "hmrc-ct-pending", requestId: CORRELATION_ID });
     expect(marker.input.ExpressionAttributeValues[":sealedFiler"]).toBe(
       `sealed(hmrc-ct-pending-filer|hmrc-ct-pending#${CORRELATION_ID}|test-sub)`,

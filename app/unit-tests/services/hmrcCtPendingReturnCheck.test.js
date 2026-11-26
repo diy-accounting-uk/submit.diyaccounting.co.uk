@@ -31,6 +31,18 @@ vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
     asyncRequests.set(`${userSub}/${requestId}`, { status, data, createdAt: existing?.createdAt ?? new Date().toISOString() });
   },
   getAsyncRequest: async (userSub, requestId) => asyncRequests.get(`${userSub}/${requestId}`) ?? null,
+  // The conditional write, in one step: pending becomes recording for the first caller only.
+  claimRecording: async (userSub, requestId) => {
+    const item = asyncRequests.get(`${userSub}/${requestId}`);
+    if (item?.status !== "pending") return false;
+    asyncRequests.set(`${userSub}/${requestId}`, { ...item, status: "recording", recordingSince: new Date().toISOString() });
+    return true;
+  },
+  releaseRecording: async (userSub, requestId) => {
+    const item = asyncRequests.get(`${userSub}/${requestId}`);
+    if (item?.status === "recording") asyncRequests.set(`${userSub}/${requestId}`, { ...item, status: "pending" });
+  },
+  RECORDING_CLAIM_STALE_MINUTES: 20,
 }));
 
 const mockPutReceipt = vi.fn();
@@ -53,6 +65,7 @@ const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.f
 vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 import { checkPendingCtReturns, CT_PENDING_CHECK_INTERVAL_SECONDS } from "@app/services/hmrcCtPendingReturnCheck.js";
+import { pollCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
 import { CT_RETURN_KIND } from "@app/services/ctReturnKind.js";
 import { chargeTokenOnSuccess } from "@app/services/tokenEnforcement.js";
 import { publishActivityEvent } from "@app/lib/activityAlert.js";
@@ -179,8 +192,8 @@ describe("checkPendingCtReturns", () => {
     expect(markers.has("AAA1")).toBe(false);
   });
 
-  test("the last run before 30 days records no answer, so it lands before the pending request's retention ends", async () => {
-    sendReturn("AAA1", "filer-a", { sentDaysAgo: 30 - 10 / (24 * 60) });
+  test("a run in the day after the 30-day wait records no answer, before the pending request's retention ends", async () => {
+    sendReturn("AAA1", "filer-a", { sentDaysAgo: 30 + 10 / (24 * 60) });
     const { outcomes } = await checkPendingCtReturns();
     expect(outcomes).toEqual([{ correlationId: "AAA1", outcome: "NO_ANSWER" }]);
   });
@@ -204,5 +217,29 @@ describe("checkPendingCtReturns", () => {
     ]);
     expect(markers.has("AAA1")).toBe(true);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.objectContaining({ hmrcCorrelationId: "AAA1", error: "socket hang up" }));
+  });
+
+  test("the page's poll and the scheduled check reading one final answer at once record it once", async () => {
+    sendReturn("AAA1", "filer-a");
+    // Each poll waits until both have asked, so both read the return as pending and get the answer.
+    const waitingPolls = [];
+    mockPost.mockImplementation(async (url, xml) => {
+      if (xml.includes("<Function>delete</Function>")) return deleteResponse("AAA1");
+      await new Promise((resolve) => {
+        waitingPolls.push(resolve);
+        if (waitingPolls.length === 2) waitingPolls.forEach((release) => release());
+      });
+      return success("AAA1");
+    });
+
+    const [page, scheduled] = await Promise.all([pollCtSubmission({ userSub: "filer-a", correlationId: "AAA1" }), checkPendingCtReturns()]);
+
+    expect(polls()).toHaveLength(2);
+    expect(mockPutReceipt).toHaveBeenCalledTimes(1);
+    expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+    expect(publishActivityEvent.mock.calls.filter(([event]) => event.event === "hmrc-ct-return-accepted")).toHaveLength(1);
+    expect(chargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+    expect(asyncRequests.get("filer-a/AAA1").status).toBe("completed");
+    expect([page.data.statusCode, scheduled.outcomes[0].outcome]).toContain("ACCEPT");
   });
 });

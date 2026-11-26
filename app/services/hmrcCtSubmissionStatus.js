@@ -29,7 +29,13 @@ import {
   RECEIPT_SIGNATURE_VALID,
   RECEIPT_SIGNATURE_DIGEST_NOT_REPRODUCED,
 } from "./hmrcReceiptSignature.js";
-import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
+import {
+  putAsyncRequest,
+  getAsyncRequest,
+  claimRecording,
+  releaseRecording,
+  RECORDING_CLAIM_STALE_MINUTES,
+} from "../data/dynamoDbAsyncRequestRepository.js";
 import { recordFiledReceipt } from "./filedReceipt.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, longPeriodFields, amendedFields, formRequestFields } from "./jointFiling.js";
@@ -107,18 +113,21 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 // How long Submit waits for HMRC's final answer to a return, counted from when it was sent.
 export const CT_ANSWER_WAIT_DAYS = 30;
+// A pending return is kept a day past the wait, so a day of scheduled checks can record that HMRC
+// gave no answer before the record goes.
+const CT_PENDING_RETENTION_DAYS = CT_ANSWER_WAIT_DAYS + 1;
 // A no-answer record stays this long after it is written, so the receipts list and the status page
 // show it.
 const CT_NO_ANSWER_RETENTION = { days: CT_ANSWER_WAIT_DAYS };
 
 /**
- * The retention of a pending return: CT_ANSWER_WAIT_DAYS from when it was sent, so a poll that
+ * The retention of a pending return: CT_PENDING_RETENTION_DAYS from when it was sent, so a poll that
  * writes the request again does not move it.
  * @param {Date|string} sentAt
  * @returns {{days: number, from: Date}}
  */
 export function ctPendingRetention(sentAt) {
-  return { days: CT_ANSWER_WAIT_DAYS, from: new Date(sentAt) };
+  return { days: CT_PENDING_RETENTION_DAYS, from: new Date(sentAt) };
 }
 
 /**
@@ -203,6 +212,11 @@ async function pendingAgain({ userSub, correlationId, pending, sentAt, pollInter
   return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark, pollIntervalSeconds } };
 }
 
+function recordingIsStale(persistedRequest) {
+  const since = Date.parse(persistedRequest.recordingSince ?? "");
+  return Number.isNaN(since) || since <= Date.now() - RECORDING_CLAIM_STALE_MINUTES * 60 * 1000;
+}
+
 // HMRC gave no final answer in CT_ANSWER_WAIT_DAYS: the request records that, and nothing more is asked.
 async function recordNoAnswer({ userSub, correlationId, pending, jointFiling, sentAt, asyncRequestsTableName }) {
   const noAnswer = {
@@ -233,12 +247,9 @@ async function recordNoAnswer({ userSub, correlationId, pending, jointFiling, se
  * @param {string} input.userSub
  * @param {string} input.correlationId - the Transaction Engine CorrelationID, the async request id
  * @param {string} [input.govTestScenario] - forwarded to the Transaction Engine as Gov-Test-Scenario
- * @param {number} [input.noAnswerLeadSeconds] - how long before the end of CT_ANSWER_WAIT_DAYS the
- *   return counts as unanswered: a scheduled caller passes its interval, so its last run comes before
- *   the pending request's retention ends
  * @returns {Promise<{data: object}|{errors: object[], correlationId: string}|{notFound: true, correlationId: string}>}
  */
-export async function pollCtSubmission({ userSub, correlationId, govTestScenario, noAnswerLeadSeconds = 0 }) {
+export async function pollCtSubmission({ userSub, correlationId, govTestScenario }) {
   context.set("hmrcCorrelationId", correlationId);
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const persistedRequest = await getAsyncRequest(userSub, correlationId, asyncRequestsTableName);
@@ -266,6 +277,10 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   }
 
   const pending = persistedRequest.data;
+  // Another poll is recording this return's final answer: the reader waits for it.
+  if (persistedRequest.status === "recording" && !recordingIsStale(persistedRequest)) {
+    return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark } };
+  }
   const jointFiling = {
     ...jointFilingFields(pending.jointFilingId),
     ...longPeriodFields(pending.longPeriod),
@@ -273,7 +288,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   };
   const now = Date.now();
   const sentAt = persistedRequest.createdAt;
-  if (now + noAnswerLeadSeconds * 1000 >= Date.parse(sentAt) + CT_ANSWER_WAIT_DAYS * DAY_MS) {
+  if (now >= Date.parse(sentAt) + CT_ANSWER_WAIT_DAYS * DAY_MS) {
     return recordNoAnswer({ userSub, correlationId, pending, jointFiling, sentAt, asyncRequestsTableName });
   }
   if (pending.nextPollAt && Date.parse(pending.nextPollAt) > now) {
@@ -365,6 +380,48 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     ...signatureDetail,
   });
 
+  // The page's poll and the scheduled check can read the same final answer: only the one that takes
+  // the claim records it, so the receipt, its email, the accepted event and the token charge happen once.
+  if (!(await claimRecording(userSub, correlationId, asyncRequestsTableName))) {
+    const stored = await getAsyncRequest(userSub, correlationId, asyncRequestsTableName);
+    if (stored?.status === "completed") return { data: withoutDeleteOwed(stored.data) };
+    return { data: { statusCode: "PENDING", correlationId, irmark: pending.irmark } };
+  }
+  try {
+    return await recordAcceptance({
+      userSub,
+      correlationId,
+      pending,
+      jointFiling,
+      parsed,
+      irmarkReceiptMismatch,
+      receiptSignature,
+      gatewayTest,
+      messageClass,
+      extraHeaders,
+      asyncRequestsTableName,
+    });
+  } catch (error) {
+    await releaseRecording(userSub, correlationId, asyncRequestsTableName);
+    throw error;
+  }
+}
+
+// Writes an accepted return's receipt and settled record, tells the Transaction Engine to drop its
+// copy, publishes the accepted event and charges the token. Only the poll that holds the claim runs it.
+async function recordAcceptance({
+  userSub,
+  correlationId,
+  pending,
+  jointFiling,
+  parsed,
+  irmarkReceiptMismatch,
+  receiptSignature,
+  gatewayTest,
+  messageClass,
+  extraHeaders,
+  asyncRequestsTableName,
+}) {
   const receiptId = `${new Date().toISOString()}-${correlationId}`;
   const accepted = {
     kind: CT_RETURN_KIND,

@@ -20,7 +20,6 @@ const logger = createLogger({ source: "app/services/hmrcCtPendingReturnCheck.js"
 
 // The schedule runs every 15 minutes. A return is checked at most once in 10 minutes, however many
 // deployments of the environment run the schedule.
-export const CT_PENDING_CHECK_SCHEDULE_MINUTES = 15;
 export const CT_PENDING_CHECK_INTERVAL_SECONDS = 600;
 
 async function checkPendingReturn(marker, now) {
@@ -30,11 +29,7 @@ async function checkPendingReturn(marker, now) {
     return { correlationId, outcome: "checked-recently" };
   }
   const userSub = await openPendingCtFiler(marker);
-  const result = await pollCtSubmission({
-    userSub,
-    correlationId,
-    noAnswerLeadSeconds: CT_PENDING_CHECK_SCHEDULE_MINUTES * 60,
-  });
+  const result = await pollCtSubmission({ userSub, correlationId });
   if (result.notFound) {
     await deletePendingCtReturn(correlationId);
     return { correlationId, outcome: "not-held" };

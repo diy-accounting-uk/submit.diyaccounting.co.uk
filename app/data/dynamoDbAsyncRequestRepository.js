@@ -227,3 +227,68 @@ export async function recordStatusCheck(userId, requestId, checkedAt, tableName)
     throw error;
   }
 }
+
+// A recording claim older than this belongs to a record that can no longer be running (its release
+// failed, or its Lambda was stopped), so the next poll may take it.
+export const RECORDING_CLAIM_STALE_MINUTES = 20;
+
+/**
+ * Take the one right to record a pending request's final answer: its status goes from "pending" to
+ * "recording", or a "recording" claim older than RECORDING_CLAIM_STALE_MINUTES is taken over. Two
+ * polls that read the same final answer both ask, and only the first records it.
+ * @param {string} userId - The user ID
+ * @param {string} requestId - The request ID
+ * @param {string} tableName
+ * @param {{now?: Date}} [options]
+ * @returns {Promise<boolean>} false when the request is not pending or another poll holds the claim
+ */
+export async function claimRecording(userId, requestId, tableName, { now = new Date() } = {}) {
+  const staleBefore = new Date(now.getTime() - RECORDING_CLAIM_STALE_MINUTES * 60 * 1000);
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub: hashSub(userId), requestId },
+          UpdateExpression: "SET #status = :recording, #recordingSince = :now",
+          ConditionExpression: "#status = :pending OR (#status = :recording AND #recordingSince < :staleBefore)",
+          ExpressionAttributeNames: { "#status": "status", "#recordingSince": "recordingSince" },
+          ExpressionAttributeValues: {
+            ":recording": "recording",
+            ":pending": "pending",
+            ":now": now.toISOString(),
+            ":staleBefore": staleBefore.toISOString(),
+          },
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return false;
+    throw error;
+  }
+}
+
+/**
+ * Give a recording claim back when the record failed part-way, so the next poll records the answer.
+ * @param {string} userId - The user ID
+ * @param {string} requestId - The request ID
+ * @param {string} tableName
+ */
+export async function releaseRecording(userId, requestId, tableName) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub: hashSub(userId), requestId },
+          UpdateExpression: "SET #status = :pending REMOVE #recordingSince",
+          ConditionExpression: "#status = :recording",
+          ExpressionAttributeNames: { "#status": "status", "#recordingSince": "recordingSince" },
+          ExpressionAttributeValues: { ":recording": "recording", ":pending": "pending" },
+        }),
+    );
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return;
+    throw error;
+  }
+}

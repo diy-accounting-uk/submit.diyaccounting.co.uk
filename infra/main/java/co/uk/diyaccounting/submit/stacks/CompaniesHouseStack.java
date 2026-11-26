@@ -1455,9 +1455,17 @@ public class CompaniesHouseStack extends Stack {
         codesSealKeySecret.grantRead(this.hmrcCtReturnStatusCheckLambda);
         receiptsTable.grant(this.hmrcCtReturnStatusCheckLambda, "dynamodb:PutItem");
         grantTokenCharge(this.hmrcCtReturnStatusCheckLambda, bundlesTable);
-        // Reads and writes the filer's request and the marker by key, and deletes a settled marker.
+        // Reads and writes the filer's request and the marker by key.
         companiesHouseAccountsAsyncRequestsTable.grant(
-                this.hmrcCtReturnStatusCheckLambda, "dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem");
+                this.hmrcCtReturnStatusCheckLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Deletes a settled marker, and nothing in any user's own partition.
+        this.hmrcCtReturnStatusCheckLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:DeleteItem"))
+                .resources(List.of(companiesHouseAccountsAsyncRequestsTable.getTableArn()))
+                .conditions(Map.of(
+                        "ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of(CT_PENDING_PARTITION))))
+                .build());
         // The one Query: the marker partition, and no user's own partition. No Scan.
         this.hmrcCtReturnStatusCheckLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)

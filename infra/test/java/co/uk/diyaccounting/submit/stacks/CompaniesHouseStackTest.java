@@ -341,6 +341,15 @@ class CompaniesHouseStackTest {
                 Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("hmrc-ct-pending"))),
                 queryStatements.get(0).get("Condition"),
                 "the Query reaches the marker partition and no user's partition");
+        var deleteStatements = statementsOnRole(template, functionName).stream()
+                .filter(statement -> "dynamodb:DeleteItem".equals(statement.get("Action")))
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("table/" + asyncTable))
+                .toList();
+        assertEquals(1, deleteStatements.size());
+        assertEquals(
+                Map.of("ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of("hmrc-ct-pending"))),
+                deleteStatements.get(0).get("Condition"),
+                "the DeleteItem reaches the marker partition and no user's partition");
         assertTrue(actions.contains("dynamodb:PutItem"), "the status check writes the receipt");
         assertTrue(actions.contains("events:PutEvents"), "the status check publishes the accepted event");
         assertTrue(actions.contains("secretsmanager:GetSecretValue"), "the status check opens the sealed filer");
