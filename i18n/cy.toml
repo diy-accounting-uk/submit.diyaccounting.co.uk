@@ -28709,3 +28709,83 @@ cy = '''Rydych yn cael dwy dderbynneb o dan un ffeilio. Dewch o hyd iddynt ar <a
 [strings."help.see-the-guide-and-the-availability-f4f06a"]
 hash = "f4f06a27fa5b"
 cy = '''Gweler y <a href="guide.html#file-company-tax-return-with-accounts" target="_blank" rel="noopener">canllaw</a> a’r <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">tabl argaeledd</a>.'''
+
+[strings."ct.failure-answers-saved"]
+hash = "2c5445638d35"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon ac wedi’u cadw yn y porwr hwn tan {date}.'''
+
+[strings."ct.failure-answers-not-saved"]
+hash = "22f483de56b7"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon. Nid ydynt wedi’u cadw yn y porwr hwn: fe wnaethoch ddewis peidio â’u cadw.'''
+
+[strings."ct.failure-answers-in-form"]
+hash = "fb7fc3df2edf"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon.'''
+
+[strings."ct.failure-sent-preview"]
+hash = "72a748ada1a2"
+cy = '''Ni anfonwyd dim at CThEF na Thŷ’r Cwmnïau. Caiff yr adolygiad ei greu cyn i ddim gael ei anfon.'''
+
+[strings."ct.failure-sent-ch-none"]
+hash = "1aa964e24a21"
+cy = '''Ni chyrhaeddodd y cyfrifon Dŷ’r Cwmnïau, ac ni anfonwyd y Ffurflen Dreth at CThEF.'''
+
+[strings."ct.failure-sent-ch-accepted"]
+hash = "2cfa384873b7"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}).'''
+
+[strings."ct.failure-sent-ch-held"]
+hash = "9a6e4ef1e6f2"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}) ac nid yw wedi penderfynu arnynt.'''
+
+[strings."ct.failure-service-ch"]
+hash = "dbfbe8c46331"
+cy = '''Tŷ’r Cwmnïau'''
+
+[strings."ct.failure-service-hmrc"]
+hash = "e23afedb2045"
+cy = '''CThEF'''
+
+[strings."ct.failure-error-at"]
+hash = "17043f573ca7"
+cy = '''{text} ({location})'''
+
+[strings."ct.failure-help"]
+hash = "b79cac926e0b"
+cy = '''Help'''
+
+[strings."ct.failure-auth-code"]
+hash = "9e0fde7af905"
+cy = '''Ni dderbyniodd Tŷ’r Cwmnïau y cod dilysu cwmni. Gwiriwch y 6 i 8 nod yn y llythyr a anfonodd Tŷ’r Cwmnïau at y cwmni, a’i roi eto.'''
+
+[strings."ct.failure-gateway"]
+hash = "f1e6dfcdbb5d"
+cy = '''Ni dderbyniodd CThEF yr ID defnyddiwr na’r cyfrinair Porth y Llywodraeth. Gwiriwch y ddau, a bod gan yr ID defnyddiwr Dreth Gorfforaeth ar gyfer y cwmni hwn.'''
+
+[strings."ct.failure-our-credentials"]
+hash = "1ccb6c406883"
+cy = '''Gwrthododd {service} gymwysterau Submit ei hun. Does dim byd o’i le ar eich cyfrif. Rhowch gynnig arall arni nes ymlaen.'''
+
+[strings."ct.failure-business"]
+hash = "3d9bd4548cf2"
+cy = '''Atebodd {service} gyda’r gwall hwn. Cywirwch yr ateb y mae’n ei enwi ac anfonwch eto.'''
+
+[strings."ct.failure-refused"]
+hash = "73d35ce06be7"
+cy = '''Gwrthodwyd yr atebion cyn i ddim gael ei anfon. Cywirwch nhw ac anfonwch eto.'''
+
+[strings."ct.failure-submit-fault"]
+hash = "38a4c23e717e"
+cy = '''Nam yn Submit yw hwn, nid yn eich atebion na’ch mewngofnodi.'''
+
+[strings."ct.failure-close"]
+hash = "7d9eb7acb13e"
+cy = '''Cau'''
+
+[strings."ct.failure-heading"]
+hash = "483bd49023ae"
+cy = '''Beth ddigwyddodd'''
+
+[strings."ct.failure-request-id"]
+hash = "8ee7951cad05"
+cy = '''Dyfynnwch y cyfeirnod {id} pan fyddwch yn gofyn am help.'''

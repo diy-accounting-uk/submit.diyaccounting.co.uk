@@ -202,7 +202,12 @@ test.describe("File Company Tax Return entry form", () => {
         submission.requests.push(body);
         submission.headers?.push(route.request().headers());
         const reply = submission.reply?.(body) ?? { status: submission.status, body: submission.body };
-        await route.fulfill({ status: reply.status, contentType: "application/json", body: JSON.stringify(reply.body) });
+        await route.fulfill({
+          status: reply.status,
+          contentType: "application/json",
+          headers: reply.headers,
+          body: JSON.stringify(reply.body),
+        });
         return;
       }
       if (url.pathname === "/api/v1/hmrc/receipt" && submission.receiptList) {
@@ -295,6 +300,86 @@ test.describe("File Company Tax Return entry form", () => {
     const result = page.locator("#returnResult");
     await expect(result).toContainText("Return CORRPEND is waiting to be checked. Checking again...", { timeout: 30_000 });
     await expect(result).not.toContainText("PENDING");
+  });
+
+  async function fileAndFail(page, reply) {
+    const submission = { requests: [], reply: () => reply };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await expect.poll(async () => (await savedDraft(page))?.values?.utr).toBe("8596148860");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    return page.locator("#failureDetail");
+  }
+
+  test("a fault in Submit's filing says so in a panel with Help and the request id, and where the answers are", async ({ page }) => {
+    const panel = await fileAndFail(page, {
+      status: 500,
+      headers: { "x-request-id": "req-ctn2-500" },
+      body: { message: "Internal server error" },
+    });
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator("[data-part=kind]")).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
+    await expect(panel.locator("[data-part=next] a")).toHaveAttribute("href", "/help.html");
+    await expect(panel.locator("[data-part=next]")).toContainText("req-ctn2-500");
+    await expect(panel.locator("[data-part=answers]")).toHaveText(
+      /^Your answers are still in this form and saved in this browser until \d{1,2} [A-Z][a-z]+ \d{4}\.$/,
+    );
+    await expect(page.locator("#statusMessagesContainer + #failureDetail")).toHaveCount(1);
+  });
+
+  test("HMRC refusing the Government Gateway credentials says what to check, after the server's own words", async ({ page }) => {
+    const body = {
+      message: "HMRC did not acknowledge the Company Tax Return",
+      error: { errors: [{ number: "1046", text: "Authentication Failure" }] },
+    };
+    const panel = await fileAndFail(page, { status: 502, body });
+    await expect(panel).toHaveAttribute("data-kind", "your-credentials");
+    await expect(panel.locator("[data-part=sent]")).toHaveText("HMRC did not acknowledge the Company Tax Return");
+    await expect(panel.locator("[data-part=kind]")).toContainText("Government Gateway user ID or password");
+  });
+
+  test("HMRC's business error lists each error, and the panel stays through a new message and goes on a newer failure or its close button", async ({
+    page,
+  }) => {
+    const body = {
+      message: "HMRC did not acknowledge the Company Tax Return",
+      error: { errors: [{ number: "3001", text: "Box 145 must not be negative" }] },
+    };
+    const panel = await fileAndFail(page, { status: 502, body });
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator("[data-part=errors] li")).toHaveText(["Box 145 must not be negative"]);
+    await page.evaluate(() => window.showStatus("Still checking", "info"));
+    await expect(panel).toBeVisible();
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#failureDetail")).toHaveCount(1);
+    await page.locator("#failureDetail .failure-detail__close").click();
+    await expect(page.locator("#failureDetail")).toHaveCount(0);
+  });
+
+  test("a preview that fails says nothing was sent", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.route("**/api/v1/hmrc/ct/return/preview", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        headers: { "x-request-id": "req-preview" },
+        body: JSON.stringify({ message: "Internal server error" }),
+      }),
+    );
+    await page.locator("#previewBtn").click();
+    const panel = page.locator("#failureDetail");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "Nothing was sent to HMRC or Companies House. The review is built before anything is sent.",
+    );
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator("[data-part=next]")).toContainText("req-preview");
   });
 
   test("a book that fills one field says so in the singular, in English and Welsh", async ({ page }) => {

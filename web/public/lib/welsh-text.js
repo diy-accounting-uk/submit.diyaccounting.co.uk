@@ -2354,6 +2354,30 @@ window.WELSH_TEXT = {
   "consent.reject": "Gwrthod",
   "consent.shared":
     "Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein",
+  "ct.failure-answers-in-form": "Mae eich atebion yn dal yn y ffurflen hon.",
+  "ct.failure-answers-not-saved":
+    "Mae eich atebion yn dal yn y ffurflen hon. Nid ydynt wedi’u cadw yn y porwr hwn: fe wnaethoch ddewis peidio â’u cadw.",
+  "ct.failure-answers-saved": "Mae eich atebion yn dal yn y ffurflen hon ac wedi’u cadw yn y porwr hwn tan {date}.",
+  "ct.failure-auth-code":
+    "Ni dderbyniodd Tŷ’r Cwmnïau y cod dilysu cwmni. Gwiriwch y 6 i 8 nod yn y llythyr a anfonodd Tŷ’r Cwmnïau at y cwmni, a’i roi eto.",
+  "ct.failure-business": "Atebodd {service} gyda’r gwall hwn. Cywirwch yr ateb y mae’n ei enwi ac anfonwch eto.",
+  "ct.failure-close": "Cau",
+  "ct.failure-error-at": "{text} ({location})",
+  "ct.failure-gateway":
+    "Ni dderbyniodd CThEF yr ID defnyddiwr na’r cyfrinair Porth y Llywodraeth. Gwiriwch y ddau, a bod gan yr ID defnyddiwr Dreth Gorfforaeth ar gyfer y cwmni hwn.",
+  "ct.failure-heading": "Beth ddigwyddodd",
+  "ct.failure-help": "Help",
+  "ct.failure-our-credentials":
+    "Gwrthododd {service} gymwysterau Submit ei hun. Does dim byd o’i le ar eich cyfrif. Rhowch gynnig arall arni nes ymlaen.",
+  "ct.failure-refused": "Gwrthodwyd yr atebion cyn i ddim gael ei anfon. Cywirwch nhw ac anfonwch eto.",
+  "ct.failure-request-id": "Dyfynnwch y cyfeirnod {id} pan fyddwch yn gofyn am help.",
+  "ct.failure-sent-ch-accepted": "Derbyniodd Tŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}).",
+  "ct.failure-sent-ch-held": "Mae gan Dŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}) ac nid yw wedi penderfynu arnynt.",
+  "ct.failure-sent-ch-none": "Ni chyrhaeddodd y cyfrifon Dŷ’r Cwmnïau, ac ni anfonwyd y Ffurflen Dreth at CThEF.",
+  "ct.failure-sent-preview": "Ni anfonwyd dim at CThEF na Thŷ’r Cwmnïau. Caiff yr adolygiad ei greu cyn i ddim gael ei anfon.",
+  "ct.failure-service-ch": "Tŷ’r Cwmnïau",
+  "ct.failure-service-hmrc": "CThEF",
+  "ct.failure-submit-fault": "Nam yn Submit yw hwn, nid yn eich atebion na’ch mewngofnodi.",
   "ct.section-video-link": "Gwyliwch o {time}",
   "ct.section-video-summary": "Gwyliwch y rhan hon",
   "field.reference-balance-sheet": "Eitem {item} y fantolen",

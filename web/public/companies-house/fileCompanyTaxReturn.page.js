@@ -68,6 +68,7 @@ import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts
 import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
 import { ct600RecordHtml } from "../lib/filing-record.js";
 import { addSectionVideos } from "../lib/section-video.js";
+import { classifyFilingFailure, showFailureDetail } from "../lib/filing-failure.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
@@ -2829,9 +2830,69 @@ async function handleReturnFormSubmit(event) {
   } catch (error) {
     console.error("Failed to preview the Company Tax Return:", error);
     window.showStatus(error.message || siteText("ch.ct.preview-failed", "Failed to preview the Company Tax Return."), "error");
+    showFilingFailure(error, "preview");
   } finally {
     window.hideLoading();
   }
+}
+
+// --- What a failure left behind ----------------------------------------------------------------
+
+// Where the answers are now: saved in this browser until a day, not saved by the person's choice,
+// or only in the form.
+function answersWhereText() {
+  const storage = browserStorage();
+  const record = storage && company ? loadDraft(storage, draftScope()) : null;
+  if (record?.expiresAt) {
+    return siteText("ct.failure-answers-saved", "Your answers are still in this form and saved in this browser until {date}.", {
+      date: longDateText(record.expiresAt.slice(0, 10)),
+    });
+  }
+  if (storage && keepDays(storage) === 0) {
+    return siteText(
+      "ct.failure-answers-not-saved",
+      "Your answers are still in this form. They are not saved in this browser: you chose not to keep them.",
+    );
+  }
+  return siteText("ct.failure-answers-in-form", "Your answers are still in this form.");
+}
+
+// What was sent and what was not, at the stage the failure came: the preview sends nothing; a joint
+// filing says which part reached which service; HMRC's part gives the server's own words.
+function sentText(stage, error) {
+  if (stage === "preview") {
+    return siteText("ct.failure-sent-preview", "Nothing was sent to HMRC or Companies House. The review is built before anything is sent.");
+  }
+  const parts = [];
+  const accounts = sending.companiesHouse;
+  if (sending.mode === "both") {
+    if (!accounts) {
+      parts.push(siteText("ct.failure-sent-ch-none", "The accounts did not reach Companies House, and the return was not sent to HMRC."));
+    } else if (accounts.statusCode === "ACCEPT") {
+      parts.push(
+        siteText("ct.failure-sent-ch-accepted", "Companies House accepted the accounts (submission {number}).", {
+          number: accounts.submissionNumber,
+        }),
+      );
+    } else {
+      parts.push(
+        siteText("ct.failure-sent-ch-held", "Companies House has the accounts (submission {number}) and has not decided on them.", {
+          number: accounts.submissionNumber,
+        }),
+      );
+    }
+  }
+  if (stage === "hmrc") parts.push(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."));
+  return parts.join(" ");
+}
+
+function showFilingFailure(error, stage) {
+  const service = stage === "companiesHouse" ? "companiesHouse" : "hmrc";
+  showFailureDetail(document, {
+    sent: sentText(stage, error),
+    answers: answersWhereText(),
+    failure: classifyFilingFailure(error, { service }),
+  });
 }
 
 function focusReviewRow(fieldId) {
@@ -4022,6 +4083,7 @@ async function runSend(send) {
     }
     if (error.status === 409) showView("previewView");
     window.showStatus(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."), "error");
+    showFilingFailure(error, sending.mode === "both" && sending.companiesHouse?.statusCode !== "ACCEPT" ? "companiesHouse" : "hmrc");
   } finally {
     window.hideLoading();
   }
@@ -4068,6 +4130,7 @@ async function handleSubmitReturn() {
           }
           showView("previewView");
           window.showStatus(companiesHouseErrorText(error), "error");
+          showFilingFailure(error, "companiesHouse");
           return;
         }
         throw error;
