@@ -73,7 +73,7 @@ State: pending.
 
 ### Wave 4
 
-Starts only when CTL1's register is on `main`.
+CTL1's register is on `main` (53e74f267).
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
