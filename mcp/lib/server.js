@@ -434,7 +434,7 @@ export const TOOLS = {
     handler: (_session, _params) => signOut(),
   },
   open_book: {
-    title: "Open a book",
+    title: "Open a DIYA-GL book",
     annotations: READS,
     description:
       "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
@@ -454,12 +454,14 @@ export const TOOLS = {
     handler: openBook,
   },
   list_books: {
-    title: "List saved books",
+    title: "List saved DIYA-GL books",
     annotations: READS,
     description:
-      "List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each " +
-      "row carries the bookId open_book takes, the book's title, its product and the period it covers. With clientId, " +
-      "lists that practice client's books instead of the practice's own.",
+      "Lists the DIYA-GL books saved in the person's DIY Accounting Submit account, most recently updated first. A " +
+      "DIYA-GL book holds one business's sales, purchases and bank lines. Each row gives the bookId that open_book takes, " +
+      "the book's title, its product and the period it covers. With clientId, lists that practice client's DIYA-GL books. " +
+      "Use this when the person asks about their VAT return, their MTD VAT or the quarter's VAT and no DIYA-GL book is " +
+      "open yet, or asks which DIYA-GL books they have saved. It does not open or change a book and does not contact HMRC.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's books instead of the practice's own"),
     },
@@ -511,11 +513,12 @@ export const TOOLS = {
     annotations: READS,
     _meta: VAT_REVIEW_CARD_TOOL_META,
     description:
-      "The nine VAT boxes for one obligation period from the session's loaded book, read from the engine's own VAT " +
-      "interface: the quarter ending on periodEnd (a month end the book carries), with HMRC's field names and " +
-      "rounding, the three months' figures, and every sales and purchases journal line that fed boxes 1, 4, 6 and 7. " +
-      "Refuses a book that is not VAT registered, a period the book does not carry, and a period whose lines do not " +
-      "reconcile with the interface.",
+      "Works out the nine VAT return boxes for one quarter from the open DIYA-GL book: the quarter ending on periodEnd, " +
+      "with HMRC's box names and rounding, each month's figures, and the sales and purchases lines behind boxes 1, 4, " +
+      "6 and 7. Use this when the person asks what their VAT return comes to, for their MTD VAT figures or the " +
+      "quarter's VAT, what the nine boxes are, or why a box has its figure. It refuses a book that is not VAT " +
+      "registered, a quarter the book does not hold, and a quarter whose lines do not agree with the book's VAT " +
+      "figures. It does not file the return or contact HMRC; prepare_vat_return gives the link to file it.",
     inputSchema: {
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
       periodStart: z
@@ -531,11 +534,12 @@ export const TOOLS = {
     annotations: READS,
     _meta: VAT_REVIEW_CARD_TOOL_META,
     description:
-      "Derives the VAT return for the quarter ending on periodEnd from the session's loaded book, exactly as " +
-      "derive_vat_return does, and answers a link to the VAT form on the Submit site with the seven figures filled in " +
-      "(the form works out boxes 3 and 5 itself). This tool never files anything and reaches no outside service. The " +
-      "person opens the link, checks the figures on the page, ticks the declaration and files there; the figures filed " +
-      "are the figures the page shows.",
+      "Works out the VAT return for the quarter ending on periodEnd from the open DIYA-GL book, as derive_vat_return " +
+      "does, and answers a link to the VAT return form on DIY Accounting Submit with the seven figures filled in (the " +
+      "form works out boxes 3 and 5). The person opens the link, checks the figures on the page, ticks the declaration " +
+      "and files there. Use this when the person asks to file, submit or send their VAT return or their MTD VAT for a " +
+      "quarter. It never files anything and contacts no outside service: the figures filed are the ones the person " +
+      "sees on the page.",
     inputSchema: {
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
       periodStart: z
@@ -706,9 +710,11 @@ export const TOOLS = {
     title: "Get a VAT receipt",
     annotations: READS,
     description:
-      "A stored VAT return receipt by its file name, over the deployed API: what HMRC answered when it accepted the " +
-      "return (the processing date, the form bundle number, the payment indicator and the charge reference). " +
-      "clientId, when given, narrows the fetch to one of the practice's clients but does not change which receipt is read.",
+      "Reads one stored VAT return receipt by its file name, which list_vat_receipts gives: what HMRC answered when it " +
+      "accepted the return, that is the processing date, the form bundle number, the payment indicator and the charge " +
+      "reference. clientId narrows the read to one of a practice's clients but does not change which receipt is read. " +
+      "Use this when the person asks for the HMRC receipt of a VAT return, its form bundle number, or whether HMRC " +
+      "accepted a return they filed. It does not file, change or resend anything.",
     inputSchema: {
       name: z.string().describe("The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)"),
       clientId: z.string().optional().describe("A practice client's id, to check the receipt belongs to that client"),
@@ -719,9 +725,10 @@ export const TOOLS = {
     title: "List VAT receipts",
     annotations: READS,
     description:
-      "The VAT return receipts Submit has stored for the signed-in account, newest first: each row carries the name " +
-      "get_vat_receipt takes, HMRC's form bundle number and the day the return was filed. clientId narrows the list to " +
-      "one of the practice's clients.",
+      "Lists the VAT return receipts DIY Accounting Submit has stored for the signed-in account, newest first: each row " +
+      "gives the name get_vat_receipt takes, HMRC's form bundle number and the day the return was filed. clientId " +
+      "narrows the list to one of a practice's clients. Use this when the person asks which VAT returns they have " +
+      "filed, for their HMRC receipts, or when a return was last filed. It does not file anything or contact HMRC.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's receipts"),
     },

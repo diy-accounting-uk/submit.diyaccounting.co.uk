@@ -93,12 +93,13 @@ export function hostedToolNames(environmentName, groups = []) {
 // What an assistant connected to prod's tool set needs to know beyond each tool's description: what
 // the connector cannot do, how a return gets filed, and what to show from a derived return.
 const PROD_HOSTED_INSTRUCTIONS =
-  "This connector offers VAT tools only: it opens a diya-gl book, derives a VAT return from it, prepares the link " +
+  "This connector offers VAT tools only: it opens a DIYA-GL book, derives a VAT return from it, prepares the link " +
   "that opens the VAT return form with those figures filled in, and reads stored VAT receipts. It cannot file a VAT " +
   "return, pay HMRC or anyone else, or file company accounts. When asked for any of those, say that this connector " +
   "offers VAT tools only and cannot do it. To file a VAT return, call prepare_vat_return, give the person its link and " +
   `tell them: "${VAT_FILING_SENTENCE}" After derive_vat_return, show the nine boxes and the largest lines behind ` +
-  "boxes 1 and 4.";
+  "boxes 1 and 4. When list_books answers no DIYA-GL book, say that no DIYA-GL book is saved in the account and give " +
+  "the link https://submit.diyaccounting.co.uk/mcp.html#what-you-need.";
 
 /**
  * The server instructions the hosted endpoint sends in an environment, for a caller in these groups:
@@ -113,12 +114,14 @@ export function hostedInstructions(environmentName, groups = []) {
 
 export const HOSTED_OVERRIDES = {
   open_book: {
-    title: "Open a book",
+    title: "Open a DIYA-GL book",
     annotations: READS,
     description:
-      "Open a book saved in the DIYA cloud by bookId (a practice client's own book with clientId), signed in as the " +
-      "caller. Answers the product, the entity, the period covered, the line count and the book checks summary. " +
-      "Replaces the session's loaded book.",
+      "Opens a DIYA-GL book saved in the person's DIY Accounting Submit account by its bookId, which list_books gives " +
+      "(a practice client's own DIYA-GL book with clientId). Answers the product, the business, the period covered, the " +
+      "line count and the book's checks, and replaces any DIYA-GL book already open in this conversation. Use this when " +
+      "the person picks a saved DIYA-GL book, or before working out or preparing a VAT return from their records. It " +
+      "does not change the book, file anything or contact HMRC.",
     inputSchema: {
       bookId: z.string().describe("The cloud book's id"),
       clientId: z.string().optional().describe("A practice client's id, to open that client's book instead of the practice's own"),

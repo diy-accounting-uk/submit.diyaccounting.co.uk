@@ -1,0 +1,49 @@
+{
+  "about": "Prompts a person types to an assistant with the DIY Accounting Submit connector installed, and the prod tool the assistant should call first for each, or none. Direct prompts name the task; indirect prompts describe a need; negative prompts ask for something the connector does not do.",
+  "prompts": [
+    { "kind": "direct", "prompt": "Work out my MTD VAT return for the quarter ended 30 June 2025", "expected": "derive_vat_return" },
+    { "kind": "direct", "prompt": "What are the nine VAT boxes for my quarter ending 31 March 2026?", "expected": "derive_vat_return" },
+    { "kind": "direct", "prompt": "File my VAT return for the quarter to 30 September 2025", "expected": "prepare_vat_return" },
+    { "kind": "direct", "prompt": "Get my VAT return ready to submit to HMRC for the June quarter", "expected": "prepare_vat_return" },
+    { "kind": "direct", "prompt": "Show me the HMRC receipt for my last VAT return", "expected": "list_vat_receipts" },
+    { "kind": "direct", "prompt": "Get the receipt 2026-08-07T10:15:00.000Z-123456789012.json", "expected": "get_vat_receipt" },
+    { "kind": "direct", "prompt": "List the DIYA-GL books saved in my DIY Accounting Submit account", "expected": "list_books" },
+    { "kind": "direct", "prompt": "Open the DIYA-GL book with id 2f4e9c1a-book", "expected": "open_book" },
+    { "kind": "direct", "prompt": "Which VAT returns have I filed with DIY Accounting Submit?", "expected": "list_vat_receipts" },
+    {
+      "kind": "direct",
+      "prompt": "Prepare the link to file my MTD VAT return for the quarter ended 31 December 2025",
+      "expected": "prepare_vat_return"
+    },
+
+    { "kind": "indirect", "prompt": "How much VAT do I owe HMRC this quarter?", "expected": "derive_vat_return" },
+    { "kind": "indirect", "prompt": "Why is box 4 so high on my VAT return?", "expected": "derive_vat_return" },
+    { "kind": "indirect", "prompt": "My VAT is due next week, can you sort it out from my records?", "expected": "list_books" },
+    { "kind": "indirect", "prompt": "Use the bakery's records for the VAT figures", "expected": "list_books" },
+    { "kind": "indirect", "prompt": "Did HMRC accept the return I sent in August?", "expected": "list_vat_receipts" },
+    {
+      "kind": "indirect",
+      "prompt": "What was the form bundle number HMRC gave my return 2026-08-07T10:15:00.000Z-123456789012.json?",
+      "expected": "get_vat_receipt"
+    },
+    { "kind": "indirect", "prompt": "Load the book I saved yesterday for my plumbing business, it is bk-77a1", "expected": "open_book" },
+    { "kind": "indirect", "prompt": "I'm ready to send this quarter's VAT, what do I do next?", "expected": "prepare_vat_return" },
+    {
+      "kind": "indirect",
+      "prompt": "Is my VAT higher than last quarter's? The quarter ended 31 March 2026.",
+      "expected": "derive_vat_return"
+    },
+    { "kind": "indirect", "prompt": "When did I last file a VAT return?", "expected": "list_vat_receipts" },
+
+    { "kind": "negative", "prompt": "Pay my VAT bill to HMRC now", "expected": "none" },
+    { "kind": "negative", "prompt": "File my company's accounts at Companies House", "expected": "none" },
+    { "kind": "negative", "prompt": "Submit my Self Assessment tax return", "expected": "none" },
+    { "kind": "negative", "prompt": "What is the current standard rate of VAT in Ireland?", "expected": "none" },
+    { "kind": "negative", "prompt": "Write me a cover letter for a bookkeeping job", "expected": "none" },
+    { "kind": "negative", "prompt": "Register my business for VAT", "expected": "none" },
+    { "kind": "negative", "prompt": "Delete my DIYA-GL book", "expected": "none" },
+    { "kind": "negative", "prompt": "Send HMRC my Corporation Tax return", "expected": "none" },
+    { "kind": "negative", "prompt": "Book a table for two at seven tonight", "expected": "none" },
+    { "kind": "negative", "prompt": "Change my bank details with HMRC", "expected": "none" }
+  ]
+}
