@@ -148,7 +148,7 @@ describe("publish-content bundles", () => {
     expect(html).toContain("Submit VAT (HMRC)");
     expect(html).not.toContain("£199.99");
     expect(html).not.toContain("Tax Agent");
-    expect(html).not.toContain("Company Tax Return");
+    expect(html).toContain("Company Tax Return");
     expect(html).not.toContain("Self Assessment");
   });
 

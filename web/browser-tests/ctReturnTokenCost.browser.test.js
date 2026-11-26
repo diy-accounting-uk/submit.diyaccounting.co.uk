@@ -6,6 +6,7 @@
 // what the send step will send, the balance, the exhausted states and the refusal message.
 
 import { test, expect } from "@playwright/test";
+import { openFoldsAround } from "./ct600Folds.js";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
@@ -71,7 +72,10 @@ const LONG_ANSWERS = {
 };
 
 async function typeLongForm(page, extra = {}) {
-  for (const [id, value] of Object.entries({ ...LONG_ANSWERS, ...extra })) await page.locator(`#${id}`).fill(value);
+  for (const [id, value] of Object.entries({ ...LONG_ANSWERS, ...extra })) {
+    await openFoldsAround(page, id);
+    await page.locator(`#${id}`).fill(value);
+  }
   await page.locator("#loansMadeAp2Yes").check();
   await page.locator("#loanName1Ap2").fill("Alex Example");
   await page.locator("#loanAmount1Ap2").fill("15000");

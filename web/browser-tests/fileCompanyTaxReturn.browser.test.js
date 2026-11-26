@@ -4,6 +4,7 @@
 // web/browser-tests/fileCompanyTaxReturn.browser.test.js
 
 import { test, expect } from "@playwright/test";
+import { openFoldsAround } from "./ct600Folds.js";
 import { serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { pageScrollsSideways, recordScreenshotPath } from "./submissionRecordAssets.js";
 import fs from "fs";
@@ -408,6 +409,116 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#repaymentName1")).toHaveCount(0);
   });
 
+  test("a box field's label leads with its box, its note links the guide, and its spreadsheet cell opens from a closed disclosure", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await expect(page.locator('label[for="nonTradingLoanRelationshipCredits"]')).toHaveText(/^Box 170: /);
+    const link = page.locator("#nonTradingLoanRelationshipCredits-hint a");
+    await expect(link).toHaveText("Company Tax Return guide");
+    await expect(link).toHaveAttribute("href", /the-company-tax-return-guide#/);
+    const disclosure = page.locator("#nonTradingLoanRelationshipCredits-source");
+    await expect(disclosure.locator("summary")).toHaveText("In DIY Accounting's spreadsheets");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await expect(disclosure.locator("dl")).toBeHidden();
+    await disclosure.locator("summary").click();
+    await expect(disclosure).toHaveAttribute("open", "");
+    await expect(disclosure.locator("dl")).toContainText("Financialaccounts.xlsx");
+    await expect(disclosure.locator("dl")).toContainText("CorporationTax");
+    await expect(disclosure.locator("dl")).toContainText("K24");
+    await expect(disclosure.locator("dl")).toContainText("Add gross bank interest received");
+    const image = disclosure.locator("img");
+    await expect(image).toHaveAttribute("src", "/images/ct600-sources/CorporationTax-K24.webp");
+    await expect(image).toHaveAttribute("alt", "The CorporationTax sheet at cell K24");
+    await expect(image).toHaveAttribute("loading", "lazy");
+  });
+
+  test("a field with no box leads with its reference and links the source of its term, or has neither", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator('label[for="tradeName"]')).toHaveText("Trade name");
+    await expect(page.locator("#tradeName-hint a")).toHaveCount(0);
+    await expect(page.locator("#tradeName-source")).toContainText("E8");
+    await expect(page.locator('label[for="includeComparatives"]')).toHaveText("Schedule 1 paragraph 7: Include last year's figures");
+    await expect(page.locator("#includeComparatives-hint a")).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/uksi/2008/409/schedule/1/paragraph/7",
+    );
+    await expect(page.locator('label[for="includeFixedAssetNote"]')).toHaveText(
+      "Schedule 1 paragraph 48: Include the tangible fixed assets note",
+    );
+    await expect(page.locator("#includeFixedAssetNote-source")).toBeAttached();
+  });
+
+  test("the page's own questions lead with their reference and carry their note", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator("#sendTo")).toHaveText("Where are you sending these accounts?");
+    await expect(page.locator("#sendTo-hint")).toBeVisible();
+    await expect(page.locator("#sendTo-hint a")).toHaveCount(0);
+    await expect(page.locator("#companiesHouseCopy")).toHaveText("Companies Act section 444: Which copy goes to Companies House?");
+    await expect(page.locator("#companiesHouseCopy-hint a")).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/444",
+    );
+    await expect(page.locator("#companiesHouseCopy-source")).toBeAttached();
+    await expect(page.locator("#accountsRegime")).toHaveText(
+      "Companies Act sections 381 and 384A: Which accounts does the company prepare?",
+    );
+    await expect(page.locator("#accountsRegime-hint a")).toHaveText([
+      "Companies Act 2006, section 381",
+      "Companies Act 2006, section 384A",
+    ]);
+    await expect(page.locator("#accountsRegime-source")).toContainText("The spreadsheets have no cell for this.");
+    await expect(page.locator("#firstPeriodStart")).toHaveText(
+      "Box 30: Does the first accounting period start on the first day of the accounts?",
+    );
+    await expect(page.locator("#firstPeriodStart-hint a")).toHaveText("Company Tax Return guide");
+    await page.locator("#periodStart").fill("2025-01-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await page.locator("#periodEnd").dispatchEvent("change");
+    await expect(page.locator("#firstPeriodStart")).toHaveText(/^Box 30: Does the first accounting period start on 1 January 2025\?$/);
+  });
+
+  test("each accounts line shows its format item, its note and both years' cells, and a sum names every cell", async ({ page }) => {
+    await openForm(page);
+    const turnover = page.locator("tr", { has: page.locator("#currentTurnover") });
+    await expect(turnover.locator("th")).toHaveText("Profit and loss item 1: Turnover");
+    await expect(page.locator("#currentTurnover")).toHaveAttribute("aria-describedby", "currentTurnover-hint");
+    await expect(page.locator("#priorTurnover")).toHaveAttribute("aria-describedby", "currentTurnover-hint");
+    const description = await page
+      .locator("#priorTurnover")
+      .evaluate((input) => document.getElementById(input.getAttribute("aria-describedby")).textContent);
+    expect(description).toContain("Sales of goods and services in the period");
+    await expect(page.locator("#currentTurnover-hint a")).toHaveText("The accounts regulations, Schedule 1");
+    const disclosure = page.locator("#currentTurnover-source");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await disclosure.locator("summary").click();
+    await expect(disclosure.locator("dl")).toContainText("This year");
+    await expect(disclosure.locator("dl")).toContainText("F9");
+    await expect(disclosure.locator("dl")).toContainText("Last year");
+    await expect(disclosure.locator("dl")).toContainText("B9");
+    await expect(disclosure.locator("img")).toHaveCount(2);
+    await expect(disclosure.locator("img").first()).toHaveAttribute("src", "/images/ct600-sources/PubPandL-F9.webp");
+    await expect(disclosure.locator("img").last()).toHaveAttribute("src", "/images/ct600-sources/PubPandL-B9.webp");
+
+    const reserve = page.locator("#currentProfitAndLossAccount-source");
+    await reserve.locator("summary").click();
+    await expect(reserve.locator("dl")).toContainText("F37 + F38 (worked from these cells)");
+    await expect(reserve.locator("img")).toHaveCount(4);
+  });
+
+  test("a loan row's fields lead with their CT600A box and carry the note and the disclosure", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#loansMadeYes").check();
+    await expect(page.locator('label[for="loanName1"]')).toHaveText("CT600A A10: Name of participator or associate");
+    await expect(page.locator("#loanName1-hint a")).toHaveText("CT600A guide");
+    const disclosure = page.locator("#loanAmount1-source");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await disclosure.locator("summary").click();
+    await expect(disclosure.locator("dl")).toContainText("PubBalSht!E29 − OpenAccounts!E30 (worked from these cells)");
+    await expect(disclosure.locator("img")).toHaveCount(2);
+    await expect(page.locator("#loanRate1-source")).toContainText("The spreadsheets have no cell for this.");
+  });
+
   test("a loan row's errors wait until its field is left or the return is previewed, not the Yes answer", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
@@ -459,13 +570,13 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#loansBookNote")).toContainText("overdrawn by £12,000 at the end and £0 at the start");
     await expect(page.locator("#loanName1")).toHaveValue("Carol Smith");
     await expect(page.locator("#loanAmount1")).toHaveValue("12000");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 480");
+    await expect(page.locator("#workedTax")).toContainText("Box 480");
     await expect(page.locator("#workedLoanTax")).toContainText("£4,050");
-    await expect(page.locator("#workedTaxRows")).toContainText("Section 455 rate for Carol Smith");
-    await expect(page.locator("#workedTaxRows")).toContainText("33.75%");
+    await expect(page.locator("#workedTax")).toContainText("Section 455 rate for Carol Smith");
+    await expect(page.locator("#workedTax")).toContainText("33.75%");
     await page.locator("#loanRate1").fill("35.75");
     await expect(page.locator("#workedLoanTax")).toContainText("£4,290");
-    await expect(page.locator("#workedTaxRows")).toContainText("the rate you entered");
+    await expect(page.locator("#workedTax")).toContainText("the rate you entered");
   });
 
   test("a repayment dated after today shows its error under its own date field", async ({ page }) => {
@@ -485,6 +596,10 @@ test.describe("File Company Tax Return entry form", () => {
 
   test("a dropped precision-code-ltd zip fills every field the book supplies and works the tax", async ({ page }) => {
     await openForm(page);
+    // The accounts lines and the employees count start at 0; blanked, a value after the drop is the book's.
+    await page.evaluate(() => {
+      for (const input of document.querySelectorAll("#formSections input")) if (input.defaultValue === "0") input.value = "";
+    });
     await dropBook(page);
 
     const supplied = [
@@ -501,7 +616,7 @@ test.describe("File Company Tax Return entry form", () => {
       "declarantStatus",
       ...CT600_FORM_FIELDS.filter((field) => ["whole-pounds", "pounds-and-pence"].includes(field.type) && !field.optional).map((f) => f.id),
       ...accountAmountIds().filter((id) => id.startsWith("current") && !OPTIONAL_CREDITOR_LINES.some((line) => id.endsWith(line))),
-      ...FIXED_ASSET_CLASSES.flatMap(([className]) => FIXED_ASSET_FIELDS.map(([field]) => noteId(className, field))),
+      ...FIXED_ASSET_CLASSES.flatMap(({ id: className }) => FIXED_ASSET_FIELDS.map(({ id: field }) => noteId(className, field))),
       ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id).filter((id) => !id.startsWith("directorsAdvance") && id !== "directorDateApproved"),
     ];
     for (const id of new Set(supplied)) {
@@ -513,10 +628,122 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#directorDateApproved"), "a book holds no approval date").toHaveValue("");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 440");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 155");
-    await expect(page.locator("#workedTaxRows")).toContainText("9198");
+    await expect(page.locator("#workedTax")).toContainText("Box 440");
+    await expect(page.locator("#workedTax")).toContainText("Box 155");
+    await expect(page.locator("#workedTax")).toContainText("9198");
     await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+  });
+
+  test("a section a published video shows has a closed Watch this part that loads the player at its second", async ({ page }) => {
+    await serveRealSite(page);
+    const list = JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/public/videos/publish.json"), "utf8"));
+    const typed = list.videos.find((video) => video.id === "file-company-tax-return-typed");
+    typed.sections = { "section-allowances": 83 };
+    await page.route("**/videos/publish.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(list) }),
+    );
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+
+    const panel = page.locator("#section-allowances > details.section-video");
+    await expect(panel.locator("summary")).toHaveText("Watch this part");
+    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(panel.locator("iframe")).toHaveCount(0);
+    await expect(page.locator("#section-company > details.section-video")).toHaveCount(0);
+    await panel.locator("summary").click();
+    await expect(panel.locator("iframe")).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${typed.videoId}?start=83`);
+    await expect(panel.locator("a.section-video__link")).toHaveText("Watch from 1:23");
+    await expect(panel.locator("a.section-video__link")).toHaveAttribute("href", `https://youtu.be/${typed.videoId}?t=83`);
+  });
+
+  test("a printed form leaves out the Watch this part panels", async ({ page }) => {
+    await serveRealSite(page);
+    const list = JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/public/videos/publish.json"), "utf8"));
+    list.videos.find((video) => video.id === "file-company-tax-return-typed").sections = { "section-allowances": 83 };
+    await page.route("**/videos/publish.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(list) }),
+    );
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    const panel = page.locator("#section-allowances > details.section-video");
+    await expect(panel).toBeVisible();
+    await panel.locator("summary").click();
+    await page.emulateMedia({ media: "print" });
+    await expect(panel).toBeHidden();
+    await page.emulateMedia({ media: "screen" });
+    await expect(panel).toBeVisible();
+  });
+
+  test("the review is the return about to be filed: a Box column, the period in words, and the accounts as tables whose Change links open their box", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#previewView h3").first()).toHaveText("The return you are about to file");
+    const utr = page.locator("#review-row-utr td");
+    await expect(utr.nth(0)).toHaveText("Box 3");
+    await expect(utr.nth(1)).toHaveText("Tax reference");
+    await expect(page.locator("#review-row-period td").nth(0)).toHaveText("Box 30");
+    await expect(page.locator("#review-row-period td").nth(2)).toHaveText(/^\d{1,2} [A-Z][a-z]+ \d{4}$/);
+    await expect(page.locator("#review-row-periodEnd td").nth(0)).toHaveText("Box 35");
+    await expect(page.locator("#reviewAnswers td")).not.toHaveText([/^Box \d+: /]);
+
+    const profitAndLoss = page.locator('table[data-ledger="profitAndLoss"]');
+    await expect(profitAndLoss.locator("caption")).toHaveText("Profit and loss account");
+    const columns = await profitAndLoss.locator("thead th").allTextContents();
+    expect(columns.slice(0, 2)).toEqual(["Line", "This year"]);
+    expect(columns.length).toBeLessThanOrEqual(3);
+    const turnover = profitAndLoss.locator("tbody tr", { has: page.locator("#review-row-currentTurnover") });
+    await expect(turnover.locator("th")).toHaveText("Turnover");
+    await expect(page.locator("#review-row-currentTurnover")).toContainText(/£[\d,]+/);
+    await expect(page.locator('table[data-ledger="balanceSheet"] tbody tr').first().locator("th")).toHaveText("Fixed assets");
+
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.locator("#previewView").screenshot({ path: `target/screenshots/ct600-review/review-${width}.png` });
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.locator("#review-row-currentTurnover a.review-change").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#currentTurnover")).toBeFocused();
+  });
+
+  test("the review shows the CT600 boxes as the filed copy does, each row with a Change link that reaches its question", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#foldAllowances > summary").click();
+    await expect(page.locator("#foldAllowances")).not.toHaveAttribute("open", "");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    const record = page.locator("#ct600Record");
+    await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
+    await expect(record.locator(".reference").first()).toHaveText("Tax reference 8596148860");
+    await expect(record.locator(".subtitle")).toHaveText(
+      /^Period covered by the return \d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$/,
+    );
+    const box3 = page.locator("#review-box-3");
+    await expect(box3.locator("td").nth(0)).toHaveText("Box 3");
+    await expect(box3.locator("td").nth(1)).toHaveText("Tax reference");
+    await expect(box3.locator("td.text-value")).toHaveText("8596148860");
+    await expect(page.locator("#review-row-directorDateApproved")).toContainText("15 September 2026");
+
+    await page.locator("#review-row-annualInvestmentAllowance a.review-change").click();
+    await expect(page.locator("#foldAllowances")).toHaveAttribute("open", "");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeFocused();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#review-box-3 a.review-change").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#utr")).toBeFocused();
   });
 
   test("the filled form previews the return with the figures it holds", async ({ page }) => {
@@ -784,6 +1011,193 @@ test.describe("File Company Tax Return entry form", () => {
     return { submission, accountsPosts };
   }
 
+  const DRAFT_KEY = "formDraft.ct600.user1.00000007";
+
+  async function savedDraft(page) {
+    return page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "null"), DRAFT_KEY);
+  }
+
+  async function lookUpAgain(page) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+  }
+
+  test("typed answers are saved in this browser and come back after a reload with Restore my answers", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator("#draftKeepDays")).toHaveValue("28");
+    await page.locator("#periodStart").fill("2025-04-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await page.locator("#currentTurnover").fill("123456");
+    await expect.poll(async () => (await savedDraft(page))?.values?.currentTurnover).toBe("123456");
+    const record = await savedDraft(page);
+    expect(record.period).toEqual({ periodStart: "2025-04-01", periodEnd: "2026-03-31" });
+    for (const secret of ["gatewayUserId", "gatewayPassword", "companyAuthCode"]) expect(record.values).not.toHaveProperty(secret);
+
+    await lookUpAgain(page);
+    const notice = page.locator("#draftRestore");
+    await expect(notice).toContainText("Answers saved in this browser");
+    await expect(notice).toContainText("for the period 1 April 2025 to 31 March 2026");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
+    await page.getByRole("button", { name: "Restore my answers" }).click();
+    await expect(page.locator("#currentTurnover")).toHaveValue("123456");
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(notice).toHaveCount(0);
+  });
+
+  test("Restore my answers opens the fold that holds a restored answer", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#periodStart").fill("2025-04-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await openFoldsAround(page, "frankedInvestmentIncome");
+    await page.locator("#frankedInvestmentIncome").fill("750");
+    await expect.poll(async () => (await savedDraft(page))?.values?.frankedInvestmentIncome).toBe("750");
+
+    await lookUpAgain(page);
+    await expect(page.locator("#foldOtherIncome")).not.toHaveAttribute("open", "");
+    await page.getByRole("button", { name: "Restore my answers" }).click();
+    await expect(page.locator("#frankedInvestmentIncome")).toHaveValue("750");
+    await expect(page.locator("#foldOtherIncome")).toHaveAttribute("open", "");
+    await expect(page.locator("#foldOtherIncome > summary")).toHaveText("Other income, 1 answered");
+  });
+
+  test("Start again deletes the saved answers and leaves the form empty", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#currentTurnover").fill("123456");
+    await expect.poll(() => savedDraft(page)).not.toBeNull();
+
+    await lookUpAgain(page);
+    await page.getByRole("button", { name: "Start again" }).click();
+    await expect(page.locator("#draftRestore")).toHaveCount(0);
+    expect(await savedDraft(page)).toBeNull();
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
+  });
+
+  test("with Do not keep chosen, nothing is in this browser after a reload", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#currentTurnover").fill("123456");
+    await expect.poll(() => savedDraft(page)).not.toBeNull();
+    await page.locator("#draftKeepDays").selectOption("0");
+    await expect(page.locator("#draftDeleted")).toHaveText("Your answers are not kept in this browser.");
+    expect(await savedDraft(page)).toBeNull();
+    await page.locator("#currentTurnover").fill("654321");
+    await page.waitForTimeout(1500);
+
+    await lookUpAgain(page);
+    await expect(page.locator("#draftRestore")).toHaveCount(0);
+    await expect(page.locator("#draftKeepDays")).toHaveValue("0");
+    expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("formDraft.ct600.")))).toEqual([]);
+  });
+
+  test("the saved answers are deleted when HMRC accepts the return", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await expect.poll(async () => (await savedDraft(page))?.values?.declarationAccepted).toBe(true);
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    await expect.poll(() => savedDraft(page)).toBeNull();
+  });
+
+  test("a joint filing's saved answers are deleted once Companies House and HMRC have both accepted", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await expect.poll(async () => (await savedDraft(page))?.values?.sendTo).toBe("both");
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    await expect.poll(() => savedDraft(page)).toBeNull();
+  });
+
+  test("a joint filing offers Start a new filing only once Companies House has decided the accounts, and names the submission meanwhile", async ({
+    page,
+  }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    let companiesHouseStatus = "PENDING";
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: companiesHouseStatus, submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#sendCtNowBtn")).toBeVisible({ timeout: 30_000 });
+
+    await page.locator("#sendCtNowBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+    await expect(page.locator("#startAgainPendingNote")).toHaveText(
+      "Companies House has not decided the accounts yet (submission 00001A). A new filing for this company and period waits until it does, so the accounts are not filed twice.",
+    );
+
+    companiesHouseStatus = "ACCEPT";
+    await page.locator("#waitForCompaniesHouseBtn").click();
+    await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the accounts", { timeout: 30_000 });
+    await expect(page.locator("#startAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainPendingNote")).toBeHidden();
+  });
+
   test("a return filed with HMRC alone can be amended to correct its attached accounts, with nothing sent to Companies House", async ({
     page,
   }) => {
@@ -968,7 +1382,10 @@ test.describe("File Company Tax Return entry form", () => {
   };
 
   async function typeLongForm(page, extra = {}) {
-    for (const [id, value] of Object.entries({ ...LONG_ANSWERS, ...extra })) await page.locator(`#${id}`).fill(value);
+    for (const [id, value] of Object.entries({ ...LONG_ANSWERS, ...extra })) {
+      await openFoldsAround(page, id);
+      await page.locator(`#${id}`).fill(value);
+    }
     await page.locator("#loansMadeAp2Yes").check();
     await page.locator("#loanName1Ap2").fill(DIRECTOR);
     await page.locator("#loanAmount1Ap2").fill("15000");
@@ -1136,10 +1553,59 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#period-error")).toContainText("18 months at most");
   });
 
+  test("a period of 13 months and then of 12 leaves no two-return heading in the worked tax", async ({ page }) => {
+    await openForm(page);
+    await typeLongForm(page);
+    const firstReturn = page.locator("#workedTax").getByRole("heading", { name: /Return 1 of 2/ });
+    await page.locator("#periodEnd").fill("2026-01-31");
+    await page.locator("#periodEnd").blur();
+    await expect(firstReturn).toBeVisible();
+
+    await page.locator("#periodEnd").fill("2025-12-31");
+    await page.locator("#periodEnd").blur();
+    await expect(page.locator("#longPeriodPanel")).toBeHidden();
+    await expect(firstReturn).toBeHidden();
+  });
+
+  test("a 13-month period with an own working that disagrees with the first return still shows both returns' worked tax", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await typeLongForm(page);
+    await page.locator("#periodEnd").fill("2026-01-31");
+    await page.locator("#periodEnd").blur();
+    const firstReturn = page.locator(".worked-tax__return").filter({ has: page.getByRole("heading", { name: /^Return 1 of 2/ }) });
+    const secondReturn = page.locator(".worked-tax__return").filter({ has: page.getByRole("heading", { name: /^Return 2 of 2/ }) });
+    const box440 = (section) =>
+      section
+        .locator(".worked-tax__row", { hasText: "Box 440:" })
+        .first()
+        .locator("dd")
+        .first()
+        .innerText()
+        .then((text) => Number(text.replace(/[^0-9.-]/g, "")));
+    await expect(firstReturn).toBeVisible();
+    const first440 = await box440(firstReturn);
+    const second440 = await box440(secondReturn);
+    expect(first440).toBeGreaterThan(0);
+
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").fill(String(first440 + 100));
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").blur();
+
+    await expect(page.locator("#workedTaxEmpty")).toBeHidden();
+    await expect(firstReturn).toBeVisible();
+    await expect(secondReturn).toBeVisible();
+    expect(await box440(firstReturn)).toBe(first440);
+    expect(await box440(secondReturn)).toBe(second440);
+  });
+
   test("a long period shows two columns, the second with the suffix Ap2 and each limit in its hint", async ({ page }) => {
     await openForm(page);
     await page.locator("#periodStart").fill("2025-01-01");
     await page.locator("#periodEnd").fill("2026-03-31");
+    await openFoldsAround(page, "annualInvestmentAllowance");
     await expect(page.locator("#annualInvestmentAllowance")).toBeVisible();
     await expect(page.locator("#annualInvestmentAllowanceAp2")).toBeVisible();
     await expect(page.locator('label[for="annualInvestmentAllowanceAp2"]')).toContainText("(return 2)");
@@ -1153,7 +1619,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#mainPoolAllowances-hint")).toContainText("main pool rate for this period is 18%");
     await expect(page.locator("#loansPart2")).toBeVisible();
     await expect(page.locator("#donationsPaidGroup")).toBeVisible();
-    await expect(page.locator("#firstPeriodStart")).toHaveText("Does the first accounting period start on 1 January 2025?");
+    await expect(page.locator("#firstPeriodStart")).toHaveText("Box 30: Does the first accounting period start on 1 January 2025?");
     for (const id of ["annualInvestmentAllowance", "annualInvestmentAllowanceAp2", "donationsPaidAp2", "associatedCompaniesAp2"]) {
       await expect(page.locator(`#${id}`)).toHaveAttribute("aria-describedby", `${id}-hint`);
     }
@@ -1210,12 +1676,8 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#returnIrmark")).toContainText(`Return 1 of 2 IRmark: ${IRMARKS.A1}`);
     await expect(page.locator("#returnIrmark")).toContainText(`Return 2 of 2 IRmark: ${IRMARKS.A2}`);
     await expect(page.locator("#returnRecord .customer-copy")).toHaveCount(2);
-    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText(
-      "Your copy of the Company Tax Return (preview) 1 of 2",
-    );
-    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText(
-      "Your copy of the Company Tax Return (preview) 2 of 2",
-    );
+    await expect(page.locator("#returnRecord .customer-copy-title").first()).toHaveText("Your copy of the Company Tax Return 1 of 2");
+    await expect(page.locator("#returnRecord .customer-copy-title").last()).toHaveText("Your copy of the Company Tax Return 2 of 2");
 
     expect(submission.requests).toHaveLength(2);
     const [first, second] = submission.requests;
@@ -1272,6 +1734,7 @@ test.describe("File Company Tax Return entry form", () => {
     }
     await expect(page.locator("#declarantName")).toBeEnabled();
 
+    await openFoldsAround(page, "mainPoolAllowancesAp2");
     await page.locator("#mainPoolAllowancesAp2").fill("300");
     await page.locator("#previewBtn").click();
     await expect(page.locator("#previewView")).toBeVisible();
@@ -1329,6 +1792,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#loanName1Ap2")).toHaveValue(DIRECTOR);
     await expect(page.locator("#periodStart")).toBeDisabled();
     await expect(page.locator("#periodEnd")).toBeDisabled();
+    await openFoldsAround(page, "mainPoolAllowancesAp2");
     await page.locator("#mainPoolAllowancesAp2").fill("300");
     await page.locator("#previewBtn").click();
     await expect(page.locator("#previewView")).toBeVisible();
@@ -1494,18 +1958,24 @@ test.describe("File Company Tax Return entry form", () => {
 
       const copy = page.locator("#returnRecord .customer-copy");
       await expect(copy).toBeVisible({ timeout: 15_000 });
-      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return (preview)");
+      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
       await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
       await expect(copy.locator(".customer-copy-submission")).toContainText("RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S");
 
       const record = copy.locator(".submission-record").first();
       await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
-      await expect(record.locator(".reference").first()).toHaveText("Unique Taxpayer Reference 8596148860");
-      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600, preview)");
-      await expect(record.locator(".subtitle")).toHaveText("Return period 1 April 2025 to 31 March 2026");
-      await expect(record.locator("tr", { hasText: "Profit or loss per the accounts" })).toBeVisible();
-      await expect(record.locator("tr", { hasText: "Box 440: Corporation Tax chargeable" }).locator("td.figure")).toHaveText("12,345.67");
-      await expect(record.locator("tr", { hasText: "Box 475: Net Corporation Tax liability" })).toHaveClass("total");
+      await expect(record.locator(".reference").first()).toHaveText("Tax reference 8596148860");
+      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600)");
+      await expect(record.locator(".subtitle")).toHaveText("Period covered by the return 1 April 2025 to 31 March 2026");
+      await expect(record.locator("tr", { hasText: "Profit or loss before tax per the accounts" })).toBeVisible();
+      await expect(record.locator("thead th.box-reference").first()).toHaveText("Box");
+      const chargeable = record.locator("tr", { hasText: "Corporation Tax chargeable" });
+      await expect(chargeable.locator("td.box-reference")).toHaveText("Box 440");
+      await expect(chargeable.locator("td.label").nth(1)).toHaveText("Corporation Tax chargeable");
+      await expect(chargeable.locator("td.figure")).toHaveText("12,345.67");
+      const liability = record.locator("tr", { hasText: "Net Corporation Tax liability" });
+      await expect(liability.locator("td.box-reference")).toHaveText("Box 475");
+      await expect(liability).toHaveClass("total");
 
       const receipt = copy.locator(".submission-record").nth(1);
       await expect(receipt.locator("tr", { hasText: "IRmark receipt" }).locator("td.text-value")).toHaveText(
@@ -1599,9 +2069,10 @@ test.describe("File Company Tax Return entry form", () => {
   test("the review lists every answer with a Change link whose hidden text names the row", async ({ page }) => {
     await reachReview(page);
     const row = page.locator("#review-row-annualInvestmentAllowance");
-    await expect(row).toContainText("Box 690: Annual investment allowance");
+    await expect(row.locator("td").nth(0)).toHaveText("Box 690");
+    await expect(row.locator("td").nth(1)).toHaveText("Annual investment allowance: capital allowances");
     await expect(row).toContainText("£52,500");
-    await expect(row.getByRole("link", { name: "Change Box 690: Annual investment allowance" })).toBeVisible();
+    await expect(row.getByRole("link", { name: "Change Annual investment allowance: capital allowances" })).toBeVisible();
     await expect(page.locator("#review-row-currentTurnover")).toContainText("Turnover, this year");
     await expect(page.locator("#review-row-declarationAccepted")).toContainText("Yes");
     await expect(page.locator("#review-box-440").getByRole("link", { name: /^Change box 440/ })).toBeVisible();
@@ -1669,25 +2140,223 @@ test.describe("File Company Tax Return entry form", () => {
     await dropBook(page);
     await completeTheAnswersTheBookLeaves(page);
 
+    await openFoldsAround(page, "ownCorporationTax");
     await page.locator("#ownCorporationTax").fill("1");
+    await openFoldsAround(page, "ownCorporationTax");
     await page.locator("#ownCorporationTax").blur();
     await expect(page.locator("#ownCorporationTax-error")).toContainText("disagrees with your own working");
 
+    await openFoldsAround(page, "ownCorporationTax");
     await page.locator("#ownCorporationTax").fill("");
     await page.locator("#taxAlreadyPaid").fill("999999");
     await page.locator("#taxAlreadyPaid").blur();
     await expect(page.locator("#taxAlreadyPaid-error")).toContainText("More tax was paid than the return charges");
   });
 
+  async function workedBoxPounds(page, box) {
+    const text = await page
+      .locator("#workedTax .worked-tax__row", { hasText: `Box ${box}:` })
+      .first()
+      .locator("dd")
+      .first()
+      .textContent();
+    return Number(text.replace(/[^0-9.-]/g, ""));
+  }
+
+  test("an own working that disagrees with the worked tax leaves box 440 and box 600 in the panel", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const box440 = await workedBoxPounds(page, 440);
+    expect(box440).toBeGreaterThan(0);
+
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").fill(String(box440 + 100));
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").blur();
+
+    await expect(page.locator("#workedTaxEmpty")).toBeHidden();
+    await expect(page.locator("#workedTax")).toContainText("Box 440:");
+    await expect(page.locator("#workedTax")).toContainText("Box 600:");
+    expect(await workedBoxPounds(page, 440)).toBe(box440);
+  });
+
+  test("the review refuses an own working that disagrees with the worked tax, naming both figures", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const box440 = await workedBoxPounds(page, 440);
+    const box475 = await workedBoxPounds(page, 475);
+    const own = box440 + 100;
+
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").fill(String(own));
+    await page.locator("#previewBtn").click();
+
+    await expect(page.locator("#previewView")).toBeHidden();
+    const error = page.locator("#ownCorporationTax-error");
+    await expect(error).toContainText("disagrees with your own working");
+    await expect(error).toContainText(box475.toFixed(2));
+    await expect(error).toContainText(own.toFixed(2));
+  });
+
+  test("on a blank form the less used blocks are folded and say All 0, and income and reliefs opens with boxes 515 and 305", async ({
+    page,
+  }) => {
+    await openForm(page);
+    for (const id of ["foldAllowances", "foldAllowanceClass1", "foldTradingLosses", "foldOtherIncome", "foldOwnWorking"]) {
+      await expect(page.locator(`#${id}`)).not.toHaveAttribute("open", "");
+    }
+    await expect(page.locator("#foldAllowances > summary")).toHaveText("Capital allowances, All 0");
+    await expect(page.locator("#foldTradingLosses > summary")).toHaveText("Trading losses, All 0");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeHidden();
+    await expect(page.locator("#incomeTaxDeducted")).toBeVisible();
+    const order = await page.evaluate(() =>
+      ["#incomeTaxDeducted", "#donationsPaidGroup", "#foldTradingLosses", "#foldOtherIncome"].map((selector) =>
+        [...document.querySelectorAll("#section-reliefs *")].indexOf(document.querySelector(selector)),
+      ),
+    );
+    expect(order.every((position) => position >= 0)).toBe(true);
+    expect([...order].sort((first, second) => first - second)).toEqual(order);
+    await expect(page.locator("#taxAlreadyPaid")).toBeVisible();
+  });
+
+  test("a fold opens itself when a book fills a box inside it, and says how many it holds", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await expect(page.locator("#foldAllowances")).toHaveAttribute("open", "");
+    await expect(page.locator("#foldAllowanceClass1")).toHaveAttribute("open", "");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeVisible();
+    await expect(page.locator("#foldAllowances > summary .form-fold__count")).toHaveText(/^\d+ answered$/);
+    await expect(page.locator("#foldOtherIncome")).not.toHaveAttribute("open", "");
+  });
+
+  test("a fold opens when a fill writes a box inside it, and a fold the reader closed stays closed across a later change", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await expect(page.locator("#foldTradingLosses")).not.toHaveAttribute("open", "");
+    // The book, iXBRL and receipt fills all write the form through applyFormEntries.
+    await page.evaluate(async () => {
+      const { applyFormEntries } = await import("/lib/ct600-fields.js");
+      applyFormEntries([["lossesBroughtForward", "5000"]]);
+    });
+    await expect(page.locator("#foldTradingLosses")).toHaveAttribute("open", "");
+    await expect(page.locator("#foldTradingLosses > summary")).toHaveText("Trading losses, 1 answered");
+    await page.locator("#foldTradingLosses > summary").click();
+    await expect(page.locator("#foldTradingLosses")).not.toHaveAttribute("open", "");
+    await page.locator("#utr").fill("8596148860");
+    await page.locator("#utr").blur();
+    await expect(page.locator("#foldTradingLosses")).not.toHaveAttribute("open", "");
+  });
+
+  test("typing into a fold counts a figure written as 0 as no answer, and opens the fold on a real one", async ({ page }) => {
+    await openForm(page);
+    await openFoldsAround(page, "frankedInvestmentIncome");
+    const summary = page.locator("#foldOtherIncome > summary");
+    for (const zero of ["0.00", "£0", "0,000"]) {
+      await page.locator("#frankedInvestmentIncome").fill(zero);
+      await expect(summary).toHaveText("Other income, All 0");
+    }
+    await summary.click();
+    await page.evaluate(() => {
+      const box = document.getElementById("frankedInvestmentIncome");
+      box.value = "1,000";
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await expect(page.locator("#foldOtherIncome")).toHaveAttribute("open", "");
+    await expect(summary).toHaveText("Other income, 1 answered");
+  });
+
+  test("a fold closed over a box that shows a problem opens again at the next change", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const own = (await workedBoxPounds(page, 440)) + 100;
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").fill(String(own));
+    await page.locator("#foldOwnWorking > summary").click();
+    await expect(page.locator("#foldOwnWorking")).not.toHaveAttribute("open", "");
+    await page.locator("#utr").fill("8596148861");
+    await expect(page.locator("#ownCorporationTax-error")).toContainText("disagrees with your own working");
+    await expect(page.locator("#foldOwnWorking")).toHaveAttribute("open", "");
+  });
+
+  test("an allowance class's title is a heading inside its summary", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator("#foldAllowanceClass2 > summary h4")).toHaveText("Main pool");
+  });
+
+  test("a problem in a folded box opens its fold and moves focus there", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const own = (await workedBoxPounds(page, 440)) + 100;
+    await page.locator("#foldOwnWorking > summary").click();
+    await openFoldsAround(page, "ownCorporationTax");
+    await page.locator("#ownCorporationTax").fill(String(own));
+    await page.locator("#foldOwnWorking > summary").click();
+    await expect(page.locator("#ownCorporationTax")).toBeHidden();
+    await page.locator("#previewBtn").click();
+    const link = page.locator("#ct600-error-summary a", { hasText: "disagrees with your own working" });
+    await link.click();
+    await expect(page.locator("#foldOwnWorking")).toHaveAttribute("open", "");
+    await expect(page.locator("#ownCorporationTax")).toBeFocused();
+  });
+
+  test("the worked tax shows boxes 155, 315, 440 and 600 and folds the other rows under How these are worked out", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    const boxes = await page.locator("#workedTaxRows .worked-tax__row dt").allTextContents();
+    expect(boxes.map((text) => text.match(/^Box (\d+):/)?.[1])).toEqual(["155", "315", "440", "600"]);
+    const steps = page.locator("#workedTaxSteps details.worked-tax__steps");
+    await expect(steps.locator("summary")).toHaveText("How these are worked out");
+    await expect(steps).not.toHaveAttribute("open", "");
+    await expect(steps.locator(".worked-tax__row", { hasText: "Box 345:" })).toBeHidden();
+    await steps.locator("summary").click();
+    await expect(steps.locator(".worked-tax__row", { hasText: "Box 345:" })).toBeVisible();
+    await page.locator("#utr").fill("8596148860");
+    await expect(page.locator("#workedTaxSteps details.worked-tax__steps")).toHaveAttribute("open", "");
+  });
+
+  test("the accounts lines of both years and the average number of employees start at 0", async ({ page }) => {
+    await openForm(page);
+    for (const id of ["currentTurnover", "priorTurnover", "currentFixedAssets", "currentCalledUpShareCapital", "averageEmployees"]) {
+      await expect(page.locator(`#${id}`), id).toHaveValue("0");
+    }
+    await page.locator("#regimeMicro").check();
+    await expect(page.locator("#microCurrentTurnover")).toHaveValue("0");
+    await expect(page.locator("#directorsAdvanceMade")).toHaveValue("");
+  });
+
+  test("an advance fills the terms with a common arrangement until they are typed, and clears with every amount at 0", async ({ page }) => {
+    await openForm(page);
+    const terms = page.locator("#directorsAdvanceTerms");
+    await expect(terms).toHaveValue("");
+    await page.locator("#directorsAdvanceMade").fill("500");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+    await expect(page.locator("#directorsAdvanceTerms-hint").getByRole("link", { name: "Section 413" })).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/413",
+    );
+    await page.locator("#directorsAdvanceMade").fill("0");
+    await expect(terms).toHaveValue("");
+
+    await page.locator("#directorsAdvanceMade").fill("500");
+    await terms.fill("Interest at 2.25%; unsecured; repaid by 31 December");
+    await page.locator("#directorsAdvanceMade").fill("0");
+    await expect(terms).toHaveValue("Interest at 2.25%; unsecured; repaid by 31 December");
+  });
+
   test("a worked box has no input and shows its rule", async ({ page }) => {
     await openForm(page);
     await dropBook(page);
     for (const box of [155, 315, 345, 430, 440, 525, 600]) {
-      await expect(page.locator("#workedTaxRows")).toContainText(`Box ${box}:`);
+      await expect(page.locator("#workedTax")).toContainText(`Box ${box}:`);
     }
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 430 is box 345 plus box 395");
+    await expect(page.locator("#workedTax")).toContainText("Box 430 is box 345 plus box 395");
     await expect(page.locator("#box440")).toHaveCount(0);
-    await expect(page.locator("#workedTaxRows input")).toHaveCount(0);
+    await expect(page.locator("#workedTax input")).toHaveCount(0);
   });
 
   async function fillALossPeriod(page) {
@@ -1710,19 +2379,20 @@ test.describe("File Company Tax Return entry form", () => {
   test("a trading loss is worked into box 780 and carried forward when no claim is made", async ({ page }) => {
     await openForm(page);
     await fillALossPeriod(page);
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 780: Losses of trades carried on wholly or partly in the UK");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 780 is the computation's adjusted loss");
+    await expect(page.locator("#workedTax")).toContainText("Box 780: Losses of trades carried on wholly or partly in the UK");
+    await expect(page.locator("#workedTax")).toContainText("Box 780 is the computation's adjusted loss");
     await expect(page.locator("#workedCarriedForward")).toContainText("£50,100");
     await expect(page.locator("#workedCarryBack")).toHaveCount(0);
-    await expect(page.locator("#workedTaxRows")).not.toContainText("Box 155:");
+    await expect(page.locator("#workedTax")).not.toContainText("Box 155:");
   });
 
   test("a loss in a trade wholly outside the UK goes in box 790", async ({ page }) => {
     await openForm(page);
     await fillALossPeriod(page);
+    await openFoldsAround(page, "lossOutsideUk");
     await page.locator("#lossOutsideUk").check();
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 790:");
-    await expect(page.locator("#workedTaxRows")).not.toContainText("Box 780:");
+    await expect(page.locator("#workedTax")).toContainText("Box 790:");
+    await expect(page.locator("#workedTax")).not.toContainText("Box 780:");
   });
 
   for (const width of [1280, 390]) {
@@ -1730,8 +2400,11 @@ test.describe("File Company Tax Return entry form", () => {
       await page.setViewportSize({ width, height: 900 });
       await openForm(page);
       await fillALossPeriod(page);
+      await openFoldsAround(page, "lossCarriedBack");
       await page.locator("#lossCarriedBack").fill("30000");
+      await openFoldsAround(page, "priorPeriodChargeableProfits");
       await page.locator("#priorPeriodChargeableProfits").fill("80000");
+      await openFoldsAround(page, "priorPeriodChargeableProfits");
       await page.locator("#priorPeriodChargeableProfits").blur();
       await expect(page.locator("#workedCarryBack")).toContainText("Corporation Tax repayable on the carry-back claim");
       await expect(page.locator("#workedCarryBack")).toContainText("£7,950");
@@ -1749,7 +2422,9 @@ test.describe("File Company Tax Return entry form", () => {
     await fillALossPeriod(page);
     await page.locator("#utr").fill("8596148860");
     await page.locator("#declarantName").fill("Carol Smith");
+    await openFoldsAround(page, "lossAgainstTotalProfits");
     await page.locator("#lossAgainstTotalProfits").fill("60000");
+    await openFoldsAround(page, "lossAgainstTotalProfits");
     await page.locator("#lossAgainstTotalProfits").blur();
     await expect(page.locator("#lossAgainstTotalProfits-error")).toContainText("more than the trading loss of the period");
   });
@@ -1771,8 +2446,8 @@ test.describe("File Company Tax Return entry form", () => {
       await page.locator(`#${id}`).fill(value);
       await page.locator(`#${id}`).blur();
     }
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 305: Qualifying donations");
-    await expect(page.locator("#workedTaxRows")).toContainText("Box 155: Trading profits");
+    await expect(page.locator("#workedTax")).toContainText("Box 305: Qualifying donations");
+    await expect(page.locator("#workedTax")).toContainText("Box 155: Trading profits");
   });
 
   async function fillAProfitPeriod(page) {
@@ -1799,12 +2474,15 @@ test.describe("File Company Tax Return entry form", () => {
       await page.setViewportSize({ width, height: 900 });
       await openForm(page);
       await fillAProfitPeriod(page);
-      await expect(page.locator("#workedTaxRows")).toContainText("£60,000");
+      await expect(page.locator("#workedTax")).toContainText("£60,000");
+      await openFoldsAround(page, "fullExpensingAllowances");
       await page.locator("#fullExpensingAllowances").fill("20000");
+      await openFoldsAround(page, "fullExpensingBalancingCharges");
       await page.locator("#fullExpensingBalancingCharges").fill("500");
+      await openFoldsAround(page, "fullExpensingBalancingCharges");
       await page.locator("#fullExpensingBalancingCharges").blur();
-      await expect(page.locator("#workedTaxRows")).toContainText("Box 155: Trading profits");
-      await expect(page.locator("#workedTaxRows")).toContainText("£40,500");
+      await expect(page.locator("#workedTax")).toContainText("Box 155: Trading profits");
+      await expect(page.locator("#workedTax")).toContainText("£40,500");
       await expect(page.locator("#mainPoolAllowances")).toHaveValue("0");
       expect(await pageScrollsSideways(page)).toBe(false);
       const cookieDecline = page.getByRole("button", { name: "Decline" });
@@ -1830,16 +2508,22 @@ test.describe("File Company Tax Return entry form", () => {
       "firstYearAllowanceExpenditure",
       "otherMachineryAndPlantExpenditure",
     ]) {
+      await openFoldsAround(page, id);
       await expect(page.locator(`#${id}`), id).toBeVisible();
     }
+    await openFoldsAround(page, "specialRateAllowances");
     await page.locator("#specialRateAllowances").fill("3000");
+    await openFoldsAround(page, "specialRateAllowanceExpenditure");
     await page.locator("#specialRateAllowanceExpenditure").focus();
+    await openFoldsAround(page, "specialRateAllowanceExpenditure");
     await page.locator("#specialRateAllowanceExpenditure").blur();
     await expect(page.locator("#specialRateAllowanceExpenditure-error")).toContainText("box 773");
+    await openFoldsAround(page, "specialRateAllowanceExpenditure");
     await page.locator("#specialRateAllowanceExpenditure").fill("6000");
+    await openFoldsAround(page, "specialRateAllowanceExpenditure");
     await page.locator("#specialRateAllowanceExpenditure").blur();
     await expect(page.locator("#specialRateAllowanceExpenditure-error")).toHaveCount(0);
-    await expect(page.locator("#workedTaxRows")).toContainText("£57,000");
+    await expect(page.locator("#workedTax")).toContainText("£57,000");
   });
 
   test("a micro-entity's book opens the micro accounts, and the preview sends the micro request", async ({ page }) => {
@@ -1875,7 +2559,7 @@ test.describe("File Company Tax Return entry form", () => {
     expect(sent.balanceSheet.priorYear.fixedAssets).toBe(182902);
     expect(sent.profitAndLoss.currentYear).toMatchObject({ turnover: 341283, otherIncome: 340, tax: 29062 });
     await expect(page.locator("#review-row-accountsRegime")).toContainText("Micro-entity accounts (FRS 105)");
-    await expect(page.locator("#review-row-microCurrentRawMaterials")).toContainText("Raw materials and consumables, this year");
+    await expect(page.locator("#review-row-microCurrentRawMaterials")).toContainText("Cost of raw materials and consumables, this year");
     await expect(page.locator("#review-row-statementMicroEntityProvisions")).toContainText("Yes");
   });
 
@@ -1890,6 +2574,7 @@ test.describe("File Company Tax Return entry form", () => {
       "directorsAdvanceMade",
       "directorsAdvanceRepaid",
     ]) {
+      await openFoldsAround(page, id);
       await expect(page.locator(`#${id}`), id).toBeVisible();
     }
     await expect(page.locator("#principalActivity")).toBeHidden();
@@ -1942,6 +2627,194 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#directorName")).toHaveValue("Antony Christopher Cartwright");
   });
 
+  test("a Company Tax Return filed for the company fills the accounts from its document and the return's answers from its boxes", async ({
+    page,
+  }) => {
+    const ctName = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+    const submission = {
+      requests: [],
+      status: 200,
+      body: {},
+      receiptList: [
+        {
+          name: ctName,
+          kind: "company-tax-return",
+          companyNumber: "00000007",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-24T11:30:00.000Z",
+        },
+        {
+          name: "2026-10-25T10:00:00.000Z-00001B.json",
+          kind: "companies-house-accounts",
+          companyNumber: "00000003",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-25T10:00:00.000Z",
+        },
+        { name: "2026-10-26T10:00:00.000Z-VAT1.json", kind: null, timestamp: "2026-10-26T10:00:00.000Z" },
+      ],
+      receiptsByName: {
+        [ctName]: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          correlationId: "ABCDEF0123456789",
+          filed: {
+            boxes: {
+              2: "00000007",
+              3: "8596148860",
+              30: "2025-04-01",
+              35: "2026-03-31",
+              160: 1200,
+              170: 350,
+              975: "Antony Cartwright",
+              440: 9198,
+            },
+            accountsIxbrl: ixbrlAccountsFile("small-company-accounts-full").buffer.toString("utf-8"),
+          },
+        },
+      },
+    };
+    await openForm(page, [], submission);
+    await expect(page.locator("#filedReceiptsSelect option")).toHaveText([
+      "Company Tax Return, 1 April 2025 to 31 March 2026, filed 24 October 2026",
+    ]);
+
+    await page.locator("#filedReceiptsUse").click();
+
+    const status = page.locator("#booksImportStatus");
+    await expect(status).toContainText("your Company Tax Return for 1 April 2025 to 31 March 2026", { timeout: 60_000 });
+    await expect(status).toContainText("The return's own answers as filed fill");
+    await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(page.locator("#currentTurnover")).toHaveValue("8500");
+    await expect(page.locator("#currentCashAtBank")).toHaveValue("5200");
+    await expect(page.locator("#utr")).toHaveValue("8596148860");
+    await expect(page.locator("#lossesBroughtForward")).toHaveValue("1200");
+    await expect(page.locator("#nonTradingLoanRelationshipCredits")).toHaveValue("350");
+    await expect(page.locator("#declarantName")).toHaveValue("Antony Cartwright");
+  });
+
+  test("a company whose last return Submit filed starts this year's from it, with last year's accounts as the prior year", async ({
+    page,
+  }) => {
+    // A loss pool larger than the profit leaves losses to carry forward and no tax to set income tax against.
+    const values = { ...(await filledFormValues(page)), lossesBroughtForward: "1000000000", incomeTaxDeducted: "", taxAlreadyPaid: "0" };
+    const ctName = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+    const submission = {
+      requests: [],
+      status: 200,
+      body: {},
+      receiptList: [
+        {
+          name: ctName,
+          kind: "company-tax-return",
+          companyNumber: "00000007",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-24T11:30:00.000Z",
+        },
+      ],
+      receiptsByName: {
+        [ctName]: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          formRequest: { company: { companyNumber: "00000007", companyName: "Precision Code Ltd" }, values },
+          filed: {
+            boxes: { 2: "00000007", 30: "2025-04-01", 35: "2026-03-31", 315: 41250, 326: 1, 975: values.declarantName, 985: "Director" },
+            accountsIxbrl: ixbrlAccountsFile("small-company-accounts-full").buffer.toString("utf-8"),
+          },
+        },
+      },
+    };
+    await openForm(page, [], submission);
+    const panel = page.locator("#lastYearPanel");
+    await expect(panel).toContainText("Submit filed this company's Company Tax Return for 1 April 2025 to 31 March 2026.");
+
+    await page.getByRole("button", { name: "Start from last year's return" }).click();
+
+    await expect(page.locator("#lastYearStarted")).toContainText("Started from your Company Tax Return for 1 April 2025 to 31 March 2026", {
+      timeout: 60_000,
+    });
+    await expect(page.locator("#lastYearStarted")).toContainText("Box 160 is the losses it carried forward.");
+    await expect(page.locator("#lastYearStarted")).toContainText("Last year's accounts figures are those filed with that return.");
+    await expect(page.locator("#periodStart")).toHaveValue("2026-04-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2027-03-31");
+    await expect(page.locator("#priorPeriodChargeableProfits")).toHaveValue("41250");
+    await expect(page.locator("#associatedCompanies")).toHaveValue("1");
+    await expect(page.locator("#tradeName")).toHaveValue(values.tradeName);
+    await expect(page.locator("#declarantName")).toHaveValue(values.declarantName);
+    await expect(page.locator("#statementSection477Exemption")).toBeChecked();
+    await expect(page.locator("#regimeSmall")).toBeChecked();
+    await expect(page.locator("#priorTurnover")).toHaveValue("8500");
+    await expect(page.locator("#priorCashAtBank")).toHaveValue("5200");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
+    const carried = Number(await page.locator("#lossesBroughtForward").inputValue());
+    expect(carried).toBeGreaterThan(0);
+    expect(carried).toBeLessThan(1000000000);
+  });
+
+  test("a return that kept no accounts takes last year's accounts from the register, and one that kept no answers leaves box 160", async ({
+    page,
+  }) => {
+    const ctName = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+    const submission = {
+      requests: [],
+      status: 200,
+      body: {},
+      receiptList: [
+        {
+          name: ctName,
+          kind: "company-tax-return",
+          companyNumber: "00000007",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          timestamp: "2026-10-24T11:30:00.000Z",
+        },
+      ],
+      receiptsByName: {
+        [ctName]: {
+          kind: "company-tax-return",
+          statusCode: "ACCEPT",
+          filed: { boxes: { 2: "00000007", 30: "2025-04-01", 35: "2026-03-31", 326: 0 } },
+        },
+      },
+    };
+    await openForm(page, [], submission);
+    await page.route("**/api/v1/companies-house/company/00000007/last-accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          outcome: "mapped",
+          set: { madeUpDate: "2026-03-31" },
+          accounts: {
+            regime: "micro",
+            balanceSheet: { fixedAssets: 800, currentAssets: 6000, calledUpShareCapital: 100 },
+            profitAndLoss: null,
+          },
+        }),
+      }),
+    );
+
+    await page.getByRole("button", { name: "Start from last year's return" }).click();
+
+    const started = page.locator("#lastYearStarted");
+    await expect(started).toContainText("That return kept no answers to work its losses from, so box 160 is left for you.", {
+      timeout: 60_000,
+    });
+    await expect(started).toContainText("Last year's accounts figures are the company's accounts on the Companies House register.");
+    await expect(page.locator("#regimeMicro")).toBeChecked();
+    await expect(page.locator("#microPriorFixedAssets")).toHaveValue("800");
+    await expect(page.locator("#microPriorCurrentAssets")).toHaveValue("6000");
+    await expect(page.locator("#periodEnd")).toHaveValue("2027-03-31");
+  });
+
+  test("a company with no return filed through Submit is offered no start from last year", async ({ page }) => {
+    await openForm(page, [], { requests: [], status: 200, body: {}, receiptList: [] });
+    await expect(page.locator("#lastYearPanel")).toBeHidden();
+  });
+
   test("a dropped micro-entity iXBRL document opens the micro accounts with its balance sheets", async ({ page }) => {
     await openForm(page);
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("micro-entity-accounts"));
@@ -1958,7 +2831,7 @@ test.describe("File Company Tax Return entry form", () => {
       .setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: OTHER_COMPANY_NUMBER }));
     await expect(page.locator("#booksImportStatus")).toContainText(OTHER_COMPANY_NUMBER, { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
     await expect(page.locator("#periodStart")).toHaveValue("");
   });
 
@@ -1969,7 +2842,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full"));
     await expect(page.locator("#booksImportStatus")).toContainText("end on 2026-03-31", { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
-    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentTurnover")).toHaveValue("0");
     await expect(page.locator("#periodEnd")).toHaveValue("2024-12-31");
   });
 

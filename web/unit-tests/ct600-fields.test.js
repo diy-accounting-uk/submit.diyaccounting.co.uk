@@ -34,9 +34,21 @@ import {
   longPeriodOf,
   loanId,
   periodFieldId,
+  ACCOUNTS_REGIMES,
+  ACCOUNTS_TEXT_FIELDS,
+  BALANCE_SHEET_FIELDS,
   CT600_BOX_ROWS,
   CT600_FORM_FIELDS,
+  FIXED_ASSET_CLASSES,
+  FIXED_ASSET_FIELDS,
+  LOAN_ROW_FIELDS,
+  MICRO_BALANCE_SHEET_FIELDS,
+  PAGE_QUESTION_FIELDS,
+  PROFIT_AND_LOSS_FIELDS,
+  REPAYMENT_ROW_FIELDS,
   STATEMENT_FIELDS,
+  boxRow,
+  noteSheetCell,
   accountsFromValues,
   ct600RequestFromValues,
   figuresFromValues,
@@ -432,7 +444,7 @@ describe("the form's own checks", () => {
         loanAmount1: "£12,000",
         loanRate1: "33.75%",
         repaymentName1: "Carol Smith",
-        repaymentDate1: "2026-06-30",
+        repaymentDate1: "30 June 2026",
         repaymentRepaid1: "£2,000",
       });
     });
@@ -518,7 +530,10 @@ describe("the review", () => {
 
   test("shows answers as the customer reads them", () => {
     expect(rowOf("annualInvestmentAllowance").value).toBe("£52,500");
-    expect(rowOf("period").value).toBe("2025-04-01 to 2026-03-31");
+    expect(rowOf("period")).toMatchObject({ reference: "Box 30", label: "Period covered by the return: from", value: "1 April 2025" });
+    expect(rowOf("periodEnd")).toMatchObject({ reference: "Box 35", label: "Period covered by the return: to", value: "31 March 2026" });
+    expect(rowOf("utr")).toMatchObject({ reference: "Box 3", label: "Tax reference" });
+    expect(rowOf("currentTurnover").ledger).toEqual({ table: "profitAndLoss", line: "turnover", lineLabel: "Turnover", year: "current" });
     expect(rowOf("loansMade").value).toBe("No");
     expect(rowOf("declarationAccepted").value).toBe("Yes");
     expect(rowOf("statementSection477Exemption").value).toBe("No");
@@ -592,7 +607,7 @@ describe("a micro-entity's accounts", () => {
   });
 
   test("the micro profit and loss lines are the server's, worked the same way from the small company's", () => {
-    const typed = MICRO_PROFIT_AND_LOSS_FIELDS.map(([field]) => field);
+    const typed = MICRO_PROFIT_AND_LOSS_FIELDS.map(({ id: field }) => field);
     expect(MICRO_PROFIT_AND_LOSS_LINES.filter((line) => !typed.includes(line))).toEqual(["profitBeforeTax", "profit"]);
     const year = smallAccounts.profitAndLoss.currentYear;
     expect(microProfitAndLossFromSmall(year, bookFigures.depreciation)).toEqual(microProfitAndLossYear(year, bookFigures.depreciation));
@@ -892,5 +907,97 @@ describe("a period of account longer than 12 months", () => {
     for (const figure of typed) expect(ACCOUNTING_PERIOD_FIELDS, figure).toContain(figure);
     expect(periodFieldId("mainPoolAllowances", 2)).toBe("mainPoolAllowancesAp2");
     expect(periodFieldId("mainPoolAllowances", 1)).toBe("mainPoolAllowances");
+  });
+});
+
+describe("the label register", () => {
+  const SHEET_CELL = /^[\w.]+\.xlsx![^!+-]+![A-Z]+\d+(?:[+-](?:[\w.]+\.xlsx![^!+-]+!)?[A-Z]+\d+)*$/;
+  const groups = {
+    "form fields": [...CT600_FORM_FIELDS, DONATIONS_PAID_FIELD],
+    "micro-entity profit and loss lines": MICRO_PROFIT_AND_LOSS_FIELDS,
+    "micro-entity balance sheet lines": MICRO_BALANCE_SHEET_FIELDS,
+    "profit and loss lines": PROFIT_AND_LOSS_FIELDS,
+    "balance sheet lines": BALANCE_SHEET_FIELDS,
+    "fixed asset classes": FIXED_ASSET_CLASSES,
+    "fixed asset note lines": FIXED_ASSET_FIELDS,
+    "statements": [...STATEMENT_FIELDS, MICRO_STATEMENT_FIELD],
+    "accounts regimes": ACCOUNTS_REGIMES,
+    "accounts text fields": ACCOUNTS_TEXT_FIELDS,
+    "loan rows": LOAN_ROW_FIELDS,
+    "repayment rows": REPAYMENT_ROW_FIELDS,
+    "page questions": PAGE_QUESTION_FIELDS,
+  };
+  const fields = Object.entries(groups).flatMap(([group, list]) => list.map((field) => [`${group}: ${field.id}`, field]));
+  // The register gives these no official term and no reference, until the operator chooses one.
+  const NO_TERM = new Set([
+    "form fields: tradeName",
+    "form fields: depreciation",
+    "form fields: amortisation",
+    "form fields: entertaining",
+    "form fields: specialRatePoolAnnualInvestmentAllowance",
+    "form fields: ownCorporationTax",
+    "page questions: sendTo",
+    "fixed asset classes: furnitureFittings",
+    "fixed asset classes: computerEquipment",
+    "fixed asset classes: motorVehicles",
+  ]);
+
+  test.each(fields)("%s has a label, a reference, a hint and a source link", (name, field) => {
+    expect(field.label, name).toMatch(/\S/);
+    expect(field.hint, name).toMatch(/\S/);
+    if (field.box !== undefined) {
+      expect(field.reference, name).toBeUndefined();
+      expect(boxRow(field.box)?.anchor, name).toMatch(/^[a-z0-9-]+$/);
+    } else if (NO_TERM.has(name)) {
+      expect(field.reference, name).toBeUndefined();
+      expect(field.termSource, name).toBeUndefined();
+    } else {
+      expect(field.reference, name).toMatch(/\S/);
+      expect(field.termSource, name).toMatch(/^https:\/\/www\.(gov\.uk|legislation\.gov\.uk)\//);
+    }
+  });
+
+  test.each(CT600_BOX_ROWS.map((row) => [row.box, row]))("box %s has a label and a guide anchor", (box, row) => {
+    expect(row.label).toMatch(/\S/);
+    expect(row.anchor).toMatch(/^[a-z0-9-]+$/);
+  });
+
+  const sources = [...CT600_BOX_ROWS.map((row) => [`box ${row.box}`, row]), ...fields].filter(([, field]) => field.source);
+
+  test.each(sources)("every sheetCell of %s is <file>!<sheet>!<cell> joined by + or -", (name, { source }) => {
+    expect(source.thisYear ?? source.workbookLabel, name).toBeTruthy();
+    for (const key of ["thisYear", "lastYear", "labelCell"]) {
+      for (const cell of [source[key] ?? []].flat()) expect(cell, `${name} ${key}`).toMatch(SHEET_CELL);
+    }
+  });
+
+  test("the directors' names are two cells, not a sum", () => {
+    expect(ACCOUNTS_TEXT_FIELDS.find(({ id }) => id === "directors").source.thisYear).toEqual([
+      "Financialaccounts.xlsx!OpenAccounts!E5",
+      "Financialaccounts.xlsx!OpenAccounts!E6",
+    ]);
+  });
+
+  test("each fixed asset note figure has the cell of its class's column and its line's row", () => {
+    for (const { id: className } of FIXED_ASSET_CLASSES) {
+      for (const { id: field } of FIXED_ASSET_FIELDS) expect(noteSheetCell(className, field)).toMatch(SHEET_CELL);
+    }
+    expect(noteSheetCell("plantMachinery", "additions")).toBe("Financialaccounts.xlsx!PubNotes!C9");
+  });
+
+  test("the sheetCell form takes a sum, a difference and a cell on another sheet", () => {
+    expect("Financialaccounts.xlsx!PubP&L!F16+F44-E43").toMatch(SHEET_CELL);
+    expect("Financialaccounts.xlsx!PubBalSht!E29-Financialaccounts.xlsx!OpenAccounts!E30").toMatch(SHEET_CELL);
+    expect("PubP&L!F9").not.toMatch(SHEET_CELL);
+    expect("Financialaccounts.xlsx!PubP&L!F9*2").not.toMatch(SHEET_CELL);
+  });
+
+  test("the guide anchors of boxes 780, 790, 480, 485, 735 and 773 are the register's", () => {
+    expect(boxRow(780).anchor).toBe("losses-of-trades-carried-on-wholly-or-partly-in-the-uk-amount");
+    expect(boxRow(790).anchor).toBe("losses-of-trades-carried-on-wholly-outside-the-uk-amount");
+    expect(boxRow(480).anchor).toBe("tax-payable-on-loans-and-arrangements-to-participators");
+    expect(boxRow(485).anchor).toBe("box-a70-in-ct600a");
+    expect(boxRow(735).anchor).toBe("annual-investment-allowance-1");
+    expect(boxRow(773).anchor).toBe("machinery-and-plant--special-rate-allowance");
   });
 });

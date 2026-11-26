@@ -69,7 +69,12 @@ export async function ingestHandler(event) {
   try {
     result = await pollCtSubmission({ userSub, correlationId, govTestScenario });
   } catch (error) {
-    logger.error({ message: "Polling the Transaction Engine failed", correlationId, error: error.message, stack: error.stack });
+    logger.error({
+      message: "Polling the Transaction Engine failed",
+      hmrcCorrelationId: correlationId,
+      error: error.message,
+      stack: error.stack,
+    });
     return http502BadGatewayResponse({
       request,
       headers: { ...responseHeaders },

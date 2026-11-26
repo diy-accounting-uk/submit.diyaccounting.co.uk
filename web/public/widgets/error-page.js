@@ -22,6 +22,7 @@
         localStorage.removeItem("cognitoAccessToken");
         localStorage.removeItem("cognitoRefreshToken");
         localStorage.removeItem("userInfo");
+        localStorage.removeItem("accountPreviewFeatures");
         window.location.reload();
       };
     } catch (error) {

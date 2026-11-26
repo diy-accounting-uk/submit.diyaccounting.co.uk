@@ -9,6 +9,8 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockSend = vi.fn();
+const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }));
+vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 const mockPutCommand = vi.fn();
 const mockGetCommand = vi.fn();
 const mockQueryCommand = vi.fn();
@@ -61,6 +63,7 @@ vi.mock("@app/services/subHasher.js", () => ({
 const {
   putReceipt,
   putReceiptIfNew,
+  getReceipt,
   listUserReceipts,
   findReceiptForSubmission,
   markReceiptStepDone,
@@ -316,6 +319,43 @@ describe("data/dynamoDbReceiptRepository", () => {
       expect(receipts.map((receipt) => receipt.longPeriod)).toEqual([null, longPeriod]);
     });
 
+    test("each filing receipt carries its company and period, from its answers or its boxes", async () => {
+      mockSend.mockResolvedValueOnce({
+        Items: [
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-03T00:00:00.000Z-CT1",
+            createdAt: "2026-01-03T00:00:00.000Z",
+            receipt: { kind: "company-tax-return", filed: { boxes: { 2: "00000001", 30: "2025-04-01", 35: "2026-03-31" } } },
+          },
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-02T00:00:00.000Z-00001A",
+            createdAt: "2026-01-02T00:00:00.000Z",
+            receipt: {
+              kind: "companies-house-accounts",
+              companyNumber: "00000003",
+              formRequest: { companyNumber: "00000003", periodStart: "2024-04-01", periodEnd: "2025-03-31" },
+            },
+          },
+          {
+            hashedSub: "h",
+            receiptId: "2026-01-01T00:00:00.000Z-FB1",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            receipt: { formBundleNumber: "FB1" },
+          },
+        ],
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      expect(receipts.map(({ companyNumber, periodStart, periodEnd }) => ({ companyNumber, periodStart, periodEnd }))).toEqual([
+        { companyNumber: "00000001", periodStart: "2025-04-01", periodEnd: "2026-03-31" },
+        { companyNumber: "00000003", periodStart: "2024-04-01", periodEnd: "2025-03-31" },
+        { companyNumber: undefined, periodStart: undefined, periodEnd: undefined },
+      ]);
+    });
+
     test("each receipt carries the byte size of its stored record, whatever its kind", async () => {
       const vatReceipt = { formBundleNumber: "FB1" };
       const ctReceipt = { kind: "company-tax-return", formBundleNumber: "FB2", figures: { turnover: 1000 } };
@@ -381,6 +421,59 @@ describe("data/dynamoDbReceiptRepository", () => {
       mockSend.mockRejectedValue(conditionalCheckFailed());
 
       expect(await acknowledgeStoredReceipt("user-1", "missing", { acknowledgedAt: "2026-11-19T13:18:00.000Z" })).toBe(false);
+    });
+  });
+
+  describe("log lines", () => {
+    const SUB = "raw-cognito-sub-0001";
+    const everyLine = () => [mockLogger.info, mockLogger.warn, mockLogger.error, mockLogger.debug].flatMap((level) => level.mock.calls);
+    const expectNoRawSub = () => {
+      const lines = everyLine().map(([fields]) => fields);
+      expect(lines.length).toBeGreaterThan(0);
+      for (const fields of lines) expect(fields).not.toHaveProperty("userSub");
+      expect(JSON.stringify(lines)).not.toContain(`"${SUB}"`);
+    };
+
+    beforeEach(() => {
+      for (const level of Object.values(mockLogger)) level.mockClear();
+    });
+
+    test("storing a receipt, and failing to, name the account by its hashed sub only", async () => {
+      await putReceipt(SUB, "receipt-1", { formBundleNumber: "FB1" }, "customer");
+      mockSend.mockRejectedValueOnce(new Error("throttled"));
+      await expect(putReceipt(SUB, "receipt-2", { formBundleNumber: "FB2" }, "customer")).rejects.toThrow("throttled");
+
+      expectNoRawSub();
+      const failure = mockLogger.error.mock.calls
+        .map(([fields]) => fields)
+        .find((fields) => fields.message === "Error storing receipt in DynamoDB");
+      expect(failure.hashedSub).toBe(`hashed-${SUB}`);
+    });
+
+    test("reading a receipt, and failing to, name the account by its hashed sub only", async () => {
+      mockSend.mockResolvedValueOnce({ Item: { hashedSub: `hashed-${SUB}`, receiptId: "receipt-1" } });
+      await getReceipt(SUB, "receipt-1");
+      mockSend.mockRejectedValueOnce(new Error("throttled"));
+      await expect(getReceipt(SUB, "receipt-2")).rejects.toThrow("throttled");
+
+      expectNoRawSub();
+      const failure = mockLogger.error.mock.calls
+        .map(([fields]) => fields)
+        .find((fields) => fields.message === "Error retrieving receipt from DynamoDB");
+      expect(failure.hashedSub).toBe(`hashed-${SUB}`);
+    });
+
+    test("listing receipts, and failing to, name the account by its hashed sub only", async () => {
+      mockSend.mockResolvedValueOnce({ Items: [] });
+      await listUserReceipts(SUB);
+      mockSend.mockRejectedValueOnce(new Error("throttled"));
+      await expect(listUserReceipts(SUB)).rejects.toThrow("throttled");
+
+      expectNoRawSub();
+      const failure = mockLogger.error.mock.calls
+        .map(([fields]) => fields)
+        .find((fields) => fields.message === "Error retrieving receipts from DynamoDB");
+      expect(failure.hashedSub).toBe(`hashed-${SUB}`);
     });
   });
 });

@@ -61,6 +61,16 @@
     );
   }
 
+  // What a reader is told when a status check of a submission the gateway took fails: the filing was
+  // sent, its outcome is not known, and Check again asks for it.
+  function checkFailedNote(submissionNumber, message) {
+    return siteText(
+      "ch.gateway.check-failed",
+      "Submission {number} was sent to Companies House, and its outcome is not known yet: the status check failed ({message}). Choose Check again to ask for the outcome.",
+      { number: submissionNumber, message },
+    );
+  }
+
   // A Companies House status code in the word a sentence about the submission reads it as, in the
   // chosen language, or null for a code with no word here. The gateway answers ACCEPT, REJECT,
   // PENDING or PARKED.
@@ -85,6 +95,24 @@
     ];
   }
 
+  // The sentence shown between polls: Companies House's word for the status in the page's template,
+  // or, while Companies House has not yet indexed the submission, a sentence that says so.
+  function pendingProgressSentence(template, number, result) {
+    if (result.notYetIndexed) {
+      return [
+        siteText("ch.gateway.not-yet-indexed", "Companies House has not indexed submission {number} yet. Checking again..."),
+        { number },
+      ];
+    }
+    return statusSentence(template, number, result.statusCode);
+  }
+
+  // pendingProgressSentence's sentence with its values in place, for a page that shows it as plain text.
+  function pendingProgressText(template, number, result) {
+    const [text, values] = pendingProgressSentence(template, number, result);
+    return text.replace(/\{([a-z]+)\}/g, (whole, name) => (name in values ? String(values[name]) : whole));
+  }
+
   // The sentence for a status code with no word here, with the code and the submission number in place.
   function unknownStatusText(number, statusCode) {
     return siteText("ch.gateway.status-unknown", "Companies House answered {code} for submission {number}.", {
@@ -102,11 +130,14 @@
   window.companiesHouseGatewayPoll = {
     pollGatewayUntilSettled,
     pendingNote,
+    checkFailedNote,
     mayCheckAgain,
     isSettled,
     statusWord,
     statusSentence,
     statusText,
+    pendingProgressSentence,
+    pendingProgressText,
     unknownStatusText,
     MAX_GATEWAY_POLLS,
   };

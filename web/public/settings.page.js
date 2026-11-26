@@ -3,18 +3,22 @@
 
 // web/public/settings.page.js
 // The settings page: preview features, kept on the account when the person is signed in and in this
-// browser session always; operator features, for an operator, kept in this browser session; and
-// pass generation, kept on the account.
+// browser always; operator features, for an operator, kept in this browser session; and pass
+// generation, kept on the account.
 
 import {
   isPreviewOn,
   setPreviewOn,
+  readBrowserPreviewChoice,
+  clearBrowserPreviewChoice,
   isOperatorFeaturesOn,
   setOperatorFeaturesOn,
   fetchBundleResponse,
   updateAccountSetting,
   ACCOUNT_SETTING_DEFAULTS,
 } from "./lib/services/viewer-settings.js";
+
+const siteText = (id, english, values) => (window.siteText ? window.siteText(id, english, values) : english);
 
 function byId(id) {
   return document.getElementById(id);
@@ -31,11 +35,16 @@ async function init() {
   const passSwitch = byId("passGenerationSwitch");
 
   previewSwitch.checked = isPreviewOn();
+  byId("previewFeaturesTwoSettings").textContent = siteText(
+    "settings.preview-two-settings",
+    "This switch sets two things: in this browser, it lists the activities this site does not offer yet; with your account, it opens the Company Tax Return to an operator.",
+  );
 
   let response = null;
-  // Signed in, the choice is kept on the account and in the session; signed out, in the session only.
+  // Signed in, the choice is kept on the account and in this browser; signed out, in this browser only.
   previewSwitch.addEventListener("change", async () => {
     const wanted = previewSwitch.checked;
+    const choiceBefore = readBrowserPreviewChoice();
     setPreviewOn(wanted);
     if (!response) return;
     previewSwitch.disabled = true;
@@ -44,8 +53,10 @@ async function init() {
       previewSwitch.checked = stored;
       setPreviewOn(stored);
     } catch (error) {
-      previewSwitch.checked = !wanted;
-      setPreviewOn(!wanted);
+      // A browser that was following the account goes on following it.
+      if (choiceBefore === null) clearBrowserPreviewChoice();
+      else setPreviewOn(choiceBefore === "on");
+      previewSwitch.checked = isPreviewOn();
       showSaveFailure(error);
     } finally {
       previewSwitch.disabled = false;
@@ -75,9 +86,7 @@ async function init() {
     );
   }
   if (response) {
-    const storedPreview = response.settings?.previewFeatures ?? ACCOUNT_SETTING_DEFAULTS.previewFeatures;
-    previewSwitch.checked = storedPreview;
-    setPreviewOn(storedPreview);
+    previewSwitch.checked = isPreviewOn();
     passSwitch.checked = response.settings?.passGeneration ?? ACCOUNT_SETTING_DEFAULTS.passGeneration;
     passSwitch.disabled = false;
     byId("operatorFeaturesRow").hidden = !(response.bundles ?? []).some((bundle) => bundle.bundleId === "operator" && bundle.allocated);

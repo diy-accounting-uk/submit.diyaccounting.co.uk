@@ -49,6 +49,11 @@ vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
     asyncRequests.set(`${userSub}/${requestId}`, { requestId, status, data, retention, createdAt });
   },
   getAsyncRequest: async (userSub, requestId) => asyncRequests.get(`${userSub}/${requestId}`) ?? null,
+  recordStatusCheck: async (userSub, requestId, checkedAt) => {
+    const existing = asyncRequests.get(`${userSub}/${requestId}`);
+    if (existing?.status !== "pending") return;
+    asyncRequests.set(`${userSub}/${requestId}`, { ...existing, data: { ...existing.data, lastCheckedAt: checkedAt.toISOString() } });
+  },
 }));
 
 const filingStates = new Map();
@@ -83,6 +88,9 @@ vi.mock("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js", async (impor
     },
     deferPresenterPoll: async (nextPollAt) => {
       if (pollState.nextPollAt < nextPollAt) pollState.nextPollAt = nextPollAt;
+    },
+    recordPresenterPollAsked: async (askedAt) => {
+      pollState.lastAskedAt = askedAt.toISOString();
     },
   };
 });
@@ -310,6 +318,42 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
 
     expect(result.outcomes).toEqual([]);
     expect(asyncRequests.get(`${USER_SUB}/PRS004`)).toMatchObject({ status: "pending", retention: { days: 100 } });
+  });
+
+  test("a page poll of a pending filing records when Submit asked, on the filing's own request", async () => {
+    await fileAccounts("PRS031", { scenario: "PENDING_FOREVER" });
+    const now = new Date();
+
+    await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS031", kind: "accounts", now });
+
+    expect(asyncRequests.get(`${USER_SUB}/PRS031`)).toMatchObject({ status: "pending", data: { lastCheckedAt: now.toISOString() } });
+  });
+
+  test("a page poll of a decided filing records no time of asking", async () => {
+    await fileAccounts("PRS032");
+    await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS032", kind: "accounts" });
+    await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS032", kind: "accounts" });
+
+    expect(asyncRequests.get(`${USER_SUB}/PRS032`).status).toBe("completed");
+    expect(asyncRequests.get(`${USER_SUB}/PRS032`).data.lastCheckedAt).toBeUndefined();
+  });
+
+  test("the presenter poll records when the gateway answered it", async () => {
+    await fileAccounts("PRS033", { scenario: "PENDING_FOREVER" });
+    const before = new Date().toISOString();
+
+    await handler();
+
+    expect(pollState.lastAskedAt >= before).toBe(true);
+  });
+
+  test("a presenter poll skipped inside the poll interval records no time of asking", async () => {
+    pollState = { nextPollAt: Math.floor(Date.now() / 1000) + 600 };
+
+    await handler();
+
+    expect(pollState.lastAskedAt).toBeUndefined();
+    expect(gatewayRequests).toEqual([]);
   });
 
   test("when the page recorded the outcome first, the presenter poll sends no second email", async () => {

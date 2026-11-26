@@ -19,6 +19,7 @@ vi.mock("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js", () => ({
   FILING_STATE_RETENTION: { days: 100 },
   claimPresenterPollSlot: async () => true,
   deferPresenterPoll: vi.fn(),
+  recordPresenterPollAsked: vi.fn(),
   claimFinalStatus: async () => true,
   releaseFinalStatus: vi.fn(),
 }));
@@ -32,6 +33,7 @@ const mockPutAsyncRequest = vi.fn();
 vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
   getAsyncRequest: async () => PENDING_REQUEST,
   putAsyncRequest: (...args) => mockPutAsyncRequest(...args),
+  recordStatusCheck: vi.fn(),
 }));
 
 vi.mock("@app/data/dynamoDbCompaniesHousePendingFilerRepository.js", () => ({

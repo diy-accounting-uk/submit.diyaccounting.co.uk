@@ -31,7 +31,7 @@ final class SubmitApplicationCdkSupport {
      * A DIYA-GL book write carries a zip far larger than the 8KB CloudFront lets WAF inspect, so
      * the managed SizeRestrictions_BODY rule blocked every save before it reached API Gateway. The
      * fix counts that managed rule and blocks an oversized body from our own rule instead, on every
-     * request except a PUT to a book route. This pins both halves: dropping either one silently
+     * request except a PUT to a book route or a POST to the CT600 return or its preview. This pins both halves: dropping either one silently
      * restores the block, or drops the size protection from routes that still need it.
      */
     @SuppressWarnings("unchecked")
@@ -75,7 +75,7 @@ final class SubmitApplicationCdkSupport {
         var conditions = (List<Map<String, Object>>)
                 ((Map<String, Object>) ((Map<String, Object>) oversizedBody.get("Statement")).get("AndStatement"))
                         .get("Statements");
-        org.junit.jupiter.api.Assertions.assertEquals(2, conditions.size());
+        org.junit.jupiter.api.Assertions.assertEquals(3, conditions.size());
 
         var sizeConstraint = (Map<String, Object>) conditions.get(0).get("SizeConstraintStatement");
         org.junit.jupiter.api.Assertions.assertEquals("GT", sizeConstraint.get("ComparisonOperator"));
@@ -111,6 +111,25 @@ final class SubmitApplicationCdkSupport {
                 (String) ((Map<String, Object>) exemptionParts.get(1).get("ByteMatchStatement")).get("SearchString");
         org.junit.jupiter.api.Assertions.assertEquals(
                 "PUT", methodSearchString, "the exemption must be scoped to PUT and nothing wider");
+
+        var ct600Exemption =
+                (Map<String, Object>) ((Map<String, Object>) conditions.get(2).get("NotStatement")).get("Statement");
+        var ct600ExemptionParts = (List<Map<String, Object>>)
+                ((Map<String, Object>) ct600Exemption.get("AndStatement")).get("Statements");
+        org.junit.jupiter.api.Assertions.assertEquals(2, ct600ExemptionParts.size());
+        var ct600PathMatches = (List<Map<String, Object>>)
+                ((Map<String, Object>) ct600ExemptionParts.get(0).get("OrStatement")).get("Statements");
+        org.junit.jupiter.api.Assertions.assertEquals(
+                List.of("/api/v1/hmrc/ct/return|EXACTLY", "/api/v1/hmrc/ct/return/preview|EXACTLY"),
+                ct600PathMatches.stream()
+                        .map(part -> (Map<String, Object>) part.get("ByteMatchStatement"))
+                        .map(match -> match.get("SearchString") + "|" + match.get("PositionalConstraint"))
+                        .toList(),
+                "the CT600 exemption must match its two paths exactly, so no path under or beside them is exempt");
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "POST",
+                ((Map<String, Object>) ct600ExemptionParts.get(1).get("ByteMatchStatement")).get("SearchString"),
+                "the CT600 exemption must be scoped to POST and nothing wider");
     }
 
     /**

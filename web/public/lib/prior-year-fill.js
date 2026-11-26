@@ -43,12 +43,13 @@ function formatDate(isoDate, welsh) {
   });
 }
 
-// The name of the line a prior-year field belongs to: its row's heading, without the "(optional)" after
-// it or the "Of which," before a part of a line.
+// The name of the line a prior-year field belongs to: its row's plain label (the heading's text when
+// the row carries none), without the "(optional)" after it or the "Of which," before a part of a line.
 function lineName(input) {
   const optional = siteText("ch.prior.optional-qualifier", "(optional)");
   const ofWhich = siteText("ch.prior.of-which-qualifier", "Of which,");
-  let name = input.closest("tr").querySelector("th").textContent.trim().replace(/\s+/g, " ");
+  const heading = input.closest("tr").querySelector("th");
+  let name = (heading.dataset.lineLabel ?? heading.textContent).trim().replace(/\s+/g, " ");
   if (name.endsWith(optional)) name = name.slice(0, -optional.length).trim();
   if (name.startsWith(ofWhich)) name = name.slice(ofWhich.length).trim();
   return name.charAt(0).toUpperCase() + name.slice(1);
@@ -92,6 +93,28 @@ export function placeFigures(accounts, doc) {
     placed.push(input.id);
   });
   return placed;
+}
+
+/**
+ * Say above each table that holds a filled prior-year figure where those figures came from.
+ * @param {Document} doc
+ * @param {string[]} placed - the ids of the fields filled
+ * @param {string} madeUpTo - the day the filed accounts were made up to, as the page shows dates
+ */
+export function markPriorYearSource(doc, placed, madeUpTo) {
+  const tables = new Set(placed.map((id) => doc.getElementById(id)?.closest("table")).filter(Boolean));
+  for (const table of tables) {
+    const note = doc.createElement("p");
+    note.className = "hint prior-year-source";
+    note.textContent = siteText(
+      "ch.prior.column-source",
+      "Last year's figures: from the accounts filed at Companies House for the year to {date}.",
+      {
+        date: madeUpTo,
+      },
+    );
+    table.before(note);
+  }
 }
 
 /** The lines whose prior-year field the form shows and that neither the fill nor anyone else filled, by their names. */
@@ -144,34 +167,34 @@ function otherFormNote(regime, companyNumber, welsh, doc) {
   return fragment;
 }
 
-// Why the prior year is left empty, for an answer with no figures.
+// Why the prior year is left at 0, for an answer with no figures.
 function emptyReason(answer, welsh) {
   const date = formatDate(answer.set?.madeUpDate, welsh);
   switch (answer.outcome) {
     case "none":
-      return siteText("ch.prior.none", "Companies House holds no accounts for this company, so the prior year is left empty.");
+      return siteText("ch.prior.none", "Companies House holds no accounts for this company, so the prior year is left at 0.");
     case "paper":
       return siteText(
         "ch.prior.paper",
-        "The company's last accounts, made up to {date}, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left empty: type it from those accounts.",
+        "The company's last accounts, made up to {date}, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left at 0: type it from those accounts.",
         { date },
       );
     case "no-ixbrl":
       return siteText(
         "ch.prior.no-ixbrl",
-        "Companies House holds the company's last accounts, made up to {date}, without an iXBRL document, so the prior year is left empty: type it from those accounts.",
+        "Companies House holds the company's last accounts, made up to {date}, without an iXBRL document, so the prior year is left at 0: type it from those accounts.",
         { date },
       );
     case "too-large":
       return siteText(
         "ch.prior.too-large",
-        "The company's last accounts, made up to {date}, are too large to read here, so the prior year is left empty: type it from those accounts.",
+        "The company's last accounts, made up to {date}, are too large to read here, so the prior year is left at 0: type it from those accounts.",
         { date },
       );
     default:
       return siteText(
         "ch.prior.unreadable",
-        "The company's last accounts, made up to {date}, do not read as accounts here, so the prior year is left empty: type it from those accounts.",
+        "The company's last accounts, made up to {date}, do not read as accounts here, so the prior year is left at 0: type it from those accounts.",
         { date },
       );
   }
@@ -184,7 +207,7 @@ export function dayAfter(isoDate) {
   return date.toISOString().slice(0, 10);
 }
 
-// Why the prior year is left empty when the last accounts filed do not end the day before this
+// Why the prior year is left at 0 when the last accounts filed do not end the day before this
 // period starts: the register holds no accounts for the year between.
 function yearGapNote(madeUpDate, nextPeriodStart, companyNumber, welsh, doc) {
   const fragment = doc.createDocumentFragment();
@@ -194,7 +217,7 @@ function yearGapNote(madeUpDate, nextPeriodStart, companyNumber, welsh, doc) {
   fragment.append(
     siteText(
       "ch.prior.year-gap",
-      "The last accounts filed were made up to {made}, and this period starts on {start}, so the year between is not on the register and the prior year is left empty. See",
+      "The last accounts filed were made up to {made}, and this period starts on {start}, so the year between is not on the register and the prior year is left at 0. See",
       { made: formatDate(madeUpDate, welsh), start: formatDate(nextPeriodStart, welsh) },
     ),
     " ",
@@ -236,6 +259,7 @@ async function capitalAndReservesNote(doc) {
 export async function fillPriorYear({ companyNumber, form, note, doc, search, welsh, fetchLastAccounts, readProfile }) {
   note.hidden = true;
   note.replaceChildren();
+  for (const earlier of doc.querySelectorAll(".prior-year-source")) earlier.remove();
   if (isRevision(search)) return;
   const response = await fetchLastAccounts(companyNumber);
   if (response.status === 403) return;
@@ -244,7 +268,7 @@ export async function fillPriorYear({ companyNumber, form, note, doc, search, we
     paragraphs.push(
       siteText(
         "ch.prior.read-failed",
-        "The company's last accounts could not be read from Companies House, so the prior year is left empty.",
+        "The company's last accounts could not be read from Companies House, so the prior year is left at 0.",
       ),
     );
   } else {
@@ -262,14 +286,14 @@ export async function fillPriorYear({ companyNumber, form, note, doc, search, we
         paragraphs.push(
           siteText(
             "ch.prior.read-failed",
-            "The company's last accounts could not be read from Companies House, so the prior year is left empty.",
+            "The company's last accounts could not be read from Companies House, so the prior year is left at 0.",
           ),
         );
       } else if (!nextPeriodStart) {
         paragraphs.push(
           siteText(
             "ch.prior.no-next-period",
-            "Companies House states no next accounting period for this company, so this form's year cannot be matched to the last accounts and the prior year is left empty.",
+            "Companies House states no next accounting period for this company, so this form's year cannot be matched to the last accounts and the prior year is left at 0.",
           ),
         );
       } else if (dayAfter(set.madeUpDate) !== nextPeriodStart) {
@@ -287,10 +311,11 @@ export async function fillPriorYear({ companyNumber, form, note, doc, search, we
   note.hidden = false;
 }
 
-// Places the figures and answers the paragraphs that say what was placed and what was left empty.
+// Places the figures and answers the paragraphs that say what was placed and what was left at 0.
 async function placedNotes(accounts, set, form, welsh, doc) {
   if (form === "small" && accounts.regime === "small") showSmallCompanyPriorYear(accounts, doc);
   const placed = placeFigures(accounts, doc);
+  markPriorYearSource(doc, placed, formatDate(set.madeUpDate, welsh));
   const empty = emptyLines(doc, placed);
   const values = {
     count: placed.length,
@@ -311,7 +336,7 @@ async function placedNotes(accounts, set, form, welsh, doc) {
         ),
   ];
   if (empty.length > 0) {
-    paragraphs.push(siteText("ch.prior.left-empty", "Left empty, with no figure in those accounts: {lines}.", { lines: empty.join(", ") }));
+    paragraphs.push(siteText("ch.prior.left-empty", "Left at 0, with no figure in those accounts: {lines}.", { lines: empty.join(", ") }));
   }
   if (form === "micro") {
     const reserves = await capitalAndReservesNote(doc);

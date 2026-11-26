@@ -3,9 +3,8 @@
 
 // web/browser-tests/fileCompanyTaxReturn.operatorPreview.browser.test.js
 //
-// The Company Tax Return page on prod opens only to an operator whose stored preview features
-// setting is on, with a banner that says it files live; everyone else on prod sees the unavailable
-// panel. On ci the page opens to anyone by its listing, with its own preview hint.
+// The Company Tax Return page opens by its listing on prod and on ci, to a customer as to an
+// operator, with no banner and no preview mark.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -76,62 +75,56 @@ test.describe("The Company Tax Return page on prod and on ci", () => {
         await page.setViewportSize({ width, height: 900 });
       });
 
-      test("an operator with preview features on sees the page with the live banner and not the preview hint", async ({ page }) => {
-        await serveSite(page, { environmentName: "prod", operator: true, previewFeatures: true });
-        await openPage(page);
-        const banner = page.locator("[data-operator-live]");
-        await expect(banner).toBeVisible();
-        await expect(banner).toContainText("Live");
-        await expect(banner).toContainText("It files for real: the return goes to HMRC");
-        await expect(page.locator("[data-preview-sandbox]")).toHaveCount(0);
-        await expect(page.locator('main [data-feature-status="preview"]')).toBeHidden();
-        await expect(page.locator("#activityUnavailablePanel")).toHaveCount(0);
-        await expect(page.locator("h1")).toHaveText("File a Company Tax Return (preview)");
-        await shoot(page, "prod-operator-preview-on");
-      });
-
-      test("a customer sees the unavailable panel", async ({ page }) => {
-        await serveSite(page, { environmentName: "prod", operator: false, previewFeatures: true });
-        await openPage(page);
-        await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
-        await expect(page.locator("#activityUnavailablePanel")).toContainText("Not available here yet");
-        await expect(page.locator("[data-operator-live]")).toHaveCount(0);
-        await shoot(page, "prod-customer");
-      });
-
-      test("on ci the page opens by its listing with its preview hint and no banner", async ({ page }) => {
-        await serveSite(page, { environmentName: "ci", operator: false, previewFeatures: false });
-        await openPage(page);
-        await expect(page.locator('main [data-feature-status="preview"]')).toBeVisible();
-        await expect(page.locator("[data-operator-live]")).toHaveCount(0);
-        await expect(page.locator("[data-preview-sandbox]")).toHaveCount(0);
-        await expect(page.locator("#activityUnavailablePanel")).toHaveCount(0);
-        await shoot(page, "ci");
-      });
+      for (const [environmentName, operator] of [
+        ["prod", false],
+        ["prod", true],
+        ["ci", false],
+      ]) {
+        const who = operator ? "an operator" : "a customer";
+        test(`on ${environmentName} ${who} sees the page with no banner and no preview mark`, async ({ page }) => {
+          await serveSite(page, { environmentName, operator, previewFeatures: false });
+          await openPage(page);
+          await expect(page.locator("#activityUnavailablePanel")).toHaveCount(0);
+          await expect(page.locator("[data-preview-sandbox]")).toHaveCount(0);
+          await expect(page.locator("[data-operator-live]")).toHaveCount(0);
+          await expect(page.locator('main [data-feature-status="preview"]')).toHaveCount(0);
+          await expect(page.locator("h1")).toHaveText("File a Company Tax Return");
+          await expect(page).toHaveTitle("File a Company Tax Return - DIY Accounting Submit");
+          await expect(page.locator("main")).not.toContainText("(preview)");
+          await expect(page.locator("main")).not.toContainText("Status: preview");
+          await shoot(page, `${environmentName}-${operator ? "operator" : "customer"}`);
+        });
+      }
     });
   }
 
-  test("an operator with preview features off sees the unavailable panel", async ({ page }) => {
-    await serveSite(page, { environmentName: "prod", operator: true, previewFeatures: false });
+  test("the form's fields carry their reference, the note's link and a closed spreadsheet disclosure, in English and Welsh", async ({
+    page,
+  }) => {
+    await serveSite(page, { environmentName: "ci", operator: false, previewFeatures: false });
     await openPage(page);
-    await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
-    await expect(page.locator("[data-operator-live]")).toHaveCount(0);
-  });
+    await expect(page.locator('label[for="utr"]')).toHaveText("Box 3: Tax reference");
+    await expect(page.locator("#utr-hint a")).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/guidance/the-company-tax-return-guide#tax-reference",
+    );
+    await expect(page.locator("#utr-source")).not.toHaveAttribute("open", "");
+    await expect(page.locator("#utr-source img")).toHaveAttribute("src", "/images/ct600-sources/OpenAccounts-O3.webp");
 
-  test("an operator with preview features on for the session only sees the unavailable panel", async ({ page }) => {
-    await page.addInitScript(() => sessionStorage.setItem("previewFeatures", "on"));
-    await serveSite(page, { environmentName: "prod", operator: true, previewFeatures: false });
-    await openPage(page);
-    await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
-  });
-
-  test("the Welsh page shows the live banner in Welsh", async ({ page }) => {
-    await serveSite(page, { environmentName: "prod", operator: true, previewFeatures: true });
     await openPage(page, { welsh: true });
-    const banner = page.locator("[data-operator-live]");
-    await expect(banner).toContainText("Byw");
-    await expect(banner).toContainText("Mae’n ffeilio go iawn");
-    await expect(page.locator("h1")).toHaveText("Ffeilio Ffurflen Dreth y Cwmni (rhagolwg)");
-    await shoot(page, "prod-operator-preview-on-cy");
+    await expect(page.locator('label[for="utr"]')).toHaveText("Blwch 3: Cyfeirnod treth");
+    await expect(page.locator("#utr-hint")).toContainText("(yn Saesneg)");
+    await expect(page.locator("#utr-source summary")).toHaveText("Yn nhaenlenni DIY Accounting");
+    await expect(page.locator("#currentTurnover-source img").first()).toHaveAttribute("alt", "Dalen PubP&L yng nghell F9");
+  });
+
+  test("the Welsh page on prod has no banner and no preview mark", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", operator: false, previewFeatures: false });
+    await openPage(page, { welsh: true });
+    await expect(page.locator("#activityUnavailablePanel")).toHaveCount(0);
+    await expect(page.locator("[data-operator-live]")).toHaveCount(0);
+    await expect(page.locator("h1")).toHaveText("Ffeilio Ffurflen Dreth y Cwmni");
+    await expect(page.locator("main")).not.toContainText("(rhagolwg)");
+    await shoot(page, "prod-customer-cy");
   });
 });

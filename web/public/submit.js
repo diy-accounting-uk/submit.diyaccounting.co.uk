@@ -38,6 +38,7 @@ import {
   prepareRedirect,
 } from "./lib/utils/correlation-utils.js";
 import { classifyVisitorKind } from "./lib/utils/visitor-kind.js";
+import { startStatusBubble } from "./lib/utils/status-bubble.js";
 
 // Services layer
 import { checkAuthStatus, checkTokenExpiry, ensureSession } from "./lib/services/auth-service.js";
@@ -575,6 +576,15 @@ function ensurePrivacyLink() {
   footer.appendChild(link);
 }
 
+// The bubble repeats status messages; a browser that cannot start it still starts the page.
+function startStatusBubbleSafely() {
+  try {
+    startStatusBubble();
+  } catch (err) {
+    console.warn("Failed to start the status bubble:", err.message);
+  }
+}
+
 // Wire up on load
 if (typeof window !== "undefined" && typeof document !== "undefined") {
   document.addEventListener("click", handleActivityStartClick);
@@ -582,6 +592,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   document.addEventListener("click", reopenConsentChoice);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
+      startStatusBubbleSafely();
       recordActivityViewOnLoad();
       recordAccountAcquisitionAfterSignIn();
       ensurePrivacyLink();
@@ -594,6 +605,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
       });
     });
   } else {
+    startStatusBubbleSafely();
     recordActivityViewOnLoad();
     recordAccountAcquisitionAfterSignIn();
     ensurePrivacyLink();

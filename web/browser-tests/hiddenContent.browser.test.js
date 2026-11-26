@@ -4,8 +4,8 @@
 // web/browser-tests/hiddenContent.browser.test.js
 //
 // The content that describes a feature (guide journeys, videos, FAQs, the MCP tool lists) shows
-// only where the catalogue lists the feature's activity in the environment: absent in prod,
-// present in ci.
+// only where the catalogue lists the feature's activity in the environment: an activity that prod
+// does not list is absent there and present in ci.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -45,7 +45,7 @@ async function serveSite(page, environmentName) {
 }
 
 test.describe("Hidden feature content", () => {
-  test("the guide has no Income Tax or Company Tax Return journeys in prod", async ({ page }) => {
+  test("the guide has no Income Tax journeys in prod, and has the Company Tax Return ones", async ({ page }) => {
     await serveSite(page, "prod");
     await page.goto("http://localhost:3000/guide.html", { waitUntil: "networkidle" });
     await expect(page.locator("details#submit-return")).toHaveCount(1);
@@ -53,7 +53,7 @@ test.describe("Hidden feature content", () => {
     await expect(page.locator("details#file-confirmation-statement")).toHaveCount(1);
     await expect(page.locator("details#diya-gl-storage")).toHaveCount(0);
     await expect(page.locator(".guide-group h2", { hasText: "Income Tax" })).toHaveCount(0);
-    await expect(page.locator(".guide-group h2", { hasText: "Company Tax Return" })).toHaveCount(0);
+    await expect(page.locator(".guide-group h2", { hasText: "Company Tax Return" })).toHaveCount(1);
     await expect(page.locator("details#company-lookup")).toHaveCount(1);
   });
 
@@ -113,7 +113,7 @@ test.describe("Hidden feature content", () => {
     await expect(page.locator("section.video-section")).toHaveCount(4);
   });
 
-  test("the help page has no FAQ about Income Tax, Company Tax Return or diya-gl books and has the Companies House filings FAQ in prod", async ({
+  test("the help page has no FAQ about Income Tax or diya-gl books, and has the Company Tax Return and Companies House filings FAQs in prod", async ({
     page,
   }) => {
     await serveSite(page, "prod");
@@ -121,7 +121,7 @@ test.describe("Hidden feature content", () => {
     await page.locator("#faq-search").fill("tax");
     await expect(page.locator(".faq-item").first()).toBeVisible();
     await expect(page.locator('.faq-item[data-id="self-assessment-itsa"]')).toHaveCount(0);
-    await expect(page.locator('.faq-item[data-id="company-tax-return-ct600"]')).toHaveCount(0);
+    await expect(page.locator('.faq-item[data-id="company-tax-return-ct600"]')).toBeVisible();
     await page.locator("#faq-search").fill("Companies House");
     await expect(page.locator('.faq-item[data-id="companies-house-filings"]')).toBeVisible();
     await expect(page.locator('.faq-item[data-id="companies-house-accounts-filings"]')).toBeVisible();
@@ -161,7 +161,7 @@ test.describe("Hidden feature content", () => {
   test("the Company Tax Return page asks no 'Who is this return for?' in prod, where the practice clients call is refused", async ({
     page,
   }) => {
-    // The operator whose own preview opens the page on prod: the page is open, and filing for a client stays off.
+    // A customer on prod: the page is open, and filing for a client stays off.
     await page.addInitScript(() => localStorage.setItem("cognitoIdToken", "id-token"));
     await serveSite(page, "prod");
     await page.route("**/api/v1/bundle", (route) =>
@@ -169,11 +169,8 @@ test.describe("Hidden feature content", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          bundles: [
-            { bundleId: "resident-ltd", allocated: true },
-            { bundleId: "operator", allocated: true },
-          ],
-          settings: { passGeneration: true, watchedCompanies: [], previewFeatures: true },
+          bundles: [{ bundleId: "resident-ltd", allocated: true }],
+          settings: { passGeneration: true, watchedCompanies: [] },
         }),
       }),
     );
@@ -181,7 +178,7 @@ test.describe("Hidden feature content", () => {
       route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED" }) }),
     );
     await page.goto("http://localhost:3000/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
-    await expect(page.locator("[data-operator-live]")).toBeVisible();
+    await expect(page.locator("#activityUnavailablePanel")).toHaveCount(0);
     await expect(page.locator("#clientChoice")).toBeHidden();
     await expect(page.getByText("Who is this return for?")).toBeHidden();
   });
@@ -192,7 +189,6 @@ test.describe("Hidden feature content", () => {
       await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "networkidle" });
       const main = page.locator("main");
       await expect(main).not.toContainText("Income Tax");
-      await expect(main).not.toContainText("Company Tax Return");
     });
   }
 });

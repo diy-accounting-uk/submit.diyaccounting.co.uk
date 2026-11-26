@@ -4,7 +4,7 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>File a Company Tax Return (preview) - DIY Accounting Submit</title>
+    <title>File a Company Tax Return - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/fileCompanyTaxReturn.html" />
     <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/fileCompanyTaxReturn.html" />
@@ -27,15 +27,11 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
-      <h1>File a Company Tax Return (preview)</h1>
+      <h1>File a Company Tax Return</h1>
       <p class="subtitle">File a small company's CT600 return, computations and accounts with HMRC</p>
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="preview">
-        <strong>Status: preview.</strong> You can prepare the return and preview its boxes here. It runs on our simulator and HMRC's test
-        service only, so nothing you send reaches HMRC.
-      </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -95,6 +91,8 @@
           Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
+        <section id="lastYearPanel" class="form-section" aria-live="polite" hidden></section>
+        <div id="draftPanel" hidden></div>
         <div id="booksImport"></div>
         <form id="returnForm" novalidate>
           <div id="formSections"></div>
@@ -128,28 +126,11 @@
             >CT600 (2026) Version 3</a
           >.
         </p>
-        <h3>Your answers</h3>
+        <h3>The return you are about to file</h3>
         <div id="reviewSendTo"></div>
         <div id="reviewAnswers"></div>
         <div id="singleReview">
-          <h3>CT600 boxes</h3>
-          <table id="ct600Table" class="results-table review-table review-table--boxes">
-            <colgroup>
-              <col class="review-table__box" />
-              <col />
-              <col class="review-table__value" />
-              <col class="review-table__change" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th scope="col">Box</th>
-                <th scope="col">Meaning</th>
-                <th scope="col" class="amount">Value (amounts in £)</th>
-                <th scope="col">Change</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <div class="customer-copy-sheet"><div id="ct600Record" class="submission-record"></div></div>
           <h3>Computations</h3>
           <table id="computationsTable" class="results-table review-table">
             <colgroup>

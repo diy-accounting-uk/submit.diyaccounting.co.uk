@@ -59,6 +59,7 @@ test.describe("Help search", () => {
         await page.addInitScript(() => localStorage.setItem("consent.analytics", "declined"));
         await page.setViewportSize({ width, height: 900 });
         await page.goto("http://localhost:3000/help.html", { waitUntil: "domcontentloaded" });
+        await page.locator('#faq-search[data-search-ready="true"]').waitFor({ state: "attached" });
         await page.locator("#faq-search").fill(query);
         await expect(page.locator("#search-hint")).toContainText(/result/);
         const result = page.locator(`.faq-item[data-id="${faqId}"]`);

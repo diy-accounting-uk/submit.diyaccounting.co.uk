@@ -368,7 +368,6 @@ test.describe("Filing page status banners say what the reader can do", () => {
   const BANNERS = [
     ["companies-house/fileMicroEntityAccounts.html", /Accounts you file here reach the live Companies House register/],
     ["companies-house/fileSmallCompanyAccounts.html", /Accounts you file here reach the live Companies House register/],
-    ["companies-house/fileCompanyTaxReturn.html", /You can prepare the return and preview its boxes here/],
   ];
 
   for (const [pagePath, wording] of BANNERS) {

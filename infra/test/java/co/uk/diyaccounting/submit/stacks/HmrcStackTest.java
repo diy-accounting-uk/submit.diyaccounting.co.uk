@@ -81,7 +81,7 @@ class HmrcStackTest {
     }
 
     @Test
-    void receiptsListCanReadTheCompaniesHouseFilingsInProgress() {
+    void receiptsListCanReadTheFilingsAndCompanyTaxReturnsInProgress() {
         TEMPLATE.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
@@ -106,7 +106,9 @@ class HmrcStackTest {
                                                                 Match.objectLike(
                                                                         Map.of(
                                                                                 "Action",
-                                                                                "dynamodb:Query",
+                                                                                java.util.List.of(
+                                                                                        "dynamodb:Query",
+                                                                                        "dynamodb:BatchGetItem"),
                                                                                 "Resource",
                                                                                 Match.arrayWith(
                                                                                         java.util.List.of(

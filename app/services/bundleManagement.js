@@ -20,7 +20,7 @@ import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCat
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 import { isOperatorEmail } from "../lib/operators.js";
-import { previewRunsAgainstSandbox, operatorPreviewPasses } from "../lib/previewFeatures.js";
+import { previewRunsAgainstSandbox } from "../lib/previewFeatures.js";
 import { holdsPracticeLicence } from "./practiceLicence.js";
 import { getClient } from "../data/dynamoDbPracticeClientRepository.js";
 
@@ -159,9 +159,6 @@ export async function enforceBundles(event, options = {}) {
   }
   const listedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
   let matchedActivities = listedActivities;
-  if (matchedActivities.length === 0) {
-    matchedActivities = await activitiesOpenedByOperatorPreview(pathActivities, environmentName, { sub: userSub, email: userEmail });
-  }
   if (matchedActivities.length === 0 && previewRunsAgainstSandbox(event, requestPath)) matchedActivities = pathActivities;
   if (pathActivities.length > 0 && matchedActivities.length === 0) {
     const environmentRestrictedActivity = pathActivities[0];
@@ -245,16 +242,6 @@ export async function enforceBundles(event, options = {}) {
   }
 
   return { userSub, bundleIds: matchedBundleIds, client };
-}
-
-// The activities an operator's own preview opens, of those a request matched in an environment
-// that lists none of them.
-async function activitiesOpenedByOperatorPreview(activities, environmentName, user) {
-  const opened = [];
-  for (const activity of activities) {
-    if (await operatorPreviewPasses(activity, environmentName, user)) opened.push(activity);
-  }
-  return opened;
 }
 
 function extractUserInfo(event) {

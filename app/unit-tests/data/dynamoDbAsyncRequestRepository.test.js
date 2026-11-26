@@ -7,6 +7,8 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { _setTestSalt, _clearSalt } from "../../services/subHasher.js";
 
 const mockSend = vi.fn();
+const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }));
+vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 vi.mock("@aws-sdk/lib-dynamodb", () => {
   class PutCommand {
@@ -102,5 +104,100 @@ describe("dynamoDbAsyncRequestRepository", () => {
     expect(input.UpdateExpression).toContain("REMOVE #data");
     expect(input.ExpressionAttributeNames["#data"]).toBe("data");
     expect(input.ExpressionAttributeValues[":data"]).toBeUndefined();
+  });
+
+  test("putAsyncRequest logs the item's key as asyncRequestId and leaves requestId to the request context", async () => {
+    const { putAsyncRequest } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await putAsyncRequest("user-123", "46DCD4CC7E194088B99857931C185829", "pending", { kind: "company-tax-return" });
+
+    const logged = mockLogger.info.mock.calls.map(([fields]) => fields);
+    expect(logged.length).toBeGreaterThan(0);
+    for (const fields of logged) {
+      expect(fields.asyncRequestId).toBe("46DCD4CC7E194088B99857931C185829");
+      expect(fields).not.toHaveProperty("requestId");
+    }
+  });
+
+  test("putAsyncRequest counts the retention from retention.from when it is given, and from now otherwise", async () => {
+    const { putAsyncRequest } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockResolvedValue({});
+    const sentAt = "2026-01-01T00:00:00.000Z";
+
+    await putAsyncRequest("user-123", "req-1", "pending", { a: 1 }, "t", { days: 30, from: sentAt });
+    const fromSent = mockSend.mock.calls[0][0].input.ExpressionAttributeValues;
+    expect(fromSent[":ttl"]).toBe(Math.floor(Date.parse(sentAt) / 1000) + 30 * 86400);
+    expect(fromSent[":ttl_datestamp"]).toBe("2026-01-31T00:00:00.000Z");
+
+    const before = Math.floor(Date.now() / 1000);
+    await putAsyncRequest("user-123", "req-1", "completed", { a: 1 }, "t");
+    const fromNow = mockSend.mock.calls[1][0].input.ExpressionAttributeValues[":ttl"];
+    expect(fromNow).toBeGreaterThanOrEqual(before + 3600);
+    expect(fromNow).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 3600);
+  });
+
+  test("recordStatusCheck sets data.lastCheckedAt in place on a request that is still pending", async () => {
+    const { recordStatusCheck } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    const { hashSub } = await import("../../services/subHasher.js");
+    mockSend.mockResolvedValue({});
+
+    await recordStatusCheck("user-123", "00001A", new Date("2026-11-26T09:20:00.000Z"), "test-async-requests");
+
+    const [[command]] = mockSend.mock.calls;
+    expect(command.input.Key).toEqual({ hashedSub: hashSub("user-123"), requestId: "00001A" });
+    expect(command.input.UpdateExpression).toBe("SET #data.#lastCheckedAt = :checkedAt");
+    expect(command.input.ConditionExpression).toBe("#status = :pending");
+    expect(command.input.ExpressionAttributeValues).toEqual({ ":checkedAt": "2026-11-26T09:20:00.000Z", ":pending": "pending" });
+  });
+
+  test("recordStatusCheck leaves a request that is no longer pending, and throws any other failure", async () => {
+    const { recordStatusCheck } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    await expect(recordStatusCheck("user-123", "00001A", new Date(), "test-async-requests")).resolves.toBeUndefined();
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
+    await expect(recordStatusCheck("user-123", "00001A", new Date(), "test-async-requests")).rejects.toThrow("throttled");
+  });
+
+  test("claimRecording turns a pending request to recording, or takes over a stale claim, with one conditional write", async () => {
+    const { claimRecording } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    const { hashSub } = await import("../../services/subHasher.js");
+    mockSend.mockResolvedValue({});
+
+    await expect(claimRecording("user-123", "CORR1", "test-async-requests", { now: new Date("2026-11-26T10:00:00.000Z") })).resolves.toBe(
+      true,
+    );
+
+    const command = mockSend.mock.calls.at(-1)[0];
+    expect(command.input.Key).toEqual({ hashedSub: hashSub("user-123"), requestId: "CORR1" });
+    expect(command.input.ConditionExpression).toBe("#status = :pending OR (#status = :recording AND #recordingSince < :staleBefore)");
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ":recording": "recording",
+      ":pending": "pending",
+      ":now": "2026-11-26T10:00:00.000Z",
+      ":staleBefore": "2026-11-26T09:40:00.000Z",
+    });
+  });
+
+  test("claimRecording answers false when another poll holds the claim or the request is settled, and throws any other failure", async () => {
+    const { claimRecording } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    await expect(claimRecording("user-123", "CORR1", "test-async-requests")).resolves.toBe(false);
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
+    await expect(claimRecording("user-123", "CORR1", "test-async-requests")).rejects.toThrow("throttled");
+  });
+
+  test("releaseRecording puts a recording request back to pending, and leaves a settled one", async () => {
+    const { releaseRecording } = await import("../../../app/data/dynamoDbAsyncRequestRepository.js");
+    mockSend.mockResolvedValueOnce({});
+    await releaseRecording("user-123", "CORR1", "test-async-requests");
+    const command = mockSend.mock.calls.at(-1)[0];
+    expect(command.input.UpdateExpression).toBe("SET #status = :pending REMOVE #recordingSince");
+    expect(command.input.ConditionExpression).toBe("#status = :recording");
+
+    mockSend.mockRejectedValueOnce(Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }));
+    await expect(releaseRecording("user-123", "CORR1", "test-async-requests")).resolves.toBeUndefined();
   });
 });

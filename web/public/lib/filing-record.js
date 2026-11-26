@@ -9,6 +9,7 @@
 
 import { customerCopyHtml, escapeRecordAttribute, escapeRecordText, recordAmount, recordHeading } from "./submission-record.js";
 import { CT600_BOX_ROWS, TEXT_BOXES } from "./ct600-fields.js";
+import { longDateText } from "./long-period.js";
 
 export const ACCOUNTS_KIND = "companies-house-accounts";
 export const CT_RETURN_KIND = "company-tax-return";
@@ -22,37 +23,6 @@ function siteText(id, english, values) {
   return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 }
 
-// Chromium's Intl has no Welsh, so a Welsh date is written from the month names here.
-const WELSH_MONTHS = [
-  "Ionawr",
-  "Chwefror",
-  "Mawrth",
-  "Ebrill",
-  "Mai",
-  "Mehefin",
-  "Gorffennaf",
-  "Awst",
-  "Medi",
-  "Hydref",
-  "Tachwedd",
-  "Rhagfyr",
-];
-
-/**
- * A date as the customer reads it in the chrome's language, e.g. "24 October 2026" or "24 Hydref 2026".
- * @param {Date} date
- * @param {{utc?: boolean}} [options] - read the day in UTC
- * @returns {string}
- */
-export function longDateText(date, { utc = false } = {}) {
-  if (globalThis.siteLanguage && globalThis.siteLanguage.chrome() === "cy") {
-    const [day, month, year] = utc
-      ? [date.getUTCDate(), date.getUTCMonth(), date.getUTCFullYear()]
-      : [date.getDate(), date.getMonth(), date.getFullYear()];
-    return `${day} ${WELSH_MONTHS[month]} ${year}`;
-  }
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", ...(utc ? { timeZone: "UTC" } : {}) });
-}
 const RECEIPT_TIMESTAMP = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)-/;
 
 /** The filing kinds this module draws a customer copy for. */
@@ -69,7 +39,7 @@ export function filingDateText(receiptName) {
   const match = RECEIPT_TIMESTAMP.exec(String(receiptName ?? ""));
   const date = match ? new Date(match[1]) : null;
   if (!date || Number.isNaN(date.getTime())) return ABSENT;
-  return longDateText(date, { utc: true });
+  return longDateText(match[1].slice(0, 10));
 }
 
 export function page(html) {
@@ -192,17 +162,44 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
   });
 }
 
+/**
+ * A CT600 box's value as the review and the filed copy show it: a rate with its %, box 329 as Yes,
+ * the period's dates in words, other coded boxes as filed; null for an amount.
+ */
+export function ct600BoxText(box, value) {
+  const key = /^\d+$/.test(String(box)) ? Number(box) : box;
+  if (!TEXT_BOXES.has(key)) return null;
+  if (value === undefined || value === null || value === "") return ABSENT;
+  if (key === 340 || key === 390) return `${value}%`;
+  if (key === 329) return siteText("ch.ct.yes", "Yes");
+  if (key === 4 && String(value) === "0") return siteText("ch.ct.box-4-none", "Not one of the listed types");
+  if ((key === 30 || key === 35) && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) return longDateText(String(value));
+  return String(value);
+}
+
 function boxValueCell(box, value) {
-  if (TEXT_BOXES.has(box)) {
-    let text = value;
-    if (box === 340 || box === 390) text = `${value}%`;
-    if (box === 329) text = siteText("ch.ct.yes", "Yes");
-    return `<td class="label text-value">${escapeRecordText(text ?? ABSENT)}</td>`;
-  }
+  const text = ct600BoxText(box, value);
+  if (text !== null) return `<td class="label text-value">${escapeRecordText(text)}</td>`;
   const amount = Number(value);
   if (!Number.isFinite(amount)) return `<td class="label text-value">${ABSENT}</td>`;
   const { html } = recordAmount(amount, { decimals: Number.isInteger(amount) ? 0 : 2 });
   return `<td class="figure positive">£${html}</td>`;
+}
+
+/**
+ * The filed copy's title and its record's title. A return the receipt marks as filed with HMRC's
+ * test service says so; a live return, or one filed before receipts recorded the service, does not.
+ */
+export function ctRecordTitle(testService, parts) {
+  return testService
+    ? siteText("ch.ct.record-title-test", "Company Tax Return (CT600, HMRC test service){parts}", { parts })
+    : siteText("ch.ct.record-title-live", "Company Tax Return (CT600){parts}", { parts });
+}
+
+export function ctCopyTitle(testService, parts) {
+  return testService
+    ? siteText("ch.ct.record-copy-title-test", "Your copy of the Company Tax Return (HMRC test service){parts}", { parts })
+    : siteText("ch.ct.record-copy-title-live", "Your copy of the Company Tax Return{parts}", { parts });
 }
 
 // " 1 of 2" for one of the two returns of a period of account over 12 months.
@@ -210,29 +207,64 @@ function longPeriodTitleSuffix(receipt) {
   return receipt.longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", receipt.longPeriod) : "";
 }
 
-function ct600Record(receipt, dateText) {
+/**
+ * The CT600 boxes as the filed copy shows them: the company, its tax reference and registration
+ * number, a title and subtitle, then a row per box with its number, HMRC's term and its value.
+ * The review before sending renders the same record, with a Change cell on each row.
+ * @param {object} record
+ * @param {object} record.boxes - the CT600 boxes
+ * @param {string} [record.utr]
+ * @param {string} [record.companyName] - box 1 when the boxes hold it
+ * @param {string} [record.companyNumber] - box 2 when the boxes hold it
+ * @param {string} record.title
+ * @param {string} record.subtitle
+ * @param {(box: number|string) => string} [record.rowId] - the id of a box's row
+ * @param {(box: number|string, label: string) => string} [record.changeCellHtml] - a Change cell for a box's row
+ * @param {string} [record.tableId]
+ */
+export function ct600RecordHtml({
+  boxes = {},
+  utr,
+  companyName = boxes[1],
+  companyNumber = boxes[2],
+  title,
+  subtitle,
+  rowId = (box) => `ct600Box${box}`,
+  changeCellHtml,
+  tableId,
+}) {
   const heading = recordHeading({
-    nameHtml: escapeRecordText(receipt.filed?.boxes?.[1] ?? siteText("ch.ct.record-name", "Company Tax Return")),
+    nameHtml: escapeRecordText(companyName ?? siteText("ch.ct.record-name", "Company Tax Return")),
     referenceHtml: [
-      receipt.utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Unique Taxpayer Reference {utr}", { utr: receipt.utr })) : "",
-      receipt.filed?.boxes?.[2]
-        ? escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: receipt.filed.boxes[2] }))
+      utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr })) : "",
+      companyNumber
+        ? escapeRecordText(siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: companyNumber }))
         : "",
     ].filter(Boolean),
-    title: siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts: longPeriodTitleSuffix(receipt) }),
-    subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
+    title,
+    subtitleHtml: escapeRecordText(subtitle),
   });
-  const boxes = receipt.filed?.boxes ?? {};
   const rows = Object.keys(boxes)
     .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
     .map((key) => {
       const box = /^\d+$/.test(key) ? Number(key) : key;
-      const label = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? siteText("ch.ct.column-box", "Box");
-      const boxLabel = escapeRecordText(siteText("ch.ct.box-label", "Box {box}: {label}", { box, label }));
-      return `<tr id="ct600Box${box}"><td class="label">${boxLabel}</td>${boxValueCell(box, boxes[box])}</tr>`;
+      const term = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? ABSENT;
+      const reference = escapeRecordText(siteText("ch.ct600.review-box", "Box {box}", { box }));
+      const change = changeCellHtml ? changeCellHtml(box, term) : "";
+      return `<tr id="${escapeRecordAttribute(rowId(box))}"><td class="label box-reference">${reference}</td><td class="label">${escapeRecordText(term)}</td>${boxValueCell(box, boxes[box])}${change}</tr>`;
     })
     .join("\n");
-  return page(`${heading}<table class="statement">\n<tbody>\n${rows}\n</tbody>\n</table>`);
+  const id = tableId ? ` id="${escapeRecordAttribute(tableId)}"` : "";
+  return page(`${heading}<table class="statement"${id}>\n<tbody>\n${rows}\n</tbody>\n</table>`);
+}
+
+function ct600Record(receipt, dateText) {
+  return ct600RecordHtml({
+    boxes: receipt.filed?.boxes ?? {},
+    utr: receipt.utr,
+    title: ctRecordTitle(receipt.gatewayTest === true, longPeriodTitleSuffix(receipt)),
+    subtitle: siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText }),
+  });
 }
 
 export function ctReceiptRecord(receipt, dateText) {
@@ -248,9 +280,8 @@ export function ctReceiptRecord(receipt, dateText) {
     textLine(siteText("ch.ct.record-irmark-receipt", "IRmark receipt"), receipt.irmarkReceipt),
     textLine(siteText("ch.ct.record-irmark-sent", "IRmark we sent"), receipt.irmark),
     textLine(siteText("ch.ct.record-correlation", "Correlation ID"), receipt.correlationId),
-    textLine(siteText("ch.ct.record-utr", "Unique Taxpayer Reference"), receipt.utr),
+    textLine(siteText("ch.ct.record-utr", "Tax reference"), receipt.utr),
     textLine(siteText("ch.ct.record-hmrc-message", "HMRC's message"), receipt.successMessage),
-    textLine(siteText("ch.record.filed-on", "Filed on"), dateText),
   ].join("\n");
   return page(`${heading}<table class="statement">\n<tbody>\n${lines}\n</tbody>\n</table>`);
 }
@@ -313,9 +344,7 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
     },
   ];
   return customerCopyHtml({
-    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", {
-      parts: longPeriodTitleSuffix(receipt),
-    }),
+    title: ctCopyTitle(receipt.gatewayTest === true, longPeriodTitleSuffix(receipt)),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT),

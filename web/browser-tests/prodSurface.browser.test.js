@@ -81,7 +81,7 @@ test.describe("Prod surface", () => {
     await shoot(page, "guard-prod");
   });
 
-  for (const pagePath of ["companies-house/fileCompanyTaxReturn.html", "practice.html", "mcp-harness.html"]) {
+  for (const pagePath of ["practice.html", "mcp-harness.html"]) {
     test(`${pagePath} shows the panel in prod`, async ({ page }) => {
       await serveSite(page, "prod");
       await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "networkidle" });
@@ -90,9 +90,16 @@ test.describe("Prod surface", () => {
     });
   }
 
-  test("the Welsh Company Tax Return page shows the not-available panel in Welsh in prod", async ({ page }) => {
+  test("the Company Tax Return page opens in prod, with no panel", async ({ page }) => {
     await serveSite(page, "prod");
-    await page.goto("http://localhost:3000/cy/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
+    await page.goto("http://localhost:3000/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
+    await expect(page.locator("#companyLookupBtn")).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("#activityUnavailablePanel")).toHaveCount(0);
+  });
+
+  test("the Welsh Income Tax dashboard shows the not-available panel in Welsh in prod", async ({ page }) => {
+    await serveSite(page, "prod");
+    await page.goto("http://localhost:3000/cy/hmrc/itsa/dashboard.html", { waitUntil: "networkidle" });
     const panel = page.locator("#activityUnavailablePanel");
     await expect(panel).toBeVisible({ timeout: 15000 });
     await expect(panel.locator("h2")).toHaveText("Ddim ar gael yma eto");

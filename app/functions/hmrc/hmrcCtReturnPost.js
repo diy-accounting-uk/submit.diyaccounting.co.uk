@@ -7,7 +7,7 @@
 // types go into the message's IDAuthentication only, are never logged or stored, and are dropped
 // once this call returns. HMRC answers with an acknowledgement; the GET Lambda polls for the result.
 
-import { createLogger } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import {
   extractRequest,
@@ -40,10 +40,11 @@ import {
   getTransactionEngineSubmissionUrl,
   redactGatewayCredentials,
   CT600_CLASS,
-  CT_RETURN_KIND,
 } from "../../services/hmrcTransactionEngine.js";
-import { findHeldCtSubmission, CT_RETURN_ACTIVITY_ID } from "../../services/hmrcCtSubmissionStatus.js";
+import { CT_RETURN_KIND } from "../../services/ctReturnKind.js";
+import { findHeldCtSubmission, ctPendingRetention, CT_RETURN_ACTIVITY_ID } from "../../services/hmrcCtSubmissionStatus.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { putPendingCtReturn } from "../../data/dynamoDbCtPendingReturnRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import {
@@ -70,6 +71,16 @@ export function apiEndpoint(app) {
   registerLambdaRoute(app, "head", "/api/v1/hmrc/ct/return", ingestHandler);
 }
 /* v8 ignore stop */
+
+// The scheduled status check asks HMRC for the answer when no page is open. HMRC has the return by
+// the time this runs, so a failure here is logged and the page's own poll still records the answer.
+async function handToScheduledCheck({ correlationId, userSub, sentAt }) {
+  try {
+    await putPendingCtReturn({ correlationId, userSub, sentAt });
+  } catch (error) {
+    logger.error({ message: "The scheduled status check could not be given this Company Tax Return", error: error.message });
+  }
+}
 
 async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, clientId }) {
   await publishActivityFailureEvent({
@@ -284,6 +295,8 @@ export async function ingestHandler(event) {
       });
     }
 
+    context.set("hmrcCorrelationId", correlationId);
+    const sentAt = new Date();
     await putAsyncRequest(
       userSub,
       correlationId,
@@ -310,13 +323,24 @@ export async function ingestHandler(event) {
         },
       },
       asyncRequestsTableName,
+      ctPendingRetention(sentAt),
     );
+    await handToScheduledCheck({ correlationId, userSub, sentAt });
 
     await publishActivityEvent({
       event: "hmrc-ct-return-submitted",
       summary: "HMRC Company Tax Return submitted",
       userSub,
       clientId,
+      // No receipt exists until HMRC accepts the return; the accepted event carries its id.
+      detail: {
+        outcome: "success",
+        activityId: CT_RETURN_ACTIVITY_ID,
+        hmrcStatus: acknowledged ? "acknowledgement" : "held",
+        correlationId,
+        irmark: irmark.base32,
+        transactionId,
+      },
     });
 
     return http201CreatedResponse({

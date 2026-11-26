@@ -95,9 +95,12 @@ const IRMARK_ERROR = engineXml({
 });
 const DELETE_RESPONSE = engineXml({ qualifier: "response", messageFunction: "delete" });
 
+const SENT_AT = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
 function pendingRecord(overrides = {}) {
   return {
     status: "pending",
+    createdAt: SENT_AT,
     data: {
       kind: "company-tax-return",
       pollUrl: POLL_URL,
@@ -188,6 +191,7 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     const [update] = await commands("UpdateCommand");
     expect(update.input.ExpressionAttributeValues[":status"]).toBe("pending");
     expect(Date.parse(update.input.ExpressionAttributeValues[":data"].nextPollAt)).toBeGreaterThan(Date.now());
+    expect(update.input.ExpressionAttributeValues[":ttl"]).toBe(Math.floor(Date.parse(SENT_AT) / 1000) + 31 * 86400);
   });
 
   test("writes the receipt, completes the request and sends the delete request on HMRC's success response", async () => {
@@ -206,8 +210,9 @@ describe("hmrcCtReturnGet ingestHandler", () => {
 
     const [receipt] = await commands("PutCommand");
     expect(receipt.input.Item.receipt).toMatchObject({ statusCode: "ACCEPT", irmarkReceipt: "RPfWtxHeCZRcwfitnIJmK9xc4OQ=" });
-    const [update] = await commands("UpdateCommand");
-    expect(update.input.ExpressionAttributeValues[":status"]).toBe("completed");
+    const updates = await commands("UpdateCommand");
+    expect(updates[0].input.ExpressionAttributeValues[":recording"]).toBe("recording");
+    expect(updates.find((update) => update.input.ExpressionAttributeValues[":status"] === "completed")).toBeDefined();
 
     expect(mockPostToTransactionEngine).toHaveBeenCalledTimes(2);
     const deleteXml = mockPostToTransactionEngine.mock.calls[1][1];
@@ -268,6 +273,23 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
   });
 
+  test("answers a stored no answer from HMRC from the record without asking HMRC", async () => {
+    storedRecord = { status: "failed", data: { kind: "company-tax-return", statusCode: "NO_ANSWER", correlationId: CORRELATION_ID } };
+    const response = await hmrcCtReturnGetHandler(buildEvent());
+    expect(parseResponseBody(response)).toMatchObject({ statusCode: "NO_ANSWER", correlationId: CORRELATION_ID });
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+  });
+
+  test("records no answer from HMRC on a read 30 days after the return was sent", async () => {
+    storedRecord = pendingRecord({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 - 1000).toISOString() });
+    const response = await hmrcCtReturnGetHandler(buildEvent());
+    expect(parseResponseBody(response)).toMatchObject({ statusCode: "NO_ANSWER" });
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    const [update] = await commands("UpdateCommand");
+    expect(update.input.ExpressionAttributeValues[":status"]).toBe("failed");
+  });
+
   test("answers 404 without polling when the caller has no request for the correlation id", async () => {
     storedRecord = undefined;
     const response = await hmrcCtReturnGetHandler(buildEvent());
@@ -300,7 +322,7 @@ describe("hmrcCtReturnGet ingestHandler", () => {
   });
 
   test("returns 403 when the environment does not list the matched activity", async () => {
-    process.env.ENVIRONMENT_NAME = "prod";
+    process.env.ENVIRONMENT_NAME = "unlisted-environment";
     const response = await hmrcCtReturnGetHandler(buildEvent());
     expect(response.statusCode).toBe(403);
   });
@@ -383,8 +405,10 @@ describe("hmrcCtReturnGet ingestHandler", () => {
       expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID });
       const [receipt] = await commands("PutCommand");
       expect(receipt.input.Item.receipt).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID });
-      const [update] = await commands("UpdateCommand");
-      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
+      const completed = (await commands("UpdateCommand")).find(
+        (update) => update.input.ExpressionAttributeValues[":status"] === "completed",
+      );
+      expect(completed.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
       expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
       expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(expect.any(String), "file-company-tax-return");
     });

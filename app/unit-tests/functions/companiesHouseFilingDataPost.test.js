@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/unit-tests/functions/companiesHouseFilingDataPost.test.js
-import { describe, test, beforeEach, expect, vi } from "vitest";
+import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
@@ -232,6 +232,93 @@ describe("companiesHouseFilingDataPost ingestHandler", () => {
     });
     const response = await companiesHouseFilingDataPostHandler(buildEvent());
     expect(response.statusCode).toBe(400);
+  });
+
+  // The logger writes JSON lines to stdout; this collects the level of each line a call writes.
+  async function logLevelsOf(call) {
+    const levels = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      for (const line of String(chunk).split("\n").filter(Boolean)) {
+        try {
+          levels.push(JSON.parse(line).level);
+        } catch {
+          // a line that is not the logger's JSON carries no level
+        }
+      }
+      return true;
+    });
+    try {
+      return { result: await call(), levels };
+    } finally {
+      spy.mockRestore();
+    }
+  }
+
+  test("answers 400 before calling the gateway for a made-up date after today, and logs no error", async () => {
+    const afterToday = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+    const { result: response, levels } = await logLevelsOf(() =>
+      companiesHouseFilingDataPostHandler(buildEvent({ body: buildBody({ madeUpDate: afterToday }) })),
+    );
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.reason).toBe("made-up-date-after-today");
+    expect(body.message).toMatch(/after today/i);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+    expect(levels.length).toBeGreaterThan(0);
+    expect(levels).not.toContain(50);
+  });
+
+  test("answers 400 with the made-up date message when the gateway says the request date must be today or before, and logs no error", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({
+      errors: [
+        {
+          raisedBy: "CompanyDataRequest",
+          number: 9999,
+          type: "fatal",
+          text: "Request date must be today's date or before 30/06/2016",
+          location: "",
+        },
+      ],
+    });
+    const { result: response, levels } = await logLevelsOf(() => companiesHouseFilingDataPostHandler(buildEvent()));
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.reason).toBe("made-up-date-after-today");
+    expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
+    expect(levels.length).toBeGreaterThan(0);
+    expect(levels).not.toContain(50);
+  });
+
+  describe("the made-up date against today in the United Kingdom at 23:30 UTC", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    async function statusAt(instant, madeUpDate) {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(instant));
+      const response = await companiesHouseFilingDataPostHandler(buildEvent({ body: buildBody({ madeUpDate }) }));
+      return response.statusCode;
+    }
+
+    test("in British Summer Time the UK date is the next UTC day, so that day is read and the one after refused", async () => {
+      expect(await statusAt("2026-07-01T23:30:00Z", "2026-07-02")).toBe(200);
+      expect(await statusAt("2026-07-01T23:30:00Z", "2026-07-03")).toBe(400);
+    });
+
+    test("in Greenwich Mean Time the UK date is the UTC date, so the next day is refused", async () => {
+      expect(await statusAt("2026-01-15T23:30:00Z", "2026-01-15")).toBe(200);
+      expect(await statusAt("2026-01-15T23:30:00Z", "2026-01-16")).toBe(400);
+    });
+  });
+
+  test("still logs an error for a gateway rejection it cannot name", async () => {
+    mockParseGatewayResponse.mockReturnValueOnce({
+      errors: [{ raisedBy: "Gateway", number: 9999, type: "fatal", text: "No presenter ID supplied" }],
+    });
+    const { result: response, levels } = await logLevelsOf(() => companiesHouseFilingDataPostHandler(buildEvent()));
+    expect(response.statusCode).toBe(500);
+    expect(levels).toContain(50);
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {

@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/unit-tests/functions/companiesHouseConfirmationStatementPost.test.js
-import { describe, test, beforeEach, expect, vi } from "vitest";
+import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
@@ -105,7 +105,10 @@ vi.mock("@app/services/activityCharges.js", () => ({
   markChargeUsed: (...args) => mockMarkChargeUsed(...args),
 }));
 
-import { ingestHandler as companiesHouseConfirmationStatementPostHandler } from "@app/functions/companies-house/companiesHouseConfirmationStatementPost.js";
+import {
+  ingestHandler as companiesHouseConfirmationStatementPostHandler,
+  extractAndValidateConfirmationStatementParameters,
+} from "@app/functions/companies-house/companiesHouseConfirmationStatementPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -650,5 +653,36 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response)).toEqual({});
+  });
+});
+
+describe("the confirmation statement's review date against today in the United Kingdom", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function reviewDateErrors(reviewDate) {
+    const errorMessages = [];
+    extractAndValidateConfirmationStatementParameters(buildEvent({ body: buildStatementBody({ reviewDate }) }), errorMessages);
+    return errorMessages.filter((message) => message.includes("reviewDate"));
+  }
+
+  test("takes today's UK date in the hour after midnight in British Summer Time, when the UTC date is still yesterday", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-01T23:30:00Z"));
+    expect(reviewDateErrors("2026-07-02")).toEqual([]);
+  });
+
+  test("takes today's UK date at 23:30 UTC in Greenwich Mean Time, when it is the UTC date", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-01-15T23:30:00Z"));
+    expect(reviewDateErrors("2026-01-15")).toEqual([]);
+    expect(reviewDateErrors("2026-01-16")).toEqual(["reviewDate must not be in the future"]);
+  });
+
+  test("refuses the day after today's UK date", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-01T23:30:00Z"));
+    expect(reviewDateErrors("2026-07-03")).toEqual(["reviewDate must not be in the future"]);
   });
 });

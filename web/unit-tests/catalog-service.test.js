@@ -11,11 +11,11 @@ import {
   isActivityListedInEnvironment,
   isActivityShown,
   isJointFilingOffered,
-  opensByOperatorPreview,
   isRevisedAccountsOffered,
   isBundleShown,
   activityPagePath,
   activityArea,
+  areaName,
   bundlePassSummary,
   featureStatusSummary,
   STATUS_FEATURES,
@@ -139,11 +139,26 @@ describe("home page activity buttons", () => {
   });
 
   it("files a page under the group of its directory", () => {
-    expect(activityArea("hmrc/vat/vatObligations.html")).toBe("VAT");
-    expect(activityArea("hmrc/itsa/itsaObligations.html")).toBe("Income Tax");
-    expect(activityArea("companies-house/filePscVerification.html")).toBe("Companies House");
-    expect(activityArea("passes/redeem.html")).toBe("Passes");
-    expect(activityArea("mcp-harness.html")).toBe("More");
+    const onPage = (id, page) => ({ id, paths: [page] });
+    expect(activityArea(onPage("vat-obligations", "hmrc/vat/vatObligations.html"))).toBe("VAT");
+    expect(activityArea(onPage("itsa-obligations", "hmrc/itsa/itsaObligations.html"))).toBe("Income Tax");
+    expect(activityArea(onPage("file-psc-verification-statement", "companies-house/filePscVerification.html"))).toBe("Companies House");
+    expect(activityArea(onPage("redeem-pass", "passes/redeem.html"))).toBe("Passes");
+    expect(activityArea(onPage("mcp-harness", "mcp-harness.html"))).toBe("More");
+  });
+
+  it("files the Company Tax Return and the joint filing under Corporation Tax, though their page is under companies-house", () => {
+    const page = "companies-house/fileCompanyTaxReturn.html";
+    expect(activityArea({ id: "file-company-tax-return", paths: [page] })).toBe("Corporation Tax");
+    expect(activityArea({ id: "file-company-tax-return-with-accounts", paths: [page] })).toBe("Corporation Tax");
+    expect(activityArea({ id: "file-micro-entity-accounts", paths: ["companies-house/fileMicroEntityAccounts.html"] })).toBe(
+      "Companies House",
+    );
+  });
+
+  it("names Corporation Tax in Welsh as Treth Gorfforaeth", () => {
+    expect(areaName("Corporation Tax", "cy")).toBe("Treth Gorfforaeth");
+    expect(areaName("Corporation Tax", "en")).toBe("Corporation Tax");
   });
 });
 
@@ -180,7 +195,7 @@ describe("featureStatusSummary", () => {
     const prod = featureStatusSummary(real, "prod");
     expect(prod.groups.map((group) => group.status)).toEqual(["production"]);
     expect(prod.groups[0].labels).not.toContain("HMRC Assist for VAT");
-    expect(prod.groups[0].labels).not.toContain("HMRC Company Tax Return (CT600)");
+    expect(prod.groups[0].labels).toContain("HMRC Company Tax Return (CT600)");
   });
 });
 
@@ -247,45 +262,18 @@ describe("isBundleShown", () => {
   });
 });
 
-describe("an activity the catalogue opens to an operator's own preview", () => {
+describe("the Company Tax Return and the joint filing on prod", () => {
   const catalogue = parseToml(readFileSync(new URL("../public/submit.catalogue.toml", import.meta.url), "utf8"));
   const taxReturn = catalogue.activities.find((entry) => entry.id === "file-company-tax-return");
-  const operator = { preview: false, operatorFeatures: true, operator: true, account: { passGeneration: true, previewFeatures: true } };
+  const customer = { preview: false, operatorFeatures: true, operator: false, account: { passGeneration: true } };
 
-  it("opens the Company Tax Return and the joint filing on prod and nowhere else", () => {
-    for (const id of ["file-company-tax-return", "file-company-tax-return-with-accounts"]) {
-      const entry = catalogue.activities.find((candidate) => candidate.id === id);
-      expect(opensByOperatorPreview(entry, "prod")).toBe(true);
-      expect(opensByOperatorPreview(entry, "ci")).toBe(false);
-    }
+  it.each(["prod", "ci"])("shows the Company Tax Return on %s by its listing, to a customer as to an operator", (environmentName) => {
+    expect(isActivityShown(taxReturn, environmentName, customer)).toBe(true);
+    expect(isActivityShown(taxReturn, environmentName, { ...customer, operator: true })).toBe(true);
   });
 
-  it("shows on prod to an operator with operator features on and the stored preview features setting on", () => {
-    expect(isActivityShown(taxReturn, "prod", operator)).toBe(true);
-  });
-
-  it.each([
-    ["a customer", { operator: false }],
-    ["an operator with operator features off", { operatorFeatures: false }],
-    ["an operator whose stored preview features setting is off", { account: { passGeneration: true, previewFeatures: false } }],
-    [
-      "an operator with preview features on for the session only",
-      { preview: true, account: { passGeneration: true, previewFeatures: false } },
-    ],
-  ])("is hidden on prod from %s", (who, change) => {
-    expect(isActivityShown(taxReturn, "prod", { ...operator, ...change })).toBe(false);
-  });
-
-  it("shows on ci by its listing, to a customer as to an operator", () => {
-    expect(
-      isActivityShown(taxReturn, "ci", { ...operator, operator: false, account: { passGeneration: true, previewFeatures: false } }),
-    ).toBe(true);
-    expect(isActivityShown(taxReturn, "ci", operator)).toBe(true);
-  });
-
-  it("offers the joint filing on prod by the same rule", () => {
-    expect(isJointFilingOffered(catalogue, "prod", operator)).toBe(true);
-    expect(isJointFilingOffered(catalogue, "prod", { ...operator, operator: false })).toBe(false);
+  it("offers the joint filing to a customer on prod", () => {
+    expect(isJointFilingOffered(catalogue, "prod", customer)).toBe(true);
   });
 });
 
@@ -310,11 +298,11 @@ describe("isJointFilingOffered", () => {
     expect(isJointFilingOffered({ activities: [] }, "ci", viewer)).toBe(false);
   });
 
-  it("is offered in ci and not in prod by the real catalogue", () => {
+  it("is offered in ci, the simulator and prod by the real catalogue", () => {
     const real = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf8"));
     expect(isJointFilingOffered(real, "ci", viewer)).toBe(true);
     expect(isJointFilingOffered(real, "simulator", viewer)).toBe(true);
-    expect(isJointFilingOffered(real, "prod", viewer)).toBe(false);
+    expect(isJointFilingOffered(real, "prod", viewer)).toBe(true);
   });
 });
 

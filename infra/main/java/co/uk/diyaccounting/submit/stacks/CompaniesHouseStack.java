@@ -32,6 +32,7 @@ import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
@@ -70,6 +71,9 @@ public class CompaniesHouseStack extends Stack {
     // other environment leaves the reference unset - the accounts Lambda's own validateEnv()
     // then fails that deployment's first filing attempt loudly rather than let one go out blank.
     private static final String XML_GATEWAY_TEST_ENV_NAME = "ci";
+    // The async-requests partition that holds a marker per Company Tax Return waiting for HMRC's
+    // answer (app/data/dynamoDbCtPendingReturnRepository.js).
+    private static final String CT_PENDING_PARTITION = "hmrc-ct-pending";
     private static final String XML_GATEWAY_LIVE_ENV_NAME = "prod";
     private static final String XML_GATEWAY_TEST_PACKAGE_REFERENCE = "0012";
     private static final String XML_GATEWAY_LIVE_PACKAGE_REFERENCE = "4326";
@@ -148,6 +152,10 @@ public class CompaniesHouseStack extends Stack {
     public AbstractApiLambdaProps hmrcCtReturnGetLambdaProps;
     public Function hmrcCtReturnGetLambda;
     public ILogGroup hmrcCtReturnGetLambdaLogGroup;
+
+    public Function hmrcCtReturnStatusCheckLambda;
+    public ILogGroup hmrcCtReturnStatusCheckLambdaLogGroup;
+    public Rule hmrcCtReturnStatusCheckSchedule;
 
     public AbstractApiLambdaProps companiesHouseOfficersGetLambdaProps;
     public Function companiesHouseOfficersGetLambda;
@@ -1317,6 +1325,7 @@ public class CompaniesHouseStack extends Stack {
             hmrcCtReturnPostLambdaEnv.with("HMRC_CT_VENDOR_ID", props.hmrcCtVendorId());
         }
         hmrcCtReturnPostLambdaEnv.with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        withFilerSealKeyEnv(hmrcCtReturnPostLambdaEnv, codesSealKeySecret);
         if (StringUtils.isNotBlank(props.hmrcReceiptCertificateSha256())) {
             hmrcCtReturnPostLambdaEnv.with("HMRC_RECEIPT_CERTIFICATE_SHA256", props.hmrcReceiptCertificateSha256());
         }
@@ -1355,6 +1364,8 @@ public class CompaniesHouseStack extends Stack {
         receiptsTable.grant(this.hmrcCtReturnPostLambda, "dynamodb:PutItem");
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.hmrcCtReturnPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Seals the filer's sub into the marker the scheduled CT600 status check reads.
+        codesSealKeySecret.grantRead(this.hmrcCtReturnPostLambda);
 
         var hmrcCtReturnGetLambdaEnv = hmrcCtLambdaEnv(props)
                 .with(
@@ -1397,8 +1408,89 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         receiptsTable.grant(this.hmrcCtReturnGetLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.hmrcCtReturnGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.hmrcCtReturnGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+        // The scheduled CT600 status check: finds every return that waits for HMRC's final answer by
+        // a Query on the hmrc-ct-pending marker partition, and runs the page's poll for each with the
+        // filer's sealed sub, so it writes the receipt, the accepted event and the token charge as the
+        // page does, and records "no answer from HMRC" 30 days after sending.
+        var hmrcCtReturnStatusCheckLambdaEnv = hmrcCtLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        if (StringUtils.isNotBlank(props.hmrcReceiptCertificateSha256())) {
+            hmrcCtReturnStatusCheckLambdaEnv.with(
+                    "HMRC_RECEIPT_CERTIFICATE_SHA256", props.hmrcReceiptCertificateSha256());
+        }
+        withFilerSealKeyEnv(hmrcCtReturnStatusCheckLambdaEnv, codesSealKeySecret);
+        var hmrcCtReturnStatusCheckLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .hmrcCtReturnStatusCheckIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestMemorySize(512)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(hmrcCtReturnStatusCheckLambdaEnv)
+                        .build());
+        this.hmrcCtReturnStatusCheckLambda = hmrcCtReturnStatusCheckLambdaConstruct.ingestLambda;
+        this.hmrcCtReturnStatusCheckLambdaLogGroup = hmrcCtReturnStatusCheckLambdaConstruct.logGroup;
+        // The salt to hash the filer's sub, PutEvents for the accepted event and the receipt email
+        // request, and the bundles Query the token charge reads the filer's bundles with.
+        grantCompaniesHouseLambdaAccess(
+                this.hmrcCtReturnStatusCheckLambda, bundlesTable, region, account, props, activityBusArn, false);
+        codesSealKeySecret.grantRead(this.hmrcCtReturnStatusCheckLambda);
+        receiptsTable.grant(this.hmrcCtReturnStatusCheckLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.hmrcCtReturnStatusCheckLambda, bundlesTable);
+        // Reads and writes the filer's request and the marker by key.
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.hmrcCtReturnStatusCheckLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Deletes a settled marker, and nothing in any user's own partition.
+        this.hmrcCtReturnStatusCheckLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:DeleteItem"))
+                .resources(List.of(companiesHouseAccountsAsyncRequestsTable.getTableArn()))
+                .conditions(Map.of(
+                        "ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of(CT_PENDING_PARTITION))))
+                .build());
+        // The one Query: the marker partition, and no user's own partition. No Scan.
+        this.hmrcCtReturnStatusCheckLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:Query"))
+                .resources(List.of(companiesHouseAccountsAsyncRequestsTable.getTableArn()))
+                .conditions(Map.of(
+                        "ForAllValues:StringEquals", Map.of("dynamodb:LeadingKeys", List.of(CT_PENDING_PARTITION))))
+                .build());
+        // Every 15 minutes, all day: the Transaction Engine answers at any hour. A return is asked
+        // about at most once in 10 minutes however many deployments share the schedule, and never
+        // inside the poll interval HMRC last named.
+        this.hmrcCtReturnStatusCheckSchedule = Rule.Builder.create(
+                        this,
+                        props.sharedNames().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaFunctionName
+                                + "-Schedule")
+                .ruleName(props.sharedNames().companiesHouse.hmrcCtReturnStatusCheckIngestLambdaFunctionName
+                        + "-schedule")
+                .description("Ask HMRC for the final answer to each Company Tax Return still waiting for one")
+                .schedule(Schedule.rate(Duration.minutes(15)))
+                .targets(List.of(LambdaFunction.Builder.create(this.hmrcCtReturnStatusCheckLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Lambda %s for the scheduled Company Tax Return status check",
+                this.hmrcCtReturnStatusCheckLambda.getNode().getId());
 
         // The confirmation statement route: two public-data lookups (officers, PSCs - the API-key
         // client, same setting as the two company lookup Lambdas above), a synchronous filing-data
@@ -3319,6 +3411,7 @@ public class CompaniesHouseStack extends Stack {
                         hmrcCtReturnPreviewPostLambdaUrlOrigin,
                         hmrcCtReturnPostLambdaUrlOrigin,
                         hmrcCtReturnGetLambdaUrlOrigin,
+                        hmrcCtReturnStatusCheckLambdaConstruct,
                         companiesHouseOfficersGetLambdaUrlOrigin,
                         companiesHousePscGetLambdaUrlOrigin,
                         companiesHouseFilingHistoryGetLambdaUrlOrigin,

@@ -80,6 +80,24 @@ test.describe("Home page activities for a Resident account", () => {
     }
   });
 
+  test("the Company Tax Return and the joint filing have their own Corporation Tax section, between Income Tax and Companies House", async ({
+    page,
+  }) => {
+    await serveHomeForResident(page);
+    await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
+
+    const activities = page.locator("#dynamicActivities");
+    const corporationTax = activities.locator("section.activity-group", { has: page.locator("h2", { hasText: "Corporation Tax" }) });
+    await expect(corporationTax).toBeVisible();
+    await expect(corporationTax).toContainText("Company Tax Return");
+    await expect(
+      activities.locator("section.activity-group", { has: page.locator("h2", { hasText: "Companies House" }) }),
+    ).not.toContainText("Company Tax Return");
+    const headings = await activities.locator("section.activity-group > h2").allTextContents();
+    expect(headings.indexOf("Corporation Tax")).toBeGreaterThan(headings.indexOf("Income Tax"));
+    expect(headings.indexOf("Corporation Tax")).toBeLessThan(headings.indexOf("Companies House"));
+  });
+
   test("a catalogue with a paths array written over several lines still gives the activity buttons", async ({ page }) => {
     const catalogue = fs.readFileSync(path.join(PUBLIC_ROOT, "submit.catalogue.toml"), "utf-8");
     const oneLine = catalogue.split("\n").find((line) => line.startsWith('paths = ["companies-house/recordsLocation.html"'));

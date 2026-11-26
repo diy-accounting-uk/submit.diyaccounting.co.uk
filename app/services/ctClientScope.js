@@ -14,8 +14,8 @@
 
 import { enforceBundles } from "./bundleManagement.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCatalog.js";
-import { previewRunsAgainstSandbox, operatorPreviewPasses } from "../lib/previewFeatures.js";
-import { http403ForbiddenResponse, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
+import { previewRunsAgainstSandbox } from "../lib/previewFeatures.js";
+import { http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
 import { http403ForbiddenFromBundleEnforcement } from "./companiesHouseApi.js";
 
 const PRACTICE_ACTIVITY_ID = "practice";
@@ -70,10 +70,7 @@ export async function refuseJointFilingWhenNotEnabled(event, request, carriesJoi
   if (!carriesJointFilingId) return undefined;
   const activity = loadCatalogFromRoot().activities?.find((candidate) => candidate.id === JOINT_FILING_ACTIVITY_ID);
   const environmentName = process.env.ENVIRONMENT_NAME;
-  const enabled =
-    isActivityListedInEnvironment(activity, environmentName) ||
-    (await operatorPreviewPasses(activity, environmentName, extractUserFromAuthorizerContext(event))) ||
-    previewRunsAgainstSandbox(event, request?.pathname);
+  const enabled = isActivityListedInEnvironment(activity, environmentName) || previewRunsAgainstSandbox(event, request?.pathname);
   if (!activity || !enabled) {
     return http403ForbiddenResponse({
       request,

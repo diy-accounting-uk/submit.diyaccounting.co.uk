@@ -222,18 +222,18 @@ describe("productCatalogHelper", () => {
     expect(micro.paths).not.toContain("companies-house/fileSmallCompanyAccounts.html");
   });
 
-  it("file-company-tax-return is granted like the accounts filings, costs one token and is not listed on prod", () => {
+  it("file-company-tax-return is granted like the accounts filings, costs one token and is listed on prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-company-tax-return");
     expect(bundlesForActivity(catalog, "file-company-tax-return")).toEqual(bundlesForActivity(catalog, "file-micro-entity-accounts"));
     expect(activity.tokenCost).toBe(1);
     expect(activity.metered).toBe(true);
-    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci", "prod"]);
     expect(activity.paths).toContain("companies-house/fileCompanyTaxReturn.html");
     expect(activity.paths).toContain("^/api/v1/hmrc/ct/return.*");
   });
 
-  it("file-company-tax-return-with-accounts has no page or route, is granted like the return and is not listed on prod", () => {
+  it("file-company-tax-return-with-accounts has no page or route, is granted like the return and is listed where the return is", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-company-tax-return-with-accounts");
     expect(bundlesForActivity(catalog, "file-company-tax-return-with-accounts")).toEqual(
@@ -243,7 +243,7 @@ describe("productCatalogHelper", () => {
     expect(activity.display).toBe("never");
     expect(activity.metered).toBe(false);
     expect(activity.environments).toEqual(catalog.activities.find((a) => a.id === "file-company-tax-return").environments);
-    expect(activity.environments).not.toContain("prod");
+    expect(activity.environments).toContain("prod");
   });
 
   it("file-revised-accounts has no page, holds the two filed-accounts routes, is granted like the joint filing and is not listed on prod", () => {

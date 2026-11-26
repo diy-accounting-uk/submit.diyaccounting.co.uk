@@ -24,6 +24,7 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
     PutCommand: command("Put"),
     UpdateCommand: command("Update"),
     QueryCommand: command("Query"),
+    BatchGetCommand: command("BatchGet"),
   };
 });
 
@@ -42,6 +43,8 @@ const {
   claimPresenterPollSlot,
   deferPresenterPoll,
   listFilingsInProgress,
+  listCompanyTaxReturnsInProgress,
+  recordPresenterPollAsked,
 } = await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
 const { initializeSalt, hashSub } = await import("@app/services/subHasher.js");
 
@@ -108,7 +111,12 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
   test("the filings in progress are the reader's own pending and rejected requests, read without the filed document", async () => {
     mockSend.mockResolvedValueOnce({
       Items: [
-        { requestId: "00001A", status: "pending", createdAt: "2026-11-18T10:00:00.000Z", data: { kind: "accounts" } },
+        {
+          requestId: "00001A",
+          status: "pending",
+          createdAt: "2026-11-18T10:00:00.000Z",
+          data: { kind: "accounts", companyNumber: "00000001" },
+        },
         {
           requestId: "00001B",
           status: "failed",
@@ -126,10 +134,12 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
       {
         submissionNumber: "00001A",
         kind: "accounts",
+        companyNumber: "00000001",
         status: "pending",
         submittedAt: "2026-11-18T10:00:00.000Z",
         rejections: [],
         clientId: null,
+        askedOnSchedule: false,
       },
       {
         submissionNumber: "00001B",
@@ -140,7 +150,8 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
         clientId: null,
       },
     ]);
-    const [[query], [nextPage]] = mockSend.mock.calls;
+    const [[query], [nextPage], [coverage]] = mockSend.mock.calls;
+    expect(coverage.name).toBe("BatchGet");
     expect(query.name).toBe("Query");
     expect(query.input.ExpressionAttributeValues[":hashedSub"]).toBe(hashSub("filer-sub-1"));
     expect(query.input.ProjectionExpression).not.toContain("filedDocument");
@@ -180,5 +191,182 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
       },
     ]);
     expect(mockSend.mock.calls[0][0].input.ProjectionExpression).toContain("#data.#clientId");
+  });
+
+  test("the presenter poll's answer is recorded on its shared state item", async () => {
+    await recordPresenterPollAsked(new Date("2026-11-26T09:15:02.000Z"));
+    const [[update]] = mockSend.mock.calls;
+    expect(update.input.Key).toEqual({ hashedSub: "companies-house-xmlgw", requestId: "presenter-poll-state" });
+    expect(update.input.UpdateExpression).toBe("SET lastAskedAt = :askedAt");
+    expect(update.input.ExpressionAttributeValues).toEqual({ ":askedAt": "2026-11-26T09:15:02.000Z" });
+  });
+
+  test("a pending filing under our presenter was last asked about at the later of its own poll and the presenter poll", async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        { requestId: "00003A", status: "pending", createdAt: "2026-11-26T08:00:00.000Z", data: { kind: "accounts" } },
+        {
+          requestId: "00003B",
+          status: "pending",
+          createdAt: "2026-11-26T08:00:00.000Z",
+          data: { kind: "accounts", lastCheckedAt: "2026-11-26T09:20:00.000Z" },
+        },
+        {
+          requestId: "00003C",
+          status: "pending",
+          createdAt: "2026-11-26T08:00:00.000Z",
+          data: { kind: "accounts", lastCheckedAt: "2026-11-26T08:30:00.000Z" },
+        },
+        { requestId: "00003D", status: "pending", createdAt: "2026-11-26T09:16:00.000Z", data: { kind: "accounts" } },
+      ],
+    });
+    mockSend.mockResolvedValueOnce({
+      Responses: {
+        [TABLE]: [
+          { requestId: "presenter-poll-state", lastAskedAt: "2026-11-26T09:15:00.000Z" },
+          { requestId: "pending#00003A", kind: "accounts" },
+          { requestId: "pending#00003B", kind: "accounts" },
+          { requestId: "pending#00003D", kind: "accounts" },
+        ],
+      },
+    });
+
+    const filings = await listFilingsInProgress("filer-sub-1");
+
+    const asked = Object.fromEntries(filings.map((filing) => [filing.submissionNumber, [filing.askedOnSchedule, filing.lastCheckedAt]]));
+    expect(asked).toEqual({
+      "00003A": [true, "2026-11-26T09:15:00.000Z"],
+      "00003B": [true, "2026-11-26T09:20:00.000Z"],
+      // Under the customer's own presenter: only its own poll counts.
+      "00003C": [false, "2026-11-26T08:30:00.000Z"],
+      // Sent after the last presenter poll: not asked about yet.
+      "00003D": [true, undefined],
+    });
+    const [, [coverage]] = mockSend.mock.calls;
+    expect(coverage.input.RequestItems[TABLE].Keys).toEqual([
+      { hashedSub: "companies-house-xmlgw", requestId: "presenter-poll-state" },
+      { hashedSub: "companies-house-xmlgw", requestId: "pending#00003A" },
+      { hashedSub: "companies-house-xmlgw", requestId: "pending#00003B" },
+      { hashedSub: "companies-house-xmlgw", requestId: "pending#00003C" },
+      { hashedSub: "companies-house-xmlgw", requestId: "pending#00003D" },
+    ]);
+    expect(coverage.input.RequestItems[TABLE].ProjectionExpression).not.toContain("sealedFiler");
+  });
+
+  test("keys the batch read leaves unprocessed are read again", async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [{ requestId: "00004A", status: "pending", createdAt: "2026-11-26T08:00:00.000Z", data: { kind: "accounts" } }],
+    });
+    mockSend.mockResolvedValueOnce({
+      Responses: { [TABLE]: [{ requestId: "pending#00004A", kind: "accounts" }] },
+      UnprocessedKeys: { [TABLE]: { Keys: [{ hashedSub: "companies-house-xmlgw", requestId: "presenter-poll-state" }] } },
+    });
+    mockSend.mockResolvedValueOnce({
+      Responses: { [TABLE]: [{ requestId: "presenter-poll-state", lastAskedAt: "2026-11-26T09:00:00.000Z" }] },
+    });
+
+    const [filing] = await listFilingsInProgress("filer-sub-1");
+
+    expect(filing).toMatchObject({ askedOnSchedule: true, lastCheckedAt: "2026-11-26T09:00:00.000Z" });
+    expect(mockSend).toHaveBeenCalledTimes(3);
+  });
+
+  test("a list with no pending filing reads no presenter poll state", async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        {
+          requestId: "00005A",
+          status: "failed",
+          createdAt: "2026-11-26T08:00:00.000Z",
+          data: { kind: "accounts", statusCode: "REJECT", rejections: [], lastCheckedAt: "2026-11-26T08:10:00.000Z" },
+        },
+      ],
+    });
+
+    const [filing] = await listFilingsInProgress("filer-sub-1");
+
+    expect(filing.lastCheckedAt).toBeUndefined();
+    expect(filing.askedOnSchedule).toBeUndefined();
+    expect(mockSend).toHaveBeenCalledTimes(1);
+  });
+
+  test("the Company Tax Returns in progress are the reader's pending requests of that kind, read by a Query on its own key", async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        {
+          requestId: "46DCD4CC7E194088B99857931C185829",
+          status: "pending",
+          createdAt: "2026-11-25T10:00:00.000Z",
+          data: {
+            utr: "8596148860",
+            lastCheckedAt: "2026-11-25T10:05:00.000Z",
+            formRequest: { company: { companyName: "EXAMPLE LIMITED", companyNumber: "00000001" } },
+            filed: { boxes: { 30: "2025-04-01", 35: "2026-03-31" } },
+          },
+        },
+      ],
+      LastEvaluatedKey: { hashedSub: "x", requestId: "46DCD4CC7E194088B99857931C185829" },
+    });
+    mockSend.mockResolvedValueOnce({ Items: [] });
+
+    const returns = await listCompanyTaxReturnsInProgress("filer-sub-1");
+
+    expect(returns).toEqual([
+      {
+        correlationId: "46DCD4CC7E194088B99857931C185829",
+        status: "pending",
+        submittedAt: "2026-11-25T10:00:00.000Z",
+        lastCheckedAt: "2026-11-25T10:05:00.000Z",
+        utr: "8596148860",
+        companyName: "EXAMPLE LIMITED",
+        companyNumber: "00000001",
+        periodStart: "2025-04-01",
+        periodEnd: "2026-03-31",
+        clientId: null,
+      },
+    ]);
+    const [[query], [nextPage]] = mockSend.mock.calls;
+    expect(query.name).toBe("Query");
+    expect(query.input.TableName).toBe(TABLE);
+    expect(query.input.KeyConditionExpression).toBe("hashedSub = :hashedSub");
+    expect(query.input.ExpressionAttributeValues).toMatchObject({
+      ":hashedSub": hashSub("filer-sub-1"),
+      ":ctReturn": "company-tax-return",
+      ":pending": "pending",
+    });
+    // A completed request, or a failed one other than no answer from HMRC, is left out by the filter.
+    expect(query.input.FilterExpression).toBe(
+      "#data.#kind = :ctReturn AND (#status = :pending OR (#status = :failed AND #data.#statusCode = :noAnswer))",
+    );
+    expect(query.input.ExpressionAttributeValues).toMatchObject({ ":failed": "failed", ":noAnswer": "NO_ANSWER" });
+    expect(query.input.ProjectionExpression).not.toMatch(/accountsIxbrl|computationsIxbrl|#data\.#filed(?!\.#boxes\.#period)/);
+    expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "46DCD4CC7E194088B99857931C185829" });
+    expect(mockSend.mock.calls.every(([command]) => command.name !== "Scan")).toBe(true);
+  });
+
+  test("answers a return HMRC gave no answer to as no-answer, with when it was sent", async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        { requestId: "AAA1", status: "pending", createdAt: "2026-11-25T10:00:00.000Z", data: {} },
+        { requestId: "AAA2", status: "failed", createdAt: "2026-10-01T10:00:00.000Z", data: { statusCode: "NO_ANSWER" } },
+      ],
+    });
+    const returns = await listCompanyTaxReturnsInProgress("filer-sub-1");
+    expect(returns.map(({ correlationId, status, submittedAt }) => ({ correlationId, status, submittedAt }))).toEqual([
+      { correlationId: "AAA1", status: "pending", submittedAt: "2026-11-25T10:00:00.000Z" },
+      { correlationId: "AAA2", status: "no-answer", submittedAt: "2026-10-01T10:00:00.000Z" },
+    ]);
+  });
+
+  test("answers a practice client's Company Tax Returns in progress for its id, and the returns made for no client without one", async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        { requestId: "AAA1", status: "pending", createdAt: "2026-11-25T10:00:00.000Z", data: {} },
+        { requestId: "AAA2", status: "pending", createdAt: "2026-11-25T11:00:00.000Z", data: { clientId: "client-1" } },
+      ],
+    });
+
+    expect((await listCompanyTaxReturnsInProgress("practice-sub")).map((ctReturn) => ctReturn.correlationId)).toEqual(["AAA1"]);
+    expect((await listCompanyTaxReturnsInProgress("practice-sub", "client-1")).map((ctReturn) => ctReturn.correlationId)).toEqual(["AAA2"]);
   });
 });

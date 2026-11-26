@@ -441,3 +441,99 @@ textarea.input--error {
   border-left: 3px solid var(--c-rule);
   padding-left: var(--space-3);
 }
+
+/* Where a field's figure sits in DIY Accounting's spreadsheets, closed until the reader opens it. */
+details.field-source {
+  margin: var(--space-1) 0 var(--space-2);
+  font-weight: normal;
+}
+
+details.field-source summary {
+  padding: var(--space-1) 0;
+  font-size: 0.9em;
+}
+
+.field-source__cells {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.field-source__cells dt {
+  font-weight: var(--weight-strong);
+}
+
+.field-source__cells dt,
+.field-source__cells dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.field-source__cells dd {
+  margin: 0;
+}
+
+.field-source__image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: var(--space-2);
+  border: 1px solid var(--c-rule);
+}
+
+/* Under a section's heading: the part of a published video that shows the section. */
+details.section-video {
+  margin: var(--space-1) 0 var(--space-3);
+}
+
+details.section-video summary {
+  padding: var(--space-1) 0;
+  font-size: 0.9em;
+}
+
+.section-video__frame iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  margin: var(--space-2) 0;
+}
+
+/* A printed form leaves out the video panels. */
+@media print {
+  details.section-video {
+    display: none;
+  }
+}
+
+/* A block most returns leave at 0, closed under its name and how many of its boxes hold an answer. */
+details.form-fold {
+  margin: var(--space-2) 0 var(--space-3);
+  border-left: 3px solid var(--c-rule);
+  padding-left: var(--space-3);
+}
+
+details.form-fold > summary {
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+}
+
+details.form-fold .form-fold__count {
+  font-weight: var(--weight-text);
+  color: var(--c-ink-muted);
+}
+
+details.worked-tax__steps > summary {
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  color: var(--c-brand);
+}
+
+details.form-fold > summary > h4.form-fold__title {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}

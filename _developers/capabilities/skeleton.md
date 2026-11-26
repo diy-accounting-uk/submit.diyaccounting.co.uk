@@ -220,6 +220,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability CH-15 -->
 <!-- capability CH-19 -->
 <!-- capability CH-27 -->
+<!-- capability CH-28 -->
 ### Filing infrastructure (CH)
 
 <!-- generated:group filing-infrastructure-ch -->

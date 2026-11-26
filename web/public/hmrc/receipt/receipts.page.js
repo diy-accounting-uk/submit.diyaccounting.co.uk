@@ -56,7 +56,8 @@ async function fetchReceipts() {
     return;
   }
   const json = await res.json();
-  showFilingsInProgress(Array.isArray(json.filingsInProgress) ? json.filingsInProgress : []);
+  const filingsInProgress = Array.isArray(json.filingsInProgress) ? json.filingsInProgress : [];
+  const ctReturnsInProgress = Array.isArray(json.companyTaxReturnsInProgress) ? json.companyTaxReturnsInProgress : [];
   const items = Array.isArray(json.receipts) ? json.receipts : [];
   const { accountingPeriodDates, longDateText } = await import("../../lib/long-period.js");
   describeLongPeriodReturn = (longPeriod) => {
@@ -68,34 +69,52 @@ async function fetchReceipts() {
     return siteText("receipts.part-of", "{part} of {parts}", { part: longPeriod.part, parts: longPeriod.parts }) + dates;
   };
   tbody.innerHTML = "";
-  if (items.length === 0) {
+  if (items.length === 0 && filingsInProgress.length === 0 && ctReturnsInProgress.length === 0) {
     table.style.display = "none";
     empty.textContent = siteText("receipts.none", "No receipts yet.");
     empty.style.display = "block";
     exportControls.style.display = "none";
-  } else {
-    empty.style.display = "none";
-    table.style.display = "table";
-    exportControls.style.display = "block";
-    for (const group of groupByJointFiling(items)) {
-      const tr = document.createElement("tr");
-
-      // Date cell
-      const dateCell = document.createElement("td");
-      dateCell.textContent = HmrcDisplayFormat.formatDateTime(group[0].timestamp);
-      dateCell.className = "date-column";
-      dateCell.setAttribute("data-label", siteText("receipts.col-date", "Date"));
-
-      // Receipt cell: one clickable label and download icon for each receipt of the filing
-      const receiptCell = document.createElement("td");
-      receiptCell.className = "receipt-cell";
-      receiptCell.setAttribute("data-label", siteText("receipts.col-receipt", "Receipt"));
-      for (const it of group) receiptCell.appendChild(receiptEntry(it, group.length > 1));
-
-      tr.appendChild(dateCell);
-      tr.appendChild(receiptCell);
-      tbody.appendChild(tr);
+    return;
+  }
+  empty.style.display = "none";
+  table.style.display = "table";
+  exportControls.style.display = items.length ? "block" : "none";
+  // A filing Companies House has not accepted, or a Company Tax Return HMRC has not answered
+  // finally, is a row of its own, beside the receipts by date.
+  const rows = [
+    ...groupByJointFiling(items).map((group) => ({
+      timestamp: group[0].timestamp,
+      entries: group.map((it) => receiptEntry(it, group.length > 1)),
+    })),
+    ...filingsInProgress.map((filing) => ({ timestamp: filing.submittedAt, entries: [filingInProgressEntry(filing)], inProgress: filing })),
+    ...ctReturnsInProgress.map((ctReturn) => ({
+      timestamp: ctReturn.submittedAt,
+      entries: [ctReturnInProgressEntry(ctReturn)],
+      inProgress: ctReturn,
+    })),
+  ];
+  rows.sort((first, second) => String(second.timestamp ?? "").localeCompare(String(first.timestamp ?? "")));
+  for (const row of rows) {
+    const tr = document.createElement("tr");
+    if (row.inProgress) {
+      tr.className = "filing-in-progress";
+      tr.dataset.status = row.inProgress.status;
     }
+
+    const dateCell = document.createElement("td");
+    dateCell.textContent = row.timestamp ? HmrcDisplayFormat.formatDateTime(row.timestamp) : "";
+    dateCell.className = "date-column";
+    dateCell.setAttribute("data-label", siteText("receipts.col-date", "Date"));
+
+    // Receipt cell: one clickable label and download icon for each receipt of the filing
+    const receiptCell = document.createElement("td");
+    receiptCell.className = "receipt-cell";
+    receiptCell.setAttribute("data-label", siteText("receipts.col-receipt", "Receipt"));
+    receiptCell.append(...row.entries);
+
+    tr.appendChild(dateCell);
+    tr.appendChild(receiptCell);
+    tbody.appendChild(tr);
   }
 }
 
@@ -119,20 +138,21 @@ const FILING_IN_PROGRESS_TITLES = {
 };
 
 // A Companies House filing that is not a receipt yet: still waiting for Companies House, which checks
-// some filings by hand in office hours, or rejected. Each one shows its submission number, the number
-// Companies House knows it by.
+// some filings by hand in office hours, or rejected. Its submission number, the number Companies House
+// knows it by, links to its status page, which can ask Companies House again.
+function filingStatusHref(filing) {
+  const query = new URLSearchParams({ filing: filing.submissionNumber, kind: filing.kind ?? "" });
+  if (filing.clientId) query.set("clientId", filing.clientId);
+  return `../../companies-house/filings.html?${query}`;
+}
+
 function filingInProgressEntry(filing) {
-  const entry = document.createElement("li");
-  entry.className = "filing-in-progress";
+  const entry = document.createElement("div");
+  entry.className = "receipt-entry filing-in-progress";
   entry.dataset.status = filing.status;
-  const title = document.createElement("strong");
-  title.textContent = FILING_IN_PROGRESS_TITLES[filing.kind] || siteText("receipts.kind-filing", "Companies House filing");
-  const number = document.createElement("span");
-  number.className = "submission-number";
-  number.textContent = siteText("receipts.submission-number", "submission number {number}", { number: filing.submissionNumber });
-  const sent = filing.submittedAt
-    ? ` ${siteText("receipts.filing-sent", "sent {date},", { date: HmrcDisplayFormat.formatDateTime(filing.submittedAt) })} `
-    : " ";
+  const title = document.createElement("span");
+  title.className = "receipt-kind";
+  title.textContent = `${FILING_IN_PROGRESS_TITLES[filing.kind] || siteText("receipts.kind-filing", "Companies House filing")}: `;
   const status = document.createElement("span");
   status.className = "filing-status";
   status.textContent =
@@ -140,8 +160,12 @@ function filingInProgressEntry(filing) {
       ? siteText("receipts.filing-not-received", "Not received by Companies House")
       : filing.status === "rejected"
         ? siteText("receipts.filing-rejected", "Rejected by Companies House")
-        : siteText("receipts.filing-pending", "Waiting for Companies House");
-  entry.append(title, sent, number, ": ", status);
+        : siteText("receipts.filing-pending-tag", "Pending");
+  const link = document.createElement("a");
+  link.className = "submission-number";
+  link.href = filingStatusHref(filing);
+  link.textContent = siteText("receipts.submission-number", "submission number {number}", { number: filing.submissionNumber });
+  entry.append(title, status, ", ", link);
   if (filing.status === "rejected" && filing.rejections?.length) {
     const reasons = document.createElement("ul");
     for (const rejection of filing.rejections) {
@@ -154,22 +178,33 @@ function filingInProgressEntry(filing) {
   return entry;
 }
 
-function showFilingsInProgress(filings) {
-  const section = document.getElementById("filingsInProgress");
-  section.replaceChildren();
-  section.style.display = filings.length ? "block" : "none";
-  if (!filings.length) return;
-  const heading = document.createElement("h2");
-  heading.textContent = siteText("receipts.in-progress-heading", "Companies House filings not accepted yet");
-  const hint = document.createElement("p");
-  hint.className = "hint";
-  hint.textContent = siteText(
-    "receipts.in-progress-hint",
-    "Companies House checks some filings by hand, in office hours. We ask it for its decision every 15 minutes in office hours, and email you the receipt when it accepts the filing.",
-  );
-  const list = document.createElement("ul");
-  for (const filing of filings) list.appendChild(filingInProgressEntry(filing));
-  section.append(heading, hint, list);
+// A Company Tax Return HMRC has not answered finally yet, or gave no answer to in the 30 days Submit
+// waits. Its correlation ID, the number HMRC's Transaction Engine knows it by, links to its status page.
+function ctReturnStatusHref(ctReturn) {
+  const query = new URLSearchParams({ filing: ctReturn.correlationId, kind: "ct600" });
+  if (ctReturn.clientId) query.set("clientId", ctReturn.clientId);
+  return `../../companies-house/filings.html?${query}`;
+}
+
+function ctReturnInProgressEntry(ctReturn) {
+  const entry = document.createElement("div");
+  entry.className = "receipt-entry filing-in-progress";
+  entry.dataset.status = ctReturn.status;
+  const title = document.createElement("span");
+  title.className = "receipt-kind";
+  title.textContent = `${siteText("receipts.kind-company-tax-return", "Company Tax Return")}: `;
+  const status = document.createElement("span");
+  status.className = "filing-status";
+  status.textContent =
+    ctReturn.status === "no-answer"
+      ? siteText("receipts.ct-no-answer-tag", "No answer from HMRC")
+      : siteText("receipts.filing-pending-tag", "Pending");
+  const link = document.createElement("a");
+  link.className = "submission-number";
+  link.href = ctReturnStatusHref(ctReturn);
+  link.textContent = siteText("receipts.correlation-id", "correlation ID {id}", { id: ctReturn.correlationId });
+  entry.append(title, status, ", ", link);
+  return entry;
 }
 
 let describeLongPeriodReturn = (longPeriod) =>
@@ -206,11 +241,11 @@ function groupByJointFiling(items) {
 
 const JOINT_RECEIPT_TITLES = {
   "companies-house-accounts": siteText("receipts.kind-accounts", "Accounts"),
-  "company-tax-return": siteText("receipts.kind-ct600", "Company Tax Return (preview)"),
+  "company-tax-return": siteText("receipts.kind-ct600", "Company Tax Return"),
 };
 const AMENDED_RECEIPT_TITLES = {
   "companies-house-accounts": siteText("receipts.kind-revised-accounts", "Revised accounts"),
-  "company-tax-return": siteText("receipts.kind-amended-ct600", "Amended Company Tax Return (preview)"),
+  "company-tax-return": siteText("receipts.kind-amended-ct600", "Amended Company Tax Return"),
 };
 
 function receiptEntry(it, inJointFiling) {

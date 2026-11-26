@@ -32,7 +32,7 @@ export async function takeApprovalBriefScreenshot(page, name, { locator, scrollT
 }
 
 export async function goToFileCompanyTaxReturn(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = "File Company Tax Return (HMRC, preview)";
+  const activityButtonText = "File Company Tax Return (HMRC)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
     await page.waitForTimeout(500);
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting File Company Tax Return", {
@@ -181,7 +181,7 @@ export async function typeInCompanyTaxReturnForm(page, screenshotPath = defaultS
 
 export async function changeAnAnswerFromTheReview(page, { fieldId, value }, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user changes ${fieldId} from the review and returns to the review with that answer focused`, async () => {
-    await expect(page.locator("#previewView")).toContainText("Your answers");
+    await expect(page.locator("#previewView")).toContainText("The return you are about to file");
     await page
       .locator(`#review-row-${fieldId}`)
       .getByRole("link", { name: /Change/ })
@@ -210,7 +210,7 @@ export async function verifyMicroEntityReview(page, screenshotPath = defaultScre
 export async function verifyLargeCompanyReviewWithLoans(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the loan to a participator, supplementary page CT600A and the main rate in the review", async () => {
     await expect(page.locator("#review-row-loansMade")).toContainText("Yes");
-    await expect(page.locator("#ct600Table")).toContainText("Tax payable on loans to participators");
+    await expect(page.locator("#ct600Table")).toContainText("Tax payable on loans and arrangements to participators");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-review-large-company.png`, readerView: true });
   });
 }
@@ -259,6 +259,7 @@ export async function fixTheAnswersAndPreview(page, kept, screenshotPath = defau
 // The product works the tax before anything is sent and refuses an answer that contradicts it.
 export async function previewWithAnOwnWorkingTheTaxDoesNotMatch(page, { pictureNamePrefix }, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters a Corporation Tax of their own that differs from the worked tax and sees the product refuse the review", async () => {
+    await openFoldsAround(page, "ownCorporationTax");
     await page.locator("#ownCorporationTax").fill("1");
     await page.locator("#ownCorporationTax").blur();
     await expect(page.locator("#ownCorporationTax-error")).toContainText("disagrees with your own working");
@@ -742,9 +743,23 @@ const LONG_PERIOD_ANSWERS = {
   mainPoolAllowancesAp2: "363",
 };
 
+// The form folds the blocks most returns leave at 0; a person opens a fold, outermost first, before
+// typing into a box inside it.
+async function openFoldsAround(page, id) {
+  const closed = await page.locator(`#${id}`).evaluate((box) => {
+    const folds = [];
+    for (let fold = box.closest("details.form-fold"); fold; fold = fold.parentElement?.closest("details.form-fold")) {
+      if (!fold.open) folds.unshift(fold.id);
+    }
+    return folds;
+  });
+  for (const foldId of closed) await page.locator(`#${foldId} > summary`).click();
+}
+
 export async function typeInLongPeriodCompanyTaxReturnForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user types a 15 month period of account, both accounting periods' figures and a loan in the second period", async () => {
     for (const [id, value] of Object.entries(LONG_PERIOD_ANSWERS)) {
+      await openFoldsAround(page, id);
       await loggedFill(page, `#${id}`, value, id);
     }
     await typeInLastYear(page);
@@ -807,6 +822,7 @@ export async function fixASecondColumnFieldAndPreview(page, { fieldId, value }, 
     await expect(page.locator("#currentTurnover")).toBeDisabled();
     await expect(page.locator("#annualInvestmentAllowance")).toBeDisabled();
     await expect(page.locator(`#${fieldId}`)).toBeEnabled();
+    await openFoldsAround(page, fieldId);
     await loggedFill(page, `#${fieldId}`, value, fieldId);
     await loggedClick(page, "#previewBtn", "Going to the review", { screenshotPath });
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
@@ -819,10 +835,10 @@ export async function fixASecondColumnFieldAndPreview(page, { fieldId, value }, 
 export async function verifyBothReceiptsOnTheReceiptsPage(page, baseUrl, screenshotPath = defaultScreenshotPath) {
   await test.step("The user opens the receipts page and sees both returns' receipts under one filing", async () => {
     await page.goto(`${baseUrl}hmrc/receipt/receipts.html`);
-    const entry = page.locator("#receiptsTable tbody tr", { hasText: "Company Tax Return (preview) 1 of 2" }).first();
+    const entry = page.locator("#receiptsTable tbody tr", { hasText: "Company Tax Return 1 of 2" }).first();
     await expect(entry).toBeVisible({ timeout: 30000 });
-    await expect(entry).toContainText("Company Tax Return (preview) 1 of 2 (1 January 2025 to 31 December 2025)");
-    await expect(entry).toContainText("Company Tax Return (preview) 2 of 2 (1 January 2026 to 31 March 2026)");
+    await expect(entry).toContainText("Company Tax Return 1 of 2 (1 January 2025 to 31 December 2025)");
+    await expect(entry).toContainText("Company Tax Return 2 of 2 (1 January 2026 to 31 March 2026)");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-long-period-receipts.png`, readerView: true });
   });
 }

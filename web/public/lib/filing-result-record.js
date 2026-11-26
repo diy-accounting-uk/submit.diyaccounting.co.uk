@@ -8,7 +8,8 @@
 // answered, and gets markup back.
 
 import { customerCopyHtml, escapeRecordText, recordAmount, recordHeading, recordTable } from "./submission-record.js";
-import { ABSENT, ctReceiptRecord, longDateText, page, textLine } from "./filing-record.js";
+import { ABSENT, ctCopyTitle, ctReceiptRecord, ctRecordTitle, page, textLine } from "./filing-record.js";
+import { longDateText } from "./long-period.js";
 import { boxRow } from "./ct600-fields.js";
 
 // page-chrome.js gives the text in the chosen language; without it the English stands.
@@ -24,12 +25,12 @@ const TAX_BOXES = [440, 475, 528];
 function longDate(isoDate) {
   const date = new Date(`${isoDate}T00:00:00Z`);
   if (!isoDate || Number.isNaN(date.getTime())) return ABSENT;
-  return longDateText(date, { utc: true });
+  return longDateText(isoDate);
 }
 
 /** Today as the customer reads a date, e.g. "24 October 2026". */
 export function todayText() {
-  return longDateText(new Date());
+  return longDateText(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date()));
 }
 
 function textTable(lines) {
@@ -169,32 +170,40 @@ export const IRMARK_MISMATCH_WARNING = siteText(
  * @param {string} filed.utr
  * @param {object} filed.boxes - the reviewed CT600 boxes
  * @param {{label: string, value: number, deduction?: boolean, style?: string}[]} filed.computation - the tax computation lines
- * @param {object} filed.outcome - HMRC's accepted answer: correlationId, irmark, irmarkReceipt, receiptId
+ * @param {object} filed.outcome - HMRC's accepted answer: correlationId, irmark, irmarkReceipt, receiptId, gatewayTest
  * @param {string} filed.dateText
  * @param {{part: number, parts: number}} [filed.longPeriod] - set when the return is one of the two of a period of account over 12 months
  * @returns {string}
  */
 export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, dateText, longPeriod }) {
+  const testService = outcome.gatewayTest === true;
   const ofParts = longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", longPeriod) : "";
   const periodEnd = String(boxes[35] ?? "");
   const heading = recordHeading({
     nameHtml: escapeRecordText(company.companyName),
     referenceHtml: [
-      escapeRecordText(siteText("ch.ct.record-utr-line", "Unique Taxpayer Reference {utr}", { utr })),
-      escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: company.companyNumber })),
+      escapeRecordText(siteText("ch.ct.record-utr-line", "Tax reference {utr}", { utr })),
+      escapeRecordText(
+        siteText("ch.ct.record-company-number-line", "Company registration number {number}", { number: company.companyNumber }),
+      ),
     ],
-    title: siteText("ch.ct.record-title", "Company Tax Return (CT600, preview){parts}", { parts: ofParts }),
+    title: ctRecordTitle(testService, ofParts),
     subtitleHtml: escapeRecordText(
-      siteText("ch.ct.record-period", "Return period {start} to {end}", { start: longDate(boxes[30]), end: longDate(periodEnd) }),
+      siteText("ch.ct.record-period", "Period covered by the return {start} to {end}", {
+        start: longDate(boxes[30]),
+        end: longDate(periodEnd),
+      }),
     ),
   });
   const taxRows = TAX_BOXES.filter((box) => boxes[box] !== undefined).map((box) => ({
-    label: siteText("ch.ct.box-label", "Box {box}: {label}", { box, label: boxRow(box).label }),
+    reference: siteText("ch.ct600.review-box", "Box {box}", { box }),
+    label: boxRow(box).label,
     cells: [figureCell(boxes[box])],
     style: box === TAX_BOXES.findLast((candidate) => boxes[candidate] !== undefined) ? "total" : undefined,
   }));
   const table = recordTable({
     columns: [periodEnd.slice(0, 4) || siteText("ch.ct.record-period-column", "Period")],
+    referenceHeading: siteText("ch.ct.column-box", "Box"),
     rows: [
       { label: siteText("ch.ct.record-computation", "Tax computation"), style: "heading" },
       ...computation.map((line) => ({
@@ -208,7 +217,7 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
   });
   const receipt = { ...outcome, utr, successMessage: undefined };
   return customerCopyHtml({
-    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return (preview){parts}", { parts: ofParts }),
+    title: ctCopyTitle(testService, ofParts),
     reference: {
       label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
       value: String(outcome.irmarkReceipt ?? outcome.irmark ?? ABSENT),

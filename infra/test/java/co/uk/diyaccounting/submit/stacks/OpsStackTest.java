@@ -369,7 +369,7 @@ class OpsStackTest {
                         .filter(entry -> entry.getKey().contains("TokenChargeUnpaid"))
                         .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         assertEquals(
-                15,
+                16,
                 metricFilters.size(),
                 "expected one metric filter per HMRC submission endpoint that calls chargeTokenOnSuccess, "
                         + "on the ingest log group its worker shares");
@@ -396,6 +396,10 @@ class OpsStackTest {
         assertTrue(
                 logGroupNames.stream().anyMatch(name -> name.contains("hmrc-itsa-final-declaration-post")),
                 "expected a metric filter on an ITSA final declaration log group, got " + logGroupNames);
+        assertTrue(
+                logGroupNames.stream().anyMatch(name -> name.contains("hmrc-ct-return-get")),
+                "expected a metric filter on the Company Tax Return status log group, which charges the token on"
+                        + " HMRC's acceptance, got " + logGroupNames);
     }
 
     @Test

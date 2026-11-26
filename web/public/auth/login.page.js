@@ -18,6 +18,7 @@ async function loginWithProvider(buttonProvider) {
   localStorage.removeItem("cognitoIdToken");
   localStorage.removeItem("cognitoRefreshToken");
   localStorage.removeItem("userInfo");
+  localStorage.removeItem("accountPreviewFeatures");
   sessionStorage.removeItem("cognito_oauth_state");
   sessionStorage.removeItem("cognito_oauth_nonce");
   sessionStorage.removeItem("cognito_pkce_verifier");

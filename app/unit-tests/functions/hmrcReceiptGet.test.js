@@ -21,6 +21,7 @@ vi.mock("@app/lib/activityAlert.js", async (importOriginal) => ({
 
 vi.mock("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js", () => ({
   listFilingsInProgress: vi.fn(),
+  listCompanyTaxReturnsInProgress: vi.fn(),
 }));
 
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
@@ -50,7 +51,7 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => {
 const { ingestHandler: hmrcReceiptGetHandler } = await import("@app/functions/hmrc/hmrcReceiptGet.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
-const { listFilingsInProgress } = await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
+const { listFilingsInProgress, listCompanyTaxReturnsInProgress } = await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
 const { publishActivityEvent } = await import("@app/lib/activityAlert.js");
 
 function makeJwt(sub) {
@@ -77,6 +78,7 @@ describe("hmrcReceiptGet ingestHandler", () => {
     Object.assign(process.env, setupTestEnv());
     listUserReceipts.mockReset().mockResolvedValue([]);
     listFilingsInProgress.mockReset().mockResolvedValue([]);
+    listCompanyTaxReturnsInProgress.mockReset().mockResolvedValue([]);
     getClient.mockReset();
     publishActivityEvent.mockClear();
   });
@@ -134,6 +136,32 @@ describe("hmrcReceiptGet ingestHandler", () => {
     expect(JSON.parse(response.body).filingsInProgress).toEqual([pending]);
   });
 
+  test("lists the caller's Company Tax Returns waiting for HMRC beside the receipts", async () => {
+    const pending = {
+      correlationId: "46DCD4CC7E194088B99857931C185829",
+      status: "pending",
+      submittedAt: "2026-11-25T10:00:00.000Z",
+      lastCheckedAt: "2026-11-25T10:05:00.000Z",
+      utr: "8596148860",
+      clientId: null,
+    };
+    listCompanyTaxReturnsInProgress.mockResolvedValue([pending]);
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+
+    expect(response.statusCode).toBe(200);
+    expect(listCompanyTaxReturnsInProgress).toHaveBeenCalledWith("filer-sub", undefined);
+    expect(JSON.parse(response.body).companyTaxReturnsInProgress).toEqual([pending]);
+  });
+
+  test("a practice's list for one client asks for that client's Company Tax Returns in progress", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1" });
+
+    await hmrcReceiptGetHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(listCompanyTaxReturnsInProgress).toHaveBeenCalledWith("practice-sub", "client-1");
+  });
+
   test("a practice's list for one client carries that client's filings in progress", async () => {
     getClient.mockResolvedValue({ clientId: "client-1" });
     const rejected = {
@@ -170,6 +198,7 @@ describe("hmrcReceiptGet ingestHandler", () => {
 
     expect(response.statusCode).toBe(403);
     expect(listFilingsInProgress).not.toHaveBeenCalled();
+    expect(listCompanyTaxReturnsInProgress).not.toHaveBeenCalled();
   });
 
   test("with a client id belonging to the caller's practice, lists only that client's receipts", async () => {

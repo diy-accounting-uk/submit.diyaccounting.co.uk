@@ -36,6 +36,7 @@
     localStorage.removeItem("cognitoIdToken");
     localStorage.removeItem("cognitoRefreshToken");
     localStorage.removeItem("userInfo");
+    localStorage.removeItem("accountPreviewFeatures");
     sessionStorage.removeItem("cognito_oauth_state");
 
     // Generate state parameter for security using cryptographically secure random values

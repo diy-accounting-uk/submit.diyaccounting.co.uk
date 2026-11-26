@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// What the signed-in person has chosen to see. Two choices last for the browser session
-// (sessionStorage): preview features, which shows what the catalogue hides in this environment,
-// and operator features, which an operator turns off to see what a customer sees. The account
-// settings live on the server and come with the bundles.
+// What the signed-in person has chosen to see. Preview features, which shows what the catalogue
+// hides in this environment, is the choice made in this browser (localStorage, so every tab
+// agrees), else the account's stored previewFeatures; signed in, a bundle answer brings the
+// browser's choice into line with the account's, so both read one value. Operator
+// features, which an operator turns off to see what a customer sees, lasts for the browser session
+// (sessionStorage). The account settings live on the server and come with the bundles.
 
 export const PREVIEW_FEATURES_HEADER = "x-preview-features";
 
 const PREVIEW_FEATURES_KEY = "previewFeatures";
+// The account's previewFeatures as last read, kept so a request sent before this page's first
+// bundle answer carries the account's setting. Sign-out removes it.
+export const ACCOUNT_PREVIEW_FEATURES_KEY = "accountPreviewFeatures";
 const OPERATOR_FEATURES_KEY = "operatorFeatures";
 
 export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [], previewFeatures: false };
@@ -30,14 +35,67 @@ function writeSession(key, value) {
   }
 }
 
-/** @returns {boolean} True when preview features are on for this session (off by default) */
-export function isPreviewOn() {
-  return readSession(PREVIEW_FEATURES_KEY) === "on";
+// The account's stored previewFeatures from the last bundle answer this page read, or null before one.
+let accountPreviewFeatures = null;
+
+function writeLocal(key, value) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // localStorage unavailable: the account's setting read on this page decides
+  }
 }
 
-/** @param {boolean} on - Whether preview features show for this session */
+function readOnOff(key) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === "on" || value === "off" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+// Keeps the account's previewFeatures, and when this browser holds a different choice takes the
+// account's value into it, so the settings switch and every reader show the one value.
+function rememberAccountSettings(settings) {
+  if (typeof settings?.previewFeatures !== "boolean") return;
+  accountPreviewFeatures = settings.previewFeatures;
+  const value = settings.previewFeatures ? "on" : "off";
+  writeLocal(ACCOUNT_PREVIEW_FEATURES_KEY, value);
+  const choice = readBrowserPreviewChoice();
+  if (choice && choice !== value) writeLocal(PREVIEW_FEATURES_KEY, value);
+}
+
+/**
+ * The preview choice stored in this browser, or null when it holds none.
+ * @returns {"on"|"off"|null}
+ */
+export function readBrowserPreviewChoice() {
+  return readOnOff(PREVIEW_FEATURES_KEY);
+}
+
+/** Removes the preview choice from this browser, so the account's setting decides again. */
+export function clearBrowserPreviewChoice() {
+  writeLocal(PREVIEW_FEATURES_KEY, null);
+}
+
+/**
+ * Whether preview features are on: the choice made in this browser when there is one, else the
+ * account's stored previewFeatures from this page's bundle answer, else the account's value as last
+ * read in this browser, else off.
+ * @returns {boolean}
+ */
+export function isPreviewOn() {
+  const choice = readBrowserPreviewChoice();
+  if (choice) return choice === "on";
+  if (accountPreviewFeatures !== null) return accountPreviewFeatures;
+  return readOnOff(ACCOUNT_PREVIEW_FEATURES_KEY) === "on";
+}
+
+/** @param {boolean} on - Whether preview features show in every tab of this browser */
 export function setPreviewOn(on) {
-  writeSession(PREVIEW_FEATURES_KEY, on ? "on" : null);
+  writeLocal(PREVIEW_FEATURES_KEY, on ? "on" : "off");
 }
 
 /** @returns {boolean} True unless an operator turned operator features off for this session */
@@ -82,17 +140,16 @@ export async function readBundleResponse() {
   }
   if (!idToken) return null;
   const requestCache = window.requestCache;
-  if (requestCache && typeof requestCache.getJSON === "function") {
-    return withinBundleReadTimeLimit(
-      requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } }),
-    );
-  }
-  return withinBundleReadTimeLimit(
-    window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => {
-      if (!response.ok) throw Object.assign(new Error(`Request failed with status ${response.status}`), { status: response.status });
-      return response.json();
-    }),
-  );
+  const read =
+    requestCache && typeof requestCache.getJSON === "function"
+      ? requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } })
+      : window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => {
+          if (!response.ok) throw Object.assign(new Error(`Request failed with status ${response.status}`), { status: response.status });
+          return response.json();
+        });
+  const response = await withinBundleReadTimeLimit(read);
+  rememberAccountSettings(response?.settings);
+  return response;
 }
 
 /**
@@ -156,7 +213,9 @@ export async function updateAccountSetting(name, value) {
   });
   if (!response.ok) throw new Error(`The setting was not saved (HTTP ${response.status})`);
   window.requestCache?.invalidate?.("/api/v1/bundle");
-  return { ...ACCOUNT_SETTING_DEFAULTS, ...((await response.json()).settings ?? {}) };
+  const settings = { ...ACCOUNT_SETTING_DEFAULTS, ...((await response.json()).settings ?? {}) };
+  rememberAccountSettings(settings);
+  return settings;
 }
 
 /**

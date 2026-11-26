@@ -195,6 +195,7 @@ async function serveSite(
     submitEnv = null,
     filedDocument = null,
     filingData = null,
+    filingDataRefusal = null,
   } = {},
 ) {
   await page.addInitScript((withSignIn) => {
@@ -224,6 +225,7 @@ async function serveSite(
       if (company && company[2] === "/filed-accounts") return json(route, 200, filedAccounts);
       if (company && filedDocument && /^\/filed-accounts\/[^/]+\/document$/.test(company[2] || ""))
         return json(route, 200, { companyNumber: "00000001", document: filedDocument });
+      if (company && filingDataRefusal && company[2] === "/filing-data") return json(route, 400, filingDataRefusal);
       if (company && filingData && company[2] === "/filing-data") return json(route, 200, filingData);
       if (company && company[2] === "/registered-email-address/eligibility")
         return json(route, 200, { eligibilityStatusCode: "COMPANY_VALID_FOR_SERVICE" });
@@ -544,6 +546,26 @@ test.describe("Company lookup drill-down", () => {
     await expect(page.locator("#drillView")).toContainText("Micro entity", { timeout: 15000 });
     expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(false);
   });
+
+  test("the Welsh books card says in Welsh that a statement date after today cannot be read", async ({ page }) => {
+    await serveSite(page, {
+      submitEnv: "DIYA_GL_BASE_URL=https://ci.diya-gl.co.uk/\n",
+      filingDataRefusal: {
+        message:
+          "The confirmation statement date is after today. Companies House reads the register only up to today: file the statement on or after that date.",
+        reason: "made-up-date-after-today",
+      },
+    });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#companyBooksAuthCode")).toBeVisible({ timeout: 30000 });
+
+    await page.fill("#companyBooksAuthCode", "222222");
+    await page.click("#companyBooksCapitalForm button[type=submit]");
+
+    await expect(page.locator("#companyBooksCapitalStatus")).toHaveText(
+      "Mae’r dyddiad hwn ar ôl heddiw. Dim ond hyd at heddiw y mae Tŷ’r Cwmnïau yn darllen y gofrestr, felly ffeiliwch y datganiad hwn ar y dyddiad y mae wedi’i wneud hyd ato neu ar ôl hynny.",
+    );
+  });
 });
 
 // A company with more filings than the routes read: the newest of them, and the total on the register.
@@ -794,11 +816,11 @@ test.describe("Company lookup drill-down edit links", () => {
     await expect(note.locator("a")).toHaveAttribute("href", "https://www.gov.uk/strike-off-your-company-from-companies-register");
   });
 
-  test("on prod, where the Company Tax Return form is not offered, the accounts section has no link to it", async ({ page }) => {
+  test("on prod, where the Company Tax Return form is offered, the accounts section links to it", async ({ page }) => {
     await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#accountsSection .file-this a.btn")).toHaveCount(2, { timeout: 15000 });
-    await expect(page.locator('#accountsSection .file-this[data-activity="file-company-tax-return"]')).toHaveCount(0);
+    await expect(page.locator("#accountsSection .file-this a.btn")).toHaveCount(3, { timeout: 15000 });
+    await expect(page.locator('#accountsSection .file-this[data-activity="file-company-tax-return"]')).toHaveCount(1);
   });
 
   for (const [language, prefix] of [

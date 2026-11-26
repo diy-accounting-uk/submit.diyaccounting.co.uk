@@ -43,7 +43,7 @@ const TRADING_LINES = [
     key: "nonTradingLoanRelationshipCredits",
     concept: "AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts",
     effect: -1,
-    label: "Less: bank interest (non-trading loan relationship credits)",
+    label: "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
   },
   { key: "depreciation", concept: "AdjustmentsDepreciation", effect: 1, label: "Add: depreciation" },
   { key: "amortisation", concept: "AdjustmentsAmortisation", effect: 1, label: "Add: goodwill amortisation" },
@@ -137,7 +137,7 @@ function monetaryCell(concept, contextRef, value, options) {
 function adjustedResultRow(adjustedProfit) {
   if (adjustedProfit >= 0) {
     return {
-      label: "Adjusted trading profit",
+      label: "Adjusted trading profit (box 155)",
       style: "total",
       cells: [monetaryCell("AdjustedProfitForThePeriod", "tradePeriod", adjustedProfit)],
     };
@@ -296,7 +296,7 @@ export function buildCtComputations({
     columns: [periodOfAccount ? "" : periodEnd.slice(0, 4)],
     rows: [
       {
-        label: "Profit before tax per accounts",
+        label: "Profit or loss before tax per the accounts",
         cells: [monetaryCell("ProfitLossPerAccounts", accountsContext, lines.profitLossPerAccounts)],
       },
       ...tradeRows,
@@ -322,12 +322,12 @@ export function buildCtComputations({
 ${recordHeading({
   nameHtml: textFact("CompanyName", "companyInstant", companyName),
   referenceHtml: [
-    `Registered number: ${escapeXmlText(companyNumber)}`,
-    `Unique Taxpayer Reference: ${textFact("TaxReference", "companyInstant", utr)}`,
+    `Company registration number: ${escapeXmlText(companyNumber)}`,
+    `Tax reference: ${textFact("TaxReference", "companyInstant", utr)}`,
   ],
   title: "Corporation Tax computation",
   subtitleHtml: `for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}`,
-})}<p>Return period: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
+})}<p>Period covered by the return: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
 <p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodOfAccount?.periodStart ?? periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodOfAccount?.periodEnd ?? periodEnd)}</p>
 <h3>Trading profits: ${escapeXmlText(tradeName)}</h3>
 ${computationTable}

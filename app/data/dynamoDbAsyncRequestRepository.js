@@ -27,17 +27,18 @@ const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.j
  * @param {string} status - Request status: 'pending', 'processing', 'completed', 'failed'
  * @param {object} data - Optional data (result for completed, error for failed)
  * @param {string} tableName - Optional table name (defaults to env var)
- * @param {{days?: number, hours?: number}} [retention] - How long the item lives, one hour unless given
+ * @param {{days?: number, hours?: number, from?: Date|string}} [retention] - How long the item lives, one hour unless
+ *   given, counted from retention.from when it is given and from now otherwise
  */
 export async function putAsyncRequest(userId, requestId, status, data = null, tableName = null, retention = { hours: 1 }) {
   const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (!actualTableName) {
-    logger.warn({ message: "putAsyncRequest called but no table name provided or in env", requestId });
+    logger.warn({ message: "putAsyncRequest called but no table name provided or in env", asyncRequestId: requestId });
     return;
   }
   logger.info({
     message: `putAsyncRequest [table: ${actualTableName}]`,
-    requestId,
+    asyncRequestId: requestId,
     status,
   });
 
@@ -47,7 +48,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     const now = new Date();
     const isoNow = now.toISOString();
 
-    const { ttl, ttl_datestamp: ttlDatestamp } = calculateTtl(now, retention);
+    const { ttl, ttl_datestamp: ttlDatestamp } = calculateTtl(retention.from ? new Date(retention.from) : now, retention);
 
     const expressionAttributeNames = {
       "#status": "status",
@@ -96,7 +97,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     logger.info({
       message: "AsyncRequest stored in DynamoDB",
       hashedSub,
-      requestId,
+      asyncRequestId: requestId,
       status,
       tableName: actualTableName,
     });
@@ -104,7 +105,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     logger.error({
       message: "Error storing AsyncRequest in DynamoDB",
       error: error.message,
-      requestId,
+      asyncRequestId: requestId,
       status,
       tableName: actualTableName,
     });
@@ -122,12 +123,12 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
 export async function getAsyncRequest(userId, requestId, tableName = null) {
   const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (!actualTableName) {
-    logger.warn({ message: "getAsyncRequest called but no table name provided or in env", requestId });
+    logger.warn({ message: "getAsyncRequest called but no table name provided or in env", asyncRequestId: requestId });
     return null;
   }
   logger.info({
     message: `getAsyncRequest [table: ${actualTableName}]`,
-    requestId,
+    asyncRequestId: requestId,
   });
 
   try {
@@ -149,7 +150,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
       logger.info({
         message: "AsyncRequest retrieved from DynamoDB",
         hashedSub,
-        requestId,
+        asyncRequestId: requestId,
         status: result.Item.status,
         tableName: actualTableName,
       });
@@ -175,7 +176,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
           message: "Found async request at old salt version",
           version,
           hashedSub: oldHash,
-          requestId,
+          asyncRequestId: requestId,
           tableName: actualTableName,
         });
         return fallbackResult.Item;
@@ -185,7 +186,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
     logger.info({
       message: "AsyncRequest not found in DynamoDB",
       hashedSub,
-      requestId,
+      asyncRequestId: requestId,
       tableName: actualTableName,
     });
     return null;
@@ -193,9 +194,101 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
     logger.error({
       message: "Error retrieving AsyncRequest from DynamoDB",
       error: error.message,
-      requestId,
+      asyncRequestId: requestId,
       tableName: actualTableName,
     });
+    throw error;
+  }
+}
+
+/**
+ * Record when a status poll last asked about a request that is still pending: data.lastCheckedAt,
+ * set in place. A request that is no longer pending, or not found, is left as it is.
+ * @param {string} userId - The user ID
+ * @param {string} requestId - The request ID
+ * @param {Date} checkedAt - When the poll asked
+ * @param {string} tableName
+ */
+export async function recordStatusCheck(userId, requestId, checkedAt, tableName) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub: hashSub(userId), requestId },
+          UpdateExpression: "SET #data.#lastCheckedAt = :checkedAt",
+          ConditionExpression: "#status = :pending",
+          ExpressionAttributeNames: { "#data": "data", "#lastCheckedAt": "lastCheckedAt", "#status": "status" },
+          ExpressionAttributeValues: { ":checkedAt": checkedAt.toISOString(), ":pending": "pending" },
+        }),
+    );
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return;
+    throw error;
+  }
+}
+
+// A recording claim older than this belongs to a record that can no longer be running (its release
+// failed, or its Lambda was stopped), so the next poll may take it.
+export const RECORDING_CLAIM_STALE_MINUTES = 20;
+
+/**
+ * Take the one right to record a pending request's final answer: its status goes from "pending" to
+ * "recording", or a "recording" claim older than RECORDING_CLAIM_STALE_MINUTES is taken over. Two
+ * polls that read the same final answer both ask, and only the first records it.
+ * @param {string} userId - The user ID
+ * @param {string} requestId - The request ID
+ * @param {string} tableName
+ * @param {{now?: Date}} [options]
+ * @returns {Promise<boolean>} false when the request is not pending or another poll holds the claim
+ */
+export async function claimRecording(userId, requestId, tableName, { now = new Date() } = {}) {
+  const staleBefore = new Date(now.getTime() - RECORDING_CLAIM_STALE_MINUTES * 60 * 1000);
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub: hashSub(userId), requestId },
+          UpdateExpression: "SET #status = :recording, #recordingSince = :now",
+          ConditionExpression: "#status = :pending OR (#status = :recording AND #recordingSince < :staleBefore)",
+          ExpressionAttributeNames: { "#status": "status", "#recordingSince": "recordingSince" },
+          ExpressionAttributeValues: {
+            ":recording": "recording",
+            ":pending": "pending",
+            ":now": now.toISOString(),
+            ":staleBefore": staleBefore.toISOString(),
+          },
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return false;
+    throw error;
+  }
+}
+
+/**
+ * Give a recording claim back when the record failed part-way, so the next poll records the answer.
+ * @param {string} userId - The user ID
+ * @param {string} requestId - The request ID
+ * @param {string} tableName
+ */
+export async function releaseRecording(userId, requestId, tableName) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub: hashSub(userId), requestId },
+          UpdateExpression: "SET #status = :pending REMOVE #recordingSince",
+          ConditionExpression: "#status = :recording",
+          ExpressionAttributeNames: { "#status": "status", "#recordingSince": "recordingSince" },
+          ExpressionAttributeValues: { ":recording": "recording", ":pending": "pending" },
+        }),
+    );
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return;
     throw error;
   }
 }

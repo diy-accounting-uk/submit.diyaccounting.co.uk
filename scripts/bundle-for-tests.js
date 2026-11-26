@@ -38,6 +38,7 @@ const moduleFiles = [
   "lib/utils/dom-utils.js",
   "lib/utils/correlation-utils.js",
   "lib/utils/visitor-kind.js",
+  "lib/utils/status-bubble.js",
   // The Companies House forms table the form service reads
   "lib/companies-house-forms.js",
   // Services layer

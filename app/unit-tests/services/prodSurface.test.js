@@ -14,8 +14,6 @@ describe("what the catalogue lists in each environment", () => {
     "diya-gl-storage",
     "self-employed",
     "vat-assist-check",
-    "file-company-tax-return",
-    "file-company-tax-return-with-accounts",
     "file-revised-accounts",
     "file-psc-verification-statement",
     "company-reports",
@@ -25,12 +23,13 @@ describe("what the catalogue lists in each environment", () => {
     expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);
   });
 
-  test("the Company Tax Return and the joint filing open on prod only to an operator's own preview", () => {
-    for (const id of ["file-company-tax-return", "file-company-tax-return-with-accounts"]) {
-      expect(activity(id).environments).not.toContain("prod");
-      expect(activity(id).operatorPreviewEnvironments).toEqual(["prod"]);
-    }
-    expect(activity("practice").operatorPreviewEnvironments).toBeUndefined();
+  test.each(["file-company-tax-return", "file-company-tax-return-with-accounts"])("%s is listed in ci and in prod", (id) => {
+    expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
+    expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(true);
+  });
+
+  test("no activity names an environment outside its environments list", () => {
+    for (const entry of catalog.activities) expect(entry).not.toHaveProperty("operatorPreviewEnvironments");
   });
 
   test("the MCP harness is not listed in prod", () => {

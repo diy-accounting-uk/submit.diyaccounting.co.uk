@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+ <EnvelopeVersion>2.0</EnvelopeVersion>
+ <Header>
+  <MessageDetails>
+   <Class>HMRC-SA-SA100</Class>
+   <Qualifier>request</Qualifier>
+   <Function>delete</Function>
+   <CorrelationID>46DCD4CC7E194088B99857931C185829</CorrelationID>
+   <Transformation>XML</Transformation>
+  </MessageDetails>
+  <SenderDetails/>
+ </Header>
+ <GovTalkDetails>
+  <Keys/>
+ </GovTalkDetails>
+ <Body/>
+</GovTalkMessage>

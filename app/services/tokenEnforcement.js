@@ -17,6 +17,7 @@ import { createLogger } from "../lib/logger.js";
 import { consumeToken, getUserBundles, recordTokenEvent, BUNDLE_MISSING } from "../data/dynamoDbBundleRepository.js";
 import { isUnlimitedTokenGrant, loadCatalogFromRoot } from "./productCatalog.js";
 import { http403ForbiddenResponse, http500ServerErrorResponse } from "../lib/httpResponseHelper.js";
+import { hashSub, isSaltInitialized } from "./subHasher.js";
 
 const logger = createLogger({ source: "app/services/tokenEnforcement.js" });
 
@@ -69,7 +70,7 @@ export async function hasTokensForActivity(userId, activityId, catalog, alsoActi
   const qualifyingBundle = findQualifyingBundle(userBundles, activity, tokenCost);
 
   if (!qualifyingBundle) {
-    logger.info({ message: "No qualifying bundle with tokens remaining", userId, activityId });
+    logger.info({ message: "No qualifying bundle with tokens remaining", hashedSub: hashedSubForLog(userId), activityId });
     const activityBundleIds = new Set(activity.bundles || []);
     const held = userBundles.find((b) => activityBundleIds.has(b.bundleId) && b.tokensGranted !== undefined);
     const tokensRemaining = held ? Math.max(0, held.tokensGranted - (held.tokensConsumed || 0)) : 0;
@@ -112,14 +113,19 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
   const qualifyingBundle = findQualifyingBundle(userBundles, activity, tokenCost);
 
   if (!qualifyingBundle) {
-    logger.info({ message: "No qualifying bundle with tokens remaining", userId, activityId });
+    logger.info({ message: "No qualifying bundle with tokens remaining", hashedSub: hashedSubForLog(userId), activityId });
     return { consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 };
   }
 
   // An unlimited grant (the resident-tax-agent practice licence) is exempt from the token count:
   // no DynamoDB decrement, no consumption event, no possibility of exhaustion.
   if (isUnlimitedTokenGrant(qualifyingBundle.tokensGranted)) {
-    logger.info({ message: "Unlimited grant - no token consumption recorded", userId, activityId, bundleId: qualifyingBundle.bundleId });
+    logger.info({
+      message: "Unlimited grant - no token consumption recorded",
+      hashedSub: hashedSubForLog(userId),
+      activityId,
+      bundleId: qualifyingBundle.bundleId,
+    });
     return { consumed: true, cost: tokenCost };
   }
 
@@ -127,7 +133,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
   const result = await consumeToken(userId, qualifyingBundle.bundleId, tokenCost);
   logger.info({
     message: "Token consumption result",
-    userId,
+    hashedSub: hashedSubForLog(userId),
     activityId,
     bundleId: qualifyingBundle.bundleId,
     consumed: result.consumed,
@@ -143,7 +149,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
         if (recorded?.reason === BUNDLE_MISSING) {
           logger.warn({
             message: "Token event not recorded: bundle item missing",
-            userId,
+            hashedSub: hashedSubForLog(userId),
             activityId,
             bundleId: qualifyingBundle.bundleId,
           });
@@ -151,11 +157,22 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
         return recorded;
       })
       .catch((err) => {
-        logger.warn({ message: "Failed to record token event", error: err.message, userId, activityId });
+        logger.warn({ message: "Failed to record token event", error: err.message, hashedSub: hashedSubForLog(userId), activityId });
       });
   }
 
   return { ...result, cost: tokenCost };
+}
+
+/**
+ * The hashed sub a log line names the account by; null when there is no sub or no salt, so a log
+ * line written on a failure path never throws.
+ *
+ * @param {string} userId - User sub
+ * @returns {string|null}
+ */
+function hashedSubForLog(userId) {
+  return userId && isSaltInitialized() ? hashSub(userId) : null;
 }
 
 /**
@@ -177,14 +194,19 @@ export async function chargeTokenOnSuccess(userId, activityId) {
     if (!result.consumed) {
       logger.warn({
         message: "Token charge skipped after HMRC success - no qualifying bundle at charge time",
-        userId,
+        hashedSub: hashedSubForLog(userId),
         activityId,
         reason: result.reason,
       });
     }
     return result;
   } catch (error) {
-    logger.error({ message: "Token charge failed after HMRC success", userId, activityId, error: error.message });
+    logger.error({
+      message: "Token charge failed after HMRC success",
+      hashedSub: hashedSubForLog(userId),
+      activityId,
+      error: error.message,
+    });
     return { consumed: false, reason: "charge_error" };
   }
 }

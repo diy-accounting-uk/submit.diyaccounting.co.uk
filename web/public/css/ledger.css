@@ -147,3 +147,29 @@
     content: none;
   }
 }
+
+/* A line's note and its spreadsheet disclosure, in a full-width row under the line's figures. */
+.ledger tr.ledger__detail td {
+  padding-top: 0;
+  font-weight: var(--weight-text);
+}
+
+.ledger tr:has(+ tr.ledger__detail) th,
+.ledger tr:has(+ tr.ledger__detail) td {
+  border-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .ledger tr:has(+ tr.ledger__detail) {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .ledger tr.ledger__detail {
+    padding-top: 0;
+  }
+
+  .ledger tr.ledger__detail td {
+    display: block;
+  }
+}

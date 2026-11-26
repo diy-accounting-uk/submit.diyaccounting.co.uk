@@ -211,12 +211,12 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
       await expect(page.locator("#priorCalledUpShareCapital")).toHaveValue("100");
       await expect(page.locator("#priorProfitAndLossAccount")).toHaveValue("9900");
       await expect(page.locator("#priorCapitalAndReserves")).toHaveValue("10000");
-      await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+      await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
       await expect(page.locator("#priorYearNote")).toContainText(
         `7 prior-year figures are filled in from the company's last accounts, made up to ${longDate(DATES.filed.end)} and approved on ${longDate(DATES.filed.approvedOn)}.`,
       );
       await expect(page.locator("#priorYearNote")).toContainText(
-        "Left empty, with no figure in those accounts: Called up share capital not paid",
+        "Left at 0, with no figure in those accounts: Called up share capital not paid",
       );
       expect(await scrollsSideways(page)).toBe(false);
       await shoot(page, "micro-entity-filled");
@@ -254,37 +254,37 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
       await shoot(page, "other-form-note");
     });
 
-    test(`accounts filed on paper open the form empty with a note that says why at ${width}px`, async ({ page }) => {
+    test(`accounts filed on paper leave the prior year at 0 with a note that says why at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page);
       await lookUp(page, "fileMicroEntityAccounts", "00000003");
       await expect(page.locator("#priorYearNote")).toHaveText(
-        `The company's last accounts, made up to ${longDate(DATES.filed.end)}, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left empty: type it from those accounts.`,
+        `The company's last accounts, made up to ${longDate(DATES.filed.end)}, were filed on paper. Companies House holds them as a scanned document only, so the prior year is left at 0: type it from those accounts.`,
       );
-      await expect(page.locator("#priorFixedAssets")).toHaveValue("");
+      await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
       await shoot(page, "paper-note");
     });
   }
 
-  test("a company with no accounts opens the form empty with a note that says why", async ({ page }) => {
+  test("a company with no accounts leaves the prior year at 0 with a note that says why", async ({ page }) => {
     await serveSite(page);
     await lookUp(page, "fileSmallCompanyAccounts", "00000007");
     await expect(page.locator("#priorYearNote")).toHaveText(
-      "Companies House holds no accounts for this company, so the prior year is left empty.",
+      "Companies House holds no accounts for this company, so the prior year is left at 0.",
     );
-    await expect(page.locator("#priorFixedAssets")).toHaveValue("");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
   });
 
-  test("a company whose last accounts end a year before this period opens the form empty, naming both dates and the filing history", async ({
+  test("a company whose last accounts end a year before this period leaves the prior year at 0, naming both dates and the filing history", async ({
     page,
   }) => {
     await serveSite(page);
     await lookUp(page, "fileMicroEntityAccounts", "00000005");
     await expect(page.locator("#priorYearNote")).toContainText(
-      `The last accounts filed were made up to ${longDate(DATES.earlier.end)}, and this period starts on ${longDate(DATES.next.start)}, so the year between is not on the register and the prior year is left empty. See the company's filing history.`,
+      `The last accounts filed were made up to ${longDate(DATES.earlier.end)}, and this period starts on ${longDate(DATES.next.start)}, so the year between is not on the register and the prior year is left at 0. See the company's filing history.`,
     );
     await expect(page.locator("#priorYearNote a")).toHaveAttribute("href", "/companies-house/company/00000005/filing-history");
-    await expect(page.locator("#priorFixedAssets")).toHaveValue("");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
   });
 
   test("a prior year with reserves the micro-entity form lacks names the line to correct, and the balance rule refuses it", async ({

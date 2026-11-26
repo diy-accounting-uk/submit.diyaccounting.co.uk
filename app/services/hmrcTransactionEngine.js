@@ -18,8 +18,6 @@ import { parseXmlTree, canonicaliseElement, childElement, localName } from "../l
 const logger = createLogger({ source: "app/services/hmrcTransactionEngine.js" });
 
 export const CT600_CLASS = "HMRC-CT-CT600";
-// Marks the async request record of a Company Tax Return, so a poll never reads another form's record.
-export const CT_RETURN_KIND = "company-tax-return";
 export const CT600_TEST_IN_LIVE_CLASS = "HMRC-CT-CT600-TIL";
 
 export const TRANSACTION_ENGINE_LIVE_SUBMISSION_URL = "https://transaction-engine.tax.service.gov.uk/submission";
@@ -174,12 +172,20 @@ export function buildCt600SubmissionRequest({
  * @returns {string}
  */
 export function buildPollRequest({ correlationId, gatewayTest, messageClass = CT600_CLASS }) {
-  return buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier: "poll", messageFunction: "submit" });
+  return buildFollowOnMessage({
+    correlationId,
+    gatewayTest,
+    messageClass,
+    qualifier: "poll",
+    messageFunction: "submit",
+    senderDetails: "",
+  });
 }
 
 /**
  * Build a DELETE_REQUEST, sent once a final response has been read, so the Transaction Engine
- * drops its copy.
+ * drops its copy. The header carries an empty SenderDetails after MessageDetails, as the
+ * protocol's sample delete request does; a poll leaves it out, as its sample does.
  * @param {object} input
  * @param {string} input.correlationId
  * @param {boolean} input.gatewayTest
@@ -187,7 +193,14 @@ export function buildPollRequest({ correlationId, gatewayTest, messageClass = CT
  * @returns {string}
  */
 export function buildDeleteRequest({ correlationId, gatewayTest, messageClass = CT600_CLASS }) {
-  return buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier: "request", messageFunction: "delete" });
+  return buildFollowOnMessage({
+    correlationId,
+    gatewayTest,
+    messageClass,
+    qualifier: "request",
+    messageFunction: "delete",
+    senderDetails: "<SenderDetails/>",
+  });
 }
 
 /**
@@ -215,11 +228,11 @@ export function buildDataRequest({ senderId, password, gatewayTest, messageClass
 `;
 }
 
-function buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier, messageFunction }) {
+function buildFollowOnMessage({ correlationId, gatewayTest, messageClass, qualifier, messageFunction, senderDetails }) {
   if (!/^[0-9A-F]{1,32}$/.test(correlationId || ""))
     throw new Error("The CorrelationID must be the upper-case hex the acknowledgement returned");
   return `<?xml version="1.0" encoding="UTF-8"?>
-<GovTalkMessage xmlns="${GOVTALK_ENVELOPE_NAMESPACE}"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>${messageClass}</Class><Qualifier>${qualifier}</Qualifier><Function>${messageFunction}</Function><CorrelationID>${correlationId}</CorrelationID><Transformation>XML</Transformation>${gatewayTest ? "<GatewayTest>1</GatewayTest>" : ""}</MessageDetails></Header><GovTalkDetails><Keys/></GovTalkDetails><Body/></GovTalkMessage>
+<GovTalkMessage xmlns="${GOVTALK_ENVELOPE_NAMESPACE}"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>${messageClass}</Class><Qualifier>${qualifier}</Qualifier><Function>${messageFunction}</Function><CorrelationID>${correlationId}</CorrelationID><Transformation>XML</Transformation>${gatewayTest ? "<GatewayTest>1</GatewayTest>" : ""}</MessageDetails>${senderDetails}</Header><GovTalkDetails><Keys/></GovTalkDetails><Body/></GovTalkMessage>
 `;
 }
 

@@ -330,6 +330,7 @@ export function extractRequest(event) {
   context.set("amznTraceId", amznTraceId);
   context.set("traceparent", traceparent);
   context.set("correlationId", correlationId);
+  context.set("hmrcCorrelationId", undefined);
   const loggedPath = loggedPathOf(event);
   context.set("loggedPath", loggedPath || undefined);
   if (event.headers) {

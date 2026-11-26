@@ -49,9 +49,10 @@ describe("filing pages", () => {
   });
 
   test("a filing that is sandbox or preview on prod gets no page", () => {
-    for (const activity of ["self-employed", "file-company-tax-return", "vat-assist-check", "file-psc-verification-statement"]) {
+    for (const activity of ["self-employed", "vat-assist-check", "file-psc-verification-statement"]) {
       expect(isProductionOnProd(catalog, activity), activity).toBe(false);
     }
+    expect(isProductionOnProd(catalog, "file-company-tax-return")).toBe(true);
     const income = { file: "income-tax.html", activity: "self-employed" };
     expect(filingPagesToWrite([income], catalog)).toEqual([]);
   });

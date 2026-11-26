@@ -87,6 +87,9 @@ let latestYearTotals = 0;
 // company's profile and the period start show. The prior year column follows that rule, and the
 // line above the balance sheet says which it is.
 let firstAccountsRule = null;
+// The terms of an advance to a director start from a common arrangement while the advance has an amount.
+import("../lib/advance-terms.js").then(({ followAdvanceTerms }) => followAdvanceTerms(document));
+
 import("../lib/first-accounts.js").then((module) => {
   firstAccountsRule = module;
   applyFirstAccountsRule();
@@ -192,6 +195,7 @@ async function handleCompanySubmit(event) {
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
+    window.booksImport.showFilingsFor(company.companyNumber);
     window.priorYearFill.fill(company.companyNumber, "micro", profile);
   } catch (error) {
     console.error("Failed to look up the company:", error);
@@ -429,20 +433,25 @@ function pollUntilSettled(submission, extraHeaders) {
     poll: () => window.pollMicroEntityAccounts(submissionNumber, extraHeaders),
     onPending: (result) =>
       showFilingResult(
-        window.companiesHouseGatewayPoll.statusText(
+        window.companiesHouseGatewayPoll.pendingProgressText(
           window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
           submissionNumber,
-          result.statusCode,
+          result,
         ),
       ),
   });
 }
 
-// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check again.
+// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check
+// again; it offers Start a new filing only once the outcome is known, or when the gateway asked for no
+// more polls and Check again is not offered, so a second filing cannot start while the first may
+// still be pending.
 async function checkOutcome(submission, headers) {
   const checkAgain = document.getElementById("checkAgainBtn");
+  const startAgainButton = document.getElementById("startAgainBtn");
   checkAgain.style.display = "none";
   checkAgain.onclick = null;
+  startAgainButton.style.display = "none";
   try {
     const outcome = await pollUntilSettled(submission, headers);
     const outcomeHeadlines = revision
@@ -472,12 +481,20 @@ async function checkOutcome(submission, headers) {
     );
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);
-    if (!settled && window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+    const mayCheckAgain = window.companiesHouseGatewayPoll.mayCheckAgain(submission);
+    if (settled || !mayCheckAgain) startAgainButton.style.display = "inline-block";
+    if (!settled && mayCheckAgain) {
       checkAgain.onclick = () => checkOutcome(submission, headers);
       checkAgain.style.display = "inline-block";
     }
   } catch (error) {
     console.error("Companies House accounts status check failed:", error);
+    if (window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+      checkAgain.onclick = () => checkOutcome(submission, headers);
+      checkAgain.style.display = "inline-block";
+    } else {
+      startAgainButton.style.display = "inline-block";
+    }
     showFilingResult(
       window.siteText("ch.accounts.not-confirmed", "Your accounts were submitted. Companies House has not confirmed the outcome yet."),
       window.siteText("ch.accounts.check-failed", "Submission number {number}. The status check failed: {message}.", {
@@ -586,7 +603,6 @@ async function handleSubmitFiling() {
     const presenterHeaders = ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
     await checkOutcome(submission, { ...govTestScenarioHeaders, ...presenterHeaders });
   } finally {
-    document.getElementById("startAgainBtn").style.display = "inline-block";
     hideLoading();
   }
 }

@@ -296,7 +296,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       await expect(page.locator("#revisionTexts-hint")).toContainText("Companies House prints both texts");
       await expect(page.locator("#formCompanyNumber")).toHaveText(MICRO_TEST_CASE.companyNumber);
       await expect(page.locator("#periodEnd")).not.toHaveValue("");
-      await expect(page.locator("#currentCurrentAssets")).not.toHaveValue("");
+      await expect(page.locator("#currentCurrentAssets")).not.toHaveValue(/^0?$/);
       await expect(page.locator("#directorName")).toHaveValue("Eleanor Bramwell");
       await expect(page.locator("#changeCompanyLink")).toBeHidden();
       await expect(page.locator("[data-feature-status]")).toHaveText(

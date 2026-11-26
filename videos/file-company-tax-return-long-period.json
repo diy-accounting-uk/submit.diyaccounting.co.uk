@@ -145,7 +145,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('File Company Tax Return (HMRC, preview)')",
+          "until": "button:has-text('File Company Tax Return (HMRC)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         {
@@ -163,19 +163,19 @@
           "action": "point",
           "target": {
             "role": "button",
-            "name": "File Company Tax Return (HMRC, preview)"
+            "name": "File Company Tax Return (HMRC)"
           },
           "caption": "Open File Company Tax Return to find the company.",
           "headline": "Find the company",
           "keyWord": "company",
-          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page.",
+          "instruction": "Choose File Company Tax Return (HMRC) on the activities page.",
           "dwellMs": 500
         },
         {
           "action": "click",
           "target": {
             "role": "button",
-            "name": "File Company Tax Return (HMRC, preview)"
+            "name": "File Company Tax Return (HMRC)"
           },
           "expectsNavigation": true
         },
@@ -235,7 +235,7 @@
           "caption": "Type the Unique Taxpayer Reference.",
           "headline": "Enter the UTR",
           "keyWord": "UTR",
-          "instruction": "Enter the Tax reference (Unique Taxpayer Reference)."
+          "instruction": "Enter the Tax reference."
         },
         {
           "action": "fill",
@@ -504,9 +504,21 @@
       "still": true,
       "steps": [
         {
+          "action": "click",
+          "target": "#foldAllowances > summary"
+        },
+        {
+          "action": "click",
+          "target": "#foldAllowanceClass1 > summary"
+        },
+        {
           "action": "fill",
           "target": "#annualInvestmentAllowance",
           "value": "12000"
+        },
+        {
+          "action": "click",
+          "target": "#foldAllowanceClass2 > summary"
         },
         {
           "action": "point",

@@ -134,6 +134,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC: use when a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
     - [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS: use when HMRC's Software Developers Support Team sends Corporation Tax test scenarios whose figures must be filed by the product's own builder to TPVS or ETS and the XML sent back, or a case must show which CT600 content the product refuses.
     - [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live: use when a company's own return, built from its diya-gl book, must be checked by HMRC's live Transaction Engine against the live rules and the company's records (rule 1610, the period HMRC holds) before it is filed, without filing it.
+    - [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for) Ask HMRC for the answer to a Company Tax Return no page is waiting for: use when a CT600 sent to HMRC's Transaction Engine still waits for its final answer and no CT600 page or Check now asks for it.
   - [Filing infrastructure](#filing-infrastructure-ch)
     - [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions: use when a filing (office address, email address, accounts) needs a Companies House transaction created, read or updated.
     - [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout: use when any outbound Companies House API call needs a bounded wait instead of hanging.
@@ -1036,7 +1037,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-17 Trace and secure client requests
 
 - **Use when:** a fetch needs a W3C traceparent and request id stamped on it, or a random value for OAuth state.
-- **Does:** correlation-utils.js generates and stores a W3C traceparent and an x-request-id per session. It installs a window.fetch wrapper that stamps both onto same-origin requests. crypto-utils.js supplies the underlying random values, used both for that tracing and for the OAuth state parameter in the login flow.
+- **Does:** correlation-utils.js keeps one W3C trace id per session and stamps each same-origin request, through a window.fetch wrapper, with a traceparent under that trace id with its own parent id, and a fresh x-request-id. crypto-utils.js supplies the underlying random values, used both for that tracing and for the OAuth state parameter in the login flow.
 - **Run:** no command; see Does and Entry
 - **Entry:** `web/public/lib/utils/correlation-utils.js:installCorrelationInterceptor`; `web/public/lib/utils/crypto-utils.js:generateRandomState`
 - **Files:** web/public/lib/utils/correlation-utils.js, web/public/lib/utils/crypto-utils.js
@@ -1614,7 +1615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in · [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House · [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
-- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS · [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live
+- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS · [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live · [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for) Ask HMRC for the answer to a Company Tax Return no page is waiting for
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
 - [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
@@ -1799,6 +1800,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
 - [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live) Send a company's own Company Tax Return to HMRC as a test in live
+- [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for) Ask HMRC for the answer to a Company Tax Return no page is waiting for
 <!-- /generated:group company-tax-return-filing-ch -->
 
 #### CH-15 File a Company Tax Return with HMRC
@@ -1830,6 +1832,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/lib/testInLiveCt600.js, scripts/lib/etsCt600.js, scripts/hmrc-tpvs-ct600.js, app/unit-tests/scripts/testInLiveCt600.test.js, app/unit-tests/scripts/etsCt600.test.js
 - **Keywords:** test in live, TIL, HMRC-CT-CT600-TIL, CT600, corporation tax, live transaction engine, government gateway, rule 1610, files nothing
 - **Related:** CH-19
+
+#### CH-28 Ask HMRC for the answer to a Company Tax Return no page is waiting for
+
+- **Use when:** a CT600 sent to HMRC's Transaction Engine still waits for its final answer and no CT600 page or Check now asks for it.
+- **Does:** hmrcCtReturnStatusCheck.js runs every 15 minutes. It reads each pending return's marker with one Query on the hmrc-ct-pending partition of the Companies House async-requests table, opens the filer's sealed sub, and runs the page's poll (pollCtSubmission), which keeps to HMRC's poll interval and writes the receipt, the hmrc-ct-return-accepted event and the token charge. A return unanswered 30 days after it was sent is recorded with the status NO_ANSWER. The marker goes once the return has its final answer.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/hmrc/hmrcCtReturnStatusCheck.js:handler`; `app/services/hmrcCtPendingReturnCheck.js:checkPendingCtReturns`
+- **Files:** app/functions/hmrc/hmrcCtReturnStatusCheck.js, app/services/hmrcCtPendingReturnCheck.js, app/data/dynamoDbCtPendingReturnRepository.js, app/services/hmrcCtSubmissionStatus.js, app/unit-tests/functions/hmrcCtReturnStatusCheck.test.js, app/unit-tests/services/hmrcCtPendingReturnCheck.test.js, app/unit-tests/data/dynamoDbCtPendingReturnRepository.test.js
+- **Keywords:** company tax return, ct600, transaction engine, scheduled poll, pending return, no answer, scheduled lambda
+- **Related:** CH-21
 
 ### Filing infrastructure (CH)
 
@@ -7766,7 +7778,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
 - company register: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
-- company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for)
 - company watch list: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - comparatives: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - compare prices: [SITE-34](#site-34-check-the-compared-prices-each-month)
@@ -7894,7 +7906,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
-- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live)
+- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [CH-27](#ch-27-send-a-companys-own-company-tax-return-to-hmrc-as-a-test-in-live), [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for)
 - ct600 due date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
@@ -8928,6 +8940,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - nightly publish: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - nightly pull: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - nino: [HMRC-09](#hmrc-09-retrieve-itsa-business-details), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
+- no answer: [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for)
 - no changes: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
 - no consent needed: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
@@ -9109,6 +9122,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - penalty points: [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - pending: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - pending filing: [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending)
+- pending return: [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for)
 - penetration report: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - penetration test: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - per-account synthesis: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
@@ -9538,7 +9552,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scenes to record: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - scheduled alert: [OPS-37](#ops-37-check-https-certificate-expiry)
 - scheduled check: [OPS-32](#ops-32-detect-cloudformation-drift)
-- scheduled lambda: [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
+- scheduled lambda: [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for), [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
+- scheduled poll: [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for)
 - scheduled pr: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - scheduled query: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - scheduled scan: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
@@ -9946,7 +9961,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - trailing window: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - training video: [DEV-40](#dev-40-record-a-product-demo-video)
 - transaction: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-09](#ch-09-query-and-submit-document-transactions)
-- transaction engine: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- transaction engine: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-28](#ch-28-ask-hmrc-for-the-answer-to-a-company-tax-return-no-page-is-waiting-for)
 - transaction lifecycle: [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - transactional email: [SITE-27](#site-27-email-the-customer-after-a-key-event)

@@ -136,25 +136,11 @@ function isOperatorOnly(bundleIds) {
 }
 
 /**
- * Whether the catalogue opens an activity to an operator's own preview in this environment: its
- * `operatorPreviewEnvironments` names the environment. The server holds the same rule in
- * app/lib/previewFeatures.js.
- * @param {object} activity - An activity entry from the parsed catalog
- * @param {string|null} environmentName - The current environment name
- * @returns {boolean}
- */
-export function opensByOperatorPreview(activity, environmentName) {
-  return Array.isArray(activity?.operatorPreviewEnvironments) && activity.operatorPreviewEnvironments.includes(environmentName);
-}
-
-/**
  * Whether the catalogue shows an activity to this person: listed in the environment, or shown by
  * preview features, and not switched off by the person's own settings. An activity may name an
  * account setting in `accountSetting` (a setting that is false hides it), and an operator who
  * turned operator features off does not see an activity that only the operator bundle serves.
  * An activity that names `previewEnvironments` is shown under preview features only in those environments.
- * Where an activity's `operatorPreviewEnvironments` names the environment, it shows only to an
- * operator, with operator features on, whose stored preview features setting is on.
  * @param {object} activity - An activity entry from the parsed catalog
  * @param {string|null} environmentName - The current environment name
  * @param {{preview: boolean, operatorFeatures: boolean, operator: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
@@ -163,9 +149,6 @@ export function opensByOperatorPreview(activity, environmentName) {
 export function isActivityShown(activity, environmentName, viewer) {
   if (activity?.accountSetting && viewer?.account?.[activity.accountSetting] === false) return false;
   if (viewer?.operatorFeatures === false && isOperatorOnly(activity?.bundles)) return false;
-  if (opensByOperatorPreview(activity, environmentName)) {
-    return viewer?.operator === true && viewer?.operatorFeatures !== false && viewer?.account?.previewFeatures === true;
-  }
   if (viewer?.preview === true && Array.isArray(activity?.previewEnvironments)) {
     return typeof environmentName === "string" && activity.previewEnvironments.includes(environmentName);
   }
@@ -198,12 +181,19 @@ export function activityPagePath(activity) {
   return activity?.paths?.find((entry) => entry.includes(".html")) ?? null;
 }
 
+// The Company Tax Return and the joint filing file with HMRC, though their page sits under
+// companies-house/, so they take their group by id and keep their page's path.
+const CORPORATION_TAX_ACTIVITY_IDS = ["file-company-tax-return", "file-company-tax-return-with-accounts"];
+
 /**
- * The home page group of an activity, taken from the directory of its page path.
- * @param {string} pagePath - The path from activityPagePath
- * @returns {"VAT"|"Income Tax"|"Companies House"|"Passes"|"More"}
+ * The home page group of an activity: Corporation Tax for the Company Tax Return activities, and
+ * otherwise the group of the directory of its page path.
+ * @param {object} activity - An activity entry from the parsed catalog, with a page
+ * @returns {"VAT"|"Income Tax"|"Corporation Tax"|"Companies House"|"Passes"|"More"}
  */
-export function activityArea(pagePath) {
+export function activityArea(activity) {
+  if (CORPORATION_TAX_ACTIVITY_IDS.includes(activity.id)) return "Corporation Tax";
+  const pagePath = activityPagePath(activity);
   if (pagePath.startsWith("hmrc/vat")) return "VAT";
   if (pagePath.startsWith("hmrc/itsa")) return "Income Tax";
   if (pagePath.startsWith("companies-house")) return "Companies House";
@@ -214,6 +204,7 @@ export function activityArea(pagePath) {
 const AREA_NAMES_CY = {
   "VAT": "TAW",
   "Income Tax": "Treth Incwm",
+  "Corporation Tax": "Treth Gorfforaeth",
   "Companies House": "Tŷ'r Cwmnïau",
   "Passes": "Tocynnau",
   "More": "Rhagor",

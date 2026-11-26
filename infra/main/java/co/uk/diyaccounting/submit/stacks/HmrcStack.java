@@ -2669,8 +2669,10 @@ public class HmrcStack extends Stack {
         receiptsTable.grant(this.receiptGetLambda, "dynamodb:GetItem", "dynamodb:Query");
         // Read-only: confirms a clientId query parameter names one of the caller's own clients.
         practiceClientsTable.grant(this.receiptGetLambda, "dynamodb:GetItem");
-        // The listing queries the caller's own partition for Companies House filings in progress.
-        companiesHouseAccountsAsyncRequestsTable.grant(this.receiptGetLambda, "dynamodb:Query");
+        // The listing queries the caller's own partition for Companies House filings and Company Tax
+        // Returns in progress, and reads by key which pending filings the presenter poll asks about.
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.receiptGetLambda, "dynamodb:Query", "dynamodb:BatchGetItem");
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());

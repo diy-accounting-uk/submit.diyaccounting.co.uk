@@ -16,6 +16,7 @@ const siteText = (id, english, values) =>
 
 import {
   ACCOUNTS_REGIMES,
+  ACCOUNTS_REGIME_QUESTION,
   ACCOUNTS_TEXT_FIELDS,
   BALANCE_SHEET_FIELDS,
   CT600_BOX_ROWS,
@@ -24,33 +25,38 @@ import {
   FIRST_PERIOD_START_FIELD,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
+  LOAN_ROW_FIELDS,
   MICRO_BALANCE_SHEET_FIELDS,
   MICRO_PROFIT_AND_LOSS_FIELDS,
   MICRO_STATEMENT_FIELD,
+  PAGE_QUESTION_FIELDS,
   PROFIT_AND_LOSS_FIELDS,
+  REPAYMENT_ROW_FIELDS,
+  SEND_TO_HMRC_ONLY_HINT,
   SECTIONS,
   STATEMENT_FIELDS,
-  TEXT_BOXES,
   accountsFromValues,
   balanceSheetId,
   PER_PERIOD_FIELD_IDS,
   PER_PERIOD_LOAN_QUESTION_IDS,
   LONG_PERIOD_DONATIONS_LABEL,
   boxChangeTarget,
-  boxRow,
   lineChangeTarget,
   longPeriodOf,
   periodFieldId,
   secondPeriodField,
+  SECOND_PERIOD_SUFFIX,
   ct600RequestFromValues,
   figuresFromValues,
+  applyFormEntries,
   financialYearOf,
   formProblems,
-  guideUrl,
   loanId,
   loanRowNumbers,
   microId,
   noteId,
+  noteSheetCell,
+  parsePounds,
   profitAndLossId,
   regimeOf,
   repaymentId,
@@ -59,7 +65,28 @@ import {
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
 import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts.js";
+import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
+import { ct600RecordHtml } from "../lib/filing-record.js";
+import { addSectionVideos } from "../lib/section-video.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
+import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
+import {
+  carryForwardEntries,
+  lastFiledReturn,
+  lastYearOfFiledAccounts,
+  lastYearOfRegisterAccounts,
+  priorYearEntries,
+} from "../lib/ct600-carry-forward.js";
+import {
+  KEEP_DAYS_CHOICES,
+  deleteAllDrafts,
+  deleteDraft,
+  draftSaver,
+  keepDays,
+  loadDraft,
+  saveDraft,
+  setKeepDays,
+} from "../lib/form-draft.js";
 import {
   DEFAULT_AGENT_STATUS,
   agentRequestFields,
@@ -81,10 +108,13 @@ const PLACEHOLDER_TEXT = "Placeholder";
 // Each computation line in the order HMRC's computation prints it: a deduction shows in
 // brackets, a subtotal has a rule above it and the total a double rule below it.
 const COMPUTATION_LINES = [
-  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss per the accounts") },
+  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss before tax per the accounts") },
   {
     field: "nonTradingLoanRelationshipCredits",
-    meaning: siteText("ch.ct.line-loan-credits", "Less: non-trading loan relationship credits"),
+    meaning: siteText(
+      "ch.ct.line-loan-credits",
+      "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
+    ),
     deduction: true,
   },
   { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Add: depreciation") },
@@ -103,7 +133,7 @@ const COMPUTATION_LINES = [
     style: "subtotal",
   },
   { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
-  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted profit"), style: "total" },
+  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted trading profit (box 155)"), style: "total" },
 ];
 
 const RETURN_TO_REVIEW = siteText("ch.ct.return-to-review", "Return to the review");
@@ -238,25 +268,19 @@ function amountCell(cell, text, style) {
 
 // --- The form -------------------------------------------------------------------------------
 
-function guideAnchorOf(field) {
-  return field.box ? boxRow(field.box)?.anchor : undefined;
+// The note under a field's label, and under it the disclosure of the spreadsheet cells. A second
+// period's column repeats neither the link nor the disclosure's pictures, so it carries the hint only.
+function hintOf(field) {
+  if (!hasRegisterEntry(field))
+    return create("p", { id: `${field.id}-hint`, class: "hint", ...(field.hint ? {} : { hidden: "" }) }, field.hint ?? "");
+  if (field.id.endsWith(SECOND_PERIOD_SUFFIX)) return create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
+  const fragment = document.createDocumentFragment();
+  fragment.append(noteOf(field), sourceDisclosure(field));
+  return fragment;
 }
 
-function hintOf(field) {
-  const hint = create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
-  const anchor = guideAnchorOf(field);
-  if (!field.hint && !anchor) hint.hidden = true;
-  if (anchor) {
-    const link = create(
-      "a",
-      { href: guideUrl(anchor), target: "_blank", rel: "noopener" },
-      siteText("ch.ct.guide-link", "Company Tax Return guide"),
-    );
-    // GOV.UK's guide is in English only, so a Welsh reader is told before following the link.
-    const inEnglish = window.siteLanguage?.chrome?.() === "cy" ? [" ", create("span", { class: "lang-mark" }, "(yn Saesneg)")] : [];
-    hint.append(field.hint ? " " : "", link, ...inEnglish, ".");
-  }
-  return hint;
+function labelOf(field) {
+  return hasRegisterEntry(field) ? labelWithReference(field) : field.label;
 }
 
 function inputFor(field) {
@@ -292,7 +316,7 @@ function textGroup(field) {
   return create(
     "div",
     { class: "form-group" },
-    create("label", { for: field.id }, field.label),
+    create("label", { for: field.id }, labelOf(field)),
     hintOf(field),
     errorHost(field.id),
     inputFor(field),
@@ -317,12 +341,11 @@ function choiceGroup(field) {
       }),
       create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}` }, text),
     );
-  const hint = field.hint ? hintOf(field) : create("p", { id: `${field.id}-hint`, class: "hint" });
   return create(
     "div",
     { class: "form-group" },
-    create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
-    hint,
+    create("p", { id: field.id, class: "field-label", tabindex: "-1" }, labelOf(field)),
+    hintOf(field),
     errorHost(field.id),
     radio("no", siteText("ch.ct.no", "No"), field.default !== "yes"),
     radio("yes", siteText("ch.ct.yes", "Yes"), field.default === "yes"),
@@ -335,7 +358,7 @@ function datesGroup(field) {
   return create(
     "div",
     { "class": "form-group", "id": field.id, "role": "group", "aria-labelledby": `${field.id}-label`, "tabindex": "-1" },
-    create("p", { id: `${field.id}-label`, class: "field-label" }, field.label),
+    create("p", { id: `${field.id}-label`, class: "field-label" }, labelOf(field)),
     hintOf(field),
     errorHost(field.id),
     dateField("periodStart", siteText("ch.ct.period-start", "Period start")),
@@ -343,19 +366,31 @@ function datesGroup(field) {
   );
 }
 
-function checkboxGroup(id, label, target = id) {
+function checkboxGroup(field, target = field.id) {
+  const { id } = field;
+  const registered = hasRegisterEntry(field);
   return create(
     "div",
     { class: "form-group" },
     errorHost(target),
-    choiceRow(create("input", { "type": "checkbox", id, "name": id, "data-error-target": target }), create("label", { for: id }, label)),
+    choiceRow(
+      create("input", {
+        "type": "checkbox",
+        id,
+        "name": id,
+        "data-error-target": target,
+        ...(registered ? { "aria-describedby": `${id}-hint` } : {}),
+      }),
+      create("label", { for: id }, labelOf(field)),
+    ),
+    ...(registered ? [hintOf(field)] : []),
   );
 }
 
 function fieldGroup(field) {
   if (field.type === "choice") return choiceGroup(field);
   if (field.type === "dates") return datesGroup(field);
-  if (field.type === "checkbox") return checkboxGroup(field.id, field.label);
+  if (field.type === "checkbox") return checkboxGroup(field);
   return textGroup(field);
 }
 
@@ -391,9 +426,17 @@ function pairedFieldGroup(field) {
 
 // A ledger: one row per line of the accounts, one column per year or movement. Every input
 // carries its full name in a hidden label, so a screen reader hears "Turnover, last year".
-function ledgerCell(column, cell) {
+// A cell with a start holds it as its value and its default, so a fill from a book or the register
+// counts it as holding no figure of its own.
+function ledgerCell(column, cell, describedBy) {
   const input = inputFor({ id: cell.id, type: "whole-pounds" });
-  input.querySelector("input").removeAttribute("aria-describedby");
+  const field = input.querySelector("input");
+  if (describedBy) field.setAttribute("aria-describedby", describedBy);
+  else field.removeAttribute("aria-describedby");
+  if (cell.start !== undefined) {
+    field.setAttribute("value", cell.start);
+    field.value = cell.start;
+  }
   return create(
     "td",
     { "class": ["ledger__figure", column.className].filter(Boolean).join(" "), "data-column": column.title },
@@ -411,14 +454,19 @@ function ledger({ caption, columns, rows, className }) {
       create("th", { scope: "col", class: ["ledger__figure", column.className].filter(Boolean).join(" ") }, column.title),
     ),
   );
-  const body = rows.map((row) =>
+  // A line's note and disclosure sit in a full-width row under it, so the row heading a screen
+  // reader announces with each figure stays the label alone; the note describes the figures.
+  const body = rows.flatMap((row) => [
     create(
       "tr",
       {},
       create("th", { scope: "row" }, row.label, ...row.cells.map((cell) => errorHost(cell.id))),
-      ...columns.map((column, index) => ledgerCell(column, row.cells[index])),
+      ...columns.map((column, index) => ledgerCell(column, row.cells[index], row.noteId)),
     ),
-  );
+    ...(row.detail
+      ? [create("tr", { class: "ledger__detail" }, create("td", { colspan: String(columns.length + 1) }, ...row.detail))]
+      : []),
+  ]);
   return create(
     "table",
     { class: ["ledger", className].filter(Boolean).join(" ") },
@@ -438,15 +486,21 @@ const YEAR_COLUMNS = [
   },
 ];
 
+// An accounts line's row heading: its label led by its reference, its note and its disclosure.
+function lineDetail(line, id) {
+  return { label: labelWithReference(line), detail: [noteOf(line, id), sourceDisclosure(line, { id })], noteId: `${id}-hint` };
+}
+
 function yearLedger(fields, idOf) {
   return ledger({
     className: "ledger--years ledger--one-year",
     columns: YEAR_COLUMNS,
-    rows: fields.map(([field, label]) => ({
-      label,
+    rows: fields.map((line) => ({
+      ...lineDetail(line, idOf("current", line.id)),
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
-        id: idOf(key, field),
-        label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+        id: idOf(key, line.id),
+        label: siteText("ch.ct.cell-label", "{label}, {when}", { label: line.label, when }),
+        start: "0",
       })),
     })),
   });
@@ -460,32 +514,66 @@ const NOTE_ROWS = [
   [siteText("ch.ct.note-disposals", "Taken out on disposals"), "disposals", "depreciationOnDisposals"],
 ];
 
-function noteLedger(className, title) {
-  const labelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(([candidate]) => candidate === field)[1]}`;
-  return ledger({
-    caption: title,
-    columns: NOTE_COLUMNS,
-    rows: NOTE_ROWS.map(([label, ...fields]) => ({
-      label,
-      cells: fields.map((field) => ({ id: noteId(className, field), label: labelOf(field) })),
-    })),
-  });
+function noteLedger(assetClass) {
+  const { id: className, label: title } = assetClass;
+  const cellLabelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(({ id: candidate }) => candidate === field).label}`;
+  const id = `note${className}`;
+  return create(
+    "div",
+    { class: "note-class" },
+    ledger({
+      caption: labelWithReference(assetClass),
+      columns: NOTE_COLUMNS,
+      rows: NOTE_ROWS.map(([label, ...fields]) => ({
+        label,
+        cells: fields.map((field) => ({ id: noteId(className, field), label: cellLabelOf(field) })),
+      })),
+    }),
+    noteOf(assetClass, id),
+    sourceDisclosure(assetClass, {
+      id,
+      rows: FIXED_ASSET_FIELDS.map((field) => ({ title: field.label, value: noteSheetCell(className, field.id) })),
+    }),
+  );
 }
 
-function accountsTextGroup({ id, label, type }) {
+function accountsTextGroup(field) {
+  const { id, type } = field;
   if (type === "textarea") {
     return create(
       "div",
       { class: "form-group" },
-      create("label", { for: id }, label),
+      create("label", { for: id }, labelOf(field)),
+      hintOf(field),
       errorHost(id),
-      create("textarea", { id, "name": id, "rows": "3", "data-error-target": id }),
+      create("textarea", { id, "name": id, "rows": "3", "data-error-target": id, "aria-describedby": `${id}-hint` }),
     );
   }
-  return textGroup({ id, label, type, hint: "" });
+  const group = textGroup(field);
+  if (id === "directorsAdvanceTerms") {
+    group
+      .querySelector(`#${id}-hint`)
+      .replaceChildren(
+        siteText(
+          "ch.ct.advance-terms-hint",
+          "This is a common arrangement. Change it to the terms the company and the director agreed: the interest rate, any security, and when the advance is repaid. ",
+        ),
+        create("a", { href: SECTION_413_URL, target: "_blank", rel: "noopener" }, siteText("ch.ct.advance-terms-link", "Section 413")),
+        siteText("ch.ct.advance-terms-needs", " needs all three."),
+      );
+  }
+  if (id === "averageEmployees") {
+    const input = group.querySelector("input");
+    input.setAttribute("value", "0");
+    input.value = "0";
+  }
+  return group;
 }
 
-const SEND_TO_HMRC_ONLY_HINT = siteText("ch.ct.send-hmrc-only-hint", "The accounts go to HMRC with the Company Tax Return.");
+const DONATIONS_FIELD = CT600_FORM_FIELDS.find((field) => field.id === "donations");
+const QUESTION = Object.fromEntries(PAGE_QUESTION_FIELDS.map((field) => [field.id, field]));
+const LOAN_FIELD = Object.fromEntries(LOAN_ROW_FIELDS.map((field) => [field.id, field]));
+const REPAYMENT_FIELD = Object.fromEntries(REPAYMENT_ROW_FIELDS.map((field) => [field.id, field]));
 const SEND_TO_BOTH_HINT = siteText(
   "ch.ct.send-both-hint",
   "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.",
@@ -514,12 +602,8 @@ function sendToSection() {
     create(
       "div",
       { class: "form-group" },
-      create(
-        "p",
-        { id: "sendTo", class: "field-label", tabindex: "-1" },
-        siteText("ch.ct.where-sending", "Where are you sending these accounts?"),
-      ),
-      create("p", { id: "sendTo-hint", class: "hint" }, SEND_TO_HMRC_ONLY_HINT),
+      create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, labelOf(QUESTION.sendTo)),
+      hintOf(QUESTION.sendTo),
       errorHost("sendTo"),
       radio("sendToHmrc", "hmrc", siteText("ch.ct.send-to-hmrc", "To HMRC with the Company Tax Return"), true),
       radio("sendToBoth", "both", siteText("ch.ct.send-to-both", "To Companies House and to HMRC with the Company Tax Return"), false),
@@ -603,19 +687,8 @@ function companiesHouseCopyGroup() {
   return create(
     "div",
     { id: "companiesHouseCopyGroup", class: "form-group", hidden: "" },
-    create(
-      "p",
-      { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" },
-      siteText("ch.ct.which-copy", "Which copy goes to Companies House?"),
-    ),
-    create(
-      "p",
-      { id: "companiesHouseCopy-hint", class: "hint" },
-      siteText(
-        "ch.ct.which-copy-hint",
-        "Companies House publishes what it receives. Filleted accounts leave the profit and loss account and the directors' report out of the public copy. HMRC gets the full accounts either way.",
-      ),
-    ),
+    create("p", { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" }, labelOf(QUESTION.companiesHouseCopy)),
+    hintOf(QUESTION.companiesHouseCopy),
     errorHost("companiesHouseCopy"),
     radio("copyFull", "full", siteText("ch.ct.full-accounts", "Full accounts"), true),
     radio("copyFilleted", "filleted", siteText("ch.ct.filleted-accounts", "Filleted accounts"), false),
@@ -638,19 +711,8 @@ function regimeGroup() {
   return create(
     "div",
     { class: "form-group" },
-    create(
-      "p",
-      { id: "accountsRegime", class: "field-label", tabindex: "-1" },
-      siteText("ch.ct.which-accounts", "Which accounts does the company prepare?"),
-    ),
-    create(
-      "p",
-      { id: "accountsRegime-hint", class: "hint" },
-      siteText(
-        "ch.ct.which-accounts-hint",
-        "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
-      ),
-    ),
+    create("p", { id: "accountsRegime", class: "field-label", tabindex: "-1" }, labelOf(ACCOUNTS_REGIME_QUESTION)),
+    hintOf(ACCOUNTS_REGIME_QUESTION),
     errorHost("accountsRegime"),
     ...ACCOUNTS_REGIMES.map(({ value, id, label }) =>
       choiceRow(
@@ -677,11 +739,12 @@ function microLedger(fields, className) {
   return ledger({
     className,
     columns: YEAR_COLUMNS,
-    rows: fields.map(([field, label]) => ({
-      label,
+    rows: fields.map((line) => ({
+      ...lineDetail(line, microId("current", line.id)),
       cells: YEAR_COLUMNS.map(({ key, when }) => ({
-        id: microId(key, field),
-        label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+        id: microId(key, line.id),
+        label: siteText("ch.ct.cell-label", "{label}, {when}", { label: line.label, when }),
+        start: "0",
       })),
     })),
   });
@@ -700,7 +763,7 @@ function accountsSection() {
     regimeGroup(),
     companiesHouseCopyGroup(),
     companiesHouseMicroNote(),
-    checkboxGroup("includeComparatives", siteText("ch.ct.include-comparatives", "Include last year's figures")),
+    checkboxGroup(QUESTION.includeComparatives),
     create("p", { "id": "firstAccountsLine", "class": "hint", "aria-live": "polite" }),
     forRegime(
       "small",
@@ -709,11 +772,11 @@ function accountsSection() {
       create("h4", {}, siteText("ch.ct.balance-sheet", "Balance sheet")),
       yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
       create("h4", {}, siteText("ch.ct.fixed-assets-note", "Tangible fixed assets note")),
-      checkboxGroup("includeFixedAssetNote", siteText("ch.ct.include-fixed-assets-note", "Include the tangible fixed assets note")),
+      checkboxGroup(QUESTION.includeFixedAssetNote),
       create(
         "div",
         { id: "fixedAssetNoteFields", style: "display: none" },
-        ...FIXED_ASSET_CLASSES.map(([className, title]) => noteLedger(className, title)),
+        ...FIXED_ASSET_CLASSES.map((assetClass) => noteLedger(assetClass)),
       ),
     ),
     forRegime(
@@ -758,6 +821,7 @@ function workedTaxPanel() {
       siteText("ch.ct.worked-empty", "Fill in the period and the accounts and the tax appears here."),
     ),
     create("dl", { id: "workedTaxRows", class: "worked-tax__list" }),
+    create("div", { id: "workedTaxSteps" }),
     create("div", { id: "workedTaxLong", class: "worked-tax__returns", hidden: "" }),
   );
 }
@@ -784,17 +848,82 @@ const ALLOWANCE_CLASSES = [
   },
 ];
 
-// Each class gets a heading and its boxes side by side where the width allows, so the section reads as six groups.
+// Each class folds under its name with its boxes side by side where the width allows, and the whole
+// section folds too: most companies claim none of them.
 function allowanceClasses(fields) {
   const byId = new Map(
     fields.map((group, index) => [CT600_FORM_FIELDS.filter((field) => field.section === "allowances")[index].id, group]),
   );
-  const grouped = ALLOWANCE_CLASSES.flatMap(({ title, ids }) => [
-    create("h4", {}, title),
-    create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id))),
-  ]);
+  const grouped = ALLOWANCE_CLASSES.map(({ title, ids }, index) =>
+    fold(`foldAllowanceClass${index + 1}`, title, [create("div", { class: "allowance-grid" }, ...ids.map((id) => byId.get(id)))], {
+      heading: "h4",
+    }),
+  );
   const ungrouped = [...byId].filter(([id]) => !ALLOWANCE_CLASSES.some(({ ids }) => ids.includes(id))).map(([, group]) => group);
-  return [...grouped, ...ungrouped];
+  return [fold("foldAllowances", SECTION_TITLE.allowances, [...grouped, ...ungrouped])];
+}
+
+// --- Folds: a block most returns leave at 0, closed until it holds an answer ----------------------
+
+const SECTION_TITLE = Object.fromEntries(SECTIONS.map(({ id, title }) => [id, title]));
+const TRADING_LOSS_IDS = [
+  "lossesBroughtForward",
+  "lossAgainstTotalProfits",
+  "lossesBroughtForwardAgainstTotalProfits",
+  "lossCarriedBack",
+  "priorPeriodChargeableProfits",
+  "lossOutsideUk",
+];
+const OTHER_INCOME_IDS = ["frankedInvestmentIncome"];
+
+// A fold's summary reads "<title>, All 0" to a screen reader; a fold named as a heading (an allowance
+// class) keeps its title as that heading, so heading navigation still finds it.
+function fold(id, title, children, { heading } = {}) {
+  const titleNode = create(heading ?? "span", { class: "form-fold__title" }, title);
+  return create(
+    "details",
+    { id, "class": "form-fold", "data-fold": "" },
+    create("summary", {}, titleNode, create("span", { class: "visually-hidden" }, ","), " ", create("span", { class: "form-fold__count" })),
+    ...children,
+  );
+}
+
+// An answer other than the box's start: a figure other than 0 however it is written ("0.00", "£0"),
+// text other than its start, or a choice or tick changed.
+function answered(control) {
+  if (control.disabled) return false;
+  if (control.type === "radio" || control.type === "checkbox") return control.checked !== control.defaultChecked;
+  const value = control.value.trim();
+  if (value === "" || value === control.defaultValue) return false;
+  const amount = parsePounds(value);
+  return amount === null || amount !== 0;
+}
+
+// Each fold says "All 0" or how many of its boxes hold an answer, and opens itself when that count
+// grows (a value typed, a book or a file filling it, saved answers restored into it), and stays open
+// while one of its boxes shows a problem. A fold the reader closed stays closed until one of those happens.
+function updateFolds() {
+  const shown = new Set(state.problems.filter((problem) => state.touched.has(problem.target)).map((problem) => problem.target));
+  for (const details of element("formSections").querySelectorAll("details[data-fold]")) {
+    const showsProblem = [...details.querySelectorAll("[data-error-target]")].some((control) => shown.has(control.dataset.errorTarget));
+    if (showsProblem) details.open = true;
+    const targets = new Set(
+      [...details.querySelectorAll("input[data-error-target], select[data-error-target]")]
+        .filter((control) => !control.closest("[hidden]") && answered(control))
+        .map((control) => control.dataset.errorTarget),
+    );
+    const count = targets.size;
+    let countText = siteText("ch.ct.fold-none", "All 0");
+    if (count === 1) countText = siteText("ch.ct.fold-one", "1 answered");
+    if (count > 1) countText = siteText("ch.ct.fold-many", "{count} answered", { count });
+    details.querySelector(".form-fold__count").textContent = countText;
+    if (count > Number(details.dataset.count ?? 0)) details.open = true;
+    details.dataset.count = String(count);
+  }
+}
+
+function openFoldsAround(node) {
+  for (let fold = node?.closest("details"); fold; fold = fold.parentElement?.closest("details")) fold.open = true;
 }
 
 // --- Loans to participators: rows the customer adds and removes -------------------------------
@@ -804,10 +933,6 @@ function allowanceClasses(fields) {
 const loanRows = { 1: 1, 2: 1 };
 const repaymentRows = { 1: 1, 2: 1 };
 const PARTS = [1, 2];
-
-function moneyGroup(id, label, hint) {
-  return textGroup({ id, label, type: "whole-pounds", hint });
-}
 
 function removeButton(kind, row, part, label) {
   return create(
@@ -825,36 +950,14 @@ function loanRow(row, part) {
   const group = create(
     "div",
     { "class": "loan-row", "data-loan-row": String(row), "data-part": String(part) },
-    textGroup({
-      id: loanId("Name", row, part),
-      label: siteText("ch.ct.loan-name", "Name of participator or associate"),
-      type: "text",
-      maxlength: 56,
-    }),
-    moneyGroup(
-      loanId("Amount", row, part),
-      siteText("ch.ct.loan-amount", "Amount still owed at the end of the period"),
-      siteText("ch.ct.loan-amount-hint", "For example, £12,000"),
-    ),
+    textGroup({ ...LOAN_FIELD.Name, id: loanId("Name", row, part), type: "text", maxlength: 56 }),
+    textGroup({ ...LOAN_FIELD.Amount, id: loanId("Amount", row, part), type: "whole-pounds" }),
     create(
       "div",
       { "class": "loan-row__lent", "data-loan-lent": String(row), "hidden": "" },
-      moneyGroup(
-        loanId("Lent", row, part),
-        siteText("ch.ct.loan-lent", "Of this, the amount lent on or after the rate change"),
-        siteText("ch.ct.loan-lent-hint", "Leave it empty when none was lent after the change"),
-      ),
+      textGroup({ ...LOAN_FIELD.Lent, id: loanId("Lent", row, part), type: "whole-pounds" }),
     ),
-    textGroup({
-      id: loanId("Rate", row, part),
-      label: siteText("ch.ct.loan-rate", "Section 455 rate for this loan, if you want to use another (%)"),
-      type: "text",
-      hint: siteText(
-        "ch.ct.loan-rate-hint",
-        "Leave it empty to use the rate shown with the worked tax. A rate you enter is not checked against the tax data.",
-      ),
-      inputmode: "decimal",
-    }),
+    textGroup({ ...LOAN_FIELD.Rate, id: loanId("Rate", row, part), type: "text", inputmode: "decimal" }),
     removeButton("loan", row, part, siteText("ch.ct.remove-loan", "Remove this loan")),
   );
   registerTargets(group);
@@ -863,28 +966,21 @@ function loanRow(row, part) {
 
 function repaymentRow(row, part) {
   const nameId = repaymentId("Name", row, part);
-  const select = create("select", { "id": nameId, "name": nameId, "data-error-target": nameId });
+  const select = create("select", { "id": nameId, "name": nameId, "data-error-target": nameId, "aria-describedby": `${nameId}-hint` });
   const group = create(
     "div",
     { "class": "loan-row", "data-repayment-row": String(row), "data-part": String(part) },
     create(
       "div",
       { class: "form-group" },
-      create("label", { for: nameId }, siteText("ch.ct.participator", "Participator")),
+      create("label", { for: nameId }, labelOf(REPAYMENT_FIELD.Name)),
+      hintOf({ ...REPAYMENT_FIELD.Name, id: nameId }),
       errorHost(nameId),
       select,
     ),
-    textGroup({ id: repaymentId("Date", row, part), label: siteText("ch.ct.date", "Date"), type: "date" }),
-    moneyGroup(
-      repaymentId("Repaid", row, part),
-      siteText("ch.ct.amount-repaid", "Amount repaid"),
-      siteText("ch.ct.amount-repaid-hint", "Leave it empty when none was repaid"),
-    ),
-    moneyGroup(
-      repaymentId("Released", row, part),
-      siteText("ch.ct.amount-released", "Amount released or written off"),
-      siteText("ch.ct.amount-released-hint", "Leave it empty when none was released or written off"),
-    ),
+    textGroup({ ...REPAYMENT_FIELD.Date, id: repaymentId("Date", row, part), type: "date" }),
+    textGroup({ ...REPAYMENT_FIELD.Repaid, id: repaymentId("Repaid", row, part), type: "whole-pounds" }),
+    textGroup({ ...REPAYMENT_FIELD.Released, id: repaymentId("Released", row, part), type: "whole-pounds" }),
     removeButton("repayment", row, part, siteText("ch.ct.remove-repayment", "Remove this repayment")),
   );
   registerTargets(group);
@@ -1037,15 +1133,7 @@ function growRowsFor(entries) {
 }
 
 function periodStartQuestion() {
-  const group = choiceGroup({
-    id: FIRST_PERIOD_START_FIELD,
-    label: siteText("ch.ct.first-period-start", "Does the first accounting period start on the first day of the accounts?"),
-    hint: siteText(
-      "ch.ct.first-period-start-hint",
-      "Answer Yes when the company's accounting period began on the first day of these accounts. Submit files a long period only from there.",
-    ),
-    default: "yes",
-  });
+  const group = choiceGroup({ ...QUESTION.firstPeriodStart, id: FIRST_PERIOD_START_FIELD, default: "yes" });
   group.id = "firstPeriodStartGroup";
   group.hidden = true;
   return group;
@@ -1070,16 +1158,32 @@ function sectionBody(sectionId) {
     const donationsPaid = pairedFieldGroup(DONATIONS_PAID_FIELD);
     donationsPaid.id = "donationsPaidGroup";
     donationsPaid.hidden = true;
-    return [...fields, donationsPaid];
+    const ids = CT600_FORM_FIELDS.filter((field) => field.section === "reliefs").map((field) => field.id);
+    const groupOf = (id) => fields[ids.indexOf(id)];
+    const open = ids.filter((id) => !TRADING_LOSS_IDS.includes(id) && !OTHER_INCOME_IDS.includes(id));
+    return [
+      ...open.map(groupOf),
+      donationsPaid,
+      fold("foldTradingLosses", siteText("ch.ct.fold-trading-losses", "Trading losses"), TRADING_LOSS_IDS.map(groupOf)),
+      fold("foldOtherIncome", siteText("ch.ct.fold-other-income", "Other income"), OTHER_INCOME_IDS.map(groupOf)),
+    ];
+  }
+  if (sectionId === "payments") {
+    const ids = CT600_FORM_FIELDS.filter((field) => field.section === "payments").map((field) => field.id);
+    const own = fields[ids.indexOf("ownCorporationTax")];
+    return [
+      ...fields.filter((group) => group !== own),
+      fold("foldOwnWorking", siteText("ch.ct.fold-own-working", "Your own working (optional)"), [own]),
+    ];
   }
   if (sectionId === "accounts") return accountsSection();
   if (sectionId === "declaration") {
     return [
       ...fields.slice(0, 2),
       create("h4", {}, siteText("ch.ct.statements", "Statements")),
-      ...STATEMENT_FIELDS.slice(0, 3).map(({ id, label }) => checkboxGroup(id, label)),
-      forRegime("small", checkboxGroup(STATEMENT_FIELDS[3].id, STATEMENT_FIELDS[3].label)),
-      forRegime("micro", checkboxGroup(MICRO_STATEMENT_FIELD.id, MICRO_STATEMENT_FIELD.label)),
+      ...STATEMENT_FIELDS.slice(0, 3).map((field) => checkboxGroup(field)),
+      forRegime("small", checkboxGroup(STATEMENT_FIELDS[3])),
+      forRegime("micro", checkboxGroup(MICRO_STATEMENT_FIELD)),
       create("h4", {}, siteText("ch.ct.declaration", "Declaration")),
       ...fields.slice(2),
     ];
@@ -1098,6 +1202,7 @@ function renderForm() {
     repaymentRows[part] = 1;
   }
   element("formSections").replaceChildren(...sections);
+  addSectionVideos(document);
   state.targets = new Set([...element("formSections").querySelectorAll("[data-error-target]")].map((node) => node.dataset.errorTarget));
   state.targets.add(WORKED_TAX_ID);
   state.touched = new Set();
@@ -1146,6 +1251,297 @@ function toggleSections() {
   element("fixedAssetNoteFields").style.display = element("includeFixedAssetNote").checked ? "block" : "none";
 }
 
+// --- Answers saved in this browser ------------------------------------------------------------
+
+const DRAFT_JOURNEY = "ct600";
+
+function browserStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function signedInSub() {
+  try {
+    return JSON.parse(localStorage.getItem("userInfo") ?? "null")?.sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function draftScope() {
+  return { journey: DRAFT_JOURNEY, sub: signedInSub(), companyNumber: company?.companyNumber };
+}
+
+// Saved one second after the last change, while the return is still being prepared.
+function saveAnswers() {
+  const storage = browserStorage();
+  if (!storage || !company || sending.taxReturnSent) return;
+  const values = readValues();
+  saveDraft(storage, { ...draftScope(), period: { periodStart: values.periodStart, periodEnd: values.periodEnd }, values });
+}
+
+const answersSaver = draftSaver(saveAnswers);
+
+// The filing is accepted: the saved answers have done their work.
+function forgetSavedAnswers() {
+  answersSaver.cancel();
+  const storage = browserStorage();
+  if (storage) deleteDraft(storage, draftScope());
+}
+
+function savedAtText(iso) {
+  const saved = new Date(iso);
+  const pad = (number) => String(number).padStart(2, "0");
+  const day = `${saved.getFullYear()}-${pad(saved.getMonth() + 1)}-${pad(saved.getDate())}`;
+  return siteText("ch.ct.draft-saved-at", "{date} at {time}", {
+    date: longDateText(day),
+    time: `${pad(saved.getHours())}:${pad(saved.getMinutes())}`,
+  });
+}
+
+function draftPeriodText(period) {
+  if (!period?.periodStart || !period?.periodEnd) return siteText("ch.ct.draft-no-period", "with no period entered yet");
+  return siteText("ch.ct.draft-period", "for the period {start} to {end}", {
+    start: longDateText(period.periodStart),
+    end: longDateText(period.periodEnd),
+  });
+}
+
+function restoreNotice(storage, record) {
+  const restore = create(
+    "button",
+    { type: "button", id: "draftRestoreBtn", class: "btn" },
+    siteText("ch.ct.draft-restore", "Restore my answers"),
+  );
+  const discard = create(
+    "button",
+    { type: "button", id: "draftDiscardBtn", class: "secondary-button" },
+    siteText("ch.ct.draft-discard", "Start again"),
+  );
+  restore.addEventListener("click", () => {
+    fillValues(record.values);
+    setDefaults();
+    refresh();
+    element("draftRestore").remove();
+    window.showStatus(siteText("ch.ct.draft-restored", "Your saved answers are back in the form."), "info");
+  });
+  discard.addEventListener("click", () => {
+    deleteDraft(storage, draftScope());
+    element("draftRestore").remove();
+  });
+  return create(
+    "section",
+    { "id": "draftRestore", "class": "form-section", "aria-labelledby": "draftRestoreHeading" },
+    create("h3", { id: "draftRestoreHeading" }, siteText("ch.ct.draft-heading", "Answers saved in this browser")),
+    create(
+      "p",
+      {},
+      siteText("ch.ct.draft-found", "This browser holds answers for this company {period}, saved on {saved}.", {
+        period: draftPeriodText(record.period),
+        saved: savedAtText(record.savedAt),
+      }),
+    ),
+    create("div", { class: "button-row" }, restore, " ", discard),
+  );
+}
+
+function keepChoice(storage) {
+  const select = create("select", { "id": "draftKeepDays", "aria-describedby": "draftKeepDays-hint" });
+  const chosen = keepDays(storage);
+  for (const days of KEEP_DAYS_CHOICES) {
+    const option = create(
+      "option",
+      { value: String(days) },
+      days === 0 ? siteText("ch.ct.draft-keep-none", "Do not keep") : siteText("ch.ct.draft-keep-days", "{days} days", { days }),
+    );
+    if (days === chosen) option.selected = true;
+    select.append(option);
+  }
+  const deleted = create("p", { "id": "draftDeleted", "class": "hint", "aria-live": "polite" });
+  select.addEventListener("change", () => {
+    const days = Number(select.value);
+    setKeepDays(storage, days, { sub: signedInSub() });
+    deleted.textContent = days === 0 ? siteText("ch.ct.draft-none-kept", "Your answers are not kept in this browser.") : "";
+    if (days === 0) element("draftRestore")?.remove();
+  });
+  const deleteAll = create(
+    "button",
+    { type: "button", id: "draftDeleteAllBtn", class: "secondary-button" },
+    siteText("ch.ct.draft-delete-all", "Delete my saved answers"),
+  );
+  deleteAll.addEventListener("click", () => {
+    answersSaver.cancel();
+    deleteAllDrafts(storage, signedInSub());
+    element("draftRestore")?.remove();
+    deleted.textContent = siteText("ch.ct.draft-deleted", "Your saved answers are deleted from this browser.");
+  });
+  return create(
+    "div",
+    { class: "form-group", id: "draftKeep" },
+    create("label", { for: "draftKeepDays" }, siteText("ch.ct.draft-keep-label", "Keep my answers in this browser for")),
+    create(
+      "p",
+      { id: "draftKeepDays-hint", class: "hint" },
+      siteText(
+        "ch.ct.draft-keep-hint",
+        "Your answers are saved as you type, so a closed tab or a new sign-in loses nothing. They are kept only in this browser, never on our servers, and anyone who uses this browser could see them. On a shared computer, choose Do not keep.",
+      ),
+    ),
+    select,
+    " ",
+    deleteAll,
+    deleted,
+  );
+}
+
+// After the company lookup: the choice of how long answers are kept, and the answers saved for
+// this company, if there are any.
+function renderDraftPanel() {
+  const host = element("draftPanel");
+  const storage = browserStorage();
+  if (!storage || !company || !signedInSub()) {
+    host.hidden = true;
+    host.replaceChildren();
+    return;
+  }
+  const record = loadDraft(storage, draftScope());
+  host.replaceChildren(...(record ? [restoreNotice(storage, record)] : []), keepChoice(storage));
+  host.hidden = false;
+}
+
+// --- Starting from last year's return ----------------------------------------------------------
+
+function dayText(isoDate) {
+  return isoDate ? longDateText(String(isoDate).slice(0, 10)) : "";
+}
+
+// The losses last year's return carried forward, worked again from the answers it kept: the last
+// return of a long period of account carries them. Null with the reason when they are not known.
+async function lossesCarriedForwardFrom(record) {
+  const values = record.formRequest?.values;
+  const filedCompany = record.formRequest?.company;
+  if (!values || !filedCompany) return { losses: null, why: "no-answers" };
+  try {
+    await ensureTaxData(values.periodStart, values.periodEnd);
+    const figures = withoutOwnWorking(figuresFromValues(values, filedCompany, undefined));
+    const input = { ...figures, ...placeholdersFor(figures) };
+    const derived = figures.accountingPeriods
+      ? state.bundle.deriveLongPeriodReturns(input, taxDataByYear(), { today: today() }).at(-1)
+      : state.bundle.deriveCt600FromFigures(input, taxDataByYear(), { today: today() });
+    return { losses: derived.losses?.totalCarriedForward ?? 0 };
+  } catch (error) {
+    console.warn("Last year's losses carried forward could not be worked again:", error);
+    return { losses: null, why: "not-worked" };
+  }
+}
+
+// Last year's accounts: those filed with the return, or the company's last accounts on the register
+// when they are for the same period. Null when neither holds them.
+async function lastYearAccountsFor(record, periodEnd) {
+  if (record.filed?.accountsIxbrl) {
+    const mapped = state.bundle.mapIxbrlAccounts(record.filed.accountsIxbrl, { regime: "any" });
+    return { accounts: lastYearOfFiledAccounts(mapped), source: "filed" };
+  }
+  const response = await window.fetchWithIdToken(
+    `/api/v1/companies-house/company/${encodeURIComponent(company.companyNumber)}/last-accounts`,
+    {},
+  );
+  if (!response.ok) return null;
+  const answer = await response.json();
+  if (answer.outcome !== "mapped" || answer.set?.madeUpDate !== periodEnd) return null;
+  return { accounts: lastYearOfRegisterAccounts(answer.accounts), source: "register" };
+}
+
+async function startFromLastYear(listed) {
+  const panel = element("lastYearPanel");
+  const button = element("lastYearStartBtn");
+  button.disabled = true;
+  try {
+    const response = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(listed.name)}`, {});
+    if (!response.ok) throw new Error(`the return could not be read (${response.status})`);
+    const record = { ...(await response.json()), periodEnd: listed.periodEnd };
+    await ensureBundle();
+    const { losses: lossesCarriedForward, why } = await lossesCarriedForwardFrom(record);
+    const lastYear = await lastYearAccountsFor(record, listed.periodEnd);
+    applyFormEntries([...carryForwardEntries(record, { lossesCarriedForward }), ...(lastYear ? priorYearEntries(lastYear.accounts) : [])]);
+    setDefaults();
+    refresh();
+    const said = [
+      siteText(
+        "ch.ct.last-year-started",
+        "Started from your Company Tax Return for {start} to {end}: the period after it, box 326, the trade name, the declarant and the statements as last year, and last year's chargeable profits. Type this year's figures.",
+        { start: dayText(listed.periodStart), end: dayText(listed.periodEnd) },
+      ),
+      why === "no-answers"
+        ? siteText("ch.ct.last-year-no-losses", "That return kept no answers to work its losses from, so box 160 is left for you.")
+        : why === "not-worked"
+          ? siteText(
+              "ch.ct.last-year-losses-not-worked",
+              "Its losses could not be worked again from the answers it kept, so box 160 is left for you.",
+            )
+          : siteText("ch.ct.last-year-losses", "Box 160 is the losses it carried forward."),
+      lastYear?.source === "filed"
+        ? siteText("ch.ct.last-year-accounts-filed", "Last year's accounts figures are those filed with that return.")
+        : lastYear?.source === "register"
+          ? siteText(
+              "ch.ct.last-year-accounts-register",
+              "Last year's accounts figures are the company's accounts on the Companies House register.",
+            )
+          : siteText(
+              "ch.ct.last-year-accounts-none",
+              "Neither that return nor the register holds last year's accounts, so their column is left at 0.",
+            ),
+    ];
+    panel.replaceChildren(create("p", { id: "lastYearStarted" }, said.join(" ")));
+  } catch (error) {
+    button.disabled = false;
+    window.showStatus(
+      siteText("ch.ct.last-year-failed", "Could not start from last year's return: {reason}.", {
+        reason: String(error.message).replace(/\.$/, ""),
+      }),
+      "error",
+    );
+  }
+}
+
+// After the company lookup: when Submit filed the company's last Company Tax Return, the form can
+// start from it.
+async function offerLastYear() {
+  const panel = element("lastYearPanel");
+  panel.hidden = true;
+  panel.replaceChildren();
+  const url = agentClient?.clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(agentClient.clientId)}` : "/api/v1/hmrc/receipt";
+  const response = await window.fetchWithIdToken(url, {}).catch(() => null);
+  if (!response?.ok) return;
+  const listed = lastFiledReturn((await response.json()).receipts, company?.companyNumber);
+  if (!listed) return;
+  const button = create(
+    "button",
+    { type: "button", id: "lastYearStartBtn", class: "btn" },
+    siteText("ch.ct.last-year-start", "Start from last year's return"),
+  );
+  button.addEventListener("click", () => startFromLastYear(listed));
+  panel.replaceChildren(
+    create(
+      "p",
+      {},
+      siteText(
+        "ch.ct.last-year-offer",
+        "Submit filed this company's Company Tax Return for {start} to {end}. This year's return can start from it.",
+        {
+          start: dayText(listed.periodStart),
+          end: dayText(listed.periodEnd),
+        },
+      ),
+    ),
+    button,
+  );
+  panel.hidden = false;
+}
+
 // --- Reading the form -----------------------------------------------------------------------
 
 function readValues() {
@@ -1170,6 +1566,29 @@ function isIsoDate(text) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text ?? "") && !Number.isNaN(Date.parse(text));
 }
 
+// The terms of an advance to a director: a common arrangement while the advance has an amount and
+// the field is empty, until the customer types in it. The amount owed at the end is worked out for
+// micro-entity accounts and is the balance sheet's amount owed by directors for small company ones.
+function followAdvanceTerms(values) {
+  const whole = (id) =>
+    Number(
+      String(values[id] ?? "")
+        .replaceAll(",", "")
+        .replace("£", "")
+        .trim() || 0,
+    );
+  const atEnd =
+    regimeOf(values) === "micro"
+      ? whole("directorsAdvanceAtStart") + whole("directorsAdvanceMade") - whole("directorsAdvanceRepaid")
+      : whole(balanceSheetId("current", "amountsOwedByDirectors"));
+  const next = followedTerms({
+    terms: values.directorsAdvanceTerms,
+    amounts: [values.directorsAdvanceAtStart, values.directorsAdvanceMade, String(atEnd)],
+    typed: state.edited.has("directorsAdvanceTerms"),
+  });
+  if (next !== null) element("directorsAdvanceTerms").value = next;
+}
+
 // Defaults follow what they come from until the customer types in them.
 function setDefaults() {
   const follow = (id, text) => {
@@ -1179,6 +1598,7 @@ function setDefaults() {
   follow("nonTradingLoanRelationshipCredits", Number.isFinite(interest) && interest > 0 ? String(interest) : "0");
   follow("tradeName", element("principalActivity").value.trim());
   const values = readValues();
+  followAdvanceTerms(values);
   if (regimeOf(values) === "micro") {
     follow("depreciation", element(microId("current", "depreciation")).value.trim() || "0");
     return;
@@ -1400,7 +1820,7 @@ function loansWorkedRows(page) {
     rows.push(
       create(
         "div",
-        { class: "worked-tax__row", role: "note" },
+        { "class": "worked-tax__row", "role": "note", "data-warning": "" },
         create("dt", {}, siteText("ch.ct.warning", "Warning")),
         create("dd", {}, warning),
       ),
@@ -1419,6 +1839,26 @@ function workedRow(term, value, hint, id) {
   );
 }
 
+// The boxes a reader checks first stay in view; every other row folds under "How these are worked out".
+const KEY_WORKED_BOXES = new Set(["155", "315", "440", "600"]);
+
+function workedSteps(items, openKey) {
+  const key = items.filter((item) => KEY_WORKED_BOXES.has(item.dataset.box) || "warning" in item.dataset);
+  const steps = items.filter((item) => !key.includes(item));
+  // The panel is built again on each change; the fold itself is kept, so a reader opening it is
+  // not undone by a change that lands between pressing and releasing the button.
+  const details =
+    document.querySelector(`details[data-steps="${openKey}"]`) ??
+    create(
+      "details",
+      { "class": "worked-tax__steps", "data-steps": openKey },
+      create("summary", {}, siteText("ch.ct.worked-steps", "How these are worked out")),
+      create("dl", { class: "worked-tax__list" }),
+    );
+  details.querySelector("dl").replaceChildren(...steps);
+  return { key, details };
+}
+
 // The rows of one return: its adjusted profit, each worked box, the loans page, and the loss carried forward or back.
 function workedItems(derived) {
   const items = [
@@ -1434,13 +1874,13 @@ function workedItems(derived) {
   for (const row of CT600_BOX_ROWS.filter(
     (candidate) => candidate.kind === "worked" && candidate.box in derived.boxes && candidate.box > 145,
   )) {
-    items.push(
-      workedRow(
-        siteText("ch.ct.box-label", "Box {box}: {label}", { box: row.box, label: row.label }),
-        workedValue(row.box, derived.boxes[row.box]),
-        row.rule,
-      ),
+    const item = workedRow(
+      siteText("ch.ct.box-label", "Box {box}: {label}", { box: row.box, label: row.label }),
+      workedValue(row.box, derived.boxes[row.box]),
+      row.rule,
     );
+    item.dataset.box = String(row.box);
+    items.push(item);
   }
   if (derived.ct600a) items.push(...loansWorkedRows(derived.ct600a));
   if (derived.losses.totalCarriedForward > 0) {
@@ -1481,6 +1921,12 @@ function placeholdersFor(figures) {
 }
 
 // Both returns side by side: the days and the split, the limits of each period, and the dates tax and the returns fall due.
+// One return's column: its key boxes in view, its other rows under "How these are worked out".
+function longColumnRows(index, items) {
+  const { key, details } = workedSteps(items, `return${index + 1}`);
+  return [create("dl", { class: "worked-tax__list" }, ...key), details];
+}
+
 function longPeriodWorkedTax(values, derivedReturns, periods) {
   const holder = element("workedTaxLong");
   const wholeDays = periods.days;
@@ -1523,9 +1969,7 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
           end: longDateText(period.periodEnd),
         }),
       ),
-      create(
-        "dl",
-        { class: "worked-tax__list" },
+      ...longColumnRows(index, [
         workedRow(
           siteText("ch.ct.days", "Days in this accounting period"),
           siteText("ch.ct.days-value", "{days} of {whole} days", { days: period.days, whole: wholeDays }),
@@ -1549,12 +1993,23 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
           longDateText(returnDueDate(periods.periods[1].periodEnd)),
           siteText("ch.ct.return-due-rule", "Both returns are due 12 months after the period of account ends"),
         ),
-      ),
+      ]),
     );
   });
   holder.replaceChildren(...columns);
   holder.hidden = false;
   element("workedTaxRows").hidden = true;
+}
+
+// The worked tax panel shows the tax the return works out, so the person's own working is left out
+// of what it derives: the review and the filing still compare the two and refuse a disagreement.
+function withoutOwnWorking(figures) {
+  const { ownCorporationTax: _own, ...rest } = figures;
+  if (!rest.accountingPeriods) return rest;
+  return {
+    ...rest,
+    accountingPeriods: rest.accountingPeriods.map(({ ownCorporationTax: _periodOwn, ...period }) => period),
+  };
 }
 
 function renderWorkedTax(values) {
@@ -1563,9 +2018,10 @@ function renderWorkedTax(values) {
   rows.hidden = false;
   if (!state.bundle) {
     rows.replaceChildren();
+    element("workedTaxSteps").replaceChildren();
     return;
   }
-  const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
+  const figures = withoutOwnWorking(figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet));
   const placeholders = placeholdersFor(figures);
   const periods = longPeriodOf(values);
   let derived;
@@ -1576,15 +2032,19 @@ function renderWorkedTax(values) {
   } catch {
     element("workedTaxEmpty").style.display = "block";
     rows.replaceChildren();
+    element("workedTaxSteps").replaceChildren();
     return;
   }
   element("workedTaxEmpty").style.display = "none";
   if (figures.accountingPeriods) {
     longPeriodWorkedTax(values, derived, periods);
     rows.replaceChildren();
+    element("workedTaxSteps").replaceChildren();
     return;
   }
-  rows.replaceChildren(...workedItems(derived));
+  const { key, details } = workedSteps(workedItems(derived), "single");
+  rows.replaceChildren(...key);
+  if (details.parentElement !== element("workedTaxSteps")) element("workedTaxSteps").replaceChildren(details);
 }
 
 // --- Showing problems -----------------------------------------------------------------------
@@ -1632,6 +2092,7 @@ function showTouchedErrors() {
 function focusTarget(target) {
   const field = CT600_FORM_FIELDS.find((candidate) => candidate.id === target);
   const node = element(field?.focus ?? target);
+  openFoldsAround(node);
   node?.focus();
   node?.scrollIntoView?.({ block: "center" });
 }
@@ -1790,14 +2251,18 @@ function updateLongPeriod(values) {
     panel.dataset.key = panelKey;
     panel.replaceChildren(...(panelShown ? longPeriodPanelContent(long) : []));
   }
-  element("firstPeriodStart").textContent = long
-    ? siteText("ch.ct.first-period-start-on", "Does the first accounting period start on {date}?", {
-        date: longDateText(values.periodStart),
-      })
-    : siteText("ch.ct.first-period-start", "Does the first accounting period start on the first day of the accounts?");
+  element("firstPeriodStart").textContent = labelOf(
+    long
+      ? {
+          ...QUESTION.firstPeriodStart,
+          label: siteText("ch.ct.first-period-start-on", "Does the first accounting period start on {date}?", {
+            date: longDateText(values.periodStart),
+          }),
+        }
+      : QUESTION.firstPeriodStart,
+  );
   const donations = form.querySelector('label[for="donations"]');
-  if (donations)
-    donations.textContent = showing ? LONG_PERIOD_DONATIONS_LABEL : CT600_FORM_FIELDS.find((field) => field.id === "donations").label;
+  if (donations) donations.textContent = labelOf(showing ? { ...DONATIONS_FIELD, label: LONG_PERIOD_DONATIONS_LABEL } : DONATIONS_FIELD);
   if (long && state.bundle) {
     for (const node of form.querySelectorAll("[data-period-hint]")) {
       const [id, part] = node.dataset.periodHint.split(":");
@@ -1817,6 +2282,7 @@ function refresh() {
   renderWorkedTax(values);
   showTouchedErrors();
   updateSummary();
+  updateFolds();
   ensureTaxData(values.periodStart, values.periodEnd);
 }
 
@@ -1838,6 +2304,7 @@ function handleFormInput(event) {
   if (control.id === "periodStart") toggleSections();
   setDefaults();
   refresh();
+  answersSaver.schedule();
 }
 
 function handleFormLeave(event) {
@@ -1852,6 +2319,7 @@ function handleFormChange(event) {
     setDefaults();
     refresh();
   }
+  answersSaver.schedule();
 }
 
 // --- The company and the card -------------------------------------------
@@ -1958,13 +2426,13 @@ function applyClientToForm() {
 
 function renderAgentAuthorisation() {
   element("agentAuthorisedHost").replaceChildren(
-    checkboxGroup(
-      "agentAuthorised",
-      siteText(
+    checkboxGroup({
+      id: "agentAuthorised",
+      label: siteText(
         "ch.ct.agent-authorised",
         "The company has authorised this practice to act for it for Corporation Tax (form 64-8 or online), and has approved this return.",
       ),
-    ),
+    }),
   );
 }
 
@@ -2003,6 +2471,9 @@ async function handleCompanySubmit(event) {
     showView("formView");
     await ensureBundle();
     applyClientToForm();
+    renderDraftPanel();
+    window.booksImport.showFilingsFor(company.companyNumber, agentClient?.clientId);
+    await offerLastYear();
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
@@ -2023,36 +2494,111 @@ function companyChangeLink() {
   return link;
 }
 
-function reviewTable(id, title, rows) {
+function answersTable(rows) {
   const body = rows.map((row) => {
-    const tr = tableRow(row.label, row.value, changeLink(row.id, row.label));
+    const tr = tableRow(row.reference ?? "", row.label, row.value, changeLink(row.id, row.label));
+    tr.children[0].classList.add("review-table__box-cell");
     tr.id = `review-row-${row.id}`;
     tr.tabIndex = -1;
     return tr;
   });
   return create(
+    "table",
+    { class: "results-table review-table review-table--boxes review-table--answers" },
+    create("colgroup", {}, ...["box", "question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
+    create(
+      "thead",
+      {},
+      create(
+        "tr",
+        {},
+        ...[
+          siteText("ch.ct.column-box", "Box"),
+          siteText("ch.ct.column-question", "Question"),
+          siteText("ch.ct.column-answer", "Answer"),
+          siteText("ch.ct.change", "Change"),
+        ].map((text) => create("th", { scope: "col" }, text)),
+      ),
+    ),
+    create("tbody", {}, ...body),
+  );
+}
+
+const ABSENT_FIGURE = "—";
+const NOT_GIVEN_TEXT = siteText("ch.ct600.not-given", "Not given");
+
+const LEDGER_TITLES = {
+  profitAndLoss: siteText("ch.ct.profit-and-loss", "Profit and loss account"),
+  balanceSheet: siteText("ch.ct.balance-sheet", "Balance sheet"),
+};
+
+// One statement of the accounts as the form lays it out: a row per line, a column per year, each
+// figure with its own Change link. A line with no figure shows "—"; a year with no figures has no column.
+function ledgerReviewTable(table, rows) {
+  const years = YEAR_COLUMNS.filter(({ key }) => rows.some((row) => row.ledger.year === key));
+  const lines = [...new Map(rows.map((row) => [row.ledger.line, row.ledger.lineLabel])).entries()];
+  const body = lines.map(([line, lineLabel]) =>
+    create(
+      "tr",
+      {},
+      create("th", { scope: "row" }, lineLabel),
+      ...years.map(({ key, title }) => {
+        const row = rows.find((candidate) => candidate.ledger.line === line && candidate.ledger.year === key);
+        if (!row) return create("td", { "class": "amount review-table__figure", "data-column": title }, ABSENT_FIGURE);
+        const typed = row.value !== NOT_GIVEN_TEXT;
+        const cell = create(
+          "td",
+          { "id": `review-row-${row.id}`, "tabindex": "-1", "class": "amount review-table__figure", "data-column": title },
+          create("span", {}, typed ? row.value : ABSENT_FIGURE),
+          " ",
+          changeLink(row.id, row.label),
+        );
+        return cell;
+      }),
+    ),
+  );
+  return create(
+    "table",
+    { "class": "results-table review-table review-table--ledger", "data-ledger": table },
+    create("caption", {}, LEDGER_TITLES[table]),
+    create(
+      "thead",
+      {},
+      create(
+        "tr",
+        {},
+        create("th", { scope: "col" }, siteText("ch.ct.column-line", "Line")),
+        ...years.map(({ title }) => create("th", { scope: "col", class: "amount" }, title)),
+      ),
+    ),
+    create("tbody", {}, ...body),
+  );
+}
+
+// A review section: its answers with their box, and the accounts' figures as their statements.
+function reviewTable(id, title, rows) {
+  const parts = [];
+  let answers = [];
+  const ledgers = new Map();
+  for (const row of rows) {
+    if (!row.ledger) {
+      answers.push(row);
+      continue;
+    }
+    if (answers.length > 0) parts.push(answersTable(answers));
+    answers = [];
+    if (!ledgers.has(row.ledger.table)) {
+      ledgers.set(row.ledger.table, []);
+      parts.push(row.ledger.table);
+    }
+    ledgers.get(row.ledger.table).push(row);
+  }
+  if (answers.length > 0) parts.push(answersTable(answers));
+  return create(
     "section",
     { id: `review-${id}` },
     create("h4", {}, title),
-    create(
-      "table",
-      { class: "results-table review-table" },
-      create("colgroup", {}, ...["question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
-      create(
-        "thead",
-        {},
-        create(
-          "tr",
-          {},
-          ...[
-            siteText("ch.ct.column-question", "Question"),
-            siteText("ch.ct.column-answer", "Answer"),
-            siteText("ch.ct.change", "Change"),
-          ].map((text) => create("th", { scope: "col" }, text)),
-        ),
-      ),
-      create("tbody", {}, ...body),
-    ),
+    ...parts.map((part) => (typeof part === "string" ? ledgerReviewTable(part, ledgers.get(part)) : part)),
   );
 }
 
@@ -2111,19 +2657,30 @@ function sortBoxes(keys) {
   return [...keys].sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || String(a).localeCompare(String(b)));
 }
 
-function boxTableRows(boxes, values, part, idSuffix) {
-  return sortBoxes(Object.keys(boxes)).map((box) => {
-    const label = boxRow(box).label;
-    const target = boxChangeTarget(box, values, part);
-    const change = target ? changeLink(target, siteText("ch.ct.change-box", "box {box}, {label}", { box, label })) : companyChangeLink();
-    const row = tableRow(box, label, "", change);
-    if (box === "340" || box === "390") amountCell(row.children[2], `${boxes[box]}%`);
-    else if (box === "329") row.children[2].textContent = siteText("ch.ct.yes", "Yes");
-    else if (TEXT_BOXES.has(Number(box)) || TEXT_BOXES.has(box)) row.children[2].textContent = boxes[box];
-    else amountCell(row.children[2], formatPounds(boxes[box]));
-    row.children[2].classList.add("review-table__value-cell");
-    row.id = `review-box-${box}${idSuffix}`;
-    return row;
+// The nodes of record markup that filing-record.js built, escaping every value it holds.
+function recordNodes(html) {
+  return [...new DOMParser().parseFromString(html, "text/html").body.childNodes];
+}
+
+// The CT600 boxes as the filed copy shows them, each row with a Change link to the question that gives it.
+function ct600ReviewRecord(boxes, values, part, idSuffix, tableId) {
+  return ct600RecordHtml({
+    boxes,
+    utr: values.utr,
+    companyName: boxes[1] ?? company?.companyName,
+    companyNumber: boxes[2] ?? company?.companyNumber,
+    title: siteText("ch.ct.review-record-title", "Company Tax Return (CT600)"),
+    subtitle: siteText("ch.ct.record-period", "Period covered by the return {start} to {end}", {
+      start: boxes[30] ? longDateText(boxes[30]) : "",
+      end: boxes[35] ? longDateText(boxes[35]) : "",
+    }),
+    tableId,
+    rowId: (box) => `review-box-${box}${idSuffix}`,
+    changeCellHtml: (box, label) => {
+      const target = boxChangeTarget(String(box), values, part);
+      const link = target ? changeLink(target, siteText("ch.ct.change-box", "box {box}, {label}", { box, label })) : companyChangeLink();
+      return `<td class="change">${link.outerHTML}</td>`;
+    },
   });
 }
 
@@ -2152,9 +2709,7 @@ function renderReview(preview) {
     element("previewIxbrl").textContent = preview.returns.map((part) => part.computationsIxbrl).join("\n");
     return;
   }
-  element("ct600Table")
-    .querySelector("tbody")
-    .replaceChildren(...boxTableRows(preview.boxes, values, 1, ""));
+  element("ct600Record").replaceChildren(...recordNodes(ct600ReviewRecord(preview.boxes, values, 1, "", "ct600Table")));
   element("computationsTable")
     .querySelector("tbody")
     .replaceChildren(...computationTableRows(preview.computationLines, values, 1, ""));
@@ -2162,31 +2717,7 @@ function renderReview(preview) {
 }
 
 function reviewTables(index) {
-  const boxes = create(
-    "table",
-    { id: `ct600Table${index}`, class: "results-table review-table review-table--boxes" },
-    create(
-      "colgroup",
-      {},
-      create("col", { class: "review-table__box" }),
-      create("col"),
-      create("col", { class: "review-table__value" }),
-      create("col", { class: "review-table__change" }),
-    ),
-    create(
-      "thead",
-      {},
-      create(
-        "tr",
-        {},
-        create("th", { scope: "col" }, siteText("ch.ct.column-box", "Box")),
-        create("th", { scope: "col" }, siteText("ch.ct.column-meaning", "Meaning")),
-        create("th", { scope: "col", class: "amount" }, siteText("ch.ct.column-value", "Value (amounts in £)")),
-        create("th", { scope: "col" }, siteText("ch.ct.change", "Change")),
-      ),
-    ),
-    create("tbody"),
-  );
+  const boxes = create("div", { class: "customer-copy-sheet" }, create("div", { class: "submission-record" }));
   const computations = create(
     "table",
     { id: `computationsTable${index}`, class: "results-table review-table" },
@@ -2222,7 +2753,7 @@ function renderLongReviews(preview, values) {
     const suffix = position === 0 ? "" : "Ap2";
     const days = longPeriodOf(values).periods[position].days;
     const { boxes, computations } = reviewTables(part.part);
-    boxes.querySelector("tbody").replaceChildren(...boxTableRows(part.boxes, values, part.part, suffix));
+    boxes.firstChild.replaceChildren(...recordNodes(ct600ReviewRecord(part.boxes, values, part.part, suffix, `ct600Table${part.part}`)));
     computations.querySelector("tbody").replaceChildren(
       ...computationTableRows(part.computationLines, values, part.part, suffix, {
         adjustedProfitBeforeAccountingPeriodAdjustments: siteText(
@@ -2425,7 +2956,7 @@ async function showOutcome(outcome) {
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
   element("tryAgainBtn").style.display = "none";
-  element("startAgainBtn").style.display = "none";
+  showStartAgain(false);
   if (outcome.statusCode === "ACCEPT") {
     setOutcome("ok");
     element("returnResult").replaceChildren(
@@ -2458,11 +2989,13 @@ async function showOutcome(outcome) {
       ),
     );
     element("returnIrmark").style.display = "block";
-    element("startAgainBtn").style.display = "inline-block";
     sending.taxReturnAccepted = true;
+    showStartAgain(true);
     if (sending.mode === "both") renderCompaniesHouse();
-    if (!sending.companiesHouse || companiesHouseAccepted()) forgetJoint();
-    else persistJoint();
+    if (!sending.companiesHouse || companiesHouseAccepted()) {
+      forgetJoint();
+      forgetSavedAnswers();
+    } else persistJoint();
     await renderReturnRecord(outcome);
     showAmendPanel();
     return;
@@ -2498,6 +3031,30 @@ async function showOutcome(outcome) {
 
 function companiesHouseAccepted() {
   return sending.companiesHouse?.statusCode === "ACCEPT";
+}
+
+// Start a new filing is offered once the filing has nothing waiting: while Companies House has not
+// decided the accounts, a new filing for the same company and period could file them twice, so the
+// page names the submission that waits instead.
+function showStartAgain(ready) {
+  const button = element("startAgainBtn");
+  const waiting = Boolean(sending.companiesHouse) && !["ACCEPT", "REJECT"].includes(sending.companiesHouse.statusCode);
+  button.style.display = ready && !waiting ? "inline-block" : "none";
+  let note = document.getElementById("startAgainPendingNote");
+  if (!(ready && waiting)) {
+    if (note) note.hidden = true;
+    return;
+  }
+  if (!note) {
+    note = create("p", { id: "startAgainPendingNote", class: "hint" });
+    button.before(note);
+  }
+  note.hidden = false;
+  note.textContent = siteText(
+    "ch.ct.start-again-pending",
+    "Companies House has not decided the accounts yet (submission {number}). A new filing for this company and period waits until it does, so the accounts are not filed twice.",
+    { number: sending.companiesHouse.submissionNumber },
+  );
 }
 
 // The review opens one joint filing: both sends carry its id. Once the accounts are with Companies House
@@ -2821,7 +3378,7 @@ function startAmendment({ accounts, attachedAccounts = false }) {
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
   element("returnIrmark").style.display = "none";
-  element("startAgainBtn").style.display = "none";
+  showStartAgain(false);
   element("jointProgress").style.display = "none";
   setOutcome();
   persistJoint();
@@ -2996,6 +3553,7 @@ async function resumeLongReturns() {
   }
   if (longQueue().length === 0) {
     sending.taxReturnAccepted = true;
+    if (!sending.companiesHouse || companiesHouseAccepted()) forgetSavedAnswers();
     await renderLongRecords();
     showAmendPanel();
     return;
@@ -3120,7 +3678,7 @@ function showJointResult() {
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
   element("tryAgainBtn").style.display = "none";
-  element("startAgainBtn").style.display = "none";
+  showStartAgain(false);
   setOutcome();
   showView("resultView");
 }
@@ -3144,9 +3702,12 @@ async function waitForCompaniesHouse(headers) {
     lockAccounts();
     configureSendStep();
   }
-  if (statusCode === "ACCEPT" && sending.taxReturnAccepted) forgetJoint();
-  else persistJoint();
+  if (statusCode === "ACCEPT" && sending.taxReturnAccepted) {
+    forgetJoint();
+    forgetSavedAnswers();
+  } else persistJoint();
   if (statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
+  if (sending.taxReturnAccepted) showStartAgain(true);
   return statusCode === "ACCEPT";
 }
 
@@ -3255,8 +3816,10 @@ async function settleLongReturn(part, outcome) {
   if (outcome.statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
   if (outcome.statusCode === "ACCEPT") await renderLongRecords();
   if (sending.mode === "both") renderCompaniesHouse();
-  if (finished && (!sending.companiesHouse || companiesHouseAccepted())) forgetJoint();
-  else persistJoint();
+  if (finished && (!sending.companiesHouse || companiesHouseAccepted())) {
+    forgetJoint();
+    forgetSavedAnswers();
+  } else persistJoint();
   if (parts[0]?.statusCode === "ACCEPT" && !sending.amendment && !finished) lockFirstReturn();
   if (finished) showAmendPanel();
   return outcome.statusCode === "ACCEPT";
@@ -3357,7 +3920,7 @@ function renderLongOutcome() {
   } else {
     element("returnIrmark").style.display = "none";
   }
-  element("startAgainBtn").style.display = longQueue().length === 0 && anyAccepted ? "inline-block" : "none";
+  showStartAgain(longQueue().length === 0 && anyAccepted);
 }
 
 async function renderLongRecords() {

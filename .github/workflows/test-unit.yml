@@ -178,6 +178,12 @@ jobs:
 
       - run: scripts/playwright-install-chromium.sh
 
+      # The filings test that prints the customer copy to PDF reads its pages back with pdftotext.
+      - name: Install pdftotext for the printed-copy test
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends poppler-utils
+
       # diya-gl caches the workbook templates it downloads under ~/.cache/diya-gl/<version>/
       # (XDG_CACHE_HOME moves it); a warm cache lets savePackageZip run with no network.
       - name: Read the installed diya-gl version

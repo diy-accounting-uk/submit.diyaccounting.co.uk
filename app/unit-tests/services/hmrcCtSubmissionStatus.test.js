@@ -9,9 +9,14 @@ import { join } from "node:path";
 
 const mockGetAsyncRequest = vi.fn();
 const mockPutAsyncRequest = vi.fn();
+const mockClaimRecording = vi.fn();
+const mockReleaseRecording = vi.fn();
 vi.mock("@app/data/dynamoDbAsyncRequestRepository.js", () => ({
   getAsyncRequest: (...args) => mockGetAsyncRequest(...args),
   putAsyncRequest: (...args) => mockPutAsyncRequest(...args),
+  claimRecording: (...args) => mockClaimRecording(...args),
+  releaseRecording: (...args) => mockReleaseRecording(...args),
+  RECORDING_CLAIM_STALE_MINUTES: 20,
 }));
 
 const mockPutReceipt = vi.fn();
@@ -38,9 +43,11 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
 const mockLogger = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() }));
 vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
-import { pollCtSubmission, findHeldCtSubmission } from "@app/services/hmrcCtSubmissionStatus.js";
-import { CT_RETURN_KIND } from "@app/services/hmrcTransactionEngine.js";
+import { pollCtSubmission, findHeldCtSubmission, ctPendingRetention } from "@app/services/hmrcCtSubmissionStatus.js";
+import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
+import { CT_RETURN_KIND } from "@app/services/ctReturnKind.js";
 import { chargeTokenOnSuccess } from "@app/services/tokenEnforcement.js";
+import { publishActivityEvent } from "@app/lib/activityAlert.js";
 
 const CORRELATION_ID = "46DCD4CC7E194088B99857931C185829";
 // base64 of 20 bytes 0x00..0x13 and the same bytes in base32
@@ -89,10 +96,45 @@ function pendingRequest() {
 const deleteCalls = () => mockPost.mock.calls.filter(([, xml]) => xml.includes("<Function>delete</Function>"));
 const statusWrites = () => mockPutAsyncRequest.mock.calls.map((call) => call[2]);
 
+beforeEach(() => {
+  mockClaimRecording.mockResolvedValue(true);
+  mockReleaseRecording.mockResolvedValue(undefined);
+});
+
 describe("pollCtSubmission", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAsyncRequest.mockResolvedValue(pendingRequest());
+  });
+
+  describe("when Submit last asked", () => {
+    const acknowledgement = () => message("acknowledgement", "submit");
+
+    test("an acknowledgement keeps the request pending and records when the Transaction Engine was asked", async () => {
+      mockPost.mockResolvedValueOnce(acknowledgement());
+      const before = new Date().toISOString();
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      const [[, , status, data]] = mockPutAsyncRequest.mock.calls;
+      expect(status).toBe("pending");
+      expect(data.lastCheckedAt >= before).toBe(true);
+      expect(data).toMatchObject({ kind: CT_RETURN_KIND, utr: "8596148860" });
+    });
+
+    test("a transient error records when the Transaction Engine was asked", async () => {
+      mockPost.mockResolvedValueOnce(gatewayError("1000"));
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(mockPutAsyncRequest.mock.calls[0][3].lastCheckedAt).toEqual(expect.any(String));
+    });
+
+    test("a read inside the poll interval asks nothing and records nothing", async () => {
+      const request = pendingRequest();
+      request.data.nextPollAt = new Date(Date.now() + 60000).toISOString();
+      request.data.lastCheckedAt = "2026-11-26T09:00:00.000Z";
+      mockGetAsyncRequest.mockResolvedValueOnce(request);
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(mockPost).not.toHaveBeenCalled();
+      expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+    });
   });
 
   describe("transient poll errors", () => {
@@ -125,6 +167,13 @@ describe("pollCtSubmission", () => {
       expect(deleteCalls()).toHaveLength(3);
     });
 
+    test("sends the delete to the submission endpoint, not the poll address", async () => {
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      expect(mockPost.mock.calls[0][0]).toBe("https://example.test/poll");
+      expect(deleteCalls().map(([url]) => url)).toEqual([TRANSACTION_ENGINE_TEST_SUBMISSION_URL]);
+    });
+
     test("stops sending the delete on error 2000", async () => {
       mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteError("2000"));
       await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
@@ -140,7 +189,7 @@ describe("pollCtSubmission", () => {
     });
 
     describe("after three failed attempts", () => {
-      const OWED = { pollUrl: "https://example.test/poll", gatewayTest: true, messageClass: "HMRC-CT-CT600" };
+      const OWED = { gatewayTest: true, messageClass: "HMRC-CT-CT600" };
 
       function completedWithDeleteOwed(status = "completed") {
         return {
@@ -174,7 +223,7 @@ describe("pollCtSubmission", () => {
         mockPost.mockResolvedValueOnce(deleteResponse());
         const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
         expect(deleteCalls()).toHaveLength(1);
-        expect(deleteCalls()[0][0]).toBe(OWED.pollUrl);
+        expect(deleteCalls()[0][0]).toBe(TRANSACTION_ENGINE_TEST_SUBMISSION_URL);
         expect(data.deleteOwed).toBeUndefined();
         expect(data.statusCode).toBe("ACCEPT");
         expect(mockPutAsyncRequest).toHaveBeenCalledTimes(1);
@@ -220,13 +269,34 @@ describe("pollCtSubmission", () => {
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data).toMatchObject({ statusCode: "ACCEPT", irmarkReceiptMismatch: true });
       expect(mockPutReceipt.mock.calls[0][2].irmarkReceiptMismatch).toBe(true);
-      expect(mockLogger.error).toHaveBeenCalledWith(expect.objectContaining({ correlationId: CORRELATION_ID, sentIrmark: IRMARK_BASE32 }));
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ hmrcCorrelationId: CORRELATION_ID, sentIrmark: IRMARK_BASE32 }),
+      );
     });
 
     test("a response without a receipt IRmark is a mismatch", async () => {
       mockPost.mockResolvedValueOnce(message("response", "submit", { body: "<SuccessResponse/>" })).mockResolvedValueOnce(deleteResponse());
       const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
       expect(data.irmarkReceiptMismatch).toBe(true);
+    });
+  });
+
+  describe("accepted activity event", () => {
+    test("carries HMRC's correlation ID, the IRmark and the receipt id, and sets the lake columns", async () => {
+      mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+      const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+      const accepted = publishActivityEvent.mock.calls
+        .map(([params]) => params)
+        .find((params) => params.event === "hmrc-ct-return-accepted");
+      expect(accepted.detail).toEqual({
+        outcome: "success",
+        activityId: "file-company-tax-return",
+        hmrcStatus: "ACCEPT",
+        correlationId: CORRELATION_ID,
+        irmark: IRMARK_BASE32,
+        receiptId: data.receiptId,
+      });
+      expect(data.receiptId).toMatch(new RegExp(`-${CORRELATION_ID}$`));
     });
   });
 
@@ -280,6 +350,96 @@ describe("pollCtSubmission", () => {
   });
 });
 
+describe("retention and the wait for HMRC's answer", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const acknowledgement = () => message("acknowledgement", "submit");
+
+  function sentDaysAgo(days, seconds = 0) {
+    return { ...pendingRequest(), createdAt: new Date(Date.now() - days * DAY_MS - seconds * 1000).toISOString() };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("a pending return keeps a day past the 30-day wait, counted from when it was sent", () => {
+    expect(ctPendingRetention("2026-01-01T00:00:00.000Z")).toEqual({ days: 31, from: new Date("2026-01-01T00:00:00.000Z") });
+  });
+
+  test("a poll that finds the return still pending keeps the retention counted from sending, not from the poll", async () => {
+    const request = sentDaysAgo(3);
+    mockGetAsyncRequest.mockResolvedValue(request);
+    mockPost.mockResolvedValueOnce(acknowledgement());
+    await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    const [[, , status, , , retention]] = mockPutAsyncRequest.mock.calls;
+    expect(status).toBe("pending");
+    expect(retention).toEqual({ days: 31, from: new Date(request.createdAt) });
+  });
+
+  test("a transient error keeps the retention counted from sending too", async () => {
+    const request = sentDaysAgo(1);
+    mockGetAsyncRequest.mockResolvedValue(request);
+    mockPost.mockResolvedValueOnce(gatewayError("1000"));
+    await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(mockPutAsyncRequest.mock.calls[0][5]).toEqual({ days: 31, from: new Date(request.createdAt) });
+  });
+
+  test("an accepted return takes the retention of a finished request", async () => {
+    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(2));
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+    await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    const completed = mockPutAsyncRequest.mock.calls.find((call) => call[2] === "completed");
+    expect(completed[5]).toBeUndefined();
+  });
+
+  test("a rejected return takes the retention of a finished request", async () => {
+    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(2));
+    mockPost.mockResolvedValueOnce(gatewayError("3000")).mockResolvedValueOnce(deleteResponse());
+    await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    const failed = mockPutAsyncRequest.mock.calls.find((call) => call[2] === "failed");
+    expect(failed[3].statusCode).toBe("REJECT");
+    expect(failed[5]).toBeUndefined();
+  });
+
+  test("a return 30 days after sending is recorded as no answer from HMRC, and HMRC is not asked", async () => {
+    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(30, 1));
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(data).toMatchObject({ kind: CT_RETURN_KIND, statusCode: "NO_ANSWER", correlationId: CORRELATION_ID, irmark: IRMARK_BASE32 });
+    const [[, , status, stored, , retention]] = mockPutAsyncRequest.mock.calls;
+    expect(status).toBe("failed");
+    expect(stored.statusCode).toBe("NO_ANSWER");
+    expect(retention).toEqual({ days: 30 });
+    expect(chargeTokenOnSuccess).not.toHaveBeenCalled();
+  });
+
+  test("a return just inside 30 days is still asked about", async () => {
+    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(29));
+    mockPost.mockResolvedValueOnce(acknowledgement());
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("PENDING");
+    expect(mockPost).toHaveBeenCalledTimes(1);
+  });
+
+  test("a return still held in the day after the 30-day wait is recorded as no answer by the next poll", async () => {
+    mockGetAsyncRequest.mockResolvedValue(sentDaysAgo(30, 20 * 3600));
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("NO_ANSWER");
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test("a stored no answer is answered from the record without asking HMRC", async () => {
+    mockGetAsyncRequest.mockResolvedValue({
+      status: "failed",
+      data: { kind: CT_RETURN_KIND, statusCode: "NO_ANSWER", correlationId: CORRELATION_ID },
+    });
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("NO_ANSWER");
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+  });
+});
+
 describe("receipt signature", () => {
   const SIGNED_RECEIPT = readFileSync(
     join(process.cwd(), "fixtures", "hmrc-transaction-engine", "receipt-signed-test-certificate.xml"),
@@ -302,12 +462,13 @@ describe("receipt signature", () => {
     delete process.env.HMRC_RECEIPT_CERTIFICATE_SHA256;
   });
 
-  test("a trusted certificate is stored as valid and logged with the correlation ID and receipt IRmark", async () => {
+  test("a trusted certificate is stored as valid and logged with HMRC's correlation ID and the receipt IRmark", async () => {
     process.env.HMRC_RECEIPT_CERTIFICATE_SHA256 = TRUSTED_SHA256;
     const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
     expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "valid" });
     expect(data.irmarkReceiptMismatch).toBeUndefined();
-    expect(mockPutReceipt.mock.calls[0][2]).toMatchObject({ receiptSignature: "valid" });
+    expect(mockPutReceipt.mock.calls[0][2]).toMatchObject({ receiptSignature: "valid", gatewayTest: true });
+    expect(data.gatewayTest).toBe(true);
     expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "submission-receipt",
@@ -317,7 +478,7 @@ describe("receipt signature", () => {
       }),
     );
     expect(logged("info", "receipt signature")[0]).toMatchObject({
-      correlationId: CORRELATION_ID,
+      hmrcCorrelationId: CORRELATION_ID,
       receiptIrmark: "XwHjMbO6v3X19HZ5W3M1WuioQPE=",
       receiptSignature: "valid",
       certificateSha256: TRUSTED_SHA256,
@@ -329,7 +490,7 @@ describe("receipt signature", () => {
     expect(data).toMatchObject({ statusCode: "ACCEPT", receiptSignature: "unknown-certificate" });
     expect(logged("warn", "receipt signature")[0]).toMatchObject({
       receiptSignature: "unknown-certificate",
-      correlationId: CORRELATION_ID,
+      hmrcCorrelationId: CORRELATION_ID,
     });
     expect(deleteCalls()).toHaveLength(1);
   });
@@ -348,7 +509,7 @@ describe("receipt signature", () => {
     expect(data.receiptSignature).toBe("digest-not-reproduced");
     expect(mockPutReceipt).toHaveBeenCalledTimes(1);
     expect(logged("info", "receipt signature")[0]).toMatchObject({
-      correlationId: CORRELATION_ID,
+      hmrcCorrelationId: CORRELATION_ID,
       receiptSignature: "digest-not-reproduced",
       computedDigest: expect.stringMatching(/^[0-9a-f]{40}$/),
       signedDigest: expect.stringMatching(/^[0-9a-f]{40}$/),
@@ -431,5 +592,52 @@ describe("findHeldCtSubmission", () => {
     await findHeldCtSubmission({ ...input, extraHeaders: { "Gov-Test-Scenario": "CT600_LOST_REPLY" } });
     expect(mockPost.mock.calls[0][2]).toEqual({ "Gov-Test-Scenario": "CT600_LOST_REPLY" });
     expect(JSON.stringify([...mockLogger.warn.mock.calls, ...mockLogger.info.mock.calls])).not.toContain("pass1");
+  });
+});
+
+describe("one record of an accepted return", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockClaimRecording.mockResolvedValue(true);
+  });
+
+  test("a poll that finds another poll recording the answer waits and asks HMRC nothing", async () => {
+    mockGetAsyncRequest.mockResolvedValue({ ...pendingRequest(), status: "recording", recordingSince: new Date().toISOString() });
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("PENDING");
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test("a recording claim older than its stale time is taken over by the next poll", async () => {
+    mockGetAsyncRequest.mockResolvedValue({
+      ...pendingRequest(),
+      status: "recording",
+      recordingSince: new Date(Date.now() - 21 * 60 * 1000).toISOString(),
+    });
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64)).mockResolvedValueOnce(deleteResponse());
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data.statusCode).toBe("ACCEPT");
+    expect(mockPutReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  test("a poll that loses the claim answers from the stored acceptance and records nothing", async () => {
+    mockClaimRecording.mockResolvedValue(false);
+    mockGetAsyncRequest
+      .mockResolvedValueOnce(pendingRequest())
+      .mockResolvedValueOnce({ status: "completed", data: { kind: CT_RETURN_KIND, statusCode: "ACCEPT", receiptId: "r-1" } });
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64));
+    const { data } = await pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID });
+    expect(data).toMatchObject({ statusCode: "ACCEPT", receiptId: "r-1" });
+    expect(mockPutReceipt).not.toHaveBeenCalled();
+    expect(chargeTokenOnSuccess).not.toHaveBeenCalled();
+    expect(mockPutAsyncRequest).not.toHaveBeenCalled();
+  });
+
+  test("a record that fails part-way gives the claim back for the next poll", async () => {
+    mockGetAsyncRequest.mockResolvedValue(pendingRequest());
+    mockPost.mockResolvedValueOnce(successResponse(IRMARK_BASE64));
+    mockPutReceipt.mockRejectedValueOnce(new Error("throttled"));
+    await expect(pollCtSubmission({ userSub: "u", correlationId: CORRELATION_ID })).rejects.toThrow("throttled");
+    expect(mockReleaseRecording).toHaveBeenCalledWith("u", CORRELATION_ID, expect.anything());
   });
 });

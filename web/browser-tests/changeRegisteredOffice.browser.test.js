@@ -135,6 +135,23 @@ test.describe("Change Registered Office Address page", () => {
     await serveFilingResultRecord(page);
   }
 
+  // Answers each read of the transaction with the next entry, the last repeating: "throw" fails the
+  // read, any other entry is the status of the transaction's one filing.
+  async function answerTransactionReads(page, answers) {
+    await page.addInitScript((statuses) => {
+      let reads = 0;
+      window.getCompaniesHouseTransaction = async () => {
+        const status = statuses[Math.min(reads++, statuses.length - 1)];
+        if (status === "throw") throw new Error("Companies House did not answer");
+        return {
+          transactionId: "test-transaction-id",
+          status: "closed",
+          filings: [{ id: "f1", type: "registered-office-address", status }],
+        };
+      };
+    }, answers);
+  }
+
   async function loadPage(page) {
     await page.goto("http://localhost:3000/companies-house/changeRegisteredOffice.html", { waitUntil: "domcontentloaded" });
     await delay(200);
@@ -323,5 +340,57 @@ test.describe("Change Registered Office Address page", () => {
     const banner = page.locator("p.hint[data-feature-status]").first();
     await expect(banner).toHaveAttribute("data-feature-status", "production");
     await expect(banner).toContainText("Status: production.");
+  });
+  test("a change still processing after the reads says it is with Companies House and offers Check again, not Start a new filing", async ({
+    page,
+  }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await answerTransactionReads(page, ["processing", "processing", "processing", "processing", "processing", "accepted"]);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await fillInAddress(page);
+    await page.check("#acceptOfficeStatement");
+    await page.click("#continueBtn");
+    await delay(200);
+
+    await page.click("#submitFilingBtn");
+
+    const result = page.locator("#filingResult");
+    await expect(result).toContainText("The change is still with Companies House. Choose Check again to ask for the outcome.", {
+      timeout: 20000,
+    });
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+
+    await page.click("#checkAgainBtn");
+
+    await expect(result).toContainText("Companies House accepted the change.", { timeout: 15000 });
+    await expect(page.locator("#startAgainBtn")).toBeVisible();
+    await expect(page.locator("#checkAgainBtn")).toBeHidden();
+  });
+
+  test("a failed read of the closed transaction shows the change as sent, with Check again and not Start a new filing", async ({
+    page,
+  }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await answerTransactionReads(page, ["throw"]);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await fillInAddress(page);
+    await page.check("#acceptOfficeStatement");
+    await page.click("#continueBtn");
+    await delay(200);
+
+    await page.click("#submitFilingBtn");
+
+    await expect(page.locator("#filingResult")).toContainText(
+      "The change was sent to Companies House, and its outcome is not known yet: the status check failed (Companies House did not answer).",
+      { timeout: 15000 },
+    );
+    await expect(page.locator("#checkAgainBtn")).toBeVisible();
+    await expect(page.locator("#startAgainBtn")).toBeHidden();
+    expect(await page.evaluate(() => window.__statusMessages)).toEqual([]);
   });
 });

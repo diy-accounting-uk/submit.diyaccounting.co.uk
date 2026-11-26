@@ -309,6 +309,7 @@
                         name="currentFixedAssets"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch yr asedau sefydlog ar gyfer eleni"
                         data-i18n-data-required-message="ch-micro-entity.enter-fixed-assets-for-this-year-8a7559"
@@ -332,6 +333,7 @@
                         name="priorFixedAssets"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch yr asedau sefydlog ar gyfer y llynedd"
                         data-i18n-data-required-message="ch-micro-entity.enter-fixed-assets-for-last-year-734c37"
@@ -354,6 +356,7 @@
                         name="currentCurrentAssets"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch yr asedau cyfredol ar gyfer eleni"
                         data-i18n-data-required-message="ch-micro-entity.enter-current-assets-for-this-year-31782e"
@@ -377,6 +380,7 @@
                         name="priorCurrentAssets"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch yr asedau cyfredol ar gyfer y llynedd"
                         data-i18n-data-required-message="ch-micro-entity.enter-current-assets-for-last-year-b6359d"
@@ -451,6 +455,7 @@
                         name="currentCreditorsWithinOneYear"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y credydwyr: symiau sy’n ddyledus o fewn blwyddyn ar gyfer eleni"
                         data-i18n-data-required-message="ch-micro-entity.enter-creditors-amounts-falling-due-within-a8546c"
@@ -477,6 +482,7 @@
                         name="priorCreditorsWithinOneYear"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y credydwyr: symiau sy’n ddyledus o fewn blwyddyn ar gyfer y llynedd"
                         data-i18n-data-required-message="ch-micro-entity.enter-creditors-amounts-falling-due-within-3258e1"
@@ -651,6 +657,7 @@
                         name="currentCalledUpShareCapital"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y cyfalaf cyfranddaliadau wedi’i alw ar gyfer eleni"
                         data-i18n-data-required-message="ch-micro-entity.enter-called-up-share-capital-for-5d8ace"
@@ -677,6 +684,7 @@
                         name="priorCalledUpShareCapital"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y cyfalaf cyfranddaliadau wedi’i alw ar gyfer y llynedd"
                         data-i18n-data-required-message="ch-micro-entity.enter-called-up-share-capital-for-a6cf0f"
@@ -702,6 +710,7 @@
                         name="currentProfitAndLossAccount"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y cyfrif elw a cholled ar gyfer eleni"
                         data-i18n-data-required-message="ch-micro-entity.enter-profit-and-loss-account-for-b19176"
@@ -728,6 +737,7 @@
                         name="priorProfitAndLossAccount"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y cyfrif elw a cholled ar gyfer y llynedd"
                         data-i18n-data-required-message="ch-micro-entity.enter-profit-and-loss-account-for-4c4a29"
@@ -753,6 +763,7 @@
                         name="currentCapitalAndReserves"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y cyfalaf a’r cronfeydd wrth gefn ar gyfer eleni"
                         data-i18n-data-required-message="ch-micro-entity.enter-capital-and-reserves-for-this-3f655f"
@@ -779,6 +790,7 @@
                         name="priorCapitalAndReserves"
                         required
                         inputmode="decimal"
+                        value="0"
                         data-money="whole-pounds"
                         data-required-message="Rhowch y cyfalaf a’r cronfeydd wrth gefn ar gyfer y llynedd"
                         data-i18n-data-required-message="ch-micro-entity.enter-capital-and-reserves-for-last-119e3e"
@@ -796,7 +808,7 @@
               <label data-i18n="ch-micro-entity.average-number-of-employees-during-the-6d5b2b" for="averageEmployees"
                 >Nifer cyfartalog y gweithwyr yn ystod y cyfnod</label
               >
-              <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
+              <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" value="0" />
             </div>
             <div class="form-group">
               <label data-i18n="ch-micro-entity.director-approving-the-balance-sheet-30d266" for="directorName"
@@ -907,7 +919,19 @@ In accordance with your instructions, we have compiled these unaudited financial
                 <label data-i18n="ch-micro-entity.interest-rate-and-main-conditions-of-edab6a" for="directorsAdvanceTerms"
                   >Cyfradd llog a phrif amodau’r blaenswm</label
                 >
-                <input type="text" id="directorsAdvanceTerms" data-advance-field="terms" name="directorsAdvanceTerms" />
+                <input
+                  type="text"
+                  id="directorsAdvanceTerms"
+                  data-advance-field="terms"
+                  name="directorsAdvanceTerms"
+                  aria-describedby="directorsAdvanceTerms-hint"
+                />
+                <p data-i18n="ch-micro-entity.this-is-a-common-arrangement-change-6b70fa" id="directorsAdvanceTerms-hint" class="hint">
+                  Trefniant cyffredin yw hwn. Newidiwch ef i’r telerau y cytunodd y cwmni a’r cyfarwyddwr arnynt: y gyfradd llog, unrhyw
+                  sicrhad, a phryd y caiff y blaenswm ei ad-dalu. Mae
+                  <a href="https://www.legislation.gov.uk/ukpga/2006/46/section/413" target="_blank" rel="noopener">Adran 413</a> yn gofyn
+                  am y tri.
+                </p>
               </div>
               <p data-i18n="ch-micro-entity.whole-pounds-for-example-600-or-94af4a" id="ledgerHintAdvances" class="hint">
                 Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
@@ -1243,6 +1267,7 @@ In accordance with your instructions, we have compiled these unaudited financial
     <script src="../../widgets/books-import.js"></script>
     <script src="../../lib/company-number-from-address.js"></script>
     <script type="module" src="../../lib/prior-year-fill.js"></script>
+    <script type="module" src="../../lib/accounts-line-detail.js"></script>
     <script src="../../companies-house/fileMicroEntityAccounts.page.js"></script>
   </body>
 </html>

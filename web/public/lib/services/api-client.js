@@ -14,12 +14,51 @@ function siteText(id, english, values) {
 }
 
 /**
+ * The JSON body of an API 403, or null when the 403 is not the API's: the site's firewall answers a
+ * blocked request with an HTML page.
+ * @param {Response} response - Fetch response
+ * @returns {Promise<object|null>}
+ */
+async function apiErrorBody(response) {
+  if (/text\/html/i.test(response.headers?.get?.("content-type") || "")) return null;
+  try {
+    const body = JSON.parse(await response.text());
+    return body && typeof body === "object" ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Say that the site's firewall blocked the request, with the reference the firewall's log holds
+ * for it when the response carries one.
+ * @param {Response} response - Fetch response
+ */
+function showFirewallBlock(response) {
+  const reference = response.headers?.get?.("x-request-id") || response.headers?.get?.("x-amz-cf-id") || "";
+  const cause = reference
+    ? siteText("widget.failure-firewall-reference", "The site's firewall blocked this request. Reference: {reference}.", { reference })
+    : siteText("widget.failure-firewall", "The site's firewall blocked this request.");
+  console.warn("403 Forbidden by the firewall:", reference);
+  if (typeof window !== "undefined" && window.showFailure) {
+    window.showFailure(
+      { status: 403, failure: { cause, next: { label: siteText("widget.try-again", "Try again"), href: window.location.pathname } } },
+      siteText("widget.request-blocked", "Request blocked"),
+    );
+  }
+}
+
+/**
  * Handle 403 Forbidden errors with user guidance
  * @param {Response} response - Fetch response
  */
 export async function handle403Error(response) {
   try {
-    const errorBody = await response.json().catch(() => ({}));
+    const errorBody = await apiErrorBody(response);
+    if (!errorBody) {
+      showFirewallBlock(response);
+      return;
+    }
     const message =
       errorBody.message || siteText("widget.access-forbidden", "Access forbidden. You may need to add a bundle to access this feature.");
     console.warn("403 Forbidden:", message);

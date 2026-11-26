@@ -68,41 +68,30 @@
     return error?.body?.message || error?.message;
   }
 
-  /**
-   * File one form and show its outcome.
-   * @param {object} input
-   * @param {string} input.kind - the form's kind in companies-house-forms.js
-   * @param {object} input.form - the company fields and the form's own fields
-   * @param {HTMLElement} input.result - the element the outcome is written into
-   * @param {object} [input.headers] - such as a developer-mode Gov-Test-Scenario, sent with every call
-   * @param {(error: Error) => boolean} [input.onRefusal] - a form's own handling of a refused filing:
-   *   answers true when it showed the refusal itself, and the error is then not written into result
-   * @param {function(object): Promise<void>} [input.onPaymentRequired] - called with the route's 402
-   *   fee-due answer (activityId, subjectKey, priceKey, fee) for a form whose fee the filer pays first
-   * @returns {Promise<object|null>} the settled outcome, or null when it is still pending or failed
-   */
-  async function fileAndShowOutcome({ kind, form, result, headers = {}, onRefusal, onPaymentRequired }) {
-    result.replaceChildren();
-    let submission;
-    try {
-      submission = await window.submitCompaniesHouseForm(kind, form, headers);
-    } catch (error) {
-      if (error?.status === 402 && error.body?.code === "fee-due" && onPaymentRequired) {
-        await onPaymentRequired(error.body);
-        return null;
-      }
-      if (onRefusal && onRefusal(error)) return null;
-      result.replaceChildren(paragraph(errorText(error), "error-message"));
-      return null;
-    }
+  // A Check again button that asks for the submission's outcome again.
+  function checkAgainButton(onClick) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary-button";
+    button.id = "checkAgainBtn";
+    button.textContent = siteText("ch.form.check-again", "Check again");
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      onClick();
+    });
+    return button;
+  }
+
+  // Polls a submission the gateway took and shows its outcome. A submission still pending after the
+  // polls, or whose status could not be read, gets Check again; Start a new filing waits until
+  // Companies House has decided it, or the gateway asked for no more polls and Check again is not
+  // offered, so a second filing cannot start while the first may still be pending. Resolves with the
+  // settled outcome, or null.
+  async function pollAndShowOutcome({ kind, submission, result, headers, onSettled }) {
     const poll = window.companiesHouseGatewayPoll;
-    result.replaceChildren(
-      paragraph(
-        siteText("ch.form.sent", "Submission {number} was taken by the gateway. Waiting for Companies House...", {
-          number: submission.submissionNumber,
-        }),
-      ),
-    );
+    const startAgainButton = document.getElementById("startAgainBtn");
+    startAgainButton.style.display = "none";
+    const askAgain = () => pollAndShowOutcome({ kind, submission, result, headers, onSettled });
     let outcome;
     try {
       outcome = await poll.pollGatewayUntilSettled({
@@ -111,11 +100,19 @@
         poll: () => window.pollCompaniesHouseForm(kind, submission.submissionNumber, headers),
       });
     } catch (error) {
-      result.replaceChildren(paragraph(errorText(error), "error-message"));
+      result.replaceChildren(
+        paragraph(poll.checkFailedNote(submission.submissionNumber, errorText(error)), "error-message"),
+        ...(poll.mayCheckAgain(submission) ? [checkAgainButton(askAgain)] : []),
+      );
+      if (!poll.mayCheckAgain(submission)) startAgainButton.style.display = "";
       return null;
     }
     if (!poll.isSettled(outcome)) {
-      result.replaceChildren(paragraph(poll.pendingNote({ ...submission, pollInterval: 0 })));
+      result.replaceChildren(
+        paragraph(poll.pendingNote(submission)),
+        ...(poll.mayCheckAgain(submission) ? [checkAgainButton(askAgain)] : []),
+      );
+      if (!poll.mayCheckAgain(submission)) startAgainButton.style.display = "";
       return null;
     }
     const accepted = outcome.statusCode === "ACCEPT";
@@ -131,7 +128,48 @@
     ];
     if (accepted && outcome.receiptId) lines.push(receiptLink(outcome.receiptId));
     result.replaceChildren(...lines);
+    startAgainButton.style.display = "";
+    if (onSettled) await onSettled(outcome);
     return outcome;
+  }
+
+  /**
+   * File one form and show its outcome.
+   * @param {object} input
+   * @param {string} input.kind - the form's kind in companies-house-forms.js
+   * @param {object} input.form - the company fields and the form's own fields
+   * @param {HTMLElement} input.result - the element the outcome is written into
+   * @param {object} [input.headers] - such as a developer-mode Gov-Test-Scenario, sent with every call
+   * @param {(error: Error) => boolean} [input.onRefusal] - a form's own handling of a refused filing:
+   *   answers true when it showed the refusal itself, and the error is then not written into result
+   * @param {function(object): Promise<void>} [input.onPaymentRequired] - called with the route's 402
+   *   fee-due answer (activityId, subjectKey, priceKey, fee) for a form whose fee the filer pays first
+   * @param {function(object): Promise<void>} [input.onSettled] - called with the outcome once Companies
+   *   House accepts or rejects the submission, after the first polls or after Check again
+   * @returns {Promise<object|null>} the settled outcome, or null when it is still pending or failed
+   */
+  async function fileAndShowOutcome({ kind, form, result, headers = {}, onRefusal, onPaymentRequired, onSettled }) {
+    result.replaceChildren();
+    let submission;
+    try {
+      submission = await window.submitCompaniesHouseForm(kind, form, headers);
+    } catch (error) {
+      if (error?.status === 402 && error.body?.code === "fee-due" && onPaymentRequired) {
+        await onPaymentRequired(error.body);
+        return null;
+      }
+      if (onRefusal && onRefusal(error)) return null;
+      result.replaceChildren(paragraph(errorText(error), "error-message"));
+      return null;
+    }
+    result.replaceChildren(
+      paragraph(
+        siteText("ch.form.sent", "Submission {number} was taken by the gateway. Waiting for Companies House...", {
+          number: submission.submissionNumber,
+        }),
+      ),
+    );
+    return pollAndShowOutcome({ kind, submission, result, headers, onSettled });
   }
 
   window.companiesHouseFormPage = { fileAndShowOutcome, errorText, registerMessages, todayInLondon };

@@ -233,6 +233,60 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     expect(accounts.directorsAdvances).toBeUndefined();
   });
 
+  test("a form left at its starting 0s previews, with every amount and the average number of employees at 0", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#averageEmployees")).toHaveValue("0");
+    await fillForm(page, {});
+    await page.fill("#averageEmployees", "0");
+    await page.click("#previewBtn");
+
+    await expect(page.locator("#previewView")).toBeVisible();
+    const accounts = await page.evaluate(() => window.rendered[0]);
+    expect(accounts.averageEmployees).toBe(0);
+    expect(JSON.stringify(accounts)).not.toContain("NaN");
+  });
+
+  test("an amount that is not a number is refused before the preview", async ({ page }) => {
+    await openFormView(page);
+    await fillForm(page, CONSISTENT_YEARS);
+    await page.fill("#currentFixedAssets", "lots");
+    await page.click("#previewBtn");
+
+    await expect(page.locator("#previewView")).toBeHidden();
+    await expect(page.locator("#currentFixedAssets")).toHaveAttribute("aria-invalid", "true");
+    expect(await page.evaluate(() => window.rendered.length)).toBe(0);
+  });
+
+  test("an advance fills the terms with a common arrangement, and the note links section 413", async ({ page }) => {
+    await openFormView(page);
+    const terms = page.locator("#directorsAdvanceTerms");
+    await expect(terms).toHaveValue("");
+    await page.fill("#directorsAdvanceMade", "500");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+    await expect(page.locator("#directorsAdvanceTerms-hint")).toContainText("This is a common arrangement.");
+    await expect(page.locator("#directorsAdvanceTerms-hint").getByRole("link", { name: "Section 413" })).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/413",
+    );
+    await page.fill("#directorsAdvanceMade", "0");
+    await expect(terms).toHaveValue("");
+    await page.fill("#directorsAdvanceAtStart", "1200");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+  });
+
+  test("terms the person types stay when the amounts change", async ({ page }) => {
+    await openFormView(page);
+    await page.fill("#directorsAdvanceMade", "500");
+    const terms = page.locator("#directorsAdvanceTerms");
+    await expect(terms).toHaveValue("Interest free if repaid within 12 months of the year end; unsecured; repayable on demand.");
+    await terms.fill("4% a year, secured on the director's car, repaid by March");
+    await page.fill("#directorsAdvanceMade", "0");
+    await page.fill("#directorsAdvanceMade", "800");
+    await expect(terms).toHaveValue("4% a year, secured on the director's car, repaid by March");
+  });
+
   test("renders accounts that add up", async ({ page }) => {
     await openFormView(page);
     await fillForm(page, CONSISTENT_YEARS);

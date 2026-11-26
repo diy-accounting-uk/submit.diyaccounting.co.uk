@@ -43,6 +43,9 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
   };
 });
 
+const mockSealFor = vi.fn(async (purpose, value, boundTo) => `sealed(${purpose}|${boundTo}|${value.userSub})`);
+vi.mock("@app/lib/codesSeal.js", () => ({ sealFor: (...args) => mockSealFor(...args), openFor: vi.fn() }));
+
 vi.mock("@aws-sdk/client-dynamodb", () => ({
   DynamoDBClient: class {
     constructor() {}
@@ -138,6 +141,12 @@ function buildEvent({
   return buildLambdaEvent(options);
 }
 
+const submittedActivityDetails = () =>
+  mockEventBridgeSend.mock.calls
+    .flatMap(([command]) => command.input?.Entries ?? [])
+    .map((entry) => JSON.parse(entry.Detail))
+    .filter((detail) => detail.event === "hmrc-ct-return-submitted");
+
 describe("hmrcCtReturnPost ingestHandler", () => {
   beforeAll(async () => {
     const body = await buildCtReturnBodyFromBook();
@@ -207,6 +216,45 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
     expect(JSON.stringify(update.input)).not.toContain(PASSWORD);
     expect(JSON.stringify(update.input)).not.toContain(USER_ID);
+  });
+
+  test("keeps the pending request 31 days from sending and gives the scheduled check a marker with the sealed filer", async () => {
+    const before = Math.floor(Date.now() / 1000);
+    const response = await hmrcCtReturnPostHandler(buildEvent());
+    expect(response.statusCode).toBe(201);
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const [pending, marker] = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+    const ttl = pending.input.ExpressionAttributeValues[":ttl"];
+    expect(ttl).toBeGreaterThanOrEqual(before + 31 * 86400);
+    expect(ttl).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 31 * 86400);
+    expect(marker.input.Key).toEqual({ hashedSub: "hmrc-ct-pending", requestId: CORRELATION_ID });
+    expect(marker.input.ExpressionAttributeValues[":sealedFiler"]).toBe(
+      `sealed(hmrc-ct-pending-filer|hmrc-ct-pending#${CORRELATION_ID}|test-sub)`,
+    );
+    expect(Date.parse(marker.input.ExpressionAttributeValues[":sentAt"])).toBeGreaterThanOrEqual(before * 1000);
+  });
+
+  test("a marker that cannot be written leaves the return filed and pending", async () => {
+    mockSealFor.mockRejectedValueOnce(new Error("Missing required environment variable MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
+    const response = await hmrcCtReturnPostHandler(buildEvent());
+    expect(response.statusCode).toBe(201);
+    expect(submittedActivityDetails()).toHaveLength(1);
+  });
+
+  test("the submitted activity event carries HMRC's correlation ID and the IRmark, and sets the lake columns", async () => {
+    const response = await hmrcCtReturnPostHandler(buildEvent());
+    const body = parseResponseBody(response);
+    const submitted = submittedActivityDetails();
+    expect(submitted).toHaveLength(1);
+    expect(submitted[0]).toMatchObject({
+      outcome: "success",
+      activityId: "file-company-tax-return",
+      hmrcStatus: "acknowledgement",
+      correlationId: CORRELATION_ID,
+      irmark: body.irmark,
+      transactionId: body.transactionId,
+    });
+    expect(submitted[0].receiptId).toBeUndefined();
   });
 
   test("resolves a relative poll end point against the submission URL and forwards Gov-Test-Scenario", async () => {
@@ -356,6 +404,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
         irmark: body.irmark,
       });
       expect(activityEvents()).not.toContain(PASSWORD);
+      expect(submittedActivityDetails()[0]).toMatchObject({ hmrcStatus: "held", correlationId: CORRELATION_ID, irmark: body.irmark });
     });
 
     test("recovers from an HTTP 504 and from an unreadable reply the same way", async () => {
@@ -434,7 +483,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
   });
 
   test("returns 403 when the environment does not list the matched activity", async () => {
-    process.env.ENVIRONMENT_NAME = "prod";
+    process.env.ENVIRONMENT_NAME = "unlisted-environment";
     const response = await hmrcCtReturnPostHandler(buildEvent());
     expect(response.statusCode).toBe(403);
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();

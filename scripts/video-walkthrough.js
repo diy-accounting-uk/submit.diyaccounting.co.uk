@@ -386,6 +386,20 @@ export function ensureArtifact(entry) {
   return dir;
 }
 
+/**
+ * The second of the video at which each page section first shows: the start of the first step whose
+ * target sits in that section, in seconds as startSeconds counts them.
+ * @param {{steps: Array<{section?: string, startMs: number}>}} timeline
+ * @returns {Record<string, number>}
+ */
+export function sectionTimes(timeline) {
+  const times = {};
+  for (const step of [...timeline.steps].sort((first, second) => first.startMs - second.startMs)) {
+    if (step.section && !(step.section in times)) times[step.section] = Math.floor(step.startMs / 1000);
+  }
+  return times;
+}
+
 export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot = path.resolve("web/public/videos") } = {}) {
   const dir = ensureArtifact(entry);
   const mp4Path = path.join(dir, `${entry.id}.mp4`);
@@ -432,7 +446,11 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
     }
     bytes += size + fs.statSync(path.join(outDir, `${frameKey(item)}-thumb.webp`)).size;
   }
-  return { walkthrough: withFrameSizes(buildWalkthroughEntries(entry.id, plan), path.dirname(outRoot)), bytes };
+  return {
+    walkthrough: withFrameSizes(buildWalkthroughEntries(entry.id, plan), path.dirname(outRoot)),
+    sections: sectionTimes(timeline),
+    bytes,
+  };
 }
 
 export function main(argv = process.argv.slice(2)) {
@@ -454,8 +472,10 @@ export function main(argv = process.argv.slice(2)) {
       } else {
         built = buildForEntry(entry);
       }
-      const { walkthrough, bytes } = built;
+      const { walkthrough, sections, bytes } = built;
       entry.walkthrough = walkthrough;
+      if (sections && Object.keys(sections).length > 0) entry.sections = sections;
+      else if (sections) delete entry.sections;
       savePublishList(list);
       copyVideosManifest();
       console.log(`${entry.id}: ${walkthrough.length} scenes, ${(bytes / 1024).toFixed(0)} KB`);

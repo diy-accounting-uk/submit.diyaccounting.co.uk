@@ -49,7 +49,7 @@ import {
   suppress as overlaySuppress,
   readEvents,
 } from "./lib/video/overlay.js";
-import { executeAction, SceneStepError } from "./lib/video/actions.js";
+import { executeAction, formSectionOf, SceneStepError } from "./lib/video/actions.js";
 import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { isFastForward } from "./lib/video/fastForward.js";
 import { createCapture } from "./lib/video/capture.js";
@@ -589,6 +589,7 @@ async function main() {
         };
         const startMs = elapsed();
         const frameStart = capture?.frames.length ?? null;
+        const section = await formSectionOf(page, step.target);
         const group = groupFor(step.action);
         // A step's caption is never burned into the frame: the uploaded .vtt track carries the
         // words. Its hold and narration still run here. A goto's caption describes the page it
@@ -763,6 +764,7 @@ async function main() {
           endMs,
           frameStart,
           frameEnd,
+          ...(section ? { section } : {}),
         });
 
         console.log(`  [${scene.id}#${stepIndex}] ${step.action} waitMs=${waitMs.toFixed(0)} elapsed=${(endMs / 1000).toFixed(1)}s`);
