@@ -198,12 +198,19 @@ export function activityPagePath(activity) {
   return activity?.paths?.find((entry) => entry.includes(".html")) ?? null;
 }
 
+// The Company Tax Return and the joint filing file with HMRC, though their page sits under
+// companies-house/, so they take their group by id and keep their page's path.
+const CORPORATION_TAX_ACTIVITY_IDS = ["file-company-tax-return", "file-company-tax-return-with-accounts"];
+
 /**
- * The home page group of an activity, taken from the directory of its page path.
- * @param {string} pagePath - The path from activityPagePath
- * @returns {"VAT"|"Income Tax"|"Companies House"|"Passes"|"More"}
+ * The home page group of an activity: Corporation Tax for the Company Tax Return activities, and
+ * otherwise the group of the directory of its page path.
+ * @param {object} activity - An activity entry from the parsed catalog, with a page
+ * @returns {"VAT"|"Income Tax"|"Corporation Tax"|"Companies House"|"Passes"|"More"}
  */
-export function activityArea(pagePath) {
+export function activityArea(activity) {
+  if (CORPORATION_TAX_ACTIVITY_IDS.includes(activity.id)) return "Corporation Tax";
+  const pagePath = activityPagePath(activity);
   if (pagePath.startsWith("hmrc/vat")) return "VAT";
   if (pagePath.startsWith("hmrc/itsa")) return "Income Tax";
   if (pagePath.startsWith("companies-house")) return "Companies House";
@@ -214,6 +221,7 @@ export function activityArea(pagePath) {
 const AREA_NAMES_CY = {
   "VAT": "TAW",
   "Income Tax": "Treth Incwm",
+  "Corporation Tax": "Treth Gorfforaeth",
   "Companies House": "Tŷ'r Cwmnïau",
   "Passes": "Tocynnau",
   "More": "Rhagor",

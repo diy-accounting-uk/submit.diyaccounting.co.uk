@@ -16,6 +16,7 @@ import {
   isBundleShown,
   activityPagePath,
   activityArea,
+  areaName,
   bundlePassSummary,
   featureStatusSummary,
   STATUS_FEATURES,
@@ -139,11 +140,26 @@ describe("home page activity buttons", () => {
   });
 
   it("files a page under the group of its directory", () => {
-    expect(activityArea("hmrc/vat/vatObligations.html")).toBe("VAT");
-    expect(activityArea("hmrc/itsa/itsaObligations.html")).toBe("Income Tax");
-    expect(activityArea("companies-house/filePscVerification.html")).toBe("Companies House");
-    expect(activityArea("passes/redeem.html")).toBe("Passes");
-    expect(activityArea("mcp-harness.html")).toBe("More");
+    const onPage = (id, page) => ({ id, paths: [page] });
+    expect(activityArea(onPage("vat-obligations", "hmrc/vat/vatObligations.html"))).toBe("VAT");
+    expect(activityArea(onPage("itsa-obligations", "hmrc/itsa/itsaObligations.html"))).toBe("Income Tax");
+    expect(activityArea(onPage("file-psc-verification-statement", "companies-house/filePscVerification.html"))).toBe("Companies House");
+    expect(activityArea(onPage("redeem-pass", "passes/redeem.html"))).toBe("Passes");
+    expect(activityArea(onPage("mcp-harness", "mcp-harness.html"))).toBe("More");
+  });
+
+  it("files the Company Tax Return and the joint filing under Corporation Tax, though their page is under companies-house", () => {
+    const page = "companies-house/fileCompanyTaxReturn.html";
+    expect(activityArea({ id: "file-company-tax-return", paths: [page] })).toBe("Corporation Tax");
+    expect(activityArea({ id: "file-company-tax-return-with-accounts", paths: [page] })).toBe("Corporation Tax");
+    expect(activityArea({ id: "file-micro-entity-accounts", paths: ["companies-house/fileMicroEntityAccounts.html"] })).toBe(
+      "Companies House",
+    );
+  });
+
+  it("names Corporation Tax in Welsh as Treth Gorfforaeth", () => {
+    expect(areaName("Corporation Tax", "cy")).toBe("Treth Gorfforaeth");
+    expect(areaName("Corporation Tax", "en")).toBe("Corporation Tax");
   });
 });
 

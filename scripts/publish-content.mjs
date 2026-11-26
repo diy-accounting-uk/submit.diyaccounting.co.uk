@@ -188,7 +188,7 @@ export function renderBundlesBlock(catalog, environmentName) {
   return cards.join("");
 }
 
-const HOME_AREA_ORDER = ["VAT", "Income Tax", "Companies House", "Passes", "More"];
+const HOME_AREA_ORDER = ["VAT", "Income Tax", "Corporation Tax", "Companies House", "Passes", "More"];
 const SIGNED_OUT_VIEWER = { preview: false, operatorFeatures: true, account: {} };
 
 /**
@@ -211,7 +211,7 @@ export function homeActivities(catalog, environmentName, language) {
       const tokenLabel = activity.display === "always" && isMetered ? tokenCostLabel(activity.tokenCost, language) : "";
       return [
         {
-          area: activityArea(page),
+          area: activityArea(activity),
           name: `${activityName(activity, language)}${tokenLabel}`,
           href: activity.display === "always" ? page : `auth/login.html?next=${encodeURIComponent(`/${page}`)}`,
         },

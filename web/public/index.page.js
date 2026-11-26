@@ -290,8 +290,8 @@ async function renderDynamicActivities() {
 
     let needsLogin = false;
     const activitiesByArea = new Map();
-    const addActivity = (activityPath, element) => {
-      const area = window.activityArea(activityPath);
+    const addActivity = (activity, element) => {
+      const area = window.activityArea(activity);
       if (!activitiesByArea.has(area)) activitiesByArea.set(area, []);
       activitiesByArea.get(area).push(element);
     };
@@ -332,7 +332,7 @@ async function renderDynamicActivities() {
 
         if (insufficientTokens) {
           addActivity(
-            path,
+            activity,
             activityItem({
               buttonClass: "btn",
               disabled: true,
@@ -343,7 +343,7 @@ async function renderDynamicActivities() {
           );
         } else if (noTokensForMetered) {
           addActivity(
-            path,
+            activity,
             activityItem({
               buttonClass: "btn",
               disabled: true,
@@ -353,12 +353,12 @@ async function renderDynamicActivities() {
             }),
           );
         } else {
-          addActivity(path, activityItem({ buttonClass: "btn activity-secondary", href: path, label: `${name}${tokenLabel}` }));
+          addActivity(activity, activityItem({ buttonClass: "btn activity-secondary", href: path, label: `${name}${tokenLabel}` }));
         }
       } else if (hasExpiredAccess) {
         // User had access but it expired - show disabled button
         addActivity(
-          path,
+          activity,
           activityItem({
             buttonClass: "btn",
             disabled: true,
@@ -376,7 +376,7 @@ async function renderDynamicActivities() {
         if (isLoggedIn) {
           // Logged in but missing bundle - link to bundles page
           addActivity(
-            path,
+            activity,
             activityItem({
               buttonClass: "btn activity-secondary",
               href: "bundles.html",
@@ -389,7 +389,7 @@ async function renderDynamicActivities() {
           // Not logged in - prompt to log in, once above the list
           needsLogin = true;
           addActivity(
-            path,
+            activity,
             activityItem({
               buttonClass: "btn activity-secondary",
               href: window.signInHref("/auth/login.html", `/${path}`),
@@ -412,7 +412,7 @@ async function renderDynamicActivities() {
       return;
     }
 
-    const areaOrder = ["VAT", "Income Tax", "Companies House", "Passes", "More"];
+    const areaOrder = ["VAT", "Income Tax", "Corporation Tax", "Companies House", "Passes", "More"];
     const sections = areaOrder
       .filter((area) => activitiesByArea.has(area))
       .map((area) => {
