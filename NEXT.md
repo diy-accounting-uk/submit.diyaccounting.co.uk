@@ -110,7 +110,6 @@ Wave set cobalt's 25 rows below are on `claude/cobalt-set` at 5a0e62839, PR #877
 ## Machine-ask
 
 
-- [ ] **OS18g. Publish the ChatGPT plugin DIY Accounting Submit.** OpenAI approved it on 2026-11-25 13:58 UTC (email "ChatGPT Plugin Submission Approved": "Your plugin, DIY Accounting Submit (v1.0.0), has been approved and is ready to publish"). With the operator's yes in the session, the session opens https://platform.openai.com/plugins/manage/plugin_asdk_app_6af90052c7f08191b817bdecceff0362 in a new tab of the operator's Chrome (where he is signed in), checks the version the page shows against the approval (v1.0.0; 0.1.6 was the version submitted on 2026-11-20), presses Publish, reads the listing in the ChatGPT directory for GB, and records the date and the listing's address in `PLAN_ORGANIC_SEARCH.md` section 8.6. A change OpenAI asks for becomes its own row. Ask: the operator's yes to publish (not yet, 2026-11-26). **Source**: `PLAN_ORGANIC_SEARCH.md` OS18g; operator, 2026-11-25. **Owner**: Claude Code (with the operator's yes). **Model**: Sonnet. **Size**: 0 files. **Repository**: none.
 
 ## Human-driven
 

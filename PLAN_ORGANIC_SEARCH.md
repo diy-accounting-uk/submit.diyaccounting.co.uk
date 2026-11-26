@@ -5,7 +5,7 @@
 
 Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 13 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 6 of the 8 open tasks (OOS17b, OOS17, OS24, OS24d, OOS30 and LIM1) are tracked in section 8.6, not on `NEXT.md`. OOS44 and OS18g are on `NEXT.md`, where each carries its brief. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 6 of the 7 open tasks (OOS17b, OOS17, OS24, OS24d, OOS30 and LIM1) are tracked in section 8.6, not on `NEXT.md`. OOS44 is on `NEXT.md`, where it carries its brief. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -398,7 +398,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
 | X1 Claude Connectors Directory | connector URL is live at `/mcp`; not in the directory | 3 | 3 | 4 | OS3, OS14, OS43, OS42, OS46, OS17, OOS17 |
-| X2 ChatGPT Plugin Directory | not listed | 4 | 4 | 4 | OS3, OS14, OS43, OS42, OS46, OS18, OOS18 |
+| X2 ChatGPT Plugin Directory | listed 2026-11-26 (version 0.1.6) | 4 | 4 | 4 | OS3, OS14, OS43, OS42, OS46, OS18, OOS18 |
 | X3 Claude plugin with an Agent Skill | absent | 2 | 3 | 3 | OS19, OOS17 |
 | X4 Connector added by the user, per assistant | partial | 1 | 1 | 3 | OS20, OOS20, OS42 |
 | X5 Microsoft Copilot certification and Agent Store | not listed | 4 | 4 | 3 | none |
@@ -829,7 +829,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; section 8.6 |
-| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | submitted 0.1.6 on 2026-11-20; the review and the publish step are task OS18g in section 8.6 |
+| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | published 2026-11-26; the listing shows version 0.1.6 and the MCP server https://submit.diyaccounting.co.uk/mcp |
 
 **Wave 4: Listings**
 
@@ -903,7 +903,7 @@ The brief of OOS44 is its row on `NEXT.md`. The briefs of the other open tasks a
 
 ### 8.6 State and briefs of the open tasks
 
-OOS17b, OOS17, OS24, OS24d, OOS30 and LIM1 are tracked here, not on `NEXT.md`. OOS44 (the FSB proposal) and OS18g (publishing the ChatGPT plugin) are on `NEXT.md`. "Blocked by" lists the tasks and events not yet done.
+OOS17b, OOS17, OS24, OS24d, OOS30 and LIM1 are tracked here, not on `NEXT.md`. OOS44 (the FSB proposal) is on `NEXT.md`. "Blocked by" lists the tasks and events not yet done.
 
 Facts for OS24, OS24d and LIM1: The listing register is `web/marketing/marketing.toml`: `npm run marketing:build` rebuilds `web/marketing/marketing.json` and `web/marketing/index.html`, and `web/unit-tests/marketing-site.test.js` holds three lists of the live listings in the register's order, so a row that moves an entry to `live` adds its id to each (OS24d, OS24).
 
@@ -911,7 +911,6 @@ Facts for OS24, OS24d and LIM1: The listing register is `web/marketing/marketing
 | --- | --- | --- | --- | --- | --- |
 | OOS17b | machine-ask | ready | the operator's go for the click | nothing | none |
 | OOS17 | machine-only (reads the reply) | blocked | the directory team's review | OOS30 | none |
-| OS18g | machine-ask | ready | the operator's yes to publish | nothing | none |
 | OS24 | machine-only | blocked | G2's answer, due by 2026-11-17 | LIM1 | submit |
 | OS24d | machine-only | blocked | Crozdesk's review | nothing | submit |
 | OOS30 | human-driven | blocked | OOS17's listing going live | nothing | none |
@@ -925,9 +924,6 @@ The operator submitted the plugin bundle on 2026-11-14 from https://claude.ai/di
 
 The MCP connector "DIY Accounting Submit" was submitted on 2026-11-14 and shows "In review" at https://claude.ai/directory/manage/diy-accounting-submit (slug `diy-accounting-submit`, categories Financial Services and Productivity, contact antony@diyaccounting.co.uk; the reviewer steps and password are in the Compliance step's "Additional notes"). Review can take a few weeks. The directory team writes to the contact email; a reply that asks for a change becomes its own row, and the listing going live unblocks OOS30. Blocked on the directory team's review. **Source**: `PLAN_ORGANIC_SEARCH.md` OOS17 (group 6, assistant connector). **Owner**: Claude Code (reads the reply in the mail mirror). **Model**: none. **Size**: 0 files. **Repository**: none. **Class**: machine-only (reads the reply). **State**: blocked. **Blocked by**: the directory team's review. **Unblocks**: OOS30.
 
-#### OS18g. Read OpenAI's review of plugin 0.1.6, then publish it
-
-The operator submitted 0.1.6 for review on 2026-11-20 (the plugin page reads "0.1.6 · In review": https://platform.openai.com/plugins/manage/plugin_asdk_app_6af90052c7f08191b817bdecceff0362). OpenAI sends its decision by email to the plugin's contact address. A session searches the mail mirror (corpus-loom `search`, source `mail-antony`, or the `.eml` files under `../mail/`) at each `/unblock` and reads the plugin page in Chrome. On approval the session presses Publish on the plugin page in the operator's Chrome, where the operator is signed in (approved by the operator, 2026-11-22). A requested change becomes its own row. The plugin page read "0.1.6 · In review" and "Estimated review completion: Dec 6, 2026" at 08:25 UTC on 2026-11-24, and the mail mirror (pulled 11:42 UTC on 2026-11-23) holds OpenAI's submission notice of 08:54 UTC on 2026-11-20 and no decision. OpenAI approved the plugin on 2026-11-25 13:58 UTC (email "ChatGPT Plugin Submission Approved", to the operator: "Your plugin, DIY Accounting Submit (v1.0.0), has been approved and is ready to publish"). Next: with the operator's yes in the session, press Publish on the plugin page in the operator's Chrome and read the listing in the ChatGPT directory for GB.
 
 #### OS24. G2's address in the listing register
 
