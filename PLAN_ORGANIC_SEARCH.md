@@ -398,7 +398,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
 | X1 Claude Connectors Directory | connector URL is live at `/mcp`; not in the directory | 3 | 3 | 4 | OS3, OS14, OS43, OS42, OS46, OS17, OOS17 |
-| X2 ChatGPT Plugin Directory | listed 2026-11-26 (version 0.1.6) | 4 | 4 | 4 | OS3, OS14, OS43, OS42, OS46, OS18, OOS18 |
+| X2 ChatGPT Plugin Directory | listed 2026-11-26 (version 0.1.6), https://chatgpt.com/plugins/plugin_asdk_app_6af90052c7f08191b817bdecceff0362 | 4 | 4 | 4 | OS3, OS14, OS43, OS42, OS46, OS18, OOS18 |
 | X3 Claude plugin with an Agent Skill | absent | 2 | 3 | 3 | OS19, OOS17 |
 | X4 Connector added by the user, per assistant | partial | 1 | 1 | 3 | OS20, OOS20, OS42 |
 | X5 Microsoft Copilot certification and Agent Store | not listed | 4 | 4 | 3 | none |
@@ -829,7 +829,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; section 8.6 |
-| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | published 2026-11-26; the listing shows version 0.1.6 and the MCP server https://submit.diyaccounting.co.uk/mcp |
+| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | published 2026-11-26 at https://chatgpt.com/plugins/plugin_asdk_app_6af90052c7f08191b817bdecceff0362; the listing shows version 0.1.6 and the MCP server https://submit.diyaccounting.co.uk/mcp |
 
 **Wave 4: Listings**
 
