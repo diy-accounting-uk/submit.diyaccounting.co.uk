@@ -3,7 +3,9 @@
 
 # DIY Accounting Submit for Claude
 
-Work out a UK VAT return from a book you saved in DIY Accounting Submit, check the nine boxes with Claude, and read the receipt afterwards.
+Work out a UK VAT return under Making Tax Digital (MTD) for VAT from the bookkeeping you keep in DIY Accounting Submit, check HMRC's nine boxes and the lines behind them with Claude, and read the HMRC receipt afterwards.
+
+It is for a VAT-registered UK business that keeps its bookkeeping in DIY Accounting Submit, for example a limited company (Ltd) or a sole trader. The plugin gives no tax advice.
 
 ## Use it
 

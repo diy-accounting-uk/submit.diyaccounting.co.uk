@@ -1,6 +1,6 @@
 ---
 name: file-a-uk-vat-return
-description: Work out a UK VAT return from the user's saved books and show the nine boxes. Use when the user asks to do, prepare, check or file a VAT return, a quarter's VAT, Making Tax Digital VAT, or asks what a past VAT receipt said.
+description: Work out a UK MTD VAT return from the user's saved books and show HMRC's nine boxes. Use when the user asks to do, prepare, check or file a VAT return or an MTD VAT return, a quarter's VAT, Making Tax Digital VAT, or asks what a past HMRC VAT receipt said.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->

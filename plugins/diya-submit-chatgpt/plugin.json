@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "diya-submit",
-  "version": "0.1.6",
-  "description": "Work out a UK VAT return from your saved books, check the nine boxes, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored VAT receipts afterwards.",
+  "version": "0.1.7",
+  "description": "Work out a UK VAT return under Making Tax Digital (MTD) from the bookkeeping you keep in DIY Accounting Submit, check HMRC's nine boxes and the lines behind them, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored HMRC VAT receipts afterwards.",
   "author": {
     "name": "DIY Accounting Limited",
     "email": "support@diyaccounting.co.uk",
@@ -11,16 +11,43 @@
   "homepage": "https://submit.diyaccounting.co.uk/mcp.html",
   "repository": "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk",
   "license": "LicenseRef-PolyForm-Internal-Use-1.0.0",
-  "keywords": ["vat", "uk", "hmrc", "making tax digital", "bookkeeping"],
+  "keywords": [
+    "mtd",
+    "making tax digital",
+    "mtd vat",
+    "mtd for vat",
+    "vat",
+    "vat return",
+    "uk vat",
+    "vat quarter",
+    "hmrc",
+    "vat boxes",
+    "nine boxes",
+    "vat receipt",
+    "bookkeeping",
+    "quarterly vat return",
+    "ledger",
+    "accounting",
+    "accounts",
+    "limited company",
+    "ltd",
+    "sole trader",
+    "small business",
+    "uk",
+    "tax",
+    "diya-gl",
+    "diy accounting"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "DIY Accounting Submit",
-        "shortDescription": "UK VAT return from your books",
-        "longDescription": "Work out a UK VAT return from a book saved in DIY Accounting Submit. List your books, open one, and derive the nine VAT boxes for a quarter with the journal lines behind them. Ask for the link to the VAT form with the figures filled in, then open it and file the return yourself in the browser, where you tick the declaration. Afterwards, read your stored VAT receipts. No tool in this plugin files a return or pays HMRC. A person signs in to an existing DIY Accounting Submit account that holds a saved book.",
+        "displayName": "DIY Accounting Submit: MTD VAT",
+        "shortDescription": "MTD VAT return, ready for HMRC",
+        "longDescription": "Work out a UK VAT return under Making Tax Digital (MTD) for VAT from the bookkeeping you keep in DIY Accounting Submit.\n\nWhat it does:\n- Lists the books saved in your account and opens one. A book is one business's bookkeeping: the sales, purchases and bank lines that make up its accounts.\n- Derives the nine boxes of the VAT return for a quarter, with the journal lines behind them, so you can check each figure against your records.\n- Gives you a link to the VAT form on the Submit site with the figures filled in. You open it, connect to HMRC, check the figures, tick the declaration and file the return yourself in the browser.\n- Reads the receipts stored for the VAT returns you filed: the time HMRC processed the return and HMRC's form bundle number.\n\nWho it is for: a VAT-registered UK business that keeps its bookkeeping in DIY Accounting Submit, for example a limited company (Ltd) or a sole trader.\n\nLimits: no tool in this plugin files a return or pays HMRC. You need an existing DIY Accounting Submit account that holds your saved bookkeeping. The plugin gives no tax advice.",
         "developerName": "DIY Accounting Limited",
         "category": "Finance",
         "capabilities": [
+          "Work out a Making Tax Digital (MTD) VAT return from your bookkeeping",
           "List the books saved in your account",
           "Open a book and read its checks",
           "Derive the nine VAT boxes for a quarter",
@@ -31,14 +58,18 @@
         "supportURL": "https://submit.diyaccounting.co.uk/mcp.html#help",
         "privacyPolicyURL": "https://submit.diyaccounting.co.uk/privacy.html",
         "termsOfServiceURL": "https://submit.diyaccounting.co.uk/terms.html",
-        "defaultPrompt": ["List my books", "Derive the VAT return for the quarter ended 30 June 2025", "Show my stored VAT receipts"],
+        "defaultPrompt": [
+          "Work out my MTD VAT return for the quarter ended 30 June 2025",
+          "Which lines are behind box 1 and box 4 of my VAT return?",
+          "Show the HMRC receipt for my last VAT return"
+        ],
         "brandColor": "#1F4E79",
         "composerIcon": "./assets/logo.png",
         "logo": "./assets/logo.png"
       },
       "publication": {
         "countries": ["GB"],
-        "release_notes": "First release. List the books saved in your DIY Accounting Submit account, open one, and work out the nine VAT boxes for a quarter with the lines behind them. Get a link to the VAT form with the figures filled in, then check and file the return yourself on the Submit site. Read your stored VAT receipts afterwards."
+        "release_notes": "Version 0.1.7. The listing now names Making Tax Digital (MTD) for VAT and HMRC, and says who the plugin is for: a VAT-registered UK business, such as a limited company (Ltd) or a sole trader, that keeps its bookkeeping in DIY Accounting Submit. The starter prompts work out an MTD VAT return for a quarter, show the lines behind box 1 and box 4, and read the HMRC receipt of the last VAT return. The tools are unchanged."
       },
       "review": {
         "demo_recording_url": "https://youtu.be/9_kkDNZmVMQ",
@@ -47,22 +78,16 @@
         "test_cases": {
           "positive": [
             {
-              "description": "List the saved books",
-              "prompt": "List my books.",
-              "tools_triggered": "list_books",
-              "expected_behavior": "The assistant lists the saved books by name, BrickWork Pro Ltd and Precision Code Ltd."
+              "description": "Work out an MTD VAT return for a quarter",
+              "prompt": "Work out my MTD VAT return for the quarter ended 30 June 2025.",
+              "tools_triggered": "list_books, open_book, derive_vat_return",
+              "expected_behavior": "The assistant asks which book or opens BrickWork Pro Ltd, then shows the nine VAT boxes for the quarter ended 30 June 2025 with their amounts and points out lines in the quarter worth checking before filing."
             },
             {
-              "description": "Open the BrickWork Pro Ltd book",
-              "prompt": "Open the BrickWork Pro Ltd book.",
-              "tools_triggered": "list_books, open_book",
-              "expected_behavior": "The assistant opens BrickWork Pro Ltd and says the business, the period covered, the line count and the book checks."
-            },
-            {
-              "description": "Derive a VAT return",
-              "prompt": "Derive the VAT return for the quarter ended 30 June 2025.",
+              "description": "Show the lines behind box 1 and box 4",
+              "prompt": "Which lines are behind box 1 and box 4 of my VAT return?",
               "tools_triggered": "derive_vat_return",
-              "expected_behavior": "The assistant shows the nine VAT boxes with their amounts and points out lines in the quarter worth checking before filing."
+              "expected_behavior": "The assistant names the largest sales lines behind box 1 and the largest purchase lines behind box 4, each with its date, description and VAT amount."
             },
             {
               "description": "Get the link to file",
@@ -71,10 +96,16 @@
               "expected_behavior": "The assistant gives a link to the VAT form on the Submit site with the figures filled in, and says the person checks and files in the browser."
             },
             {
-              "description": "Read stored receipts",
-              "prompt": "Show my stored VAT receipts.",
+              "description": "Read the HMRC receipt of the last VAT return",
+              "prompt": "Show the HMRC receipt for my last VAT return.",
               "tools_triggered": "list_vat_receipts",
               "expected_behavior": "The assistant says the account has no stored VAT receipts."
+            },
+            {
+              "description": "Open the BrickWork Pro Ltd book",
+              "prompt": "Open the BrickWork Pro Ltd book.",
+              "tools_triggered": "list_books, open_book",
+              "expected_behavior": "The assistant opens BrickWork Pro Ltd and says the business, the period covered, the line count and the book checks."
             }
           ],
           "negative": [
