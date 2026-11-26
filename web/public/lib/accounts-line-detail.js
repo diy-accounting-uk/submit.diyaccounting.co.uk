@@ -225,27 +225,45 @@ export function lineOfRow(row, lines, format) {
 }
 
 /**
- * Give each ledger row of the page its referenced label and, on this year's figure, its note and
- * disclosure. A row's heading keeps the plain label in data-line-label for the prior-year fill to name.
+ * Give each ledger row of the page its referenced label and, under this year's row, a full-width row
+ * with its note and disclosure; the note describes the row's figures. A row's heading keeps the plain
+ * label in data-line-label for the prior-year fill to name.
  */
 export function renderAccountsLines(doc, lines, format) {
   const optional = siteText("ch.prior.optional-qualifier", "(optional)");
   for (const heading of doc.querySelectorAll("table.ledger tbody th[scope='row']")) {
-    const found = lineOfRow(heading.closest("tr"), lines, format);
+    const row = heading.closest("tr");
+    const found = lineOfRow(row, lines, format);
     if (!found) continue;
     const { year, line: entry } = found;
     const wasOptional = heading.dataset.optional === "true" || heading.textContent.trim().endsWith(optional);
     heading.dataset.optional = String(wasOptional);
     heading.dataset.lineLabel = entry.label;
-    const label = labelWithReference(entry);
-    const id = `line${entry.id.charAt(0).toUpperCase()}${entry.id.slice(1)}${year === "prior" ? "Prior" : ""}`;
-    const children = [doc.createElement("span")];
-    children[0].className = "line-label";
-    children[0].textContent = wasOptional ? `${label} ${optional}` : label;
-    if (year === "current") children.push(noteOf(entry, id), sourceDisclosure(entry, { id }));
-    const open = heading.querySelector("details[open]");
-    heading.replaceChildren(...children);
-    if (open) heading.querySelector("details").open = true;
+    const label = doc.createElement("span");
+    label.className = "line-label";
+    const referenced = labelWithReference(entry);
+    label.textContent = wasOptional ? `${referenced} ${optional}` : referenced;
+    heading.replaceChildren(label);
+    if (year !== "current") continue;
+    const id = `line${entry.id.charAt(0).toUpperCase()}${entry.id.slice(1)}`;
+    const earlier = row.nextElementSibling?.classList.contains("ledger__detail") ? row.nextElementSibling : null;
+    const wasOpen = Boolean(earlier?.querySelector("details[open]"));
+    earlier?.remove();
+    const detail = doc.createElement("tr");
+    detail.className = "ledger__detail";
+    if (row.dataset.profitAndLossFormat) detail.dataset.profitAndLossFormat = row.dataset.profitAndLossFormat;
+    detail.hidden = row.hidden;
+    const cell = doc.createElement("td");
+    cell.colSpan = row.cells.length;
+    const disclosure = sourceDisclosure(entry, { id });
+    disclosure.open = wasOpen;
+    cell.append(noteOf(entry, id), disclosure);
+    detail.append(cell);
+    row.after(detail);
+    for (const input of row.querySelectorAll("input")) {
+      const described = (input.getAttribute("aria-describedby") ?? "").split(/\s+/).filter((token) => token && token !== `${id}-hint`);
+      input.setAttribute("aria-describedby", [...described, `${id}-hint`].join(" "));
+    }
   }
 }
 

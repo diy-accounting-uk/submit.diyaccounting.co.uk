@@ -1432,6 +1432,18 @@ export const ACCOUNTS_REGIMES = [
   },
 ];
 
+// The question the two regimes answer: one note for both, naming the section of each.
+export const ACCOUNTS_REGIME_QUESTION = {
+  id: "accountsRegime",
+  label: siteText("ch.ct.which-accounts", "Which accounts does the company prepare?"),
+  hint: siteText(
+    "ch.ct.which-accounts-hint",
+    "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
+  ),
+  reference: "CA 381; CA 384A",
+  termSources: [companiesActSection(381), companiesActSection("384A")],
+};
+
 export function regimeOf(values) {
   return values.accountsRegime === "micro" ? "micro" : "small";
 }

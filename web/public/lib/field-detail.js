@@ -29,6 +29,10 @@ const REFERENCE_PATTERNS = [
   [/PL2 (\d+\([ab]\)|\d+)/, ([, item]) => siteText("field.reference-profit-and-loss", "Profit and loss item {item}", { item })],
   [/μ?PL1? (\w+)/, ([, item]) => siteText("field.reference-profit-and-loss", "Profit and loss item {item}", { item })],
   [/\bR, note (\d+)/, ([, note]) => siteText("field.reference-balance-sheet-note", "Balance sheet note {note}", { note })],
+  [
+    /^CA (\d+[A-Z]?); CA (\d+[A-Z]?)$/,
+    ([, first, second]) => siteText("field.reference-companies-act-two", "Companies Act sections {first} and {second}", { first, second }),
+  ],
   [/^CA (\d+[A-Z]?)/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
   [/^R(\d+)/, ([, paragraph]) => siteText("field.reference-regulations", "Schedule 1 paragraph {paragraph}", { paragraph })],
   [/^Notes$/, () => siteText("field.reference-notes", "Notes to the accounts")],
@@ -59,6 +63,13 @@ export function labelWithReference(field) {
 
 const COMPANIES_ACT = /^https:\/\/www\.legislation\.gov\.uk\/ukpga\/2006\/46\/section\/(\w+)$/;
 const REGULATIONS = /^https:\/\/www\.legislation\.gov\.uk\/uksi\/2008\/409\/schedule\/1\/(?:paragraph\/(\d+)|part\/1)$/;
+
+/** Every link a field's note carries: one for its box or termSource, or one for each of its termSources. */
+export function sourceLinksOf(field) {
+  if (field.termSources) return field.termSources.map((termSource) => sourceLinkOf({ id: field.id, termSource }));
+  const link = sourceLinkOf(field);
+  return link ? [link] : [];
+}
 
 /** Where a field's term comes from: the guide at the box's anchor, or the field's termSource. */
 export function sourceLinkOf(field) {
@@ -97,12 +108,16 @@ export function sourceLinkOf(field) {
 /** The note under a label: the hint, then the link to the term's source, marked as English for a Welsh reader. */
 export function noteOf(field, id = field.id) {
   const note = create("p", { id: `${id}-hint`, class: "hint" }, field.hint ?? "");
-  const link = sourceLinkOf(field);
-  if (!field.hint && !link) note.hidden = true;
-  if (link) {
+  const links = sourceLinksOf(field);
+  if (!field.hint && links.length === 0) note.hidden = true;
+  if (links.length > 0) {
     // The sources are in English only, so a Welsh reader is told before following the link.
     const inEnglish = globalThis.siteLanguage?.chrome?.() === "cy" ? [" ", create("span", { class: "lang-mark" }, "(yn Saesneg)")] : [];
-    note.append(field.hint ? " " : "", create("a", { href: link.href, target: "_blank", rel: "noopener" }, link.text), ...inEnglish, ".");
+    const anchors = links.flatMap((link, index) => [
+      ...(index > 0 ? [", "] : []),
+      create("a", { href: link.href, target: "_blank", rel: "noopener" }, link.text),
+    ]);
+    note.append(field.hint ? " " : "", ...anchors, ...inEnglish, ".");
   }
   return note;
 }

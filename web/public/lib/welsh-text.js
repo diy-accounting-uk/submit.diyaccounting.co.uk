@@ -2344,6 +2344,7 @@ window.WELSH_TEXT = {
   "field.reference-box": "Blwch {box}",
   "field.reference-boxes": "Blychau {boxes}",
   "field.reference-companies-act": "Deddf Cwmnïau adran {section}",
+  "field.reference-companies-act-two": "Deddf Cwmnïau adrannau {first} a {second}",
   "field.reference-ct600a": "CT600A {box}",
   "field.reference-declaration": "Datganiad",
   "field.reference-label": "{reference}: {label}",

@@ -17,8 +17,8 @@ test.describe("File small company accounts page - each line's format item, note 
     await lookUpCompany(page, "fileSmallCompanyAccounts", "SC000001");
     const stocks = lineHeading(page, "currentStocks");
     await expect(stocks.locator(".line-label")).toHaveText("Balance sheet item C.I: Stocks");
-    await expect(stocks.locator("#lineStocks-hint")).toContainText("Goods held for sale");
-    const disclosure = stocks.locator("#lineStocks-source");
+    await expect(page.locator("#lineStocks-hint")).toContainText("Goods held for sale");
+    const disclosure = page.locator("#lineStocks-source");
     await expect(disclosure).not.toHaveAttribute("open", "");
     await disclosure.locator("summary").click();
     await expect(disclosure.locator("dl")).toContainText("E10");
@@ -27,7 +27,7 @@ test.describe("File small company accounts page - each line's format item, note 
     await expect(lineHeading(page, "currentTradeDebtors").locator(".line-label")).toHaveText(
       "Balance sheet item C.II.1: Of which, trade debtors",
     );
-    await expect(lineHeading(page, "currentOtherCreditors").locator("details")).toContainText("The spreadsheets have no cell for this.");
+    await expect(page.locator("#lineOtherCreditors-source")).toContainText("The spreadsheets have no cell for this.");
   });
 
   test("last year's table names its lines without a second disclosure and says where its figures came from", async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe("File small company accounts page - each line's format item, note 
     await lookUpCompany(page, "fileSmallCompanyAccounts", "SC000001");
     await expect(page.locator("#priorStocks")).toHaveValue("600");
     await expect(lineHeading(page, "priorStocks").locator(".line-label")).toHaveText("Balance sheet item C.I: Stocks");
-    await expect(lineHeading(page, "priorStocks").locator("details")).toHaveCount(0);
+    await expect(page.locator("tr", { has: page.locator("#priorStocks") }).locator("+ tr.ledger__detail")).toHaveCount(0);
     await expect(page.locator(".prior-year-source").first()).toHaveText(
       `Last year's figures: from the accounts filed at Companies House for the year to ${longDate(DATES.filed.end)}.`,
     );
@@ -46,8 +46,10 @@ test.describe("File small company accounts page - each line's format item, note 
     await lookUpCompany(page, "fileSmallCompanyAccounts", "SC000001");
     const interest = lineHeading(page, "currentInterestReceivable").locator(".line-label");
     await expect(interest).toHaveText("Profit and loss item 10: Other interest receivable and similar income");
+    await expect(page.locator("tr.ledger__detail", { has: page.locator("#lineOtherExternalCharges-hint") })).toBeHidden();
     await page.locator("#profitAndLossFormat2").check();
     await expect(interest).toHaveText("Profit and loss item 12: Other interest receivable and similar income");
+    await expect(page.locator("tr.ledger__detail", { has: page.locator("#lineOtherExternalCharges-hint") })).toBeVisible();
     await expect(lineHeading(page, "currentOtherExternalCharges").locator(".line-label")).toHaveText(
       "Profit and loss item 5(b): Other external charges",
     );

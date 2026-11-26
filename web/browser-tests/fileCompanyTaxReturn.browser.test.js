@@ -448,12 +448,47 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#includeFixedAssetNote-source")).toBeAttached();
   });
 
+  test("the page's own questions lead with their reference and carry their note", async ({ page }) => {
+    await openForm(page);
+    await expect(page.locator("#sendTo")).toHaveText("Where are you sending these accounts?");
+    await expect(page.locator("#sendTo-hint")).toBeVisible();
+    await expect(page.locator("#sendTo-hint a")).toHaveCount(0);
+    await expect(page.locator("#companiesHouseCopy")).toHaveText("Companies Act section 444: Which copy goes to Companies House?");
+    await expect(page.locator("#companiesHouseCopy-hint a")).toHaveAttribute(
+      "href",
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/444",
+    );
+    await expect(page.locator("#companiesHouseCopy-source")).toBeAttached();
+    await expect(page.locator("#accountsRegime")).toHaveText(
+      "Companies Act sections 381 and 384A: Which accounts does the company prepare?",
+    );
+    await expect(page.locator("#accountsRegime-hint a")).toHaveText([
+      "Companies Act 2006, section 381",
+      "Companies Act 2006, section 384A",
+    ]);
+    await expect(page.locator("#accountsRegime-source")).toContainText("The spreadsheets have no cell for this.");
+    await expect(page.locator("#firstPeriodStart")).toHaveText(
+      "Box 30: Does the first accounting period start on the first day of the accounts?",
+    );
+    await expect(page.locator("#firstPeriodStart-hint a")).toHaveText("Company Tax Return guide");
+    await page.locator("#periodStart").fill("2025-01-01");
+    await page.locator("#periodEnd").fill("2026-03-31");
+    await page.locator("#periodEnd").dispatchEvent("change");
+    await expect(page.locator("#firstPeriodStart")).toHaveText(/^Box 30: Does the first accounting period start on 1 January 2025\?$/);
+  });
+
   test("each accounts line shows its format item, its note and both years' cells, and a sum names every cell", async ({ page }) => {
     await openForm(page);
     const turnover = page.locator("tr", { has: page.locator("#currentTurnover") });
-    await expect(turnover.locator("th")).toContainText("Profit and loss item 1: Turnover");
-    await expect(turnover.locator("#currentTurnover-hint a")).toHaveText("The accounts regulations, Schedule 1");
-    const disclosure = turnover.locator("#currentTurnover-source");
+    await expect(turnover.locator("th")).toHaveText("Profit and loss item 1: Turnover");
+    await expect(page.locator("#currentTurnover")).toHaveAttribute("aria-describedby", "currentTurnover-hint");
+    await expect(page.locator("#priorTurnover")).toHaveAttribute("aria-describedby", "currentTurnover-hint");
+    const description = await page
+      .locator("#priorTurnover")
+      .evaluate((input) => document.getElementById(input.getAttribute("aria-describedby")).textContent);
+    expect(description).toContain("Sales of goods and services in the period");
+    await expect(page.locator("#currentTurnover-hint a")).toHaveText("The accounts regulations, Schedule 1");
+    const disclosure = page.locator("#currentTurnover-source");
     await expect(disclosure).not.toHaveAttribute("open", "");
     await disclosure.locator("summary").click();
     await expect(disclosure.locator("dl")).toContainText("This year");
@@ -1449,7 +1484,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#mainPoolAllowances-hint")).toContainText("main pool rate for this period is 18%");
     await expect(page.locator("#loansPart2")).toBeVisible();
     await expect(page.locator("#donationsPaidGroup")).toBeVisible();
-    await expect(page.locator("#firstPeriodStart")).toHaveText("Does the first accounting period start on 1 January 2025?");
+    await expect(page.locator("#firstPeriodStart")).toHaveText("Box 30: Does the first accounting period start on 1 January 2025?");
     for (const id of ["annualInvestmentAllowance", "annualInvestmentAllowanceAp2", "donationsPaidAp2", "associatedCompaniesAp2"]) {
       await expect(page.locator(`#${id}`)).toHaveAttribute("aria-describedby", `${id}-hint`);
     }

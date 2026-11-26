@@ -18,11 +18,11 @@ test.describe("File micro-entity accounts page - each line's format item, note a
     await lookUpCompany(page, "fileMicroEntityAccounts", "00000001");
     const heading = lineRow(page, "CreditorsWithinOneYear").locator("th");
     await expect(heading.locator(".line-label")).toHaveText("Balance sheet item E: Creditors: amounts falling due within one year");
-    await expect(heading.locator("#lineCreditorsWithinOneYear-hint a")).toHaveAttribute(
+    await expect(page.locator("#lineCreditorsWithinOneYear-hint a")).toHaveAttribute(
       "href",
       "https://www.legislation.gov.uk/uksi/2008/409/schedule/1/part/1",
     );
-    const disclosure = heading.locator("#lineCreditorsWithinOneYear-source");
+    const disclosure = page.locator("#lineCreditorsWithinOneYear-source");
     await expect(disclosure.locator("summary")).toHaveText("In DIY Accounting's spreadsheets");
     await expect(disclosure).not.toHaveAttribute("open", "");
     await disclosure.locator("summary").click();
@@ -40,7 +40,9 @@ test.describe("File micro-entity accounts page - each line's format item, note a
         { timeout: 10_000 },
       )
       .toBeGreaterThan(0);
-    await expect(lineRow(page, "CreditorsWithinOneYear").locator("details")).toHaveCount(1);
+    await expect(heading).toHaveText("Balance sheet item E: Creditors: amounts falling due within one year");
+    await expect(page.locator("#currentCreditorsWithinOneYear")).toHaveAttribute("aria-describedby", /\blineCreditorsWithinOneYear-hint\b/);
+    await expect(page.locator("#priorCreditorsWithinOneYear")).toHaveAttribute("aria-describedby", /\blineCreditorsWithinOneYear-hint\b/);
   });
 
   test("a line only this page has keeps its optional mark and has no workbook place to show", async ({ page }) => {
@@ -48,7 +50,7 @@ test.describe("File micro-entity accounts page - each line's format item, note a
     await lookUpCompany(page, "fileMicroEntityAccounts", "00000001");
     const heading = lineRow(page, "PrepaymentsAccruedIncome").locator("th");
     await expect(heading.locator(".line-label")).toHaveText("Balance sheet item D: Prepayments and accrued income (optional)");
-    await expect(heading.locator("#linePrepaymentsAccruedIncome-source")).toContainText("The spreadsheets have no cell for this.");
+    await expect(page.locator("#linePrepaymentsAccruedIncome-source")).toContainText("The spreadsheets have no cell for this.");
     await expect(lineRow(page, "CapitalAndReserves").locator(".line-label")).toHaveText("Balance sheet item K: Capital and reserves");
   });
 
@@ -72,6 +74,6 @@ test.describe("File micro-entity accounts page - each line's format item, note a
     await expect(lineRow(page, "CapitalAndReserves").locator(".line-label")).toHaveText(
       "Eitem K y fantolen: Cyfalaf a chronfeydd wrth gefn",
     );
-    await expect(lineRow(page, "FixedAssets").locator("summary")).toHaveText("Yn nhaenlenni DIY Accounting");
+    await expect(page.locator("#lineFixedAssets-source summary")).toHaveText("Yn nhaenlenni DIY Accounting");
   });
 });

@@ -28604,3 +28604,7 @@ cy = '''Y rhan o’r symiau hynny sydd gan y cwmni’n ddyledus i gwmnïau yn ei
 [strings."ch.prior.column-source"]
 hash = "e40634d04cc2"
 cy = '''Ffigurau’r llynedd: o’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar gyfer y flwyddyn hyd at {date}.'''
+
+[strings."field.reference-companies-act-two"]
+hash = "234e86b27244"
+cy = '''Deddf Cwmnïau adrannau {first} a {second}'''

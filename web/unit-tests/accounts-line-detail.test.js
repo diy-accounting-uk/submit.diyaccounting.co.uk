@@ -24,6 +24,10 @@ describe("the accounts pages' lines", () => {
     test(`every figure row of ${name} has a register entry, a referenced label and, for this year, a note and a disclosure`, () => {
       const doc = pageDocument(name);
       renderAccountsLines(doc, lines, "1");
+      const detailRows = doc.querySelectorAll("tr.ledger__detail").length;
+      expect(detailRows).toBeGreaterThan(5);
+      renderAccountsLines(doc, lines, "1");
+      expect(doc.querySelectorAll("tr.ledger__detail").length, "a second render adds no second detail row").toBe(detailRows);
       const headings = [...doc.querySelectorAll("table.ledger tbody th[scope='row']")].filter((heading) =>
         heading.closest("tr").querySelector("input[id^='current'], input[id^='prior']"),
       );
@@ -32,11 +36,15 @@ describe("the accounts pages' lines", () => {
         const id = heading.closest("tr").querySelector("input[id]").id;
         expect(heading.querySelector(".line-label").textContent, id).toMatch(/^(Balance sheet|Profit and loss) (item|note) [\w.()]+: /);
         expect(heading.dataset.lineLabel, id).toMatch(/\S/);
+        expect(heading.querySelector("p, details"), id).toBeNull();
+        const detail = heading.closest("tr").nextElementSibling;
         if (id.startsWith("current")) {
-          expect(heading.querySelector("p.hint a"), id).not.toBeNull();
-          expect(heading.querySelector("details.field-source"), id).not.toBeNull();
+          expect(detail.classList.contains("ledger__detail"), id).toBe(true);
+          expect(detail.querySelector("p.hint a"), id).not.toBeNull();
+          expect(detail.querySelector("details.field-source"), id).not.toBeNull();
+          expect(doc.getElementById(id).getAttribute("aria-describedby"), id).toContain(detail.querySelector("p.hint").id);
         } else {
-          expect(heading.querySelector("details"), id).toBeNull();
+          expect(detail?.classList.contains("ledger__detail") ?? false, id).toBe(false);
         }
       }
     });

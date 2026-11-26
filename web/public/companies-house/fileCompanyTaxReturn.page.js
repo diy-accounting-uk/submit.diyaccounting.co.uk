@@ -16,6 +16,7 @@ const siteText = (id, english, values) =>
 
 import {
   ACCOUNTS_REGIMES,
+  ACCOUNTS_REGIME_QUESTION,
   ACCOUNTS_TEXT_FIELDS,
   BALANCE_SHEET_FIELDS,
   CT600_BOX_ROWS,
@@ -423,10 +424,11 @@ function pairedFieldGroup(field) {
 // carries its full name in a hidden label, so a screen reader hears "Turnover, last year".
 // A cell with a start holds it as its value and its default, so a fill from a book or the register
 // counts it as holding no figure of its own.
-function ledgerCell(column, cell) {
+function ledgerCell(column, cell, describedBy) {
   const input = inputFor({ id: cell.id, type: "whole-pounds" });
   const field = input.querySelector("input");
-  field.removeAttribute("aria-describedby");
+  if (describedBy) field.setAttribute("aria-describedby", describedBy);
+  else field.removeAttribute("aria-describedby");
   if (cell.start !== undefined) {
     field.setAttribute("value", cell.start);
     field.value = cell.start;
@@ -448,14 +450,19 @@ function ledger({ caption, columns, rows, className }) {
       create("th", { scope: "col", class: ["ledger__figure", column.className].filter(Boolean).join(" ") }, column.title),
     ),
   );
-  const body = rows.map((row) =>
+  // A line's note and disclosure sit in a full-width row under it, so the row heading a screen
+  // reader announces with each figure stays the label alone; the note describes the figures.
+  const body = rows.flatMap((row) => [
     create(
       "tr",
       {},
-      create("th", { scope: "row" }, row.label, ...(row.detail ?? []), ...row.cells.map((cell) => errorHost(cell.id))),
-      ...columns.map((column, index) => ledgerCell(column, row.cells[index])),
+      create("th", { scope: "row" }, row.label, ...row.cells.map((cell) => errorHost(cell.id))),
+      ...columns.map((column, index) => ledgerCell(column, row.cells[index], row.noteId)),
     ),
-  );
+    ...(row.detail
+      ? [create("tr", { class: "ledger__detail" }, create("td", { colspan: String(columns.length + 1) }, ...row.detail))]
+      : []),
+  ]);
   return create(
     "table",
     { class: ["ledger", className].filter(Boolean).join(" ") },
@@ -477,7 +484,7 @@ const YEAR_COLUMNS = [
 
 // An accounts line's row heading: its label led by its reference, its note and its disclosure.
 function lineDetail(line, id) {
-  return { label: labelWithReference(line), detail: [noteOf(line, id), sourceDisclosure(line, { id })] };
+  return { label: labelWithReference(line), detail: [noteOf(line, id), sourceDisclosure(line, { id })], noteId: `${id}-hint` };
 }
 
 function yearLedger(fields, idOf) {
@@ -591,8 +598,8 @@ function sendToSection() {
     create(
       "div",
       { class: "form-group" },
-      create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, QUESTION.sendTo.label),
-      create("p", { id: "sendTo-hint", class: "hint" }, QUESTION.sendTo.hint),
+      create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, labelOf(QUESTION.sendTo)),
+      hintOf(QUESTION.sendTo),
       errorHost("sendTo"),
       radio("sendToHmrc", "hmrc", siteText("ch.ct.send-to-hmrc", "To HMRC with the Company Tax Return"), true),
       radio("sendToBoth", "both", siteText("ch.ct.send-to-both", "To Companies House and to HMRC with the Company Tax Return"), false),
@@ -676,8 +683,8 @@ function companiesHouseCopyGroup() {
   return create(
     "div",
     { id: "companiesHouseCopyGroup", class: "form-group", hidden: "" },
-    create("p", { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" }, QUESTION.companiesHouseCopy.label),
-    create("p", { id: "companiesHouseCopy-hint", class: "hint" }, QUESTION.companiesHouseCopy.hint),
+    create("p", { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" }, labelOf(QUESTION.companiesHouseCopy)),
+    hintOf(QUESTION.companiesHouseCopy),
     errorHost("companiesHouseCopy"),
     radio("copyFull", "full", siteText("ch.ct.full-accounts", "Full accounts"), true),
     radio("copyFilleted", "filleted", siteText("ch.ct.filleted-accounts", "Filleted accounts"), false),
@@ -700,19 +707,8 @@ function regimeGroup() {
   return create(
     "div",
     { class: "form-group" },
-    create(
-      "p",
-      { id: "accountsRegime", class: "field-label", tabindex: "-1" },
-      siteText("ch.ct.which-accounts", "Which accounts does the company prepare?"),
-    ),
-    create(
-      "p",
-      { id: "accountsRegime-hint", class: "hint" },
-      siteText(
-        "ch.ct.which-accounts-hint",
-        "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
-      ),
-    ),
+    create("p", { id: "accountsRegime", class: "field-label", tabindex: "-1" }, labelOf(ACCOUNTS_REGIME_QUESTION)),
+    hintOf(ACCOUNTS_REGIME_QUESTION),
     errorHost("accountsRegime"),
     ...ACCOUNTS_REGIMES.map(({ value, id, label }) =>
       choiceRow(
@@ -1067,12 +1063,7 @@ function growRowsFor(entries) {
 }
 
 function periodStartQuestion() {
-  const group = choiceGroup({
-    id: FIRST_PERIOD_START_FIELD,
-    label: QUESTION.firstPeriodStart.label,
-    hint: QUESTION.firstPeriodStart.hint,
-    default: "yes",
-  });
+  const group = choiceGroup({ ...QUESTION.firstPeriodStart, id: FIRST_PERIOD_START_FIELD, default: "yes" });
   group.id = "firstPeriodStartGroup";
   group.hidden = true;
   return group;
@@ -2143,11 +2134,16 @@ function updateLongPeriod(values) {
     panel.dataset.key = panelKey;
     panel.replaceChildren(...(panelShown ? longPeriodPanelContent(long) : []));
   }
-  element("firstPeriodStart").textContent = long
-    ? siteText("ch.ct.first-period-start-on", "Does the first accounting period start on {date}?", {
-        date: longDateText(values.periodStart),
-      })
-    : QUESTION.firstPeriodStart.label;
+  element("firstPeriodStart").textContent = labelOf(
+    long
+      ? {
+          ...QUESTION.firstPeriodStart,
+          label: siteText("ch.ct.first-period-start-on", "Does the first accounting period start on {date}?", {
+            date: longDateText(values.periodStart),
+          }),
+        }
+      : QUESTION.firstPeriodStart,
+  );
   const donations = form.querySelector('label[for="donations"]');
   if (donations) donations.textContent = labelOf(showing ? { ...DONATIONS_FIELD, label: LONG_PERIOD_DONATIONS_LABEL } : DONATIONS_FIELD);
   if (long && state.bundle) {
