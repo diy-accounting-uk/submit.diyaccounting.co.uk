@@ -165,6 +165,50 @@ test.describe("The bubble for a status message out of view", () => {
     await expect(page.locator("#statusMessagesContainer .status-error").last()).toBeFocused();
   });
 
+  test("a failure far down the page shows its title, cause and next-step link apart in the bubble, the link still a link", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await scrollToFoot(page);
+    await page.evaluate(() => {
+      const error = new Error("The service did not answer.");
+      error.status = 503;
+      window.showFailure(error, "Could not check the return");
+    });
+    const bubble = page.locator(".status-bubble");
+    await expect(bubble).toHaveAttribute("data-kind", "error");
+    const message = page.locator("#statusMessagesContainer .status-error");
+    const title = await message.locator(".status-message-title").textContent();
+    const cause = await message.locator(".status-message-cause").textContent();
+    const next = message.locator("a.status-message-next");
+    const nextLabel = await next.textContent();
+    const nextHref = await next.getAttribute("href");
+
+    await expect(bubble.locator(".status-message-title")).toHaveText(title);
+    await expect(bubble.locator(".status-message-cause")).toHaveText(cause);
+    const bubbleNext = bubble.getByRole("link", { name: nextLabel });
+    await expect(bubbleNext).toHaveAttribute("href", nextHref);
+    const lines = await bubble
+      .locator(".status-bubble-text > *")
+      .evaluateAll((parts) => parts.map((part) => Math.round(part.getBoundingClientRect().top)));
+    expect(new Set(lines).size).toBe(3);
+    const shownLines = await bubble.locator(".status-bubble-text").evaluate((text) => text.innerText.split("\n").filter(Boolean));
+    expect(shownLines).toEqual([title, cause, nextLabel]);
+  });
+
+  test("the message that Go to the message focuses gives up its tabindex when the focus moves on", async ({ page }) => {
+    await openForm(page);
+    await scrollToFoot(page);
+    await showMessage(page, "The return could not be checked.", "error");
+    await page.locator(".status-bubble").getByRole("link", { name: "Go to the message" }).click();
+    const message = page.locator("#statusMessagesContainer .status-error");
+    await expect(message).toBeFocused();
+    await expect(message).toHaveAttribute("tabindex", "-1");
+    await page.keyboard.press("Tab");
+    await expect(message).not.toBeFocused();
+    await expect(message).not.toHaveAttribute("tabindex");
+  });
+
   test("an error shown while the status area is in view makes no bubble", async ({ page }) => {
     await openForm(page);
     await page.evaluate(() => window.scrollTo(0, 0));

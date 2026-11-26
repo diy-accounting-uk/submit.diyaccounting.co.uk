@@ -39,6 +39,16 @@ function messageText(message) {
   return message.querySelector(".status-message-content")?.textContent ?? message.textContent;
 }
 
+// The message's content as the bubble shows it: each part a copy of its own element, so a failure's
+// title, cause and next-step link stay apart and the link stays a link.
+function messageParts(message) {
+  const content = message.querySelector(".status-message-content") ?? message;
+  const parts = document.createElement("div");
+  parts.className = "status-bubble-text";
+  parts.append(...Array.from(content.childNodes, (node) => node.cloneNode(true)));
+  return parts;
+}
+
 /** Watches the page's status container and loading spinner, and shows their bubbles. */
 export function startStatusBubble() {
   const container = document.getElementById("statusMessagesContainer");
@@ -65,16 +75,17 @@ export function startStatusBubble() {
     close();
     container.scrollIntoView({ block: "start" });
     if (!message.isConnected) return;
-    if (!message.hasAttribute("tabindex")) message.setAttribute("tabindex", "-1");
+    if (!message.hasAttribute("tabindex")) {
+      message.setAttribute("tabindex", "-1");
+      message.addEventListener("blur", () => message.removeAttribute("tabindex"), { once: true });
+    }
     message.focus({ preventScroll: true });
   }
 
   function show(message) {
     close();
     const kind = kindOf(message);
-    const text = document.createElement("span");
-    text.className = "status-bubble-text";
-    text.textContent = messageText(message);
+    const text = messageParts(message);
 
     const link = document.createElement("a");
     link.className = "status-bubble-link";
