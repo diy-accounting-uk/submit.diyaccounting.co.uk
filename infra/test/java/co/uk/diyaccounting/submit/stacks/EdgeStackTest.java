@@ -114,18 +114,35 @@ class EdgeStackTest {
                 .map(statement -> (Map<String, Object>) statement.get("AndStatement"))
                 .filter(andStatement -> andStatement != null)
                 .map(andStatement -> (List<Map<String, Object>>) andStatement.get("Statements"))
-                .filter(parts -> parts.stream()
-                        .anyMatch(part -> part.get("ByteMatchStatement") != null
-                                && "/api/v1/hmrc/ct/return"
+                .filter(parts -> parts.get(0).get("OrStatement") != null
+                        && ((List<Map<String, Object>>)
+                                        ((Map<String, Object>) parts.get(0).get("OrStatement")).get("Statements"))
+                                .stream().anyMatch(part -> "/api/v1/hmrc/ct/return"
                                         .equals(((Map<String, Object>) part.get("ByteMatchStatement"))
                                                 .get("SearchString"))))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("expected a NOT exemption for the CT600 return path"));
+                .orElseThrow(() -> new AssertionError("expected a NOT exemption for the CT600 return paths"));
 
         assertEquals(2, ctExemption.size());
-        var uriMatch = (Map<String, Object>) ctExemption.get(0).get("ByteMatchStatement");
-        assertEquals("STARTS_WITH", uriMatch.get("PositionalConstraint"));
-        assertTrue(((Map<String, Object>) uriMatch.get("FieldToMatch")).containsKey("UriPath"));
+        var uriMatches = (List<Map<String, Object>>)
+                ((Map<String, Object>) ctExemption.get(0).get("OrStatement")).get("Statements");
+        assertEquals(
+                List.of("/api/v1/hmrc/ct/return", "/api/v1/hmrc/ct/return/preview"),
+                uriMatches.stream()
+                        .map(part ->
+                                (String) ((Map<String, Object>) part.get("ByteMatchStatement")).get("SearchString"))
+                        .toList());
+        for (var part : uriMatches) {
+            var uriMatch = (Map<String, Object>) part.get("ByteMatchStatement");
+            assertEquals("EXACTLY", uriMatch.get("PositionalConstraint"));
+            assertTrue(((Map<String, Object>) uriMatch.get("FieldToMatch")).containsKey("UriPath"));
+            assertEquals(
+                    List.of("URL_DECODE", "LOWERCASE"),
+                    ((List<Map<String, Object>>) uriMatch.get("TextTransformations"))
+                            .stream()
+                                    .map(transformation -> transformation.get("Type"))
+                                    .toList());
+        }
         var methodMatch = (Map<String, Object>) ctExemption.get(1).get("ByteMatchStatement");
         assertTrue(((Map<String, Object>) methodMatch.get("FieldToMatch")).containsKey("Method"));
         assertEquals("EXACTLY", methodMatch.get("PositionalConstraint"));

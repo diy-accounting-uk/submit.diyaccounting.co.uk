@@ -1136,6 +1136,17 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
+    /** Matches the CT600 file route and its preview route exactly, and no path under or beside them. */
+    private static CfnWebACL.StatementProperty ct600ReturnRouteUriStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .orStatement(CfnWebACL.OrStatementProperty.builder()
+                        .statements(List.of(
+                                uriPathExactlyStatement("/api/v1/hmrc/ct/return"),
+                                uriPathExactlyStatement("/api/v1/hmrc/ct/return/preview")))
+                        .build())
+                .build();
+    }
+
     /** Matches the hosted MCP endpoint, its OAuth facade and the OAuth discovery documents. */
     private static CfnWebACL.StatementProperty mcpRouteUriPrefixStatement() {
         return CfnWebACL.StatementProperty.builder()
@@ -1233,6 +1244,27 @@ public class EdgeStack extends Stack {
                                 .build())
                         .positionalConstraint("STARTS_WITH")
                         .searchString(prefix)
+                        .textTransformations(List.of(
+                                CfnWebACL.TextTransformationProperty.builder()
+                                        .priority(0)
+                                        .type("URL_DECODE")
+                                        .build(),
+                                CfnWebACL.TextTransformationProperty.builder()
+                                        .priority(1)
+                                        .type("LOWERCASE")
+                                        .build()))
+                        .build())
+                .build();
+    }
+
+    private static CfnWebACL.StatementProperty uriPathExactlyStatement(String path) {
+        return CfnWebACL.StatementProperty.builder()
+                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .uriPath(Map.of())
+                                .build())
+                        .positionalConstraint("EXACTLY")
+                        .searchString(path)
                         .textTransformations(List.of(
                                 CfnWebACL.TextTransformationProperty.builder()
                                         .priority(0)
@@ -1558,9 +1590,10 @@ public class EdgeStack extends Stack {
                         // second path /api/v1/books/* is the one request shape that legitimately
                         // carries megabytes, and it is authenticated by the books JWT authoriser
                         // before diyaGlPut.js checks the decoded size against DIYA_GL_MAX_BYTES.
-                        // A POST under /api/v1/hmrc/ct/return files a CT600 whose return, computations
-                        // and accounts travel in the body, well past 8KB; it is authenticated before
-                        // the handler reads it.
+                        // A POST to /api/v1/hmrc/ct/return or /api/v1/hmrc/ct/return/preview carries a
+                        // CT600 whose return, computations and accounts travel in the body, well past
+                        // 8KB; it is authenticated before the handler reads it. Both paths match
+                        // exactly, so no path under or beside them is exempt.
                         CfnWebACL.RuleProperty.builder()
                                 .name("OversizedBodyOutsideBookWrite")
                                 .priority(5)
@@ -1621,8 +1654,7 @@ public class EdgeStack extends Stack {
                                                                                                         .builder()
                                                                                                         .statements(
                                                                                                                 List.of(
-                                                                                                                        uriPathStartsWithStatement(
-                                                                                                                                "/api/v1/hmrc/ct/return"),
+                                                                                                                        ct600ReturnRouteUriStatement(),
                                                                                                                         methodStatement(
                                                                                                                                 "POST")))
                                                                                                         .build())
