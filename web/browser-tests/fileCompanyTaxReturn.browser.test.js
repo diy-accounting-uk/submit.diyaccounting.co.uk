@@ -1271,6 +1271,38 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(firstReturn).toBeHidden();
   });
 
+  test("a 13-month period with an own working that disagrees with the first return still shows both returns' worked tax", async ({
+    page,
+  }) => {
+    await openForm(page);
+    await typeLongForm(page);
+    await page.locator("#periodEnd").fill("2026-01-31");
+    await page.locator("#periodEnd").blur();
+    const firstReturn = page.locator(".worked-tax__return").filter({ has: page.getByRole("heading", { name: /^Return 1 of 2/ }) });
+    const secondReturn = page.locator(".worked-tax__return").filter({ has: page.getByRole("heading", { name: /^Return 2 of 2/ }) });
+    const box440 = (section) =>
+      section
+        .locator(".worked-tax__row", { hasText: "Box 440:" })
+        .first()
+        .locator("dd")
+        .first()
+        .innerText()
+        .then((text) => Number(text.replace(/[^0-9.-]/g, "")));
+    await expect(firstReturn).toBeVisible();
+    const first440 = await box440(firstReturn);
+    const second440 = await box440(secondReturn);
+    expect(first440).toBeGreaterThan(0);
+
+    await page.locator("#ownCorporationTax").fill(String(first440 + 100));
+    await page.locator("#ownCorporationTax").blur();
+
+    await expect(page.locator("#workedTaxEmpty")).toBeHidden();
+    await expect(firstReturn).toBeVisible();
+    await expect(secondReturn).toBeVisible();
+    expect(await box440(firstReturn)).toBe(first440);
+    expect(await box440(secondReturn)).toBe(second440);
+  });
+
   test("a long period shows two columns, the second with the suffix Ap2 and each limit in its hint", async ({ page }) => {
     await openForm(page);
     await page.locator("#periodStart").fill("2025-01-01");
