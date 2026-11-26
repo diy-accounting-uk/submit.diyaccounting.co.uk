@@ -1136,6 +1136,20 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#period-error")).toContainText("18 months at most");
   });
 
+  test("a period of 13 months and then of 12 leaves no two-return heading in the worked tax", async ({ page }) => {
+    await openForm(page);
+    await typeLongForm(page);
+    const firstReturn = page.locator("#workedTax").getByRole("heading", { name: /Return 1 of 2/ });
+    await page.locator("#periodEnd").fill("2026-01-31");
+    await page.locator("#periodEnd").blur();
+    await expect(firstReturn).toBeVisible();
+
+    await page.locator("#periodEnd").fill("2025-12-31");
+    await page.locator("#periodEnd").blur();
+    await expect(page.locator("#longPeriodPanel")).toBeHidden();
+    await expect(firstReturn).toBeHidden();
+  });
+
   test("a long period shows two columns, the second with the suffix Ap2 and each limit in its hint", async ({ page }) => {
     await openForm(page);
     await page.locator("#periodStart").fill("2025-01-01");
@@ -1677,6 +1691,50 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#taxAlreadyPaid").fill("999999");
     await page.locator("#taxAlreadyPaid").blur();
     await expect(page.locator("#taxAlreadyPaid-error")).toContainText("More tax was paid than the return charges");
+  });
+
+  async function workedBoxPounds(page, box) {
+    const text = await page
+      .locator("#workedTaxRows .worked-tax__row", { hasText: `Box ${box}:` })
+      .first()
+      .locator("dd")
+      .first()
+      .innerText();
+    return Number(text.replace(/[^0-9.-]/g, ""));
+  }
+
+  test("an own working that disagrees with the worked tax leaves box 440 and box 600 in the panel", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const box440 = await workedBoxPounds(page, 440);
+    expect(box440).toBeGreaterThan(0);
+
+    await page.locator("#ownCorporationTax").fill(String(box440 + 100));
+    await page.locator("#ownCorporationTax").blur();
+
+    await expect(page.locator("#workedTaxEmpty")).toBeHidden();
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 440:");
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 600:");
+    expect(await workedBoxPounds(page, 440)).toBe(box440);
+  });
+
+  test("the review refuses an own working that disagrees with the worked tax, naming both figures", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const box440 = await workedBoxPounds(page, 440);
+    const box475 = await workedBoxPounds(page, 475);
+    const own = box440 + 100;
+
+    await page.locator("#ownCorporationTax").fill(String(own));
+    await page.locator("#previewBtn").click();
+
+    await expect(page.locator("#previewView")).toBeHidden();
+    const error = page.locator("#ownCorporationTax-error");
+    await expect(error).toContainText("disagrees with your own working");
+    await expect(error).toContainText(box475.toFixed(2));
+    await expect(error).toContainText(own.toFixed(2));
   });
 
   test("a worked box has no input and shows its rule", async ({ page }) => {

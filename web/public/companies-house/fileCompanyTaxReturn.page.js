@@ -1557,6 +1557,17 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
   element("workedTaxRows").hidden = true;
 }
 
+// The worked tax panel shows the tax the return works out, so the person's own working is left out
+// of what it derives: the review and the filing still compare the two and refuse a disagreement.
+function withoutOwnWorking(figures) {
+  const { ownCorporationTax: _own, ...rest } = figures;
+  if (!rest.accountingPeriods) return rest;
+  return {
+    ...rest,
+    accountingPeriods: rest.accountingPeriods.map(({ ownCorporationTax: _periodOwn, ...period }) => period),
+  };
+}
+
 function renderWorkedTax(values) {
   const rows = element("workedTaxRows");
   element("workedTaxLong").hidden = true;
@@ -1565,7 +1576,7 @@ function renderWorkedTax(values) {
     rows.replaceChildren();
     return;
   }
-  const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
+  const figures = withoutOwnWorking(figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet));
   const placeholders = placeholdersFor(figures);
   const periods = longPeriodOf(values);
   let derived;
