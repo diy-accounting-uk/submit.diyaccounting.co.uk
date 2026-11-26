@@ -3272,6 +3272,7 @@ window.WELSH_TEXT = {
   "widget.still-processing": "Yn dal i brosesu...",
   "widget.try-again": "Rhowch gynnig arall arni",
   "widget.vrn-nine-numbers": "Mae’n rhaid i’r rhif cofrestru TAW fod yn 9 rhif",
+  "widget.working": "Wrthi’n gweithio",
   "widget.yes": "Iawn",
 };
 

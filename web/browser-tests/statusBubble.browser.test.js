@@ -29,9 +29,25 @@ const COMPANY_PROFILE = {
 const BOOK_DIRECTORY = path.join(process.cwd(), "fixtures/diya-gl/precision-code-ltd");
 const PREVIEW_FAILURE = "HMRC could not check the return: the period of account is missing.";
 
-// Serves the real site from web/public, signed in, with the company lookup answered and the
-// return's preview failing with an error the page shows in its status area.
-async function serveSite(page) {
+const PREVIEW_ANSWER = {
+  boxes: { 3: "8596148860", 30: "2025-04-01", 35: "2026-03-31", 440: 12345.67, 475: 12345.67 },
+  computationLines: {
+    profitLossPerAccounts: 1,
+    nonTradingLoanRelationshipCredits: 1,
+    depreciation: 1,
+    amortisation: 1,
+    entertaining: 1,
+    donations: 1,
+    adjustedProfitBeforeCapitalAllowances: 2,
+    totalCapitalAllowances: 1,
+    adjustedProfit: 1,
+  },
+  computationsIxbrl: "<html/>",
+};
+
+// Serves the real site from web/public, signed in, with the company lookup answered. The return's
+// preview fails with an error the page shows in its status area, unless `preview` answers it.
+async function serveSite(page, { preview } = {}) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("cognitoIdToken", "mock-id-token");
@@ -59,6 +75,10 @@ async function serveSite(page) {
       return;
     }
     if (url.pathname === "/api/v1/hmrc/ct/return/preview") {
+      if (preview) {
+        await preview(route);
+        return;
+      }
       await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: PREVIEW_FAILURE }) });
       return;
     }
@@ -79,8 +99,8 @@ async function serveSite(page) {
   });
 }
 
-async function openForm(page) {
-  await serveSite(page);
+async function openForm(page, options) {
+  await serveSite(page, options);
   await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
   await page.locator("#companyNumber").fill("00000007");
   await page.locator("#companyLookupBtn").click();
@@ -155,7 +175,7 @@ test.describe("The bubble for a status message out of view", () => {
     await expect(page.locator(".status-bubble")).toHaveCount(0);
   });
 
-  test("an error bubble stays until it is closed, and an information bubble closes on its own after eight seconds", async ({ page }) => {
+  test("an error bubble stays until it is closed, and a success bubble closes on its own after eight seconds", async ({ page }) => {
     await page.clock.install();
     await openForm(page);
     await scrollToFoot(page);
@@ -169,16 +189,11 @@ test.describe("The bubble for a status message out of view", () => {
     await expect(bubble).toHaveCount(0);
     await expect(page.locator("#statusMessagesContainer .status-error")).toHaveCount(1);
 
-    await showMessage(page, "Checking the return with HMRC.", "info");
-    await expect(bubble).toHaveAttribute("data-kind", "info");
+    await showMessage(page, "The return is saved.", "success");
+    await expect(bubble).toHaveAttribute("data-kind", "success");
     await page.clock.fastForward(7_000);
     await expect(bubble).toBeVisible();
     await page.clock.fastForward(1_500);
-    await expect(bubble).toHaveCount(0);
-
-    await showMessage(page, "The return is saved.", "success");
-    await expect(bubble).toHaveAttribute("data-kind", "success");
-    await page.clock.fastForward(8_500);
     await expect(bubble).toHaveCount(0);
   });
 
@@ -230,5 +245,96 @@ test.describe("The bubble for a status message out of view", () => {
     await scrollToFoot(page);
     await showMessage(page, "Neges am y Ffurflen.", "error");
     await expect(page.locator(".status-bubble .status-bubble-link")).toHaveText("Ewch i’r neges");
+  });
+});
+
+test.describe("The working bubble while the page works", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("pressing Preview the return shows the working bubble until HMRC's answer, and then neither bubble", async ({ page }) => {
+    let answer;
+    const answered = new Promise((resolve) => {
+      answer = resolve;
+    });
+    await openForm(page, {
+      preview: async (route) => {
+        await answered;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(PREVIEW_ANSWER),
+        });
+      },
+    });
+    await fillFromTheBook(page);
+    await scrollToFoot(page);
+    const working = page.locator(".status-working-bubble");
+    await expect(working).toHaveCount(0);
+
+    await page.locator("#previewBtn").click();
+    await expect(working).toBeVisible();
+    await expect(working).toBeInViewport();
+    await expect(working.locator(".status-working-label")).toHaveText("Working");
+    await expect(working).not.toHaveAttribute("role");
+    await expect(page.locator("#loadingSpinner")).toBeVisible();
+
+    answer();
+    await expect(working).toHaveCount(0);
+    await expect(page.locator(".status-bubble")).toHaveCount(0);
+  });
+
+  test("a failed preview takes the working bubble away and leaves the error bubble", async ({ page }) => {
+    let fail;
+    const failed = new Promise((resolve) => {
+      fail = resolve;
+    });
+    await openForm(page, {
+      preview: async (route) => {
+        await failed;
+        await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: PREVIEW_FAILURE }) });
+      },
+    });
+    await fillFromTheBook(page);
+    await scrollToFoot(page);
+    await page.locator("#previewBtn").click();
+    const working = page.locator(".status-working-bubble");
+    await expect(working).toBeVisible();
+    await expect(page.locator(".status-bubble")).toHaveCount(0);
+
+    fail();
+    await expect(working).toHaveCount(0);
+    const bubble = page.locator(".status-bubble");
+    await expect(bubble).toHaveAttribute("data-kind", "error");
+    await expect(bubble).toBeInViewport();
+  });
+
+  test("an information message shows as the working bubble with its text, wherever the reader is, until it leaves", async ({ page }) => {
+    await openForm(page);
+    const working = page.locator(".status-working-bubble");
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await showMessage(page, "Still processing...", "info");
+    await expect(working).toBeVisible();
+    await expect(working.locator(".status-working-text")).toHaveText("Still processing...");
+
+    await scrollToFoot(page);
+    await expect(working).toBeInViewport();
+    await expect(page.locator(".status-bubble")).toHaveCount(0);
+
+    await showMessage(page, "The return could not be checked.", "error");
+    await expect(working).toHaveCount(0);
+    await expect(page.locator(".status-bubble")).toHaveAttribute("data-kind", "error");
+  });
+
+  test("the working bubble reads in Welsh on the Welsh page", async ({ page }) => {
+    await serveSite(page);
+    await page.goto(PAGE_URL.replace("/companies-house/", "/cy/companies-house/"), { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await page.evaluate(() => window.showLoading());
+    await expect(page.locator(".status-working-bubble .status-working-label")).toHaveText("Wrthi’n gweithio");
+    await page.evaluate(() => window.hideLoading());
+    await expect(page.locator(".status-working-bubble")).toHaveCount(0);
   });
 });

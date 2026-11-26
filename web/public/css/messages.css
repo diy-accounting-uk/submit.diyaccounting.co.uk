@@ -118,19 +118,74 @@
   background-color: var(--c-paper);
 }
 
-/* The bubble that repeats a message added while the status area is out of
-   view, fixed at the top right of the window. */
-.status-bubble {
-  --message-ink: var(--c-info);
-  --message-tint: var(--c-info-tint);
+/* The bubbles at the top right of the window: the working bubble while the
+   page works, and the bubble that repeats a message added while the status
+   area is out of view. */
+.status-bubbles {
   position: fixed;
   top: var(--space-4);
   right: var(--space-4);
   z-index: 1000;
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(24rem, calc(100vw - 2 * var(--space-4)));
+  pointer-events: none;
+}
+
+.status-bubble,
+.status-working-bubble {
+  pointer-events: auto;
+}
+
+.status-working-bubble {
+  display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  width: min(24rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--c-info);
+  border-left-width: 4px;
+  border-radius: var(--radius-control);
+  background-color: var(--c-info-tint);
+  color: var(--c-ink);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+
+.status-working-label {
+  font-weight: var(--weight-strong);
+}
+
+.status-working-sign {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 3px solid var(--c-info-tint);
+  border-top-color: var(--c-info);
+  border-radius: 50%;
+  outline: 1px solid var(--c-info);
+  outline-offset: -1px;
+  animation: status-working-turn 0.9s linear infinite;
+}
+
+@keyframes status-working-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-working-sign {
+    animation: none;
+  }
+}
+
+.status-bubble {
+  --message-ink: var(--c-info);
+  --message-tint: var(--c-info-tint);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--message-ink);
   border-left-width: 4px;

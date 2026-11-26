@@ -27728,3 +27728,9 @@ cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn.'''
 [strings."widget.failure-firewall-reference"]
 hash = "fc21e70bd1b7"
 cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn. Cyfeirnod: {reference}.'''
+
+# == The working bubble while a page works, ids widget.working ==
+
+[strings."widget.working"]
+hash = "a92f0449a9f7"
+cy = '''Wrthi’n gweithio'''
