@@ -53,7 +53,7 @@ Submit never takes, holds or forwards money, and never sees card or bank details
 
 ### PAY1. The payment client and simulator
 
-`app/services/hmrcPaymentClient.js` (new): `startPayment({ vrn, amountInPence, backURL, hmrcAccount })` calls `POST /pay` with an application-restricted token, and `paymentStatus(clientJourneyId, { hmrcAccount })` calls `GET /status`. It sends `friendlyName` "DIY Accounting Submit" and the receipt URL as `backURL`, omits absent fields, and maps HMRC's 400 `errors` to one named error.
+`app/services/hmrcPaymentClient.js` (new): `startPayment({ taxRegime, reference, amountInPence, backURL, hmrcAccount })` (`taxRegime` `Vat` or `SelfAssessment`, `reference` the VRN or the UTR, so the Income Tax follow-on, `PLAN_ITSA_APPROVAL.md` ISA6, needs no refactor) calls `POST /pay` with an application-restricted token, and `paymentStatus(clientJourneyId, { hmrcAccount })` calls `GET /status`. It sends `friendlyName` "DIY Accounting Submit" and the receipt URL as `backURL`, omits absent fields, and maps HMRC's 400 `errors` to one named error.
 
 - **The token.** The only client-credentials flow today is `sandboxAccessToken` in `app/functions/hmrc/hmrcFphCheckWorker.js` (line 77): sandbox only (`HMRC_SANDBOX_CLIENT_ID`, `HMRC_SANDBOX_CLIENT_SECRET_ARN`, `HMRC_SANDBOX_BASE_URI`), a cached token, and one re-read of a rolled secret through `refreshAfterAuthFailure`. Copy that pattern into the client and pick the application as `getHmrcBaseUrl` in `app/services/hmrcApi.js` (line 57) picks the base: `hmrcAccount` `synthetic` gives the sandbox values, anything else `HMRC_BASE_URI`, `HMRC_CLIENT_ID` and `HMRC_CLIENT_SECRET_ARN`. Keep one cached token per application. Call through `recordedFetch` with `org: "hmrc"` and `actor: "system"`, as the worker does.
 - **Fraud prevention headers.** They go on these calls only if HMRC's spec or the validator asks for them on application-restricted calls (check `../private.diyaccounting.co.uk/hmrc/developer/fraud-prevention/` and `../private.diyaccounting.co.uk/hmrc/developer/apis/initpay.yaml`; say which in the report).
@@ -75,7 +75,7 @@ Two routes: `POST /api/v1/hmrc/vat/payment` (starts a journey for the signed-in 
 
 ### PAY3. The ways-to-pay panel
 
-One shared widget (`web/public/widgets/vat-ways-to-pay.js`, new) that, given a VRN, an amount and a due date, shows in this order:
+One shared widget (`web/public/widgets/vat-ways-to-pay.js`, new) that, given a tax regime, a reference (the VRN for VAT), an amount and a due date, shows in this order (it is built and tested for VAT here; ISA6 adds Self Assessment's bank details and links):
 
 1. **Pay now through HMRC**: a button that calls PAY2's start route and sends the browser to `redirectURL`; on return (the `backURL`) it reads the status and shows "Paid £X on <date>", "Payment failed" or "Payment in progress".
 2. **Bank transfer**: HMRC's VAT account name, sort code and account number, and the payment reference (the VRN), each with a copy button. The bank details are read once from GOV.UK's "Pay your VAT bill: bank details" page by the builder of this row, written into one constant with the page's URL beside it, and checked by a test against that constant only.

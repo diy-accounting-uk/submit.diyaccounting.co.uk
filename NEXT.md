@@ -5,7 +5,7 @@
 
 Living handover for this repository. Rules and shape: `../NEXT.md` (DONE or OPEN only, nothing
 deferred; a bug found fixing item A is A's remainder, not a new item; this file holds ONLY what
-to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` at this root. The ITSA production approval rows (IA1 to IA10) and the Income Tax, bundle and practice unhide rows (UH1 to UH3) are boarded in `PLAN_ITSA_APPROVAL.md`, not here. Every other open task is tracked in its plan: the FSB offer chain and the donor offer chain stay here beside the CT-on-prod chain, and the defects.
+to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` at this root. The ITSA production approval rows (IA5 to IA10), the Income Tax account view (ISA1 to ISA8, OISA1) and the Income Tax, bundle and practice unhide rows (UH1 to UH3) are boarded in `PLAN_ITSA_APPROVAL.md`, not here. Every other open task is tracked in its plan: the FSB offer chain and the donor offer chain stay here beside the CT-on-prod chain, and the defects.
 
 ## Open items
 
