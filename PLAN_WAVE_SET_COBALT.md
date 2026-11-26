@@ -94,7 +94,7 @@ State: pending.
 |---|---|---|---|
 | ct600-page | CTL7, CTL9 | Sonnet | `ct600-fields.js` (`reviewAnswers`), `web/public/lib/filing-record.js`, `web/public/lib/filing-result-record.js`, `fileCompanyTaxReturn.page.js`, `app/services/ctComputationsIxbrl.js`, `app/services/accountsIxbrlCommon.js`, their tests |
 
-State: landed at a987c2445 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445); gate running: garnet gate-browser-a987c24, anvil gate-java-lint-a987c24; Docker passed on the laptop; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration.
+State: landed at a987c2445 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445); flint's review found six points: ctl7b (the box reference, the period term, print row breaks, one `longDateText`) builds on flint for this wave, and ctl7c (the review rendered from the filed copy, dates in words) rides wave 8 after CTF1 because it changes the CT600 page; gate running: garnet gate-browser-a987c24, anvil gate-java-lint-a987c24; Docker passed on the laptop; npm test, the CT600 browser tests and the companyTaxReturn simulator suite passed on jasper's integration.
 
 ### Wave 7
 
@@ -108,7 +108,7 @@ State: integrating: jasper merges CTV1 (adeced7af) onto `claude/cobalt-w06-a987c
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| ct600-page | CTF1 | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
+| ct600-page | CTF1, ctl7c | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
 
 State: pending.
 
