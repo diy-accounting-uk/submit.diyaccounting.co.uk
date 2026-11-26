@@ -3,11 +3,14 @@
 
 # PLAN: ITSA production approval and the software finder listing
 
-The build is done and proven in the sandbox; its plan is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. This plan carries what
-stands between that build and real customers: HMRC's production access for Income Tax (MTD), the
-software finder listing, and the three things that follow the approval. It took these items from
-`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` (the recognition track and T10), `NEXT.md` (O11, B10)
-(rows 10 and 11) on 2026-10-03.
+The build is done and proven in the sandbox; its plan is archived at
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. This plan
+carries what stands between that build and real customers: HMRC's production access for Income
+Tax (MTD), the software finder listing, the Income Tax ad group, and the unhide rows that put the
+forms on prod.
+
+Status (2026-11-26): IA5 to IA10 and UH1 to UH3 are open. Each waits on HMRC's early-2027 update
+on 2027-28 production access. `NEXT.md` carries none of them.
 
 ## Operator assertions (verbatim)
 
@@ -163,43 +166,41 @@ Arrangements". The body, with the mail client's chrome and the standing footer r
 - Exception 2 needs quarterly access already granted for the product. Our production credentials
   cover VAT (MTD) only.
 - A 2026-27 application sent now is refused by the letter's own terms, and the refusal sits on
-  the record HMRC reads in 2027. The 2026-10-09 date that drove O11 (the sandbox log window) no
-  longer drives anything.
+  the record HMRC reads in 2027.
 
 **What the letter opens.**
 
 - The 2027-28 round. HMRC names "existing software developers" as a group it will brief by early
   2027 on timing, criteria and process. We are one through the VAT credentials.
-- HMRC now states the sandbox log retention as 30 days (our evidence pack said 14). The eight
-  ITSA suites run against ci on demand, so the recency requirement is met by one dispatch in the
-  week the application goes.
+- HMRC keeps sandbox testing logs for 30 days. The eight ITSA suites run against ci on demand,
+  so IA5 meets the recency requirement with one dispatch in the month the application goes.
 - Readiness, line by line against the letter: end-to-end journey (quarterly update to final
   declaration, both income types), minimum functional standards (all nine APIs, D9), digital
   records (the DIYA-GL import is the source, no manual entry path), terms of use, tested
   journeys with error handling (the eight suites and the three sandbox years of 2026-09-25),
   export (the receipts and the book download), fraud prevention headers (validator clean on the
   ci deployment), customer experience (disclaimers and limits on the calculation and declaration
-  pages). The AI-assurance line is new: the application must say how AI-assisted output was
+  pages). The AI-assurance line asks the application to say how AI-assisted output was
   reviewed and tested. This repository's record answers it (every change behind a PR with CI
-  gates, the sandbox transcripts, the evidence pack with a check per claim), and the checklist
-  gains a row for it.
+  gates, the sandbox transcripts, the evidence pack with a check per claim), in row 14 of the
+  checklist.
 
-**What is worth doing now, before HMRC's 2027 update.**
+## HMRC production access for Income Tax, as of 2026-11-26
 
-1. A one-paragraph note to SDST, in place of the application (sent 2026-10-03): the product is built and
-   sandbox-tested end to end for self-employment and UK property, include
-   antony@diyaccounting.co.uk in the 2027-28 notifications, and is a readiness review accepted in
-   advance. No attachments.
-2. Subscribe to the ITSA notices in the Developer Hub's email preferences, so the next
-   announcement arrives (done; the operator confirmed it on 2026-11-06).
-3. Correct the 14-day figure to 30 days in the evidence pack and the two drafts, and add the AI
-   assurance row to the checklist.
-4. Decide whether the spreadsheets site points sole traders at a recognised bridging product for
-   2026-27. VitalTax wrote on 2022-07-12 that they saw interest in integrating DIY Accounting with
-   VitalTax for MTD Income Tax, and announced MTD for Income Tax in their product on 2025-11-18
-   (both in the mail mirror). Decided (a) on 2026-10-20; the note is on the spreadsheets home page (spreadsheets PR #164, merged as 511945ab).
-
-**Sent 2026-10-03.** The note to SDST went from antony@diyaccounting.co.uk (text as sent in `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_2027_NOTE.md`); it also points HMRC at the published ITSA sandbox recordings as evidence of the working product. SDST's reply, if any, rewrites the blocked rows below.
+- **Held**: production credentials for VAT (MTD) only, on the production application CMQAA-531.
+  No Income Tax API has production access.
+- **Our note**: antony@diyaccounting.co.uk wrote to `SDSTeam@hmrc.gov.uk` on 2026-10-03 (text in
+  `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_2027_NOTE.md`). It asked to be in
+  the 2027-28 notifications, and whether a readiness review or the Production Approvals Checklist
+  can be lodged before the window opens.
+- **SDST's answer**: Nathan Watson replied on 2026-10-05 and asked us to set up email preferences
+  in the Developer Hub (`mail/antony@diyaccounting.co.uk/2026/10/5/1a10c449f358f10e.eml`). The
+  operator set them up (2026-11-06). The question about an early readiness review has no answer.
+- **Since then**: Developer Hub notices reach antony@diyaccounting.co.uk (the latest on
+  2026-11-25). None is about 2027-28 production access.
+- **The Developer Hub**: the Self Assessment Accounts API page (updated 2026-11-25) still says
+  that HMRC no longer accepts production requests for new 2026-27 quarterly update products.
+- **Recognition and the software finder**: neither is applied for. Both wait on HMRC's update.
 
 **What waits.** The recognition application, the production-credentials email, the checklist,
 the finder listing and the Income Tax ad group all wait on HMRC's early-2027 update. The ad group
@@ -207,8 +208,7 @@ must not run before recognition, because the product could not deliver what it a
 
 ## Board
 
-The rows below are this plan's open work, in board order. `NEXT.md` carries none of them; this
-section is their board.
+The rows below are this plan's open work, in board order.
 
 ### Blocked on HMRC's early-2027 update
 
@@ -224,8 +224,10 @@ send.
 - [ ] **IA6. The recognition application.** The operator sends
   `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
   `SDSTeam@hmrc.gov.uk` from antony@diyaccounting.co.uk, rewritten first for the 2027-28 process,
-  with the evidence README's check per claim. **Owner**: Operator (send), Claude Code (the
-  rewrite). **Model**: Sonnet. **Size**: 1 file (private).
+  with the evidence README's check per claim. The rewrite also corrects row "Testing in the last
+  two weeks" of `../private.diyaccounting.co.uk/hmrc/itsa/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md`,
+  which still gives HMRC's log window as 14 days (it is 30). **Owner**: Operator (send), Claude
+  Code (the rewrite). **Model**: Sonnet. **Size**: 2 files (private).
 - [ ] **IA7. The production-credentials email.** When SDST answers:
   `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md`, same
   folder; one application covers recognition and production credentials. **Owner**: Operator.
@@ -240,8 +242,9 @@ send.
   pricing, accessibility position. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 - [ ] **IA10. The Income Tax ad group.** After recognition: a session adds it to
   `infra/google/ads/ads.toml`'s "Search: MTD VAT" campaign (keywords and copy in the parent of
-  8816f93c, PR #414) and applies with `npm run ads:sync -- --apply` on the operator's yes.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+  8816f93c, PR #414) and applies with `npm run ads:sync -- --apply` on the operator's yes. The
+  campaign is `PAUSED` in `ads.toml` (ADS5), so the ad group serves only when the operator also
+  un-pauses the campaign. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
 ### Unhide on prod
 
@@ -255,8 +258,10 @@ operator's approval to enable it for live users on prod.
   for the ITSA APIs (IA7); each activity in a bundle sold on prod; the operator's approval, asked when the other preconditions hold (operator, 2026-11-22: not given ahead).
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
-  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval, asked when the other preconditions hold (operator, 2026-11-22: not given ahead). Resident Pro and Resident Ltd gain `prod` in their `listedInEnvironments` in RL2d; Companies House is
-  `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4, which is live; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
+  `diya-gl-storage` activities. Preconditions: UH3; `PLAN_HMRC_CT_APPROVAL.md` UH7 (the CT600
+  inside Resident Ltd); the operator's approval, asked when the other preconditions hold
+  (operator, 2026-11-22: not given ahead). Resident Pro is already listed on prod.
+  **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
   Authorisation API on Submit's production application; HMRC's approval of agent use; practice
@@ -268,19 +273,15 @@ operator's approval to enable it for live users on prod.
 ```
 HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
                                                └──► IA9
-IA3 ──► IA6
-IA4 decided (a); the note is on the spreadsheets home page (spreadsheets PR #164)
-IA11 ──► IA6 (the recordings are cited in the application)
 IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_HMRC_CT_APPROVAL.md UH7)
 ```
 
-Backlog row 10 (ITSA phase 1) is closed: its build is on main and proven, and the send it
-waited on is IA6. Backlog row 11 (ITSA phase 2 and the recognition application) closes with IA7.
+Backlog row 11 (ITSA phase 2 and the recognition application) closes with IA7.
 
 ## The application, as the phase-2 plan designed it
 
-Moved from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` on 2026-10-03; the 2027-28 process may change the steps, and
-IA6's rewrite checks each against HMRC's update.
+From `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. The
+2027-28 process may change the steps, and IA6's rewrite checks each against HMRC's update.
 
 HMRC recognises three product shapes. Ours is a **full end-to-end product**, built in two
 stages. The guide allows the stages to be approved one at a time, and we apply for both at once
@@ -343,50 +344,29 @@ lists both income types the journey covers. The software vendor team email descr
 as filing quarterly updates, loss claims and a final declaration for self-employment and UK
 property income.
 
-The pack is assembled and on main (BSAS and UK property annual evidenced on all three sandbox
-years, 328b44d3a). IA3 and IA6 are the edits it still takes.
+The pack is assembled (BSAS and UK property annual evidenced on all three sandbox years). IA6
+is the edit it still takes.
 
-## Backlog rows this plan carries
-
-Moved from the backlog's Tier 2 on 2026-10-03; their tier and value stay as written here.
-
-### 10. ITSA phase 1 sandbox integration
-
-ITSA build, phase 1: sandbox integration with the self-employment quarterly update APIs. On main
-and proven: the sandbox year ran clean on 2023-24, 2025-26 and 2026-27 on 2026-09-25 with a valid
-`Gov-Client-Multi-Factor` header, and the eight ITSA suites run in CI. The hand-rolled
-`hmrcApi.js` client stays, and a quarterly update costs one token like a VAT return; the mandate
-dates and thresholds are in `_developers/hmrc/ITSA_SPIKE.md`. Closed: nothing is left to build;
-the send it waited on is IA6.
-
-**Source**: Issues #16, #20; `../private.diyaccounting.co.uk/strategy/STRATEGY.md`;
-`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. **Effort**: L. **Value**: Revenue. The strategic bet. Voluntary sign-up is
-open now and HMRC auto-enrolment starts September 2026.
+## Backlog row this plan carries
 
 ### 11. ITSA phase 2 and the recognition application
 
 ITSA build, phase 2: annual summaries, final declaration, then the ITSA recognition application
-and finder listing. The build and the recognition pack are on main; evidence for each claim is in
-`../private.diyaccounting.co.uk/hmrc/itsa/evidence/README.md`. Remaining: IA1 to IA10 above. One
+and finder listing. The build and the recognition pack are done; evidence for each claim is in
+`../private.diyaccounting.co.uk/hmrc/itsa/evidence/README.md`. Remaining: IA5 to IA10 above. One
 application covers recognition and production credentials. Closes with IA7.
 
 **Source**: `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` T10. **Effort**: L. **Value**: Revenue. The recognition lead
 time is HMRC's; being ready when the 2027-28 window opens is the only control we have over April
 2027.
 
-### 17d. Walkthrough video test-data review
-
-Moved from the backlog's Tier 3 and `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` on 2026-10-03; the work is IA11.
-
-**Source**: Operator, 2026-09-15. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window and, since the 2026-10-03 note to SDST, part of the application's evidence; a result on screen and shorter runs make them worth watching.
-
 ## Sources
 
-- HMRC, "MTD ITSA APIs – Update on Production Access Arrangements", 2026-09-30, quoted above.
+- HMRC, "MTD ITSA APIs – Update on Production Access Arrangements", 2026-09-30, quoted above
+  (`mail/antony@diyaccounting.co.uk/2026/9/30/1a0f2f5040783ccd.eml`); our reply of 2026-10-03
+  (`…/2026/10/3/1a1017745227e438.eml`) and SDST's of 2026-10-05 (`…/2026/10/5/1a10c449f358f10e.eml`).
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
   <https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html>
 - `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` (the build, its decisions D3 and D9, and its verification list).
 - `../private.diyaccounting.co.uk/hmrc/itsa/` (the checklist, the questionnaires, the drafts, the
   evidence pack and the sandbox runs).
-- Mail mirror: VitalTax, 2022-07-12 (`mail/antony@diyaccounting.co.uk/2022/7/12/181f1ff873a650bf.eml`)
-  and 2025-11-18 (`mail/antony@diyaccounting.co.uk/2025/11/18/19a9721cb06eacce.eml`).
