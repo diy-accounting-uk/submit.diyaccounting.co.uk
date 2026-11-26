@@ -5,6 +5,53 @@
 // edit those and run npm run build:welsh. page-chrome.js loads this file when the language choice is Welsh.
 
 window.WELSH_TEXT = {
+  "accounts-line.accruals": "Croniadau (yn ddyledus o fewn blwyddyn)",
+  "accounts-line.accruals-deferred-income": "Croniadau ac incwm gohiriedig",
+  "accounts-line.accruals-deferred-income-hint":
+    "Costau’r cyfnod hwn nad ydynt wedi’u hanfonebu eto, ac incwm a gafwyd yn y cyfnod hwn ar gyfer un hwyrach.",
+  "accounts-line.accruals-hint":
+    "Costau’r cyfnod hwn nad ydynt wedi’u hanfonebu eto, a ddangosir o fewn y credydwyr sy’n ddyledus o fewn 12 mis.",
+  "accounts-line.amounts-owed-to-directors": "O’r rhain, symiau sy’n ddyledus i gyfarwyddwyr",
+  "accounts-line.amounts-owed-to-directors-hint": "Y rhan o’r symiau hynny sydd gan y cwmni’n ddyledus i’w gyfarwyddwyr.",
+  "accounts-line.amounts-owed-to-group-undertakings": "O’r rhain, symiau sy’n ddyledus i ymgymeriadau grŵp",
+  "accounts-line.amounts-owed-to-group-undertakings-hint": "Y rhan o’r symiau hynny sydd gan y cwmni’n ddyledus i gwmnïau yn ei grŵp.",
+  "accounts-line.called-up-share-capital-not-paid": "Cyfalaf cyfranddaliadau a alwyd heb ei dalu",
+  "accounts-line.called-up-share-capital-not-paid-hint":
+    "Cyfalaf cyfranddaliadau y mae’r cwmni wedi’i alw ac nad yw’r aelodau wedi’i dalu eto.",
+  "accounts-line.capital-and-reserves": "Cyfalaf a chronfeydd wrth gefn",
+  "accounts-line.capital-and-reserves-hint": "Cyfalaf cyfranddaliadau a alwyd ynghyd â’r cyfrif elw a cholled. Mae’n hafal i’r asedau net.",
+  "accounts-line.change-in-stocks": "Newid mewn stociau o nwyddau gorffenedig ac mewn gwaith ar y gweill",
+  "accounts-line.change-in-stocks-hint":
+    "Stociau cau o nwyddau gorffenedig a gwaith ar y gweill llai stociau agor. Mae gostyngiad yn ffigur minws.",
+  "accounts-line.depreciation": "Dibrisiant a symiau eraill a ddilëwyd oddi ar asedau sefydlog diriaethol ac anniriaethol",
+  "accounts-line.depreciation-hint": "Y dibrisiant a’r amorteiddiad a godwyd ar asedau sefydlog y cwmni yn y cyfnod.",
+  "accounts-line.interest-payable": "Llog taladwy a threuliau tebyg",
+  "accounts-line.interest-payable-hint": "Llog a dalodd y cwmni ar fenthyciadau a gorddrafftiau.",
+  "accounts-line.other-debtors": "O’r rhain, dyledwyr eraill",
+  "accounts-line.other-debtors-hint": "Unrhyw swm arall sy’n ddyledus i’r cwmni.",
+  "accounts-line.other-external-charges": "Taliadau allanol eraill",
+  "accounts-line.other-external-charges-hint": "Costau eraill a brynwyd o’r tu allan i’r cwmni, fel isgontractwyr a rhent.",
+  "accounts-line.other-operating-expenses": "Treuliau gweithredu eraill",
+  "accounts-line.other-operating-expenses-hint": "Pob cost arall o redeg y cwmni yn y cyfnod.",
+  "accounts-line.other-operating-income": "Incwm gweithredu arall",
+  "accounts-line.other-operating-income-hint": "Incwm o weithrediadau’r cwmni heblaw ei werthiannau, fel rhent a gafwyd neu grantiau.",
+  "accounts-line.own-work-capitalised": "Gwaith eich hun a gyfalafwyd",
+  "accounts-line.own-work-capitalised-hint": "Cost y gwaith a wnaeth y cwmni ar ei asedau sefydlog ei hun, wedi’i hychwanegu at eu cost.",
+  "accounts-line.prepayments": "O’r rhain, rhagdaliadau ac incwm cronedig",
+  "accounts-line.prepayments-accrued-income": "Rhagdaliadau ac incwm cronedig",
+  "accounts-line.prepayments-accrued-income-hint":
+    "Costau a dalwyd yn y cyfnod hwn ar gyfer un hwyrach, ac incwm a enillwyd yn y cyfnod hwn nad yw wedi’i anfonebu eto.",
+  "accounts-line.prepayments-hint":
+    "Costau a dalwyd yn y cyfnod hwn ar gyfer un hwyrach, ac incwm a enillwyd nad yw wedi’i anfonebu eto, a ddangosir o fewn dyledwyr.",
+  "accounts-line.provisions-for-liabilities": "Darpariaethau ar gyfer rhwymedigaethau",
+  "accounts-line.provisions-for-liabilities-hint":
+    "Symiau a neilltuwyd ar gyfer rhwymedigaeth nad yw ei swm neu ei dyddiad yn sicr eto, fel treth ohiriedig.",
+  "accounts-line.raw-materials-consumables": "Deunyddiau crai a defnyddiau traul",
+  "accounts-line.raw-materials-consumables-hint": "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd yn y cyfnod.",
+  "accounts-line.staff-costs": "Costau staff",
+  "accounts-line.staff-costs-hint": "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn.",
+  "accounts-line.trade-debtors": "O’r rhain, dyledwyr masnach",
+  "accounts-line.trade-debtors-hint": "Y rhan o’r dyledwyr sydd gan gwsmeriaid yn ddyledus am werthiannau.",
   "bundles.active-subscription": "Tanysgrifiad gweithredol",
   "bundles.added": "Wedi’i ychwanegu ✓",
   "bundles.added-name": "Wedi’i ychwanegu ✓ {name}",
@@ -1804,6 +1851,7 @@ window.WELSH_TEXT = {
   "ch.office.filled-from-filed": "Wedi’i llenwi o’r cyfrifon a ffeiliwyd gennych. Newidiwch ran i’w chywiro.",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",
+  "ch.prior.column-source": "Ffigurau’r llynedd: o’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar gyfer y flwyddyn hyd at {date}.",
   "ch.prior.filing-history": "hanes ffeilio’r cwmni",
   "ch.prior.last-were-micro": "Cyfrifon micro-endid oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",
   "ch.prior.last-were-small": "Cyfrifon cwmni bach oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",

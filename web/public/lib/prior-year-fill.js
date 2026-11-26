@@ -43,12 +43,13 @@ function formatDate(isoDate, welsh) {
   });
 }
 
-// The name of the line a prior-year field belongs to: its row's heading, without the "(optional)" after
-// it or the "Of which," before a part of a line.
+// The name of the line a prior-year field belongs to: its row's plain label (the heading's text when
+// the row carries none), without the "(optional)" after it or the "Of which," before a part of a line.
 function lineName(input) {
   const optional = siteText("ch.prior.optional-qualifier", "(optional)");
   const ofWhich = siteText("ch.prior.of-which-qualifier", "Of which,");
-  let name = input.closest("tr").querySelector("th").textContent.trim().replace(/\s+/g, " ");
+  const heading = input.closest("tr").querySelector("th");
+  let name = (heading.dataset.lineLabel ?? heading.textContent).trim().replace(/\s+/g, " ");
   if (name.endsWith(optional)) name = name.slice(0, -optional.length).trim();
   if (name.startsWith(ofWhich)) name = name.slice(ofWhich.length).trim();
   return name.charAt(0).toUpperCase() + name.slice(1);
@@ -92,6 +93,28 @@ export function placeFigures(accounts, doc) {
     placed.push(input.id);
   });
   return placed;
+}
+
+/**
+ * Say above each table that holds a filled prior-year figure where those figures came from.
+ * @param {Document} doc
+ * @param {string[]} placed - the ids of the fields filled
+ * @param {string} madeUpTo - the day the filed accounts were made up to, as the page shows dates
+ */
+export function markPriorYearSource(doc, placed, madeUpTo) {
+  const tables = new Set(placed.map((id) => doc.getElementById(id)?.closest("table")).filter(Boolean));
+  for (const table of tables) {
+    const note = doc.createElement("p");
+    note.className = "hint prior-year-source";
+    note.textContent = siteText(
+      "ch.prior.column-source",
+      "Last year's figures: from the accounts filed at Companies House for the year to {date}.",
+      {
+        date: madeUpTo,
+      },
+    );
+    table.before(note);
+  }
 }
 
 /** The lines whose prior-year field the form shows and that neither the fill nor anyone else filled, by their names. */
@@ -236,6 +259,7 @@ async function capitalAndReservesNote(doc) {
 export async function fillPriorYear({ companyNumber, form, note, doc, search, welsh, fetchLastAccounts, readProfile }) {
   note.hidden = true;
   note.replaceChildren();
+  for (const earlier of doc.querySelectorAll(".prior-year-source")) earlier.remove();
   if (isRevision(search)) return;
   const response = await fetchLastAccounts(companyNumber);
   if (response.status === 403) return;
@@ -291,6 +315,7 @@ export async function fillPriorYear({ companyNumber, form, note, doc, search, we
 async function placedNotes(accounts, set, form, welsh, doc) {
   if (form === "small" && accounts.regime === "small") showSmallCompanyPriorYear(accounts, doc);
   const placed = placeFigures(accounts, doc);
+  markPriorYearSource(doc, placed, formatDate(set.madeUpDate, welsh));
   const empty = emptyLines(doc, placed);
   const values = {
     count: placed.length,

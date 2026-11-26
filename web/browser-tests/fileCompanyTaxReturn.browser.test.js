@@ -460,8 +460,8 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(disclosure.locator("dl")).toContainText("Last year");
     await expect(disclosure.locator("dl")).toContainText("B9");
     await expect(disclosure.locator("img")).toHaveCount(2);
-    await expect(disclosure.locator("img").first()).toHaveAttribute("src", "/images/ct600-sources/PubP&L-F9.webp");
-    await expect(disclosure.locator("img").last()).toHaveAttribute("src", "/images/ct600-sources/PubP&L-B9.webp");
+    await expect(disclosure.locator("img").first()).toHaveAttribute("src", "/images/ct600-sources/PubPandL-F9.webp");
+    await expect(disclosure.locator("img").last()).toHaveAttribute("src", "/images/ct600-sources/PubPandL-B9.webp");
 
     const reserve = page.locator("#currentProfitAndLossAccount-source");
     await reserve.locator("summary").click();

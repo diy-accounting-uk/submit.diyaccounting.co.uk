@@ -8,6 +8,7 @@
 // of each. The fields come from ct600-fields.js, where each carries its register entry.
 
 import { boxRow, guideUrl } from "./ct600-fields.js";
+import { namedCells, sourceImageUrl } from "./ct600-source-cells.js";
 
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
@@ -21,12 +22,11 @@ function create(tag, attributes = {}, ...children) {
   return node;
 }
 
-export const SOURCE_IMAGE_DIRECTORY = "/images/ct600-sources";
-
 // The reference of a field with no box, from the register's code: the first code it names.
 const REFERENCE_PATTERNS = [
   [/^CT600A (A\d+)/, ([, box]) => siteText("field.reference-ct600a", "CT600A {box}", { box })],
   [/μ?BS1 ([A-Z][A-Z.\d]*)/, ([, item]) => siteText("field.reference-balance-sheet", "Balance sheet item {item}", { item })],
+  [/PL2 (\d+\([ab]\)|\d+)/, ([, item]) => siteText("field.reference-profit-and-loss", "Profit and loss item {item}", { item })],
   [/μ?PL1? (\w+)/, ([, item]) => siteText("field.reference-profit-and-loss", "Profit and loss item {item}", { item })],
   [/\bR, note (\d+)/, ([, note]) => siteText("field.reference-balance-sheet-note", "Balance sheet note {note}", { note })],
   [/^CA (\d+[A-Z]?)/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
@@ -122,9 +122,12 @@ export function parseSheetCells(value) {
   return cells;
 }
 
-/** A cell's picture, cut from the published workbook. */
+// The cells with a picture cut from the published workbook: every cell a `source` names.
+const PICTURED_CELLS = new Set(namedCells().map(({ sheet, cell }) => `${sheet}!${cell}`));
+
+/** A cell's picture, or null when no picture of it has been cut. */
 export function sourceImagePath({ sheet, cell }) {
-  return `${SOURCE_IMAGE_DIRECTORY}/${sheet}-${cell}.webp`;
+  return PICTURED_CELLS.has(`${sheet}!${cell}`) ? sourceImageUrl({ sheet, cell }) : null;
 }
 
 function cellsText(cells) {
@@ -191,7 +194,7 @@ export function sourceDisclosure(field, { id = field.id, rows } = {}) {
   const pictured = new Set();
   for (const cell of all) {
     const path = sourceImagePath(cell);
-    if (pictured.has(path)) continue;
+    if (!path || pictured.has(path)) continue;
     pictured.add(path);
     details.append(
       create("img", {

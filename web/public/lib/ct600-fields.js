@@ -26,7 +26,7 @@ export const CT600A_GUIDE_URL =
   "https://www.gov.uk/guidance/supplementary-pages-ct600a-2015-version-3-close-company-loans-and-arrangements-to-confer-benefits-on-participators";
 const LIFE_OF_A_COMPANY_ACCOUNTS_URL =
   "https://www.gov.uk/government/publications/life-of-a-company-annual-requirements/life-of-a-company-part-1-accounts";
-const REGULATIONS_URL = "https://www.legislation.gov.uk/uksi/2008/409/schedule/1/part/1";
+export const REGULATIONS_URL = "https://www.legislation.gov.uk/uksi/2008/409/schedule/1/part/1";
 
 // The Small Companies and Groups (Accounts and Directors' Report) Regulations 2008, Schedule 1.
 function regulationsParagraph(paragraph) {

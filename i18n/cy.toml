@@ -28448,3 +28448,167 @@ cy = '''{label} (yng nghell {cell})'''
 [strings."field.source-image-alt"]
 hash = "d02d3a4a8739"
 cy = '''Dalen {sheet} yng nghell {cell}'''
+
+[strings."accounts-line.called-up-share-capital-not-paid"]
+hash = "276a57eefa8b"
+cy = '''Cyfalaf cyfranddaliadau a alwyd heb ei dalu'''
+
+[strings."accounts-line.called-up-share-capital-not-paid-hint"]
+hash = "610aec79d40d"
+cy = '''Cyfalaf cyfranddaliadau y mae’r cwmni wedi’i alw ac nad yw’r aelodau wedi’i dalu eto.'''
+
+[strings."accounts-line.prepayments-accrued-income"]
+hash = "279c6cc4e3d5"
+cy = '''Rhagdaliadau ac incwm cronedig'''
+
+[strings."accounts-line.prepayments-accrued-income-hint"]
+hash = "bb3857fefea5"
+cy = '''Costau a dalwyd yn y cyfnod hwn ar gyfer un hwyrach, ac incwm a enillwyd yn y cyfnod hwn nad yw wedi’i anfonebu eto.'''
+
+[strings."accounts-line.provisions-for-liabilities"]
+hash = "2be61aad53b3"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau'''
+
+[strings."accounts-line.provisions-for-liabilities-hint"]
+hash = "4949209f23ea"
+cy = '''Symiau a neilltuwyd ar gyfer rhwymedigaeth nad yw ei swm neu ei dyddiad yn sicr eto, fel treth ohiriedig.'''
+
+[strings."accounts-line.accruals-deferred-income"]
+hash = "2a032711b37f"
+cy = '''Croniadau ac incwm gohiriedig'''
+
+[strings."accounts-line.accruals-deferred-income-hint"]
+hash = "acd062ad448e"
+cy = '''Costau’r cyfnod hwn nad ydynt wedi’u hanfonebu eto, ac incwm a gafwyd yn y cyfnod hwn ar gyfer un hwyrach.'''
+
+[strings."accounts-line.capital-and-reserves"]
+hash = "2853bb928d05"
+cy = '''Cyfalaf a chronfeydd wrth gefn'''
+
+[strings."accounts-line.capital-and-reserves-hint"]
+hash = "e33248dc34f0"
+cy = '''Cyfalaf cyfranddaliadau a alwyd ynghyd â’r cyfrif elw a cholled. Mae’n hafal i’r asedau net.'''
+
+[strings."accounts-line.change-in-stocks"]
+hash = "f391c3557abe"
+cy = '''Newid mewn stociau o nwyddau gorffenedig ac mewn gwaith ar y gweill'''
+
+[strings."accounts-line.change-in-stocks-hint"]
+hash = "76c2997171f1"
+cy = '''Stociau cau o nwyddau gorffenedig a gwaith ar y gweill llai stociau agor. Mae gostyngiad yn ffigur minws.'''
+
+[strings."accounts-line.own-work-capitalised"]
+hash = "6d2b8e519fc0"
+cy = '''Gwaith eich hun a gyfalafwyd'''
+
+[strings."accounts-line.own-work-capitalised-hint"]
+hash = "343425db90d6"
+cy = '''Cost y gwaith a wnaeth y cwmni ar ei asedau sefydlog ei hun, wedi’i hychwanegu at eu cost.'''
+
+[strings."accounts-line.other-operating-income"]
+hash = "66b1c9867144"
+cy = '''Incwm gweithredu arall'''
+
+[strings."accounts-line.other-operating-income-hint"]
+hash = "7ab9c4acd521"
+cy = '''Incwm o weithrediadau’r cwmni heblaw ei werthiannau, fel rhent a gafwyd neu grantiau.'''
+
+[strings."accounts-line.raw-materials-consumables"]
+hash = "8471ca9007cb"
+cy = '''Deunyddiau crai a defnyddiau traul'''
+
+[strings."accounts-line.raw-materials-consumables-hint"]
+hash = "35d8c27ce5ff"
+cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd yn y cyfnod.'''
+
+[strings."accounts-line.other-external-charges"]
+hash = "88457ef59862"
+cy = '''Taliadau allanol eraill'''
+
+[strings."accounts-line.other-external-charges-hint"]
+hash = "97636070b235"
+cy = '''Costau eraill a brynwyd o’r tu allan i’r cwmni, fel isgontractwyr a rhent.'''
+
+[strings."accounts-line.staff-costs"]
+hash = "f64e0cbf55e8"
+cy = '''Costau staff'''
+
+[strings."accounts-line.staff-costs-hint"]
+hash = "aaa3ad511931"
+cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn.'''
+
+[strings."accounts-line.depreciation"]
+hash = "43b4394c94f7"
+cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedau sefydlog diriaethol ac anniriaethol'''
+
+[strings."accounts-line.depreciation-hint"]
+hash = "bc9338d4a7fd"
+cy = '''Y dibrisiant a’r amorteiddiad a godwyd ar asedau sefydlog y cwmni yn y cyfnod.'''
+
+[strings."accounts-line.other-operating-expenses"]
+hash = "71c31090776d"
+cy = '''Treuliau gweithredu eraill'''
+
+[strings."accounts-line.other-operating-expenses-hint"]
+hash = "50edd714b685"
+cy = '''Pob cost arall o redeg y cwmni yn y cyfnod.'''
+
+[strings."accounts-line.interest-payable"]
+hash = "663f7cecca4f"
+cy = '''Llog taladwy a threuliau tebyg'''
+
+[strings."accounts-line.interest-payable-hint"]
+hash = "47b2b7f670fa"
+cy = '''Llog a dalodd y cwmni ar fenthyciadau a gorddrafftiau.'''
+
+[strings."accounts-line.trade-debtors"]
+hash = "1c26ff4a90ce"
+cy = '''O’r rhain, dyledwyr masnach'''
+
+[strings."accounts-line.trade-debtors-hint"]
+hash = "de6f0439773f"
+cy = '''Y rhan o’r dyledwyr sydd gan gwsmeriaid yn ddyledus am werthiannau.'''
+
+[strings."accounts-line.other-debtors"]
+hash = "3adaed26bb86"
+cy = '''O’r rhain, dyledwyr eraill'''
+
+[strings."accounts-line.other-debtors-hint"]
+hash = "37bdad9833fc"
+cy = '''Unrhyw swm arall sy’n ddyledus i’r cwmni.'''
+
+[strings."accounts-line.prepayments"]
+hash = "bd5805b9b40c"
+cy = '''O’r rhain, rhagdaliadau ac incwm cronedig'''
+
+[strings."accounts-line.prepayments-hint"]
+hash = "1d13b872e662"
+cy = '''Costau a dalwyd yn y cyfnod hwn ar gyfer un hwyrach, ac incwm a enillwyd nad yw wedi’i anfonebu eto, a ddangosir o fewn dyledwyr.'''
+
+[strings."accounts-line.accruals"]
+hash = "bc9f66b47c37"
+cy = '''Croniadau (yn ddyledus o fewn blwyddyn)'''
+
+[strings."accounts-line.accruals-hint"]
+hash = "8f0fb4c02352"
+cy = '''Costau’r cyfnod hwn nad ydynt wedi’u hanfonebu eto, a ddangosir o fewn y credydwyr sy’n ddyledus o fewn 12 mis.'''
+
+[strings."accounts-line.amounts-owed-to-directors"]
+hash = "1c5fcd061911"
+cy = '''O’r rhain, symiau sy’n ddyledus i gyfarwyddwyr'''
+
+[strings."accounts-line.amounts-owed-to-directors-hint"]
+hash = "b379eb8204af"
+cy = '''Y rhan o’r symiau hynny sydd gan y cwmni’n ddyledus i’w gyfarwyddwyr.'''
+
+[strings."accounts-line.amounts-owed-to-group-undertakings"]
+hash = "253346011d5d"
+cy = '''O’r rhain, symiau sy’n ddyledus i ymgymeriadau grŵp'''
+
+[strings."accounts-line.amounts-owed-to-group-undertakings-hint"]
+hash = "a4aaefc343d0"
+cy = '''Y rhan o’r symiau hynny sydd gan y cwmni’n ddyledus i gwmnïau yn ei grŵp.'''
+
+[strings."ch.prior.column-source"]
+hash = "e40634d04cc2"
+cy = '''Ffigurau’r llynedd: o’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar gyfer y flwyddyn hyd at {date}.'''

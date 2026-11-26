@@ -6,11 +6,14 @@
 // web/unit-tests/field-detail.test.js
 
 import { describe, test, expect } from "vitest";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import {
   ACCOUNTS_TEXT_FIELDS,
   BALANCE_SHEET_FIELDS,
   CT600_FORM_FIELDS,
   DONATIONS_PAID_FIELD,
+  CT600_BOX_ROWS,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
   LOAN_ROW_FIELDS,
@@ -21,6 +24,7 @@ import {
   PROFIT_AND_LOSS_FIELDS,
   REPAYMENT_ROW_FIELDS,
   STATEMENT_FIELDS,
+  noteSheetCell,
 } from "../public/lib/ct600-fields.js";
 import {
   labelWithReference,
@@ -84,7 +88,7 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
       parseSheetCells("Financialaccounts.xlsx!PubBalSht!E29-Financialaccounts.xlsx!OpenAccounts!E30").map(({ sheet }) => sheet),
     ).toEqual(["PubBalSht", "OpenAccounts"]);
     expect(() => parseSheetCells("F9")).toThrow("Not a sheetCell");
-    expect(sourceImagePath({ sheet: "PubP&L", cell: "F9" })).toBe("/images/ct600-sources/PubP&L-F9.webp");
+    expect(sourceImagePath({ sheet: "PubP&L", cell: "F9" })).toBe("/images/ct600-sources/PubPandL-F9.webp");
   });
 
   test("the note ends with its source link, and the disclosure is closed with the cells, the label and a picture of each cell", () => {
@@ -104,5 +108,14 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
   test("a field the spreadsheets do not hold says so in its disclosure", () => {
     const rate = LOAN_ROW_FIELDS.find(({ id }) => id === "Rate");
     expect(sourceDisclosure(rate, { id: "loanRate1" }).textContent).toContain("The spreadsheets have no cell for this.");
+  });
+
+  test("every picture a disclosure shows is a file in the site, and a cell with no picture shows none", () => {
+    const disclosures = [...CT600_BOX_ROWS.filter((row) => row.source), ...FIELDS].map((field) => sourceDisclosure(field, { id: "x" }));
+    const sources = disclosures.flatMap((disclosure) => [...disclosure.querySelectorAll("img")].map((image) => image.getAttribute("src")));
+    expect(sources.length).toBeGreaterThan(90);
+    for (const src of sources) expect(existsSync(join(process.cwd(), "web/public", src)), src).toBe(true);
+    const [{ sheet, cell }] = parseSheetCells(noteSheetCell("plantMachinery", "additions"));
+    expect(sourceImagePath({ sheet, cell })).toBeNull();
   });
 });
