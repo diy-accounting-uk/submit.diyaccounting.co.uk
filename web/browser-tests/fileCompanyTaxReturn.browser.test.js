@@ -747,6 +747,89 @@ test.describe("File Company Tax Return entry form", () => {
     });
   }
 
+  async function submitAndAccept(page, { both = false } = {}) {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    const accountsPosts = [];
+    await page.route("**/api/v1/companies-house/accounts", (route) => {
+      accountsPosts.push(JSON.parse(route.request().postData()));
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      });
+    });
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    if (both) await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    if (both) await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    return { submission, accountsPosts };
+  }
+
+  test("a return filed with HMRC alone can be amended to correct its attached accounts, with nothing sent to Companies House", async ({
+    page,
+  }) => {
+    const { submission, accountsPosts } = await submitAndAccept(page);
+    await expect(page.locator("#amendPanel")).toBeVisible();
+    await expect(page.locator("#amendReturnBtn")).toBeVisible();
+    await expect(page.locator("#amendAttachedAccountsBtn")).toBeVisible();
+    await expect(page.locator("#amendAccountsBtn")).toBeHidden();
+    await expect(page.locator("#amendHmrcHint")).toBeVisible();
+    await expect(page.locator("#amendBothHint")).toBeHidden();
+
+    await page.locator("#amendAttachedAccountsBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#accountsLockNote")).toHaveText(
+      "You are correcting the accounts attached to the return. HMRC gets them with the amended return; Companies House gets nothing.",
+    );
+    await expect(page.locator("#averageEmployees")).toBeEnabled();
+    await page.locator("#averageEmployees").fill("7");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send the amended return to HMRC");
+    await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
+    await expect(page.locator("#revisionGroup")).toBeHidden();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the amended Company Tax Return", { timeout: 30_000 });
+
+    expect(submission.requests).toHaveLength(2);
+    const amended = submission.requests[1];
+    expect(amended).toMatchObject({ amended: true, averageEmployees: 7 });
+    expect(amended).not.toHaveProperty("jointFilingId");
+    expect(amended).not.toHaveProperty("revision");
+    expect(accountsPosts).toEqual([]);
+  });
+
+  test("a joint filing's amend panel keeps its revised-accounts choice and offers no attached-accounts amendment", async ({ page }) => {
+    const { accountsPosts } = await submitAndAccept(page, { both: true });
+    expect(accountsPosts).toHaveLength(1);
+    await expect(page.locator("#amendPanel")).toBeVisible();
+    await expect(page.locator("#amendReturnBtn")).toBeVisible();
+    await expect(page.locator("#amendAttachedAccountsBtn")).toBeHidden();
+    await expect(page.locator("#amendBothHint")).toBeVisible();
+    await expect(page.locator("#amendHmrcHint")).toBeHidden();
+  });
+
   test("?amend= refills the form from the receipt and sends an amended return under the original jointFilingId", async ({ page }) => {
     const values = await filledFormValues(page);
     expect(Object.keys(values).some((key) => /password|authcode|gatewayuser/i.test(key))).toBe(false);

@@ -12649,6 +12649,14 @@ cy = '''Diwygio’r Ffurflen'''
 hash = "a96b0fcc06a6"
 cy = '''Diwygio’r cyfrifon a’r Ffurflen'''
 
+[strings."ch-tax-return.amend-the-return-when-a-tax-425c7a"]
+hash = "425c7a60b471"
+cy = '''Diwygiwch y Ffurflen pan oedd ateb treth yn anghywir. Diwygiwch y cyfrifon sydd ynghlwm wrth y Ffurflen pan oedd ffigur yn y cyfrifon yn anghywir: mae CThEF yn cael Ffurflen ddiwygiedig gyda’r cyfrifon wedi’u cywiro, ac nid yw Tŷ’r Cwmnïau yn cael dim. Mae eich derbynebau yn dangos y diwygiadau o dan y ffeilio hwn.'''
+
+[strings."ch-tax-return.amend-the-accounts-attached-to-the-33ee7c"]
+hash = "33ee7ce8dcb5"
+cy = '''Diwygio’r cyfrifon sydd ynghlwm wrth y Ffurflen'''
+
 [strings."ch-tax-return.where-to-get-help-00f119"]
 hash = "00f1193a0417"
 cy = '''Ble i gael cymorth'''
@@ -15188,6 +15196,10 @@ cy = '''Cyflwyno {word} {part} o 2 i CThEF'''
 [strings."ch.ct.accounts-locked"]
 hash = "bbd7a790e48c"
 cy = '''Wedi’u ffeilio yn Nhŷ’r Cwmnïau ar {date}, cyflwyniad {number}. Ni all y cyfrifon newid yma. Newidiwch yr atebion treth yn unig.'''
+
+[strings."ch.ct.accounts-attached-correcting"]
+hash = "368c7d61427c"
+cy = '''Rydych yn cywiro’r cyfrifon sydd ynghlwm wrth y Ffurflen. Mae CThEF yn eu cael gyda’r Ffurflen ddiwygiedig; nid yw Tŷ’r Cwmnïau yn cael dim.'''
 
 [strings."ch.ct.accounts-revising"]
 hash = "3ba632a1d8fd"

@@ -630,6 +630,8 @@ window.WELSH_TEXT = {
   "ch.ct.a80": "Blwch A80: treth sy’n daladwy ar fenthyciadau i gyfranogwyr",
   "ch.ct.a80-rule": "Wedi’i gario i flwch 480",
   "ch.ct.about-accounts": "Am y cyfrifon",
+  "ch.ct.accounts-attached-correcting":
+    "Rydych yn cywiro’r cyfrifon sydd ynghlwm wrth y Ffurflen. Mae CThEF yn eu cael gyda’r Ffurflen ddiwygiedig; nid yw Tŷ’r Cwmnïau yn cael dim.",
   "ch.ct.accounts-filed-then": "Mae’r cyfrifon wedi’u ffeilio gyda Thŷ’r Cwmnïau. {message}",
   "ch.ct.accounts-intro":
     "Mae CThEF yn cymryd y cyfrifon llawn gyda’r Ffurflen, felly maent yn rhan o’r ffurflen hon. Rhowch bunnoedd cyfan, er enghraifft 600 neu 1,200.",

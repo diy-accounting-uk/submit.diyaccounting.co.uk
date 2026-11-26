@@ -328,10 +328,15 @@
         <div id="returnRecord"></div>
         <section id="amendPanel" aria-labelledby="amendHeading" style="display: none">
           <h3 data-i18n="ch-tax-return.amend-this-filing-745521" id="amendHeading">Diwygio’r ffeilio hwn</h3>
-          <p data-i18n="ch-tax-return.amend-the-return-when-a-tax-88a562" class="hint">
+          <p data-i18n="ch-tax-return.amend-the-return-when-a-tax-88a562" id="amendBothHint" class="hint">
             Diwygiwch y Ffurflen pan oedd ateb treth yn anghywir. Diwygiwch y cyfrifon a’r Ffurflen pan oedd ffigur yn y cyfrifon yn
             anghywir: mae Tŷ’r Cwmnïau yn cael cyfrifon diwygiedig, yna mae CThEF yn cael Ffurflen ddiwygiedig. Mae eich derbynebau yn
             dangos y diwygiadau o dan y ffeilio hwn.
+          </p>
+          <p data-i18n="ch-tax-return.amend-the-return-when-a-tax-425c7a" id="amendHmrcHint" class="hint" hidden>
+            Diwygiwch y Ffurflen pan oedd ateb treth yn anghywir. Diwygiwch y cyfrifon sydd ynghlwm wrth y Ffurflen pan oedd ffigur yn y
+            cyfrifon yn anghywir: mae CThEF yn cael Ffurflen ddiwygiedig gyda’r cyfrifon wedi’u cywiro, ac nid yw Tŷ’r Cwmnïau yn cael dim.
+            Mae eich derbynebau yn dangos y diwygiadau o dan y ffeilio hwn.
           </p>
           <p data-i18n="ch-tax-return.the-loss-claimed-in-return-2-a0d7cc" id="amendLongNote" class="hint" hidden>
             Mae’r golled a hawliwyd yn Ffurflen 2 yn newid Ffurflen 1. Diwygiwch Ffurflen 1 fel bod gan CThEF y ffigurau a anfonwyd gennych
@@ -349,6 +354,15 @@
               style="display: none"
             >
               Diwygio’r cyfrifon a’r Ffurflen
+            </button>
+            <button
+              data-i18n="ch-tax-return.amend-the-accounts-attached-to-the-33ee7c"
+              type="button"
+              id="amendAttachedAccountsBtn"
+              class="secondary-button"
+              style="display: none"
+            >
+              Diwygio’r cyfrifon sydd ynghlwm wrth y Ffurflen
             </button>
           </div>
         </section>
