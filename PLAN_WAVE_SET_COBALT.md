@@ -9,6 +9,8 @@
 
 > Push a prefix: waves 1 to 8 plus AL37 and CTP4 ship first, and CTN2, CTN4, CTL1A and CTL8 start the next set.
 
+> do UH7 in the last wave of cobolt.
+
 (operator, 2026-11-26, 10:40 UTC, replacing waves 9 to 12; the next set is `PLAN_WAVE_SET_COMET.md`.)
 
 (operator, 2026-11-26.) The answer that finalised the set (2026-11-26): scope A, the machine rows already on `NEXT.md` (26 rows); Bramble stays its own set. CTP4 and CTL1A joined on the operator's answer of 2026-11-26 (CTP3D B, the CTL1Q answers), and AL37 on his answer of the same day.
@@ -23,11 +25,10 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 
 ## The set
 
-- **submit, 24 rows in waves**: CTL0, CT45, CT46, CH63, CTA1, CTN1, CTN3, CTS1, CTD1, CTD2, CTP3, CTA2, CTR2, CT49, CTL2, CTL5, CTL4, CTL10, CTL7, CTL9, CTV1, CTF1, AL37, CTP4. Each row's brief is its `NEXT.md` row; the CT600 label rows point to their section of `PLAN_CT600_LABELS.md`. CTN2, CTN4, CTL1A and CTL8 moved to wave set comet (operator, 2026-11-26).
+- **submit, 25 rows in waves**: CTL0, CT45, CT46, CH63, CTA1, CTN1, CTN3, CTS1, CTD1, CTD2, CTP3, CTA2, CTR2, CT49, CTL2, CTL5, CTL4, CTL10, CTL7, CTL9, CTV1, CTF1, AL37, CTP4, UH7. Each row's brief is its `NEXT.md` row; the CT600 label rows point to their section of `PLAN_CT600_LABELS.md`. CTN2, CTN4, CTL1A and CTL8 moved to wave set comet (operator, 2026-11-26).
 - **Beside**:
   - CTL1 (Opus): the label register is the appendix of `PLAN_CT600_LABELS.md`, a document pushed to `main`. It must be on `main` before wave 4 starts, because CTL2 reads it.
 - **Left out, with the test that removed each**:
-  - UH7 (test 1): the operator opens the CT600 to the public when this set is done (OCT9, 2026-11-26), so it follows the set on prod.
   - OS18g (test 4): the operator's yes and a click in his Chrome; no pull request. Not yet (operator, 2026-11-26).
   - CHL1 (test 4): it waits on live filings in December 2026 and January 2027.
   - OCT10, OCT11, OCTL1 (test 4): the operator's own filing, check and decision.
@@ -98,7 +99,7 @@ State: pending.
 |---|---|---|---|
 | ct600-page | CTL7, CTL9 | Sonnet | `ct600-fields.js` (`reviewAnswers`), `web/public/lib/filing-record.js`, `web/public/lib/filing-result-record.js`, `fileCompanyTaxReturn.page.js`, `app/services/ctComputationsIxbrl.js`, `app/services/accountsIxbrlCommon.js`, their tests |
 
-State: landed at d33151ff8 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445, ctl7b d33151ff8); gated with wave 7 on cc47107d6 (see wave 7).
+State: gated with wave 7 at cc47107d6 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445, ctl7b d33151ff8 on this branch).
 
 ### Wave 7
 
@@ -106,7 +107,7 @@ State: landed at d33151ff8 (CTL7 c12f818d1, CTL9 5f21a1f12, ctl10b a987c2445, ct
 |---|---|---|---|
 | ct600-page | CTV1 | Sonnet | `fileCompanyTaxReturn.page.js`, `scripts/site-video-capture.js`, `scripts/video-walkthrough.js`, `videos/publish.json`, `web/public/videos/publish.json` |
 
-State: landed at cc47107d6 on `claude/cobalt-w07` (CTV1 52fb5ced9, ctv1b abf54dbea, ctl7b carried from wave 6 cc47107d6). Gates for waves 6 and 7: Maven, lint and mcp passed on a987c2445 and 52fb5ced9 (anvil); browser 2607 passed on a987c2445 with 2 failures that ctl7b fixes; now running on cc47107d6: flint gate-unit-sim-cc47107, Docker passed on the laptop; the browser gate follows garnet's run on 52fb5ced9.
+State: gated cc47107d6 (CTV1 52fb5ced9, ctv1b abf54dbea, ctl7b cc47107d6): browser 2611 passed (garnet), npm test 16287, mcp 474, the companyTaxReturn and fileMicroEntityAccounts simulator suites (flint), Maven 578 and lint (anvil on 52fb5ced9), Docker (laptop).
 
 ### Wave 8
 
@@ -114,18 +115,19 @@ State: landed at cc47107d6 on `claude/cobalt-w07` (CTV1 52fb5ced9, ctv1b abf54db
 |---|---|---|---|
 | ct600-page | CTF1, ctl7c, ctf1b | Sonnet | `fileCompanyTaxReturn.page.js`, `ct600-fields.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `videos/file-company-tax-return-long-period.json` |
 
-State: integrating: jasper merges CTF1 (2b9177b1f) onto `claude/cobalt-w07-abf54db` (`claude/jasper-integrate-ctf1`); harbour builds ctl7c next.
+State: CTF1 landed at 9db929d6f on `claude/cobalt-w08` (from cc47107d6); ctl7c and ctf1b build on harbour and land next; then the wave's gate.
 
 ### Wave 9
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
 | ch-filing-data | AL37 (al37, al37b, al37c) | Sonnet | `app/functions/companies-house/companiesHouseFilingDataPost.js`, `app/lib/companiesHouseGatewayErrors.js`, `web/public/lib/services/companies-house-confirmation-service.js`, `web/public/companies-house/fileConfirmationStatement.page.js`, `web/public/lib/company-books.js`, `app/functions/companies-house/companiesHouseConfirmationStatementPost.js`, their tests |
+| public | UH7 | Sonnet | `web/public/submit.catalogue.toml`, CT38's operator gate, the "preview" words in both activities, the CT600 page's banner, the receipt and the filed record, `scripts/build-mtd-calendar.mjs` and `web/public/mtd-calendar.html`, `web/public/terms.html`, their tests |
 | ct-poll | CTP4 | Sonnet | `app/data/dynamoDbAsyncRequestRepository.js`, `app/functions/hmrc/hmrcCtReturnPost.js`, the scheduled CT600 status check, `receipts.page.js`, `filings.page.js`, its stack and names classes in `infra/`, their tests |
 
-Both are built (`claude/anvil-al37c` 3bc704d0e, `claude/dusk-ctp4` 2c693df9b) and land on wave 8's head through the integrator.
+AL37 and CTP4 are built (`claude/anvil-al37c` 3bc704d0e, `claude/dusk-ctp4` 2c693df9b); UH7 builds on flint from 9db929d6f (operator, 2026-11-26: "do UH7 in the last wave of cobolt").
 
-State: pending.
+State: integrating: jasper lands AL37 then CTP4 on 9db929d6f; UH7 building on flint.
 
 ## Gates
 
@@ -150,11 +152,11 @@ State: pending.
    - CT45: the operator's preview of the amended CT600 on prod answers 200 and the file request passes the WAF (OCT10 is the operator's own filing).
    - CH63: the next live Companies House accounts filing's first poll reads pending, not an error.
    - CTA1: the operator's activities page on prod shows "Corporation Tax".
+   - UH7: a signed-in customer with no preview features sees the CT600 and the joint filing listed on prod, the pages carry no "preview" mark, and the calendar and terms say production.
 
 ## After the deploy
 
 - OCT10: the operator files the amended CT600 on prod.
-- UH7: when the prod proof list passes, open the CT600 and the joint filing to the public, in its own PR (OCT9, decided 2026-11-26).
 - OCTL1: the operator's roll-out decision, from the page on prod.
 
 ## When the set branch fails
