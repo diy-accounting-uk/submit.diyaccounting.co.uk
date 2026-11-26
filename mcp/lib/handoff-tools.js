@@ -3,7 +3,7 @@
 
 // @capability MCP-24 Hand the VAT figures to the browser to file
 // - **Use when:** an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
-// - **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>". It files nothing and calls no service; the fragment never reaches a server.
+// - **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>", after a query that names the assistant as the campaign source ("?utm_source=<client kind>&utm_medium=mcp"). It files nothing and calls no service; the fragment never reaches a server.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `mcp/lib/handoff-tools.js:prepareVatReturn`; `mcp/lib/handoff-tools.js:vatHandoffLink`
 // - **Files:** mcp/lib/handoff-tools.js, mcp/test/handoff-tools.test.js
@@ -43,13 +43,17 @@ function publicBaseUrl() {
 }
 
 /**
- * The link to the VAT form that carries a handoff in its fragment.
+ * The link to the VAT form that carries a handoff in its fragment. The query names the assistant
+ * as the campaign source, so the page's landing capture and the account's acquisition record
+ * say which assistant sent the person.
  * @param {{kind: string, sourceFileName: string, packageVersion: string, period: Object, figures: Object}} handoff
+ * @param {string} client - the assistant's kind, from client-kind.js
  * @returns {string}
  */
-export function vatHandoffLink(handoff) {
+export function vatHandoffLink(handoff, client) {
   const encoded = Buffer.from(JSON.stringify(handoff), "utf8").toString("base64url");
-  return `${publicBaseUrl()}${VAT_FORM_PATH}#books=${encoded}`;
+  const campaign = `?utm_source=${encodeURIComponent(client)}&utm_medium=mcp`;
+  return `${publicBaseUrl()}${VAT_FORM_PATH}${campaign}#books=${encoded}`;
 }
 
 // What the person does with the link: the plugin files nothing, so the return is filed in the browser.
@@ -73,13 +77,16 @@ export async function prepareVatReturn(session, params = {}) {
     figures[name] = value;
   }
   const period = { periodStart: derived.periodStart, periodEnd: derived.periodEnd };
-  const link = vatHandoffLink({
-    kind: "vat",
-    sourceFileName: session.sourcePath ? basename(session.sourcePath) : session.book.entityInformation?.organizationDescription || "book",
-    packageVersion: await packageVersion(),
-    period,
-    figures,
-  });
+  const link = vatHandoffLink(
+    {
+      kind: "vat",
+      sourceFileName: session.sourcePath ? basename(session.sourcePath) : session.book.entityInformation?.organizationDescription || "book",
+      packageVersion: await packageVersion(),
+      period,
+      figures,
+    },
+    session.client,
+  );
   return {
     link,
     period,

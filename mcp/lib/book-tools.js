@@ -36,6 +36,7 @@ import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js
 
 import { storedCredentials } from "./auth.js";
 import { desktopClientHeaders } from "./client-headers.js";
+import { UNKNOWN_CLIENT } from "./client-kind.js";
 
 export const SAVE_FORMATS = ["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"];
 
@@ -58,14 +59,21 @@ function baseUrl() {
  * clientHeaders answers the headers a call to an HMRC route carries for HMRC's fraud prevention
  * data (the stdio server reads its own machine; the hosted Lambda passes what the caller gives).
  * @param {{credentials?: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>},
- *   pollBudgetMs?: number|null, clientHeaders?: () => Promise<Object>}} [options]
- * @returns {{book: Object|null, lines: Array|null, product: string|null, sourcePath: string|null,
+ *   pollBudgetMs?: number|null, clientHeaders?: () => Promise<Object>, client?: string}} [options] - client is the
+ *   assistant's kind from client-kind.js
+ * @returns {{client: string, book: Object|null, lines: Array|null, product: string|null, sourcePath: string|null,
  *   cloud: {bookId: string, clientId: string|null, etag: string}|null,
  *   credentials: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>},
  *   pollBudgetMs: number|null, clientHeaders: () => Promise<Object>}}
  */
-export function createSession({ credentials = storedCredentials, pollBudgetMs = null, clientHeaders = desktopClientHeaders } = {}) {
+export function createSession({
+  credentials = storedCredentials,
+  pollBudgetMs = null,
+  clientHeaders = desktopClientHeaders,
+  client = UNKNOWN_CLIENT,
+} = {}) {
   return {
+    client,
     book: null,
     lines: null,
     product: null,

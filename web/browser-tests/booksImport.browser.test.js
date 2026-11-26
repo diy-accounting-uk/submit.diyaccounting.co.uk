@@ -661,6 +661,26 @@ test.describe("figures sent from a DIYA-GL page in the URL fragment", () => {
     expect(await page.evaluate(() => location.hash)).toBe("");
   });
 
+  test("a link that names its assistant in the query keeps the query through sign-in and still fills", async ({ page }) => {
+    const { derived, handoff } = await vatHandoffFor("brickwork-pro-ltd-vat", "2026-03-31");
+    await serveRealSite(page);
+    await arriveSignedOutWhenFragmentPresent(page);
+    const campaign = "?utm_source=claude&utm_medium=mcp";
+
+    await page.goto(VAT_URL + campaign + toFragment(handoff), { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#booksImportStatus")).toContainText("Sign in and the figures from brickwork.diya-gl.zip fill this form.");
+    expect(await page.evaluate(() => location.hash)).toBe("");
+    expect(await page.evaluate(() => location.search)).toBe(campaign);
+    expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBe(`/hmrc/vat/submitVat.html${campaign}`);
+
+    await page.goto(VAT_URL + campaign, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      `Filled the nine boxes from brickwork.diya-gl.zip for the period ${derived.periodStart} to ${derived.periodEnd}.`,
+    );
+    for (const id of VAT_BOX_IDS) await expect(page.locator(`#${id}`)).toHaveValue(String(derived.hmrc[id]));
+  });
+
   test("a signed-in customer has the quarterly figures filled on arrival and a reload does not fill again", async ({ page }) => {
     const { period, handoff } = await quarterlyHandoffFor("brickwork-pro-se-vat", "2025-07-05");
     await serveRealSite(page);

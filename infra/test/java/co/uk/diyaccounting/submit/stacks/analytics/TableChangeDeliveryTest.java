@@ -140,6 +140,26 @@ class TableChangeDeliveryTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void mcpSessionsTableCarriesTheClientKind() {
+        Template template = synthTableChangeDelivery();
+
+        var columnNames = new ArrayList<String>();
+        for (var resource : template.findResources("AWS::Glue::Table").values()) {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var tableInput = (Map<String, Object>) properties.get("TableInput");
+            if (!"dynamo_mcp_sessions".equals(tableInput.get("Name"))) continue;
+            var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
+            for (var column : (List<Map<String, Object>>) storageDescriptor.get("Columns")) {
+                columnNames.add(column.get("Name") + ":" + column.get("Type"));
+            }
+        }
+        for (var expected : List.of("hashed_sub:string", "session_hash:string", "ttl:bigint", "client:string")) {
+            assertTrue(columnNames.contains(expected), "missing column " + expected + " in " + columnNames);
+        }
+    }
+
+    @Test
     void eventSourceMappingsReportBatchItemFailuresAndBisectOnError() {
         Template template = synthTableChangeDelivery();
 

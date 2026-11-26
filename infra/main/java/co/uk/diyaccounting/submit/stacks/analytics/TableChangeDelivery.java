@@ -443,6 +443,7 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("hashed_sub", "string"));
                 columns.add(column("session_hash", "string"));
                 columns.add(column("ttl", "bigint"));
+                columns.add(column("client", "string"));
             }
             default -> throw new IllegalArgumentException("No Glue columns declared for table kind: " + kind);
         }

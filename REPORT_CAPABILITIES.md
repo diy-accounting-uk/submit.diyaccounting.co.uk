@@ -5580,7 +5580,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-24 Hand the VAT figures to the browser to file
 
 - **Use when:** an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
-- **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>". It files nothing and calls no service; the fragment never reaches a server.
+- **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>", after a query that names the assistant as the campaign source ("?utm_source=<client kind>&utm_medium=mcp"). It files nothing and calls no service; the fragment never reaches a server.
 - **Run:** no command; see Does and Entry
 - **Entry:** `mcp/lib/handoff-tools.js:prepareVatReturn`; `mcp/lib/handoff-tools.js:vatHandoffLink`
 - **Files:** mcp/lib/handoff-tools.js, mcp/test/handoff-tools.test.js
