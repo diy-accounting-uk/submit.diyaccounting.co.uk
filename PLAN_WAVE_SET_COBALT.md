@@ -132,9 +132,9 @@ State: pending.
 
 | Batch | Rows in order | Model | Files the batch owns |
 |---|---|---|---|
-| ct-poll | CTP4 | Sonnet | `app/data/dynamoDbAsyncRequestRepository.js`, `app/functions/hmrc/hmrcCtReturnPost.js`, the scheduled CT600 status check (new, beside `app/functions/companies-house/companiesHouseSubmissionStatusPoll.js`), its stack and names classes in `infra/`, their tests |
-| ch-filing-data | AL37 | Sonnet | `app/functions/companies-house/companiesHouseFilingDataPost.js`, `app/lib/companiesHouseGatewayErrors.js`, their tests |
-| ct600-fields | CTL1A | Sonnet | `web/public/lib/ct600-fields.js`, the accounts iXBRL builders for the micro-entity lines, the register appendix of `PLAN_CT600_LABELS.md` (by the laptop), their tests |
+| ct-poll | CTP4 | Sonnet | `app/data/dynamoDbAsyncRequestRepository.js`, `app/functions/hmrc/hmrcCtReturnPost.js`, the scheduled CT600 status check (new, beside `app/functions/companies-house/companiesHouseSubmissionStatusPoll.js`), its stack and names classes in `infra/`, their tests; never the CT600 page or `hmrc-ct-return-service.js` |
+| ch-filing-data | AL37 | Sonnet | `app/functions/companies-house/companiesHouseFilingDataPost.js`, `app/lib/companiesHouseGatewayErrors.js`, `web/public/lib/services/companies-house-confirmation-service.js`, `web/public/companies-house/fileConfirmationStatement.page.js`, their tests |
+| ct600-fields | CTL1A | Sonnet | `web/public/lib/ct600-fields.js`, `app/services/ctComputationsIxbrl.js`, the accounts iXBRL builders for the micro-entity lines, the ixds fixtures, their tests; the register appendix of `PLAN_CT600_LABELS.md` by the laptop |
 
 CTP4 and AL37 build now from wave 6's tip and CTL1A from wave 10's gated tip, because CTF1 also changes `ct600-fields.js`. Both land after CTN4.
 
