@@ -118,8 +118,8 @@ test.describe("The Company Tax Return page on prod and on ci", () => {
     await expect(page.locator("[data-operator-live]")).toHaveCount(0);
   });
 
-  test("an operator with preview features on for the session only sees the unavailable panel", async ({ page }) => {
-    await page.addInitScript(() => sessionStorage.setItem("previewFeatures", "on"));
+  test("an operator with preview features on in this browser only sees the unavailable panel", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("previewFeatures", "on"));
     await serveSite(page, { environmentName: "prod", operator: true, previewFeatures: false });
     await openPage(page);
     await expect(page.locator("#activityUnavailablePanel")).toBeVisible();

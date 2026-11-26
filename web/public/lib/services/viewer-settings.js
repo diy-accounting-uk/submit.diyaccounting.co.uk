@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// What the signed-in person has chosen to see. Two choices last for the browser session
-// (sessionStorage): preview features, which shows what the catalogue hides in this environment,
-// and operator features, which an operator turns off to see what a customer sees. The account
-// settings live on the server and come with the bundles.
+// What the signed-in person has chosen to see. Preview features, which shows what the catalogue
+// hides in this environment, is the choice made in this browser (localStorage, so every tab
+// agrees), else the account's stored previewFeatures from the last bundle answer. Operator
+// features, which an operator turns off to see what a customer sees, lasts for the browser session
+// (sessionStorage). The account settings live on the server and come with the bundles.
 
 export const PREVIEW_FEATURES_HEADER = "x-preview-features";
 
@@ -30,14 +31,40 @@ function writeSession(key, value) {
   }
 }
 
-/** @returns {boolean} True when preview features are on for this session (off by default) */
-export function isPreviewOn() {
-  return readSession(PREVIEW_FEATURES_KEY) === "on";
+// The account's stored previewFeatures from the last bundle answer this page read, or null before one.
+let accountPreviewFeatures = null;
+
+function rememberAccountSettings(settings) {
+  if (typeof settings?.previewFeatures === "boolean") accountPreviewFeatures = settings.previewFeatures;
 }
 
-/** @param {boolean} on - Whether preview features show for this session */
+function readBrowserPreviewChoice() {
+  try {
+    const choice = localStorage.getItem(PREVIEW_FEATURES_KEY);
+    return choice === "on" || choice === "off" ? choice : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether preview features are on: the choice made in this browser when there is one, else the
+ * account's stored previewFeatures from the last bundle answer, else off.
+ * @returns {boolean}
+ */
+export function isPreviewOn() {
+  const choice = readBrowserPreviewChoice();
+  if (choice) return choice === "on";
+  return accountPreviewFeatures === true;
+}
+
+/** @param {boolean} on - Whether preview features show in every tab of this browser */
 export function setPreviewOn(on) {
-  writeSession(PREVIEW_FEATURES_KEY, on ? "on" : null);
+  try {
+    localStorage.setItem(PREVIEW_FEATURES_KEY, on ? "on" : "off");
+  } catch {
+    // localStorage unavailable: the account's setting decides
+  }
 }
 
 /** @returns {boolean} True unless an operator turned operator features off for this session */
@@ -82,17 +109,16 @@ export async function readBundleResponse() {
   }
   if (!idToken) return null;
   const requestCache = window.requestCache;
-  if (requestCache && typeof requestCache.getJSON === "function") {
-    return withinBundleReadTimeLimit(
-      requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } }),
-    );
-  }
-  return withinBundleReadTimeLimit(
-    window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => {
-      if (!response.ok) throw Object.assign(new Error(`Request failed with status ${response.status}`), { status: response.status });
-      return response.json();
-    }),
-  );
+  const read =
+    requestCache && typeof requestCache.getJSON === "function"
+      ? requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } })
+      : window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => {
+          if (!response.ok) throw Object.assign(new Error(`Request failed with status ${response.status}`), { status: response.status });
+          return response.json();
+        });
+  const response = await withinBundleReadTimeLimit(read);
+  rememberAccountSettings(response?.settings);
+  return response;
 }
 
 /**
@@ -156,7 +182,9 @@ export async function updateAccountSetting(name, value) {
   });
   if (!response.ok) throw new Error(`The setting was not saved (HTTP ${response.status})`);
   window.requestCache?.invalidate?.("/api/v1/bundle");
-  return { ...ACCOUNT_SETTING_DEFAULTS, ...((await response.json()).settings ?? {}) };
+  const settings = { ...ACCOUNT_SETTING_DEFAULTS, ...((await response.json()).settings ?? {}) };
+  rememberAccountSettings(settings);
+  return settings;
 }
 
 /**

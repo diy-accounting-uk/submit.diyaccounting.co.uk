@@ -695,8 +695,8 @@ test.describe("HMRC Assist check on the VAT return", () => {
     });
   }
 
-  test("shows no control and no note on prod when preview features are on for the session", async ({ page }) => {
-    await page.addInitScript(() => sessionStorage.setItem("previewFeatures", "on"));
+  test("shows no control and no note on prod when preview features are on in this browser", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("previewFeatures", "on"));
     const { reportRequests } = await openForm(page, { environmentName: "prod" });
     await fillBoxes(page);
     await settle(page);

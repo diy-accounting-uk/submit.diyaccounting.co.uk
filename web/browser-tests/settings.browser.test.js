@@ -4,7 +4,7 @@
 // web/browser-tests/settings.browser.test.js
 //
 // The settings page behind the header cog: the preview features switch (this account and this
-// session), the operator features switch (this session), and the pass generation switch (this account).
+// browser), the operator features switch (this session), and the pass generation switch (this account).
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -161,16 +161,16 @@ test.describe("Settings page", () => {
       await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
     });
 
-    test("signed in, is saved to the account and kept in this session", async ({ page }) => {
+    test("signed in, is saved to the account and kept in this browser", async ({ page }) => {
       const { settingsWrites } = await serveSite(page);
       await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
       await page.locator("#previewFeaturesSwitch").check();
       await expect.poll(() => settingsWrites).toEqual([{ previewFeatures: true }]);
       await expect(page.locator("#previewFeaturesSwitch")).toBeChecked();
-      expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBe("on");
+      expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBe("on");
     });
 
-    test("a save the server refuses sets the switch and this session back and says the setting was not saved", async ({ page }) => {
+    test("a save the server refuses sets the switch and this browser back and says the setting was not saved", async ({ page }) => {
       await serveSite(page);
       await page.route("**/api/v1/account/settings", (route) =>
         route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) }),
@@ -179,14 +179,44 @@ test.describe("Settings page", () => {
       await page.locator("#previewFeaturesSwitch").click();
       await expect(page.locator("#previewFeaturesSwitch")).not.toBeChecked();
       await expect(page.locator(".status-message")).toContainText("The setting was not saved");
-      expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBeNull();
+      expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBe("off");
     });
 
-    test("is read from the account on a new page, and this session follows it", async ({ page }) => {
+    test("with no choice made in this browser, follows the account's setting without storing a choice", async ({ page }) => {
       await serveSite(page, { stored: { previewFeatures: true } });
       await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
       await expect(page.locator("#previewFeaturesSwitch")).toBeChecked();
-      expect(await page.evaluate(() => sessionStorage.getItem("previewFeatures"))).toBe("on");
+      expect(await page.evaluate(() => localStorage.getItem("previewFeatures"))).toBeNull();
+      await page.goto("http://localhost:3000/practice.html", { waitUntil: "networkidle" });
+      await expect(page.locator("[data-preview-sandbox]")).toBeVisible();
+    });
+
+    test("says which of the two preview settings does what", async ({ page }) => {
+      await serveSite(page);
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await expect(page.locator("#previewFeaturesTwoSettings")).toHaveText(
+        "This switch sets two things: in this browser, it lists the activities this site does not offer yet; with your account, it opens the Company Tax Return to an operator.",
+      );
+    });
+
+    test("turned on, lists the same activities on a second page of this browser", async ({ page, context }) => {
+      await serveSite(page);
+      const activities = async (tab) => {
+        await tab.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+        await expect(tab.locator("#dynamicActivities .activity-group button.btn").first()).toBeVisible();
+        return tab.locator("#dynamicActivities .activity-group button.btn").allTextContents();
+      };
+      const listedWithPreviewOff = await activities(page);
+
+      await page.goto("http://localhost:3000/settings.html", { waitUntil: "networkidle" });
+      await page.locator("#previewFeaturesSwitch").check();
+      await expect(page.locator("#previewFeaturesSwitch")).toBeChecked();
+      const listedWithPreviewOn = await activities(page);
+      expect(listedWithPreviewOn.length).toBeGreaterThan(listedWithPreviewOff.length);
+
+      const secondPage = await context.newPage();
+      await serveSite(secondPage);
+      expect(await activities(secondPage)).toEqual(listedWithPreviewOn);
     });
 
     test("on, does not send the preview header from a page the catalogue lists", async ({ page }) => {

@@ -27890,3 +27890,9 @@ cy = '''Gwirio nawr'''
 [strings."receipts.filing-pending-tag"]
 hash = "331551b0de41"
 cy = '''Yn aros'''
+
+# == The settings page's line on what the preview features switch sets, id settings.preview-two-settings ==
+
+[strings."settings.preview-two-settings"]
+hash = "8f754530fb7a"
+cy = '''Mae’r switsh hwn yn gosod dau beth: yn y porwr hwn, mae’n rhestru’r gweithgareddau nad yw’r wefan hon yn eu cynnig eto; gyda’ch cyfrif, mae’n agor Ffurflen Dreth y Cwmni i weithredwr.'''

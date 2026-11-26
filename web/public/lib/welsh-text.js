@@ -2936,6 +2936,8 @@ window.WELSH_TEXT = {
   "receipts.see-payments": "Gweld eich taliadau TAW",
   "receipts.submission-number": "rhif cyflwyniad {number}",
   "receipts.unnamed": "Derbynneb heb enw",
+  "settings.preview-two-settings":
+    "Mae’r switsh hwn yn gosod dau beth: yn y porwr hwn, mae’n rhestru’r gweithgareddau nad yw’r wefan hon yn eu cynnig eto; gyda’ch cyfrif, mae’n agor Ffurflen Dreth y Cwmni i weithredwr.",
   "settings.read-failed":
     "Nid oedd modd darllen gosodiadau eich cyfrif, felly ni ellir eu newid nawr. Ail-lwythwch y dudalen i roi cynnig arall arni.",
   "usage.read-failed": "Nid oedd modd darllen eich bwndeli a’ch credydau (tokens). Ail-lwythwch y dudalen i roi cynnig arall arni.",
