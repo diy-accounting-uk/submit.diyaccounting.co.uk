@@ -79,7 +79,7 @@ describe("the hosted MCP endpoint without a token", () => {
     expect(initialized.capabilities.tools).toBeDefined();
   });
 
-  it("answers initialize on prod with the instructions that the connector offers VAT tools only", async () => {
+  it("answers initialize on prod with the instructions that no tool files or pays", async () => {
     const result = await ingestHandler(
       anonymousPost({
         jsonrpc: "2.0",
@@ -89,16 +89,16 @@ describe("the hosted MCP endpoint without a token", () => {
       }),
     );
     const { result: initialized } = JSON.parse(result.body);
-    expect(initialized.instructions).toMatch(/VAT tools only/);
+    expect(initialized.instructions).toMatch(/No tool files a return or accounts, or pays HMRC or anyone else/);
     expect(initialized.instructions).toMatch(/tick the declaration/);
   });
 
-  it("lists prod's six hosted tools by name, title and input schema", async () => {
+  it("lists prod's eleven hosted tools by name, title and input schema", async () => {
     const result = await ingestHandler(anonymousPost({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }));
     expect(result.statusCode).toBe(200);
     const { tools } = JSON.parse(result.body).result;
     expect(tools.map((tool) => tool.name)).toEqual(hostedToolNames("prod"));
-    expect(tools).toHaveLength(6);
+    expect(tools).toHaveLength(11);
     for (const tool of tools) {
       expect(tool.title).toBeTruthy();
       expect(tool.description).toBeTruthy();

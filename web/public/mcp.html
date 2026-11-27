@@ -168,7 +168,7 @@
             <li>Google asks you to link your Google Account and the Diyaccounting account. Choose Continue.</li>
             <li>Sign in to your account on the DIY Accounting Submit page.</li>
             <li>
-              In &ldquo;Save your custom app&rdquo;, keep the name <code>DIY Accounting Submit</code>. It lists the six tools under
+              In &ldquo;Save your custom app&rdquo;, keep the name <code>DIY Accounting Submit</code>. It lists the eleven tools under
               Available actions. Choose Connect.
             </li>
           </ol>
@@ -177,7 +177,7 @@
             2025.&rdquo; Gemini asks which DIYA-GL book to use, then shows the nine boxes.
           </p>
           <h3>Tools</h3>
-          <p>The connector has six tools. It does not reach HMRC and it files nothing.</p>
+          <p>The connector has eleven tools. It does not reach HMRC and it files nothing.</p>
           <dl>
             <dt><code>list_books</code></dt>
             <dd>List the DIYA-GL books saved in your account, most recently updated first.</dd>
@@ -192,6 +192,14 @@
             </dd>
             <dt><code>list_vat_receipts</code>, <code>get_vat_receipt</code></dt>
             <dd>List the VAT receipts Submit stored for your account, and read one.</dd>
+            <dt><code>company_filing_deadlines</code></dt>
+            <dd>When a company's next accounts and confirmation statement are due, from the Companies House public register.</dd>
+            <dt><code>derive_micro_entity_accounts</code>, <code>derive_small_company_accounts</code></dt>
+            <dd>The figures a company's micro-entity or small company accounts take, from the open DIYA-GL book.</dd>
+            <dt><code>derive_company_tax_return</code></dt>
+            <dd>The figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company.</dd>
+            <dt><code>list_accounts_receipts</code></dt>
+            <dd>List the accounts filings Submit stored for your account, accepted and rejected.</dd>
           </dl>
           <p>
             Open the link in your browser, check the figures, tick the declaration and file the return there. Nothing reaches HMRC until you

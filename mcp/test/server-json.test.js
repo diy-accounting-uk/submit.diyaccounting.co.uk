@@ -55,6 +55,11 @@ describe("server.json for the MCP registry", () => {
       "prepare_vat_return",
       "get_vat_receipt",
       "list_vat_receipts",
+      "company_filing_deadlines",
+      "derive_micro_entity_accounts",
+      "derive_small_company_accounts",
+      "derive_company_tax_return",
+      "list_accounts_receipts",
     ]);
     expect(serverJson.description).toMatch(/VAT/);
     expect(serverJson.description).toMatch(/Files no return/);

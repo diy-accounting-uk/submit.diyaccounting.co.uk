@@ -391,7 +391,8 @@
         <h3 id="hosted-mcp-answers">What the hosted MCP endpoint sends to your AI client</h3>
         <p>
           You can connect an AI client, such as ChatGPT, Claude or Gemini, to the hosted MCP endpoint. You sign in with your Submit account.
-          The client can then call six tools. Each tool answers with data from your own account only:
+          The client can then call eleven tools. Each tool answers with data from your own account, except the filing deadlines, which come
+          from the Companies House public register:
         </p>
         <ul>
           <li><strong>Your saved books</strong>: the id, title and product of each book, and the period that it covers.</li>
@@ -415,6 +416,24 @@
             bundle number and the day that you filed. For one receipt, the date and time that HMRC processed the return, the form bundle
             number, the payment indicator and the charge reference.
           </li>
+          <li>
+            <strong>A company's filing deadlines</strong>: for a company number that you give, the company's name, status and type, the due
+            date and period of its next accounts, whether they are overdue, the due date of its next confirmation statement and the type of
+            its last accounts. These come from the Companies House public register, not from your account.
+          </li>
+          <li>
+            <strong>Company accounts worked out from a DIYA-GL book</strong>: the company's name and number, the period, the balance sheet
+            and profit and loss figures, the names of the directors and the number of employees.
+          </li>
+          <li>
+            <strong>A Company Tax Return worked out from a DIYA-GL book</strong>: the accounting period, the computation figures, the profit
+            and loss account, the trading profit and the Corporation Tax.
+          </li>
+          <li>
+            <strong>Your accounts filings</strong>: for each set of accounts that you filed through Submit, the name of the receipt, the
+            company number, the period, the type of accounts and whether Companies House accepted it. For a rejected filing, its submission
+            number, the day it was rejected and Companies House's reasons.
+          </li>
         </ul>
         <p>The tools send no internal identifier of your account, no session or request identifier and no log data.</p>
         <p>
@@ -424,8 +443,9 @@
           that an AI client sent.
         </p>
         <p>
-          <strong>Purpose</strong>: the AI client uses the data to show you your books and to work out a VAT return. You then check the
-          return and file it yourself in your browser. We use the data for no other purpose.
+          <strong>Purpose</strong>: the AI client uses the data to show you your DIYA-GL books, to work out a VAT return, company accounts
+          or a Company Tax Return, and to tell you when a company's filings are due. You then check the figures and file them yourself in
+          your browser. We use the data for no other purpose.
         </p>
         <p>
           <strong>Recipient</strong>: the supplier of the AI client that you connect. This is OpenAI for ChatGPT, Anthropic for Claude and
@@ -435,8 +455,8 @@
         <p>
           <strong>Retention</strong>: we keep no copy of an answer. While you are connected, we keep a record of the connection that holds
           the id of the open book. We delete that record 24 hours after its last use. We delete a saved book 35 days after its last save,
-          unless your account keeps books with no time limit. We keep VAT receipts for 7 years. The supplier of the AI client decides how
-          long it keeps the answers, under the settings of your account with it.
+          unless your account keeps books with no time limit. We keep VAT and accounts receipts for 7 years. The supplier of the AI client
+          decides how long it keeps the answers, under the settings of your account with it.
         </p>
 
         <h3>HMRC consent</h3>

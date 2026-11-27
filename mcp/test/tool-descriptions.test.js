@@ -28,9 +28,9 @@ async function prodTools() {
 }
 
 describe("the golden prompt set", () => {
-  it("holds ten direct, ten indirect and ten negative prompts", () => {
+  it("holds at least ten direct, ten indirect and ten negative prompts", () => {
     const count = (kind) => GOLDEN.prompts.filter((entry) => entry.kind === kind).length;
-    expect([count("direct"), count("indirect"), count("negative")]).toEqual([10, 10, 10]);
+    for (const kind of ["direct", "indirect", "negative"]) expect(count(kind), kind).toBeGreaterThanOrEqual(10);
   });
 
   it("expects a prod tool for each direct and indirect prompt, and none for each negative one", () => {
@@ -46,7 +46,7 @@ describe("the golden prompt set", () => {
 });
 
 describe("the descriptions prod's tools/list answers", () => {
-  it("lists exactly prod's six tools", async () => {
+  it("lists exactly prod's tools", async () => {
     expect((await prodTools()).map((tool) => tool.name).sort()).toEqual([...PROD_TOOLS].sort());
   });
 

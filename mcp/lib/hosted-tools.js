@@ -35,6 +35,7 @@ export const HOSTED_TOOL_NAMES = [
   "derive_uk_property_period",
   "derive_uk_property_annual",
   "derive_company_tax_return",
+  "company_filing_deadlines",
   "request_hmrc_authorisation",
   "list_vat_obligations",
   "list_vat_liabilities",
@@ -62,8 +63,9 @@ export const HOSTED_TOOL_NAMES = [
   "run_for_clients",
 ];
 
-// Prod offers the books tools, the VAT derivation, the link that opens the VAT form with the figures
-// filled in, and the stored receipts. No hosted tool on prod reaches HMRC, because an AI client cannot
+// Prod offers the DIYA-GL book tools, the VAT, accounts and Company Tax Return derivations, the link that
+// opens the VAT form with the figures filled in, a company's filing deadlines from the public register,
+// and the stored receipts. No hosted tool on prod files or reaches HMRC, because an AI client cannot
 // give the fraud prevention headers a call needs. The HMRC tools, the sandbox filing tools and the
 // practice tools register in every other environment.
 const PROD_HOSTED_TOOL_NAMES = [
@@ -73,6 +75,11 @@ const PROD_HOSTED_TOOL_NAMES = [
   "prepare_vat_return",
   "get_vat_receipt",
   "list_vat_receipts",
+  "company_filing_deadlines",
+  "derive_micro_entity_accounts",
+  "derive_small_company_accounts",
+  "derive_company_tax_return",
+  "list_accounts_receipts",
 ];
 
 // The demo user that directory reviewers sign in as belongs to this Cognito group. Its token sees
@@ -93,10 +100,12 @@ export function hostedToolNames(environmentName, groups = []) {
 // What an assistant connected to prod's tool set needs to know beyond each tool's description: what
 // the connector cannot do, how a return gets filed, and what to show from a derived return.
 const PROD_HOSTED_INSTRUCTIONS =
-  "This connector offers VAT tools only: it opens a DIYA-GL book, derives a VAT return from it, prepares the link " +
-  "that opens the VAT return form with those figures filled in, and reads stored VAT receipts. It cannot file a VAT " +
-  "return, pay HMRC or anyone else, or file company accounts. When asked for any of those, say that this connector " +
-  "offers VAT tools only and cannot do it. To file a VAT return, call prepare_vat_return, give the person its link and " +
+  "This connector reads and works out figures: it opens a DIYA-GL book and derives from it a VAT return, a company's " +
+  "micro-entity or small company accounts and a Company Tax Return; it prepares the link that opens the VAT return " +
+  "form with the VAT figures filled in; it looks up a company's filing deadlines on the Companies House register; and " +
+  "it reads stored VAT receipts and accounts filings. No tool files a return or accounts, or pays HMRC or anyone else. " +
+  "When asked to file accounts or a Company Tax Return, or to pay, say that this connector cannot do it and that the " +
+  "person files those on the DIY Accounting Submit website. To file a VAT return, call prepare_vat_return, give the person its link and " +
   `tell them: "${VAT_FILING_SENTENCE}" After derive_vat_return, show the nine boxes and the largest lines behind ` +
   "boxes 1 and 4. When list_books answers no DIYA-GL book, say that no DIYA-GL book is saved in the account and give " +
   "the link https://submit.diyaccounting.co.uk/mcp.html#what-you-need.";
@@ -169,10 +178,11 @@ export const HOSTED_OVERRIDES = {
     title: "Derive a Company Tax Return",
     annotations: READS,
     description:
-      "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
-      "computation figures, the profit and loss account from the engine's published statements, and the book's own " +
-      "trading profit and Corporation Tax as a working sheet for a check. Refuses a book that is not a Company book, " +
-      "makes a trading loss or carries net non-trading loan relationship debits.",
+      "Works out the figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company: the accounting " +
+      "period, the computation figures, the profit and loss account, and the book's own trading profit and Corporation " +
+      "Tax as a check. Use this when the person asks what their Corporation Tax will be, for their CT600 figures, or how " +
+      "their taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net " +
+      "non-trading loan relationship debits, and it does not file the return or contact HMRC.",
     inputSchema: {},
     handler: (session) => deriveCompanyTaxReturn(session, {}),
   },

@@ -118,15 +118,25 @@ describe("the hosted tool set", () => {
     }
   });
 
-  it("offers only the books, derivation, hand-off link and receipt tools in prod, none of which reach HMRC", () => {
+  it("offers only the DIYA-GL book, derivation, hand-off link, deadline and receipt tools in prod, none of which files or reaches HMRC", () => {
     const prodNames = hostedToolNames("prod");
     expect(prodNames).toContain("prepare_vat_return");
     for (const hmrcTool of ["submit_vat_return", "list_vat_obligations", "get_vat_return", "request_hmrc_authorisation"]) {
       expect(prodNames).not.toContain(hmrcTool);
     }
-    expect(prodNames).toEqual(expect.arrayContaining(["list_books", "open_book"]));
+    expect(prodNames).toEqual(
+      expect.arrayContaining([
+        "list_books",
+        "open_book",
+        "company_filing_deadlines",
+        "derive_micro_entity_accounts",
+        "derive_small_company_accounts",
+        "derive_company_tax_return",
+        "list_accounts_receipts",
+      ]),
+    );
     expect(
-      prodNames.filter((name) => /sandbox|itsa|uk_property|client|company|confirmation|accounts|poll_submission|move_book/.test(name)),
+      prodNames.filter((name) => /sandbox|itsa|uk_property|client|confirmation|submit|render|request|poll_submission|move_book/.test(name)),
     ).toEqual([]);
     const server = createServer(createSession(), { toolNames: prodNames, overrides: HOSTED_OVERRIDES });
     expect(Object.keys(server._registeredTools).sort()).toEqual([...prodNames].sort());
@@ -178,11 +188,12 @@ describe("the hosted tool set", () => {
         { session: createSession(), toolNames: hostedToolNames("prod"), instructions },
       ).then((response) => response.json());
 
-    it("the initialize result for prod's tool set says the connector offers VAT tools only and cannot file accounts or pay", async () => {
+    it("the initialize result for prod's tool set says what the tools do and that none files or pays", async () => {
       const { result } = await initialize(hostedInstructions("prod"));
 
-      expect(result.instructions).toMatch(/VAT tools only/);
-      expect(result.instructions).toMatch(/cannot file a VAT return, pay HMRC or anyone else, or file company accounts/);
+      expect(result.instructions).toMatch(/reads and works out figures/);
+      expect(result.instructions).toMatch(/filing deadlines on the Companies House register/);
+      expect(result.instructions).toMatch(/No tool files a return or accounts, or pays HMRC or anyone else/);
     });
 
     it("the initialize result says how a return is filed and what to show from a derived return", async () => {

@@ -1931,10 +1931,6 @@ cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurfle
 hash = "8a1c6e669367"
 cy = '''Ffurflen Dreth y Cwmni CThEF (CT600)'''
 
-[strings."mtd-calendar.web-form-guide-video-6afae7"]
-hash = "6afae78ffc07"
-cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a> (yn Saesneg)'''
-
 [strings."mtd-calendar.hmrc-assist-check-on-a-vat-b4a415"]
 hash = "b4a4151c19d1"
 cy = '''Gwiriad HMRC Assist ar Ffurflen TAW'''
@@ -19352,10 +19348,6 @@ cy = '''Pan fydd eich cleient AI yn galw ein pwynt terfyn MCP a letyir, rydym yn
 hash = "cacd9a1f90bc"
 cy = '''Yr hyn y mae’r pwynt terfyn MCP a letyir yn ei anfon at eich cleient AI'''
 
-[strings."privacy.you-can-connect-an-ai-client-518b03"]
-hash = "518b03969fb9"
-cy = '''Gallwch gysylltu cleient AI, megis ChatGPT, Claude neu Gemini, â’r pwynt terfyn MCP a letyir. Rydych yn mewngofnodi gyda’ch cyfrif Submit. Yna gall y cleient alw chwe offeryn. Mae pob offeryn yn ateb gyda data o’ch cyfrif eich hun yn unig:'''
-
 [strings."privacy.your-saved-books-the-id-title-cffbed"]
 hash = "cffbed94530f"
 cy = '''<strong>Eich llyfrau a gadwyd</strong>: id, teitl a chynnyrch pob llyfr, a’r cyfnod y mae’n ei gwmpasu.'''
@@ -19384,17 +19376,9 @@ cy = '''Nid yw’r offer yn anfon unrhyw ddynodydd mewnol o’ch cyfrif, unrhyw 
 hash = "cfcfd689c0f3"
 cy = '''Pan fydd cleient AI yn agor sesiwn, rydym yn cofnodi pa fath o gleient ydyw (ChatGPT, Claude, Gemini, Copilot, cleient arall neu anhysbys), o’r enw y mae’r cleient yn ei roi, gyda dynodydd eich cyfrif wedi’i hashio. Rydym yn ei ddefnyddio i gyfrif pa gleientiaid AI y mae pobl yn eu defnyddio. Mae’r ddolen i’r ffurflen TAW yn enwi’r un math o gleient cyn y "#", fel bod ein tudalennau’n gallu cyfrif yr ymweliadau a anfonodd cleient AI.'''
 
-[strings."privacy.purpose-the-ai-client-uses-the-511f68"]
-hash = "511f688fb9db"
-cy = '''<strong>Diben</strong>: mae’r cleient AI yn defnyddio’r data i ddangos eich llyfrau i chi ac i gyfrifo Ffurflen TAW. Yna rydych chi’n gwirio’r Ffurflen ac yn ei ffeilio eich hun yn eich porwr. Nid ydym yn defnyddio’r data at unrhyw ddiben arall.'''
-
 [strings."privacy.recipient-the-supplier-of-the-ai-1f9ae4"]
 hash = "1f9ae4aaf7ad"
 cy = '''<strong>Derbynnydd</strong>: cyflenwr y cleient AI rydych yn ei gysylltu. OpenAI yw hwn ar gyfer ChatGPT, Anthropic ar gyfer Claude a Google ar gyfer Gemini. Mae’r cyflenwr yn derbyn pob ateb ac yn ei ddefnyddio o dan ei bolisi preifatrwydd ei hun a gosodiadau eich cyfrif gydag ef. Gall y cyflenwr brosesu’r data y tu allan i’r DU.'''
-
-[strings."privacy.retention-we-keep-no-copy-of-21805c"]
-hash = "21805cc98d33"
-cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau heb derfyn amser. Rydym yn cadw derbynebau TAW am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''
 
 [strings."privacy.hmrc-consent-2a2a74"]
 hash = "2a2a7452ff24"
@@ -28833,3 +28817,42 @@ cy = '''Wrthi’n anfon y ffurflen at Dŷ’r Cwmnïau...'''
 [strings."ch.narrate-sending-change"]
 hash = "e007f9d11f5a"
 cy = '''Wrthi’n anfon y newid at Dŷ’r Cwmnïau...'''
+# == The Company Tax Return row's MCP cell: the hosted connector works out figures only ==
+
+[strings."mtd-calendar.production-figures-only-bb0667"]
+hash = "bb0667425d3c"
+cy = '''cynhyrchu (production) <span class="calendar-date">ffigurau yn unig</span>'''
+
+[strings."mtd-calendar.web-form-guide-video-mcp-5d0317"]
+hash = "5d031786c8ec"
+cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+
+# == The privacy policy's hosted MCP part, eleven tools ==
+
+[strings."privacy.you-can-connect-an-ai-client-c5bbea"]
+hash = "c5bbea3e86d7"
+cy = '''Gallwch gysylltu cleient AI, megis ChatGPT, Claude neu Gemini, â’r pwynt terfyn MCP a letyir. Rydych yn mewngofnodi gyda’ch cyfrif Submit. Yna gall y cleient alw un ar ddeg o offer. Mae pob offeryn yn ateb gyda data o’ch cyfrif eich hun, ac eithrio’r terfynau amser ffeilio, sy’n dod o gofrestr gyhoeddus Tŷ’r Cwmnïau:'''
+
+[strings."privacy.a-company-s-filing-deadlines-for-eb1851"]
+hash = "eb1851d41830"
+cy = '''<strong>Terfynau amser ffeilio cwmni</strong>: ar gyfer rhif cwmni a roddwch, enw, statws a math y cwmni, dyddiad dyledus a chyfnod ei gyfrifon nesaf, a ydynt yn hwyr, dyddiad dyledus ei ddatganiad cadarnhau nesaf a math ei gyfrifon diwethaf. Daw’r rhain o gofrestr gyhoeddus Tŷ’r Cwmnïau, nid o’ch cyfrif.'''
+
+[strings."privacy.company-accounts-worked-out-from-a-c1f279"]
+hash = "c1f27901cea5"
+cy = '''<strong>Cyfrifon cwmni a gyfrifwyd o lyfr DIYA-GL</strong>: enw a rhif y cwmni, y cyfnod, ffigurau’r fantolen a’r cyfrif elw a cholled, enwau’r cyfarwyddwyr a nifer y gweithwyr.'''
+
+[strings."privacy.a-company-tax-return-worked-out-d99e1d"]
+hash = "d99e1db1b53d"
+cy = '''<strong>Ffurflen Dreth y Cwmni a gyfrifwyd o lyfr DIYA-GL</strong>: y cyfnod cyfrifyddu, ffigurau’r cyfrifiant, y cyfrif elw a cholled, yr elw masnachu a’r Dreth Gorfforaeth.'''
+
+[strings."privacy.your-accounts-filings-for-each-set-c71d46"]
+hash = "c71d46a90858"
+cy = '''<strong>Eich ffeilio cyfrifon</strong>: ar gyfer pob set o gyfrifon a ffeiliwyd gennych drwy Submit, enw’r dderbynneb, rhif y cwmni, y cyfnod, math y cyfrifon ac a wnaeth Tŷ’r Cwmnïau eu derbyn. Ar gyfer ffeilio a wrthodwyd, ei rif cyflwyno, y diwrnod y’i gwrthodwyd a rhesymau Tŷ’r Cwmnïau.'''
+
+[strings."privacy.purpose-the-ai-client-uses-the-ba0784"]
+hash = "ba0784ce7a1a"
+cy = '''<strong>Diben</strong>: mae’r cleient AI yn defnyddio’r data i ddangos eich llyfrau DIYA-GL i chi, i gyfrifo Ffurflen TAW, cyfrifon cwmni neu Ffurflen Dreth y Cwmni, ac i ddweud wrthych pryd mae ffeilio cwmni yn ddyledus. Yna rydych chi’n gwirio’r ffigurau ac yn eu ffeilio eich hun yn eich porwr. Nid ydym yn defnyddio’r data at unrhyw ddiben arall.'''
+
+[strings."privacy.retention-we-keep-no-copy-of-8e7d3d"]
+hash = "8e7d3d7dbf91"
+cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau heb derfyn amser. Rydym yn cadw derbynebau TAW a chyfrifon am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''

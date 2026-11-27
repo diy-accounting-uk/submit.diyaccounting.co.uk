@@ -44,6 +44,7 @@ import {
   getVatReceipt,
   listVatReceipts,
   listAccountsReceipts,
+  companyFilingDeadlines,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   renderSmallCompanyAccounts,
@@ -554,10 +555,12 @@ export const TOOLS = {
     title: "Derive micro-entity accounts",
     annotations: READS,
     description:
-      "The seven FRS 105 balance-sheet lines the accounts filing takes, from the session's loaded book: the current " +
-      "year from the engine's published balance sheet and the prior year from the book's opening balance, in whole " +
-      "pounds with capital and reserves equal to net assets, plus the period dates, the company number and name, the " +
-      "first director and the employee count. Refuses a book whose published or opening balance sheet does not balance.",
+      "Works out the seven FRS 105 balance sheet lines a micro-entity's accounts take, from the open DIYA-GL book: this " +
+      "year from the book's balance sheet and last year from its opening balance, in whole pounds with capital and " +
+      "reserves equal to net assets, plus the period dates, the company number and name, the first director and the " +
+      "employee count. Use this when the person asks what their micro-entity accounts will show, for their company's " +
+      "year-end balance sheet, or to check the figures before they file. It refuses a book whose balance sheets do not " +
+      "balance, and it does not file the accounts or contact Companies House.",
     inputSchema: {},
     handler: deriveMicroEntityAccounts,
   },
@@ -565,12 +568,13 @@ export const TOOLS = {
     title: "Derive small-company accounts",
     annotations: READS,
     description:
-      "The figures a small company's FRS 102 section 1A accounts filing takes, from the session's loaded book: the " +
-      "full profit and loss account and the balance sheet sub-lines for the current year from the engine's published " +
-      "statements, the prior-year balance sheet from the opening balance, the tangible fixed asset note by class, the " +
-      "period dates, the company number and name, the directors and the employee count, in whole pounds with every " +
-      "subtotal holding. The book publishes no prior-year profit and loss account, so none is returned. Refuses a book " +
-      "whose published or opening balance sheet does not balance.",
+      "Works out the figures a small company's FRS 102 section 1A accounts take, from the open DIYA-GL book: this year's " +
+      "profit and loss account and balance sheet lines, last year's balance sheet from the opening balance, the tangible " +
+      "fixed asset note by class, the period dates, the company number and name, the directors and the employee count, " +
+      "in whole pounds with every subtotal holding. The book holds no profit and loss account for last year, so none is " +
+      "given. Use this when the person asks what their small company accounts will show or for their full year-end " +
+      "accounts figures. It refuses a book whose balance sheets do not balance, and it does not file the accounts or " +
+      "contact Companies House.",
     inputSchema: {},
     handler: deriveSmallCompanyAccounts,
   },
@@ -578,12 +582,13 @@ export const TOOLS = {
     title: "Derive a Company Tax Return",
     annotations: READS,
     description:
-      "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
-      "computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment income, " +
-      "losses brought forward), the profit and loss account from the engine's published statements, and the book's own " +
-      "trading profit and Corporation Tax as a working sheet for a check. Refuses a book that is not a Company book, " +
-      "makes a trading loss or carries net non-trading loan relationship debits. With a path, also writes the answer as " +
-      'the JSON file the Company Tax Return page\'s "Fill from your books" card reads.',
+      "Works out the figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company: the accounting " +
+      "period, the computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment " +
+      "income, losses brought forward), the profit and loss account, and the book's own trading profit and Corporation " +
+      "Tax as a check. With a path, also writes the answer as the JSON file the Company Tax Return page's book import " +
+      "reads. Use this when the person asks what their Corporation Tax will be, for their CT600 figures, or how their " +
+      "taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net " +
+      "non-trading loan relationship debits, and it does not file the return or contact HMRC.",
     inputSchema: {
       path: z.string().optional().describe("Where to write the answer as JSON for the Company Tax Return page's import"),
     },
@@ -734,18 +739,33 @@ export const TOOLS = {
     },
     handler: listVatReceipts,
   },
+  company_filing_deadlines: {
+    title: "Look up a company's filing deadlines",
+    annotations: READS_OUTSIDE,
+    description:
+      "Looks up a company on the Companies House public register by its company number and answers its name, status and " +
+      "type, when its next accounts are due and the period they cover, whether they are overdue, when its next " +
+      "confirmation statement is due, and the type of its last accounts. Use this when the person asks when their " +
+      "company's accounts or confirmation statement are due, whether a filing is overdue, or what the register holds for " +
+      "a company number. It reads the public register only: it needs no DIYA-GL book, and it does not file anything with " +
+      "Companies House.",
+    inputSchema: {
+      companyNumber: z.string().describe("The company number, 8 characters, such as 00006400 or SC123456"),
+    },
+    handler: companyFilingDeadlines,
+  },
   list_accounts_receipts: {
     title: "List accounts receipts",
     annotations: READS,
     description:
-      "The accounts filings of the signed-in account, newest first, over the deployed API. Call it before revising " +
-      "accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the " +
-      "company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a " +
-      "Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their " +
-      "submission number and Companies House's reasons, and have no receipt to revise. A receipt that cannot be read, " +
-      "or whose filed document does not read as accounts, answers problem with the reason and is not revisable. " +
-      "It lists the newest 25 accounts filings; when there are more it answers more true, and older filings are not " +
-      "listed. clientId narrows the list to one of the practice's clients.",
+      "Lists the accounts filings of the signed-in account, newest first. Each accepted filing gives the receipt name " +
+      "that revision.revisesReceipt takes, the company number, the period, the type of accounts, whether it is itself " +
+      "revised accounts, whether it went with a Company Tax Return, and revisable. A rejected filing gives its " +
+      "submission number and Companies House's reasons. A receipt that cannot be read gives problem with the reason. " +
+      "It lists the newest 25 filings and answers more true when there are older ones. clientId narrows the list to " +
+      "one of a practice's clients. Use this when the person asks which accounts they have filed, whether Companies " +
+      "House accepted or rejected them, or before revising accounts already filed. It does not file, change or revise " +
+      "anything.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's accounts filings"),
     },
