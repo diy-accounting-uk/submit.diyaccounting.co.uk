@@ -17,7 +17,7 @@
 
 ## Status
 
-defined 2026-11-25; its rows are off `NEXT.md`. Board them when comet merges, after `/plan-review-loop` on `PLAN_VAT_PAYMENTS.md` and `PLAN_FILING_FEE_PROTECTION.md` (operator, 2026-11-26); wave 1 then branches from `origin/main`.
+defined 2026-11-25; its rows are off `NEXT.md`, and both plans have passed `/plan-review-loop`. Bramble starts only when the operator asks for it; comet's merge does not start it (operator, 2026-11-27). On that request its rows go on the board and wave 1 branches from `origin/main`.
 
 ## The goal
 
