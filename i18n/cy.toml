@@ -28793,3 +28793,43 @@ cy = '''Beth ddigwyddodd'''
 [strings."ct.failure-request-id"]
 hash = "8ee7951cad05"
 cy = '''Dyfynnwch y cyfeirnod {id} pan fyddwch yn gofyn am help.'''
+
+[strings."ct.narrate-checking"]
+hash = "55b3b828404d"
+cy = '''Wrthi’n gwirio eich atebion...'''
+
+[strings."ct.narrate-accounts-then-return"]
+hash = "177eddae6a55"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon; wrthi’n anfon y Ffurflen Dreth at CThEF...'''
+
+[strings."ct.narrate-sending-return"]
+hash = "efa009b1f01e"
+cy = '''Wrthi’n anfon y Ffurflen Dreth at CThEF...'''
+
+[strings."ct.narrate-waiting-hmrc"]
+hash = "93e39e82df6d"
+cy = '''Wrthi’n aros am ateb CThEF...'''
+
+[strings."ct.narrate-waiting-ch"]
+hash = "6e70b8b60ad0"
+cy = '''Wrthi’n aros am ateb Tŷ’r Cwmnïau...'''
+
+[strings."ct.narrate-sending-accounts"]
+hash = "e079881092c2"
+cy = '''Wrthi’n anfon y cyfrifon at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-verification"]
+hash = "bcf308f5699f"
+cy = '''Wrthi’n anfon y datganiad dilysu at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-statement"]
+hash = "954d9b2303da"
+cy = '''Wrthi’n anfon y datganiad cadarnhau at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-form"]
+hash = "c025ca0a6c9c"
+cy = '''Wrthi’n anfon y ffurflen at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-change"]
+hash = "e007f9d11f5a"
+cy = '''Wrthi’n anfon y newid at Dŷ’r Cwmnïau...'''

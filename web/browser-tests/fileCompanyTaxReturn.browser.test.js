@@ -463,6 +463,51 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(panel.locator("[data-part=next]")).toContainText("req-preview");
   });
 
+  test("the preview, the send and HMRC's check each say what they are doing, in order", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.stageMessages = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.classList?.contains("status-info")) window.stageMessages.push(node.textContent.replace("×", "").trim());
+          }
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: "CORRSTAGES", irmark: "IRMARK", pollIntervalSeconds: 0 },
+      pollBody: { statusCode: "PENDING", correlationId: "CORRSTAGES", pollIntervalSeconds: 0 },
+    };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const slow = (pattern) =>
+      page.route(pattern, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        await route.fallback();
+      });
+    await slow("**/api/v1/hmrc/ct/return/preview");
+    await slow("**/api/v1/hmrc/ct/return");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Checking your answers...");
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("waiting to be checked", { timeout: 30_000 });
+    const messages = await page.evaluate(() => window.stageMessages);
+    const order = ["Checking your answers...", "Sending the return to HMRC...", "Waiting for HMRC's answer..."].map((text) =>
+      messages.indexOf(text),
+    );
+    expect(
+      order.every((position) => position >= 0),
+      messages.join(" | "),
+    ).toBe(true);
+    expect([...order].sort((first, second) => first - second)).toEqual(order);
+  });
+
   test("a book that fills one field says so in the singular, in English and Welsh", async ({ page }) => {
     for (const [prefix, sentence] of [
       ["", "Filled 1 field from precision-code.diya-gl.zip for the period"],

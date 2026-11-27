@@ -1805,6 +1805,10 @@ window.WELSH_TEXT = {
   "ch.namesake.born": "ganwyd {month}",
   "ch.namesake.named-with-note": "{name}, {note} ({described})",
   "ch.namesake.notified": "hysbyswyd {date}",
+  "ch.narrate-sending-change": "Wrthi’n anfon y newid at Dŷ’r Cwmnïau...",
+  "ch.narrate-sending-form": "Wrthi’n anfon y ffurflen at Dŷ’r Cwmnïau...",
+  "ch.narrate-sending-statement": "Wrthi’n anfon y datganiad cadarnhau at Dŷ’r Cwmnïau...",
+  "ch.narrate-sending-verification": "Wrthi’n anfon y datganiad dilysu at Dŷ’r Cwmnïau...",
   "ch.notes.advances-required":
     "Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.",
   "ch.notes.arithmetic":
@@ -2378,6 +2382,12 @@ window.WELSH_TEXT = {
   "ct.failure-service-ch": "Tŷ’r Cwmnïau",
   "ct.failure-service-hmrc": "CThEF",
   "ct.failure-submit-fault": "Nam yn Submit yw hwn, nid yn eich atebion na’ch mewngofnodi.",
+  "ct.narrate-accounts-then-return": "Mae gan Dŷ’r Cwmnïau y cyfrifon; wrthi’n anfon y Ffurflen Dreth at CThEF...",
+  "ct.narrate-checking": "Wrthi’n gwirio eich atebion...",
+  "ct.narrate-sending-accounts": "Wrthi’n anfon y cyfrifon at Dŷ’r Cwmnïau...",
+  "ct.narrate-sending-return": "Wrthi’n anfon y Ffurflen Dreth at CThEF...",
+  "ct.narrate-waiting-ch": "Wrthi’n aros am ateb Tŷ’r Cwmnïau...",
+  "ct.narrate-waiting-hmrc": "Wrthi’n aros am ateb CThEF...",
   "ct.section-video-link": "Gwyliwch o {time}",
   "ct.section-video-summary": "Gwyliwch y rhan hon",
   "field.reference-balance-sheet": "Eitem {item} y fantolen",

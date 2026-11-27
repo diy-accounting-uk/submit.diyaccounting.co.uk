@@ -94,6 +94,7 @@
     const askAgain = () => pollAndShowOutcome({ kind, submission, result, headers, onSettled });
     let outcome;
     try {
+      window.showStatus?.(siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."), "info");
       outcome = await poll.pollGatewayUntilSettled({
         submissionNumber: submission.submissionNumber,
         pollIntervalSeconds: submission.pollInterval,
@@ -152,6 +153,7 @@
     result.replaceChildren();
     let submission;
     try {
+      window.showStatus?.(siteText("ch.narrate-sending-form", "Sending the form to Companies House..."), "info");
       submission = await window.submitCompaniesHouseForm(kind, form, headers);
     } catch (error) {
       if (error?.status === 402 && error.body?.code === "fee-due" && onPaymentRequired) {

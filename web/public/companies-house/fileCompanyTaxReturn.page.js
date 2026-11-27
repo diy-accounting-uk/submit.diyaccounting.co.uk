@@ -2814,6 +2814,7 @@ async function handleReturnFormSubmit(event) {
     }
     previewRequest = { ...ct600RequestFromValues(values, company, state.workingSheet), ...agentFields() };
     reviewedValues = values;
+    narrate(siteText("ct.narrate-checking", "Checking your answers..."));
     const preview = await window.previewCtReturn(previewRequest);
     if (Array.isArray(preview.returns) && !chooseAmendedReturns(preview)) return;
     renderReview(preview);
@@ -2834,6 +2835,22 @@ async function handleReturnFormSubmit(event) {
   } finally {
     window.hideLoading();
   }
+}
+
+// --- Saying what a long running submission is doing --------------------------------------------
+
+// One information message per stage, as the VAT submission shows them; the working bubble shows each
+// while the spinner shows, and the answer or the failure that ends the stage replaces it.
+function narrate(text) {
+  window.showStatus(text, "info");
+}
+
+function narrateSendingReturn() {
+  narrate(
+    sending.mode === "both" && sending.companiesHouse?.statusCode === "ACCEPT"
+      ? siteText("ct.narrate-accounts-then-return", "Companies House has the accounts; sending the return to HMRC...")
+      : siteText("ct.narrate-sending-return", "Sending the return to HMRC..."),
+  );
 }
 
 // --- What a failure left behind ----------------------------------------------------------------
@@ -2955,6 +2972,7 @@ function returnStatusWord(statusCode) {
 }
 
 async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
+  narrate(siteText("ct.narrate-waiting-hmrc", "Waiting for HMRC's answer..."));
   let waitFor = firstWaitSeconds;
   let result;
   for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
@@ -3747,6 +3765,7 @@ function showJointResult() {
 // Poll Companies House for one window. True once it accepts; otherwise the page says where the accounts stand.
 // Only the newest poll window may write the result, so an older window cannot overwrite it or send the return twice.
 async function waitForCompaniesHouse(headers) {
+  narrate(siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
   const pollWindow = ++companiesHousePollWindow;
   const { submissionNumber, pollIntervalSeconds } = sending.companiesHouse;
   for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_POLLS; attempt++) {
@@ -3773,6 +3792,7 @@ async function waitForCompaniesHouse(headers) {
 }
 
 async function sendAccountsToCompaniesHouse(headers, companyAuthCode) {
+  narrate(siteText("ct.narrate-sending-accounts", "Sending the accounts to Companies House..."));
   const submission = await window.submitMicroEntityAccounts(companiesHouseRequest(companyAuthCode), headers);
   element("companyAuthCode").value = "";
   sending.companiesHouse = {
@@ -3807,6 +3827,7 @@ function readGatewayCredentials() {
 async function sendCompanyTaxReturn(headers) {
   const credentials = readGatewayCredentials();
   if (!credentials) return;
+  narrateSendingReturn();
   const submission = await window.submitCtReturn(taxReturnRequest(credentials.gatewayUserId, credentials.gatewayPassword), headers);
   element("gatewayPassword").value = "";
   sending.taxReturnSent = true;
@@ -3846,6 +3867,7 @@ async function sendLongReturns(headers) {
 }
 
 async function sendLongReturn(part, headers, credentials) {
+  narrateSendingReturn();
   const submission = await window.submitCtReturn(taxReturnRequest(credentials.gatewayUserId, credentials.gatewayPassword, part), headers);
   element("gatewayPassword").value = "";
   sending.taxReturnSent = true;
