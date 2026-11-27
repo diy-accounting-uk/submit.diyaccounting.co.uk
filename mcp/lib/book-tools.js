@@ -40,7 +40,7 @@ import { UNKNOWN_CLIENT } from "./client-kind.js";
 
 export const SAVE_FORMATS = ["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"];
 
-// The DIYA cloud forms of open_book/save_book reach DIY Accounting Submit's own storage routes
+// The DIY Accounting Submit account forms of open_book/save_book reach DIY Accounting Submit's own storage routes
 // (diyaGlListGet.js, diyaGlVersionGet.js, diyaGlPut.js), the same routes the spreadsheets site's
 // DIYA-GL pages use, over the session's credentials. Configuration comes from the
 // environment: DIYA_SUBMIT_BASE_URL, the same variable practice-tools.js and submit-tools.js read.
@@ -130,7 +130,7 @@ function summarise(session, bookChecks) {
 }
 
 /**
- * The metadata of each book saved in the DIYA cloud, most recently updated first, over the route
+ * The metadata of each book saved in the DIY Accounting Submit account, most recently updated first, over the route
  * the spreadsheets site's DIYA-GL pages list (GET /api/v1/books): every field the route stores,
  * the etag a replacing save sends among them. clientId lists a practice client's book set instead
  * of the practice's own.
@@ -173,7 +173,7 @@ export async function listBooks(session, { clientId } = {}) {
 }
 
 /**
- * The session's loaded book from the DIYA cloud by book id, over the same route the spreadsheets
+ * The session's loaded book from the DIY Accounting Submit account by book id, over the same route the spreadsheets
  * site's DIYA-GL pages read (GET /api/v1/books/{bookId}/versions/latest). Replaces the session's
  * loaded book and records the etag save_book's cloud form needs for its next if-match.
  */
@@ -288,7 +288,7 @@ function isoDateOrNull(value) {
 }
 
 /**
- * The session's loaded book to the DIYA cloud by book id, over the same route the spreadsheets
+ * The session's loaded book to the DIY Accounting Submit account by book id, over the same route the spreadsheets
  * site's DIYA-GL pages write (PUT /api/v1/books/{bookId}). Carries the if-match etag from the
  * session's last cloud open or save of this same bookId; a book saved here for the first time (no
  * prior cloud open) sends none, matching a brand-new book on that route.
@@ -337,7 +337,7 @@ async function saveCloudBook(session, { bookId, clientId } = {}) {
  * engine's own interchange formats; xlsx and zip compose the product's
  * workbook or package, which fetches the template from
  * spreadsheets.diyaccounting.co.uk the first time it runs. With cloud: true,
- * writes to the DIYA cloud by bookId instead (a practice client's book set
+ * writes to the DIY Accounting Submit account by bookId instead (a practice client's book set
  * with clientId).
  * @param {Object} session
  * @param {{path: string, format?: string} | {cloud: true, bookId: string, clientId?: string}} params

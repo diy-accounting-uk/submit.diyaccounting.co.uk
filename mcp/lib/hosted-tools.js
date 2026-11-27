@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // hosted-tools.js -- the tools the hosted MCP endpoint registers, and the four
-// that change shape there: open_book reads the DIYA cloud only,
+// that change shape there: open_book reads the DIY Accounting Submit account only,
 // derive_itsa_annual_submission and derive_company_tax_return answer without
 // writing a file, and run_for_clients cannot run the book tools. The tools
 // left out are the sign-in pair (the connector owns sign-in) and the filesystem
@@ -100,6 +100,8 @@ export function hostedToolNames(environmentName, groups = []) {
 // What an assistant connected to prod's tool set needs to know beyond each tool's description: what
 // the connector cannot do, how a return gets filed, and what to show from a derived return.
 const PROD_HOSTED_INSTRUCTIONS =
+  "A book is one DIYA-GL file: one business's sales, purchases and bank lines for a year. " +
+  'Say "your DIYA-GL book" or "your records" to the person, never "your books". ' +
   "This connector reads and works out figures: it opens a DIYA-GL book and derives from it a VAT return, a company's " +
   "micro-entity or small company accounts and a Company Tax Return; it prepares the link that opens the VAT return " +
   "form with the VAT figures filled in; it looks up a company's filing deadlines on the Companies House register; and " +
@@ -145,7 +147,7 @@ export const HOSTED_OVERRIDES = {
     annotations: READS,
     description:
       "The year's allowances and adjustments for HMRC's Self Employment Business API annual submission from the loaded " +
-      "self-employed book, restricted to the fields HMRC accepts for that tax year.",
+      "self-employed DIYA-GL book, restricted to the fields HMRC accepts for that tax year.",
     inputSchema: {
       taxYear: z.string().optional().describe("Override the tax year the book's dates imply, as 2025-26"),
     },

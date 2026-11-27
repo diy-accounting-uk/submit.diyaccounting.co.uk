@@ -419,7 +419,7 @@ export const TOOLS = {
       "operator's browser (or prints the URL, when it cannot open one) with a PKCE code challenge, catches the " +
       "authorization code on a loopback listener, and stores the refresh token under " +
       "~/.config/diya-submit/credentials.json mode 600. Every tool that reaches the deployed API (the VAT, " +
-      "Companies House, practice and cloud-book tools) uses the resulting session; run this once before any of " +
+      "Companies House, practice and saved DIYA-GL book tools) uses the resulting session; run this once before any of " +
       "them, and again after a sign_out or once the stored refresh token has expired.",
     inputSchema: {},
     handler: (_session, _params) => signIn(),
@@ -438,9 +438,9 @@ export const TOOLS = {
     title: "Open a DIYA-GL book",
     annotations: READS,
     description:
-      "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
+      "Open a DIYA-GL book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
       "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). With cloud: true, opens " +
-      "bookId from the DIYA cloud instead (a practice client's own book with clientId), signed in as the session's credentials " +
+      "bookId from the DIY Accounting Submit account instead (a practice client's own book with clientId), signed in as the session's credentials " +
       "idToken(). Answers the product, the entity, the period covered, the line count and the book checks " +
       "summary. Replaces the session's loaded book.",
     inputSchema: {
@@ -448,7 +448,7 @@ export const TOOLS = {
         .string()
         .optional()
         .describe("Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads; unused with cloud"),
-      cloud: z.boolean().optional().describe("Open bookId from the DIYA cloud instead of the filesystem"),
+      cloud: z.boolean().optional().describe("Open bookId from the DIY Accounting Submit account instead of the filesystem"),
       bookId: z.string().optional().describe("The cloud book's id; required with cloud: true"),
       clientId: z.string().optional().describe("A practice client's id, to open that client's book instead of the practice's own"),
     },
@@ -469,19 +469,19 @@ export const TOOLS = {
     handler: listBooks,
   },
   save_book: {
-    title: "Save the book",
+    title: "Save the DIYA-GL book",
     annotations: CHANGES,
     description:
-      "Save the session's loaded book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
+      "Save the session's loaded DIYA-GL book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
       "directory; the default for a path with no extension), diya-gl-zip, json, xlsx (the product's recalculating " +
       "workbook) and zip (the product's package). xlsx and zip fetch the template from spreadsheets.diyaccounting.co.uk " +
-      "on first use. With cloud: true, writes to the DIYA cloud by bookId instead (a practice client's book set with " +
+      "on first use. With cloud: true, writes to the DIY Accounting Submit account by bookId instead (a practice client's book set with " +
       "clientId), signed in as the session's credentials; carries the if-match etag from the session's last cloud " +
       "open or save of the same bookId.",
     inputSchema: {
       path: z.string().optional().describe("Where to write: a directory for diya-gl-dir, otherwise a file path; unused with cloud"),
       format: z.enum(SAVE_FORMATS).optional().describe("One of diya-gl-dir, diya-gl-zip, json, xlsx, zip; unused with cloud"),
-      cloud: z.boolean().optional().describe("Save to the DIYA cloud by bookId instead of the filesystem"),
+      cloud: z.boolean().optional().describe("Save to the DIY Accounting Submit account by bookId instead of the filesystem"),
       bookId: z.string().optional().describe("The cloud book's id; required with cloud: true"),
       clientId: z.string().optional().describe("A practice client's id, to save into that client's book set"),
     },
@@ -491,7 +491,7 @@ export const TOOLS = {
     title: "Write a finance package",
     annotations: CHANGES,
     description:
-      "Writes a diya-gl book and its lines as the unzipped spreadsheets package directory a completed year's package " +
+      "Writes a DIYA-GL book and its lines as the unzipped spreadsheets package directory a completed year's package " +
       "holds: one workbook for a single-file product (Basic Sole Trader, Taxi Driver), the whole named set for a " +
       "multi-file one (Self Employed, Company), under outputDir in a directory named the product's own way. Reads the " +
       "book from bookPath (a diya-gl-dir, or any file open_book reads) or from book and lines given directly; does not " +
@@ -920,10 +920,10 @@ export const TOOLS = {
     handler: pollSubmission,
   },
   move_book_to_client: {
-    title: "Move a book to a client",
+    title: "Move a DIYA-GL book to a client",
     annotations: CHANGES,
     description:
-      "Move one of the practice's own books to a client's book set (during migration from sole trader to practice). " +
+      "Move one of the practice's own DIYA-GL books to a client's book set (during migration from sole trader to practice). " +
       "Calls DIY Accounting Submit's own move route, which copies the book and every kept version, verifies each copy, " +
       "then deletes the source. Refuses when the client already has a book with this id, or the practice has no such book of its own.",
     inputSchema: {

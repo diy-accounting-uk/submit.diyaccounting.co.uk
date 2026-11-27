@@ -196,6 +196,13 @@ describe("the hosted tool set", () => {
       expect(result.instructions).toMatch(/No tool files a return or accounts, or pays HMRC or anyone else/);
     });
 
+    it("the initialize result says what a DIYA-GL book is and the words to use for it", async () => {
+      const { result } = await initialize(hostedInstructions("prod"));
+
+      expect(result.instructions).toContain("A book is one DIYA-GL file: one business's sales, purchases and bank lines for a year.");
+      expect(result.instructions).toContain('Say "your DIYA-GL book" or "your records" to the person, never "your books".');
+    });
+
     it("the initialize result says how a return is filed and what to show from a derived return", async () => {
       const { result } = await initialize(hostedInstructions("prod"));
 
@@ -216,5 +223,17 @@ describe("the hosted tool set", () => {
 
       expect(result.instructions).toBeUndefined();
     });
+  });
+});
+
+describe("every tool's title and description", () => {
+  it("names a saved file a DIYA-GL book and the place it is saved the DIY Accounting Submit account", () => {
+    for (const [name, tool] of [...Object.entries(TOOLS), ...Object.entries(HOSTED_OVERRIDES)]) {
+      const text = `${tool.title} ${tool.description}`;
+      expect(text, name).not.toMatch(/DIYA cloud/);
+      expect(text, name).not.toMatch(/diya-gl book/);
+      expect(text, name).not.toMatch(/\b(your|their|the company's|from) books\b/i);
+      if (/\bbooks?\b/i.test(text)) expect(text, name).toMatch(/DIYA-GL book/);
+    }
   });
 });
