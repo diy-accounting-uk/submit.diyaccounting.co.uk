@@ -84,7 +84,7 @@ export const CT600_BOX_ROWS = [
       labelCell: sheetCell("OpenAccounts!O2"),
       workbookLabel: "Tax Reference per CT603 Notice",
       differenceNote:
-        'The spreadsheet calls this the "Tax Reference per CT603 Notice". It is the company\'s 10-digit Unique Taxpayer Reference. A book does not fill it; type it.',
+        'The spreadsheet calls this the "Tax Reference per CT603 Notice". It is the company\'s 10-digit Unique Taxpayer Reference. The fill from your records leaves it empty; type it.',
     },
   },
   {
@@ -196,7 +196,7 @@ export const CT600_BOX_ROWS = [
       thisYear: sheetCell("CT600!Z98"),
       workbookLabel: "Trading losses of this or a later accounting period",
       differenceNote:
-        "The spreadsheet's box 30 sets a trading loss against bank interest by itself. A book fills Submit's box 275 with 0. Enter the spreadsheet's figure when the company makes this claim.",
+        "The spreadsheet's box 30 sets a trading loss against bank interest by itself. The fill from your records puts 0 in Submit's box 275. Enter the spreadsheet's figure when the company makes this claim.",
     },
   },
   {
@@ -708,7 +708,7 @@ export const CT600_BOX_ROWS = [
       thisYear: sheetCell("CT600!AL194"),
       workbookLabel: "Expenditure on machinery and plant on which first year allowance is claimed",
       differenceNote:
-        "The spreadsheet's box 118 adds \"Expenditure on\". A book fills Submit's box 760 with 0. Enter the spreadsheet's figure.",
+        "The spreadsheet's box 118 adds \"Expenditure on\". The fill from your records puts 0 in Submit's box 760. Enter the spreadsheet's figure.",
     },
   },
   {
@@ -1233,7 +1233,7 @@ export const CT600_FORM_FIELDS = [
       thisYear: sheetCell("CorporationTax!K35"),
       workbookLabel: "Corporation Tax chargeable",
       differenceNote:
-        "The spreadsheet's own working of the tax is \"Corporation Tax chargeable\" in CorporationTax!K35. A book does not fill this field; type K35 here to check Submit's box 440.",
+        "The spreadsheet's own working of the tax is \"Corporation Tax chargeable\" in CorporationTax!K35. The fill from your records leaves this field empty; type K35 here to check Submit's box 440.",
     },
   },
   {
@@ -1461,7 +1461,7 @@ export const ACCOUNTS_REGIME_QUESTION = {
   label: siteText("ch.ct.which-accounts", "Which accounts does the company prepare?"),
   hint: siteText(
     "ch.ct.which-accounts-hint",
-    "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
+    "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. The fill from your records picks this for you.",
   ),
   reference: "CA 381; CA 384A",
   termSources: [companiesActSection(381), companiesActSection("384A")],
@@ -1849,7 +1849,7 @@ export const BALANCE_SHEET_FIELDS = [
       lastYear: sheetCell("PubBalSht!A16"),
       workbookLabel: "Trade Creditors",
       differenceNote:
-        "The spreadsheet's \"Trade Creditors\" also holds net wages, wage deductions and dividends due. A book fills Submit's other creditors with 0 this year; move those amounts to other creditors if the company shows them apart.",
+        "The spreadsheet's \"Trade Creditors\" also holds net wages, wage deductions and dividends due. The fill from your records puts 0 in Submit's other creditors this year; move those amounts to other creditors if the company shows them apart.",
     },
   },
   {
@@ -2101,7 +2101,8 @@ export const ACCOUNTS_TEXT_FIELDS = [
     source: {
       thisYear: sheetCell("OpenAccounts!E5"),
       workbookLabel: "First Director's Name",
-      differenceNote: "A book names the first director (OpenAccounts!E5). Change it when another director owes the company.",
+      differenceNote:
+        "The fill from your records names the first director (OpenAccounts!E5). Change it when another director owes the company.",
     },
   },
   {
@@ -2137,7 +2138,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
       thisYear: `${sheetCell("PubBalSht!E29")}-${sheetCell("OpenAccounts!E30")}`,
       workbookLabel: "Directors Loan Account, end less start",
       differenceNote:
-        "The spreadsheet holds the balance at the start and at the end only. A book fills the increase as advanced, or the decrease as repaid; enter the amounts when there were both.",
+        "The spreadsheet holds the balance at the start and at the end only. The fill from your records puts the increase in as advanced, or the decrease as repaid; enter the amounts when there were both.",
     },
   },
   {
@@ -2151,7 +2152,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
       thisYear: `${sheetCell("OpenAccounts!E30")}-${sheetCell("PubBalSht!E29")}`,
       workbookLabel: "Directors Loan Account, start less end",
       differenceNote:
-        "The spreadsheet holds the balance at the start and at the end only. A book fills the increase as advanced, or the decrease as repaid; enter the amounts when there were both.",
+        "The spreadsheet holds the balance at the start and at the end only. The fill from your records puts the increase in as advanced, or the decrease as repaid; enter the amounts when there were both.",
     },
   },
   {
@@ -2189,7 +2190,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
       thisYear: sheetCell("PubBalSht!C57"),
       workbookLabel: "Date Signed",
       differenceNote:
-        "The spreadsheet's \"Date Signed\" shows today's date (TODAY()). A book does not fill this field; enter the date the board approved the accounts.",
+        "The spreadsheet's \"Date Signed\" shows today's date (TODAY()). The fill from your records leaves this field empty; enter the date the board approved the accounts.",
     },
   },
 ];
@@ -2636,7 +2637,7 @@ export const LOAN_ROW_FIELDS = [
     source: {
       thisYear: sheetCell("OpenAccounts!E5"),
       workbookLabel: "First Director's Name",
-      differenceNote: "A book names the first director (OpenAccounts!E5) for the one loan row it fills.",
+      differenceNote: "The fill from your records names the first director (OpenAccounts!E5) for the one loan row it fills.",
     },
   },
   {
@@ -2649,7 +2650,7 @@ export const LOAN_ROW_FIELDS = [
       thisYear: `${sheetCell("PubBalSht!E29")}-${sheetCell("OpenAccounts!E30")}`,
       workbookLabel: "Directors Loan Account, end less start",
       differenceNote:
-        "The spreadsheet holds the director's loan account at the start and at the end. A book fills the increase in the amount the director owes. Enter each loan made in the period and still owed.",
+        "The spreadsheet holds the director's loan account at the start and at the end. The fill from your records puts in the increase in the amount the director owes. Enter each loan made in the period and still owed.",
     },
   },
   {
@@ -2883,7 +2884,7 @@ function repaymentRowProblems(values, problem, today, part) {
         repaymentId("Date", row, part),
         siteText(
           "ch.ct600.problem-repayment-in-period",
-          "A repayment on or before the end of the period belongs in the period's own books",
+          "A repayment on or before the end of the period belongs in the period's own accounts",
         ),
       );
     } else if (date > today) {
@@ -3282,7 +3283,7 @@ function loanEntries(figures, accounts) {
       "loansBookNote",
       siteText(
         "ch.ct600.book-loan-note",
-        "Your book shows the director's loan account overdrawn by £{end} at the end and £{start} at the start.",
+        "Your records show the director's loan account overdrawn by £{end} at the end and £{start} at the start.",
         { end: overdrawn.toLocaleString("en-GB"), start: opening.toLocaleString("en-GB") },
       ),
     ],

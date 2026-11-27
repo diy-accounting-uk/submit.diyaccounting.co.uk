@@ -421,7 +421,7 @@ describe("the form's own checks", () => {
 
     test("shows a repayment on or before the period end under its own date field", () => {
       const problems = formProblems(repaying({ repaymentDate1: "2026-03-31" }), { today: "2026-11-03" });
-      expect(problems.find((problem) => problem.target === "repaymentDate1")?.message).toMatch(/period's own books/);
+      expect(problems.find((problem) => problem.target === "repaymentDate1")?.message).toMatch(/period's own accounts/);
     });
 
     test("names the field of a loan row that is wrong", () => {

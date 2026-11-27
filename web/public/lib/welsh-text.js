@@ -1054,7 +1054,7 @@ window.WELSH_TEXT = {
   "ch.ct.where-sending": "I ble rydych yn anfon y cyfrifon hyn?",
   "ch.ct.which-accounts": "Pa gyfrifon y mae’r cwmni yn eu paratoi?",
   "ch.ct.which-accounts-hint":
-    "Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae llyfr yn dewis hyn i chi.",
+    "Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae’r llenwi o’ch cofnodion yn dewis hyn i chi.",
   "ch.ct.which-copy": "Pa gopi sy’n mynd i Dŷ’r Cwmnïau?",
   "ch.ct.which-copy-hint":
     "Mae Tŷ’r Cwmnïau yn cyhoeddi’r hyn y mae’n ei gael. Mae cyfrifon wedi’u ffiledu (filleted) yn gadael y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr allan o’r copi cyhoeddus. Mae CThEF yn cael y cyfrifon llawn y naill ffordd neu’r llall.",
@@ -1102,7 +1102,7 @@ window.WELSH_TEXT = {
   "ch.ct600.average-employees-hint":
     "Nifer cyfartalog y bobl a gyflogodd y cwmni yn y cyfnod, gan gynnwys cyfarwyddwyr. Rhowch 0 os nad oes neb.",
   "ch.ct600.book-loan-note":
-    "Mae eich llyfr yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.",
+    "Mae eich cofnodion yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.",
   "ch.ct600.box-1": "Enw’r cwmni",
   "ch.ct600.box-1-rule": "Mae chwilio am y cwmni yn rhoi’r enw",
   "ch.ct600.box-145": "Cyfanswm y trosiant o fasnachu",
@@ -1392,7 +1392,7 @@ window.WELSH_TEXT = {
   "ch.ct600.problem-pence": "Rhowch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54",
   "ch.ct600.problem-repayment-date": "Rhowch ddyddiad yr ad-daliad",
   "ch.ct600.problem-repayment-future": "Ni all ad-daliad gael ei ddyddio ar ôl heddiw",
-  "ch.ct600.problem-repayment-in-period": "Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i lyfrau’r cyfnod ei hun",
+  "ch.ct600.problem-repayment-in-period": "Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i gyfrifon y cyfnod ei hun",
   "ch.ct600.problem-repayment-name": "Dewiswch gyfranogwr o’r benthyciadau",
   "ch.ct600.problem-repayment-none": "Rhowch y swm a ad-dalwyd, neu’r swm a ryddhawyd neu a ddilëwyd",
   "ch.ct600.problem-repayment-whole": "Rhowch bunnoedd cyfan, neu gadewch hwn yn wag os nad oes dim",

@@ -14413,8 +14413,8 @@ hash = "7be29c4a7e17"
 cy = '''Pa gyfrifon y mae’r cwmni yn eu paratoi?'''
 
 [strings."ch.ct.which-accounts-hint"]
-hash = "dad3ad021bf6"
-cy = '''Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae llyfr yn dewis hyn i chi.'''
+hash = "981a805eed58"
+cy = '''Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae’r llenwi o’ch cofnodion yn dewis hyn i chi.'''
 
 [strings."ch.ct.accounts-intro"]
 hash = "db5d7a167dda"
@@ -16528,8 +16528,8 @@ cy = '''Rhowch ddyddiad yr ad-daliad'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-repayment-in-period"]
-hash = "1169ed5e12ae"
-cy = '''Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i lyfrau’r cyfnod ei hun'''
+hash = "43553148dbff"
+cy = '''Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i gyfrifon y cyfnod ei hun'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-repayment-future"]
@@ -16673,8 +16673,8 @@ cy = '''Derbyniwch y datganiad cyn i chi weld rhagolwg o’r Ffurflen Dreth'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.book-loan-note"]
-hash = "f9b8d67062bb"
-cy = '''Mae eich llyfr yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.'''
+hash = "ce66f10b5a2d"
+cy = '''Mae eich cofnodion yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.not-given"]
