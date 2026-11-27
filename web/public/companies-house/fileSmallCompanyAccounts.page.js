@@ -741,7 +741,7 @@ function showFilingCopyLink(outcome) {
 }
 
 function pollUntilSettled(submission, extraHeaders) {
-  window.showStatus(window.siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."), "info");
+  window.narrateStage(window.siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
   const { submissionNumber } = submission;
   return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
     submissionNumber,
@@ -852,7 +852,7 @@ async function handleSubmitFiling() {
     const accounts = { ...filedAccounts, companyAuthCode };
     const govTestScenario = document.getElementById("govTestScenario").value.trim();
     const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
-    window.showStatus(window.siteText("ct.narrate-sending-accounts", "Sending the accounts to Companies House..."), "info");
+    window.narrateStage(window.siteText("ct.narrate-sending-accounts", "Sending the accounts to Companies House..."));
     const submission = await window.submitMicroEntityAccounts(accounts, { ...govTestScenarioHeaders, ...languageHeaders() });
     document
       .getElementById("filingResult")

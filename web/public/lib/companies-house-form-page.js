@@ -94,13 +94,15 @@
     const askAgain = () => pollAndShowOutcome({ kind, submission, result, headers, onSettled });
     let outcome;
     try {
-      window.showStatus?.(siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."), "info");
+      window.narrateStage(siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
       outcome = await poll.pollGatewayUntilSettled({
         submissionNumber: submission.submissionNumber,
         pollIntervalSeconds: submission.pollInterval,
         poll: () => window.pollCompaniesHouseForm(kind, submission.submissionNumber, headers),
       });
+      window.endStage();
     } catch (error) {
+      window.endStage();
       result.replaceChildren(
         paragraph(poll.checkFailedNote(submission.submissionNumber, errorText(error)), "error-message"),
         ...(poll.mayCheckAgain(submission) ? [checkAgainButton(askAgain)] : []),
@@ -153,7 +155,7 @@
     result.replaceChildren();
     let submission;
     try {
-      window.showStatus?.(siteText("ch.narrate-sending-form", "Sending the form to Companies House..."), "info");
+      window.narrateStage(siteText("ch.narrate-sending-form", "Sending the form to Companies House..."));
       submission = await window.submitCompaniesHouseForm(kind, form, headers);
     } catch (error) {
       if (error?.status === 402 && error.body?.code === "fee-due" && onPaymentRequired) {

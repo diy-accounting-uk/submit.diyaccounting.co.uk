@@ -49,6 +49,8 @@ async function openAmend(page, receipt) {
     window.fetchWithIdToken = async () => ({ ok: true, json: async () => receiptBody });
     window.showLoading = () => {};
     window.hideLoading = () => {};
+    window.narrateStage = (message) => window.showStatus(message, "info");
+    window.endStage = () => {};
     window.showStatus = (text, type) => {
       const message = document.createElement("div");
       message.className = `status-message status-${type}`;

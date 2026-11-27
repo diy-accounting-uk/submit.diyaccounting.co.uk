@@ -31,6 +31,8 @@ test.describe("Change Registered Email Address page", () => {
         window.hideStatus = () => {};
         window.showLoading = () => {};
         window.hideLoading = () => {};
+        window.narrateStage = (message) => window.showStatus(message, "info");
+        window.endStage = () => {};
         window.__submitReady__ = true;
         window.normaliseCompanyNumber = (value) => String(value).trim().toUpperCase().padStart(8, "0");
         window.generateRandomState = () => "test-state";

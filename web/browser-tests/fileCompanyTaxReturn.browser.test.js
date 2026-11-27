@@ -323,6 +323,7 @@ test.describe("File Company Tax Return entry form", () => {
       body: { message: "Internal server error" },
     });
     await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
     await expect(panel.locator("[data-part=kind]")).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
     await expect(panel.locator("[data-part=next] a")).toHaveAttribute("href", "/help.html");
     await expect(panel.locator("[data-part=next]")).toContainText("req-ctn2-500");
@@ -463,22 +464,27 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(panel.locator("[data-part=next]")).toContainText("req-preview");
   });
 
-  test("the preview, the send and HMRC's check each say what they are doing, in order", async ({ page }) => {
+  test("the preview, the send and HMRC's check each say what they are doing, in order, one stage at a time, and no stage outlives the answer", async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
       window.stageMessages = [];
+      window.mostStagesShown = 0;
       new MutationObserver((records) => {
         for (const record of records) {
           for (const node of record.addedNodes) {
             if (node.classList?.contains("status-info")) window.stageMessages.push(node.textContent.replace("×", "").trim());
           }
         }
+        const shown = document.querySelectorAll("#statusMessagesContainer .status-info").length;
+        window.mostStagesShown = Math.max(window.mostStagesShown, shown);
       }).observe(document, { childList: true, subtree: true });
     });
     const submission = {
       requests: [],
       status: 200,
-      body: { correlationId: "CORRSTAGES", irmark: "IRMARK", pollIntervalSeconds: 0 },
-      pollBody: { statusCode: "PENDING", correlationId: "CORRSTAGES", pollIntervalSeconds: 0 },
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
     };
     await openForm(page, [], submission);
     await dropBook(page);
@@ -493,10 +499,11 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#previewBtn").click();
     await expect(page.locator("#statusMessagesContainer")).toContainText("Checking your answers...");
     await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
     await page.locator("#gatewayUserId").fill("gateway-user");
     await page.locator("#gatewayPassword").fill("gateway-password");
     await page.locator("#submitReturnBtn").click();
-    await expect(page.locator("#returnResult")).toContainText("waiting to be checked", { timeout: 30_000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
     const messages = await page.evaluate(() => window.stageMessages);
     const order = ["Checking your answers...", "Sending the return to HMRC...", "Waiting for HMRC's answer..."].map((text) =>
       messages.indexOf(text),
@@ -506,6 +513,8 @@ test.describe("File Company Tax Return entry form", () => {
       messages.join(" | "),
     ).toBe(true);
     expect([...order].sort((first, second) => first - second)).toEqual(order);
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
+    expect(await page.evaluate(() => window.mostStagesShown)).toBe(1);
   });
 
   test("a book that fills one field says so in the singular, in English and Welsh", async ({ page }) => {
@@ -1408,6 +1417,30 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the accounts", { timeout: 30_000 });
     await expect(page.locator("#startAgainBtn")).toBeVisible();
     await expect(page.locator("#startAgainPendingNote")).toBeHidden();
+  });
+
+  test("a joint filing says each stage in order: the accounts to Companies House, its answer, then the return to HMRC and its answer", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.stageMessages = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.classList?.contains("status-info")) window.stageMessages.push(node.textContent.replace("×", "").trim());
+          }
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await submitAndAccept(page, { both: true });
+    const messages = await page.evaluate(() => window.stageMessages);
+    expect(messages.slice(messages.indexOf("Sending the accounts to Companies House...")), messages.join(" | ")).toEqual([
+      "Sending the accounts to Companies House...",
+      "Waiting for Companies House's answer...",
+      "Companies House has the accounts; sending the return to HMRC...",
+      "Waiting for HMRC's answer...",
+    ]);
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
   });
 
   test("a return filed with HMRC alone can be amended to correct its attached accounts, with nothing sent to Companies House", async ({
