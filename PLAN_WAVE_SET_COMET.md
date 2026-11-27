@@ -91,6 +91,6 @@ As for cobalt: each wave's generators, the split gates on the workers, the Docke
 
 ## After the deploy
 
-- CTL8's recordings go to the channel unlisted for the operator to watch (`video-publish`); public only after he has watched.
+- CTL8's recordings go to the channel unlisted for the operator to watch (`video-publish`); public only after he has watched. Then `npm run video:walkthrough` for the four `file-company-tax-return-*` entries against the published recordings, and `publish.json`, its copy and `guide.html` go straight to prod as static content: comet ships the guide frames and section times of the silent simulator takes, so each "Watch this part" link seeks 3 to 31 s off in the old embedded video until then.
 - ODSC1, then DSC7, as the set's list says.
 - WRD7: `npm run video:publish -- --sync-metadata`, then `--sync-metadata --apply`, writes the changed titles and descriptions to the channel.
