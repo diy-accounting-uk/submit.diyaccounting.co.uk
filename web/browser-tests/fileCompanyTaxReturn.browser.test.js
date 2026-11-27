@@ -361,6 +361,87 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#failureDetail")).toHaveCount(0);
   });
 
+  test("Companies House refusing Submit's presenter account on a joint filing says nothing reached either service and the fault is not the person's", async ({
+    page,
+  }) => {
+    await openForm(page, [], { requests: [], status: 200, body: {} });
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Companies House rejected the accounts submission envelope",
+          error: { submissionNumber: "00001A", errors: [{ number: 5003, text: "Unknown presenter account" }] },
+        }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "submit-credentials");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "The accounts did not reach Companies House, and the return was not sent to HMRC.",
+    );
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "Companies House refused Submit's own credentials. Nothing is wrong with your account. Try again later.",
+    );
+  });
+
+  test("HMRC's error on a return sent while Companies House holds the accounts names both parts, and takes HMRC's class", async ({
+    page,
+  }) => {
+    const submission = {
+      requests: [],
+      status: 502,
+      body: {
+        message: "HMRC did not acknowledge the Company Tax Return",
+        error: { errors: [{ number: "3001", text: "Box 145 must not be negative" }] },
+      },
+    };
+    await openForm(page, [], submission);
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: "PENDING", submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#sendCtNowBtn")).toBeVisible({ timeout: 30_000 });
+    await page.locator("#sendCtNowBtn").click();
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "Companies House has the accounts (submission 00001A) and has not decided on them. HMRC did not acknowledge the Company Tax Return",
+    );
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "HMRC answered with this error. Correct the answer it names and send again.",
+    );
+    await expect(panel.locator("[data-part=errors] li")).toHaveText(["Box 145 must not be negative"]);
+  });
+
   test("a preview that fails says nothing was sent", async ({ page }) => {
     await openForm(page);
     await dropBook(page);

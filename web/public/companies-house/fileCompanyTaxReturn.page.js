@@ -4083,7 +4083,7 @@ async function runSend(send) {
     }
     if (error.status === 409) showView("previewView");
     window.showStatus(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."), "error");
-    showFilingFailure(error, sending.mode === "both" && sending.companiesHouse?.statusCode !== "ACCEPT" ? "companiesHouse" : "hmrc");
+    showFilingFailure(error, error.service ?? (sending.mode === "both" && !sending.companiesHouse ? "companiesHouse" : "hmrc"));
   } finally {
     window.hideLoading();
   }

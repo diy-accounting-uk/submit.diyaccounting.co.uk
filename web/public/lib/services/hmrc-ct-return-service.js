@@ -21,6 +21,7 @@ function ctReturnErrorFromResponse(response, body) {
   error.body = body;
   error.reason = body?.reason;
   error.requestId = response.headers?.get?.("x-request-id") ?? undefined;
+  error.service = "hmrc";
   return error;
 }
 

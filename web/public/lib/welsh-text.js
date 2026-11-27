@@ -2366,7 +2366,7 @@ window.WELSH_TEXT = {
   "ct.failure-gateway":
     "Ni dderbyniodd CThEF yr ID defnyddiwr na’r cyfrinair Porth y Llywodraeth. Gwiriwch y ddau, a bod gan yr ID defnyddiwr Dreth Gorfforaeth ar gyfer y cwmni hwn.",
   "ct.failure-heading": "Beth ddigwyddodd",
-  "ct.failure-help": "Help",
+  "ct.failure-help": "Cymorth",
   "ct.failure-our-credentials":
     "Gwrthododd {service} gymwysterau Submit ei hun. Does dim byd o’i le ar eich cyfrif. Rhowch gynnig arall arni nes ymlaen.",
   "ct.failure-refused": "Gwrthodwyd yr atebion cyn i ddim gael ei anfon. Cywirwch nhw ac anfonwch eto.",

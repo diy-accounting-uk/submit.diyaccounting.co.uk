@@ -28752,7 +28752,7 @@ cy = '''{text} ({location})'''
 
 [strings."ct.failure-help"]
 hash = "b79cac926e0b"
-cy = '''Help'''
+cy = '''Cymorth'''
 
 [strings."ct.failure-auth-code"]
 hash = "9e0fde7af905"

@@ -24,6 +24,9 @@ export const HELP_HREF = "/help.html";
 
 // HMRC's GovTalk number for a Government Gateway user ID or password it did not accept.
 const HMRC_AUTHENTICATION_FAILURE = "1046";
+// HMRC's GovTalk number for a message that does not validate against the GovTalk schema: Submit
+// built it wrongly.
+const HMRC_SCHEMA_FAULT = "1001";
 // Companies House's GovTalk numbers for the presenter account Submit files under: its
 // authentication, the account itself and its credit for the fee.
 const COMPANIES_HOUSE_PRESENTER_ERRORS = new Set(["502", "5003", "5006", "9984"]);
@@ -121,7 +124,10 @@ export function classifyFilingFailure(error, { service }) {
         errors: errors.map(errorText).filter(Boolean),
       };
     }
-    if (service === "companiesHouse" && numbers.includes(COMPANIES_HOUSE_SOFTWARE_FAULT)) {
+    if (
+      (service === "companiesHouse" && numbers.includes(COMPANIES_HOUSE_SOFTWARE_FAULT)) ||
+      (service === "hmrc" && numbers.includes(HMRC_SCHEMA_FAULT))
+    ) {
       return submitFault(error);
     }
     return {
@@ -134,7 +140,8 @@ export function classifyFilingFailure(error, { service }) {
       errors: errors.map(errorText).filter(Boolean),
     };
   }
-  if (typeof status === "number" && status >= 500) return submitFault(error);
+  // No answer at all, or a 5xx: nothing says the answers were refused, so it is not a refusal.
+  if (typeof status !== "number" || status >= 500) return submitFault(error);
   return {
     kind: FAILURE_KINDS.businessError,
     service,

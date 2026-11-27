@@ -23,6 +23,16 @@ describe("the kind of a filing's failure", () => {
     expect(failure.cause).toBe("This is a fault in Submit, not in your answers or your sign-in.");
   });
 
+  test("a request that got no answer is a fault in Submit, and never a refusal before anything was sent", () => {
+    const failure = classifyFilingFailure(new TypeError("Failed to fetch"), { service: "hmrc" });
+    expect(failure.kind).toBe(FAILURE_KINDS.submitFault);
+  });
+
+  test("HMRC's schema error is a fault in Submit, not an answer to correct", () => {
+    const body = { error: { errors: [{ number: "1001", text: "The submitted XML document failed to validate" }] } };
+    expect(classifyFilingFailure(answer(502, body), { service: "hmrc" }).kind).toBe(FAILURE_KINDS.submitFault);
+  });
+
   test("Companies House refusing the presenter account Submit files under is Submit's own credentials", () => {
     const body = { message: "Gateway error", error: { errors: [{ number: "502", text: "Authentication Failure" }] } };
     const failure = classifyFilingFailure(answer(502, body), { service: "companiesHouse" });
