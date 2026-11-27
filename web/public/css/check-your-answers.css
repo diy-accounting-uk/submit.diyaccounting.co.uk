@@ -186,6 +186,11 @@
     display: none;
   }
 
+  /* With no box number the question takes the whole line, so the answer sits under it as it does under a boxed question. */
+  .review-table--answers td.review-table__box-cell:empty + td {
+    flex-basis: 100%;
+  }
+
   .review-table--ledger caption {
     display: block;
   }

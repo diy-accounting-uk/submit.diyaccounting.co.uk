@@ -314,7 +314,7 @@ function formLinesOf(page, year) {
 }
 
 // The figure each box of a year holds once the revision has opened: what the books mapping gives for
-// the lines the books card fills, then what the revision module reads over it.
+// the lines the Fill from your records card fills, then what the revision module reads over it.
 function filledYear(source, year, lines) {
   const mappedYear = source.figures[year === "current" ? "currentYear" : "priorYear"];
   const filled = Object.fromEntries(lines.filter((line) => typeof mappedYear[line] === "number").map((line) => [line, mappedYear[line]]));

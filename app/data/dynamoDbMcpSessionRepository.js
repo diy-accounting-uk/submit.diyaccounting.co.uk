@@ -38,10 +38,11 @@ function expired(item) {
  * Creates a session for a user with no cloud book open.
  *
  * @param {string} hashedSub - the owner's hashed sub
- * @returns {Promise<{sessionId: string, hashedSub: string, cloud: null, ttl: number}>}
+ * @param {string} client - the assistant's kind, from mcp/lib/client-kind.js
+ * @returns {Promise<{sessionId: string, hashedSub: string, client: string, cloud: null, ttl: number}>}
  */
-export async function createMcpSession(hashedSub) {
-  const item = { sessionId: randomUUID(), hashedSub, cloud: null, ttl: newTtl() };
+export async function createMcpSession(hashedSub, client) {
+  const item = { sessionId: randomUUID(), hashedSub, client, cloud: null, ttl: newTtl() };
   await executeDynamoDbCommand((module) => new module.PutCommand({ TableName: tableName(), Item: item }));
   return item;
 }

@@ -1,0 +1,40 @@
+{
+  "source": {
+    "url": "http://www.hmrc.gov.uk/softwaredevelopers/ct/CT2024-v1.0.0.zip",
+    "size": 593165,
+    "sha256": "2870e82e2b5813389b886514434e6655f1f56c2247e38f4d25707be51beefd9f",
+    "file": "www.hmrc.gov.uk/schemas/ct/comp/2024-01-01/ct-comp/ct-comp-2024-label.xml",
+    "labelRole": "http://www.xbrl.org/2003/role/label",
+    "language": "en",
+    "note": "The standard English label of each ct-comp concept Submit files or names, for the concepts that ct-comp-2025-concepts.json also lists. HMRC publishes no CT2025 package with labels."
+  },
+  "labels": {
+    "ct-comp:AdjustedLossOfPeriod": "Adjusted loss of period",
+    "ct-comp:AdjustedProfitForThePeriod": "Adjusted profit for the period",
+    "ct-comp:AdjustedProfitOrLossBeforeAccountingPeriodAdjustments": "Adjusted profit (or loss) before accounting period adjustments",
+    "ct-comp:AdjustmentsAmortisation": "Adjustments, amortisation",
+    "ct-comp:AdjustmentsDepreciation": "Adjustments, depreciation",
+    "ct-comp:AdjustmentsDonations": "Adjustments, donations",
+    "ct-comp:AdjustmentsEntertaining": "Adjustments, entertaining",
+    "ct-comp:AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts": "Adjustments, non-trading loan relationship credits per accounts",
+    "ct-comp:CompanyIsAPartnerInAFirm": "Company is a partner in a firm",
+    "ct-comp:CompanyName": "Company name",
+    "ct-comp:CorporationTaxChargeable": "Corporation tax chargeable",
+    "ct-comp:EndOfPeriodCoveredByReturn": "End of period covered by return",
+    "ct-comp:MainPoolBalancingChargesInRespectOfFullExpensing": "Main pool, balancing charges in respect of full expensing",
+    "ct-comp:MainPoolTotalFullExpensingAllowance": "Main pool, total full expensing allowance",
+    "ct-comp:NameOfProductionSoftware": "Name of production software",
+    "ct-comp:PeriodOfAccountEndDate": "Period of account end date",
+    "ct-comp:PeriodOfAccountStartDate": "Period of account start date",
+    "ct-comp:ProfitLossPerAccounts": "Profit/(loss) per accounts",
+    "ct-comp:SpecialRatePoolAnnualInvestmentAllowance": "Special rate pool, annual investment allowance",
+    "ct-comp:SpecialRatePoolBalancingCharge": "Special rate pool, balancing charge",
+    "ct-comp:SpecialRatePoolBalancingChargeInRespectOfSRAllowance": "Special rate pool, balancing charge in respect of SR allowance",
+    "ct-comp:SpecialRatePoolTotalAllowances": "Special rate pool, total allowances",
+    "ct-comp:SpecialRatePoolTotalSRAllowance": "Special rate pool, total SR allowance",
+    "ct-comp:StartOfPeriodCoveredByReturn": "Start of period covered by return",
+    "ct-comp:TaxReference": "Tax reference",
+    "ct-comp:TotalCapitalAllowances": "Total capital allowances",
+    "ct-comp:VersionOfProductionSoftware": "Version of production software"
+  }
+}

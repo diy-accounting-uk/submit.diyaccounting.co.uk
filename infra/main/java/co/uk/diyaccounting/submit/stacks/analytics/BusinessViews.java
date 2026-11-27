@@ -418,6 +418,10 @@ public class BusinessViews extends Construct {
                             + " and HTTP status, for the last 15 days",
                     List.of("dynamo_calls")),
             new ViewDefinition(
+                    "v_mcp_sessions_by_client",
+                    "MCP sessions each UTC day by the assistant that opened them: distinct customers and sessions",
+                    List.of("dynamo_mcp_sessions")),
+            new ViewDefinition(
                     "v_hmrc_failures_by_class_hourly",
                     "HMRC failures each hour by class and HMRC status, for the last 15 days",
                     List.of("activity_events_all")),

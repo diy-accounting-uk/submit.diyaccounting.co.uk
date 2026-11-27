@@ -44,6 +44,7 @@ import {
   getVatReceipt,
   listVatReceipts,
   listAccountsReceipts,
+  companyFilingDeadlines,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   renderSmallCompanyAccounts,
@@ -418,7 +419,7 @@ export const TOOLS = {
       "operator's browser (or prints the URL, when it cannot open one) with a PKCE code challenge, catches the " +
       "authorization code on a loopback listener, and stores the refresh token under " +
       "~/.config/diya-submit/credentials.json mode 600. Every tool that reaches the deployed API (the VAT, " +
-      "Companies House, practice and cloud-book tools) uses the resulting session; run this once before any of " +
+      "Companies House, practice and saved DIYA-GL book tools) uses the resulting session; run this once before any of " +
       "them, and again after a sign_out or once the stored refresh token has expired.",
     inputSchema: {},
     handler: (_session, _params) => signIn(),
@@ -434,12 +435,12 @@ export const TOOLS = {
     handler: (_session, _params) => signOut(),
   },
   open_book: {
-    title: "Open a book",
+    title: "Open a DIYA-GL book",
     annotations: READS,
     description:
-      "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
+      "Open a DIYA-GL book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
       "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). With cloud: true, opens " +
-      "bookId from the DIYA cloud instead (a practice client's own book with clientId), signed in as the session's credentials " +
+      "bookId from the DIY Accounting Submit account instead (a practice client's own book with clientId), signed in as the session's credentials " +
       "idToken(). Answers the product, the entity, the period covered, the line count and the book checks " +
       "summary. Replaces the session's loaded book.",
     inputSchema: {
@@ -447,38 +448,40 @@ export const TOOLS = {
         .string()
         .optional()
         .describe("Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads; unused with cloud"),
-      cloud: z.boolean().optional().describe("Open bookId from the DIYA cloud instead of the filesystem"),
+      cloud: z.boolean().optional().describe("Open bookId from the DIY Accounting Submit account instead of the filesystem"),
       bookId: z.string().optional().describe("The cloud book's id; required with cloud: true"),
       clientId: z.string().optional().describe("A practice client's id, to open that client's book instead of the practice's own"),
     },
     handler: openBook,
   },
   list_books: {
-    title: "List saved books",
+    title: "List saved DIYA-GL books",
     annotations: READS,
     description:
-      "List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each " +
-      "row carries the bookId open_book takes, the book's title, its product and the period it covers. With clientId, " +
-      "lists that practice client's books instead of the practice's own.",
+      "Lists the DIYA-GL books saved in the person's DIY Accounting Submit account, most recently updated first. A " +
+      "DIYA-GL book holds one business's sales, purchases and bank lines. Each row gives the bookId that open_book takes, " +
+      "the book's title, its product and the period it covers. With clientId, lists that practice client's DIYA-GL books. " +
+      "Use this when the person asks about their VAT return, their MTD VAT or the quarter's VAT and no DIYA-GL book is " +
+      "open yet, or asks which DIYA-GL books they have saved. It does not open or change a book and does not contact HMRC.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's books instead of the practice's own"),
     },
     handler: listBooks,
   },
   save_book: {
-    title: "Save the book",
+    title: "Save the DIYA-GL book",
     annotations: CHANGES,
     description:
-      "Save the session's loaded book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
+      "Save the session's loaded DIYA-GL book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
       "directory; the default for a path with no extension), diya-gl-zip, json, xlsx (the product's recalculating " +
       "workbook) and zip (the product's package). xlsx and zip fetch the template from spreadsheets.diyaccounting.co.uk " +
-      "on first use. With cloud: true, writes to the DIYA cloud by bookId instead (a practice client's book set with " +
+      "on first use. With cloud: true, writes to the DIY Accounting Submit account by bookId instead (a practice client's book set with " +
       "clientId), signed in as the session's credentials; carries the if-match etag from the session's last cloud " +
       "open or save of the same bookId.",
     inputSchema: {
       path: z.string().optional().describe("Where to write: a directory for diya-gl-dir, otherwise a file path; unused with cloud"),
       format: z.enum(SAVE_FORMATS).optional().describe("One of diya-gl-dir, diya-gl-zip, json, xlsx, zip; unused with cloud"),
-      cloud: z.boolean().optional().describe("Save to the DIYA cloud by bookId instead of the filesystem"),
+      cloud: z.boolean().optional().describe("Save to the DIY Accounting Submit account by bookId instead of the filesystem"),
       bookId: z.string().optional().describe("The cloud book's id; required with cloud: true"),
       clientId: z.string().optional().describe("A practice client's id, to save into that client's book set"),
     },
@@ -488,7 +491,7 @@ export const TOOLS = {
     title: "Write a finance package",
     annotations: CHANGES,
     description:
-      "Writes a diya-gl book and its lines as the unzipped spreadsheets package directory a completed year's package " +
+      "Writes a DIYA-GL book and its lines as the unzipped spreadsheets package directory a completed year's package " +
       "holds: one workbook for a single-file product (Basic Sole Trader, Taxi Driver), the whole named set for a " +
       "multi-file one (Self Employed, Company), under outputDir in a directory named the product's own way. Reads the " +
       "book from bookPath (a diya-gl-dir, or any file open_book reads) or from book and lines given directly; does not " +
@@ -511,11 +514,12 @@ export const TOOLS = {
     annotations: READS,
     _meta: VAT_REVIEW_CARD_TOOL_META,
     description:
-      "The nine VAT boxes for one obligation period from the session's loaded book, read from the engine's own VAT " +
-      "interface: the quarter ending on periodEnd (a month end the book carries), with HMRC's field names and " +
-      "rounding, the three months' figures, and every sales and purchases journal line that fed boxes 1, 4, 6 and 7. " +
-      "Refuses a book that is not VAT registered, a period the book does not carry, and a period whose lines do not " +
-      "reconcile with the interface.",
+      "Works out the nine VAT return boxes for one quarter from the open DIYA-GL book: the quarter ending on periodEnd, " +
+      "with HMRC's box names and rounding, each month's figures, and the sales and purchases lines behind boxes 1, 4, " +
+      "6 and 7. Use this when the person asks what their VAT return comes to, for their MTD VAT figures or the " +
+      "quarter's VAT, what the nine boxes are, or why a box has its figure. It refuses a book that is not VAT " +
+      "registered, a quarter the book does not hold, and a quarter whose lines do not agree with the book's VAT " +
+      "figures. It does not file the return or contact HMRC; prepare_vat_return gives the link to file it.",
     inputSchema: {
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
       periodStart: z
@@ -531,11 +535,12 @@ export const TOOLS = {
     annotations: READS,
     _meta: VAT_REVIEW_CARD_TOOL_META,
     description:
-      "Derives the VAT return for the quarter ending on periodEnd from the session's loaded book, exactly as " +
-      "derive_vat_return does, and answers a link to the VAT form on the Submit site with the seven figures filled in " +
-      "(the form works out boxes 3 and 5 itself). This tool never files anything and reaches no outside service. The " +
-      "person opens the link, checks the figures on the page, ticks the declaration and files there; the figures filed " +
-      "are the figures the page shows.",
+      "Works out the VAT return for the quarter ending on periodEnd from the open DIYA-GL book, as derive_vat_return " +
+      "does, and answers a link to the VAT return form on DIY Accounting Submit with the seven figures filled in (the " +
+      "form works out boxes 3 and 5). The person opens the link, checks the figures on the page, ticks the declaration " +
+      "and files there. Use this when the person asks to file, submit or send their VAT return or their MTD VAT for a " +
+      "quarter. It never files anything and contacts no outside service: the figures filed are the ones the person " +
+      "sees on the page.",
     inputSchema: {
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
       periodStart: z
@@ -550,10 +555,12 @@ export const TOOLS = {
     title: "Derive micro-entity accounts",
     annotations: READS,
     description:
-      "The seven FRS 105 balance-sheet lines the accounts filing takes, from the session's loaded book: the current " +
-      "year from the engine's published balance sheet and the prior year from the book's opening balance, in whole " +
-      "pounds with capital and reserves equal to net assets, plus the period dates, the company number and name, the " +
-      "first director and the employee count. Refuses a book whose published or opening balance sheet does not balance.",
+      "Works out the seven FRS 105 balance sheet lines a micro-entity's accounts take, from the open DIYA-GL book: this " +
+      "year from the book's balance sheet and last year from its opening balance, in whole pounds with capital and " +
+      "reserves equal to net assets, plus the period dates, the company number and name, the first director and the " +
+      "employee count. Use this when the person asks what their micro-entity accounts will show, for their company's " +
+      "year-end balance sheet, or to check the figures before they file. It refuses a book whose balance sheets do not " +
+      "balance, and it does not file the accounts or contact Companies House.",
     inputSchema: {},
     handler: deriveMicroEntityAccounts,
   },
@@ -561,12 +568,13 @@ export const TOOLS = {
     title: "Derive small-company accounts",
     annotations: READS,
     description:
-      "The figures a small company's FRS 102 section 1A accounts filing takes, from the session's loaded book: the " +
-      "full profit and loss account and the balance sheet sub-lines for the current year from the engine's published " +
-      "statements, the prior-year balance sheet from the opening balance, the tangible fixed asset note by class, the " +
-      "period dates, the company number and name, the directors and the employee count, in whole pounds with every " +
-      "subtotal holding. The book publishes no prior-year profit and loss account, so none is returned. Refuses a book " +
-      "whose published or opening balance sheet does not balance.",
+      "Works out the figures a small company's FRS 102 section 1A accounts take, from the open DIYA-GL book: this year's " +
+      "profit and loss account and balance sheet lines, last year's balance sheet from the opening balance, the tangible " +
+      "fixed asset note by class, the period dates, the company number and name, the directors and the employee count, " +
+      "in whole pounds with every subtotal holding. The book holds no profit and loss account for last year, so none is " +
+      "given. Use this when the person asks what their small company accounts will show or for their full year-end " +
+      "accounts figures. It refuses a book whose balance sheets do not balance, and it does not file the accounts or " +
+      "contact Companies House.",
     inputSchema: {},
     handler: deriveSmallCompanyAccounts,
   },
@@ -574,14 +582,18 @@ export const TOOLS = {
     title: "Derive a Company Tax Return",
     annotations: READS,
     description:
-      "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
-      "computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment income, " +
-      "losses brought forward), the profit and loss account from the engine's published statements, and the book's own " +
-      "trading profit and Corporation Tax as a working sheet for a check. Refuses a book that is not a Company book, " +
-      "makes a trading loss or carries net non-trading loan relationship debits. With a path, also writes the answer as " +
-      'the JSON file the Company Tax Return page\'s "Fill from your books" card reads.',
+      "Works out the figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company: the accounting " +
+      "period, the computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment " +
+      "income, losses brought forward), the profit and loss account, and the book's own trading profit and Corporation " +
+      "Tax as a check. With a path, also writes the answer as the JSON file the Company Tax Return page's \"Fill from " +
+      'your records" card reads. Use this when the person asks what their Corporation Tax will be, for their CT600 ' +
+      "figures, or how their taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net " +
+      "non-trading loan relationship debits, and it does not file the return or contact HMRC.",
     inputSchema: {
-      path: z.string().optional().describe("Where to write the answer as JSON for the Company Tax Return page's import"),
+      path: z
+        .string()
+        .optional()
+        .describe("Where to write the answer as JSON for the Company Tax Return page's Fill from your records card"),
     },
     handler: deriveCompanyTaxReturn,
   },
@@ -706,9 +718,11 @@ export const TOOLS = {
     title: "Get a VAT receipt",
     annotations: READS,
     description:
-      "A stored VAT return receipt by its file name, over the deployed API: what HMRC answered when it accepted the " +
-      "return (the processing date, the form bundle number, the payment indicator and the charge reference). " +
-      "clientId, when given, narrows the fetch to one of the practice's clients but does not change which receipt is read.",
+      "Reads one stored VAT return receipt by its file name, which list_vat_receipts gives: what HMRC answered when it " +
+      "accepted the return, that is the processing date, the form bundle number, the payment indicator and the charge " +
+      "reference. clientId narrows the read to one of a practice's clients but does not change which receipt is read. " +
+      "Use this when the person asks for the HMRC receipt of a VAT return, its form bundle number, or whether HMRC " +
+      "accepted a return they filed. It does not file, change or resend anything.",
     inputSchema: {
       name: z.string().describe("The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)"),
       clientId: z.string().optional().describe("A practice client's id, to check the receipt belongs to that client"),
@@ -719,26 +733,42 @@ export const TOOLS = {
     title: "List VAT receipts",
     annotations: READS,
     description:
-      "The VAT return receipts Submit has stored for the signed-in account, newest first: each row carries the name " +
-      "get_vat_receipt takes, HMRC's form bundle number and the day the return was filed. clientId narrows the list to " +
-      "one of the practice's clients.",
+      "Lists the VAT return receipts DIY Accounting Submit has stored for the signed-in account, newest first: each row " +
+      "gives the name get_vat_receipt takes, HMRC's form bundle number and the day the return was filed. clientId " +
+      "narrows the list to one of a practice's clients. Use this when the person asks which VAT returns they have " +
+      "filed, for their HMRC receipts, or when a return was last filed. It does not file anything or contact HMRC.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's receipts"),
     },
     handler: listVatReceipts,
   },
+  company_filing_deadlines: {
+    title: "Look up a company's filing deadlines",
+    annotations: READS_OUTSIDE,
+    description:
+      "Looks up a company on the Companies House public register by its company number and answers its name, status and " +
+      "type, when its next accounts are due and the period they cover, whether they are overdue, when its next " +
+      "confirmation statement is due, and the type of its last accounts. Use this when the person asks when their " +
+      "company's accounts or confirmation statement are due, whether a filing is overdue, or what the register holds for " +
+      "a company number. It reads the public register only: it needs no DIYA-GL book, and it does not file anything with " +
+      "Companies House.",
+    inputSchema: {
+      companyNumber: z.string().describe("The company number, 8 characters, such as 00006400 or SC123456"),
+    },
+    handler: companyFilingDeadlines,
+  },
   list_accounts_receipts: {
     title: "List accounts receipts",
     annotations: READS,
     description:
-      "The accounts filings of the signed-in account, newest first, over the deployed API. Call it before revising " +
-      "accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the " +
-      "company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a " +
-      "Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their " +
-      "submission number and Companies House's reasons, and have no receipt to revise. A receipt that cannot be read, " +
-      "or whose filed document does not read as accounts, answers problem with the reason and is not revisable. " +
-      "It lists the newest 25 accounts filings; when there are more it answers more true, and older filings are not " +
-      "listed. clientId narrows the list to one of the practice's clients.",
+      "Lists the accounts filings of the signed-in account, newest first. Each accepted filing gives the receipt name " +
+      "that revision.revisesReceipt takes, the company number, the period, the type of accounts, whether it is itself " +
+      "revised accounts, whether it went with a Company Tax Return, and revisable. A rejected filing gives its " +
+      "submission number and Companies House's reasons. A receipt that cannot be read gives problem with the reason. " +
+      "It lists the newest 25 filings and answers more true when there are older ones. clientId narrows the list to " +
+      "one of a practice's clients. Use this when the person asks which accounts they have filed, whether Companies " +
+      "House accepted or rejected them, or before revising accounts already filed. It does not file, change or revise " +
+      "anything.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's accounts filings"),
     },
@@ -893,10 +923,10 @@ export const TOOLS = {
     handler: pollSubmission,
   },
   move_book_to_client: {
-    title: "Move a book to a client",
+    title: "Move a DIYA-GL book to a client",
     annotations: CHANGES,
     description:
-      "Move one of the practice's own books to a client's book set (during migration from sole trader to practice). " +
+      "Move one of the practice's own DIYA-GL books to a client's book set (during migration from sole trader to practice). " +
       "Calls DIY Accounting Submit's own move route, which copies the book and every kept version, verifies each copy, " +
       "then deletes the source. Refuses when the client already has a book with this id, or the practice has no such book of its own.",
     inputSchema: {

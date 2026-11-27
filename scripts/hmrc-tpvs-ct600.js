@@ -194,7 +194,13 @@ const accountsIxbrl = micro
       dateOfApproval: periodEnd,
       ...(revision ? { revision } : {}),
       balanceSheet: { current: microAccounts.balanceSheet.currentYear, prior: microAccounts.balanceSheet.priorYear },
-      profitAndLoss: { current: microProfitAndLossYear(accounts.profitAndLoss.currentYear, depreciation) },
+      profitAndLoss: {
+        current: microProfitAndLossYear(
+          accounts.profitAndLoss.currentYear,
+          depreciation,
+          accounts.profitAndLossFormat2.currentYear.staffCosts,
+        ),
+      },
       ...(microAccounts.directorsAdvances ? { directorsAdvances: directorsAdvances(microAccounts) } : {}),
     })
   : buildSmallCompanyAccounts({

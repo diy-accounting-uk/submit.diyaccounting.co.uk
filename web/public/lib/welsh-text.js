@@ -445,15 +445,15 @@ window.WELSH_TEXT = {
   "ch.books.auth-code-hint":
     "Mae Tŷ’r Cwmnïau yn rhoi’r cyfranddalwyr a’r cyfalaf cyfranddaliadau ar gyfer cod dilysu’r cwmni. Anfonir y cod ar gyfer y cais hwn yn unig ac ni chaiff ei gadw.",
   "ch.books.auth-code-needed": "Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.",
-  "ch.books.building": "Yn gwneud y llyfrau…",
+  "ch.books.building": "Yn gwneud y llyfrau DIYA-GL…",
   "ch.books.capital-added": "Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.",
   "ch.books.differences": "Beth i’w wirio yn y llyfr:",
   "ch.books.download-package": "Lawrlwytho’r flwyddyn nesaf fel pecyn taenlen",
-  "ch.books.failed": "Nid oedd modd gwneud y llyfrau: {reason}",
+  "ch.books.failed": "Nid oedd modd gwneud y llyfrau DIYA-GL: {reason}",
   "ch.books.first-period": "Nid yw’r cwmni wedi ffeilio cyfrifon eto, felly mae’r llyfr yn dechrau heb falansau agoriadol.",
-  "ch.books.heading": "Llyfrau’r cwmni",
+  "ch.books.heading": "Cofnodion cyfrifyddu yn DIYA-GL",
   "ch.books.intro":
-    "Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.",
+    "Dechreuwch gofnodion cyfrifyddu’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff pob llyfr DIYA-GL ei wneud yn y porwr hwn, ac nid oes dim yn cael ei storio.",
   "ch.books.next-period": "Mae llyfr y flwyddyn nesaf yn rhedeg o {start} i {end}.",
   "ch.books.no-filed-book":
     "Nid oes gan y cyfrifon diwethaf ar y gofrestr ddogfen iXBRL y gall y dudalen hon ei darllen, felly nid oes balansau agoriadol yn llyfr y flwyddyn nesaf.",
@@ -862,14 +862,13 @@ window.WELSH_TEXT = {
   "ch.ct.limits-rule": "Y terfyn elw bychan a’r terfyn uchaf, wedi’u graddio i {days} diwrnod y cyfnod cyfrifyddu hwn",
   "ch.ct.limits-value": "£{small} a £{upper}",
   "ch.ct.line-adjusted-profit": "Elw masnachu wedi’i addasu (blwch 155)",
-  "ch.ct.line-amortisation": "Adio: amorteiddiad",
+  "ch.ct.line-amortisation": "Addasiadau, amorteiddiad",
   "ch.ct.line-before-allowances": "Elw wedi’i addasu cyn lwfansau cyfalaf",
   "ch.ct.line-before-apportionment": "Elw wedi’i addasu cyn dosrannu amser",
-  "ch.ct.line-depreciation": "Adio: dibrisiant",
-  "ch.ct.line-donations": "Adio: rhoddion",
-  "ch.ct.line-entertaining": "Adio: adloniant",
-  "ch.ct.line-loan-credits":
-    "Llai: llog banc, cymdeithas adeiladu neu log arall, ac elw o berthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu (blwch 170)",
+  "ch.ct.line-depreciation": "Addasiadau, dibrisiant",
+  "ch.ct.line-donations": "Addasiadau, rhoddion",
+  "ch.ct.line-entertaining": "Addasiadau, adloniant",
+  "ch.ct.line-loan-credits": "Addasiadau, credydau perthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu yn ôl y cyfrifon",
   "ch.ct.line-long-adjusted": "Elw wedi’i addasu ar gyfer {days} diwrnod y cyfnod cyfrifon",
   "ch.ct.line-long-apportionment": "Dosrannu amser: {days} o {whole} diwrnod",
   "ch.ct.line-profit-per-accounts": "Elw neu golled cyn treth yn ôl y cyfrifon",
@@ -1055,7 +1054,7 @@ window.WELSH_TEXT = {
   "ch.ct.where-sending": "I ble rydych yn anfon y cyfrifon hyn?",
   "ch.ct.which-accounts": "Pa gyfrifon y mae’r cwmni yn eu paratoi?",
   "ch.ct.which-accounts-hint":
-    "Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae llyfr yn dewis hyn i chi.",
+    "Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae’r llenwi o’ch cofnodion yn dewis hyn i chi.",
   "ch.ct.which-copy": "Pa gopi sy’n mynd i Dŷ’r Cwmnïau?",
   "ch.ct.which-copy-hint":
     "Mae Tŷ’r Cwmnïau yn cyhoeddi’r hyn y mae’n ei gael. Mae cyfrifon wedi’u ffiledu (filleted) yn gadael y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr allan o’r copi cyhoeddus. Mae CThEF yn cael y cyfrifon llawn y naill ffordd neu’r llall.",
@@ -1070,8 +1069,8 @@ window.WELSH_TEXT = {
   "ch.ct.your-receipts": "Eich derbynebau",
   "ch.ct600.accounting-policies": "Polisïau cyfrifyddu",
   "ch.ct600.accounting-policies-hint": "Sut y caiff y cyfrifon eu paratoi, er enghraifft o dan adran 1A FRS 102 ar sail cost hanesyddol.",
-  "ch.ct600.amortisation": "Amorteiddiad a adiwyd yn ôl",
-  "ch.ct600.annual-investment-allowance-hint": "Yr uchafswm yw 1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.",
+  "ch.ct600.amortisation": "Addasiadau, amorteiddiad",
+  "ch.ct600.annual-investment-allowance-hint": "Yr uchafswm yw £1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.",
   "ch.ct600.annual-investment-allowance-outside-trade-hint":
     "Lwfans buddsoddi blynyddol a hawliwyd y tu allan i’r cyfrifiad o elw masnachu. Nid yw’n newid yr elw masnachu.",
   "ch.ct600.asset-additions": "Ychwanegiadau",
@@ -1103,7 +1102,7 @@ window.WELSH_TEXT = {
   "ch.ct600.average-employees-hint":
     "Nifer cyfartalog y bobl a gyflogodd y cwmni yn y cyfnod, gan gynnwys cyfarwyddwyr. Rhowch 0 os nad oes neb.",
   "ch.ct600.book-loan-note":
-    "Mae eich llyfr yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.",
+    "Mae eich cofnodion yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.",
   "ch.ct600.box-1": "Enw’r cwmni",
   "ch.ct600.box-1-rule": "Mae chwilio am y cwmni yn rhoi’r enw",
   "ch.ct600.box-145": "Cyfanswm y trosiant o fasnachu",
@@ -1199,9 +1198,9 @@ window.WELSH_TEXT = {
   "ch.ct600.box-780-rule": "Blwch 780 yw’r golled wedi’i haddasu yn y cyfrifiant",
   "ch.ct600.box-790": "Colledion masnach a gynhaliwyd yn gyfan gwbl y tu allan i’r DU: swm sy’n codi",
   "ch.ct600.box-790-rule": "Blwch 790 yw’r golled wedi’i haddasu yn y cyfrifiant",
-  "ch.ct600.box-85-a": "Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol",
-  "ch.ct600.box-85-a-rule":
-    "Mae blwch 85A wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan",
+  "ch.ct600.box-85": "Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol",
+  "ch.ct600.box-85-rule":
+    "Mae blwch 85 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan",
   "ch.ct600.box-95": "Benthyciadau a threfniadau i gyfranogwyr gan gwmnïau caeedig – ffurflen CT600A",
   "ch.ct600.box-95-rule":
     "Mae blwch 95 wedi’i dicio pan roddodd y cwmni fenthyg i gyfranogwyr a bod tudalen atodol CT600A gyda’r Ffurflen Dreth",
@@ -1247,10 +1246,10 @@ window.WELSH_TEXT = {
   "ch.ct600.dates-answer": "{start} i {end}",
   "ch.ct600.declarant-name-hint": "Y person sy’n gwneud y datganiad ar ran y cwmni, cyfarwyddwr fel arfer.",
   "ch.ct600.declarant-status-hint": "Eu swydd yn y cwmni, er enghraifft Cyfarwyddwr neu Ysgrifennydd y cwmni.",
-  "ch.ct600.declaration-accepted":
-    "Rwyf yn datgan bod yr wybodaeth yn y Ffurflen Dreth hon ac yn y cyfrifon a’r cyfrifiannau atodedig yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.",
   "ch.ct600.declaration-accepted-hint": "Ticiwch hwn pan fydd y Ffurflen Dreth, y cyfrifon a’r cyfrifiannau’n gywir ac yn gyflawn.",
-  "ch.ct600.depreciation": "Dibrisiant a adiwyd yn ôl",
+  "ch.ct600.declaration-hmrc":
+    "Rwyf yn datgan bod yr wybodaeth a roddais ar y Ffurflen Dreth y Cwmni hon ac ar unrhyw dudalennau atodol yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.",
+  "ch.ct600.depreciation": "Addasiadau, dibrisiant",
   "ch.ct600.depreciation-hint": "Mae’n dechrau fel tâl y nodyn ar gyfer y flwyddyn, pan roddir nodyn.",
   "ch.ct600.director-date-approved": "Dyddiad cymeradwyo",
   "ch.ct600.director-date-approved-hint": "Y diwrnod y cymeradwyodd y bwrdd y cyfrifon. Nid yw ar ôl heddiw.",
@@ -1276,7 +1275,7 @@ window.WELSH_TEXT = {
   "ch.ct600.donations-paid": "Blwch 305: Cyfraniadau cymhwysol a dalwyd yn y cyfnod cyfrifyddu",
   "ch.ct600.donations-paid-hint":
     "Cyfraniadau cymhwysol i elusennau a dalwyd yn y cyfnod cyfrifyddu hwn. Maen nhw’n cael eu hawlio yn erbyn cyfanswm yr elw ym mlwch 305 y Ffurflen Dreth hon.",
-  "ch.ct600.entertaining": "Adloniant a adiwyd yn ôl",
+  "ch.ct600.entertaining": "Addasiadau, adloniant",
   "ch.ct600.entertaining-hint": "Dim mwy na chost gwerthiant adio treuliau gweinyddol.",
   "ch.ct600.first-period-start-question": "A yw’r cyfnod cyfrifyddu cyntaf yn dechrau ar {start}?",
   "ch.ct600.first-period-start-refusal":
@@ -1303,11 +1302,8 @@ window.WELSH_TEXT = {
     "Mae’r fasnach yn cael ei chynnal yn gyfan gwbl y tu allan i’r DU (mae colled yn mynd ym mlwch 790, nid blwch 780)",
   "ch.ct600.loss-outside-uk-hint":
     "Ticiwch hwn pan fydd y fasnach gyfan yn cael ei chynnal y tu allan i’r DU. Mae’r golled fasnachu wedyn yn mynd ym mlwch 790 yn lle blwch 780.",
-  "ch.ct600.losses-brought-forward": "Blwch 160: Colledion masnachu a ddygwyd ymlaen",
   "ch.ct600.losses-brought-forward-against-total-profits-hint":
     "Colledion a ddygwyd ymlaen na chymerodd yr elw masnachu, wedi’u hawlio yn erbyn elw arall y cyfnod.",
-  "ch.ct600.losses-brought-forward-hint":
-    "Y colledion sydd ar gael. Mae’r elw masnachu yn cymryd cymaint ag y gall ym mlwch 160 ac mae’r gweddill yn cael ei gario ymlaen.",
   "ch.ct600.main-pool-allowances-hint": "Gadewch y lwfans buddsoddi blynyddol allan: mae blwch 705 yn ei gynnwys.",
   "ch.ct600.micro-bs-called-up-share-capital": "Cyfalaf cyfranddaliadau wedi’i alw",
   "ch.ct600.micro-bs-called-up-share-capital-hint": "Gwerth enwol y cyfranddaliadau y mae’r cwmni wedi’u dyroddi a’u galw.",
@@ -1326,15 +1322,15 @@ window.WELSH_TEXT = {
   "ch.ct600.micro-pl-depreciation": "Dibrisiad, amorteiddiad ac amhariad",
   "ch.ct600.micro-pl-depreciation-hint": "Y dibrisiant a godwyd ar asedau sefydlog y cwmni yn y cyfnod.",
   "ch.ct600.micro-pl-other-charges": "Treuliau gweithredol eraill",
-  "ch.ct600.micro-pl-other-charges-hint": "Pob cost arall y cyfnod, gan gynnwys cost gwerthiannau a’r treuliau gweinyddol.",
+  "ch.ct600.micro-pl-other-charges-admin-hint": "Pob cost arall y cyfnod: y treuliau gweinyddol llai’r costau staff a’r dibrisiant.",
   "ch.ct600.micro-pl-other-income": "Incwm gweithredol arall",
   "ch.ct600.micro-pl-other-income-hint": "Incwm y tu allan i fasnach y cwmni, fel llog banc.",
   "ch.ct600.micro-pl-raw-materials": "Cost deunyddiau crai a defnyddiau traul",
-  "ch.ct600.micro-pl-raw-materials-hint":
-    "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi 0 ac yn rhoi’r gost hon mewn taliadau eraill.",
+  "ch.ct600.micro-pl-raw-materials-cost-of-sales-hint":
+    "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae’r llenwi o’ch cofnodion yn rhoi cost gwerthiannau yma.",
   "ch.ct600.micro-pl-staff-costs": "Costau staff",
-  "ch.ct600.micro-pl-staff-costs-hint":
-    "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi 0 ac yn rhoi’r rhain mewn taliadau eraill.",
+  "ch.ct600.micro-pl-staff-costs-wages-hint":
+    "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae’r llenwi o’ch cofnodion yn rhoi’r cyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr yma.",
   "ch.ct600.micro-pl-tax": "Treth",
   "ch.ct600.micro-pl-tax-hint": "Y Dreth Gorfforaeth a godwyd ar elw’r cyfnod hwn.",
   "ch.ct600.micro-pl-turnover": "Trosiant",
@@ -1346,9 +1342,9 @@ window.WELSH_TEXT = {
   "ch.ct600.not-given": "Heb ei roi",
   "ch.ct600.note-label": "{title}: {label}",
   "ch.ct600.other-machinery-and-plant-expenditure-hint": "Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.",
-  "ch.ct600.own-corporation-tax": "Treth Gorfforaeth yn ôl eich cyfrifiad eich hun (dewisol)",
+  "ch.ct600.own-corporation-tax": "Treth Gorfforaeth sy’n daladwy",
   "ch.ct600.own-corporation-tax-hint":
-    "Gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.",
+    "Eich cyfrifiad eich hun o’r ffigur hwn, fel gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.",
   "ch.ct600.period": "Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu",
   "ch.ct600.period-hint":
     "Mae’r cyfrifon yn cwmpasu’r cyfnod hwn. Mae’n dechrau ar 1 Ebrill 2015 neu ar ôl hynny, yn dod i ben cyn heddiw ac yn para hyd at 18 mis. Mae cyfnod dros 12 mis yn cael ei ffeilio fel dwy Ffurflen Dreth.",
@@ -1391,12 +1387,12 @@ window.WELSH_TEXT = {
     "Nid yw’r fantolen ar gyfer y llynedd yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}",
   "ch.ct600.problem-micro-unbalanced-this":
     "Nid yw’r fantolen ar gyfer eleni yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}",
-  "ch.ct600.problem-note-depreciation": "Rhaid i’r dibrisiant a adiwyd yn ôl fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}",
+  "ch.ct600.problem-note-depreciation": "Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}",
   "ch.ct600.problem-note-value": "Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedau sefydlog {assets}",
   "ch.ct600.problem-pence": "Rhowch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54",
   "ch.ct600.problem-repayment-date": "Rhowch ddyddiad yr ad-daliad",
   "ch.ct600.problem-repayment-future": "Ni all ad-daliad gael ei ddyddio ar ôl heddiw",
-  "ch.ct600.problem-repayment-in-period": "Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i lyfrau’r cyfnod ei hun",
+  "ch.ct600.problem-repayment-in-period": "Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i gyfrifon y cyfnod ei hun",
   "ch.ct600.problem-repayment-name": "Dewiswch gyfranogwr o’r benthyciadau",
   "ch.ct600.problem-repayment-none": "Rhowch y swm a ad-dalwyd, neu’r swm a ryddhawyd neu a ddilëwyd",
   "ch.ct600.problem-repayment-whole": "Rhowch bunnoedd cyfan, neu gadewch hwn yn wag os nad oes dim",
@@ -1443,7 +1439,7 @@ window.WELSH_TEXT = {
   "ch.ct600.special-rate-allowance-expenditure-hint": "Mae angen hwn pryd bynnag y caiff blwch 693 ei lenwi.",
   "ch.ct600.special-rate-allowances-hint": "Y lwfans cyfradd arbennig ar asedion cyfradd arbennig newydd.",
   "ch.ct600.special-rate-pool-allowances-hint": "Gadewch allan y lwfans buddsoddi blynyddol a hawliwyd ar y gronfa hon; rhowch ef isod.",
-  "ch.ct600.special-rate-pool-annual-investment-allowance": "Lwfans buddsoddi blynyddol a hawliwyd ar y gronfa gyfradd arbennig",
+  "ch.ct600.special-rate-pool-annual-investment-allowance": "Cronfa gyfradd arbennig, lwfans buddsoddi blynyddol",
   "ch.ct600.special-rate-pool-annual-investment-allowance-hint":
     "Rhan o’r lwfans buddsoddi blynyddol ym mlwch 690. Mae blwch 695 yn ei gynnwys ac mae blwch 705 yn ei adael allan.",
   "ch.ct600.statement-directors-responsibilities":
@@ -1468,6 +1464,9 @@ window.WELSH_TEXT = {
   "ch.ct600.this-year": "eleni",
   "ch.ct600.trade-name": "Enw’r fasnach",
   "ch.ct600.trade-name-hint": "Enw’r fasnach, a ddangosir yn y cyfrifiannau. Mae’n dechrau fel y prif weithgarwch.",
+  "ch.ct600.trading-losses-brought-forward": "Colledion masnachu a ddygwyd ymlaen",
+  "ch.ct600.trading-losses-brought-forward-hint":
+    "Y colledion sydd ar gael. Blwch 160 yw’r rhan a osodir yn erbyn elw masnachu; mae’r gweddill yn cael ei gario ymlaen.",
   "ch.ct600.utr-hint": "Y 10 digid ar lythyrau Treth Gorfforaeth CThEF y cwmni.",
   "ch.ct600.year-label": "{label}, {when}",
   "ch.ct600.yes": "Ie",
@@ -1805,6 +1804,10 @@ window.WELSH_TEXT = {
   "ch.namesake.born": "ganwyd {month}",
   "ch.namesake.named-with-note": "{name}, {note} ({described})",
   "ch.namesake.notified": "hysbyswyd {date}",
+  "ch.narrate-sending-change": "Wrthi’n anfon y newid at Dŷ’r Cwmnïau...",
+  "ch.narrate-sending-form": "Wrthi’n anfon y ffurflen at Dŷ’r Cwmnïau...",
+  "ch.narrate-sending-statement": "Wrthi’n anfon y datganiad cadarnhau at Dŷ’r Cwmnïau...",
+  "ch.narrate-sending-verification": "Wrthi’n anfon y datganiad dilysu at Dŷ’r Cwmnïau...",
   "ch.notes.advances-required":
     "Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.",
   "ch.notes.arithmetic":
@@ -2115,7 +2118,7 @@ window.WELSH_TEXT = {
   "ch.revision.downloads-open": "Agor yn DIYA-GL",
   "ch.revision.downloads-package": "Lawrlwytho fel pecyn taenlen",
   "ch.revision.downloads-summary":
-    "Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.",
+    "Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn Llenwi o’ch cofnodion uchod.",
   "ch.revision.downloads-unavailable": "Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.",
   "ch.revision.line-accruals": "croniadau",
   "ch.revision.line-accruals-deferred-income": "croniadau ac incwm gohiriedig",
@@ -2354,6 +2357,36 @@ window.WELSH_TEXT = {
   "consent.reject": "Gwrthod",
   "consent.shared":
     "Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein",
+  "ct.failure-answers-in-form": "Mae eich atebion yn dal yn y ffurflen hon.",
+  "ct.failure-answers-not-saved":
+    "Mae eich atebion yn dal yn y ffurflen hon. Nid ydynt wedi’u cadw yn y porwr hwn: fe wnaethoch ddewis peidio â’u cadw.",
+  "ct.failure-answers-saved": "Mae eich atebion yn dal yn y ffurflen hon ac wedi’u cadw yn y porwr hwn tan {date}.",
+  "ct.failure-auth-code":
+    "Ni dderbyniodd Tŷ’r Cwmnïau y cod dilysu cwmni. Gwiriwch y 6 i 8 nod yn y llythyr a anfonodd Tŷ’r Cwmnïau at y cwmni, a’i roi eto.",
+  "ct.failure-business": "Atebodd {service} gyda’r gwall hwn. Cywirwch yr ateb y mae’n ei enwi ac anfonwch eto.",
+  "ct.failure-close": "Cau",
+  "ct.failure-error-at": "{text} ({location})",
+  "ct.failure-gateway":
+    "Ni dderbyniodd CThEF yr ID defnyddiwr na’r cyfrinair Porth y Llywodraeth. Gwiriwch y ddau, a bod gan yr ID defnyddiwr Dreth Gorfforaeth ar gyfer y cwmni hwn.",
+  "ct.failure-heading": "Beth ddigwyddodd",
+  "ct.failure-help": "Cymorth",
+  "ct.failure-our-credentials":
+    "Gwrthododd {service} gymwysterau Submit ei hun. Does dim byd o’i le ar eich cyfrif. Rhowch gynnig arall arni nes ymlaen.",
+  "ct.failure-refused": "Gwrthodwyd yr atebion cyn i ddim gael ei anfon. Cywirwch nhw ac anfonwch eto.",
+  "ct.failure-request-id": "Dyfynnwch y cyfeirnod {id} pan fyddwch yn gofyn am help.",
+  "ct.failure-sent-ch-accepted": "Derbyniodd Tŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}).",
+  "ct.failure-sent-ch-held": "Mae gan Dŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}) ac nid yw wedi penderfynu arnynt.",
+  "ct.failure-sent-ch-none": "Ni chyrhaeddodd y cyfrifon Dŷ’r Cwmnïau, ac ni anfonwyd y Ffurflen Dreth at CThEF.",
+  "ct.failure-sent-preview": "Ni anfonwyd dim at CThEF na Thŷ’r Cwmnïau. Caiff yr adolygiad ei greu cyn i ddim gael ei anfon.",
+  "ct.failure-service-ch": "Tŷ’r Cwmnïau",
+  "ct.failure-service-hmrc": "CThEF",
+  "ct.failure-submit-fault": "Nam yn Submit yw hwn, nid yn eich atebion na’ch mewngofnodi.",
+  "ct.narrate-accounts-then-return": "Mae gan Dŷ’r Cwmnïau y cyfrifon; wrthi’n anfon y Ffurflen Dreth at CThEF...",
+  "ct.narrate-checking": "Wrthi’n gwirio eich atebion...",
+  "ct.narrate-sending-accounts": "Wrthi’n anfon y cyfrifon at Dŷ’r Cwmnïau...",
+  "ct.narrate-sending-return": "Wrthi’n anfon y Ffurflen Dreth at CThEF...",
+  "ct.narrate-waiting-ch": "Wrthi’n aros am ateb Tŷ’r Cwmnïau...",
+  "ct.narrate-waiting-hmrc": "Wrthi’n aros am ateb CThEF...",
   "ct.section-video-link": "Gwyliwch o {time}",
   "ct.section-video-summary": "Gwyliwch y rhan hon",
   "field.reference-balance-sheet": "Eitem {item} y fantolen",
@@ -3370,8 +3403,8 @@ window.WELSH_TEXT = {
   "widget.books-drive-sheet":
     "Methu mewnforio {file}: Google Sheet yw hwn. Dewiswch y llyfr DIYA-GL, y gweithlyfr taenlen (.xlsx) neu’r zip pecyn yn lle hynny.",
   "widget.books-drive-waiting": "Yn aros am Google Drive...",
-  "widget.books-drop": "Gollyngwch lyfr yma",
-  "widget.books-file-label": "Ffeil y llyfr i’w mewnforio",
+  "widget.books-drop": "Gollyngwch ffeil yma",
+  "widget.books-file-label": "Ffeil i’w mewnforio",
   "widget.books-filed-boxes": "Mae atebion y Ffurflen ei hun fel y’u ffeiliwyd yn llenwi {count}.",
   "widget.books-filed-failed": "Ni ellid llenwi o {file}: {reason}.",
   "widget.books-filed-kind-accounts": "Cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau",
@@ -3384,8 +3417,8 @@ window.WELSH_TEXT = {
   "widget.books-filed-use": "Llenwi o’r ffeilio hwn",
   "widget.books-filled-ixbrl": "Llenwyd {fields} o {file} ({taxonomy}) ar gyfer y cyfnod {start} hyd at {end}.",
   "widget.books-handoff-sign-in": "Mewngofnodwch a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.",
-  "widget.books-handoff-unusable": "Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfrau: {reason}. Ni lenwyd dim.",
-  "widget.books-heading": "Llenwi o’ch llyfrau",
+  "widget.books-handoff-unusable": "Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfr DIYA-GL: {reason}. Ni lenwyd dim.",
+  "widget.books-heading": "Llenwi o’ch cofnodion",
   "widget.books-hint":
     "Gollyngwch eich llyfr DIYA-GL, eich gweithlyfr taenlen neu eich zip pecyn yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.",
   "widget.books-hint-company":
@@ -3403,7 +3436,7 @@ window.WELSH_TEXT = {
   "widget.books-reading": "Yn darllen {file}...",
   "widget.books-reading-saved": "Yn darllen y llyfr a gadwyd...",
   "widget.books-saved-failed": "Methu defnyddio’r llyfr a gadwyd: {reason}.",
-  "widget.books-saved-label": "Neu defnyddiwch un o lyfrau cadw’r cleient",
+  "widget.books-saved-label": "Neu defnyddiwch un o lyfrau DIYA-GL cadw’r cleient",
   "widget.books-saved-option": "{title} (fersiwn {version})",
   "widget.books-saved-use": "Llenwi o’r llyfr hwn",
   "widget.books-small-filled": "Llenwyd {count} maes o {file} ar gyfer y cyfnod {start} i {end}.",

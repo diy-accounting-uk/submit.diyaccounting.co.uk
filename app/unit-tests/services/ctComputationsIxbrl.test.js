@@ -84,7 +84,7 @@ describe("buildCtComputations", () => {
       "Tax reference:",
       "Period covered by the return:",
       "Profit or loss before tax per the accounts",
-      "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
+      "Adjustments, non-trading loan relationship credits per accounts",
       "Adjusted trading profit (box 155)",
     ]) {
       expect(xml).toContain(words);

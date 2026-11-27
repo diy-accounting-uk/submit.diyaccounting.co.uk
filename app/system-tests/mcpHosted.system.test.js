@@ -144,6 +144,34 @@ describe("System: hosted MCP endpoint through Express", () => {
     await client.close();
   });
 
+  it("lists prod's eleven tools on prod", async () => {
+    const environmentName = process.env.ENVIRONMENT_NAME;
+    process.env.ENVIRONMENT_NAME = "prod";
+    try {
+      const { client } = await connectClient(signedAccessToken());
+      const { tools } = await client.listTools();
+      expect(tools.map((tool) => tool.name).sort()).toEqual(
+        [
+          "list_books",
+          "open_book",
+          "derive_vat_return",
+          "prepare_vat_return",
+          "list_vat_receipts",
+          "get_vat_receipt",
+          "company_filing_deadlines",
+          "derive_micro_entity_accounts",
+          "derive_small_company_accounts",
+          "derive_company_tax_return",
+          "list_accounts_receipts",
+        ].sort(),
+      );
+      await client.close();
+    } finally {
+      if (environmentName === undefined) delete process.env.ENVIRONMENT_NAME;
+      else process.env.ENVIRONMENT_NAME = environmentName;
+    }
+  });
+
   it("opens a cloud book, derives from it on a later call, and ends the session on close", async () => {
     const { client, transport } = await connectClient(signedAccessToken());
     const opened = structured(await client.callTool({ name: "open_book", arguments: { bookId: BOOK_ID } }));

@@ -719,6 +719,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability MCP-18 -->
 <!-- capability MCP-26 -->
 <!-- capability MCP-27 -->
+<!-- capability MCP-28 -->
 <!-- capability MCP-19 -->
 ### Book and derivation tools (MCP)
 

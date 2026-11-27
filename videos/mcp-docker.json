@@ -112,7 +112,7 @@
           "action": "fill",
           "target": ".mantine-InputWrapper-root:has-text(\"Path to the book\") input",
           "value": "/books/brickwork-pro-ltd-vat.json",
-          "caption": "A real example: the books of a small building firm.",
+          "caption": "A real example: the DIYA-GL book of a small building firm.",
           "headline": "Point it at a book",
           "keyWord": "book",
           "note": "fill, not type: a plain path value, and the Mantine input's own keystroke handling runs past the typing cadence tolerance."

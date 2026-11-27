@@ -134,6 +134,7 @@ test.describe("File Company Tax Return entry form", () => {
   async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }, practice = {}) {
     await page.addInitScript((email) => {
       try {
+        localStorage.setItem("consent.analytics", "declined");
         localStorage.setItem("cognitoIdToken", "mock-id-token");
         localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       } catch {
@@ -202,7 +203,12 @@ test.describe("File Company Tax Return entry form", () => {
         submission.requests.push(body);
         submission.headers?.push(route.request().headers());
         const reply = submission.reply?.(body) ?? { status: submission.status, body: submission.body };
-        await route.fulfill({ status: reply.status, contentType: "application/json", body: JSON.stringify(reply.body) });
+        await route.fulfill({
+          status: reply.status,
+          contentType: "application/json",
+          headers: reply.headers,
+          body: JSON.stringify(reply.body),
+        });
         return;
       }
       if (url.pathname === "/api/v1/hmrc/receipt" && submission.receiptList) {
@@ -295,6 +301,221 @@ test.describe("File Company Tax Return entry form", () => {
     const result = page.locator("#returnResult");
     await expect(result).toContainText("Return CORRPEND is waiting to be checked. Checking again...", { timeout: 30_000 });
     await expect(result).not.toContainText("PENDING");
+  });
+
+  async function fileAndFail(page, reply) {
+    const submission = { requests: [], reply: () => reply };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await expect.poll(async () => (await savedDraft(page))?.values?.utr).toBe("8596148860");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    return page.locator("#failureDetail");
+  }
+
+  test("a fault in Submit's filing says so in a panel with Help and the request id, and where the answers are", async ({ page }) => {
+    const panel = await fileAndFail(page, {
+      status: 500,
+      headers: { "x-request-id": "req-ctn2-500" },
+      body: { message: "Internal server error" },
+    });
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
+    await expect(panel.locator("[data-part=kind]")).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
+    await expect(panel.locator("[data-part=next] a")).toHaveAttribute("href", "/help.html");
+    await expect(panel.locator("[data-part=next]")).toContainText("req-ctn2-500");
+    await expect(panel.locator("[data-part=answers]")).toHaveText(
+      /^Your answers are still in this form and saved in this browser until \d{1,2} [A-Z][a-z]+ \d{4}\.$/,
+    );
+    await expect(page.locator("#statusMessagesContainer + #failureDetail")).toHaveCount(1);
+  });
+
+  test("HMRC refusing the Government Gateway credentials says what to check, after the server's own words", async ({ page }) => {
+    const body = {
+      message: "HMRC did not acknowledge the Company Tax Return",
+      error: { errors: [{ number: "1046", text: "Authentication Failure" }] },
+    };
+    const panel = await fileAndFail(page, { status: 502, body });
+    await expect(panel).toHaveAttribute("data-kind", "your-credentials");
+    await expect(panel.locator("[data-part=sent]")).toHaveText("HMRC did not acknowledge the Company Tax Return");
+    await expect(panel.locator("[data-part=kind]")).toContainText("Government Gateway user ID or password");
+  });
+
+  test("HMRC's business error lists each error, and the panel stays through a new message and goes on a newer failure or its close button", async ({
+    page,
+  }) => {
+    const body = {
+      message: "HMRC did not acknowledge the Company Tax Return",
+      error: { errors: [{ number: "3001", text: "Box 145 must not be negative" }] },
+    };
+    const panel = await fileAndFail(page, { status: 502, body });
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator("[data-part=errors] li")).toHaveText(["Box 145 must not be negative"]);
+    await page.evaluate(() => window.showStatus("Still checking", "info"));
+    await expect(panel).toBeVisible();
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#failureDetail")).toHaveCount(1);
+    await page.locator("#failureDetail .failure-detail__close").click();
+    await expect(page.locator("#failureDetail")).toHaveCount(0);
+  });
+
+  test("Companies House refusing Submit's presenter account on a joint filing says nothing reached either service and the fault is not the person's", async ({
+    page,
+  }) => {
+    await openForm(page, [], { requests: [], status: 200, body: {} });
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Companies House rejected the accounts submission envelope",
+          error: { submissionNumber: "00001A", errors: [{ number: 5003, text: "Unknown presenter account" }] },
+        }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "submit-credentials");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "The accounts did not reach Companies House, and the return was not sent to HMRC.",
+    );
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "Companies House refused Submit's own credentials. Nothing is wrong with your account. Try again later.",
+    );
+  });
+
+  test("HMRC's error on a return sent while Companies House holds the accounts names both parts, and takes HMRC's class", async ({
+    page,
+  }) => {
+    const submission = {
+      requests: [],
+      status: 502,
+      body: {
+        message: "HMRC did not acknowledge the Company Tax Return",
+        error: { errors: [{ number: "3001", text: "Box 145 must not be negative" }] },
+      },
+    };
+    await openForm(page, [], submission);
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: "PENDING", submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#sendCtNowBtn")).toBeVisible({ timeout: 30_000 });
+    await page.locator("#sendCtNowBtn").click();
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "Companies House has the accounts (submission 00001A) and has not decided on them. HMRC did not acknowledge the Company Tax Return",
+    );
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "HMRC answered with this error. Correct the answer it names and send again.",
+    );
+    await expect(panel.locator("[data-part=errors] li")).toHaveText(["Box 145 must not be negative"]);
+  });
+
+  test("a preview that fails says nothing was sent", async ({ page }) => {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.route("**/api/v1/hmrc/ct/return/preview", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        headers: { "x-request-id": "req-preview" },
+        body: JSON.stringify({ message: "Internal server error" }),
+      }),
+    );
+    await page.locator("#previewBtn").click();
+    const panel = page.locator("#failureDetail");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "Nothing was sent to HMRC or Companies House. The review is built before anything is sent.",
+    );
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator("[data-part=next]")).toContainText("req-preview");
+  });
+
+  test("the preview, the send and HMRC's check each say what they are doing, in order, one stage at a time, and no stage outlives the answer", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.stageMessages = [];
+      window.mostStagesShown = 0;
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.classList?.contains("status-info")) window.stageMessages.push(node.textContent.replace("×", "").trim());
+          }
+        }
+        const shown = document.querySelectorAll("#statusMessagesContainer .status-info").length;
+        window.mostStagesShown = Math.max(window.mostStagesShown, shown);
+      }).observe(document, { childList: true, subtree: true });
+    });
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    const slow = (pattern) =>
+      page.route(pattern, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        await route.fallback();
+      });
+    await slow("**/api/v1/hmrc/ct/return/preview");
+    await slow("**/api/v1/hmrc/ct/return");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Checking your answers...");
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the Company Tax Return", { timeout: 30_000 });
+    const messages = await page.evaluate(() => window.stageMessages);
+    const order = ["Checking your answers...", "Sending the return to HMRC...", "Waiting for HMRC's answer..."].map((text) =>
+      messages.indexOf(text),
+    );
+    expect(
+      order.every((position) => position >= 0),
+      messages.join(" | "),
+    ).toBe(true);
+    expect([...order].sort((first, second) => first - second)).toEqual(order);
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
+    expect(await page.evaluate(() => window.mostStagesShown)).toBe(1);
   });
 
   test("a book that fills one field says so in the singular, in English and Welsh", async ({ page }) => {
@@ -553,7 +774,7 @@ test.describe("File Company Tax Return entry form", () => {
       page.locator("#addRepaymentBtn"),
       page.locator('[data-repayment-row="1"] button[data-remove="repayment"]'),
     ]) {
-      await expect(button).toHaveClass("secondary-button");
+      await expect(button).toHaveClass(/(^| )secondary-button( |$)/);
       await expect(button).toHaveCSS("border-top-style", "solid");
     }
     expect(await page.locator("#addLoanBtn").evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(
@@ -599,13 +820,13 @@ test.describe("File Company Tax Return entry form", () => {
     // The accounts lines and the employees count start at 0; blanked, a value after the drop is the book's.
     await page.evaluate(() => {
       for (const input of document.querySelectorAll("#formSections input")) if (input.defaultValue === "0") input.value = "";
+      document.getElementById("associatedCompanies").value = "2";
     });
     await dropBook(page);
 
     const supplied = [
       "periodStart",
       "periodEnd",
-      "associatedCompanies",
       "tradeName",
       "principalActivity",
       "accountingPolicies",
@@ -626,6 +847,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
     await expect(page.locator("#currentTurnover")).toHaveValue("341283");
     await expect(page.locator("#directorDateApproved"), "a book holds no approval date").toHaveValue("");
+    await expect(page.locator("#associatedCompanies"), "the book leaves the number the person typed").toHaveValue("2");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
     await expect(page.locator("#workedTax")).toContainText("Box 440");
@@ -637,6 +859,7 @@ test.describe("File Company Tax Return entry form", () => {
   test("a section a published video shows has a closed Watch this part that loads the player at its second", async ({ page }) => {
     await serveRealSite(page);
     const list = JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/public/videos/publish.json"), "utf8"));
+    for (const video of list.videos) delete video.sections;
     const typed = list.videos.find((video) => video.id === "file-company-tax-return-typed");
     typed.sections = { "section-allowances": 83 };
     await page.route("**/videos/publish.json", (route) =>
@@ -708,6 +931,18 @@ test.describe("File Company Tax Return entry form", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.locator("#previewView").screenshot({ path: `target/screenshots/ct600-review/review-${width}.png` });
     }
+    const answerUnderQuestion = async (rowId) =>
+      page.locator(`#${rowId}`).evaluate((row) => {
+        const cells = [...row.children].filter((cell) => getComputedStyle(cell).display !== "none");
+        const [question, answer] = [cells.at(-3), cells.at(-2)].map((cell) => cell.getBoundingClientRect());
+        return answer.top >= question.bottom - 1;
+      });
+    expect(await answerUnderQuestion("review-row-utr")).toBe(true);
+    const unboxed = await page
+      .locator("#reviewAnswers tr[id^=review-row-]")
+      .evaluateAll((rows) => rows.filter((row) => row.querySelector("td.review-table__box-cell:empty")).map((row) => row.id));
+    expect(unboxed.length).toBeGreaterThan(0);
+    for (const rowId of unboxed) expect(await answerUnderQuestion(rowId), rowId).toBe(true);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.locator("#review-row-currentTurnover a.review-change").click();
     await expect(page.locator("#formView")).toBeVisible();
@@ -735,6 +970,15 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(box3.locator("td").nth(1)).toHaveText("Tax reference");
     await expect(box3.locator("td.text-value")).toHaveText("8596148860");
     await expect(page.locator("#review-row-directorDateApproved")).toContainText("15 September 2026");
+    await page.setViewportSize({ width: 390, height: 900 });
+    for (const rowId of ["review-box-3", "review-box-440"]) {
+      const [label, answer, change] = await page
+        .locator(`#${rowId}`)
+        .evaluate((row) => [row.children[1], row.children[2], row.children[3]].map((cell) => cell.getBoundingClientRect().toJSON()));
+      expect(Math.abs(answer.left - label.left), rowId).toBeLessThanOrEqual(1);
+      expect(Math.abs(change.top - answer.top), rowId).toBeLessThanOrEqual(4);
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
 
     await page.locator("#review-row-annualInvestmentAllowance a.review-change").click();
     await expect(page.locator("#foldAllowances")).toHaveAttribute("open", "");
@@ -1198,6 +1442,30 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#startAgainPendingNote")).toBeHidden();
   });
 
+  test("a joint filing says each stage in order: the accounts to Companies House, its answer, then the return to HMRC and its answer", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.stageMessages = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.classList?.contains("status-info")) window.stageMessages.push(node.textContent.replace("×", "").trim());
+          }
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await submitAndAccept(page, { both: true });
+    const messages = await page.evaluate(() => window.stageMessages);
+    expect(messages.slice(messages.indexOf("Sending the accounts to Companies House...")), messages.join(" | ")).toEqual([
+      "Sending the accounts to Companies House...",
+      "Waiting for Companies House's answer...",
+      "Companies House has the accounts; sending the return to HMRC...",
+      "Waiting for HMRC's answer...",
+    ]);
+    await expect(page.locator("#statusMessagesContainer .status-info")).toHaveCount(0);
+  });
+
   test("a return filed with HMRC alone can be amended to correct its attached accounts, with nothing sent to Companies House", async ({
     page,
   }) => {
@@ -1411,24 +1679,24 @@ test.describe("File Company Tax Return entry form", () => {
     totalCapitalAllowances: 13800,
   };
   const FIRST_RETURN_BOXES = {
-    "3": "8596148860",
-    "30": "2025-01-01",
-    "35": "2025-12-31",
-    "50": "yes",
-    "85A": "yes",
-    "305": 2000,
-    "440": 19273.46,
-    "475": 19273.46,
+    3: "8596148860",
+    30: "2025-01-01",
+    35: "2025-12-31",
+    50: "yes",
+    85: "yes",
+    305: 2000,
+    440: 19273.46,
+    475: 19273.46,
   };
   const SECOND_RETURN_BOXES = {
-    "3": "8596148860",
-    "30": "2026-01-01",
-    "35": "2026-03-31",
-    "50": "yes",
-    "85A": "yes",
-    "440": 5688.68,
-    "480": 5062.5,
-    "475": 5688.68,
+    3: "8596148860",
+    30: "2026-01-01",
+    35: "2026-03-31",
+    50: "yes",
+    85: "yes",
+    440: 5688.68,
+    480: 5062.5,
+    475: 5688.68,
   };
   const LONG_PREVIEW = (secondBoxes = SECOND_RETURN_BOXES) => ({
     periodOfAccount: { periodStart: "2025-01-01", periodEnd: "2026-03-31" },
@@ -1658,7 +1926,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#reviewReturn2Heading")).toHaveText("Return 2 of 2: 1 January 2026 to 31 March 2026");
     await expect(page.locator("#review-return-1")).toContainText("Tax is due on 1 October 2026. The return is due on 31 March 2027.");
     await expect(page.locator("#review-return-2")).toContainText("Tax is due on 1 January 2027. The return is due on 31 March 2027.");
-    await expect(page.locator("#review-box-85A")).toContainText("Accounts attached are for a different period");
+    await expect(page.locator("#review-box-85")).toContainText("Accounts attached are for a different period");
     await expect(page.locator("#review-box-440")).toContainText("19,273.46");
     await expect(page.locator("#review-box-440Ap2")).toContainText("5,688.68");
     await expect(page.locator("#review-line-timeApportionment")).toContainText("Time apportionment: 365 of 455 days");
@@ -1836,6 +2104,9 @@ test.describe("File Company Tax Return entry form", () => {
       await page.locator("#section-period").screenshot({ path: recordScreenshotPath("ct600-long-period-panel", width) });
       await page.locator("#section-allowances").screenshot({ path: recordScreenshotPath("ct600-long-period-columns", width) });
       await page.locator("#section-loans").screenshot({ path: recordScreenshotPath("ct600-long-period-loans", width) });
+      const addButton = await page.locator("#addLoanBtnAp2").boundingBox();
+      const nextQuestion = await page.locator("#addLoanBtnAp2 + *").boundingBox();
+      expect(nextQuestion.y - (addButton.y + addButton.height)).toBeGreaterThanOrEqual(16);
       await page.locator("#workedTax").screenshot({ path: recordScreenshotPath("ct600-long-period-worked-tax", width) });
       await page.locator("#previewBtn").click();
       await expect(page.locator("#previewView")).toBeVisible();
@@ -1998,10 +2269,29 @@ test.describe("File Company Tax Return entry form", () => {
         "mailto:support@diyaccounting.co.uk",
       );
 
+      const brokenWords = await record.locator("td.label").evaluateAll((cells) =>
+        cells.flatMap((cell) => {
+          const node = cell.firstChild;
+          if (!node || node.nodeType !== Node.TEXT_NODE) return [];
+          return [...node.textContent.matchAll(/[^\s-]+/g)]
+            .filter((word) => {
+              const range = document.createRange();
+              range.setStart(node, word.index);
+              range.setEnd(node, word.index + word[0].length);
+              return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size > 1;
+            })
+            .map((word) => word[0]);
+        }),
+      );
+      expect(brokenWords).toEqual([]);
+
       const text = await page.locator("#returnRecord").innerText();
       expect(text).not.toContain("undefined");
       expect(text).not.toContain("NaN");
       expect(await pageScrollsSideways(page)).toBe(false);
+      const amendButtons = await page.locator("#amendPanel .button-group").boundingBox();
+      const helpHeading = await page.locator("#supportHelpHeading").boundingBox();
+      expect(helpHeading.y - (amendButtons.y + amendButtons.height)).toBeGreaterThanOrEqual(16);
       await page.screenshot({ path: recordScreenshotPath(`ct600-result-${scheme}`, width), fullPage: true });
     });
   }

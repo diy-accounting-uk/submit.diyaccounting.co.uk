@@ -81,6 +81,8 @@ test.describe("File Confirmation Statement page", () => {
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
         window.hideLoading = window.hideLoading || (() => {});
+        window.narrateStage = (message) => window.showStatus(message, "info");
+        window.endStage = () => {};
         window.__statusMessages = [];
         window.showStatus = (message, type) => {
           window.__statusMessages.push({ message, type });

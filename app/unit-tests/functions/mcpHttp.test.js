@@ -236,12 +236,35 @@ describe("mcpHttp ingestHandler", () => {
     const result = await ingestHandler(mcpEvent({ body: INITIALIZE }));
     expect(result.statusCode).toBe(200);
     expect(result.headers["Mcp-Session-Id"]).toBe("session-abc");
-    expect(mockCreateMcpSession).toHaveBeenCalledWith(OWN_HASH());
+    expect(mockCreateMcpSession).toHaveBeenCalledWith(OWN_HASH(), "other");
     const [request, options] = mockHandleMcpRequest.mock.calls[0];
     expect(request.url).toBe(`https://${HOST}/mcp`);
     expect(await request.json()).toMatchObject({ method: "initialize" });
     expect(await options.session.credentials.accessToken()).toBe("good-token");
     expect(await options.session.credentials.idToken()).toBeNull();
+  });
+
+  it("stores the kind of assistant initialize names and gives it to the tools", async () => {
+    mockCreateMcpSession.mockResolvedValue({ sessionId: "session-claude" });
+    const initialize = { ...INITIALIZE, params: { ...INITIALIZE.params, clientInfo: { name: "claude-ai", version: "0.1.0" } } };
+    await ingestHandler(mcpEvent({ body: initialize }));
+    expect(mockCreateMcpSession).toHaveBeenCalledWith(OWN_HASH(), "claude");
+    expect(mockHandleMcpRequest.mock.calls[0][1].session.client).toBe("claude");
+  });
+
+  it("stores unknown when initialize names no client", async () => {
+    mockCreateMcpSession.mockResolvedValue({ sessionId: "session-nameless" });
+    const { clientInfo, ...params } = INITIALIZE.params;
+    expect(clientInfo.name).toBe("test");
+    await ingestHandler(mcpEvent({ body: { ...INITIALIZE, params } }));
+    expect(mockCreateMcpSession).toHaveBeenCalledWith(OWN_HASH(), "unknown");
+  });
+
+  it("gives the tools the assistant kind the stored session holds", async () => {
+    mockGetMcpSession.mockResolvedValue({ sessionId: "s-7", hashedSub: OWN_HASH(), client: "chatgpt", cloud: null });
+    await ingestHandler(mcpEvent({ headers: { "mcp-session-id": "s-7" }, body: TOOLS_CALL }));
+    expect(mockHandleMcpRequest.mock.calls[0][1].session.client).toBe("chatgpt");
+    expect(mockCreateMcpSession).not.toHaveBeenCalled();
   });
 
   it("gives the tools the caller's signed address and the MCP's version pair", async () => {
@@ -309,7 +332,8 @@ describe("mcpHttp ingestHandler", () => {
     const result = await ingestHandler(mcpEvent({ body: TOOLS_CALL }));
     expect(result.statusCode).toBe(200);
     expect(result.headers["Mcp-Session-Id"]).toBe("s-new");
-    expect(mockCreateMcpSession).toHaveBeenCalledWith(OWN_HASH());
+    expect(mockCreateMcpSession).toHaveBeenCalledWith(OWN_HASH(), "unknown");
+    expect(mockHandleMcpRequest.mock.calls[0][1].session.client).toBe("unknown");
     expect(mockGetMcpSession).not.toHaveBeenCalled();
     expect(await mockHandleMcpRequest.mock.calls[0][1].session.credentials.accessToken()).toBe("good-token");
     expect(mockUpdateMcpSessionCloud).toHaveBeenCalledWith("s-new", { bookId: "book-9", clientId: null, etag: "e1" });

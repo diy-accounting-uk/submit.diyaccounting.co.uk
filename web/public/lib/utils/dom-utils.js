@@ -71,6 +71,20 @@ function clearSupersededMessages(container, message, type) {
   }
 }
 
+// The one message that says which stage a submission has reached. Each stage replaces the one
+// before it, and hideLoading removes it when the submission ends, so no stage outlives its answer.
+export const SUBMISSION_STAGE = "submission-stage";
+
+/** Show the stage a submission has reached, in place of the stage before it. */
+export function narrateStage(message) {
+  showStatus(message, "info", { requestId: SUBMISSION_STAGE });
+}
+
+/** Remove the stage message: the submission has its answer, or has stopped. */
+export function endStage() {
+  dismissStatus(SUBMISSION_STAGE);
+}
+
 /**
  * Remove the messages shown with this requestId, and no others: a request's own progress message
  * when the request ends.
@@ -328,6 +342,8 @@ if (typeof window !== "undefined") {
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
   window.dismissStatus = dismissStatus;
+  window.narrateStage = narrateStage;
+  window.endStage = endStage;
   window.showFailure = showFailure;
   window.requestError = requestError;
   window.removeStatusMessage = removeStatusMessage;

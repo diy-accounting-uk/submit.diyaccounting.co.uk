@@ -23,6 +23,8 @@
 
   function hideLoading() {
     console.log("Page display transition: Hiding loading spinner");
+    // The submission has ended, so the stage it had reached is over.
+    if (typeof window.endStage === "function") window.endStage();
     const loadingSpinner = document.getElementById("loadingSpinner");
     const submitBtn = document.getElementById("submitBtn");
     if (loadingSpinner) {

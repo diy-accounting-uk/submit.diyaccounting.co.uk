@@ -376,6 +376,36 @@ export async function listVatReceipts(session, params = {}) {
   };
 }
 
+// The fields of the public deadlines lookup (companiesHousePublicDeadlinesGet.js) the tool answers.
+const COMPANY_DEADLINE_FIELDS = [
+  "companyNumber",
+  "companyName",
+  "companyStatus",
+  "companyType",
+  "accountsNextDue",
+  "accountsNextPeriodStart",
+  "accountsNextPeriodEnd",
+  "accountsOverdue",
+  "accountsLastPeriodEnd",
+  "confirmationStatementNextDue",
+  "lastAccountsType",
+];
+
+/**
+ * company_filing_deadlines: one company's accounts and confirmation statement due dates from the
+ * Companies House public register, through the lookup company-filing-deadlines.html uses.
+ * @param {Object} session
+ * @param {{companyNumber: string}} params
+ * @returns {Promise<Object>}
+ */
+export async function companyFilingDeadlines(session, params = {}) {
+  const companyNumber = String(requireField("company_filing_deadlines", params, "companyNumber"))
+    .trim()
+    .toUpperCase();
+  const found = await callSubmitApi(session, `/api/v1/public/company-deadlines?number=${encodeURIComponent(companyNumber)}`);
+  return Object.fromEntries(COMPANY_DEADLINE_FIELDS.filter((field) => found[field] !== undefined).map((field) => [field, found[field]]));
+}
+
 // The kind Submit stores on the receipt of accepted accounts, and on a rejected accounts filing.
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 const ACCOUNTS_FILING_KIND = "accounts";

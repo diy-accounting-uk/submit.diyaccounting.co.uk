@@ -75,6 +75,9 @@
 #   VAT submission                cyflwyniad TAW
 #   sandbox                       amgylchedd prawf (sandbox)
 #   preview                       rhagolwg (preview)
+#   records                       cofnodion
+#   bookkeeping                   cadw cyfrifon
+#   DIYA-GL book                  llyfr DIYA-GL
 # Sources: https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-vat.cy
 #          https://www.gov.uk/guidance/choose-the-right-software-for-making-tax-digital-for-income-tax.cy
 #          https://www.gov.uk/government/news/sole-traders-and-landlords-earning-more-than-30000-urged-to-act-now.cy
@@ -548,10 +551,6 @@ cy = '''Beth sy’n newid o 6 Ebrill 2027 i unig fasnachwr neu landlord sydd ag 
 [strings."tools.connector-for-ai-assistants-f229a5"]
 hash = "f229a5de4d29"
 cy = '''<a href="mcp.html">Cysylltydd ar gyfer cynorthwywyr AI</a> (yn Saesneg)'''
-
-[strings."tools.use-submit-from-an-ai-assistant-b39ce7"]
-hash = "b39ce71ec6c3"
-cy = '''Defnyddiwch Submit o gynorthwyydd AI sy’n cefnogi MCP: darllen llyfr cyfrifon, cyfrifo a pharatoi Ffurflen TAW.'''
 
 [strings."tools.spreadsheets-c54847"]
 hash = "c548470c80f0"
@@ -1607,10 +1606,6 @@ cy = '''Yn gweithio gyda Basic PAYE Tools CThEF'''
 hash = "ba572e5e80fd"
 cy = '''<a href="https://diya-gl.co.uk/" target="_blank" rel="noopener"> DIYA-GL </a> (yn Saesneg)'''
 
-[strings."spreadsheets.free-double-entry-bookkeeping-for-basic-a94f39"]
-hash = "a94f39a59a1a"
-cy = '''Cadw cyfrifon dwbl am ddim ar gyfer Basic Sole Trader, Self Employed, Taxi Driver a chwmni cyfyngedig. Cadwch eich llyfrau yn y porwr, a’u cadw yn y cwmwl pan fyddwch wedi mewngofnodi.'''
-
 [strings."spreadsheets.double-entry-bookkeeping-c7e300"]
 hash = "c7e300dd620d"
 cy = '''Cadw cyfrifon dwbl'''
@@ -1927,10 +1922,6 @@ cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurfle
 [strings."mtd-calendar.hmrc-company-tax-return-ct600-8a1c6e"]
 hash = "8a1c6e669367"
 cy = '''Ffurflen Dreth y Cwmni CThEF (CT600)'''
-
-[strings."mtd-calendar.web-form-guide-video-6afae7"]
-hash = "6afae78ffc07"
-cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.hmrc-assist-check-on-a-vat-b4a415"]
 hash = "b4a4151c19d1"
@@ -3245,10 +3236,6 @@ cy = '''Gweld eich rhwymedigaethau TAW'''
 [strings."vat-submit.sign-in-to-submit-a-vat-57f235"]
 hash = "57f2353f63b4"
 cy = '''Mewngofnodwch i gyflwyno Ffurflen TAW'''
-
-[strings."vat-submit.sign-in-to-submit-your-vat-723188"]
-hash = "72318891853f"
-cy = '''Mewngofnodwch i gyflwyno’ch Ffurflen TAW i CThEF. Mae eich llyfrau, eich cysylltiad â CThEF a’ch derbynebau yn cael eu cadw gyda’ch cyfrif.'''
 
 [strings."vat-submit.vat-period-to-submit-236d4c"]
 hash = "236d4ccf5d13"
@@ -5127,8 +5114,8 @@ hash = "465d6d1078a2"
 cy = '''Llenwyd y naw blwch o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, yna cyflwynwch.'''
 
 [strings."widget.books-heading"]
-hash = "6f8e51431cf9"
-cy = '''Llenwi o’ch llyfrau'''
+hash = "e48d7cc2dc3d"
+cy = '''Llenwi o’ch cofnodion'''
 
 [strings."widget.books-hint"]
 hash = "4110bc3b7239"
@@ -5143,16 +5130,16 @@ hash = "3e10c3cd6e0d"
 cy = '''Dewis ffeil'''
 
 [strings."widget.books-drop"]
-hash = "347bd9fc8998"
-cy = '''Gollyngwch lyfr yma'''
+hash = "a5e4b360b855"
+cy = '''Gollyngwch ffeil yma'''
 
 [strings."widget.books-file-label"]
-hash = "5a2169b7d04a"
-cy = '''Ffeil y llyfr i’w mewnforio'''
+hash = "7962d666339e"
+cy = '''Ffeil i’w mewnforio'''
 
 [strings."widget.books-saved-label"]
-hash = "e1139c29d726"
-cy = '''Neu defnyddiwch un o lyfrau cadw’r cleient'''
+hash = "1a5d5f63f1d2"
+cy = '''Neu defnyddiwch un o lyfrau DIYA-GL cadw’r cleient'''
 
 [strings."widget.books-saved-use"]
 hash = "b67a330349da"
@@ -5171,8 +5158,8 @@ hash = "5bfd81210a2f"
 cy = '''Methu mewnforio {file}: {reason}.'''
 
 [strings."widget.books-handoff-unusable"]
-hash = "a52707642711"
-cy = '''Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfrau: {reason}. Ni lenwyd dim.'''
+hash = "2d3f91470981"
+cy = '''Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfr DIYA-GL: {reason}. Ni lenwyd dim.'''
 
 [strings."widget.books-handoff-sign-in"]
 hash = "18044f42ff77"
@@ -14281,26 +14268,6 @@ cy = '''Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n
 hash = "a55754cf6271"
 cy = '''Elw neu golled cyn treth yn ôl y cyfrifon'''
 
-[strings."ch.ct.line-loan-credits"]
-hash = "71f58db9e7c7"
-cy = '''Llai: llog banc, cymdeithas adeiladu neu log arall, ac elw o berthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu (blwch 170)'''
-
-[strings."ch.ct.line-depreciation"]
-hash = "fcfa75e12b50"
-cy = '''Adio: dibrisiant'''
-
-[strings."ch.ct.line-amortisation"]
-hash = "77267e2932f6"
-cy = '''Adio: amorteiddiad'''
-
-[strings."ch.ct.line-entertaining"]
-hash = "6810449b5168"
-cy = '''Adio: adloniant'''
-
-[strings."ch.ct.line-donations"]
-hash = "e11cae05062a"
-cy = '''Adio: rhoddion'''
-
 [strings."ch.ct.line-before-apportionment"]
 hash = "d94ed12b958d"
 cy = '''Elw wedi’i addasu cyn dosrannu amser'''
@@ -14446,8 +14413,8 @@ hash = "7be29c4a7e17"
 cy = '''Pa gyfrifon y mae’r cwmni yn eu paratoi?'''
 
 [strings."ch.ct.which-accounts-hint"]
-hash = "dad3ad021bf6"
-cy = '''Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae llyfr yn dewis hyn i chi.'''
+hash = "981a805eed58"
+cy = '''Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae’r llenwi o’ch cofnodion yn dewis hyn i chi.'''
 
 [strings."ch.ct.accounts-intro"]
 hash = "db5d7a167dda"
@@ -15511,16 +15478,6 @@ hash = "311f6e3d3568"
 cy = '''Mae blwch 50 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
-[strings."ch.ct600.box-85-a"]
-hash = "a68aba9550b4"
-cy = '''Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.box-85-a-rule"]
-hash = "a0316fb4a23a"
-cy = '''Mae blwch 85A wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan'''
-
-# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 [strings."ch.ct600.box-95"]
 hash = "2763f3dbfa1f"
 cy = '''Benthyciadau a threfniadau i gyfranogwyr gan gwmnïau caeedig – ffurflen CT600A'''
@@ -16077,24 +16034,9 @@ hash = "662c2a268cdb"
 cy = '''Mae’n dechrau fel llog derbyniadwy’r cyfrifon.'''
 
 # no HMRC Welsh found
-[strings."ch.ct600.depreciation"]
-hash = "ca9620e79f3f"
-cy = '''Dibrisiant a adiwyd yn ôl'''
-
-# no HMRC Welsh found
 [strings."ch.ct600.depreciation-hint"]
 hash = "a11756a90efe"
 cy = '''Mae’n dechrau fel tâl y nodyn ar gyfer y flwyddyn, pan roddir nodyn.'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.amortisation"]
-hash = "b0a2c10ebb79"
-cy = '''Amorteiddiad a adiwyd yn ôl'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.entertaining"]
-hash = "7786da6caeb8"
-cy = '''Adloniant a adiwyd yn ôl'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.entertaining-hint"]
@@ -16113,8 +16055,8 @@ cy = '''Cyfraniadau cymhwysol i elusennau. Maen nhw’n cael eu hadio’n ôl at
 
 # no HMRC Welsh found
 [strings."ch.ct600.annual-investment-allowance-hint"]
-hash = "b7b1cc315705"
-cy = '''Yr uchafswm yw 1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.'''
+hash = "0ac2389b43d5"
+cy = '''Yr uchafswm yw £1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 # no HMRC Welsh found
@@ -16144,11 +16086,6 @@ cy = '''Mae angen hwn pryd bynnag y caiff blwch 693 ei lenwi.'''
 hash = "68ee92cbc360"
 cy = '''Gadewch allan y lwfans buddsoddi blynyddol a hawliwyd ar y gronfa hon; rhowch ef isod.'''
 
-# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
-[strings."ch.ct600.special-rate-pool-annual-investment-allowance"]
-hash = "8b6fc7b7c4ed"
-cy = '''Lwfans buddsoddi blynyddol a hawliwyd ar y gronfa gyfradd arbennig'''
-
 # no HMRC Welsh found
 [strings."ch.ct600.special-rate-pool-annual-investment-allowance-hint"]
 hash = "465ed259f0c7"
@@ -16168,16 +16105,6 @@ cy = '''Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.'''
 [strings."ch.ct600.other-machinery-and-plant-expenditure-hint"]
 hash = "c8ae143646e5"
 cy = '''Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.'''
-
-# HMRC Welsh CT600 form
-[strings."ch.ct600.losses-brought-forward"]
-hash = "3eb9cacdd853"
-cy = '''Blwch 160: Colledion masnachu a ddygwyd ymlaen'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.losses-brought-forward-hint"]
-hash = "4cd82e57a9bf"
-cy = '''Y colledion sydd ar gael. Mae’r elw masnachu yn cymryd cymaint ag y gall ym mlwch 160 ac mae’r gweddill yn cael ei gario ymlaen.'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.loss-against-total-profits-hint"]
@@ -16225,14 +16152,9 @@ hash = "e8503939c072"
 cy = '''Er enghraifft, £600 neu £193.54. Dim mwy na’r dreth sy’n daladwy ym mlwch 525.'''
 
 # no HMRC Welsh found
-[strings."ch.ct600.own-corporation-tax"]
-hash = "1a9d1d0ac85e"
-cy = '''Treth Gorfforaeth yn ôl eich cyfrifiad eich hun (dewisol)'''
-
-# no HMRC Welsh found
 [strings."ch.ct600.own-corporation-tax-hint"]
-hash = "d074a70333be"
-cy = '''Gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.'''
+hash = "539787068aaa"
+cy = '''Eich cyfrifiad eich hun o’r ffigur hwn, fel gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.loans-made"]
@@ -16248,11 +16170,6 @@ cy = '''A gafodd unrhyw fenthyciadau a wnaed yn y cyfnod eu had-dalu, eu rhyddha
 [strings."ch.ct600.repaid-since"]
 hash = "e6a96470ca10"
 cy = '''A oes unrhyw ran ohono wedi’i had-dalu, ei rhyddhau neu ei dileu ers diwedd y cyfnod?'''
-
-# HMRC Welsh CT600 form
-[strings."ch.ct600.declaration-accepted"]
-hash = "75860fef2159"
-cy = '''Rwyf yn datgan bod yr wybodaeth yn y Ffurflen Dreth hon ac yn y cyfrifon a’r cyfrifiannau atodedig yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.'''
 
 # HMRC Welsh CT600 form
 [strings."ch.ct600.donations-paid"]
@@ -16611,8 +16528,8 @@ cy = '''Rhowch ddyddiad yr ad-daliad'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-repayment-in-period"]
-hash = "1169ed5e12ae"
-cy = '''Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i lyfrau’r cyfnod ei hun'''
+hash = "43553148dbff"
+cy = '''Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i gyfrifon y cyfnod ei hun'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-repayment-future"]
@@ -16705,11 +16622,6 @@ hash = "1c3da7044802"
 cy = '''Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedau sefydlog {assets}'''
 
 # no HMRC Welsh found
-[strings."ch.ct600.problem-note-depreciation"]
-hash = "bbfb6091f7a9"
-cy = '''Rhaid i’r dibrisiant a adiwyd yn ôl fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
-
-# no HMRC Welsh found
 [strings."ch.ct600.problem-required-principal-activity"]
 hash = "b2b5c31ad967"
 cy = '''Rhowch y prif weithgarwch'''
@@ -16761,8 +16673,8 @@ cy = '''Derbyniwch y datganiad cyn i chi weld rhagolwg o’r Ffurflen Dreth'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.book-loan-note"]
-hash = "f9b8d67062bb"
-cy = '''Mae eich llyfr yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.'''
+hash = "ce66f10b5a2d"
+cy = '''Mae eich cofnodion yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.not-given"]
@@ -18395,10 +18307,6 @@ cy = '''Nid yw’r cyfrifon ar y dderbynneb honno yn nodi eu cyfnod, felly ni al
 hash = "e2c63ae380ef"
 cy = '''Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.'''
 
-[strings."ch-small-company.the-accounts-filed-were-a-full-78a2db"]
-hash = "78a2dba52fee"
-cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu gollyngwch lyfr y cwmni ar y cerdyn uchod.</span>'''
-
 [strings."ch.revision.prior-profit-and-loss-empty"]
 hash = "0d8f32fc2a79"
 cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.'''
@@ -18805,9 +18713,9 @@ cy = '''Polisi preifatrwydd - DIY Accounting Submit'''
 hash = "ba445cff3898"
 cy = '''Polisi preifatrwydd'''
 
-[strings."privacy.last-updated-22-november-2026-83c508"]
-hash = "83c508914894"
-cy = '''Diweddarwyd ddiwethaf: 22 Tachwedd 2026'''
+[strings."privacy.last-updated-26-november-2026-ff995c"]
+hash = "ff995c055eb2"
+cy = '''Diweddarwyd ddiwethaf: 26 Tachwedd 2026'''
 
 [strings."privacy.contents-437aea"]
 hash = "437aea62a5bd"
@@ -19141,14 +19049,6 @@ cy = '''<strong>Logiau gweithredu Lambda</strong>: Logiau gweithredol strwythure
 hash = "d2ee287576f9"
 cy = '''<strong>Trywydd archwilio API CThEF</strong>: Cofnodion wedi’u masgio o geisiadau ac ymatebion API ar gyfer cydymffurfio a datrys problemau (mae data sensitif wedi’i olygu allan)'''
 
-[strings."privacy.google-drive-and-books-7c6792"]
-hash = "7c6792f6ee69"
-cy = '''Google Drive a llyfrau'''
-
-[strings."privacy.you-can-open-a-book-from-81c83e"]
-hash = "81c83eb9b7b3"
-cy = '''Gallwch agor llyfr o’ch Google Drive eich hun, neu gadw llyfr iddo. Mae hyn yn defnyddio mewngofnodi Google a’r caniatâd <code>drive.file</code>, sy’n gadael i’r wefan weld dim ond y ffeiliau rydych yn eu dewis neu’n eu creu gyda hi. Mae’r llyfr yn aros yn eich porwr. Dim ond y ffigurau rydych yn eu ffeilio sy’n cyrraedd gweinyddion Submit.'''
-
 [strings."privacy.google-s-own-privacy-policy-governs-9a8873"]
 hash = "9a8873bb46e1"
 cy = '''Polisi preifatrwydd Google ei hun sy’n llywodraethu eich cyfrif Drive.'''
@@ -19349,18 +19249,6 @@ cy = '''Pan fydd eich cleient AI yn galw ein pwynt terfyn MCP a letyir, rydym yn
 hash = "cacd9a1f90bc"
 cy = '''Yr hyn y mae’r pwynt terfyn MCP a letyir yn ei anfon at eich cleient AI'''
 
-[strings."privacy.you-can-connect-an-ai-client-518b03"]
-hash = "518b03969fb9"
-cy = '''Gallwch gysylltu cleient AI, megis ChatGPT, Claude neu Gemini, â’r pwynt terfyn MCP a letyir. Rydych yn mewngofnodi gyda’ch cyfrif Submit. Yna gall y cleient alw chwe offeryn. Mae pob offeryn yn ateb gyda data o’ch cyfrif eich hun yn unig:'''
-
-[strings."privacy.your-saved-books-the-id-title-cffbed"]
-hash = "cffbed94530f"
-cy = '''<strong>Eich llyfrau a gadwyd</strong>: id, teitl a chynnyrch pob llyfr, a’r cyfnod y mae’n ei gwmpasu.'''
-
-[strings."privacy.an-open-book-the-name-of-edb9fa"]
-hash = "edb9fa02aec9"
-cy = '''<strong>Llyfr agored</strong>: enw’r busnes, y cynnyrch, y cyfnod, nifer llinellau’r dyddlyfr a chanlyniadau gwiriadau’r llyfr.'''
-
 [strings."privacy.a-vat-return-worked-out-from-85e2a6"]
 hash = "85e2a61e7425"
 cy = '''<strong>Ffurflen TAW wedi’i chyfrifo o lyfr</strong>: y rhif cofrestru TAW sydd yn y llyfr, y naw blwch TAW, y ffigurau ar gyfer pob mis, y dyddiad dyledus a llinellau’r dyddlyfr y tu ôl i flychau 1, 4, 6 a 7. Ar gyfer pob llinell o’r dyddlyfr, mae’r offeryn yn anfon y dyddiad, y cyfrif, y cyfeirnod, y gwrthbarti a’r symiau. Gwrthbarti yw enw cwsmer neu gyflenwr yn eich llyfr.'''
@@ -19377,17 +19265,13 @@ cy = '''<strong>Eich derbynebau TAW</strong>: ar gyfer pob Ffurflen TAW a ffeili
 hash = "ce2c618ff0b4"
 cy = '''Nid yw’r offer yn anfon unrhyw ddynodydd mewnol o’ch cyfrif, unrhyw ddynodydd sesiwn na chais, nac unrhyw ddata log.'''
 
-[strings."privacy.purpose-the-ai-client-uses-the-511f68"]
-hash = "511f688fb9db"
-cy = '''<strong>Diben</strong>: mae’r cleient AI yn defnyddio’r data i ddangos eich llyfrau i chi ac i gyfrifo Ffurflen TAW. Yna rydych chi’n gwirio’r Ffurflen ac yn ei ffeilio eich hun yn eich porwr. Nid ydym yn defnyddio’r data at unrhyw ddiben arall.'''
+[strings."privacy.when-an-ai-client-opens-a-cfcfd6"]
+hash = "cfcfd689c0f3"
+cy = '''Pan fydd cleient AI yn agor sesiwn, rydym yn cofnodi pa fath o gleient ydyw (ChatGPT, Claude, Gemini, Copilot, cleient arall neu anhysbys), o’r enw y mae’r cleient yn ei roi, gyda dynodydd eich cyfrif wedi’i hashio. Rydym yn ei ddefnyddio i gyfrif pa gleientiaid AI y mae pobl yn eu defnyddio. Mae’r ddolen i’r ffurflen TAW yn enwi’r un math o gleient cyn y "#", fel bod ein tudalennau’n gallu cyfrif yr ymweliadau a anfonodd cleient AI.'''
 
 [strings."privacy.recipient-the-supplier-of-the-ai-1f9ae4"]
 hash = "1f9ae4aaf7ad"
 cy = '''<strong>Derbynnydd</strong>: cyflenwr y cleient AI rydych yn ei gysylltu. OpenAI yw hwn ar gyfer ChatGPT, Anthropic ar gyfer Claude a Google ar gyfer Gemini. Mae’r cyflenwr yn derbyn pob ateb ac yn ei ddefnyddio o dan ei bolisi preifatrwydd ei hun a gosodiadau eich cyfrif gydag ef. Gall y cyflenwr brosesu’r data y tu allan i’r DU.'''
-
-[strings."privacy.retention-we-keep-no-copy-of-21805c"]
-hash = "21805cc98d33"
-cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau heb derfyn amser. Rydym yn cadw derbynebau TAW am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''
 
 [strings."privacy.hmrc-consent-2a2a74"]
 hash = "2a2a7452ff24"
@@ -20515,10 +20399,6 @@ cy = '''Mae’r Telerau Defnyddio hyn (“Telerau”) yn rheoli eich mynediad at
 hash = "3a7da1343a4e"
 cy = '''1. Yr hyn y mae’r Gwasanaeth yn ei wneud'''
 
-[strings."terms.diy-accounting-submit-is-a-web-732339"]
-hash = "73233923f9c7"
-cy = '''Rhaglen we yw DIY Accounting Submit sy’n helpu busnesau yn y DU a’u cyfrifwyr i anfon ffeiliadau at CThEF a Thŷ’r Cwmnïau, ac i gadw’r llyfrau sy’n sail iddynt. Mae’r Gwasanaeth yn cynnig:'''
-
 [strings."terms.vat-making-tax-digital-view-vat-6c4117"]
 hash = "6c41179d7329"
 cy = '''<strong>TAW (Troi Treth yn Ddigidol).</strong> Gweld rhwymedigaethau, rhwymedigaethau talu (<span lang="en-GB">liabilities</span>), taliadau a chosbau TAW. Cyflwyno Ffurflenni TAW i CThEF. Gweld Ffurflenni a gyflwynwyd a derbynebau.'''
@@ -20534,10 +20414,6 @@ cy = '''<strong>Tŷ’r Cwmnïau.</strong> Chwilio am gwmni. Newid cyfeiriad swy
 [strings."terms.diya-gl-books-save-and-load-ba7937"]
 hash = "ba79370780b9"
 cy = '''<strong>Llyfrau DIYA-GL.</strong> Cadw a llwytho llyfrau DIYA-GL yn eich cyfrif.'''
-
-[strings."terms.mcp-server-read-and-edit-a-0356f6"]
-hash = "0356f6469947"
-cy = '''<strong>Gweinydd MCP.</strong> Darllen a golygu llyfr, a ffeilio ohono, drwy gynorthwyydd deallusrwydd artiffisial sy’n cefnogi’r Model Context Protocol.'''
 
 [strings."terms.receipts-and-history-view-receipts-of-c864be"]
 hash = "c864bef93b19"
@@ -20943,9 +20819,9 @@ cy = '''Mae creu tocyn digidol neu ffisegol i’w roi i rywun arall yn costio 10
 hash = "bc274891b428"
 cy = '''Ffi ffeilio'''
 
-[strings."terms.filing-a-confirmation-statement-with-companies-ec7aa2"]
-hash = "ec7aa26a5a8f"
-cy = '''Mae ffeilio datganiad cadarnhau gyda Thŷ’r Cwmnïau yn golygu tâl o £61.35 am bob ffeilio, yn ychwanegol at y bundle a’r credyd.'''
+[strings."terms.filing-a-confirmation-statement-through-submit-e34b58"]
+hash = "e34b5807e54c"
+cy = '''Mae ffeilio datganiad cadarnhau drwy gyflwynydd Tŷ’r Cwmnïau Submit yn costio £61.35 am bob ffeilio, yn ychwanegol at y bundle; mae’r £61.35 yn cynnwys ffi £50 Tŷ’r Cwmnïau. Os byddwch yn ffeilio o dan eich cyflwynydd Tŷ’r Cwmnïau eich hun, mae Tŷ’r Cwmnïau yn codi ei ffi £50 ar eich cyfrif credyd, ac nid yw Submit yn codi dim am y ffeilio.'''
 
 [strings."terms.subscriptions-a151f2"]
 hash = "a151f2e912fe"
@@ -21939,9 +21815,9 @@ cy = '''A allaf ffeilio cyfrifon neu ddatganiad cadarnhau gyda Thŷ’r Cwmnïau
 hash = "209627165e51"
 cy = '''Gallwch. Mae cyfrifon micro-endid, cyfrifon cwmni bach a’r datganiad cadarnhau mewn <strong>Cynhyrchu (production)</strong>. Mae ffeilio yn mynd at Dŷ’r Cwmnïau.'''
 
-[strings."help.each-filing-needs-the-resident-ltd-4e2fb8"]
-hash = "4e2fb81434be"
-cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> ar gyfer pob ffeilio. Mae ffeilio cyfrifon yn costio un credyd. Nid yw datganiad cadarnhau yn costio credyd, ac mae tâl o £61.35 am bob ffeilio.'''
+[strings."help.each-filing-needs-the-resident-ltd-0a63cc"]
+hash = "0a63ccc2355c"
+cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> ar gyfer pob ffeilio. Mae ffeilio cyfrifon yn costio un credyd. Nid yw datganiad cadarnhau yn costio credyd. Wedi’i ffeilio drwy gyflwynydd Tŷ’r Cwmnïau Submit, mae’n costio £61.35, sy’n cynnwys ffi £50 Tŷ’r Cwmnïau. Wedi’i ffeilio o dan eich cyflwynydd Tŷ’r Cwmnïau eich hun, mae Tŷ’r Cwmnïau yn codi ei ffi £50 ar eich cyfrif credyd, ac nid yw Submit yn codi dim am y ffeilio.'''
 
 [strings."help.the-psc-verification-statement-is-in-2d8a7b"]
 hash = "2d8a7b2a4142"
@@ -27480,8 +27356,8 @@ hash = "fd7096790558"
 cy = '''Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.'''
 
 [strings."ch.revision.downloads-summary"]
-hash = "d7a6d715c90a"
-cy = '''Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.'''
+hash = "2bf8f1a0066e"
+cy = '''Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn Llenwi o’ch cofnodion uchod.'''
 
 [strings."ch.revision.downloads-filleted"]
 hash = "4d1d3cdca563"
@@ -27510,20 +27386,20 @@ cy = '''Agor yn DIYA-GL'''
 # == The company drill-down's books in the DIYA-GL app (lib/company-books.js), ids ch.books.* ==
 
 [strings."ch.books.heading"]
-hash = "d1e84945ae4b"
-cy = '''Llyfrau’r cwmni'''
+hash = "b1d10369d099"
+cy = '''Cofnodion cyfrifyddu yn DIYA-GL'''
 
 [strings."ch.books.intro"]
-hash = "bc345126a4fa"
-cy = '''Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.'''
+hash = "67cca9e7f638"
+cy = '''Dechreuwch gofnodion cyfrifyddu’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff pob llyfr DIYA-GL ei wneud yn y porwr hwn, ac nid oes dim yn cael ei storio.'''
 
 [strings."ch.books.building"]
-hash = "c5b9ea7f8be9"
-cy = '''Yn gwneud y llyfrau…'''
+hash = "75ce616c7f65"
+cy = '''Yn gwneud y llyfrau DIYA-GL…'''
 
 [strings."ch.books.failed"]
-hash = "446c95ea338e"
-cy = '''Nid oedd modd gwneud y llyfrau: {reason}'''
+hash = "201f8c398c7d"
+cy = '''Nid oedd modd gwneud y llyfrau DIYA-GL: {reason}'''
 
 [strings."ch.books.next-period"]
 hash = "7b46099aa736"
@@ -28037,21 +27913,9 @@ cy = '''Gwerthiannau nwyddau a gwasanaethau yn y cyfnod, ar ôl gostyngiadau mas
 hash = "122dcaccd3dc"
 cy = '''Incwm y tu allan i fasnach y cwmni, fel llog banc.'''
 
-[strings."ch.ct600.micro-pl-raw-materials-hint"]
-hash = "f2c6b91a1aeb"
-cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi 0 ac yn rhoi’r gost hon mewn taliadau eraill.'''
-
-[strings."ch.ct600.micro-pl-staff-costs-hint"]
-hash = "bc5972009929"
-cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi 0 ac yn rhoi’r rhain mewn taliadau eraill.'''
-
 [strings."ch.ct600.micro-pl-depreciation-hint"]
 hash = "6e1bbd201201"
 cy = '''Y dibrisiant a godwyd ar asedau sefydlog y cwmni yn y cyfnod.'''
-
-[strings."ch.ct600.micro-pl-other-charges-hint"]
-hash = "b111aa8f6d6c"
-cy = '''Pob cost arall y cyfnod, gan gynnwys cost gwerthiannau a’r treuliau gweinyddol.'''
 
 [strings."ch.ct600.micro-pl-tax-hint"]
 hash = "f775cf818846"
@@ -28706,3 +28570,308 @@ cy = '''Rydych yn cael dwy dderbynneb o dan un ffeilio. Dewch o hyd iddynt ar <a
 [strings."help.see-the-guide-and-the-availability-f4f06a"]
 hash = "f4f06a27fa5b"
 cy = '''Gweler y <a href="guide.html#file-company-tax-return-with-accounts" target="_blank" rel="noopener">canllaw</a> a’r <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">tabl argaeledd</a>.'''
+
+[strings."ct.failure-answers-saved"]
+hash = "2c5445638d35"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon ac wedi’u cadw yn y porwr hwn tan {date}.'''
+
+[strings."ct.failure-answers-not-saved"]
+hash = "22f483de56b7"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon. Nid ydynt wedi’u cadw yn y porwr hwn: fe wnaethoch ddewis peidio â’u cadw.'''
+
+[strings."ct.failure-answers-in-form"]
+hash = "fb7fc3df2edf"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon.'''
+
+[strings."ct.failure-sent-preview"]
+hash = "72a748ada1a2"
+cy = '''Ni anfonwyd dim at CThEF na Thŷ’r Cwmnïau. Caiff yr adolygiad ei greu cyn i ddim gael ei anfon.'''
+
+[strings."ct.failure-sent-ch-none"]
+hash = "1aa964e24a21"
+cy = '''Ni chyrhaeddodd y cyfrifon Dŷ’r Cwmnïau, ac ni anfonwyd y Ffurflen Dreth at CThEF.'''
+
+[strings."ct.failure-sent-ch-accepted"]
+hash = "2cfa384873b7"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}).'''
+
+[strings."ct.failure-sent-ch-held"]
+hash = "9a6e4ef1e6f2"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon (cyflwyniad {number}) ac nid yw wedi penderfynu arnynt.'''
+
+[strings."ct.failure-service-ch"]
+hash = "dbfbe8c46331"
+cy = '''Tŷ’r Cwmnïau'''
+
+[strings."ct.failure-service-hmrc"]
+hash = "e23afedb2045"
+cy = '''CThEF'''
+
+[strings."ct.failure-error-at"]
+hash = "17043f573ca7"
+cy = '''{text} ({location})'''
+
+[strings."ct.failure-help"]
+hash = "b79cac926e0b"
+cy = '''Cymorth'''
+
+[strings."ct.failure-auth-code"]
+hash = "9e0fde7af905"
+cy = '''Ni dderbyniodd Tŷ’r Cwmnïau y cod dilysu cwmni. Gwiriwch y 6 i 8 nod yn y llythyr a anfonodd Tŷ’r Cwmnïau at y cwmni, a’i roi eto.'''
+
+[strings."ct.failure-gateway"]
+hash = "f1e6dfcdbb5d"
+cy = '''Ni dderbyniodd CThEF yr ID defnyddiwr na’r cyfrinair Porth y Llywodraeth. Gwiriwch y ddau, a bod gan yr ID defnyddiwr Dreth Gorfforaeth ar gyfer y cwmni hwn.'''
+
+[strings."ct.failure-our-credentials"]
+hash = "1ccb6c406883"
+cy = '''Gwrthododd {service} gymwysterau Submit ei hun. Does dim byd o’i le ar eich cyfrif. Rhowch gynnig arall arni nes ymlaen.'''
+
+[strings."ct.failure-business"]
+hash = "3d9bd4548cf2"
+cy = '''Atebodd {service} gyda’r gwall hwn. Cywirwch yr ateb y mae’n ei enwi ac anfonwch eto.'''
+
+[strings."ct.failure-refused"]
+hash = "73d35ce06be7"
+cy = '''Gwrthodwyd yr atebion cyn i ddim gael ei anfon. Cywirwch nhw ac anfonwch eto.'''
+
+[strings."ct.failure-submit-fault"]
+hash = "38a4c23e717e"
+cy = '''Nam yn Submit yw hwn, nid yn eich atebion na’ch mewngofnodi.'''
+
+[strings."ct.failure-close"]
+hash = "7d9eb7acb13e"
+cy = '''Cau'''
+
+[strings."ct.failure-heading"]
+hash = "483bd49023ae"
+cy = '''Beth ddigwyddodd'''
+
+[strings."ct.failure-request-id"]
+hash = "8ee7951cad05"
+cy = '''Dyfynnwch y cyfeirnod {id} pan fyddwch yn gofyn am help.'''
+
+[strings."ct.narrate-checking"]
+hash = "55b3b828404d"
+cy = '''Wrthi’n gwirio eich atebion...'''
+
+[strings."ct.narrate-accounts-then-return"]
+hash = "177eddae6a55"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon; wrthi’n anfon y Ffurflen Dreth at CThEF...'''
+
+[strings."ct.narrate-sending-return"]
+hash = "efa009b1f01e"
+cy = '''Wrthi’n anfon y Ffurflen Dreth at CThEF...'''
+
+[strings."ct.narrate-waiting-hmrc"]
+hash = "93e39e82df6d"
+cy = '''Wrthi’n aros am ateb CThEF...'''
+
+[strings."ct.narrate-waiting-ch"]
+hash = "6e70b8b60ad0"
+cy = '''Wrthi’n aros am ateb Tŷ’r Cwmnïau...'''
+
+[strings."ct.narrate-sending-accounts"]
+hash = "e079881092c2"
+cy = '''Wrthi’n anfon y cyfrifon at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-verification"]
+hash = "bcf308f5699f"
+cy = '''Wrthi’n anfon y datganiad dilysu at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-statement"]
+hash = "954d9b2303da"
+cy = '''Wrthi’n anfon y datganiad cadarnhau at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-form"]
+hash = "c025ca0a6c9c"
+cy = '''Wrthi’n anfon y ffurflen at Dŷ’r Cwmnïau...'''
+
+[strings."ch.narrate-sending-change"]
+hash = "e007f9d11f5a"
+cy = '''Wrthi’n anfon y newid at Dŷ’r Cwmnïau...'''
+# == The Company Tax Return row's MCP cell: the hosted connector works out figures only ==
+
+[strings."mtd-calendar.production-figures-only-bb0667"]
+hash = "bb0667425d3c"
+cy = '''cynhyrchu (production) <span class="calendar-date">ffigurau yn unig</span>'''
+
+[strings."mtd-calendar.web-form-guide-video-mcp-5d0317"]
+hash = "5d031786c8ec"
+cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+
+# == The privacy policy's hosted MCP part, eleven tools ==
+
+[strings."privacy.you-can-connect-an-ai-client-c5bbea"]
+hash = "c5bbea3e86d7"
+cy = '''Gallwch gysylltu cleient AI, megis ChatGPT, Claude neu Gemini, â’r pwynt terfyn MCP a letyir. Rydych yn mewngofnodi gyda’ch cyfrif Submit. Yna gall y cleient alw un ar ddeg o offer. Mae pob offeryn yn ateb gyda data o’ch cyfrif eich hun, ac eithrio’r terfynau amser ffeilio, sy’n dod o gofrestr gyhoeddus Tŷ’r Cwmnïau:'''
+
+[strings."privacy.a-company-s-filing-deadlines-for-eb1851"]
+hash = "eb1851d41830"
+cy = '''<strong>Terfynau amser ffeilio cwmni</strong>: ar gyfer rhif cwmni a roddwch, enw, statws a math y cwmni, dyddiad dyledus a chyfnod ei gyfrifon nesaf, a ydynt yn hwyr, dyddiad dyledus ei ddatganiad cadarnhau nesaf a math ei gyfrifon diwethaf. Daw’r rhain o gofrestr gyhoeddus Tŷ’r Cwmnïau, nid o’ch cyfrif.'''
+
+[strings."privacy.company-accounts-worked-out-from-a-c1f279"]
+hash = "c1f27901cea5"
+cy = '''<strong>Cyfrifon cwmni a gyfrifwyd o lyfr DIYA-GL</strong>: enw a rhif y cwmni, y cyfnod, ffigurau’r fantolen a’r cyfrif elw a cholled, enwau’r cyfarwyddwyr a nifer y gweithwyr.'''
+
+[strings."privacy.a-company-tax-return-worked-out-d99e1d"]
+hash = "d99e1db1b53d"
+cy = '''<strong>Ffurflen Dreth y Cwmni a gyfrifwyd o lyfr DIYA-GL</strong>: y cyfnod cyfrifyddu, ffigurau’r cyfrifiant, y cyfrif elw a cholled, yr elw masnachu a’r Dreth Gorfforaeth.'''
+
+[strings."privacy.your-accounts-filings-for-each-set-c71d46"]
+hash = "c71d46a90858"
+cy = '''<strong>Eich ffeilio cyfrifon</strong>: ar gyfer pob set o gyfrifon a ffeiliwyd gennych drwy Submit, enw’r dderbynneb, rhif y cwmni, y cyfnod, math y cyfrifon ac a wnaeth Tŷ’r Cwmnïau eu derbyn. Ar gyfer ffeilio a wrthodwyd, ei rif cyflwyno, y diwrnod y’i gwrthodwyd a rhesymau Tŷ’r Cwmnïau.'''
+
+[strings."privacy.purpose-the-ai-client-uses-the-ba0784"]
+hash = "ba0784ce7a1a"
+cy = '''<strong>Diben</strong>: mae’r cleient AI yn defnyddio’r data i ddangos eich llyfrau DIYA-GL i chi, i gyfrifo Ffurflen TAW, cyfrifon cwmni neu Ffurflen Dreth y Cwmni, ac i ddweud wrthych pryd mae ffeilio cwmni yn ddyledus. Yna rydych chi’n gwirio’r ffigurau ac yn eu ffeilio eich hun yn eich porwr. Nid ydym yn defnyddio’r data at unrhyw ddiben arall.'''
+
+# == The customer wording on the cards, FAQ, guide, terms, privacy and marketing site, from WRD2 to WRD4 ==
+
+[strings."tools.use-submit-from-an-ai-assistant-cb7379"]
+hash = "cb7379a97c28"
+cy = '''Defnyddiwch Submit o gynorthwyydd AI sy’n cefnogi MCP: darllen llyfr DIYA-GL, cyfrifo a pharatoi Ffurflen TAW.'''
+
+[strings."spreadsheets.free-double-entry-bookkeeping-for-basic-6a5732"]
+hash = "6a57320c3bc2"
+cy = '''Cadw cyfrifon dwbl am ddim ar gyfer Basic Sole Trader, Self Employed, Taxi Driver a chwmni cyfyngedig. Cadwch eich cofnodion yn y porwr, a’u cadw yn y cwmwl pan fyddwch wedi mewngofnodi.'''
+
+[strings."privacy.google-drive-and-diya-gl-books-5059a2"]
+hash = "5059a20e75cb"
+cy = '''Google Drive a llyfrau DIYA-GL'''
+
+[strings."privacy.you-can-open-a-diya-gl-01e5b3"]
+hash = "01e5b3a20e05"
+cy = '''Gallwch agor llyfr DIYA-GL o’ch Google Drive eich hun, neu gadw un iddo. Mae hyn yn defnyddio mewngofnodi Google a’r caniatâd <code>drive.file</code>, sy’n gadael i’r wefan weld dim ond y ffeiliau rydych yn eu dewis neu’n eu creu gyda hi. Mae’r llyfr yn aros yn eich porwr. Dim ond y ffigurau rydych yn eu ffeilio sy’n cyrraedd gweinyddion Submit.'''
+
+[strings."privacy.your-saved-diya-gl-books-the-29a948"]
+hash = "29a94837556d"
+cy = '''<strong>Eich llyfrau DIYA-GL a gadwyd</strong>: id, teitl a chynnyrch pob llyfr, a’r cyfnod y mae’n ei gwmpasu.'''
+
+[strings."privacy.an-open-diya-gl-book-the-74309f"]
+hash = "74309f234e32"
+cy = '''<strong>Llyfr DIYA-GL agored</strong>: enw’r busnes, y cynnyrch, y cyfnod, nifer llinellau’r dyddlyfr a chanlyniadau gwiriadau’r llyfr.'''
+
+[strings."terms.diy-accounting-submit-is-a-web-7b7897"]
+hash = "7b7897e157cc"
+cy = '''Rhaglen we yw DIY Accounting Submit sy’n helpu busnesau yn y DU a’u cyfrifwyr i anfon ffeiliadau at CThEF a Thŷ’r Cwmnïau, ac i gadw’r cofnodion sy’n sail iddynt. Mae’r Gwasanaeth yn cynnig:'''
+
+[strings."terms.mcp-server-read-and-edit-a-119871"]
+hash = "119871f328bf"
+cy = '''<strong>Gweinydd MCP.</strong> Darllen a golygu llyfr DIYA-GL, a ffeilio ohono, drwy gynorthwyydd deallusrwydd artiffisial sy’n cefnogi’r Model Context Protocol.'''
+
+[strings."vat-submit.sign-in-to-submit-your-vat-5ea85e"]
+hash = "5ea85e8e75bd"
+cy = '''Mewngofnodwch i gyflwyno’ch Ffurflen TAW i CThEF. Mae eich llyfrau DIYA-GL cadw, eich cysylltiad â CThEF a’ch derbynebau yn cael eu cadw gyda’ch cyfrif.'''
+
+[strings."ch-small-company.the-accounts-filed-were-a-full-dde403"]
+hash = "dde40382d9aa"
+cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu gollyngwch lyfr DIYA-GL neu becyn taenlenni’r cwmni ar y cerdyn Llenwi o’ch cofnodion uchod.</span>'''
+
+[strings."privacy.retention-we-keep-no-copy-of-35260a"]
+hash = "35260a52911d"
+cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau DIYA-GL heb derfyn amser. Rydym yn cadw derbynebau TAW a chyfrifon am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''
+# == Box 85 of the CT600, ids ch.ct600.box-85* ==
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-85"]
+hash = "a68aba9550b4"
+cy = '''Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-85-rule"]
+hash = "c34b4652c707"
+cy = '''Mae blwch 85 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan'''
+
+# == The CT600 declaration, in HMRC's words, id ch.ct600.declaration-hmrc ==
+
+# no HMRC Welsh found for the declaration on GOV.UK; for a Welsh speaker to check
+[strings."ch.ct600.declaration-hmrc"]
+hash = "7663838f4423"
+cy = '''Rwyf yn datgan bod yr wybodaeth a roddais ar y Ffurflen Dreth y Cwmni hon ac ar unrhyw dudalennau atodol yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.'''
+
+# == Trading losses brought forward, ids ch.ct600.trading-losses-brought-forward* ==
+
+# HMRC's Welsh CT600 term for box 160, without its box number
+[strings."ch.ct600.trading-losses-brought-forward"]
+hash = "6609feaf6cda"
+cy = '''Colledion masnachu a ddygwyd ymlaen'''
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.trading-losses-brought-forward-hint"]
+hash = "8f269c723432"
+cy = '''Y colledion sydd ar gael. Blwch 160 yw’r rhan a osodir yn erbyn elw masnachu; mae’r gweddill yn cael ei gario ymlaen.'''
+
+# == The micro-entity profit and loss lines a book fills, ids ch.ct600.micro-pl-*-hint ==
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.micro-pl-raw-materials-cost-of-sales-hint"]
+hash = "e09a4fb15dc0"
+cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae’r llenwi o’ch cofnodion yn rhoi cost gwerthiannau yma.'''
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.micro-pl-staff-costs-wages-hint"]
+hash = "d3ef2a9ebe6a"
+cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae’r llenwi o’ch cofnodion yn rhoi’r cyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr yma.'''
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.micro-pl-other-charges-admin-hint"]
+hash = "53a62f776fd8"
+cy = '''Pob cost arall y cyfnod: y treuliau gweinyddol llai’r costau staff a’r dibrisiant.'''
+
+# == The CT computation lines and the fields that fill them, from HMRC's CT computations taxonomy labels, ids ch.ct.line-* and ch.ct600.* ==
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-loan-credits"]
+hash = "2f49a995989f"
+cy = '''Addasiadau, credydau perthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu yn ôl y cyfrifon'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-depreciation"]
+hash = "7566935bc4f1"
+cy = '''Addasiadau, dibrisiant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-amortisation"]
+hash = "0723ef202b37"
+cy = '''Addasiadau, amorteiddiad'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-entertaining"]
+hash = "b06c05514ca0"
+cy = '''Addasiadau, adloniant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-donations"]
+hash = "450d8fcdbc6a"
+cy = '''Addasiadau, rhoddion'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.depreciation"]
+hash = "7566935bc4f1"
+cy = '''Addasiadau, dibrisiant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.amortisation"]
+hash = "0723ef202b37"
+cy = '''Addasiadau, amorteiddiad'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.entertaining"]
+hash = "b06c05514ca0"
+cy = '''Addasiadau, adloniant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.special-rate-pool-annual-investment-allowance"]
+hash = "14310b71ab22"
+cy = '''Cronfa gyfradd arbennig, lwfans buddsoddi blynyddol'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.own-corporation-tax"]
+hash = "dc38d836e844"
+cy = '''Treth Gorfforaeth sy’n daladwy'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.problem-note-depreciation"]
+hash = "2d7d9e94b9ed"
+cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''

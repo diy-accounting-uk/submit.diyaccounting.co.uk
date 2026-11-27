@@ -36,19 +36,19 @@ export const CT_COMP_NAMESPACE = "http://www.hmrc.gov.uk/schemas/ct/comp/2025-01
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- identifier scheme URI, compared byte for byte, not fetched
 const COMPANIES_HOUSE_SCHEME = "http://www.companieshouse.gov.uk/";
 
-// Each trading line, in the order the computation shows it, with its ct-comp concept and whether
-// it adds to or takes from the profit per accounts.
-const TRADING_LINES = [
+// Each trading line, in the order the computation shows it, with its ct-comp concept, whether it
+// adds to or takes from the profit per accounts, and the concept's standard label.
+export const TRADING_LINES = [
   {
     key: "nonTradingLoanRelationshipCredits",
     concept: "AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts",
     effect: -1,
-    label: "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
+    label: "Adjustments, non-trading loan relationship credits per accounts",
   },
-  { key: "depreciation", concept: "AdjustmentsDepreciation", effect: 1, label: "Add: depreciation" },
-  { key: "amortisation", concept: "AdjustmentsAmortisation", effect: 1, label: "Add: goodwill amortisation" },
-  { key: "entertaining", concept: "AdjustmentsEntertaining", effect: 1, label: "Add: entertaining" },
-  { key: "donations", concept: "AdjustmentsDonations", effect: 1, label: "Add: donations" },
+  { key: "depreciation", concept: "AdjustmentsDepreciation", effect: 1, label: "Adjustments, depreciation" },
+  { key: "amortisation", concept: "AdjustmentsAmortisation", effect: 1, label: "Adjustments, amortisation" },
+  { key: "entertaining", concept: "AdjustmentsEntertaining", effect: 1, label: "Adjustments, entertaining" },
+  { key: "donations", concept: "AdjustmentsDonations", effect: 1, label: "Adjustments, donations" },
 ];
 
 // The capital allowance classes shown beside the totals, from section 2 of the computations

@@ -104,6 +104,8 @@
   }
 
   function hideLoading(options = {}) {
+    // The submission has ended, so the stage it had reached is over.
+    if (typeof window.endStage === "function") window.endStage();
     const spinner = getSpinner(options.spinnerId);
     if (spinner) spinner.style.display = "none";
     const submitBtn = document.getElementById(options.submitButtonId || "submitBtn");
@@ -169,5 +171,12 @@
   }
   if (typeof window.hideLoading !== "function") {
     window.hideLoading = () => api.hideLoading();
+  }
+  // The stage a submission has reached: one message, each stage in place of the one before it.
+  if (typeof window.narrateStage !== "function") {
+    window.narrateStage = (message) => window.showStatus(message, "info", { requestId: "submission-stage" });
+  }
+  if (typeof window.endStage !== "function") {
+    window.endStage = () => window.dismissStatus("submission-stage");
   }
 })();

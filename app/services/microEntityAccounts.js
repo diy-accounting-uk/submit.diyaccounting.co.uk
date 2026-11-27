@@ -64,20 +64,22 @@ export async function deriveMicroEntityAccounts(session) {
 
 /**
  * One year of a micro-entity profit and loss account (MICRO_PROFIT_AND_LOSS_LINES) from a small
- * company's profit and loss lines. The book keeps no staff cost or raw material line, so every
- * cost other than the depreciation charge is an other charge and interest receivable is other
+ * company's profit and loss lines. The cost of sales (PubP&L!F16) is the raw materials and
+ * consumables, the staff costs (MnthP&L!B18+B19+B20) and the depreciation come out of the
+ * administrative expenses, and what is left of them is other charges. Interest receivable is other
  * income. Turnover, profit before tax, tax and profit are the small company's own.
  * @param {{turnover: number, costOfSales: number, administrativeExpenses: number, interestReceivable: number, profitBeforeTax: number, tax: number, profit: number}} year
  * @param {number} depreciation - the depreciation charge within the costs, whole pounds
+ * @param {number} staffCosts - the staff costs within the administrative expenses, whole pounds
  */
-export function microProfitAndLossYear(year, depreciation = 0) {
+export function microProfitAndLossYear(year, depreciation, staffCosts) {
   return {
     turnover: year.turnover,
     otherIncome: year.interestReceivable,
-    rawMaterials: 0,
-    staffCosts: 0,
+    rawMaterials: year.costOfSales,
+    staffCosts,
     depreciation,
-    otherCharges: year.costOfSales + year.administrativeExpenses - depreciation,
+    otherCharges: year.administrativeExpenses - staffCosts - depreciation,
     profitBeforeTax: year.profitBeforeTax,
     tax: year.tax,
     profit: year.profit,

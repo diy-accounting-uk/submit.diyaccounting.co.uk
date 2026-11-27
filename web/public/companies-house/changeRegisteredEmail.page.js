@@ -220,6 +220,7 @@ async function showTransactionOutcome() {
   startAgainButton.style.display = "none";
   let transaction;
   try {
+    window.narrateStage(window.siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
     transaction = await pollTransactionUntilSettled(filing.transactionId);
   } catch (error) {
     if (error.status === 401) throw error;
@@ -318,6 +319,7 @@ async function runFilingSequence() {
   hideStatus();
   document.getElementById("validationErrors").style.display = "none";
   try {
+    window.narrateStage(window.siteText("ch.narrate-sending-change", "Sending the change to Companies House..."));
     if (!filing.transactionId) {
       const transaction = await window.openCompaniesHouseTransaction(filing.companyNumber, "Change of registered email address");
       filing.transactionId = transaction.transactionId;

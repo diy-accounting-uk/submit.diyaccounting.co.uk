@@ -84,7 +84,7 @@ export const CT600_BOX_ROWS = [
       labelCell: sheetCell("OpenAccounts!O2"),
       workbookLabel: "Tax Reference per CT603 Notice",
       differenceNote:
-        'The spreadsheet calls this the "Tax Reference per CT603 Notice". It is the company\'s 10-digit Unique Taxpayer Reference. A book does not fill it; type it.',
+        'The spreadsheet calls this the "Tax Reference per CT603 Notice". It is the company\'s 10-digit Unique Taxpayer Reference. The fill from your records leaves it empty; type it.',
     },
   },
   {
@@ -122,13 +122,13 @@ export const CT600_BOX_ROWS = [
     anchor: "making-more-than-one-return-now",
   },
   {
-    box: "85A",
-    label: siteText("ch.ct600.box-85-a", "Accounts attached are for a different period"),
+    box: 85,
+    label: siteText("ch.ct600.box-85", "Accounts attached are for a different period"),
     kind: "worked",
     section: "accounts",
     rule: siteText(
-      "ch.ct600.box-85-a-rule",
-      "Box 85A is ticked on each return of a period of account longer than 12 months, because the attached accounts cover the whole period of account",
+      "ch.ct600.box-85-rule",
+      "Box 85 is ticked on each return of a period of account longer than 12 months, because the attached accounts cover the whole period of account",
     ),
     anchor: COMPUTATIONS_GUIDE_ANCHOR,
   },
@@ -196,7 +196,7 @@ export const CT600_BOX_ROWS = [
       thisYear: sheetCell("CT600!Z98"),
       workbookLabel: "Trading losses of this or a later accounting period",
       differenceNote:
-        "The spreadsheet's box 30 sets a trading loss against bank interest by itself. A book fills Submit's box 275 with 0. Enter the spreadsheet's figure when the company makes this claim.",
+        "The spreadsheet's box 30 sets a trading loss against bank interest by itself. The fill from your records puts 0 in Submit's box 275. Enter the spreadsheet's figure when the company makes this claim.",
     },
   },
   {
@@ -323,7 +323,6 @@ export const CT600_BOX_ROWS = [
     section: "company",
     field: "associatedCompanies",
     anchor: "number-of-associated-companies-in-this-period",
-    source: { thisYear: sheetCell("Admin!P14") },
   },
   {
     box: 327,
@@ -335,8 +334,7 @@ export const CT600_BOX_ROWS = [
     source: {
       thisYear: sheetCell("CT600!Y118"),
       workbookLabel: "Associated companies in the first financial year",
-      differenceNote:
-        'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Both show Admin!P14, the number of associated companies, which Submit reads for box 326.',
+      differenceNote: 'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Submit files the number you type for box 326 in both.',
     },
   },
   {
@@ -349,8 +347,7 @@ export const CT600_BOX_ROWS = [
     source: {
       thisYear: sheetCell("CT600!Y120"),
       workbookLabel: "Associated companies in the second financial year",
-      differenceNote:
-        'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Both show Admin!P14, the number of associated companies, which Submit reads for box 326.',
+      differenceNote: 'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Submit files the number you type for box 326 in both.',
     },
   },
   {
@@ -711,7 +708,7 @@ export const CT600_BOX_ROWS = [
       thisYear: sheetCell("CT600!AL194"),
       workbookLabel: "Expenditure on machinery and plant on which first year allowance is claimed",
       differenceNote:
-        "The spreadsheet's box 118 adds \"Expenditure on\". A book fills Submit's box 760 with 0. Enter the spreadsheet's figure.",
+        "The spreadsheet's box 118 adds \"Expenditure on\". The fill from your records puts 0 in Submit's box 760. Enter the spreadsheet's figure.",
     },
   },
   {
@@ -763,7 +760,7 @@ export function guideUrl(anchor) {
 }
 
 // Boxes the review shows as typed or coded text; every other box is an amount in pounds.
-export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, "85A", 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, 85, 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: siteText("ch.ct600.section-company", "Company") },
@@ -835,6 +832,35 @@ export const FIRST_PERIOD_START_REFUSAL = siteText(
   "ch.ct600.first-period-start-refusal",
   "Submit files a long period when the first accounting period starts on the first day of the accounts.",
 );
+
+// Each computation line in the order HMRC's computation prints it: a deduction shows in
+// brackets, a subtotal has a rule above it and the total a double rule below it. A line that
+// files a ct-comp concept takes that concept's standard label.
+export const COMPUTATION_LINES = [
+  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss before tax per the accounts") },
+  {
+    field: "nonTradingLoanRelationshipCredits",
+    meaning: siteText("ch.ct.line-loan-credits", "Adjustments, non-trading loan relationship credits per accounts"),
+    deduction: true,
+  },
+  { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Adjustments, depreciation") },
+  { field: "amortisation", meaning: siteText("ch.ct.line-amortisation", "Adjustments, amortisation") },
+  { field: "entertaining", meaning: siteText("ch.ct.line-entertaining", "Adjustments, entertaining") },
+  { field: "donations", meaning: siteText("ch.ct.line-donations", "Adjustments, donations") },
+  {
+    field: "adjustedProfitBeforeAccountingPeriodAdjustments",
+    meaning: siteText("ch.ct.line-before-apportionment", "Adjusted profit before the time apportionment"),
+    style: "subtotal",
+  },
+  { field: "timeApportionment", meaning: siteText("ch.ct.line-time-apportionment", "Time apportionment"), deduction: false },
+  {
+    field: "adjustedProfitBeforeCapitalAllowances",
+    meaning: siteText("ch.ct.line-before-allowances", "Adjusted profit before capital allowances"),
+    style: "subtotal",
+  },
+  { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
+  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted trading profit (box 155)"), style: "total" },
+];
 
 // The typed fields. type: text, date, count, whole-pounds, pounds-and-pence, choice, checkbox.
 // figure is the key in the figures model; target is the id the model's problems for that key show beside.
@@ -919,7 +945,7 @@ export const CT600_FORM_FIELDS = [
     section: "computation",
     figure: "depreciation",
     type: WHOLE,
-    label: siteText("ch.ct600.depreciation", "Depreciation added back"),
+    label: siteText("ch.ct600.depreciation", "Adjustments, depreciation"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.depreciation-hint", "It starts as the note's charge for the year, when a note is given.")}`,
     default: "0",
     source: { thisYear: sheetCell("CorporationTax!I8"), workbookLabel: "Add back depreciation charged during the year" },
@@ -929,7 +955,7 @@ export const CT600_FORM_FIELDS = [
     section: "computation",
     figure: "amortisation",
     type: WHOLE,
-    label: siteText("ch.ct600.amortisation", "Amortisation added back"),
+    label: siteText("ch.ct600.amortisation", "Adjustments, amortisation"),
     hint: MONEY_HINT,
     default: "0",
     source: {
@@ -943,7 +969,7 @@ export const CT600_FORM_FIELDS = [
     section: "computation",
     figure: "entertaining",
     type: WHOLE,
-    label: siteText("ch.ct600.entertaining", "Entertaining added back"),
+    label: siteText("ch.ct600.entertaining", "Adjustments, entertaining"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.entertaining-hint", "No more than the cost of sales plus administrative expenses.")}`,
     default: "0",
     source: { thisYear: sheetCell("CorporationTax!I9"), workbookLabel: "Add back business entertainment" },
@@ -965,7 +991,7 @@ export const CT600_FORM_FIELDS = [
     box: 690,
     type: WHOLE,
     label: boxLabel(690),
-    hint: `${MONEY_HINT}. ${siteText("ch.ct600.annual-investment-allowance-hint", "The most is 1,000,000 for 12 months, reduced in proportion for a shorter period.")}`,
+    hint: `${MONEY_HINT}. ${siteText("ch.ct600.annual-investment-allowance-hint", "The most is £1,000,000 for 12 months, reduced in proportion for a shorter period.")}`,
     default: "0",
   },
   {
@@ -1053,10 +1079,7 @@ export const CT600_FORM_FIELDS = [
     section: "allowances",
     figure: "specialRatePoolAnnualInvestmentAllowance",
     type: WHOLE,
-    label: siteText(
-      "ch.ct600.special-rate-pool-annual-investment-allowance",
-      "Annual investment allowance claimed on the special rate pool",
-    ),
+    label: siteText("ch.ct600.special-rate-pool-annual-investment-allowance", "Special rate pool, annual investment allowance"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.special-rate-pool-annual-investment-allowance-hint", "Part of the annual investment allowance in box 690. Box 695 includes it and box 705 leaves it out.")}`,
     default: "0",
   },
@@ -1106,8 +1129,8 @@ export const CT600_FORM_FIELDS = [
     figure: "lossesBroughtForward",
     box: 160,
     type: WHOLE,
-    label: siteText("ch.ct600.losses-brought-forward", "Box 160: Trading losses brought forward"),
-    hint: `${MONEY_HINT}. ${siteText("ch.ct600.losses-brought-forward-hint", "The losses available. The trading profit takes as much as it can in box 160 and the rest is carried forward.")}`,
+    label: siteText("ch.ct600.trading-losses-brought-forward", "Trading losses brought forward"),
+    hint: `${MONEY_HINT}. ${siteText("ch.ct600.trading-losses-brought-forward-hint", "The losses available. Box 160 is the part set against trading profits; the rest is carried forward.")}`,
     default: "0",
   },
   {
@@ -1200,17 +1223,17 @@ export const CT600_FORM_FIELDS = [
     section: "payments",
     figure: "ownCorporationTax",
     type: "pounds-and-pence",
-    label: siteText("ch.ct600.own-corporation-tax", "Corporation Tax per your own working (optional)"),
+    label: siteText("ch.ct600.own-corporation-tax", "Corporation tax chargeable"),
     hint: siteText(
       "ch.ct600.own-corporation-tax-hint",
-      "A check only. If it differs from box 440 by more than £5, the review stops and names both figures.",
+      "Your own working of this figure, as a check only. If it differs from box 440 by more than £5, the review stops and names both figures.",
     ),
     optional: true,
     source: {
       thisYear: sheetCell("CorporationTax!K35"),
       workbookLabel: "Corporation Tax chargeable",
       differenceNote:
-        "The spreadsheet's own working of the tax is \"Corporation Tax chargeable\" in CorporationTax!K35. A book does not fill this field; type K35 here to check Submit's box 440.",
+        "The spreadsheet's own working of the tax is \"Corporation Tax chargeable\" in CorporationTax!K35. The fill from your records leaves this field empty; type K35 here to check Submit's box 440.",
     },
   },
   {
@@ -1292,8 +1315,8 @@ export const CT600_FORM_FIELDS = [
     figure: "declarationAccepted",
     type: "checkbox",
     label: siteText(
-      "ch.ct600.declaration-accepted",
-      "I declare that the information in this return and the attached accounts and computations is correct and complete to the best of my knowledge and belief.",
+      "ch.ct600.declaration-hmrc",
+      "I declare that the information I have given on this Company Tax Return and any supplementary pages is correct and complete to the best of my knowledge and belief.",
     ),
     hint: siteText(
       "ch.ct600.declaration-accepted-hint",
@@ -1438,7 +1461,7 @@ export const ACCOUNTS_REGIME_QUESTION = {
   label: siteText("ch.ct.which-accounts", "Which accounts does the company prepare?"),
   hint: siteText(
     "ch.ct.which-accounts-hint",
-    "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
+    "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. The fill from your records picks this for you.",
   ),
   reference: "CA 381; CA 384A",
   termSources: [companiesActSection(381), companiesActSection("384A")],
@@ -1493,21 +1516,33 @@ export const MICRO_PROFIT_AND_LOSS_FIELDS = [
     id: "rawMaterials",
     label: siteText("ch.ct600.micro-pl-raw-materials", "Cost of raw materials and consumables"),
     hint: siteText(
-      "ch.ct600.micro-pl-raw-materials-hint",
-      "The cost of materials and consumables used. A book fills 0 and puts this cost in other charges.",
+      "ch.ct600.micro-pl-raw-materials-cost-of-sales-hint",
+      "The cost of materials and consumables used. The fill from your records puts the cost of sales here.",
     ),
     reference: "μPL C",
     termSource: REGULATIONS_URL,
+    source: {
+      thisYear: sheetCell("PubP&L!F16"),
+      lastYear: sheetCell("PubP&L!B16"),
+      workbookLabel: "Cost of Sales",
+      differenceNote: 'The spreadsheet calls this "Cost of Sales". The format calls it "Cost of raw materials and consumables".',
+    },
   },
   {
     id: "staffCosts",
     label: siteText("ch.ct600.micro-pl-staff-costs", "Staff costs"),
     hint: siteText(
-      "ch.ct600.micro-pl-staff-costs-hint",
-      "Wages, employer's National Insurance and pension contributions. A book fills 0 and puts these in other charges.",
+      "ch.ct600.micro-pl-staff-costs-wages-hint",
+      "Wages, employer's National Insurance and pension contributions. The fill from your records puts the wages and salaries, directors' wages and employer's National Insurance here.",
     ),
     reference: "μPL D",
     termSource: REGULATIONS_URL,
+    source: {
+      thisYear: sheetCell("MnthP&L!B18+B19+B20"),
+      workbookLabel: "Wages and Salaries; Directors Wages; Employers National Insurance",
+      differenceNote:
+        "The spreadsheet shows the staff costs as three lines of the administrative expenses. The format shows them as one line, and other charges leaves them out.",
+    },
   },
   {
     id: "depreciation",
@@ -1527,17 +1562,16 @@ export const MICRO_PROFIT_AND_LOSS_FIELDS = [
     id: "otherCharges",
     label: siteText("ch.ct600.micro-pl-other-charges", "Other charges"),
     hint: siteText(
-      "ch.ct600.micro-pl-other-charges-hint",
-      "Every other cost of the period, including the cost of sales and the administrative expenses.",
+      "ch.ct600.micro-pl-other-charges-admin-hint",
+      "Every other cost of the period: the administrative expenses less the staff costs and the depreciation.",
     ),
     reference: "μPL F",
     termSource: REGULATIONS_URL,
     source: {
-      thisYear: sheetCell("PubP&L!F16+F44-E43"),
-      lastYear: sheetCell("PubP&L!B16+B44-A43"),
-      workbookLabel: "Cost of Sales; Administrative Expenses; Depreciation",
+      thisYear: sheetCell("PubP&L!F44-E43-Financialaccounts.xlsx!MnthP&L!B18-B19-B20"),
+      workbookLabel: "Administrative Expenses; Depreciation; Wages and Salaries; Directors Wages; Employers National Insurance",
       differenceNote:
-        "The format's \"Other charges\" is the spreadsheet's cost of sales and administrative expenses, less the depreciation.",
+        "The format's \"Other charges\" is the spreadsheet's administrative expenses, less the depreciation and the staff costs.",
     },
   },
   {
@@ -1815,7 +1849,7 @@ export const BALANCE_SHEET_FIELDS = [
       lastYear: sheetCell("PubBalSht!A16"),
       workbookLabel: "Trade Creditors",
       differenceNote:
-        "The spreadsheet's \"Trade Creditors\" also holds net wages, wage deductions and dividends due. A book fills Submit's other creditors with 0 this year; move those amounts to other creditors if the company shows them apart.",
+        "The spreadsheet's \"Trade Creditors\" also holds net wages, wage deductions and dividends due. The fill from your records puts 0 in Submit's other creditors this year; move those amounts to other creditors if the company shows them apart.",
     },
   },
   {
@@ -2067,7 +2101,8 @@ export const ACCOUNTS_TEXT_FIELDS = [
     source: {
       thisYear: sheetCell("OpenAccounts!E5"),
       workbookLabel: "First Director's Name",
-      differenceNote: "A book names the first director (OpenAccounts!E5). Change it when another director owes the company.",
+      differenceNote:
+        "The fill from your records names the first director (OpenAccounts!E5). Change it when another director owes the company.",
     },
   },
   {
@@ -2103,7 +2138,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
       thisYear: `${sheetCell("PubBalSht!E29")}-${sheetCell("OpenAccounts!E30")}`,
       workbookLabel: "Directors Loan Account, end less start",
       differenceNote:
-        "The spreadsheet holds the balance at the start and at the end only. A book fills the increase as advanced, or the decrease as repaid; enter the amounts when there were both.",
+        "The spreadsheet holds the balance at the start and at the end only. The fill from your records puts the increase in as advanced, or the decrease as repaid; enter the amounts when there were both.",
     },
   },
   {
@@ -2117,7 +2152,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
       thisYear: `${sheetCell("OpenAccounts!E30")}-${sheetCell("PubBalSht!E29")}`,
       workbookLabel: "Directors Loan Account, start less end",
       differenceNote:
-        "The spreadsheet holds the balance at the start and at the end only. A book fills the increase as advanced, or the decrease as repaid; enter the amounts when there were both.",
+        "The spreadsheet holds the balance at the start and at the end only. The fill from your records puts the increase in as advanced, or the decrease as repaid; enter the amounts when there were both.",
     },
   },
   {
@@ -2155,7 +2190,7 @@ export const ACCOUNTS_TEXT_FIELDS = [
       thisYear: sheetCell("PubBalSht!C57"),
       workbookLabel: "Date Signed",
       differenceNote:
-        "The spreadsheet's \"Date Signed\" shows today's date (TODAY()). A book does not fill this field; enter the date the board approved the accounts.",
+        "The spreadsheet's \"Date Signed\" shows today's date (TODAY()). The fill from your records leaves this field empty; enter the date the board approved the accounts.",
     },
   },
 ];
@@ -2350,18 +2385,20 @@ export function microNetAssetsOf(sheet) {
 
 /**
  * A micro-entity's profit and loss account from a small company's: interest receivable is other
- * income, and the costs less the depreciation are other charges.
+ * income, the cost of sales is the raw materials and consumables, and the administrative expenses
+ * less the staff costs and the depreciation are other charges.
  * @param {object} year - the small company profit and loss lines
- * @param {number} [depreciation] - the depreciation written off in the year
+ * @param {number} depreciation - the depreciation written off in the year
+ * @param {number} staffCosts - the staff costs within the administrative expenses
  */
-export function microProfitAndLossFromSmall(year, depreciation = 0) {
+export function microProfitAndLossFromSmall(year, depreciation, staffCosts) {
   return {
     turnover: year.turnover,
     otherIncome: year.interestReceivable,
-    rawMaterials: 0,
-    staffCosts: 0,
+    rawMaterials: year.costOfSales,
+    staffCosts,
     depreciation,
-    otherCharges: year.costOfSales + year.administrativeExpenses - depreciation,
+    otherCharges: year.administrativeExpenses - staffCosts - depreciation,
     profitBeforeTax: year.profitBeforeTax,
     tax: year.tax,
     profit: year.profit,
@@ -2500,7 +2537,7 @@ function accountingPeriodFigures(values, part) {
  * accountingPeriods, and no working sheet: a book covers 12 months.
  * @param {Record<string, string|boolean>} values
  * @param {{companyName: string, companyNumber: string}} company
- * @param {object} [workingSheet] - the book's own trading profit and Corporation Tax, when a book filled the form
+ * @param {object} [workingSheet] - the book's own trading profit, when a book filled the form
  */
 export function figuresFromValues(values, company, workingSheet) {
   const accounts = accountsFromValues(values);
@@ -2600,7 +2637,7 @@ export const LOAN_ROW_FIELDS = [
     source: {
       thisYear: sheetCell("OpenAccounts!E5"),
       workbookLabel: "First Director's Name",
-      differenceNote: "A book names the first director (OpenAccounts!E5) for the one loan row it fills.",
+      differenceNote: "The fill from your records names the first director (OpenAccounts!E5) for the one loan row it fills.",
     },
   },
   {
@@ -2613,7 +2650,7 @@ export const LOAN_ROW_FIELDS = [
       thisYear: `${sheetCell("PubBalSht!E29")}-${sheetCell("OpenAccounts!E30")}`,
       workbookLabel: "Directors Loan Account, end less start",
       differenceNote:
-        "The spreadsheet holds the director's loan account at the start and at the end. A book fills the increase in the amount the director owes. Enter each loan made in the period and still owed.",
+        "The spreadsheet holds the director's loan account at the start and at the end. The fill from your records puts in the increase in the amount the director owes. Enter each loan made in the period and still owed.",
     },
   },
   {
@@ -2847,7 +2884,7 @@ function repaymentRowProblems(values, problem, today, part) {
         repaymentId("Date", row, part),
         siteText(
           "ch.ct600.problem-repayment-in-period",
-          "A repayment on or before the end of the period belongs in the period's own books",
+          "A repayment on or before the end of the period belongs in the period's own accounts",
         ),
       );
     } else if (date > today) {
@@ -3011,7 +3048,7 @@ function fixedAssetNoteProblems(values, problem) {
   if (amountOf(values, "depreciation", true) !== charge) {
     problem(
       "depreciation",
-      siteText("ch.ct600.problem-note-depreciation", "Depreciation added back must equal the note's charge for the year, {charge}", {
+      siteText("ch.ct600.problem-note-depreciation", "Adjustments, depreciation must equal the note's charge for the year, {charge}", {
         charge,
       }),
     );
@@ -3193,8 +3230,9 @@ function accountsEntries(accounts) {
 
 /**
  * Every form value a book supplies, as [element id, value] pairs: the figures the model reads
- * from the book, the accounts, the trade name and the signer. The company's UTR, the date the
- * accounts were approved, and the statements and declaration stay the customer's to give.
+ * from the book, the accounts, the trade name and the signer. The company's UTR, the number of
+ * associated companies, the date the accounts were approved, and the statements and declaration
+ * stay the customer's to give.
  * The book's micro-entity accounts fill the micro fields too, and the size of the company picks the
  * regime the form opens on.
  * @param {object} figures - ct600FiguresFromBook output
@@ -3205,7 +3243,6 @@ export function formEntriesFromBook(figures, accounts, microAccounts) {
   const entries = [
     ["periodStart", figures.periodStart],
     ["periodEnd", figures.periodEnd],
-    ["associatedCompanies", text(figures.associatedCompanies ?? 0)],
     ["tradeName", accounts.tradeName],
   ];
   for (const field of CT600_FORM_FIELDS) {
@@ -3246,7 +3283,7 @@ function loanEntries(figures, accounts) {
       "loansBookNote",
       siteText(
         "ch.ct600.book-loan-note",
-        "Your book shows the director's loan account overdrawn by £{end} at the end and £{start} at the start.",
+        "Your records show the director's loan account overdrawn by £{end} at the end and £{start} at the start.",
         { end: overdrawn.toLocaleString("en-GB"), start: opening.toLocaleString("en-GB") },
       ),
     ],
@@ -3264,7 +3301,11 @@ function loanEntries(figures, accounts) {
 
 function microEntries(figures, accounts, microAccounts) {
   const entries = [];
-  const pl = microProfitAndLossFromSmall(accounts.profitAndLoss.currentYear, figures.depreciation ?? 0);
+  const pl = microProfitAndLossFromSmall(
+    accounts.profitAndLoss.currentYear,
+    figures.depreciation ?? 0,
+    accounts.profitAndLossFormat2.currentYear.staffCosts,
+  );
   for (const { id: field } of MICRO_PROFIT_AND_LOSS_FIELDS) entries.push([microId("current", field), text(pl[field])]);
   for (const [year, key] of [
     ["current", "currentYear"],
@@ -3400,7 +3441,6 @@ export function formEntriesFromFigures(figures) {
   const entries = [
     ["periodStart", text(figures.periodStart)],
     ["periodEnd", text(figures.periodEnd)],
-    ["associatedCompanies", text(figures.associatedCompanies ?? 0)],
   ];
   for (const field of CT600_FORM_FIELDS) {
     if (!field.figure || field.optional || !(field.type === WHOLE || field.type === "pounds-and-pence")) continue;
@@ -3433,6 +3473,7 @@ export const BOX_SOURCE_FIELD = {
   30: "period",
   35: "period",
   50: "period",
+  85: "period",
   95: "loansMade",
   145: TURNOVER_FIELD,
   155: TURNOVER_FIELD,
@@ -3517,7 +3558,7 @@ function partTarget(field, values, part) {
  * @param {1|2} [part]
  */
 export function boxChangeTarget(box, values, part = 1) {
-  const source = BOX_SOURCE_FIELD[box] ?? LETTERED_BOX_SOURCE_FIELD[box];
+  const source = BOX_SOURCE_FIELD[box];
   if (!source) return undefined;
   const field = longPeriodOf(values) && Number(box) === 305 ? DONATIONS_PAID_FIELD.id : source;
   return changeTargetFor(partTarget(field, values, part), values);
@@ -3527,9 +3568,6 @@ export function boxChangeTarget(box, values, part = 1) {
 export function lineChangeTarget(line, values, part = 1) {
   return changeTargetFor(partTarget(COMPUTATION_SOURCE_FIELD[line], values, part), values);
 }
-
-// Boxes whose number carries a letter, which a numeric key cannot hold.
-export const LETTERED_BOX_SOURCE_FIELD = { "85A": "period" };
 
 const NOT_GIVEN = siteText("ch.ct600.not-given", "Not given");
 const YES = siteText("ch.ct600.yes", "Yes");

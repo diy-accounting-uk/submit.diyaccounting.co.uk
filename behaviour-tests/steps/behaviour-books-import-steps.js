@@ -15,7 +15,7 @@ const fixturesDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.ur
 
 /**
  * Write a fixture book (a directory of book.toml and lines.jsonl) as the single JSON file the
- * "Fill from your books" control reads, and return the file's path.
+ * "Fill from your records" control reads, and return the file's path.
  */
 export function writeFixtureBookFile(fixtureName, outputDirectory) {
   const { book, lines } = loadDiyaGlData(path.join(fixturesDirectory, fixtureName));
@@ -26,11 +26,11 @@ export function writeFixtureBookFile(fixtureName, outputDirectory) {
 }
 
 /**
- * Hand a book file to the form's "Fill from your books" control, as a dropped file does, and
+ * Hand a book file to the form's "Fill from your records" control, as a dropped file does, and
  * wait for the control to report the fill.
  */
 export async function dropBookOnForm(page, bookFile, expectedStatus, screenshotPath) {
-  await test.step("The user drops a book on Fill from your books and the form fills", async () => {
+  await test.step("The user drops a DIYA-GL book on Fill from your records and the form fills", async () => {
     await expect(page.locator("#booksImportDrop")).toBeVisible();
     await page.locator("#booksImportFile").setInputFiles(bookFile);
     await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 30_000 });

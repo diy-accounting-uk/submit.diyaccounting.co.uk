@@ -169,7 +169,7 @@ export const AVAILABILITY = [
       ["production", "book export file"],
       NOT_OFFERED,
       NOT_OFFERED,
-      NOT_OFFERED,
+      ["production", "figures only"],
       NOT_OFFERED,
     ],
   },

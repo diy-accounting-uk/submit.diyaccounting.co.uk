@@ -6,7 +6,7 @@
 // app/services/microEntityAccounts.js, shared with the nightly company
 // book pull; this file re-exports it for the MCP tool registration.
 // derive_company_tax_return: the Company Tax Return figures from the loaded
-// Company book, the file the web "Fill from your books" card reads.
+// Company book, the file the web "Fill from your records" card reads.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve as resolvePath } from "node:path";

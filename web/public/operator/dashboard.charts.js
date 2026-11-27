@@ -82,7 +82,7 @@ const INITIALLY_HIDDEN_SERIES = {
   "integration-duration": { organisation: { showOnlySuffix: CUSTOMER_AND_UNKNOWN_CALLS } },
   "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
   "low-running-cost": {
-    cost: ["total", "Tax"],
+    cost: ["Tax"],
     deployment: ["total", "untagged"],
     charge: { hide: ["total"], hidePrefix: "Tax for product code" },
   },

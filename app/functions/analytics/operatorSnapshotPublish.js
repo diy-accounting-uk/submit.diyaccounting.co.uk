@@ -2004,7 +2004,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "low-running-cost",
       title: "AWS costs",
       unit: "usd",
-      note: "AWS cost across every account in the organisation, from the AWS cost export (FOCUS), one point per UTC day of the charge. Cost shows the 12 largest services and folds the rest into Other; tax is a line of its own, because AWS bills the tax of each service on the first day of the month. Cost and CloudWatch by charge start with the total and the tax hidden, and By deployment starts with the total and the untagged charges hidden, so the daily run of each service shows.",
+      note: "AWS cost across every account in the organisation, from the AWS cost export (FOCUS), one point per UTC day of the charge. Cost shows the 12 largest services and folds the rest into Other; tax is a line of its own, because AWS bills the tax of each service on the first day of the month. Cost starts with the tax hidden and the total shown. CloudWatch by charge starts with the total and the tax hidden, and By deployment with the total and the untagged charges hidden, so the daily run of each service shows.",
       modes: [
         {
           id: "cost",

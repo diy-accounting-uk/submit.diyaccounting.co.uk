@@ -77,7 +77,7 @@ export async function showRevisionDownloads(holder, { filedDocument, filleted, c
       { class: "hint" },
       siteText(
         "ch.revision.downloads-summary",
-        "The book is a summary of the filed accounts: the opening balances and one line for each filed figure. Correct it in the DIYA-GL app or the spreadsheets, then drop it on the books card above.",
+        "The book is a summary of the filed accounts: the opening balances and one line for each filed figure. Correct it in the DIYA-GL app or the spreadsheets, then drop it on the Fill from your records card above.",
       ),
     ),
   );

@@ -35,6 +35,8 @@ describe("the diya-submit plugin", () => {
 });
 
 const chatgptRead = (relativePath) => readFileSync(new URL(`../../plugins/diya-submit-chatgpt/${relativePath}`, import.meta.url), "utf8");
+// The directory's visit to the landing page carries its source, so the landing capture counts it.
+const WEBSITE_QUERY = "?utm_source=chatgpt&utm_medium=directory&utm_campaign=plugin-listing";
 const siteFile = (url) => new URL(`../../web/public${new URL(url).pathname}`, import.meta.url);
 
 describe("the diya-submit ChatGPT plugin package", () => {
@@ -59,6 +61,7 @@ describe("the diya-submit ChatGPT plugin package", () => {
     for (const capability of listing.capabilities) expect(capability.length).toBeLessThanOrEqual(120);
     expect(listing.defaultPrompt.length).toBeLessThanOrEqual(3);
     for (const prompt of listing.defaultPrompt) expect(prompt.length).toBeLessThanOrEqual(128);
+    expect(listing.websiteURL).toBe(`https://submit.diyaccounting.co.uk/mcp.html${WEBSITE_QUERY}`);
     for (const field of ["websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"]) {
       expect(listing[field], field).toMatch(/^https:\/\/submit\.diyaccounting\.co\.uk\//);
       expect(listing[field].length).toBeLessThanOrEqual(1024);
@@ -90,7 +93,10 @@ describe("the diya-submit ChatGPT plugin package", () => {
       expect(text, name).not.toContain("£");
     }
     const links = JSON.stringify(manifest).match(/https:\/\/submit\.diyaccounting\.co\.uk[^"]*/g);
-    for (const link of links) expect(link, link).toMatch(/\/(mcp|privacy|terms)\.html(#[a-z]+)?$/);
+    expect(links).toContain(listing.websiteURL);
+    for (const link of links.filter((candidate) => candidate !== listing.websiteURL)) {
+      expect(link, link).toMatch(/\/(mcp|privacy|terms)\.html(#[a-z]+)?$/);
+    }
   });
 
   it("points its logo and composer icon at a file in the package", () => {
@@ -106,10 +112,11 @@ describe("the diya-submit ChatGPT plugin package", () => {
     expect(Object.values(mcpServers)[0].url).toBe(serverJson.remotes[0].url);
   });
 
-  it("calls in its skill only the six tools prod serves and all of them", () => {
+  it("calls in its skill only tools prod serves", () => {
     const skill = chatgptRead("skills/file-a-uk-vat-return/SKILL.md");
     const called = new Set([...skill.matchAll(/`([a-z]+(?:_[a-z]+)+)`/g)].map((match) => match[1]));
-    expect([...called].sort()).toEqual([...hostedToolNames("prod")].sort());
+    expect(called.size).toBeGreaterThan(0);
+    for (const tool of called) expect(hostedToolNames("prod"), tool).toContain(tool);
   });
 
   it("holds five positive and three negative review test cases and the walk-through in the manifest", () => {

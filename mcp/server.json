@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.diy-accounting-uk/diya-submit",
   "title": "DIY Accounting Submit",
-  "description": "Opens a book, derives VAT return figures and reads stored VAT receipts. Files no return.",
+  "description": "Opens a DIYA-GL book, derives VAT return figures and reads stored VAT receipts. Files no return.",
   "version": "0.1.4",
   "websiteUrl": "https://submit.diyaccounting.co.uk",
   "icons": [{ "src": "https://submit.diyaccounting.co.uk/images/connector-icon.png", "mimeType": "image/png", "sizes": ["512x512"] }],

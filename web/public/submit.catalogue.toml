@@ -580,8 +580,8 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 # authentication code. It has no page of its own; the drill-down shows it to an account that holds it.
 [[activities]]
 id = "start-company-books"
-name = "Start Company Books (Companies House, preview)"
-nameCy = "Dechrau llyfrau cwmni (Tŷ'r Cwmnïau, rhagolwg (preview))"
+name = "Start company records in DIYA-GL (Companies House, preview)"
+nameCy = "Dechrau cofnodion cwmni yn DIYA-GL (Tŷ'r Cwmnïau, rhagolwg (preview))"
 display = "never"
 bundles = ["default"]
 metered = false

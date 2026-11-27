@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // File Company Tax Return: companyView -> formView -> previewView -> resultView. The customer
-// types the figures (or a book fills them through the "Fill from your books" card); the form
+// types the figures (or a book fills them through the "Fill from your records" card); the form
 // checks them as they are entered and works the tax out beside them. The Government Gateway user
 // ID and password are read from the page when the return is submitted, sent once and held nowhere
 // else.
@@ -20,6 +20,7 @@ import {
   ACCOUNTS_TEXT_FIELDS,
   BALANCE_SHEET_FIELDS,
   CT600_BOX_ROWS,
+  COMPUTATION_LINES,
   CT600_FORM_FIELDS,
   DONATIONS_PAID_FIELD,
   FIRST_PERIOD_START_FIELD,
@@ -68,6 +69,7 @@ import { applyComparativesRule, companyFromProfile } from "../lib/first-accounts
 import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "../lib/field-detail.js";
 import { ct600RecordHtml } from "../lib/filing-record.js";
 import { addSectionVideos } from "../lib/section-video.js";
+import { classifyFilingFailure, showFailureDetail } from "../lib/filing-failure.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
@@ -104,37 +106,6 @@ const WORKED_TAX_ID = "workedTax";
 const SUMMARY_ID = "ct600-error-summary";
 const PLACEHOLDER_UTR = "0000000000";
 const PLACEHOLDER_TEXT = "Placeholder";
-
-// Each computation line in the order HMRC's computation prints it: a deduction shows in
-// brackets, a subtotal has a rule above it and the total a double rule below it.
-const COMPUTATION_LINES = [
-  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss before tax per the accounts") },
-  {
-    field: "nonTradingLoanRelationshipCredits",
-    meaning: siteText(
-      "ch.ct.line-loan-credits",
-      "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
-    ),
-    deduction: true,
-  },
-  { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Add: depreciation") },
-  { field: "amortisation", meaning: siteText("ch.ct.line-amortisation", "Add: amortisation") },
-  { field: "entertaining", meaning: siteText("ch.ct.line-entertaining", "Add: entertaining") },
-  { field: "donations", meaning: siteText("ch.ct.line-donations", "Add: donations") },
-  {
-    field: "adjustedProfitBeforeAccountingPeriodAdjustments",
-    meaning: siteText("ch.ct.line-before-apportionment", "Adjusted profit before the time apportionment"),
-    style: "subtotal",
-  },
-  { field: "timeApportionment", meaning: siteText("ch.ct.line-time-apportionment", "Time apportionment"), deduction: false },
-  {
-    field: "adjustedProfitBeforeCapitalAllowances",
-    meaning: siteText("ch.ct.line-before-allowances", "Adjusted profit before capital allowances"),
-    style: "subtotal",
-  },
-  { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
-  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted trading profit (box 155)"), style: "total" },
-];
 
 const RETURN_TO_REVIEW = siteText("ch.ct.return-to-review", "Return to the review");
 const PREVIEW_THE_RETURN = siteText("ch.ct.preview-the-return", "Preview the return");
@@ -1015,7 +986,7 @@ function loansPartBody(part, questions) {
       create("div", { id: id("loanRows") }),
       create(
         "button",
-        { "type": "button", "id": id("addLoanBtn"), "class": "secondary-button", "data-part": String(part) },
+        { "type": "button", "id": id("addLoanBtn"), "class": "secondary-button add-row-button", "data-part": String(part) },
         siteText("ch.ct.add-participator", "Add another participator"),
       ),
       releasedBeforeEnd,
@@ -1035,7 +1006,7 @@ function loansPartBody(part, questions) {
         create("div", { id: id("repaymentRows") }),
         create(
           "button",
-          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary-button", "data-part": String(part) },
+          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary-button add-row-button", "data-part": String(part) },
           siteText("ch.ct.add-repayment", "Add another repayment"),
         ),
       ),
@@ -2813,6 +2784,7 @@ async function handleReturnFormSubmit(event) {
     }
     previewRequest = { ...ct600RequestFromValues(values, company, state.workingSheet), ...agentFields() };
     reviewedValues = values;
+    window.narrateStage(siteText("ct.narrate-checking", "Checking your answers..."));
     const preview = await window.previewCtReturn(previewRequest);
     if (Array.isArray(preview.returns) && !chooseAmendedReturns(preview)) return;
     renderReview(preview);
@@ -2829,9 +2801,79 @@ async function handleReturnFormSubmit(event) {
   } catch (error) {
     console.error("Failed to preview the Company Tax Return:", error);
     window.showStatus(error.message || siteText("ch.ct.preview-failed", "Failed to preview the Company Tax Return."), "error");
+    showFilingFailure(error, "preview");
   } finally {
     window.hideLoading();
   }
+}
+
+// --- Saying what a long running submission is doing --------------------------------------------
+
+function narrateSendingReturn() {
+  window.narrateStage(
+    sending.mode === "both" && sending.companiesHouse?.statusCode === "ACCEPT"
+      ? siteText("ct.narrate-accounts-then-return", "Companies House has the accounts; sending the return to HMRC...")
+      : siteText("ct.narrate-sending-return", "Sending the return to HMRC..."),
+  );
+}
+
+// --- What a failure left behind ----------------------------------------------------------------
+
+// Where the answers are now: saved in this browser until a day, not saved by the person's choice,
+// or only in the form.
+function answersWhereText() {
+  const storage = browserStorage();
+  const record = storage && company ? loadDraft(storage, draftScope()) : null;
+  if (record?.expiresAt) {
+    return siteText("ct.failure-answers-saved", "Your answers are still in this form and saved in this browser until {date}.", {
+      date: longDateText(record.expiresAt.slice(0, 10)),
+    });
+  }
+  if (storage && keepDays(storage) === 0) {
+    return siteText(
+      "ct.failure-answers-not-saved",
+      "Your answers are still in this form. They are not saved in this browser: you chose not to keep them.",
+    );
+  }
+  return siteText("ct.failure-answers-in-form", "Your answers are still in this form.");
+}
+
+// What was sent and what was not, at the stage the failure came: the preview sends nothing; a joint
+// filing says which part reached which service; HMRC's part gives the server's own words.
+function sentText(stage, error) {
+  if (stage === "preview") {
+    return siteText("ct.failure-sent-preview", "Nothing was sent to HMRC or Companies House. The review is built before anything is sent.");
+  }
+  const parts = [];
+  const accounts = sending.companiesHouse;
+  if (sending.mode === "both") {
+    if (!accounts) {
+      parts.push(siteText("ct.failure-sent-ch-none", "The accounts did not reach Companies House, and the return was not sent to HMRC."));
+    } else if (accounts.statusCode === "ACCEPT") {
+      parts.push(
+        siteText("ct.failure-sent-ch-accepted", "Companies House accepted the accounts (submission {number}).", {
+          number: accounts.submissionNumber,
+        }),
+      );
+    } else {
+      parts.push(
+        siteText("ct.failure-sent-ch-held", "Companies House has the accounts (submission {number}) and has not decided on them.", {
+          number: accounts.submissionNumber,
+        }),
+      );
+    }
+  }
+  if (stage === "hmrc") parts.push(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."));
+  return parts.join(" ");
+}
+
+function showFilingFailure(error, stage) {
+  const service = stage === "companiesHouse" ? "companiesHouse" : "hmrc";
+  showFailureDetail(document, {
+    sent: sentText(stage, error),
+    answers: answersWhereText(),
+    failure: classifyFilingFailure(error, { service }),
+  });
 }
 
 function focusReviewRow(fieldId) {
@@ -2894,6 +2936,7 @@ function returnStatusWord(statusCode) {
 }
 
 async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
+  window.narrateStage(siteText("ct.narrate-waiting-hmrc", "Waiting for HMRC's answer..."));
   let waitFor = firstWaitSeconds;
   let result;
   for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
@@ -3686,6 +3729,7 @@ function showJointResult() {
 // Poll Companies House for one window. True once it accepts; otherwise the page says where the accounts stand.
 // Only the newest poll window may write the result, so an older window cannot overwrite it or send the return twice.
 async function waitForCompaniesHouse(headers) {
+  window.narrateStage(siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
   const pollWindow = ++companiesHousePollWindow;
   const { submissionNumber, pollIntervalSeconds } = sending.companiesHouse;
   for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_POLLS; attempt++) {
@@ -3712,6 +3756,7 @@ async function waitForCompaniesHouse(headers) {
 }
 
 async function sendAccountsToCompaniesHouse(headers, companyAuthCode) {
+  window.narrateStage(siteText("ct.narrate-sending-accounts", "Sending the accounts to Companies House..."));
   const submission = await window.submitMicroEntityAccounts(companiesHouseRequest(companyAuthCode), headers);
   element("companyAuthCode").value = "";
   sending.companiesHouse = {
@@ -3746,6 +3791,7 @@ function readGatewayCredentials() {
 async function sendCompanyTaxReturn(headers) {
   const credentials = readGatewayCredentials();
   if (!credentials) return;
+  narrateSendingReturn();
   const submission = await window.submitCtReturn(taxReturnRequest(credentials.gatewayUserId, credentials.gatewayPassword), headers);
   element("gatewayPassword").value = "";
   sending.taxReturnSent = true;
@@ -3785,6 +3831,7 @@ async function sendLongReturns(headers) {
 }
 
 async function sendLongReturn(part, headers, credentials) {
+  narrateSendingReturn();
   const submission = await window.submitCtReturn(taxReturnRequest(credentials.gatewayUserId, credentials.gatewayPassword, part), headers);
   element("gatewayPassword").value = "";
   sending.taxReturnSent = true;
@@ -4022,6 +4069,7 @@ async function runSend(send) {
     }
     if (error.status === 409) showView("previewView");
     window.showStatus(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."), "error");
+    showFilingFailure(error, error.service ?? (sending.mode === "both" && !sending.companiesHouse ? "companiesHouse" : "hmrc"));
   } finally {
     window.hideLoading();
   }
@@ -4068,6 +4116,7 @@ async function handleSubmitReturn() {
           }
           showView("previewView");
           window.showStatus(companiesHouseErrorText(error), "error");
+          showFilingFailure(error, "companiesHouse");
           return;
         }
         throw error;

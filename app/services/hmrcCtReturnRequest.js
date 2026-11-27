@@ -104,8 +104,8 @@ function readFigures(figures, { accounts, utr, declarant, longPeriod, longPeriod
     profitAndLoss: accounts.profitAndLoss,
   };
   const working = figures.workingSheet;
-  if (working !== undefined && !(Number.isFinite(working?.tradingProfit) && Number.isFinite(working?.corporationTax))) {
-    errorMessages.push("figures.workingSheet needs a numeric tradingProfit and corporationTax");
+  if (working !== undefined && !Number.isFinite(working?.tradingProfit)) {
+    errorMessages.push("figures.workingSheet needs a numeric tradingProfit");
     return stitched;
   }
   const isLongPeriod = longPeriod !== undefined || figures.accountingPeriods !== undefined;

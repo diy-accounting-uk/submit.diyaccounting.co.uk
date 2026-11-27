@@ -40,6 +40,7 @@ import {
 } from "../../data/dynamoDbMcpSessionRepository.js";
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
 import { hostedInstructions, hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
+import { clientKindOf, clientNameForLog } from "../../../mcp/lib/client-kind.js";
 import { createSession, restoreCloudBook } from "../../../mcp/lib/book-tools.js";
 import { MCP_VENDOR_VERSION } from "../../../mcp/lib/client-headers.js";
 
@@ -128,6 +129,16 @@ function jsonRpcMethod(bodyText) {
     const message = JSON.parse(bodyText);
     if (Array.isArray(message) || typeof message?.method !== "string") return null;
     return message.method;
+  } catch {
+    return null;
+  }
+}
+
+// The name an initialize request gives for its client (params.clientInfo.name), or null.
+function initializeClientName(bodyText) {
+  try {
+    const name = JSON.parse(bodyText)?.params?.clientInfo?.name;
+    return typeof name === "string" ? name : null;
   } catch {
     return null;
   }
@@ -269,20 +280,26 @@ export async function ingestHandler(event) {
     return { statusCode: 204, headers: {}, body: "" };
   }
 
+  // Only initialize names its client; a session started by any other request has no name.
+  const clientName = startsSession ? initializeClientName(bodyText) : null;
+  const client = stored?.client ?? clientKindOf(clientName);
   const session = createSession({
     credentials: { accessToken: async () => token, idToken: async () => null },
     pollBudgetMs: HOSTED_POLL_BUDGET_MS,
     clientHeaders: async () => hostedClientHeaders(event, sub),
+    client,
   });
 
   if (stored) session.hmrcGrant = stored.hmrcGrant ?? null;
 
   let extraHeaders = {};
   if (startsSession) {
-    const created = await createMcpSession(hashedSub);
+    const created = await createMcpSession(hashedSub, client);
+    // The raw name, once a session, so the fold in client-kind.js can be checked against what clients send.
+    logger.info({ message: "MCP session client", clientName: clientNameForLog(clientName), client });
     extraHeaders = { [SESSION_HEADER]: created.sessionId };
   } else if (!stored) {
-    stored = await createMcpSession(hashedSub);
+    stored = await createMcpSession(hashedSub, client);
     sessionCreated = true;
     extraHeaders = { [SESSION_HEADER]: stored.sessionId };
   } else if (stored.cloud && rpcMethod === "tools/call") {
@@ -314,7 +331,7 @@ export async function ingestHandler(event) {
   if (stored && (session.hmrcGrant?.grantId ?? null) !== (stored.hmrcGrant?.grantId ?? null)) {
     await updateMcpSessionHmrcGrant(stored.sessionId, session.hmrcGrant);
   }
-  if (sessionCreated) logger.info({ message: "MCP session started by a signed-in request", method: rpcMethod });
+  if (sessionCreated) logger.info({ message: "MCP session started by a signed-in request", method: rpcMethod, client });
   return result;
 }
 

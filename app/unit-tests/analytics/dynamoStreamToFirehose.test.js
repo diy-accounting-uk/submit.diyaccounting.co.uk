@@ -562,7 +562,24 @@ describe("projectors of the customer tables new to the lake", () => {
       { sessionId: "session-1", hashedSub: "h1", cloud: { bookId: "b" }, ttl: 5 },
       "REMOVE",
     );
-    expect(session).toEqual({ hashed_sub: "h1", session_hash: hashSub("session-1"), ttl: 5 });
+    expect(session).toEqual({ hashed_sub: "h1", session_hash: hashSub("session-1"), ttl: 5, client: null });
+  });
+
+  test("an MCP session carries the assistant's kind, and a user's open-book item carries none", () => {
+    const session = projectFields(
+      "mcp_sessions",
+      { sessionId: "session-2", hashedSub: "h1", client: "claude", cloud: null, ttl: 9 },
+      null,
+      "INSERT",
+    );
+    expect(session).toEqual({ hashed_sub: "h1", session_hash: hashSub("session-2"), ttl: 9, client: "claude" });
+    const userBook = projectFields(
+      "mcp_sessions",
+      { sessionId: "book:h1", hashedSub: "h1", cloud: { bookId: "b" }, ttl: 9 },
+      null,
+      "INSERT",
+    );
+    expect(userBook.client).toBeNull();
   });
 });
 

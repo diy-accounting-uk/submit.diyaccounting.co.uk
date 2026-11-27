@@ -106,12 +106,13 @@ export async function buildMicroCtReturnBodyFromBook({ bookDirectory = FIXTURE_B
   const small = await buildCtReturnBodyFromBook({ bookDirectory, utr });
   const { book, lines } = loadDiyaGlData(bookDirectory);
   const micro = await deriveMicroEntityAccounts({ book, lines });
+  const { staffCosts } = (await deriveSmallCompanyAccounts({ book, lines })).profitAndLossFormat2.currentYear;
   const { smallCompany, ...rest } = small;
   const depreciation = small.figures.depreciation ?? 0;
   return {
     ...rest,
     balanceSheet: micro.balanceSheet,
-    profitAndLoss: { currentYear: microProfitAndLossYear(smallCompany.profitAndLoss.currentYear, depreciation) },
+    profitAndLoss: { currentYear: microProfitAndLossYear(smallCompany.profitAndLoss.currentYear, depreciation, staffCosts) },
     statementsAccepted: {
       section477Exemption: true,
       membersNotRequiredAudit: true,

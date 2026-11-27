@@ -105,6 +105,13 @@ export function sourceLinkOf(field) {
   throw new Error(`No link text for ${field.id}: ${href}`);
 }
 
+// What goes between a hint and the source links: nothing without a hint, a space after a hint that
+// ends its sentence, and a full stop and a space after one that does not.
+function gapAfterHint(hint) {
+  if (!hint) return "";
+  return /[.!?]$/.test(hint.trim()) ? " " : ". ";
+}
+
 /** The note under a label: the hint, then the link to the term's source, marked as English for a Welsh reader. */
 export function noteOf(field, id = field.id) {
   const note = create("p", { id: `${id}-hint`, class: "hint" }, field.hint ?? "");
@@ -117,7 +124,7 @@ export function noteOf(field, id = field.id) {
       ...(index > 0 ? [", "] : []),
       create("a", { href: link.href, target: "_blank", rel: "noopener" }, link.text),
     ]);
-    note.append(field.hint ? " " : "", ...anchors, ...inEnglish, ".");
+    note.append(gapAfterHint(field.hint), ...anchors, ...inEnglish, ".");
   }
   return note;
 }

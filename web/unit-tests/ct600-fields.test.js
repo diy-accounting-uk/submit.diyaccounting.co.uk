@@ -17,6 +17,7 @@ import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.j
 import { deriveMicroEntityAccounts, microProfitAndLossYear } from "@app/services/microEntityAccounts.js";
 import { MICRO_PROFIT_AND_LOSS_LINES } from "@app/services/microEntityAccountsIxbrl.js";
 import { buildMicroCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
+import { labelWithReference } from "../public/lib/field-detail.js";
 import {
   MICRO_PROFIT_AND_LOSS_FIELDS,
   MICRO_STATEMENT_FIELD,
@@ -25,7 +26,6 @@ import {
   qualifiesAsMicroEntity,
   BOX_SOURCE_FIELD,
   COMPUTATION_SOURCE_FIELD,
-  LETTERED_BOX_SOURCE_FIELD,
   DONATIONS_PAID_FIELD,
   FIRST_PERIOD_START_REFUSAL,
   PER_PERIOD_FIELD_IDS,
@@ -164,12 +164,24 @@ describe("the box rows", () => {
     }
   });
 
-  test("a form field with a box labels itself with that box's number", () => {
+  test("a form field with a box shows that box's number before its label", () => {
     for (const field of CT600_FORM_FIELDS.filter(
       (candidate) => candidate.box && candidate.type !== "dates" && candidate.type !== "choice",
     )) {
-      expect(field.label).toContain(`Box ${field.box}`);
+      expect(labelWithReference(field)).toMatch(new RegExp(`^Box ${field.box}: `));
     }
+  });
+
+  test("the losses brought forward field says box 160 is the part set against trading profits", () => {
+    const field = CT600_FORM_FIELDS.find(({ id }) => id === "lossesBroughtForward");
+    expect(field.label).toBe("Trading losses brought forward");
+    expect(field.hint).toContain("Box 160 is the part set against trading profits");
+  });
+
+  test("the declaration is HMRC's, word for word", () => {
+    expect(CT600_FORM_FIELDS.find(({ id }) => id === "declarationAccepted").label).toBe(
+      "I declare that the information I have given on this Company Tax Return and any supplementary pages is correct and complete to the best of my knowledge and belief.",
+    );
   });
 });
 
@@ -225,10 +237,10 @@ describe("the precision-code-ltd book filling the form", () => {
       "declarantName",
       "depreciation",
       "annualInvestmentAllowance",
-      "associatedCompanies",
     ]) {
       expect(String(filled.get(id) ?? ""), id).not.toBe("");
     }
+    expect(filled.has("associatedCompanies"), "the person types the number of associated companies").toBe(false);
     expect(filled.get("periodStart")).toBe("2025-04-01");
     expect(filled.get("includeFixedAssetNote")).toBe(true);
   });
@@ -409,7 +421,7 @@ describe("the form's own checks", () => {
 
     test("shows a repayment on or before the period end under its own date field", () => {
       const problems = formProblems(repaying({ repaymentDate1: "2026-03-31" }), { today: "2026-11-03" });
-      expect(problems.find((problem) => problem.target === "repaymentDate1")?.message).toMatch(/period's own books/);
+      expect(problems.find((problem) => problem.target === "repaymentDate1")?.message).toMatch(/period's own accounts/);
     });
 
     test("names the field of a loan row that is wrong", () => {
@@ -558,9 +570,7 @@ describe("the review", () => {
   });
 
   test("every box the page can show has a Change target, but the company's name and number", () => {
-    const withoutTarget = CT600_BOX_ROWS.map((row) => row.box).filter(
-      (box) => !(box in BOX_SOURCE_FIELD) && !(box in LETTERED_BOX_SOURCE_FIELD),
-    );
+    const withoutTarget = CT600_BOX_ROWS.map((row) => row.box).filter((box) => !(box in BOX_SOURCE_FIELD));
     expect(withoutTarget).toEqual([1, 2]);
   });
 });
@@ -610,7 +620,28 @@ describe("a micro-entity's accounts", () => {
     const typed = MICRO_PROFIT_AND_LOSS_FIELDS.map(({ id: field }) => field);
     expect(MICRO_PROFIT_AND_LOSS_LINES.filter((line) => !typed.includes(line))).toEqual(["profitBeforeTax", "profit"]);
     const year = smallAccounts.profitAndLoss.currentYear;
-    expect(microProfitAndLossFromSmall(year, bookFigures.depreciation)).toEqual(microProfitAndLossYear(year, bookFigures.depreciation));
+    const staffCosts = smallAccounts.profitAndLossFormat2.currentYear.staffCosts;
+    expect(microProfitAndLossFromSmall(year, bookFigures.depreciation, staffCosts)).toEqual(
+      microProfitAndLossYear(year, bookFigures.depreciation, staffCosts),
+    );
+  });
+
+  test("the micro lines file the cost of sales and the staff costs on their own, and other charges falls by both", () => {
+    const year = smallAccounts.profitAndLoss.currentYear;
+    const staffCosts = smallAccounts.profitAndLossFormat2.currentYear.staffCosts;
+    const micro = microProfitAndLossFromSmall(year, bookFigures.depreciation, staffCosts);
+    expect(staffCosts).toBeGreaterThan(0);
+    expect(micro.rawMaterials).toBe(year.costOfSales);
+    expect(micro.staffCosts).toBe(staffCosts);
+    expect(micro.otherCharges).toBe(
+      year.costOfSales + year.administrativeExpenses - bookFigures.depreciation - micro.rawMaterials - staffCosts,
+    );
+    expect(micro.turnover + micro.otherIncome - micro.rawMaterials - micro.staffCosts - micro.depreciation - micro.otherCharges).toBe(
+      year.profitBeforeTax,
+    );
+    const filled = new Map(microBookEntries);
+    expect(filled.get("microCurrentRawMaterials")).toBe(String(year.costOfSales));
+    expect(filled.get("microCurrentStaffCosts")).toBe(String(staffCosts));
   });
 
   test("the filled micro form passes every check", () => {
@@ -882,7 +913,7 @@ describe("a period of account longer than 12 months", () => {
     }
     expect(rows.find((row) => row.id === "donationsPaidAp2").value).toBe("£0");
     for (const part of [1, 2]) {
-      for (const box of [...Object.keys(BOX_SOURCE_FIELD), ...Object.keys(LETTERED_BOX_SOURCE_FIELD)])
+      for (const box of Object.keys(BOX_SOURCE_FIELD))
         expect(ids.has(boxChangeTarget(box, values, part)), `box ${box} return ${part}`).toBe(true);
       for (const line of Object.keys(COMPUTATION_SOURCE_FIELD)) expect(ids.has(lineChangeTarget(line, values, part)), line).toBe(true);
     }

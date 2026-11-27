@@ -70,8 +70,8 @@
           "url": "/bst.html",
           "waitFor": "#new-book-btn",
           "caption": "This is diya-gl's Basic Sole Trader book. It's free and runs in your browser.",
-          "headline": "A sole trader's books",
-          "keyWord": "books",
+          "headline": "A sole trader's records",
+          "keyWord": "records",
           "instruction": "Open the Basic Sole Trader book in diya-gl."
         },
         {

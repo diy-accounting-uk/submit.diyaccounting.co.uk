@@ -60,7 +60,7 @@ export const GROUPS = [
   },
   {
     title: "Company Tax Return (CT600)",
-    intro: "File the corporation tax return from a book, with the accounts, or for a period over 12 months.",
+    intro: "File the corporation tax return from a DIYA-GL book, with the accounts, or for a period over 12 months.",
     journeys: [
       { video: "file-company-tax-return-book" },
       { video: "file-company-tax-return-typed" },
@@ -84,17 +84,17 @@ export const GROUPS = [
     journeys: [{ video: "sign-in" }, { video: "tokens" }, { video: "subscription-management" }, { video: "bundles" }, { video: "tour" }],
   },
   {
-    title: "Your books (diya-gl)",
-    intro: "Keep sales and purchases in a book and see your profit.",
+    title: "Your records (diya-gl)",
+    intro: "Keep your sales and purchases in a DIYA-GL book and see your profit.",
     journeys: [
       { video: "accounting-diya-gl-profit" },
       { video: "accounting-spreadsheet-profit" },
       {
         id: "diya-gl-storage",
         catalogueActivity: "diya-gl-storage",
-        title: "Save your diya-gl books",
+        title: "Save a DIYA-GL book to your account",
         steps: [
-          ["Keep your book in diya-gl", "Write your sales and purchases to a diya-gl book."],
+          ["Keep your records in diya-gl", "Write your sales and purchases to a diya-gl book."],
           ["Save it to your account", "With Resident Pro, the book saves to your account from diya-gl."],
           ["Use it in a filing", "Load the saved book into a VAT return, a quarterly update or a Company Tax Return."],
         ],
@@ -103,7 +103,7 @@ export const GROUPS = [
   },
   {
     title: "MCP servers",
-    intro: "Connect an assistant to your books and submissions.",
+    intro: "Connect an assistant to your saved DIYA-GL books and your submissions.",
     journeys: [{ video: "mcp-hosted" }, { video: "mcp-harness" }, { video: "mcp-diya-gl" }, { video: "mcp-docker" }, { video: "mcp-cli" }],
   },
 ];

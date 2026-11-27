@@ -486,6 +486,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront: use when a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
     - [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books: use when a directory reviewer's sign-in on the MCP consent page needs its user, its one-time code seed or its sample books to exist, or the weekly seed run needs tracing.
     - [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository: use when plugins/diya-submit/ changes and the public diya-submit-plugin repository must match it.
+    - [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term) Record where Claude's connector directory shows us for each search term: use when the plugin or connector listing changes and its position in Claude's marketplace must be measured before and after, term by term.
     - [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness: use when a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
   - [Book and derivation tools](#book-and-derivation-tools-mcp)
     - [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP: use when an MCP session needs to open or save a diya-gl book, locally or in the cloud.
@@ -5437,7 +5438,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
-- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books · [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
+- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books · [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository · [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term) Record where Claude's connector directory shows us for each search term · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures · [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file · [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant) Show a VAT return as a card inside the assistant
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
@@ -5452,6 +5453,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
 - [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books
 - [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository
+- [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term) Record where Claude's connector directory shows us for each search term
 - [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 <!-- /generated:group server-and-cli-mcp -->
 
@@ -5503,6 +5505,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `.github/workflows/sync-plugin-repo.yml`
 - **Files:** .github/workflows/sync-plugin-repo.yml, plugins/diya-submit/
 - **Keywords:** plugin repository, diya-submit-plugin, plugin sync, deploy key, PLUGIN_REPO_DEPLOY_KEY, connector directory
+
+#### MCP-28 Record where Claude's connector directory shows us for each search term
+
+- **Use when:** the plugin or connector listing changes and its position in Claude's marketplace must be measured before and after, term by term.
+- **Does:** plugin-directory-sweep.mjs fetches claude.com/marketplace/connectors-plugins with a plain GET, reads the connector records from the page's self.__next_f.push script chunks (title, slug, oneLiner, author, popularityScore), and for each term counts the records whose title, one-liner or author holds it, gives our position by popularity among them and the first five titles. It writes one CSV (directory, term, matches, our position, first five) to the private repository's plugin-positions folder, or to --out. It throws when the page holds no record, so a changed page never writes an empty CSV.
+- **Run:** `node scripts/plugin-directory-sweep.mjs [--out target/plugin-positions/<date>.csv] [--html <saved page>]`
+- **Entry:** `scripts/plugin-directory-sweep.mjs:connectorRecords`; `scripts/plugin-directory-sweep.mjs:sweepTerms`
+- **Files:** scripts/plugin-directory-sweep.mjs, app/unit-tests/scripts/pluginDirectorySweep.test.js
+- **Keywords:** plugin directory, claude marketplace, connector listing, search terms, popularity, plugin positions, discovery, csv
+- **Related:** MCP-27
 
 #### MCP-19 Demonstrate the submission MCP in a scripted chat harness
 
@@ -5568,7 +5580,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-24 Hand the VAT figures to the browser to file
 
 - **Use when:** an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
-- **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>". It files nothing and calls no service; the fragment never reaches a server.
+- **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>", after a query that names the assistant as the campaign source ("?utm_source=<client kind>&utm_medium=mcp"). It files nothing and calls no service; the fragment never reaches a server.
 - **Run:** no command; see Does and Entry
 - **Entry:** `mcp/lib/handoff-tools.js:prepareVatReturn`; `mcp/lib/handoff-tools.js:vatHandoffLink`
 - **Files:** mcp/lib/handoff-tools.js, mcp/test/handoff-tools.test.js
@@ -7669,6 +7681,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
 - claude --cloud: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - claude code on the web: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
+- claude marketplace: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - claude-user: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - claudebot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
@@ -7809,7 +7822,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - connector directory: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
-- connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
+- connector listing: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term), [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - connector url: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
@@ -7903,6 +7916,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - crystallisation: [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - csp header: [SITE-08](#site-08-bootstrap-the-app-server)
 - css bundle: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
+- csv: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
 - csv export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
@@ -8055,6 +8069,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - directory listing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs), [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - directory reviewer: [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
+- discovery: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
 - dispatch backlog: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - dispute: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - dispute auto-accept: [BILL-31](#bill-31-configure-stripe-account-policies)
@@ -9167,6 +9182,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - playwright mcp: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - playwright recording: [DEV-40](#dev-40-record-a-product-demo-video)
 - playwright steps: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
+- plugin directory: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
+- plugin positions: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
 - plugin repository: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - plugin sync: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - plugin_repo_deploy_key: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
@@ -9185,6 +9202,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - polyform: [SITE-20](#site-20-document-business-governance-and-positioning)
 - polyform internal use: [DEV-20](#dev-20-check-spdx-licence-headers)
 - pool: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
+- popularity: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
 - populatedmap: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - portal lambda: [BILL-37](#bill-37-cdk-billing-app-stack)
 - post-deploy: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-16](#ops-16-run-dynamodb-data-migrations)
@@ -9580,6 +9598,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - search console report: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - search console sitemaps: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - search health: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do), [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
+- search terms: [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term)
 - searchconsole-sitemaps.yml: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - second pass: [OPS-18](#ops-18-run-alarm-triage)

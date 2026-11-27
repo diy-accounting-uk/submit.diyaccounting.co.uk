@@ -3,7 +3,7 @@
 
 // scripts/write-video-books.js
 //
-// Writes the book files the video scenes drop on "Fill from your books", one JSON file per
+// Writes the book files the video scenes drop on "Fill from your records", one JSON file per
 // fixture book, into videos/books/. Run it again after a fixture book changes:
 //   node scripts/write-video-books.js
 

@@ -1050,6 +1050,7 @@ function buildParagraph(parts, className) {
 }
 
 function pollPscVerificationUntilSettled(submission) {
+  window.narrateStage(window.siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
   return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
     submissionNumber: submission.submissionNumber,
     pollIntervalSeconds: submission.pollInterval,
@@ -1120,6 +1121,7 @@ async function handlePscVerificationSubmit(index, matches) {
       dobYear: psc.dateOfBirth?.year,
       personalCode,
     };
+    window.narrateStage(window.siteText("ch.narrate-sending-verification", "Sending the verification statement to Companies House..."));
     const submission = await window.submitPscVerificationStatement(ownPresenter ? { ...payload, ownPresenter } : payload);
     resultContainer.replaceChildren(
       buildParagraph(
@@ -1169,6 +1171,7 @@ function showSubmissionProgress(text, values) {
 }
 
 function pollUntilSettled(submission, extraHeaders) {
+  window.narrateStage(window.siteText("ct.narrate-waiting-ch", "Waiting for Companies House's answer..."));
   const { submissionNumber } = submission;
   return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
     submissionNumber,
@@ -1293,6 +1296,7 @@ async function handleSubmitFiling() {
     const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
     // The own presenter rides in the submit request alone. The record rendered afterwards is built from payload,
     // so it is kept off payload and sent separately.
+    window.narrateStage(window.siteText("ch.narrate-sending-statement", "Sending the confirmation statement to Companies House..."));
     const submission = await window.submitConfirmationStatement(ownPresenter ? { ...payload, ownPresenter } : payload, {
       ...govTestScenarioHeaders,
       ...languageHeaders(),

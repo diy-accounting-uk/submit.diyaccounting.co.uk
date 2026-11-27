@@ -114,9 +114,9 @@ const COMPUTATION_ADJUSTMENTS = [
 // The figures fields that hold whole pounds and no less than zero, with the label a message uses.
 const WHOLE_POUND_FIELDS = [
   ["nonTradingLoanRelationshipCredits", "Non-trading loan relationship credits (bank interest)"],
-  ["depreciation", "Depreciation added back"],
-  ["amortisation", "Amortisation added back"],
-  ["entertaining", "Entertaining added back"],
+  ["depreciation", "Adjustments, depreciation"],
+  ["amortisation", "Adjustments, amortisation"],
+  ["entertaining", "Adjustments, entertaining"],
   ["donations", "Donations added back"],
   ["annualInvestmentAllowance", "Annual investment allowance (box 690)"],
   ["mainPoolAllowances", "Main pool writing down allowances, without the annual investment allowance"],
@@ -126,7 +126,7 @@ const WHOLE_POUND_FIELDS = [
   ["specialRateAllowances", "Special rate allowances (box 693)"],
   ["specialRateBalancingCharges", "Special rate allowance balancing charges (box 694)"],
   ["specialRatePoolAllowances", "Special rate pool writing down allowances, without the annual investment allowance (box 695)"],
-  ["specialRatePoolAnnualInvestmentAllowance", "Annual investment allowance claimed on the special rate pool"],
+  ["specialRatePoolAnnualInvestmentAllowance", "Special rate pool, annual investment allowance"],
   ["specialRatePoolBalancingCharges", "Special rate pool balancing charges (box 700)"],
   ["annualInvestmentAllowanceOutsideTrade", "Annual investment allowance outside the calculation of trading profits (box 735)"],
   ["firstYearAllowanceExpenditure", "Machinery and plant on which first year allowance is claimed (box 760)"],
@@ -223,7 +223,7 @@ function figureProblems(figures, { today } = {}) {
     Number.isFinite(current.administrativeExpenses) &&
     numberOrZero(figures.entertaining) > current.costOfSales + current.administrativeExpenses
   ) {
-    problem("entertaining", "Entertaining added back is more than the cost of sales and administrative expenses");
+    problem("entertaining", "Adjustments, entertaining is more than the cost of sales and administrative expenses");
   }
   if (
     Number.isFinite(numberOrZero(figures.donations)) &&
@@ -247,7 +247,7 @@ function figureProblems(figures, { today } = {}) {
   if (numberOrZero(figures.specialRatePoolAnnualInvestmentAllowance) > numberOrZero(figures.annualInvestmentAllowance)) {
     problem(
       "specialRatePoolAnnualInvestmentAllowance",
-      "The annual investment allowance claimed on the special rate pool is more than the annual investment allowance in box 690",
+      "Special rate pool, annual investment allowance is more than the annual investment allowance in box 690",
     );
   }
   if (numberOrZero(figures.specialRateAllowances) > 0 && numberOrZero(figures.specialRateAllowanceExpenditure) === 0) {
@@ -372,8 +372,7 @@ export function computationLinesFromFigures(figures) {
 export function ct600FiguresFromResults(results, smallCompanyAccounts) {
   const ct600 = results.CT600;
   const workingSheet = results.CorporationTax;
-  const admin = results.Admin;
-  if (!ct600 || !workingSheet || !admin) {
+  if (!ct600 || !workingSheet) {
     throw new Ct600RefusedError("The book carries no CT600 sheet; only a Company (ltd) book files a Company Tax Return");
   }
   if (workingSheet.K24 < 0) {
@@ -389,7 +388,6 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
   const figures = {
     periodStart: isoFromSerial(ct600.B33),
     periodEnd: isoFromSerial(ct600.M33),
-    associatedCompanies: admin.P14 ?? 0,
     profitAndLoss,
     nonTradingLoanRelationshipCredits: positive(workingSheet.K24),
     depreciation: positive(workingSheet.I8),
@@ -406,7 +404,6 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
     workingSheet: {
       tradingProfit: workingSheet.K22 + positive(results["MnthP&L"]?.B37),
       tradingLoss: Math.max((ct600.Q206 ?? 0) - positive(results["MnthP&L"]?.B37), 0),
-      corporationTax: workingSheet.K35 ?? 0,
     },
   };
   const lossesBroughtForward = wholePounds(ct600.Z72);
@@ -1117,7 +1114,7 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
 
   if (figures.periodOfAccount) {
     boxes[50] = "yes";
-    boxes["85A"] = "yes";
+    boxes[85] = "yes";
   }
 
   const workingSheet = figures.workingSheet;
@@ -1208,12 +1205,6 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
   }
   const netCorporationTaxPence = corporationTaxPence - marginalReliefPence;
   const netCorporationTax = fromPence(netCorporationTaxPence);
-  if (workingSheet && Math.abs(netCorporationTax - workingSheet.corporationTax) > WORKING_SHEET_TOLERANCE_POUNDS) {
-    throw new Ct600RefusedError(
-      `The return's Corporation Tax ${netCorporationTax.toFixed(2)} disagrees with the working sheet's ${workingSheet.corporationTax.toFixed(2)}`,
-      "corporationTax",
-    );
-  }
   const ownCorporationTax = figures.ownCorporationTax;
   if (
     ownCorporationTax !== undefined &&

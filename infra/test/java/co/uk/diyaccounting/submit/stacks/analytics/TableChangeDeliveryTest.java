@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -140,6 +141,26 @@ class TableChangeDeliveryTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void mcpSessionsTableCarriesTheClientKind() {
+        Template template = synthTableChangeDelivery();
+
+        var columnNames = new ArrayList<String>();
+        for (var resource : template.findResources("AWS::Glue::Table").values()) {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var tableInput = (Map<String, Object>) properties.get("TableInput");
+            if (!"dynamo_mcp_sessions".equals(tableInput.get("Name"))) continue;
+            var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
+            for (var column : (List<Map<String, Object>>) storageDescriptor.get("Columns")) {
+                columnNames.add(column.get("Name") + ":" + column.get("Type"));
+            }
+        }
+        for (var expected : List.of("hashed_sub:string", "session_hash:string", "ttl:bigint", "client:string")) {
+            assertTrue(columnNames.contains(expected), "missing column " + expected + " in " + columnNames);
+        }
+    }
+
+    @Test
     void eventSourceMappingsReportBatchItemFailuresAndBisectOnError() {
         Template template = synthTableChangeDelivery();
 
@@ -229,5 +250,44 @@ class TableChangeDeliveryTest {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
         return !actions.isEmpty()
                 && actions.stream().allMatch(a -> String.valueOf(a).startsWith("xray:"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void everyStreamsErrorOutputPrefixCarriesItsTablesColumnFingerprint() {
+        Template template = synthTableChangeDelivery();
+
+        var prefixes = new ArrayList<String>();
+        for (var resource :
+                template.findResources("AWS::KinesisFirehose::DeliveryStream").values()) {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var destination = (Map<String, Object>) properties.get("ExtendedS3DestinationConfiguration");
+            prefixes.add(String.valueOf(destination.get("ErrorOutputPrefix")));
+        }
+        assertEquals(TableChangeDelivery.STREAMED_TABLE_KINDS.size(), prefixes.size());
+        for (var kind : TableChangeDelivery.STREAMED_TABLE_KINDS) {
+            var expected = "errors/" + kind + "/schema-" + TableChangeDelivery.schemaFingerprint(kind)
+                    + "/!{firehose:error-output-type}/dt=!{timestamp:yyyy-MM-dd}/";
+            assertTrue(prefixes.contains(expected), "no stream has " + expected + " in " + prefixes);
+        }
+    }
+
+    @Test
+    void aColumnChangeChangesTheFingerprintAndTheSameColumnsKeepIt() {
+        var columns = List.of(
+                TableChangeDelivery.column("hashed_sub", "string"),
+                TableChangeDelivery.column("session_hash", "string"),
+                TableChangeDelivery.column("ttl", "bigint"));
+        var sameColumns = List.of(
+                TableChangeDelivery.column("hashed_sub", "string"),
+                TableChangeDelivery.column("session_hash", "string"),
+                TableChangeDelivery.column("ttl", "bigint"));
+        var withClient = new ArrayList<>(columns);
+        withClient.add(TableChangeDelivery.column("client", "string"));
+
+        var fingerprint = TableChangeDelivery.columnsFingerprint(columns);
+        assertTrue(fingerprint.matches("^[0-9a-f]{8}$"), fingerprint);
+        assertEquals(fingerprint, TableChangeDelivery.columnsFingerprint(sameColumns));
+        assertNotEquals(fingerprint, TableChangeDelivery.columnsFingerprint(withClient));
     }
 }

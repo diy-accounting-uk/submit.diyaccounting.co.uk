@@ -55,7 +55,7 @@ describe("prepare_vat_return", () => {
     it("answers a link to the VAT form whose fragment decodes to the page's JSON with the derived figures", async () => {
       const derived = await deriveVatReturn(session, { periodEnd: "2025-06-30" });
       const answer = await prepareVatReturn(session, { periodEnd: "2025-06-30" });
-      expect(answer.link.startsWith(`${SITE}/hmrc/vat/submitVat.html#books=`)).toBe(true);
+      expect(answer.link.startsWith(`${SITE}/hmrc/vat/submitVat.html?utm_source=unknown&utm_medium=mcp#books=`)).toBe(true);
       expect(new URL(answer.link).origin).toBe(SITE);
       const decoded = decodeFragment(answer.link);
       expect(Object.keys(decoded).sort()).toEqual(["figures", "kind", "packageVersion", "period", "sourceFileName"]);
@@ -99,9 +99,19 @@ describe("prepare_vat_return", () => {
         totalAcquisitionsExVAT: 0,
       },
     };
-    const link = vatHandoffLink(handoff);
+    const link = vatHandoffLink(handoff, "claude");
     expect(link.slice(link.indexOf("#") + "#books=".length)).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(decodeFragment(link)).toEqual(handoff);
+  });
+
+  it("names the assistant as the campaign source in the query before the fragment", async () => {
+    const session = createSession({ client: "chatgpt" });
+    await openBook(session, { path: join(FIXTURES, "brickwork-pro-ltd-vat") });
+    const url = new URL((await prepareVatReturn(session, { periodEnd: "2025-06-30" })).link);
+    expect(url.pathname).toBe("/hmrc/vat/submitVat.html");
+    expect(url.searchParams.get("utm_source")).toBe("chatgpt");
+    expect(url.searchParams.get("utm_medium")).toBe("mcp");
+    expect(url.hash.startsWith("#books=")).toBe(true);
   });
 
   it("is registered in every hosted environment, prod included", () => {

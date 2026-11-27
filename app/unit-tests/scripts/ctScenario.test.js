@@ -117,30 +117,30 @@ describe("runScenario for the two returns of a long period of account", () => {
     return file;
   }
 
-  it("files return 1 and return 2 of the 15-month example, each with boxes 50 and 85A", async () => {
+  it("files return 1 and return 2 of the 15-month example, each with boxes 50 and 85", async () => {
     const accepted = async () => ({ status: 200, data: TPVS_SUCCESS });
     const first = await runScenario({ scenario: readScenario(LONG_PART_1), outDirectory: directory, utr: UTR, post: accepted });
     const second = await runScenario({ scenario: readScenario(LONG_PART_2), outDirectory: directory, utr: UTR, post: accepted });
     expect([first.exitCode, second.exitCode]).toEqual([0, 0]);
     expect(first.result.boxes).toMatchObject({
-      "30": "2025-01-01",
-      "35": "2025-12-31",
-      "50": "yes",
-      "85A": "yes",
-      "315": 86881,
-      "435": 2446.79,
-      "440": 19273.46,
+      30: "2025-01-01",
+      35: "2025-12-31",
+      50: "yes",
+      85: "yes",
+      315: 86881,
+      435: 2446.79,
+      440: 19273.46,
     });
     expect(second.result.boxes).toMatchObject({
-      "30": "2026-01-01",
-      "35": "2026-03-31",
-      "50": "yes",
-      "85A": "yes",
-      "315": 24956,
-      "435": 550.32,
-      "440": 5688.68,
-      "480": 5062.5,
-      "95": "yes",
+      30: "2026-01-01",
+      35: "2026-03-31",
+      50: "yes",
+      85: "yes",
+      315: 24956,
+      435: 550.32,
+      440: 5688.68,
+      480: 5062.5,
+      95: "yes",
     });
     expect(first.result.irmark).not.toBe(second.result.irmark);
   });

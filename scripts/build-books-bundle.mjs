@@ -3,7 +3,7 @@
 
 // Builds web/public/lib/books-bundle.js: the diya-gl book reader and the three
 // filing derivations as one browser ES module, loaded with import() on first use
-// of the "Fill from your books" card.
+// of the "Fill from your records" card.
 //
 // The bundle imports the published @diy-accounting-uk/diya-gl package exactly as
 // it stands. Two substitutions keep it running under the production CSP in a

@@ -243,20 +243,20 @@ function capitalForm(onCode) {
  */
 export async function renderCompanyBooks(holder, { profile, diyaGlBaseUrl, formatDate, deps }) {
   holder.replaceChildren(
-    element("h3", {}, siteText("ch.books.heading", "Company books")),
+    element("h3", {}, siteText("ch.books.heading", "Accounting records in DIYA-GL")),
     element(
       "p",
       { class: "hint" },
       siteText(
         "ch.books.intro",
-        "Start the company's books in the DIYA-GL app from what Companies House holds: the last filed accounts give the next year's opening balances. The books are made in this browser, and nothing is stored.",
+        "Start the company's accounting records in the DIYA-GL app from what Companies House holds: the last filed accounts give the next year's opening balances. Each DIYA-GL book is made in this browser, and nothing is stored.",
       ),
     ),
   );
   const status = element(
     "p",
     { class: "hint", id: "companyBooksStatus", role: "status" },
-    siteText("ch.books.building", "Making the books…"),
+    siteText("ch.books.building", "Making the DIYA-GL books…"),
   );
   holder.appendChild(status);
   const [bundle, officers, filedDocument] = await Promise.all([
@@ -278,7 +278,7 @@ export async function renderCompanyBooks(holder, { profile, diyaGlBaseUrl, forma
     status.textContent = "";
   } catch (error) {
     console.error("Could not make the company's books:", error);
-    status.textContent = siteText("ch.books.failed", "The books could not be made: {reason}", { reason: error.message });
+    status.textContent = siteText("ch.books.failed", "The DIYA-GL books could not be made: {reason}", { reason: error.message });
     return;
   }
   holder.appendChild(

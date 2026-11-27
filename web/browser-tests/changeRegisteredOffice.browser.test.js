@@ -62,6 +62,8 @@ test.describe("Change Registered Office Address page", () => {
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
         window.hideLoading = window.hideLoading || (() => {});
+        window.narrateStage = (message) => window.showStatus(message, "info");
+        window.endStage = () => {};
         window.__statusMessages = [];
         window.showStatus = (message, type) => {
           window.__statusMessages.push({ message, type });
@@ -391,6 +393,6 @@ test.describe("Change Registered Office Address page", () => {
     );
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
     await expect(page.locator("#startAgainBtn")).toBeHidden();
-    expect(await page.evaluate(() => window.__statusMessages)).toEqual([]);
+    expect(await page.evaluate(() => window.__statusMessages.filter(({ type }) => type !== "info"))).toEqual([]);
   });
 });

@@ -224,17 +224,17 @@
     },
     {
       "id": "import-book",
-      "chapter": "Fill from a book",
+      "chapter": "Fill from a DIYA-GL book",
       "still": true,
       "steps": [
         {
           "action": "dropFile",
           "target": "#booksImportDrop",
           "file": "videos/books/precision-code-ltd-ct600.diya-gl.zip",
-          "caption": "Drop the company's diya-gl book on the form.",
+          "caption": "Drop the company's DIYA-GL book on the form.",
           "headline": "Drop your book",
           "keyWord": "book",
-          "instruction": "Drop the company's diya-gl book on the box that says Drop a book here."
+          "instruction": "Drop the company's DIYA-GL book on the box that says Drop a file here."
         },
         {
           "action": "await",

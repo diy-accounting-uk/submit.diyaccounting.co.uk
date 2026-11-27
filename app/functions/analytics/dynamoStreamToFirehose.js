@@ -264,13 +264,15 @@ function projectActivityCharge(image) {
 
 /**
  * An MCP session. The session id is what a connector sends to use the session, so it leaves the
- * table only as its salted hash; the cloud book pointer and the grant id stay in the table.
+ * table only as its salted hash; the cloud book pointer and the grant id stay in the table. The
+ * client is the assistant's kind (claude, chatgpt and so on); a user's open-book item has none.
  */
 function projectMcpSession(image) {
   return {
     hashed_sub: image.hashedSub ?? null,
     session_hash: typeof image.sessionId === "string" ? hashSub(image.sessionId) : null,
     ttl: numberOrNull(image.ttl),
+    client: image.client ?? null,
   };
 }
 

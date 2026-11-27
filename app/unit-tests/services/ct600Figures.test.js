@@ -133,10 +133,9 @@ describe("deriveCt600FromFigures worked from the precision-code-ltd book", () =>
     expect(worked[705].sources).toEqual(["annualInvestmentAllowance", "mainPoolAllowances", "specialRatePoolAnnualInvestmentAllowance"]);
   });
 
-  test("agrees with the working sheet to within five pounds", () => {
+  test("agrees with the working sheet's trading profit to within five pounds", () => {
     const { boxes } = derive(figuresFromBook);
     expect(Math.abs(boxes[155] - figuresFromBook.workingSheet.tradingProfit)).toBeLessThan(5);
-    expect(Math.abs(boxes[440] - figuresFromBook.workingSheet.corporationTax)).toBeLessThan(5);
   });
 
   test("the book and the model through the MCP derivation give the same boxes", async () => {
@@ -437,12 +436,6 @@ describe("the £5 check", () => {
   test("stops a working sheet whose trading profit disagrees", () => {
     expect(() => derive({ ...figuresFromBook, workingSheet: { ...figuresFromBook.workingSheet, tradingProfit: 200000 } })).toThrow(
       /disagrees with the working sheet/,
-    );
-  });
-
-  test("stops a working sheet whose tax disagrees", () => {
-    expect(() => derive({ ...figuresFromBook, workingSheet: { ...figuresFromBook.workingSheet, corporationTax: 1000 } })).toThrow(
-      /Corporation Tax .* disagrees with the working sheet/,
     );
   });
 

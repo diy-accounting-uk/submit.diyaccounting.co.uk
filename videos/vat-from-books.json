@@ -168,7 +168,7 @@
     },
     {
       "id": "import-book",
-      "chapter": "Fill from a book",
+      "chapter": "Fill from a DIYA-GL book",
       "still": true,
       "steps": [
         {
@@ -178,7 +178,7 @@
           "caption": "Drop your diya-gl book on the form.",
           "headline": "Drop your book",
           "keyWord": "book",
-          "instruction": "Drop your diya-gl book on the box that says Drop a book here."
+          "instruction": "Drop your diya-gl book on the box that says Drop a file here."
         },
         {
           "action": "await",

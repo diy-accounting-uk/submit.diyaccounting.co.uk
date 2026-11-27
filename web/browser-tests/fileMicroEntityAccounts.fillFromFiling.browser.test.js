@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/fileMicroEntityAccounts.fillFromFiling.browser.test.js
-// The micro-entity form fills from a filing the person made: the books card lists their accounts and
+// The micro-entity form fills from a filing the person made: the Fill from your records card lists their accounts and
 // Company Tax Return receipts for the company looked up, and the chosen one fills the form from the
 // accounts document it filed.
 

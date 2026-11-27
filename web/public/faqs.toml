@@ -493,7 +493,7 @@ question = "Can I file accounts or a confirmation statement with Companies House
 answer = """
 Yes. Micro-entity accounts, small company accounts and the confirmation statement are in **Production**. A filing goes to Companies House.
 
-Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle. An accounts filing costs one token. A confirmation statement costs no token and carries a £61.35 charge for each filing.
+Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle. An accounts filing costs one token. A confirmation statement costs no token. Filed through Submit's Companies House presenter, it costs £61.35, which includes Companies House's £50 fee. Filed under your own Companies House presenter, Companies House bills its £50 fee to your credit account and Submit takes nothing for the filing.
 
 The PSC verification statement is in **Sandbox**: it goes to the Companies House test service and files nothing real.
 
@@ -565,7 +565,7 @@ priority = 35
 id = "diya-gl-books"
 activity = "diya-gl-storage"
 category = "bundles"
-question = "What is diya-gl and can I save my books here?"
+question = "What is diya-gl and can I save my DIYA-GL book here?"
 answer = """
 diya-gl is our bookkeeping software. It keeps a book of your sales and purchases and works out the figures for your filings.
 

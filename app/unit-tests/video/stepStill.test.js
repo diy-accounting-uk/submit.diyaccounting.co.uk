@@ -7,6 +7,7 @@ import path from "node:path";
 import { describe, it, expect, vi } from "vitest";
 import {
   findStepStill,
+  prepareStillsDir,
   stepStillName,
   writeCardFreeStill,
   HEADLINE_CARD_ATTRIBUTE,
@@ -59,5 +60,27 @@ describe("writeCardFreeStill", () => {
     expect(options.style).toContain("visibility: hidden");
     expect(page.evaluate).toHaveBeenCalledTimes(2);
     expect(page.evaluate.mock.calls[0][1]).toContain(`[${HEADLINE_CARD_ATTRIBUTE}]`);
+  });
+});
+
+describe("prepareStillsDir", () => {
+  it("leaves no still of an earlier recording in the run's stills directory", () => {
+    const stillsDir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "stills-")), "stills");
+    fs.mkdirSync(stillsDir, { recursive: true });
+    fs.writeFileSync(path.join(stillsDir, stepStillName("company-lookup", 5)), "earlier run");
+    fs.writeFileSync(path.join(stillsDir, "FAILED-company-lookup-2.png"), "earlier failure");
+
+    prepareStillsDir(stillsDir);
+
+    expect(fs.readdirSync(stillsDir)).toEqual([]);
+    expect(findStepStill(stillsDir, { scene: "company-lookup", step: 5 }, 8)).toBeNull();
+  });
+
+  it("makes the directory when a scene has never been recorded on this machine", () => {
+    const stillsDir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "stills-")), "out", "stills");
+
+    prepareStillsDir(stillsDir);
+
+    expect(fs.statSync(stillsDir).isDirectory()).toBe(true);
   });
 });

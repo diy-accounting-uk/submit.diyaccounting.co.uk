@@ -1790,6 +1790,16 @@ test.describe("Operator Dashboard", () => {
       await cohort.screenshot({ path: "target/screenshots/operator-dashboard-retention-cohorts.png" });
     });
 
+    test("starts the AWS costs chart with the All services line shown and the tax hidden", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_REVIEWED_CHARTS } });
+      await loadDashboard(page);
+
+      const costs = page.locator("#chart-low-running-cost");
+      await expect(costs.locator('.chart-legend-item[data-series-id="total"]')).toHaveText("All services");
+      await expect(costs.locator('.chart-legend-item[data-series-id="total"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(costs.locator('.chart-legend-item[data-series-id="Tax"]')).toHaveAttribute("aria-pressed", "false");
+    });
+
     test("draws the reviewed graphs: tax and untagged cost hidden, the rate's base, customer sign-ins, unknown calls and dotted sparse lines", async ({
       page,
     }) => {
@@ -1800,6 +1810,7 @@ test.describe("Operator Dashboard", () => {
 
       const costs = page.locator("#chart-low-running-cost");
       await expect(pressed(costs)).toHaveText([
+        "All services",
         "Claude Sonnet 4.5 (Amazon Bedrock Edition)",
         "Amazon Simple Storage Service",
         "AWS Lambda",
