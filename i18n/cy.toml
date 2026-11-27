@@ -15498,16 +15498,6 @@ hash = "311f6e3d3568"
 cy = '''Mae blwch 50 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
-[strings."ch.ct600.box-85-a"]
-hash = "a68aba9550b4"
-cy = '''Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.box-85-a-rule"]
-hash = "a0316fb4a23a"
-cy = '''Mae blwch 85A wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan'''
-
-# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 [strings."ch.ct600.box-95"]
 hash = "2763f3dbfa1f"
 cy = '''Benthyciadau a threfniadau i gyfranogwyr gan gwmnïau caeedig – ffurflen CT600A'''
@@ -16156,16 +16146,6 @@ cy = '''Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.'''
 hash = "c8ae143646e5"
 cy = '''Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.'''
 
-# HMRC Welsh CT600 form
-[strings."ch.ct600.losses-brought-forward"]
-hash = "3eb9cacdd853"
-cy = '''Blwch 160: Colledion masnachu a ddygwyd ymlaen'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.losses-brought-forward-hint"]
-hash = "4cd82e57a9bf"
-cy = '''Y colledion sydd ar gael. Mae’r elw masnachu yn cymryd cymaint ag y gall ym mlwch 160 ac mae’r gweddill yn cael ei gario ymlaen.'''
-
 # no HMRC Welsh found
 [strings."ch.ct600.loss-against-total-profits-hint"]
 hash = "489a1cc1070d"
@@ -16235,11 +16215,6 @@ cy = '''A gafodd unrhyw fenthyciadau a wnaed yn y cyfnod eu had-dalu, eu rhyddha
 [strings."ch.ct600.repaid-since"]
 hash = "e6a96470ca10"
 cy = '''A oes unrhyw ran ohono wedi’i had-dalu, ei rhyddhau neu ei dileu ers diwedd y cyfnod?'''
-
-# HMRC Welsh CT600 form
-[strings."ch.ct600.declaration-accepted"]
-hash = "75860fef2159"
-cy = '''Rwyf yn datgan bod yr wybodaeth yn y Ffurflen Dreth hon ac yn y cyfrifon a’r cyfrifiannau atodedig yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.'''
 
 # HMRC Welsh CT600 form
 [strings."ch.ct600.donations-paid"]
@@ -27988,21 +27963,9 @@ cy = '''Gwerthiannau nwyddau a gwasanaethau yn y cyfnod, ar ôl gostyngiadau mas
 hash = "122dcaccd3dc"
 cy = '''Incwm y tu allan i fasnach y cwmni, fel llog banc.'''
 
-[strings."ch.ct600.micro-pl-raw-materials-hint"]
-hash = "f2c6b91a1aeb"
-cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi 0 ac yn rhoi’r gost hon mewn taliadau eraill.'''
-
-[strings."ch.ct600.micro-pl-staff-costs-hint"]
-hash = "bc5972009929"
-cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi 0 ac yn rhoi’r rhain mewn taliadau eraill.'''
-
 [strings."ch.ct600.micro-pl-depreciation-hint"]
 hash = "6e1bbd201201"
 cy = '''Y dibrisiant a godwyd ar asedau sefydlog y cwmni yn y cyfnod.'''
-
-[strings."ch.ct600.micro-pl-other-charges-hint"]
-hash = "b111aa8f6d6c"
-cy = '''Pob cost arall y cyfnod, gan gynnwys cost gwerthiannau a’r treuliau gweinyddol.'''
 
 [strings."ch.ct600.micro-pl-tax-hint"]
 hash = "f775cf818846"
@@ -28858,3 +28821,50 @@ cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gall
 [strings."privacy.retention-we-keep-no-copy-of-35260a"]
 hash = "35260a52911d"
 cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau DIYA-GL heb derfyn amser. Rydym yn cadw derbynebau TAW a chyfrifon am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''
+# == Box 85 of the CT600, ids ch.ct600.box-85* ==
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-85"]
+hash = "a68aba9550b4"
+cy = '''Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-85-rule"]
+hash = "c34b4652c707"
+cy = '''Mae blwch 85 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan'''
+
+# == The CT600 declaration, in HMRC's words, id ch.ct600.declaration-hmrc ==
+
+# no HMRC Welsh found for the declaration on GOV.UK; for a Welsh speaker to check
+[strings."ch.ct600.declaration-hmrc"]
+hash = "7663838f4423"
+cy = '''Rwyf yn datgan bod yr wybodaeth a roddais ar y Ffurflen Dreth y Cwmni hon ac ar unrhyw dudalennau atodol yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.'''
+
+# == Trading losses brought forward, ids ch.ct600.trading-losses-brought-forward* ==
+
+# HMRC's Welsh CT600 term for box 160, without its box number
+[strings."ch.ct600.trading-losses-brought-forward"]
+hash = "6609feaf6cda"
+cy = '''Colledion masnachu a ddygwyd ymlaen'''
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.trading-losses-brought-forward-hint"]
+hash = "8f269c723432"
+cy = '''Y colledion sydd ar gael. Blwch 160 yw’r rhan a osodir yn erbyn elw masnachu; mae’r gweddill yn cael ei gario ymlaen.'''
+
+# == The micro-entity profit and loss lines a book fills, ids ch.ct600.micro-pl-*-hint ==
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.micro-pl-raw-materials-cost-of-sales-hint"]
+hash = "3cd8052941a8"
+cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi cost gwerthiannau.'''
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.micro-pl-staff-costs-wages-hint"]
+hash = "b97f54950723"
+cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi ei gyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr.'''
+
+# no HMRC Welsh found; for a Welsh speaker to check
+[strings."ch.ct600.micro-pl-other-charges-admin-hint"]
+hash = "53a62f776fd8"
+cy = '''Pob cost arall y cyfnod: y treuliau gweinyddol llai’r costau staff a’r dibrisiant.'''

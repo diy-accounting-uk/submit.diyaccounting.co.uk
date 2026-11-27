@@ -258,9 +258,9 @@ describe("a period of account longer than 12 months", () => {
     expect([first.returnDueDate, second.returnDueDate]).toEqual(["2027-03-31", "2027-03-31"]);
   });
 
-  test("a part carries boxes 50 and 85A and its own period in boxes 30 and 35", () => {
+  test("a part carries boxes 50 and 85 and its own period in boxes 30 and 35", () => {
     const [first, second] = buildLongPeriodReturnDocuments(extractLong(1).request);
-    expect([first.boxes[50], first.boxes["85A"], first.boxes[30], first.boxes[35]]).toEqual(["yes", "yes", "2025-01-01", "2025-12-31"]);
+    expect([first.boxes[50], first.boxes[85], first.boxes[30], first.boxes[35]]).toEqual(["yes", "yes", "2025-01-01", "2025-12-31"]);
     expect([second.boxes[30], second.boxes[35]]).toEqual(["2026-01-01", "2026-03-31"]);
   });
 
@@ -330,7 +330,7 @@ describe("a period of account longer than 12 months", () => {
     const { errors } = extractLong(
       1,
       (body) => {
-        body.reviewedBoxes = { "50": "yes", "85A": "yes" };
+        body.reviewedBoxes = { 50: "yes", 85: "yes" };
       },
       { requireReviewedBoxes: true },
     );

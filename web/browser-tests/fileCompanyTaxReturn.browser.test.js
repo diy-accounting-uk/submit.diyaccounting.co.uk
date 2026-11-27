@@ -816,7 +816,6 @@ test.describe("File Company Tax Return entry form", () => {
     const supplied = [
       "periodStart",
       "periodEnd",
-      "associatedCompanies",
       "tradeName",
       "principalActivity",
       "accountingPolicies",
@@ -837,6 +836,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
     await expect(page.locator("#currentTurnover")).toHaveValue("341283");
     await expect(page.locator("#directorDateApproved"), "a book holds no approval date").toHaveValue("");
+    await expect(page.locator("#associatedCompanies"), "the person types the number of associated companies").toHaveValue("0");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
     await expect(page.locator("#workedTax")).toContainText("Box 440");
@@ -1622,24 +1622,24 @@ test.describe("File Company Tax Return entry form", () => {
     totalCapitalAllowances: 13800,
   };
   const FIRST_RETURN_BOXES = {
-    "3": "8596148860",
-    "30": "2025-01-01",
-    "35": "2025-12-31",
-    "50": "yes",
-    "85A": "yes",
-    "305": 2000,
-    "440": 19273.46,
-    "475": 19273.46,
+    3: "8596148860",
+    30: "2025-01-01",
+    35: "2025-12-31",
+    50: "yes",
+    85: "yes",
+    305: 2000,
+    440: 19273.46,
+    475: 19273.46,
   };
   const SECOND_RETURN_BOXES = {
-    "3": "8596148860",
-    "30": "2026-01-01",
-    "35": "2026-03-31",
-    "50": "yes",
-    "85A": "yes",
-    "440": 5688.68,
-    "480": 5062.5,
-    "475": 5688.68,
+    3: "8596148860",
+    30: "2026-01-01",
+    35: "2026-03-31",
+    50: "yes",
+    85: "yes",
+    440: 5688.68,
+    480: 5062.5,
+    475: 5688.68,
   };
   const LONG_PREVIEW = (secondBoxes = SECOND_RETURN_BOXES) => ({
     periodOfAccount: { periodStart: "2025-01-01", periodEnd: "2026-03-31" },
@@ -1869,7 +1869,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#reviewReturn2Heading")).toHaveText("Return 2 of 2: 1 January 2026 to 31 March 2026");
     await expect(page.locator("#review-return-1")).toContainText("Tax is due on 1 October 2026. The return is due on 31 March 2027.");
     await expect(page.locator("#review-return-2")).toContainText("Tax is due on 1 January 2027. The return is due on 31 March 2027.");
-    await expect(page.locator("#review-box-85A")).toContainText("Accounts attached are for a different period");
+    await expect(page.locator("#review-box-85")).toContainText("Accounts attached are for a different period");
     await expect(page.locator("#review-box-440")).toContainText("19,273.46");
     await expect(page.locator("#review-box-440Ap2")).toContainText("5,688.68");
     await expect(page.locator("#review-line-timeApportionment")).toContainText("Time apportionment: 365 of 455 days");

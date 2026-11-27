@@ -122,13 +122,13 @@ export const CT600_BOX_ROWS = [
     anchor: "making-more-than-one-return-now",
   },
   {
-    box: "85A",
-    label: siteText("ch.ct600.box-85-a", "Accounts attached are for a different period"),
+    box: 85,
+    label: siteText("ch.ct600.box-85", "Accounts attached are for a different period"),
     kind: "worked",
     section: "accounts",
     rule: siteText(
-      "ch.ct600.box-85-a-rule",
-      "Box 85A is ticked on each return of a period of account longer than 12 months, because the attached accounts cover the whole period of account",
+      "ch.ct600.box-85-rule",
+      "Box 85 is ticked on each return of a period of account longer than 12 months, because the attached accounts cover the whole period of account",
     ),
     anchor: COMPUTATIONS_GUIDE_ANCHOR,
   },
@@ -323,7 +323,6 @@ export const CT600_BOX_ROWS = [
     section: "company",
     field: "associatedCompanies",
     anchor: "number-of-associated-companies-in-this-period",
-    source: { thisYear: sheetCell("Admin!P14") },
   },
   {
     box: 327,
@@ -335,8 +334,7 @@ export const CT600_BOX_ROWS = [
     source: {
       thisYear: sheetCell("CT600!Y118"),
       workbookLabel: "Associated companies in the first financial year",
-      differenceNote:
-        'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Both show Admin!P14, the number of associated companies, which Submit reads for box 326.',
+      differenceNote: 'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Submit files the number you type for box 326 in both.',
     },
   },
   {
@@ -349,8 +347,7 @@ export const CT600_BOX_ROWS = [
     source: {
       thisYear: sheetCell("CT600!Y120"),
       workbookLabel: "Associated companies in the second financial year",
-      differenceNote:
-        'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Both show Admin!P14, the number of associated companies, which Submit reads for box 326.',
+      differenceNote: 'The spreadsheet\'s boxes 40 and 41 leave out "Number of". Submit files the number you type for box 326 in both.',
     },
   },
   {
@@ -763,7 +760,7 @@ export function guideUrl(anchor) {
 }
 
 // Boxes the review shows as typed or coded text; every other box is an amount in pounds.
-export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, "85A", 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 50, 85, 95, 280, 326, 327, 328, 329, 330, 340, 380, 390, 485, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: siteText("ch.ct600.section-company", "Company") },
@@ -1106,8 +1103,8 @@ export const CT600_FORM_FIELDS = [
     figure: "lossesBroughtForward",
     box: 160,
     type: WHOLE,
-    label: siteText("ch.ct600.losses-brought-forward", "Box 160: Trading losses brought forward"),
-    hint: `${MONEY_HINT}. ${siteText("ch.ct600.losses-brought-forward-hint", "The losses available. The trading profit takes as much as it can in box 160 and the rest is carried forward.")}`,
+    label: siteText("ch.ct600.trading-losses-brought-forward", "Trading losses brought forward"),
+    hint: `${MONEY_HINT}. ${siteText("ch.ct600.trading-losses-brought-forward-hint", "The losses available. Box 160 is the part set against trading profits; the rest is carried forward.")}`,
     default: "0",
   },
   {
@@ -1292,8 +1289,8 @@ export const CT600_FORM_FIELDS = [
     figure: "declarationAccepted",
     type: "checkbox",
     label: siteText(
-      "ch.ct600.declaration-accepted",
-      "I declare that the information in this return and the attached accounts and computations is correct and complete to the best of my knowledge and belief.",
+      "ch.ct600.declaration-hmrc",
+      "I declare that the information I have given on this Company Tax Return and any supplementary pages is correct and complete to the best of my knowledge and belief.",
     ),
     hint: siteText(
       "ch.ct600.declaration-accepted-hint",
@@ -1493,21 +1490,33 @@ export const MICRO_PROFIT_AND_LOSS_FIELDS = [
     id: "rawMaterials",
     label: siteText("ch.ct600.micro-pl-raw-materials", "Cost of raw materials and consumables"),
     hint: siteText(
-      "ch.ct600.micro-pl-raw-materials-hint",
-      "The cost of materials and consumables used. A book fills 0 and puts this cost in other charges.",
+      "ch.ct600.micro-pl-raw-materials-cost-of-sales-hint",
+      "The cost of materials and consumables used. A book fills the cost of sales.",
     ),
     reference: "μPL C",
     termSource: REGULATIONS_URL,
+    source: {
+      thisYear: sheetCell("PubP&L!F16"),
+      lastYear: sheetCell("PubP&L!B16"),
+      workbookLabel: "Cost of Sales",
+      differenceNote: 'The spreadsheet calls this "Cost of Sales". The format calls it "Cost of raw materials and consumables".',
+    },
   },
   {
     id: "staffCosts",
     label: siteText("ch.ct600.micro-pl-staff-costs", "Staff costs"),
     hint: siteText(
-      "ch.ct600.micro-pl-staff-costs-hint",
-      "Wages, employer's National Insurance and pension contributions. A book fills 0 and puts these in other charges.",
+      "ch.ct600.micro-pl-staff-costs-wages-hint",
+      "Wages, employer's National Insurance and pension contributions. A book fills its wages and salaries, directors' wages and employer's National Insurance.",
     ),
     reference: "μPL D",
     termSource: REGULATIONS_URL,
+    source: {
+      thisYear: sheetCell("MnthP&L!B18+B19+B20"),
+      workbookLabel: "Wages and Salaries; Directors Wages; Employers National Insurance",
+      differenceNote:
+        "The spreadsheet shows the staff costs as three lines of the administrative expenses. The format shows them as one line, and other charges leaves them out.",
+    },
   },
   {
     id: "depreciation",
@@ -1527,17 +1536,16 @@ export const MICRO_PROFIT_AND_LOSS_FIELDS = [
     id: "otherCharges",
     label: siteText("ch.ct600.micro-pl-other-charges", "Other charges"),
     hint: siteText(
-      "ch.ct600.micro-pl-other-charges-hint",
-      "Every other cost of the period, including the cost of sales and the administrative expenses.",
+      "ch.ct600.micro-pl-other-charges-admin-hint",
+      "Every other cost of the period: the administrative expenses less the staff costs and the depreciation.",
     ),
     reference: "μPL F",
     termSource: REGULATIONS_URL,
     source: {
-      thisYear: sheetCell("PubP&L!F16+F44-E43"),
-      lastYear: sheetCell("PubP&L!B16+B44-A43"),
-      workbookLabel: "Cost of Sales; Administrative Expenses; Depreciation",
+      thisYear: sheetCell("PubP&L!F44-E43-Financialaccounts.xlsx!MnthP&L!B18-B19-B20"),
+      workbookLabel: "Administrative Expenses; Depreciation; Wages and Salaries; Directors Wages; Employers National Insurance",
       differenceNote:
-        "The format's \"Other charges\" is the spreadsheet's cost of sales and administrative expenses, less the depreciation.",
+        "The format's \"Other charges\" is the spreadsheet's administrative expenses, less the depreciation and the staff costs.",
     },
   },
   {
@@ -2350,18 +2358,20 @@ export function microNetAssetsOf(sheet) {
 
 /**
  * A micro-entity's profit and loss account from a small company's: interest receivable is other
- * income, and the costs less the depreciation are other charges.
+ * income, the cost of sales is the raw materials and consumables, and the administrative expenses
+ * less the staff costs and the depreciation are other charges.
  * @param {object} year - the small company profit and loss lines
- * @param {number} [depreciation] - the depreciation written off in the year
+ * @param {number} depreciation - the depreciation written off in the year
+ * @param {number} staffCosts - the staff costs within the administrative expenses
  */
-export function microProfitAndLossFromSmall(year, depreciation = 0) {
+export function microProfitAndLossFromSmall(year, depreciation, staffCosts) {
   return {
     turnover: year.turnover,
     otherIncome: year.interestReceivable,
-    rawMaterials: 0,
-    staffCosts: 0,
+    rawMaterials: year.costOfSales,
+    staffCosts,
     depreciation,
-    otherCharges: year.costOfSales + year.administrativeExpenses - depreciation,
+    otherCharges: year.administrativeExpenses - staffCosts - depreciation,
     profitBeforeTax: year.profitBeforeTax,
     tax: year.tax,
     profit: year.profit,
@@ -2500,7 +2510,7 @@ function accountingPeriodFigures(values, part) {
  * accountingPeriods, and no working sheet: a book covers 12 months.
  * @param {Record<string, string|boolean>} values
  * @param {{companyName: string, companyNumber: string}} company
- * @param {object} [workingSheet] - the book's own trading profit and Corporation Tax, when a book filled the form
+ * @param {object} [workingSheet] - the book's own trading profit, when a book filled the form
  */
 export function figuresFromValues(values, company, workingSheet) {
   const accounts = accountsFromValues(values);
@@ -3193,8 +3203,9 @@ function accountsEntries(accounts) {
 
 /**
  * Every form value a book supplies, as [element id, value] pairs: the figures the model reads
- * from the book, the accounts, the trade name and the signer. The company's UTR, the date the
- * accounts were approved, and the statements and declaration stay the customer's to give.
+ * from the book, the accounts, the trade name and the signer. The company's UTR, the number of
+ * associated companies, the date the accounts were approved, and the statements and declaration
+ * stay the customer's to give.
  * The book's micro-entity accounts fill the micro fields too, and the size of the company picks the
  * regime the form opens on.
  * @param {object} figures - ct600FiguresFromBook output
@@ -3205,7 +3216,6 @@ export function formEntriesFromBook(figures, accounts, microAccounts) {
   const entries = [
     ["periodStart", figures.periodStart],
     ["periodEnd", figures.periodEnd],
-    ["associatedCompanies", text(figures.associatedCompanies ?? 0)],
     ["tradeName", accounts.tradeName],
   ];
   for (const field of CT600_FORM_FIELDS) {
@@ -3264,7 +3274,11 @@ function loanEntries(figures, accounts) {
 
 function microEntries(figures, accounts, microAccounts) {
   const entries = [];
-  const pl = microProfitAndLossFromSmall(accounts.profitAndLoss.currentYear, figures.depreciation ?? 0);
+  const pl = microProfitAndLossFromSmall(
+    accounts.profitAndLoss.currentYear,
+    figures.depreciation ?? 0,
+    accounts.profitAndLossFormat2.currentYear.staffCosts,
+  );
   for (const { id: field } of MICRO_PROFIT_AND_LOSS_FIELDS) entries.push([microId("current", field), text(pl[field])]);
   for (const [year, key] of [
     ["current", "currentYear"],
@@ -3400,7 +3414,6 @@ export function formEntriesFromFigures(figures) {
   const entries = [
     ["periodStart", text(figures.periodStart)],
     ["periodEnd", text(figures.periodEnd)],
-    ["associatedCompanies", text(figures.associatedCompanies ?? 0)],
   ];
   for (const field of CT600_FORM_FIELDS) {
     if (!field.figure || field.optional || !(field.type === WHOLE || field.type === "pounds-and-pence")) continue;
@@ -3433,6 +3446,7 @@ export const BOX_SOURCE_FIELD = {
   30: "period",
   35: "period",
   50: "period",
+  85: "period",
   95: "loansMade",
   145: TURNOVER_FIELD,
   155: TURNOVER_FIELD,
@@ -3517,7 +3531,7 @@ function partTarget(field, values, part) {
  * @param {1|2} [part]
  */
 export function boxChangeTarget(box, values, part = 1) {
-  const source = BOX_SOURCE_FIELD[box] ?? LETTERED_BOX_SOURCE_FIELD[box];
+  const source = BOX_SOURCE_FIELD[box];
   if (!source) return undefined;
   const field = longPeriodOf(values) && Number(box) === 305 ? DONATIONS_PAID_FIELD.id : source;
   return changeTargetFor(partTarget(field, values, part), values);
@@ -3527,9 +3541,6 @@ export function boxChangeTarget(box, values, part = 1) {
 export function lineChangeTarget(line, values, part = 1) {
   return changeTargetFor(partTarget(COMPUTATION_SOURCE_FIELD[line], values, part), values);
 }
-
-// Boxes whose number carries a letter, which a numeric key cannot hold.
-export const LETTERED_BOX_SOURCE_FIELD = { "85A": "period" };
 
 const NOT_GIVEN = siteText("ch.ct600.not-given", "Not given");
 const YES = siteText("ch.ct600.yes", "Yes");

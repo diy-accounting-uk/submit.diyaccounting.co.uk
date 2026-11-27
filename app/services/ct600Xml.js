@@ -91,9 +91,9 @@ export const CT600_BOX_PATHS = {
   985: "/IRenvelope/CompanyTaxReturn/Declaration/Status",
 };
 
-// Box 85A, "I attach accounts for a different period", ticked on each return of a long period of
+// Box 85, "I attach accounts and computations for a different period", ticked on each return of a long period of
 // account: the accounts are for the whole period of account.
-export const CT600_BOX_85A_PATH = "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/DifferentPeriod";
+export const CT600_BOX_85_PATH = "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/DifferentPeriod";
 
 // Where each box of supplementary page CT600A sits in the return, as HMRC's CT-specDoc names it.
 // Part 2 and part 3 rows repeat per participator; the paths name the first.
@@ -211,7 +211,7 @@ function financialYearXml(name, year, profit, rate, tax) {
  * iXBRL and an empty IRmark for hmrcTransactionEngine.js to fill.
  *
  * @param {object} input
- * @param {Record<number|string, string|number>} input.boxes - deriveCt600FromFigures output; boxes 50 and 85A mark one of the two returns of a long period of account, whose accounts are for the whole period
+ * @param {Record<number|string, string|number>} input.boxes - deriveCt600FromFigures output; boxes 50 and 85 mark one of the two returns of a long period of account, whose accounts are for the whole period
  * @param {object} [input.ct600a] - deriveCt600FromFigures output: the supplementary page CT600A, when the company lent to participators
  * @param {string} input.accountsIxbrl - the full FRS 102 accounts document
  * @param {string} input.computationsIxbrl - from ctComputationsIxbrl.js
@@ -284,7 +284,7 @@ export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computation
     wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd>${agentXml}<DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>${agent ? "Agent" : "Company"}</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary>${element("MultipleReturns", b[50])}<Accounts>${b["85A"] ? element("DifferentPeriod", b["85A"]) : "<ThisPeriodAccounts>yes</ThisPeriodAccounts>"}</Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd>${agentXml}<DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>${agent ? "Agent" : "Company"}</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary>${element("MultipleReturns", b[50])}<Accounts>${b[85] ? element("DifferentPeriod", b[85]) : "<ThisPeriodAccounts>yes</ThisPeriodAccounts>"}</Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations>${wrap("SupplementaryPages", element("CT600A", b[95]))}</ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration>${loansByCloseCompaniesXml(ct600a)}<AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**
@@ -296,6 +296,7 @@ export function buildCt600IrEnvelope({ boxes, ct600a, accountsIxbrl, computation
  * @param {string} company.companyNumber - box 2
  * @param {string} company.utr - box 3
  * @param {number} company.companyType - box 4
+ * @param {number} [company.associatedCompanies] - box 326, the number of associated companies the person gives
  * @param {string} company.declarantName - box 975
  * @param {string} company.declarantStatus - box 985
  * @param {number} [company.taxAlreadyPaid] - box 595, pounds and pence paid before filing
@@ -314,6 +315,7 @@ export async function deriveCompanyTaxReturn(session, company, options) {
     companyNumber: company.companyNumber,
     utr: company.utr,
     companyType: company.companyType,
+    associatedCompanies: company.associatedCompanies,
     declarantName: company.declarantName,
     declarantStatus: company.declarantStatus,
     taxAlreadyPaid: company.taxAlreadyPaid ?? 0,

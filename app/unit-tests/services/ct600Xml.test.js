@@ -16,7 +16,7 @@ import {
   buildCt600IrEnvelope,
   ltdTaxDataForPeriodEnd,
   CT600_BOX_PATHS,
-  CT600_BOX_85A_PATH,
+  CT600_BOX_85_PATH,
   CT600A_BOX_PATHS,
   CT600_NAMESPACE,
 } from "@app/services/ct600Xml.js";
@@ -194,6 +194,20 @@ describe("boxesFor for other shapes of book", () => {
   });
 });
 
+describe("the number of associated companies is the one the person gives", () => {
+  test("a book whose Admin!P14 holds associated companies, with none given, files without a refusal", () => {
+    const book = withResults({ Admin: { P14: 2 }, CorporationTax: { K35: 1 } });
+    expect(ct600FiguresFromResults(book, { profitAndLoss: {} })).not.toHaveProperty("associatedCompanies");
+    const { boxes } = boxesFor({ results: book, company: COMPANY });
+    expect([boxes[326], boxes[327], boxes[328]].filter((value) => value !== undefined).every((value) => value === 0)).toBe(true);
+  });
+
+  test("the number given is filed whatever the book's Admin!P14 holds", () => {
+    const { boxes } = boxesFor({ results: withResults({ Admin: { P14: 2 } }), company: { ...COMPANY, associatedCompanies: 1 } });
+    expect([boxes[326], boxes[327], boxes[328]].filter((value) => value !== undefined)).toContain(1);
+  });
+});
+
 describe("boxesFor refuses a book outside a small trading company's return", () => {
   test.each([
     ["a book with no CT600 sheet", () => ({ ...results, CT600: undefined }), /only a Company \(ltd\) book/],
@@ -209,7 +223,6 @@ describe("boxesFor refuses a book outside a small trading company's return", () 
       () => withResults({ CorporationTax: { K22: 200000 } }),
       /disagrees with the working sheet/,
     ],
-    ["a working sheet whose tax disagrees", () => withResults({ CorporationTax: { K35: 1000 } }), /Corporation Tax .* disagrees/],
   ])("%s", (_label, makeResults, message) => {
     expect(() => boxesFor({ results: makeResults(), company: COMPANY })).toThrow(message);
   });
@@ -621,11 +634,11 @@ describe("the two returns of a long period of account", () => {
     expect((await schemaProblems(misplaced)).join(" ")).toMatch(/MultipleReturns/);
   });
 
-  test("writes boxes 50 and 85A, with the accounts for the whole period of account", () => {
+  test("writes boxes 50 and 85, with the accounts for the whole period of account", () => {
     for (const returnResult of [first, second]) {
       const document = parseXmlDocument(envelope(returnResult));
       expect(valueAt(document, CT600_BOX_PATHS[50])).toBe("yes");
-      expect(valueAt(document, CT600_BOX_85A_PATH)).toBe("yes");
+      expect(valueAt(document, CT600_BOX_85_PATH)).toBe("yes");
       expect(valueAt(document, "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/ThisPeriodAccounts")).toBeUndefined();
       expect(valueAt(document, "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Computations/ThisPeriodComputations")).toBe("yes");
     }
@@ -667,6 +680,6 @@ describe("the two returns of a long period of account", () => {
     const document = buildDocument(boxes);
     expect(valueAt(document, CT600_BOX_PATHS[50])).toBeUndefined();
     expect(valueAt(document, "/IRenvelope/CompanyTaxReturn/ReturnInfoSummary/Accounts/ThisPeriodAccounts")).toBe("yes");
-    expect(valueAt(document, CT600_BOX_85A_PATH)).toBeUndefined();
+    expect(valueAt(document, CT600_BOX_85_PATH)).toBeUndefined();
   });
 });

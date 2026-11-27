@@ -108,10 +108,11 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
     const disclosure = sourceDisclosure(field, { id: "microCurrentOtherCharges" });
     expect(disclosure.hasAttribute("open")).toBe(false);
     expect(disclosure.querySelector("summary").textContent).toBe("In DIY Accounting's spreadsheets");
-    expect(disclosure.querySelector("dl").textContent).toContain("F16 + F44 − E43 (worked from these cells)");
-    expect(disclosure.querySelector("dl").textContent).toContain("B16 + B44 − A43");
+    expect(disclosure.querySelector("dl").textContent).toContain(
+      "PubP&L!F44 − PubP&L!E43 − MnthP&L!B18 − MnthP&L!B19 − MnthP&L!B20 (worked from these cells)",
+    );
     expect(disclosure.querySelector(".field-source__note").textContent).toBe(field.source.differenceNote);
-    expect([...disclosure.querySelectorAll("img")].map((image) => image.getAttribute("src"))).toHaveLength(6);
+    expect([...disclosure.querySelectorAll("img")].map((image) => image.getAttribute("src"))).toHaveLength(5);
   });
 
   test("a field the spreadsheets do not hold says so in its disclosure", () => {

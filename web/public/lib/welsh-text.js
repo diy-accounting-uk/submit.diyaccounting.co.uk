@@ -1199,9 +1199,9 @@ window.WELSH_TEXT = {
   "ch.ct600.box-780-rule": "Blwch 780 yw’r golled wedi’i haddasu yn y cyfrifiant",
   "ch.ct600.box-790": "Colledion masnach a gynhaliwyd yn gyfan gwbl y tu allan i’r DU: swm sy’n codi",
   "ch.ct600.box-790-rule": "Blwch 790 yw’r golled wedi’i haddasu yn y cyfrifiant",
-  "ch.ct600.box-85-a": "Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol",
-  "ch.ct600.box-85-a-rule":
-    "Mae blwch 85A wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan",
+  "ch.ct600.box-85": "Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol",
+  "ch.ct600.box-85-rule":
+    "Mae blwch 85 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan",
   "ch.ct600.box-95": "Benthyciadau a threfniadau i gyfranogwyr gan gwmnïau caeedig – ffurflen CT600A",
   "ch.ct600.box-95-rule":
     "Mae blwch 95 wedi’i dicio pan roddodd y cwmni fenthyg i gyfranogwyr a bod tudalen atodol CT600A gyda’r Ffurflen Dreth",
@@ -1247,9 +1247,9 @@ window.WELSH_TEXT = {
   "ch.ct600.dates-answer": "{start} i {end}",
   "ch.ct600.declarant-name-hint": "Y person sy’n gwneud y datganiad ar ran y cwmni, cyfarwyddwr fel arfer.",
   "ch.ct600.declarant-status-hint": "Eu swydd yn y cwmni, er enghraifft Cyfarwyddwr neu Ysgrifennydd y cwmni.",
-  "ch.ct600.declaration-accepted":
-    "Rwyf yn datgan bod yr wybodaeth yn y Ffurflen Dreth hon ac yn y cyfrifon a’r cyfrifiannau atodedig yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.",
   "ch.ct600.declaration-accepted-hint": "Ticiwch hwn pan fydd y Ffurflen Dreth, y cyfrifon a’r cyfrifiannau’n gywir ac yn gyflawn.",
+  "ch.ct600.declaration-hmrc":
+    "Rwyf yn datgan bod yr wybodaeth a roddais ar y Ffurflen Dreth y Cwmni hon ac ar unrhyw dudalennau atodol yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.",
   "ch.ct600.depreciation": "Dibrisiant a adiwyd yn ôl",
   "ch.ct600.depreciation-hint": "Mae’n dechrau fel tâl y nodyn ar gyfer y flwyddyn, pan roddir nodyn.",
   "ch.ct600.director-date-approved": "Dyddiad cymeradwyo",
@@ -1303,11 +1303,8 @@ window.WELSH_TEXT = {
     "Mae’r fasnach yn cael ei chynnal yn gyfan gwbl y tu allan i’r DU (mae colled yn mynd ym mlwch 790, nid blwch 780)",
   "ch.ct600.loss-outside-uk-hint":
     "Ticiwch hwn pan fydd y fasnach gyfan yn cael ei chynnal y tu allan i’r DU. Mae’r golled fasnachu wedyn yn mynd ym mlwch 790 yn lle blwch 780.",
-  "ch.ct600.losses-brought-forward": "Blwch 160: Colledion masnachu a ddygwyd ymlaen",
   "ch.ct600.losses-brought-forward-against-total-profits-hint":
     "Colledion a ddygwyd ymlaen na chymerodd yr elw masnachu, wedi’u hawlio yn erbyn elw arall y cyfnod.",
-  "ch.ct600.losses-brought-forward-hint":
-    "Y colledion sydd ar gael. Mae’r elw masnachu yn cymryd cymaint ag y gall ym mlwch 160 ac mae’r gweddill yn cael ei gario ymlaen.",
   "ch.ct600.main-pool-allowances-hint": "Gadewch y lwfans buddsoddi blynyddol allan: mae blwch 705 yn ei gynnwys.",
   "ch.ct600.micro-bs-called-up-share-capital": "Cyfalaf cyfranddaliadau wedi’i alw",
   "ch.ct600.micro-bs-called-up-share-capital-hint": "Gwerth enwol y cyfranddaliadau y mae’r cwmni wedi’u dyroddi a’u galw.",
@@ -1326,15 +1323,15 @@ window.WELSH_TEXT = {
   "ch.ct600.micro-pl-depreciation": "Dibrisiad, amorteiddiad ac amhariad",
   "ch.ct600.micro-pl-depreciation-hint": "Y dibrisiant a godwyd ar asedau sefydlog y cwmni yn y cyfnod.",
   "ch.ct600.micro-pl-other-charges": "Treuliau gweithredol eraill",
-  "ch.ct600.micro-pl-other-charges-hint": "Pob cost arall y cyfnod, gan gynnwys cost gwerthiannau a’r treuliau gweinyddol.",
+  "ch.ct600.micro-pl-other-charges-admin-hint": "Pob cost arall y cyfnod: y treuliau gweinyddol llai’r costau staff a’r dibrisiant.",
   "ch.ct600.micro-pl-other-income": "Incwm gweithredol arall",
   "ch.ct600.micro-pl-other-income-hint": "Incwm y tu allan i fasnach y cwmni, fel llog banc.",
   "ch.ct600.micro-pl-raw-materials": "Cost deunyddiau crai a defnyddiau traul",
-  "ch.ct600.micro-pl-raw-materials-hint":
-    "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi 0 ac yn rhoi’r gost hon mewn taliadau eraill.",
+  "ch.ct600.micro-pl-raw-materials-cost-of-sales-hint":
+    "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi cost gwerthiannau.",
   "ch.ct600.micro-pl-staff-costs": "Costau staff",
-  "ch.ct600.micro-pl-staff-costs-hint":
-    "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi 0 ac yn rhoi’r rhain mewn taliadau eraill.",
+  "ch.ct600.micro-pl-staff-costs-wages-hint":
+    "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi ei gyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr.",
   "ch.ct600.micro-pl-tax": "Treth",
   "ch.ct600.micro-pl-tax-hint": "Y Dreth Gorfforaeth a godwyd ar elw’r cyfnod hwn.",
   "ch.ct600.micro-pl-turnover": "Trosiant",
@@ -1468,6 +1465,9 @@ window.WELSH_TEXT = {
   "ch.ct600.this-year": "eleni",
   "ch.ct600.trade-name": "Enw’r fasnach",
   "ch.ct600.trade-name-hint": "Enw’r fasnach, a ddangosir yn y cyfrifiannau. Mae’n dechrau fel y prif weithgarwch.",
+  "ch.ct600.trading-losses-brought-forward": "Colledion masnachu a ddygwyd ymlaen",
+  "ch.ct600.trading-losses-brought-forward-hint":
+    "Y colledion sydd ar gael. Blwch 160 yw’r rhan a osodir yn erbyn elw masnachu; mae’r gweddill yn cael ei gario ymlaen.",
   "ch.ct600.utr-hint": "Y 10 digid ar lythyrau Treth Gorfforaeth CThEF y cwmni.",
   "ch.ct600.year-label": "{label}, {when}",
   "ch.ct600.yes": "Ie",

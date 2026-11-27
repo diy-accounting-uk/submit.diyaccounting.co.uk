@@ -372,8 +372,7 @@ export function computationLinesFromFigures(figures) {
 export function ct600FiguresFromResults(results, smallCompanyAccounts) {
   const ct600 = results.CT600;
   const workingSheet = results.CorporationTax;
-  const admin = results.Admin;
-  if (!ct600 || !workingSheet || !admin) {
+  if (!ct600 || !workingSheet) {
     throw new Ct600RefusedError("The book carries no CT600 sheet; only a Company (ltd) book files a Company Tax Return");
   }
   if (workingSheet.K24 < 0) {
@@ -389,7 +388,6 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
   const figures = {
     periodStart: isoFromSerial(ct600.B33),
     periodEnd: isoFromSerial(ct600.M33),
-    associatedCompanies: admin.P14 ?? 0,
     profitAndLoss,
     nonTradingLoanRelationshipCredits: positive(workingSheet.K24),
     depreciation: positive(workingSheet.I8),
@@ -406,7 +404,6 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
     workingSheet: {
       tradingProfit: workingSheet.K22 + positive(results["MnthP&L"]?.B37),
       tradingLoss: Math.max((ct600.Q206 ?? 0) - positive(results["MnthP&L"]?.B37), 0),
-      corporationTax: workingSheet.K35 ?? 0,
     },
   };
   const lossesBroughtForward = wholePounds(ct600.Z72);
@@ -1117,7 +1114,7 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
 
   if (figures.periodOfAccount) {
     boxes[50] = "yes";
-    boxes["85A"] = "yes";
+    boxes[85] = "yes";
   }
 
   const workingSheet = figures.workingSheet;
@@ -1208,12 +1205,6 @@ export function deriveCt600FromFigures(figures, taxDataByYear, { today } = {}) {
   }
   const netCorporationTaxPence = corporationTaxPence - marginalReliefPence;
   const netCorporationTax = fromPence(netCorporationTaxPence);
-  if (workingSheet && Math.abs(netCorporationTax - workingSheet.corporationTax) > WORKING_SHEET_TOLERANCE_POUNDS) {
-    throw new Ct600RefusedError(
-      `The return's Corporation Tax ${netCorporationTax.toFixed(2)} disagrees with the working sheet's ${workingSheet.corporationTax.toFixed(2)}`,
-      "corporationTax",
-    );
-  }
   const ownCorporationTax = figures.ownCorporationTax;
   if (
     ownCorporationTax !== undefined &&
