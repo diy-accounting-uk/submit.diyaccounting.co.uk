@@ -255,7 +255,6 @@ const ANSWER_FIELDS = {
   derive_company_tax_return: [
     "figures.amortisation",
     "figures.annualInvestmentAllowance",
-    "figures.associatedCompanies",
     "figures.depreciation",
     "figures.directorsLoanOpeningOverdrawn",
     "figures.directorsLoanOverdrawn",
@@ -277,7 +276,6 @@ const ANSWER_FIELDS = {
     "figures.profitAndLoss.current.profitBeforeTax",
     "figures.profitAndLoss.current.tax",
     "figures.profitAndLoss.current.turnover",
-    "figures.workingSheet.corporationTax",
     "figures.workingSheet.tradingLoss",
     "figures.workingSheet.tradingProfit",
     "kind",
