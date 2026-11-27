@@ -275,8 +275,7 @@ operator's approval to enable it for live users on prod.
   approval, asked when the other preconditions hold (operator, 2026-11-22: not given ahead).
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~5 files.
 - [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
-  `diya-gl-storage` activities. Preconditions: UH3; `PLAN_HMRC_CT_APPROVAL.md` UH7 (the CT600
-  inside Resident Ltd); the operator's approval, asked when the other preconditions hold
+  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval, asked when the other preconditions hold
   (operator, 2026-11-22: not given ahead). Resident Pro is already listed on prod.
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
@@ -290,7 +289,7 @@ operator's approval to enable it for live users on prod.
 ```
 HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
                                                └──► IA9
-IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_HMRC_CT_APPROVAL.md UH7)
+IA7 ──► UH3 ──► UH2 ──► UH1
 ```
 
 Backlog row 11 (ITSA phase 2 and the recognition application) closes with IA7.
