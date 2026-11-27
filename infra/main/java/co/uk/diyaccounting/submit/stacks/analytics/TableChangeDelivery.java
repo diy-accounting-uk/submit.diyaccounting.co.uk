@@ -11,7 +11,11 @@ import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +58,7 @@ import software.constructs.IDependable;
  */
 public class TableChangeDelivery extends Construct {
 
-    private static final List<String> STREAMED_TABLE_KINDS = List.of(
+    static final List<String> STREAMED_TABLE_KINDS = List.of(
             "receipts",
             "bundles",
             "subscriptions",
@@ -449,7 +453,31 @@ public class TableChangeDelivery extends Construct {
         }
     }
 
-    private static CfnTable.ColumnProperty column(String name, String type) {
+    /**
+     * The first 8 hex characters of a SHA-256 over the columns' name:type pairs, in order. A
+     * delivery stream carries its table's fingerprint in its destination, so a column change updates
+     * the destination, and only an updated destination makes Firehose load the table's latest
+     * version for the Parquet conversion.
+     */
+    static String columnsFingerprint(List<CfnTable.ColumnProperty> columns) {
+        var pairs = new StringBuilder();
+        for (var column : columns)
+            pairs.append(column.getName()).append(':').append(column.getType()).append('\n');
+        try {
+            var digest =
+                    MessageDigest.getInstance("SHA-256").digest(pairs.toString().getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest).substring(0, 8);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
+    }
+
+    /** The fingerprint of the Glue table columns a table kind's delivery stream converts with. */
+    static String schemaFingerprint(String kind) {
+        return columnsFingerprint(buildColumns(kind));
+    }
+
+    static CfnTable.ColumnProperty column(String name, String type) {
         return CfnTable.ColumnProperty.builder().name(name).type(type).build();
     }
 
@@ -520,8 +548,8 @@ public class TableChangeDelivery extends Construct {
                                 .bucketArn(lakeBucket.getBucketArn())
                                 .roleArn(firehoseRole.getRoleArn())
                                 .prefix(curatedPrefix + "dt=!{timestamp:yyyy-MM-dd}/")
-                                .errorOutputPrefix(
-                                        "errors/" + kind + "/!{firehose:error-output-type}/dt=!{timestamp:yyyy-MM-dd}/")
+                                .errorOutputPrefix("errors/" + kind + "/schema-" + schemaFingerprint(kind)
+                                        + "/!{firehose:error-output-type}/dt=!{timestamp:yyyy-MM-dd}/")
                                 .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
                                         .intervalInSeconds(900)
                                         .sizeInMBs(128)
