@@ -17,7 +17,7 @@
 
 ## Status
 
-approved 2026-11-26 (the operator's words above); building. Wave 1 gated 9e71acfc0 (`claude/comet-w01`, local; equal to anvil's tested head 42d20cf95). Wave 2 (CTN4) integrating on anvil's `claude/anvil-comet-w02`. Wave 3: DSC6, WRD6 and WRD2 to WRD4 built and reviewed, queued on anvil's `claude/anvil-comet-w03`; CTL1A, CTL1B and WRD5 building on dusk. Wave 4: WRD7 built; CTL8 after waves 1 to 3. Beside the waves, riding comet's PR: DASH60 and CSF1.
+approved 2026-11-26 (the operator's words above); building. Wave 1 gated 9e71acfc0 (`claude/comet-w01`), wave 2 gated 6f1a8d763 (`claude/comet-w02`), wave 3 gated 7eea2145a (`claude/comet-w03`, equal to anvil's tested head 5db8429d0); the laptop branches are local and signed. Wave 4: WRD7 reviewed; CTL8 (the look pass) building on dusk on the wave 3 head with WRD7. DASH60 and CSF1 ride the PR inside wave 3. Then `claude/comet-set`, one PR, the ci proofs, `/auto-merge`, the prod proofs.
 
 ## The goal
 
