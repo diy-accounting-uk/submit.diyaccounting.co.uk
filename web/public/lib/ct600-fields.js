@@ -1491,7 +1491,7 @@ export const MICRO_PROFIT_AND_LOSS_FIELDS = [
     label: siteText("ch.ct600.micro-pl-raw-materials", "Cost of raw materials and consumables"),
     hint: siteText(
       "ch.ct600.micro-pl-raw-materials-cost-of-sales-hint",
-      "The cost of materials and consumables used. A book fills the cost of sales.",
+      "The cost of materials and consumables used. The fill from your records puts the cost of sales here.",
     ),
     reference: "μPL C",
     termSource: REGULATIONS_URL,
@@ -1507,7 +1507,7 @@ export const MICRO_PROFIT_AND_LOSS_FIELDS = [
     label: siteText("ch.ct600.micro-pl-staff-costs", "Staff costs"),
     hint: siteText(
       "ch.ct600.micro-pl-staff-costs-wages-hint",
-      "Wages, employer's National Insurance and pension contributions. A book fills its wages and salaries, directors' wages and employer's National Insurance.",
+      "Wages, employer's National Insurance and pension contributions. The fill from your records puts the wages and salaries, directors' wages and employer's National Insurance here.",
     ),
     reference: "μPL D",
     termSource: REGULATIONS_URL,

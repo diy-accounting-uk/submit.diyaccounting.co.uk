@@ -810,6 +810,7 @@ test.describe("File Company Tax Return entry form", () => {
     // The accounts lines and the employees count start at 0; blanked, a value after the drop is the book's.
     await page.evaluate(() => {
       for (const input of document.querySelectorAll("#formSections input")) if (input.defaultValue === "0") input.value = "";
+      document.getElementById("associatedCompanies").value = "2";
     });
     await dropBook(page);
 
@@ -836,7 +837,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
     await expect(page.locator("#currentTurnover")).toHaveValue("341283");
     await expect(page.locator("#directorDateApproved"), "a book holds no approval date").toHaveValue("");
-    await expect(page.locator("#associatedCompanies"), "the person types the number of associated companies").toHaveValue("0");
+    await expect(page.locator("#associatedCompanies"), "the book leaves the number the person typed").toHaveValue("2");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
     await expect(page.locator("#workedTax")).toContainText("Box 440");

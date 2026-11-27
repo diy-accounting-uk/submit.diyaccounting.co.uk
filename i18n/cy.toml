@@ -28856,13 +28856,13 @@ cy = '''Y colledion sydd ar gael. Blwch 160 yw’r rhan a osodir yn erbyn elw ma
 
 # no HMRC Welsh found; for a Welsh speaker to check
 [strings."ch.ct600.micro-pl-raw-materials-cost-of-sales-hint"]
-hash = "3cd8052941a8"
-cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi cost gwerthiannau.'''
+hash = "e09a4fb15dc0"
+cy = '''Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae’r llenwi o’ch cofnodion yn rhoi cost gwerthiannau yma.'''
 
 # no HMRC Welsh found; for a Welsh speaker to check
 [strings."ch.ct600.micro-pl-staff-costs-wages-hint"]
-hash = "b97f54950723"
-cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi ei gyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr.'''
+hash = "d3ef2a9ebe6a"
+cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae’r llenwi o’ch cofnodion yn rhoi’r cyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr yma.'''
 
 # no HMRC Welsh found; for a Welsh speaker to check
 [strings."ch.ct600.micro-pl-other-charges-admin-hint"]

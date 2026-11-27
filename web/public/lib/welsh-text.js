@@ -1328,10 +1328,10 @@ window.WELSH_TEXT = {
   "ch.ct600.micro-pl-other-income-hint": "Incwm y tu allan i fasnach y cwmni, fel llog banc.",
   "ch.ct600.micro-pl-raw-materials": "Cost deunyddiau crai a defnyddiau traul",
   "ch.ct600.micro-pl-raw-materials-cost-of-sales-hint":
-    "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae llyfr yn llenwi cost gwerthiannau.",
+    "Cost y deunyddiau a’r defnyddiau traul a ddefnyddiwyd. Mae’r llenwi o’ch cofnodion yn rhoi cost gwerthiannau yma.",
   "ch.ct600.micro-pl-staff-costs": "Costau staff",
   "ch.ct600.micro-pl-staff-costs-wages-hint":
-    "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae llyfr yn llenwi ei gyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr.",
+    "Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae’r llenwi o’ch cofnodion yn rhoi’r cyflogau, cyflogau’r cyfarwyddwyr ac Yswiriant Gwladol y cyflogwr yma.",
   "ch.ct600.micro-pl-tax": "Treth",
   "ch.ct600.micro-pl-tax-hint": "Y Dreth Gorfforaeth a godwyd ar elw’r cyfnod hwn.",
   "ch.ct600.micro-pl-turnover": "Trosiant",
