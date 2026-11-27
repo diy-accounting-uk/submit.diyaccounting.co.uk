@@ -17,7 +17,7 @@
 
 ## Status
 
-approved 2026-11-26 (the operator's words above); building. Cobalt is on `main` at 7790dda02, so wave 1 can land. Built on the workers and waiting for their rebase: CTN2, CTN4, CTL1A. Not started: CTL1B, DSC1 to DSC5, WRD0 to WRD7. DSC6 waits for the operator's go.
+approved 2026-11-26 (the operator's words above); building. Wave 1 gated 9e71acfc0 (`claude/comet-w01`, local; equal to anvil's tested head 42d20cf95). Wave 2 (CTN4) integrating on anvil's `claude/anvil-comet-w02`. Wave 3: DSC6, WRD6 and WRD2 to WRD4 built and reviewed, queued on anvil's `claude/anvil-comet-w03`; CTL1A, CTL1B and WRD5 building on dusk. Wave 4: WRD7 built; CTL8 after waves 1 to 3. Beside the waves, riding comet's PR: DASH60 and CSF1.
 
 ## The goal
 
