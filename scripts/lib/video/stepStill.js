@@ -17,6 +17,18 @@ export const CHAPTER_LABEL_ATTRIBUTE = "data-svc-chapter";
 // The chapter label sits at the left of the viewport and a long chapter name runs into the content column.
 const HIDE_OVERLAY_TEXT = `[${HEADLINE_CARD_ATTRIBUTE}], [${CHAPTER_LABEL_ATTRIBUTE}] { visibility: hidden !important; }`;
 
+/**
+ * Makes a run's stills directory empty, so the walkthrough cutter can only find the stills this run
+ * writes: a still left by an earlier recording of the scene would otherwise stand in for a step this
+ * run did not photograph. Failure stills (FAILED-<scene>-<step>.png) are written after this, so a
+ * failing step of this run keeps its still.
+ * @param {string} stillsDir - the run's stills directory
+ */
+export function prepareStillsDir(stillsDir) {
+  fs.rmSync(stillsDir, { recursive: true, force: true });
+  fs.mkdirSync(stillsDir, { recursive: true });
+}
+
 /** The file name of a step's card-free still, inside the recording's stills directory. */
 export function stepStillName(sceneId, stepIndex) {
   return `step-${sceneId}-${stepIndex}.png`;

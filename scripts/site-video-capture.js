@@ -58,7 +58,7 @@ import { writeVtt, writeTranscript, writeTimeline, captionTextForStep } from "./
 import { substituteValues } from "./lib/video/values.js";
 import { buildCaptureManifest, writeCaptureManifest } from "./lib/video/pipelineVersion.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
-import { writeCardFreeStill } from "./lib/video/stepStill.js";
+import { writeCardFreeStill, prepareStillsDir } from "./lib/video/stepStill.js";
 import { captureOverlayConfig } from "./lib/video/captureOverlayConfig.js";
 import { captureBrowserEnv } from "./lib/video/browserLocale.js";
 import { consentAnswerFor } from "./lib/video/consentAnswer.js";
@@ -350,7 +350,7 @@ async function main() {
   const stillsDir = path.join(outDir, "stills");
   const narrationDir = path.join(outDir, "narration");
   fs.mkdirSync(outDir, { recursive: true });
-  fs.mkdirSync(stillsDir, { recursive: true });
+  prepareStillsDir(stillsDir);
 
   // Narration reaches only a real recording: --stills-only never encodes a video, so there is
   // nothing to hold a scene open for and nothing to mux the audio onto.
