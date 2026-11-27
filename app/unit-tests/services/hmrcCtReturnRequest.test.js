@@ -109,7 +109,7 @@ describe("extractAndValidateCtReturnParameters", () => {
 
   test.each([
     ["a bank interest figure that is not whole pounds", { nonTradingLoanRelationshipCredits: 1.5 }, /bank interest/],
-    ["a negative depreciation", { depreciation: -1 }, /Depreciation/],
+    ["a negative depreciation", { depreciation: -1 }, /Adjustments, depreciation/],
     ["a company type other than 0", { companyType: 6 }, /Company type 6/],
     ["a period over 12 months", { periodStart: "2025-04-01", periodEnd: "2026-04-30" }, /longer than 12 months/],
     ["a working sheet without numbers", { workingSheet: { tradingProfit: "1" } }, /workingSheet/],

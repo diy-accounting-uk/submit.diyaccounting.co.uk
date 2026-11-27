@@ -20,6 +20,7 @@ import {
   ACCOUNTS_TEXT_FIELDS,
   BALANCE_SHEET_FIELDS,
   CT600_BOX_ROWS,
+  COMPUTATION_LINES,
   CT600_FORM_FIELDS,
   DONATIONS_PAID_FIELD,
   FIRST_PERIOD_START_FIELD,
@@ -105,37 +106,6 @@ const WORKED_TAX_ID = "workedTax";
 const SUMMARY_ID = "ct600-error-summary";
 const PLACEHOLDER_UTR = "0000000000";
 const PLACEHOLDER_TEXT = "Placeholder";
-
-// Each computation line in the order HMRC's computation prints it: a deduction shows in
-// brackets, a subtotal has a rule above it and the total a double rule below it.
-const COMPUTATION_LINES = [
-  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss before tax per the accounts") },
-  {
-    field: "nonTradingLoanRelationshipCredits",
-    meaning: siteText(
-      "ch.ct.line-loan-credits",
-      "Less: bank, building society or other interest, and profits from non-trading loan relationships (box 170)",
-    ),
-    deduction: true,
-  },
-  { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Add: depreciation") },
-  { field: "amortisation", meaning: siteText("ch.ct.line-amortisation", "Add: amortisation") },
-  { field: "entertaining", meaning: siteText("ch.ct.line-entertaining", "Add: entertaining") },
-  { field: "donations", meaning: siteText("ch.ct.line-donations", "Add: donations") },
-  {
-    field: "adjustedProfitBeforeAccountingPeriodAdjustments",
-    meaning: siteText("ch.ct.line-before-apportionment", "Adjusted profit before the time apportionment"),
-    style: "subtotal",
-  },
-  { field: "timeApportionment", meaning: siteText("ch.ct.line-time-apportionment", "Time apportionment"), deduction: false },
-  {
-    field: "adjustedProfitBeforeCapitalAllowances",
-    meaning: siteText("ch.ct.line-before-allowances", "Adjusted profit before capital allowances"),
-    style: "subtotal",
-  },
-  { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
-  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted trading profit (box 155)"), style: "total" },
-];
 
 const RETURN_TO_REVIEW = siteText("ch.ct.return-to-review", "Return to the review");
 const PREVIEW_THE_RETURN = siteText("ch.ct.preview-the-return", "Preview the return");

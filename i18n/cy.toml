@@ -14268,26 +14268,6 @@ cy = '''Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n
 hash = "a55754cf6271"
 cy = '''Elw neu golled cyn treth yn ôl y cyfrifon'''
 
-[strings."ch.ct.line-loan-credits"]
-hash = "71f58db9e7c7"
-cy = '''Llai: llog banc, cymdeithas adeiladu neu log arall, ac elw o berthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu (blwch 170)'''
-
-[strings."ch.ct.line-depreciation"]
-hash = "fcfa75e12b50"
-cy = '''Adio: dibrisiant'''
-
-[strings."ch.ct.line-amortisation"]
-hash = "77267e2932f6"
-cy = '''Adio: amorteiddiad'''
-
-[strings."ch.ct.line-entertaining"]
-hash = "6810449b5168"
-cy = '''Adio: adloniant'''
-
-[strings."ch.ct.line-donations"]
-hash = "e11cae05062a"
-cy = '''Adio: rhoddion'''
-
 [strings."ch.ct.line-before-apportionment"]
 hash = "d94ed12b958d"
 cy = '''Elw wedi’i addasu cyn dosrannu amser'''
@@ -16054,24 +16034,9 @@ hash = "662c2a268cdb"
 cy = '''Mae’n dechrau fel llog derbyniadwy’r cyfrifon.'''
 
 # no HMRC Welsh found
-[strings."ch.ct600.depreciation"]
-hash = "ca9620e79f3f"
-cy = '''Dibrisiant a adiwyd yn ôl'''
-
-# no HMRC Welsh found
 [strings."ch.ct600.depreciation-hint"]
 hash = "a11756a90efe"
 cy = '''Mae’n dechrau fel tâl y nodyn ar gyfer y flwyddyn, pan roddir nodyn.'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.amortisation"]
-hash = "b0a2c10ebb79"
-cy = '''Amorteiddiad a adiwyd yn ôl'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.entertaining"]
-hash = "7786da6caeb8"
-cy = '''Adloniant a adiwyd yn ôl'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.entertaining-hint"]
@@ -16120,11 +16085,6 @@ cy = '''Mae angen hwn pryd bynnag y caiff blwch 693 ei lenwi.'''
 [strings."ch.ct600.special-rate-pool-allowances-hint"]
 hash = "68ee92cbc360"
 cy = '''Gadewch allan y lwfans buddsoddi blynyddol a hawliwyd ar y gronfa hon; rhowch ef isod.'''
-
-# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
-[strings."ch.ct600.special-rate-pool-annual-investment-allowance"]
-hash = "8b6fc7b7c4ed"
-cy = '''Lwfans buddsoddi blynyddol a hawliwyd ar y gronfa gyfradd arbennig'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.special-rate-pool-annual-investment-allowance-hint"]
@@ -16192,14 +16152,9 @@ hash = "e8503939c072"
 cy = '''Er enghraifft, £600 neu £193.54. Dim mwy na’r dreth sy’n daladwy ym mlwch 525.'''
 
 # no HMRC Welsh found
-[strings."ch.ct600.own-corporation-tax"]
-hash = "1a9d1d0ac85e"
-cy = '''Treth Gorfforaeth yn ôl eich cyfrifiad eich hun (dewisol)'''
-
-# no HMRC Welsh found
 [strings."ch.ct600.own-corporation-tax-hint"]
-hash = "d074a70333be"
-cy = '''Gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.'''
+hash = "539787068aaa"
+cy = '''Eich cyfrifiad eich hun o’r ffigur hwn, fel gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.loans-made"]
@@ -16665,11 +16620,6 @@ cy = '''Rhaid i’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymla
 [strings."ch.ct600.problem-note-value"]
 hash = "1c3da7044802"
 cy = '''Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedau sefydlog {assets}'''
-
-# no HMRC Welsh found
-[strings."ch.ct600.problem-note-depreciation"]
-hash = "bbfb6091f7a9"
-cy = '''Rhaid i’r dibrisiant a adiwyd yn ôl fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-required-principal-activity"]
@@ -28868,3 +28818,60 @@ cy = '''Cyflogau, Yswiriant Gwladol y cyflogwr a chyfraniadau pensiwn. Mae’r l
 [strings."ch.ct600.micro-pl-other-charges-admin-hint"]
 hash = "53a62f776fd8"
 cy = '''Pob cost arall y cyfnod: y treuliau gweinyddol llai’r costau staff a’r dibrisiant.'''
+
+# == The CT computation lines and the fields that fill them, from HMRC's CT computations taxonomy labels, ids ch.ct.line-* and ch.ct600.* ==
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-loan-credits"]
+hash = "2f49a995989f"
+cy = '''Addasiadau, credydau perthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu yn ôl y cyfrifon'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-depreciation"]
+hash = "7566935bc4f1"
+cy = '''Addasiadau, dibrisiant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-amortisation"]
+hash = "0723ef202b37"
+cy = '''Addasiadau, amorteiddiad'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-entertaining"]
+hash = "b06c05514ca0"
+cy = '''Addasiadau, adloniant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct.line-donations"]
+hash = "450d8fcdbc6a"
+cy = '''Addasiadau, rhoddion'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.depreciation"]
+hash = "7566935bc4f1"
+cy = '''Addasiadau, dibrisiant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.amortisation"]
+hash = "0723ef202b37"
+cy = '''Addasiadau, amorteiddiad'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.entertaining"]
+hash = "b06c05514ca0"
+cy = '''Addasiadau, adloniant'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.special-rate-pool-annual-investment-allowance"]
+hash = "14310b71ab22"
+cy = '''Cronfa gyfradd arbennig, lwfans buddsoddi blynyddol'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.own-corporation-tax"]
+hash = "dc38d836e844"
+cy = '''Treth Gorfforaeth sy’n daladwy'''
+
+# no HMRC Welsh found; built from the glossary's adjustments and HMRC's Welsh CT600 terms
+[strings."ch.ct600.problem-note-depreciation"]
+hash = "2d7d9e94b9ed"
+cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''

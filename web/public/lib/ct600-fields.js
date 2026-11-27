@@ -833,6 +833,35 @@ export const FIRST_PERIOD_START_REFUSAL = siteText(
   "Submit files a long period when the first accounting period starts on the first day of the accounts.",
 );
 
+// Each computation line in the order HMRC's computation prints it: a deduction shows in
+// brackets, a subtotal has a rule above it and the total a double rule below it. A line that
+// files a ct-comp concept takes that concept's standard label.
+export const COMPUTATION_LINES = [
+  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss before tax per the accounts") },
+  {
+    field: "nonTradingLoanRelationshipCredits",
+    meaning: siteText("ch.ct.line-loan-credits", "Adjustments, non-trading loan relationship credits per accounts"),
+    deduction: true,
+  },
+  { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Adjustments, depreciation") },
+  { field: "amortisation", meaning: siteText("ch.ct.line-amortisation", "Adjustments, amortisation") },
+  { field: "entertaining", meaning: siteText("ch.ct.line-entertaining", "Adjustments, entertaining") },
+  { field: "donations", meaning: siteText("ch.ct.line-donations", "Adjustments, donations") },
+  {
+    field: "adjustedProfitBeforeAccountingPeriodAdjustments",
+    meaning: siteText("ch.ct.line-before-apportionment", "Adjusted profit before the time apportionment"),
+    style: "subtotal",
+  },
+  { field: "timeApportionment", meaning: siteText("ch.ct.line-time-apportionment", "Time apportionment"), deduction: false },
+  {
+    field: "adjustedProfitBeforeCapitalAllowances",
+    meaning: siteText("ch.ct.line-before-allowances", "Adjusted profit before capital allowances"),
+    style: "subtotal",
+  },
+  { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
+  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted trading profit (box 155)"), style: "total" },
+];
+
 // The typed fields. type: text, date, count, whole-pounds, pounds-and-pence, choice, checkbox.
 // figure is the key in the figures model; target is the id the model's problems for that key show beside.
 export const CT600_FORM_FIELDS = [
@@ -916,7 +945,7 @@ export const CT600_FORM_FIELDS = [
     section: "computation",
     figure: "depreciation",
     type: WHOLE,
-    label: siteText("ch.ct600.depreciation", "Depreciation added back"),
+    label: siteText("ch.ct600.depreciation", "Adjustments, depreciation"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.depreciation-hint", "It starts as the note's charge for the year, when a note is given.")}`,
     default: "0",
     source: { thisYear: sheetCell("CorporationTax!I8"), workbookLabel: "Add back depreciation charged during the year" },
@@ -926,7 +955,7 @@ export const CT600_FORM_FIELDS = [
     section: "computation",
     figure: "amortisation",
     type: WHOLE,
-    label: siteText("ch.ct600.amortisation", "Amortisation added back"),
+    label: siteText("ch.ct600.amortisation", "Adjustments, amortisation"),
     hint: MONEY_HINT,
     default: "0",
     source: {
@@ -940,7 +969,7 @@ export const CT600_FORM_FIELDS = [
     section: "computation",
     figure: "entertaining",
     type: WHOLE,
-    label: siteText("ch.ct600.entertaining", "Entertaining added back"),
+    label: siteText("ch.ct600.entertaining", "Adjustments, entertaining"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.entertaining-hint", "No more than the cost of sales plus administrative expenses.")}`,
     default: "0",
     source: { thisYear: sheetCell("CorporationTax!I9"), workbookLabel: "Add back business entertainment" },
@@ -1050,10 +1079,7 @@ export const CT600_FORM_FIELDS = [
     section: "allowances",
     figure: "specialRatePoolAnnualInvestmentAllowance",
     type: WHOLE,
-    label: siteText(
-      "ch.ct600.special-rate-pool-annual-investment-allowance",
-      "Annual investment allowance claimed on the special rate pool",
-    ),
+    label: siteText("ch.ct600.special-rate-pool-annual-investment-allowance", "Special rate pool, annual investment allowance"),
     hint: `${MONEY_HINT}. ${siteText("ch.ct600.special-rate-pool-annual-investment-allowance-hint", "Part of the annual investment allowance in box 690. Box 695 includes it and box 705 leaves it out.")}`,
     default: "0",
   },
@@ -1197,10 +1223,10 @@ export const CT600_FORM_FIELDS = [
     section: "payments",
     figure: "ownCorporationTax",
     type: "pounds-and-pence",
-    label: siteText("ch.ct600.own-corporation-tax", "Corporation Tax per your own working (optional)"),
+    label: siteText("ch.ct600.own-corporation-tax", "Corporation tax chargeable"),
     hint: siteText(
       "ch.ct600.own-corporation-tax-hint",
-      "A check only. If it differs from box 440 by more than £5, the review stops and names both figures.",
+      "Your own working of this figure, as a check only. If it differs from box 440 by more than £5, the review stops and names both figures.",
     ),
     optional: true,
     source: {
@@ -3021,7 +3047,7 @@ function fixedAssetNoteProblems(values, problem) {
   if (amountOf(values, "depreciation", true) !== charge) {
     problem(
       "depreciation",
-      siteText("ch.ct600.problem-note-depreciation", "Depreciation added back must equal the note's charge for the year, {charge}", {
+      siteText("ch.ct600.problem-note-depreciation", "Adjustments, depreciation must equal the note's charge for the year, {charge}", {
         charge,
       }),
     );

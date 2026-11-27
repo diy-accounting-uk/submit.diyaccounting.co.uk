@@ -862,14 +862,13 @@ window.WELSH_TEXT = {
   "ch.ct.limits-rule": "Y terfyn elw bychan a’r terfyn uchaf, wedi’u graddio i {days} diwrnod y cyfnod cyfrifyddu hwn",
   "ch.ct.limits-value": "£{small} a £{upper}",
   "ch.ct.line-adjusted-profit": "Elw masnachu wedi’i addasu (blwch 155)",
-  "ch.ct.line-amortisation": "Adio: amorteiddiad",
+  "ch.ct.line-amortisation": "Addasiadau, amorteiddiad",
   "ch.ct.line-before-allowances": "Elw wedi’i addasu cyn lwfansau cyfalaf",
   "ch.ct.line-before-apportionment": "Elw wedi’i addasu cyn dosrannu amser",
-  "ch.ct.line-depreciation": "Adio: dibrisiant",
-  "ch.ct.line-donations": "Adio: rhoddion",
-  "ch.ct.line-entertaining": "Adio: adloniant",
-  "ch.ct.line-loan-credits":
-    "Llai: llog banc, cymdeithas adeiladu neu log arall, ac elw o berthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu (blwch 170)",
+  "ch.ct.line-depreciation": "Addasiadau, dibrisiant",
+  "ch.ct.line-donations": "Addasiadau, rhoddion",
+  "ch.ct.line-entertaining": "Addasiadau, adloniant",
+  "ch.ct.line-loan-credits": "Addasiadau, credydau perthnasoedd benthyciadau nad ydynt yn ymwneud â masnachu yn ôl y cyfrifon",
   "ch.ct.line-long-adjusted": "Elw wedi’i addasu ar gyfer {days} diwrnod y cyfnod cyfrifon",
   "ch.ct.line-long-apportionment": "Dosrannu amser: {days} o {whole} diwrnod",
   "ch.ct.line-profit-per-accounts": "Elw neu golled cyn treth yn ôl y cyfrifon",
@@ -1070,7 +1069,7 @@ window.WELSH_TEXT = {
   "ch.ct.your-receipts": "Eich derbynebau",
   "ch.ct600.accounting-policies": "Polisïau cyfrifyddu",
   "ch.ct600.accounting-policies-hint": "Sut y caiff y cyfrifon eu paratoi, er enghraifft o dan adran 1A FRS 102 ar sail cost hanesyddol.",
-  "ch.ct600.amortisation": "Amorteiddiad a adiwyd yn ôl",
+  "ch.ct600.amortisation": "Addasiadau, amorteiddiad",
   "ch.ct600.annual-investment-allowance-hint": "Yr uchafswm yw 1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.",
   "ch.ct600.annual-investment-allowance-outside-trade-hint":
     "Lwfans buddsoddi blynyddol a hawliwyd y tu allan i’r cyfrifiad o elw masnachu. Nid yw’n newid yr elw masnachu.",
@@ -1250,7 +1249,7 @@ window.WELSH_TEXT = {
   "ch.ct600.declaration-accepted-hint": "Ticiwch hwn pan fydd y Ffurflen Dreth, y cyfrifon a’r cyfrifiannau’n gywir ac yn gyflawn.",
   "ch.ct600.declaration-hmrc":
     "Rwyf yn datgan bod yr wybodaeth a roddais ar y Ffurflen Dreth y Cwmni hon ac ar unrhyw dudalennau atodol yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.",
-  "ch.ct600.depreciation": "Dibrisiant a adiwyd yn ôl",
+  "ch.ct600.depreciation": "Addasiadau, dibrisiant",
   "ch.ct600.depreciation-hint": "Mae’n dechrau fel tâl y nodyn ar gyfer y flwyddyn, pan roddir nodyn.",
   "ch.ct600.director-date-approved": "Dyddiad cymeradwyo",
   "ch.ct600.director-date-approved-hint": "Y diwrnod y cymeradwyodd y bwrdd y cyfrifon. Nid yw ar ôl heddiw.",
@@ -1276,7 +1275,7 @@ window.WELSH_TEXT = {
   "ch.ct600.donations-paid": "Blwch 305: Cyfraniadau cymhwysol a dalwyd yn y cyfnod cyfrifyddu",
   "ch.ct600.donations-paid-hint":
     "Cyfraniadau cymhwysol i elusennau a dalwyd yn y cyfnod cyfrifyddu hwn. Maen nhw’n cael eu hawlio yn erbyn cyfanswm yr elw ym mlwch 305 y Ffurflen Dreth hon.",
-  "ch.ct600.entertaining": "Adloniant a adiwyd yn ôl",
+  "ch.ct600.entertaining": "Addasiadau, adloniant",
   "ch.ct600.entertaining-hint": "Dim mwy na chost gwerthiant adio treuliau gweinyddol.",
   "ch.ct600.first-period-start-question": "A yw’r cyfnod cyfrifyddu cyntaf yn dechrau ar {start}?",
   "ch.ct600.first-period-start-refusal":
@@ -1343,9 +1342,9 @@ window.WELSH_TEXT = {
   "ch.ct600.not-given": "Heb ei roi",
   "ch.ct600.note-label": "{title}: {label}",
   "ch.ct600.other-machinery-and-plant-expenditure-hint": "Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.",
-  "ch.ct600.own-corporation-tax": "Treth Gorfforaeth yn ôl eich cyfrifiad eich hun (dewisol)",
+  "ch.ct600.own-corporation-tax": "Treth Gorfforaeth sy’n daladwy",
   "ch.ct600.own-corporation-tax-hint":
-    "Gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.",
+    "Eich cyfrifiad eich hun o’r ffigur hwn, fel gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.",
   "ch.ct600.period": "Y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu",
   "ch.ct600.period-hint":
     "Mae’r cyfrifon yn cwmpasu’r cyfnod hwn. Mae’n dechrau ar 1 Ebrill 2015 neu ar ôl hynny, yn dod i ben cyn heddiw ac yn para hyd at 18 mis. Mae cyfnod dros 12 mis yn cael ei ffeilio fel dwy Ffurflen Dreth.",
@@ -1388,7 +1387,7 @@ window.WELSH_TEXT = {
     "Nid yw’r fantolen ar gyfer y llynedd yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}",
   "ch.ct600.problem-micro-unbalanced-this":
     "Nid yw’r fantolen ar gyfer eleni yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}",
-  "ch.ct600.problem-note-depreciation": "Rhaid i’r dibrisiant a adiwyd yn ôl fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}",
+  "ch.ct600.problem-note-depreciation": "Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}",
   "ch.ct600.problem-note-value": "Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedau sefydlog {assets}",
   "ch.ct600.problem-pence": "Rhowch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54",
   "ch.ct600.problem-repayment-date": "Rhowch ddyddiad yr ad-daliad",
@@ -1440,7 +1439,7 @@ window.WELSH_TEXT = {
   "ch.ct600.special-rate-allowance-expenditure-hint": "Mae angen hwn pryd bynnag y caiff blwch 693 ei lenwi.",
   "ch.ct600.special-rate-allowances-hint": "Y lwfans cyfradd arbennig ar asedion cyfradd arbennig newydd.",
   "ch.ct600.special-rate-pool-allowances-hint": "Gadewch allan y lwfans buddsoddi blynyddol a hawliwyd ar y gronfa hon; rhowch ef isod.",
-  "ch.ct600.special-rate-pool-annual-investment-allowance": "Lwfans buddsoddi blynyddol a hawliwyd ar y gronfa gyfradd arbennig",
+  "ch.ct600.special-rate-pool-annual-investment-allowance": "Cronfa gyfradd arbennig, lwfans buddsoddi blynyddol",
   "ch.ct600.special-rate-pool-annual-investment-allowance-hint":
     "Rhan o’r lwfans buddsoddi blynyddol ym mlwch 690. Mae blwch 695 yn ei gynnwys ac mae blwch 705 yn ei adael allan.",
   "ch.ct600.statement-directors-responsibilities":
