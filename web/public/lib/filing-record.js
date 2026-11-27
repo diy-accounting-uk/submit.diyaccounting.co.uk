@@ -163,7 +163,7 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
 }
 
 /**
- * A CT600 box's value as the review and the filed copy show it: a rate with its %, box 329 as Yes,
+ * A CT600 box's value as the review and the filed copy show it: a rate with its %, an indicator box as Yes,
  * the period's dates in words, other coded boxes as filed; null for an amount.
  */
 export function ct600BoxText(box, value) {
@@ -171,7 +171,7 @@ export function ct600BoxText(box, value) {
   if (!TEXT_BOXES.has(key)) return null;
   if (value === undefined || value === null || value === "") return ABSENT;
   if (key === 340 || key === 390) return `${value}%`;
-  if (key === 329) return siteText("ch.ct.yes", "Yes");
+  if (key === 329 || String(value) === "yes") return siteText("ch.ct.yes", "Yes");
   if (key === 4 && String(value) === "0") return siteText("ch.ct.box-4-none", "Not one of the listed types");
   if ((key === 30 || key === 35) && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) return longDateText(String(value));
   return String(value);

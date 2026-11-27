@@ -16055,8 +16055,8 @@ cy = '''Cyfraniadau cymhwysol i elusennau. Maen nhw’n cael eu hadio’n ôl at
 
 # no HMRC Welsh found
 [strings."ch.ct600.annual-investment-allowance-hint"]
-hash = "b7b1cc315705"
-cy = '''Yr uchafswm yw 1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.'''
+hash = "0ac2389b43d5"
+cy = '''Yr uchafswm yw £1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 # no HMRC Welsh found

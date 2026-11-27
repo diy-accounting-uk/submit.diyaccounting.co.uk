@@ -229,6 +229,19 @@
   .customer-copy-sheet .submission-record table.statement td.text-value {
     overflow-wrap: anywhere;
   }
+  /* The filed CT600's statement, with its Box column: tighter cells, and a label that breaks between words, not inside one. */
+  .customer-copy-sheet .submission-record table.statement:has(td.box-reference) :is(th, td) {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  .customer-copy-sheet .submission-record table.statement:has(td.box-reference) :is(th, td).box-reference {
+    width: auto;
+    padding-left: 0;
+  }
+  .customer-copy-sheet .submission-record table.statement:has(td.box-reference) td.label:not(.box-reference) {
+    padding-right: 0.5rem;
+    overflow-wrap: break-word;
+  }
 }
 
 /* The customer copy. */
@@ -404,7 +417,7 @@
 }
 
 /* The review's CT600 record: a Change link at the end of each box's row, in a blue that reads on the
-   sheet's white paper in either theme. Below 40rem it sits on its own line under the row. */
+   sheet's white paper in either theme. Below 40rem the answer and its Change link share a line under the question. */
 .customer-copy-sheet .submission-record table.statement td.change {
   text-align: right;
   white-space: nowrap;
@@ -413,21 +426,39 @@
 .customer-copy-sheet .submission-record table.statement td.change a {
   color: #1d4f91;
 }
+/* A label or a text answer that wraps keeps its box number and its Change link on its first line. */
+.customer-copy-sheet .submission-record table.statement tr:has(td.change) td {
+  vertical-align: top;
+}
 @media (max-width: 40rem) {
   .customer-copy-sheet .submission-record table.statement tr:has(td.change) {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     column-gap: 0.75rem;
+    padding: 0.5rem 0;
   }
-  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.label:not(.box-reference) {
-    flex: 1 1 60%;
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td {
+    padding: 0;
+  }
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.box-reference {
+    flex: 0 0 4rem;
+  }
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.label:not(.box-reference):not(.text-value) {
+    flex: 1 1 calc(100% - 4.75rem);
     min-width: 0;
+    padding: 0;
+    color: inherit;
+  }
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.text-value,
+  .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.figure {
+    flex: 1 1 auto;
+    margin-left: 4.75rem;
+    text-align: left;
   }
   .customer-copy-sheet .submission-record table.statement tr:has(td.change) td.change {
     display: block;
-    flex: 1 1 100%;
-    padding: 0 0 0.5rem;
-    text-align: left;
+    flex: none;
+    text-align: right;
   }
 }

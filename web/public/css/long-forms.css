@@ -84,3 +84,12 @@ h2 + form > .form-section:first-child {
 .capital-table > .btn-small:not(.remove-row) {
   margin-bottom: var(--space-4);
 }
+
+/* Rows the reader adds and removes: each row's Remove button stands off the next row, and the Add button stands off the question after it. */
+.loan-row {
+  margin-bottom: var(--space-3);
+}
+
+.add-row-button {
+  margin-bottom: var(--space-5);
+}

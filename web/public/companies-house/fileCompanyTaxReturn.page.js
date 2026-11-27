@@ -986,7 +986,7 @@ function loansPartBody(part, questions) {
       create("div", { id: id("loanRows") }),
       create(
         "button",
-        { "type": "button", "id": id("addLoanBtn"), "class": "secondary-button", "data-part": String(part) },
+        { "type": "button", "id": id("addLoanBtn"), "class": "secondary-button add-row-button", "data-part": String(part) },
         siteText("ch.ct.add-participator", "Add another participator"),
       ),
       releasedBeforeEnd,
@@ -1006,7 +1006,7 @@ function loansPartBody(part, questions) {
         create("div", { id: id("repaymentRows") }),
         create(
           "button",
-          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary-button", "data-part": String(part) },
+          { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary-button add-row-button", "data-part": String(part) },
           siteText("ch.ct.add-repayment", "Add another repayment"),
         ),
       ),

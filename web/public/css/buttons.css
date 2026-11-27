@@ -204,7 +204,8 @@
 }
 
 /* A heading that follows a row of buttons starts a new block. */
-.button-group + h3 {
+.button-group + h3,
+section:has(> .button-group:last-child) + section > h3:first-child {
   margin-top: var(--space-5);
 }
 

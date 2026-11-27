@@ -117,7 +117,8 @@ export function noteOf(field, id = field.id) {
       ...(index > 0 ? [", "] : []),
       create("a", { href: link.href, target: "_blank", rel: "noopener" }, link.text),
     ]);
-    note.append(field.hint ? " " : "", ...anchors, ...inEnglish, ".");
+    const hintGap = !field.hint ? "" : /[.!?]$/.test(field.hint.trim()) ? " " : ". ";
+    note.append(hintGap, ...anchors, ...inEnglish, ".");
   }
   return note;
 }

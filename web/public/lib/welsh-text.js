@@ -1070,7 +1070,7 @@ window.WELSH_TEXT = {
   "ch.ct600.accounting-policies": "Polisïau cyfrifyddu",
   "ch.ct600.accounting-policies-hint": "Sut y caiff y cyfrifon eu paratoi, er enghraifft o dan adran 1A FRS 102 ar sail cost hanesyddol.",
   "ch.ct600.amortisation": "Addasiadau, amorteiddiad",
-  "ch.ct600.annual-investment-allowance-hint": "Yr uchafswm yw 1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.",
+  "ch.ct600.annual-investment-allowance-hint": "Yr uchafswm yw £1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.",
   "ch.ct600.annual-investment-allowance-outside-trade-hint":
     "Lwfans buddsoddi blynyddol a hawliwyd y tu allan i’r cyfrifiad o elw masnachu. Nid yw’n newid yr elw masnachu.",
   "ch.ct600.asset-additions": "Ychwanegiadau",

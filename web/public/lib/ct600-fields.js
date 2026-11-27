@@ -991,7 +991,7 @@ export const CT600_FORM_FIELDS = [
     box: 690,
     type: WHOLE,
     label: boxLabel(690),
-    hint: `${MONEY_HINT}. ${siteText("ch.ct600.annual-investment-allowance-hint", "The most is 1,000,000 for 12 months, reduced in proportion for a shorter period.")}`,
+    hint: `${MONEY_HINT}. ${siteText("ch.ct600.annual-investment-allowance-hint", "The most is £1,000,000 for 12 months, reduced in proportion for a shorter period.")}`,
     default: "0",
   },
   {

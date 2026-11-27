@@ -34,6 +34,7 @@ import {
   sourceDisclosure,
   sourceImagePath,
   sourceLinkOf,
+  sourceLinksOf,
 } from "../public/lib/field-detail.js";
 
 const FIELDS = [
@@ -113,6 +114,19 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
     );
     expect(disclosure.querySelector(".field-source__note").textContent).toBe(field.source.differenceNote);
     expect([...disclosure.querySelectorAll("img")].map((image) => image.getAttribute("src"))).toHaveLength(5);
+  });
+
+  test("a hint with no full stop of its own is a sentence before the source link", () => {
+    const linked = FIELDS.filter((field) => field.hint && sourceLinksOf(field).length > 0);
+    const bare = linked.find(({ hint }) => hint === "For example, £600 or £1,200");
+    expect(noteOf(bare).textContent).toMatch(/^For example, £600 or £1,200\. \S/);
+    const sentence = linked.find(({ hint }) => hint.endsWith("."));
+    expect(noteOf(sentence).textContent.startsWith(`${sentence.hint} `)).toBe(true);
+  });
+
+  test("a hint writes an amount in thousands with its pound sign", () => {
+    const bare = FIELDS.filter(({ hint }) => /(?<![£\d,.])\d{1,3}(?:,\d{3})+/.test(hint ?? "")).map(({ id }) => id);
+    expect(bare).toEqual([]);
   });
 
   test("a field the spreadsheets do not hold says so in its disclosure", () => {

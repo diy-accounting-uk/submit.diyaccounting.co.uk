@@ -134,6 +134,7 @@ test.describe("File Company Tax Return entry form", () => {
   async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }, practice = {}) {
     await page.addInitScript((email) => {
       try {
+        localStorage.setItem("consent.analytics", "declined");
         localStorage.setItem("cognitoIdToken", "mock-id-token");
         localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email }));
       } catch {
@@ -773,7 +774,7 @@ test.describe("File Company Tax Return entry form", () => {
       page.locator("#addRepaymentBtn"),
       page.locator('[data-repayment-row="1"] button[data-remove="repayment"]'),
     ]) {
-      await expect(button).toHaveClass("secondary-button");
+      await expect(button).toHaveClass(/(^| )secondary-button( |$)/);
       await expect(button).toHaveCSS("border-top-style", "solid");
     }
     expect(await page.locator("#addLoanBtn").evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(
@@ -929,6 +930,18 @@ test.describe("File Company Tax Return entry form", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.locator("#previewView").screenshot({ path: `target/screenshots/ct600-review/review-${width}.png` });
     }
+    const answerUnderQuestion = async (rowId) =>
+      page.locator(`#${rowId}`).evaluate((row) => {
+        const cells = [...row.children].filter((cell) => getComputedStyle(cell).display !== "none");
+        const [question, answer] = [cells.at(-3), cells.at(-2)].map((cell) => cell.getBoundingClientRect());
+        return answer.top >= question.bottom - 1;
+      });
+    expect(await answerUnderQuestion("review-row-utr")).toBe(true);
+    const unboxed = await page
+      .locator("#reviewAnswers tr[id^=review-row-]")
+      .evaluateAll((rows) => rows.filter((row) => row.querySelector("td.review-table__box-cell:empty")).map((row) => row.id));
+    expect(unboxed.length).toBeGreaterThan(0);
+    for (const rowId of unboxed) expect(await answerUnderQuestion(rowId), rowId).toBe(true);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.locator("#review-row-currentTurnover a.review-change").click();
     await expect(page.locator("#formView")).toBeVisible();
@@ -956,6 +969,15 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(box3.locator("td").nth(1)).toHaveText("Tax reference");
     await expect(box3.locator("td.text-value")).toHaveText("8596148860");
     await expect(page.locator("#review-row-directorDateApproved")).toContainText("15 September 2026");
+    await page.setViewportSize({ width: 390, height: 900 });
+    for (const rowId of ["review-box-3", "review-box-440"]) {
+      const [label, answer, change] = await page
+        .locator(`#${rowId}`)
+        .evaluate((row) => [row.children[1], row.children[2], row.children[3]].map((cell) => cell.getBoundingClientRect().toJSON()));
+      expect(Math.abs(answer.left - label.left), rowId).toBeLessThanOrEqual(1);
+      expect(Math.abs(change.top - answer.top), rowId).toBeLessThanOrEqual(4);
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
 
     await page.locator("#review-row-annualInvestmentAllowance a.review-change").click();
     await expect(page.locator("#foldAllowances")).toHaveAttribute("open", "");
@@ -2081,6 +2103,9 @@ test.describe("File Company Tax Return entry form", () => {
       await page.locator("#section-period").screenshot({ path: recordScreenshotPath("ct600-long-period-panel", width) });
       await page.locator("#section-allowances").screenshot({ path: recordScreenshotPath("ct600-long-period-columns", width) });
       await page.locator("#section-loans").screenshot({ path: recordScreenshotPath("ct600-long-period-loans", width) });
+      const addButton = await page.locator("#addLoanBtnAp2").boundingBox();
+      const nextQuestion = await page.locator("#addLoanBtnAp2 + *").boundingBox();
+      expect(nextQuestion.y - (addButton.y + addButton.height)).toBeGreaterThanOrEqual(16);
       await page.locator("#workedTax").screenshot({ path: recordScreenshotPath("ct600-long-period-worked-tax", width) });
       await page.locator("#previewBtn").click();
       await expect(page.locator("#previewView")).toBeVisible();
@@ -2243,10 +2268,29 @@ test.describe("File Company Tax Return entry form", () => {
         "mailto:support@diyaccounting.co.uk",
       );
 
+      const brokenWords = await record.locator("td.label").evaluateAll((cells) =>
+        cells.flatMap((cell) => {
+          const node = cell.firstChild;
+          if (!node || node.nodeType !== Node.TEXT_NODE) return [];
+          return [...node.textContent.matchAll(/[^\s-]+/g)]
+            .filter((word) => {
+              const range = document.createRange();
+              range.setStart(node, word.index);
+              range.setEnd(node, word.index + word[0].length);
+              return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size > 1;
+            })
+            .map((word) => word[0]);
+        }),
+      );
+      expect(brokenWords).toEqual([]);
+
       const text = await page.locator("#returnRecord").innerText();
       expect(text).not.toContain("undefined");
       expect(text).not.toContain("NaN");
       expect(await pageScrollsSideways(page)).toBe(false);
+      const amendButtons = await page.locator("#amendPanel .button-group").boundingBox();
+      const helpHeading = await page.locator("#supportHelpHeading").boundingBox();
+      expect(helpHeading.y - (amendButtons.y + amendButtons.height)).toBeGreaterThanOrEqual(16);
       await page.screenshot({ path: recordScreenshotPath(`ct600-result-${scheme}`, width), fullPage: true });
     });
   }

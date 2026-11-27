@@ -77,9 +77,9 @@
             "role": "heading",
             "name": "View your books in DIYA-GL"
           },
-          "caption": "diya-gl keeps a sole trader's books, free, in your browser.",
-          "headline": "A sole trader's books",
-          "keyWord": "books",
+          "caption": "diya-gl keeps a sole trader's records, free, in your browser.",
+          "headline": "A sole trader's records",
+          "keyWord": "records",
           "dwellMs": 600,
           "instruction": "Open the Basic Sole Trader book at diya-gl.co.uk/bst.html."
         },
