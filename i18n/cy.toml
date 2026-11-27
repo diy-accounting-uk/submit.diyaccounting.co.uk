@@ -5114,8 +5114,8 @@ hash = "465d6d1078a2"
 cy = '''Llenwyd y naw blwch o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, yna cyflwynwch.'''
 
 [strings."widget.books-heading"]
-hash = "6f8e51431cf9"
-cy = '''Llenwi o’ch llyfrau'''
+hash = "e48d7cc2dc3d"
+cy = '''Llenwi o’ch cofnodion'''
 
 [strings."widget.books-hint"]
 hash = "4110bc3b7239"
@@ -5130,16 +5130,16 @@ hash = "3e10c3cd6e0d"
 cy = '''Dewis ffeil'''
 
 [strings."widget.books-drop"]
-hash = "347bd9fc8998"
-cy = '''Gollyngwch lyfr yma'''
+hash = "a5e4b360b855"
+cy = '''Gollyngwch ffeil yma'''
 
 [strings."widget.books-file-label"]
-hash = "5a2169b7d04a"
-cy = '''Ffeil y llyfr i’w mewnforio'''
+hash = "7962d666339e"
+cy = '''Ffeil i’w mewnforio'''
 
 [strings."widget.books-saved-label"]
-hash = "e1139c29d726"
-cy = '''Neu defnyddiwch un o lyfrau cadw’r cleient'''
+hash = "1a5d5f63f1d2"
+cy = '''Neu defnyddiwch un o lyfrau DIYA-GL cadw’r cleient'''
 
 [strings."widget.books-saved-use"]
 hash = "b67a330349da"
@@ -5158,8 +5158,8 @@ hash = "5bfd81210a2f"
 cy = '''Methu mewnforio {file}: {reason}.'''
 
 [strings."widget.books-handoff-unusable"]
-hash = "a52707642711"
-cy = '''Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfrau: {reason}. Ni lenwyd dim.'''
+hash = "2d3f91470981"
+cy = '''Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfr DIYA-GL: {reason}. Ni lenwyd dim.'''
 
 [strings."widget.books-handoff-sign-in"]
 hash = "18044f42ff77"
@@ -27431,8 +27431,8 @@ hash = "fd7096790558"
 cy = '''Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.'''
 
 [strings."ch.revision.downloads-summary"]
-hash = "d7a6d715c90a"
-cy = '''Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.'''
+hash = "2bf8f1a0066e"
+cy = '''Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn Llenwi o’ch cofnodion uchod.'''
 
 [strings."ch.revision.downloads-filleted"]
 hash = "4d1d3cdca563"
@@ -27461,20 +27461,20 @@ cy = '''Agor yn DIYA-GL'''
 # == The company drill-down's books in the DIYA-GL app (lib/company-books.js), ids ch.books.* ==
 
 [strings."ch.books.heading"]
-hash = "d1e84945ae4b"
-cy = '''Llyfrau’r cwmni'''
+hash = "b1d10369d099"
+cy = '''Cofnodion cyfrifyddu yn DIYA-GL'''
 
 [strings."ch.books.intro"]
-hash = "bc345126a4fa"
-cy = '''Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.'''
+hash = "67cca9e7f638"
+cy = '''Dechreuwch gofnodion cyfrifyddu’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff pob llyfr DIYA-GL ei wneud yn y porwr hwn, ac nid oes dim yn cael ei storio.'''
 
 [strings."ch.books.building"]
-hash = "c5b9ea7f8be9"
-cy = '''Yn gwneud y llyfrau…'''
+hash = "75ce616c7f65"
+cy = '''Yn gwneud y llyfrau DIYA-GL…'''
 
 [strings."ch.books.failed"]
-hash = "446c95ea338e"
-cy = '''Nid oedd modd gwneud y llyfrau: {reason}'''
+hash = "201f8c398c7d"
+cy = '''Nid oedd modd gwneud y llyfrau DIYA-GL: {reason}'''
 
 [strings."ch.books.next-period"]
 hash = "7b46099aa736"
