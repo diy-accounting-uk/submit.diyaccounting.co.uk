@@ -205,6 +205,13 @@
   overflow-wrap: anywhere;
   vertical-align: top;
 }
+/* The CT600 boxes: the question gives way to its answer, and the box number sits on the question's first line. */
+.customer-copy-sheet .submission-record table.statement:has(td.box-reference) td.label:has(+ td.text-value) {
+  min-width: 0;
+}
+.customer-copy-sheet .submission-record table.statement tr:has(td.text-value) td.box-reference {
+  vertical-align: top;
+}
 
 .customer-copy-sheet .submission-record table.statement {
   display: table;

@@ -166,6 +166,21 @@ test.describe("Filings page - customer copy", () => {
     await expect(copy.locator(".customer-copy-links a").first()).toHaveAttribute("href", "fileCompanyTaxReturn.html");
   });
 
+  test("the CT600 boxes beside the side note keep each text answer's words whole", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await openFiling(page, CT_RECEIPT_NAME, CT_RECEIPT);
+    for (const box of [1, 2, 3]) {
+      const cell = page.locator(`#ct600Box${box} td.text-value`);
+      const lines = await cell.evaluate((node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+      });
+      const words = (await cell.innerText()).split(/\s+/).length;
+      expect(lines, `box ${box}`).toBeLessThanOrEqual(words);
+    }
+  });
+
   test("a return filed with HMRC's live service is no preview, and the copy names each concept once", async ({ page }) => {
     await openFiling(page, CT_RECEIPT_NAME, {
       ...CT_RECEIPT,
