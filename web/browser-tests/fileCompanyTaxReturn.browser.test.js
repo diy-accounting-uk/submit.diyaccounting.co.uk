@@ -859,6 +859,7 @@ test.describe("File Company Tax Return entry form", () => {
   test("a section a published video shows has a closed Watch this part that loads the player at its second", async ({ page }) => {
     await serveRealSite(page);
     const list = JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/public/videos/publish.json"), "utf8"));
+    for (const video of list.videos) delete video.sections;
     const typed = list.videos.find((video) => video.id === "file-company-tax-return-typed");
     typed.sections = { "section-allowances": 83 };
     await page.route("**/videos/publish.json", (route) =>
