@@ -17,7 +17,7 @@
 
 ## Status
 
-approved 2026-11-26 (the operator's words above); in PR #880. Wave 1 gated 9e71acfc0 (`claude/comet-w01`), wave 2 gated 6f1a8d763 (`claude/comet-w02`), wave 3 gated 7eea2145a (`claude/comet-w03`, equal to anvil's tested head 5db8429d0); the laptop branches are local and signed. Wave 4 gated (`claude/comet-w04` e8acbd778, equal to anvil's tested head fd62ceca3). `claude/comet-set` e8acbd778 is PR #880 (2026-11-27); then the ci proofs in three lanes, `/auto-merge`, the prod proofs.
+approved 2026-11-26 (the operator's words above); merged as PR #880 (f00e858f1) and live on prod as `prod-f00e858` (2026-11-27 18:42 UTC); the ci proofs passed on `ci-set1`, and DSC5 and DSC6 passed on prod. Left on `NEXT.md`: WRD7's channel title sync and CTL8's narrated recordings with the walkthrough against them; ODSC1, then DSC7, follow as the set's list says.
 
 ## The goal
 
