@@ -17,7 +17,7 @@
 
 ## Status
 
-approved 2026-11-26 (the operator's words above); building. Wave 1 gated 9e71acfc0 (`claude/comet-w01`), wave 2 gated 6f1a8d763 (`claude/comet-w02`), wave 3 gated 7eea2145a (`claude/comet-w03`, equal to anvil's tested head 5db8429d0); the laptop branches are local and signed. Wave 4: WRD7 reviewed; CTL8 (the look pass) building on dusk on the wave 3 head with WRD7. DASH60 and CSF1 ride the PR inside wave 3. Then `claude/comet-set`, one PR, the ci proofs, `/auto-merge`, the prod proofs.
+approved 2026-11-26 (the operator's words above); building. Wave 1 gated 9e71acfc0 (`claude/comet-w01`), wave 2 gated 6f1a8d763 (`claude/comet-w02`), wave 3 gated 7eea2145a (`claude/comet-w03`, equal to anvil's tested head 5db8429d0); the laptop branches are local and signed. Wave 4: CTL8 (the look pass, with WRD7 merged) split to bring delivery forward (operator, 2026-11-27): dusk does the review fixes, the typed recording and the walkthrough; cyclone, bugle and epoch record long-period, book and with-accounts at the same time from dusk's e83ea9691; anvil starts `claude/anvil-comet-w04` with dusk's fixes so far; the wave 4 gate is split across workers; the 42 simulator suites run in quarters on the wave 3 head now, so the final gate re-runs only the suites CTL8 touches; the ci proofs run in three lanes at once (signed-in browser: CTN2, CTL1A, WRD2; MCP and lake: DSC4, DSC5, DSC6; anonymous: DSC3). DASH60 and CSF1 ride the PR inside wave 3. Then `claude/comet-set`, one PR, the ci proofs, `/auto-merge`, the prod proofs.
 
 ## The goal
 
