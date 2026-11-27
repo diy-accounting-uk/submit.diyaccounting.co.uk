@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { clientKindOf, UNKNOWN_CLIENT } from "../lib/client-kind.js";
+import { CLIENT_NAME_LOG_LENGTH, clientKindOf, clientNameForLog, UNKNOWN_CLIENT } from "../lib/client-kind.js";
 
 describe("clientKindOf", () => {
   it.each([
@@ -25,5 +25,14 @@ describe("clientKindOf", () => {
     expect(clientKindOf("  ")).toBe(UNKNOWN_CLIENT);
     expect(clientKindOf(42)).toBe(UNKNOWN_CLIENT);
     expect(UNKNOWN_CLIENT).toBe("unknown");
+  });
+
+  it("logs a client's name as printable ASCII, cut to its length limit", () => {
+    expect(clientNameForLog("claude-ai")).toBe("claude-ai");
+    expect(clientNameForLog("x".repeat(500))).toHaveLength(CLIENT_NAME_LOG_LENGTH);
+    expect(clientNameForLog("name\nwith\u0000control\u00e9")).toBe("name?with?control?");
+    expect(clientNameForLog(undefined)).toBeNull();
+    expect(clientNameForLog("   ")).toBeNull();
+    expect(clientNameForLog({ name: "x" })).toBeNull();
   });
 });

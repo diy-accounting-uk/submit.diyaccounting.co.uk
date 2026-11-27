@@ -28,3 +28,17 @@ export function clientKindOf(name) {
   }
   return "other";
 }
+
+export const CLIENT_NAME_LOG_LENGTH = 64;
+
+/**
+ * The client's own name as the session log records it: printable ASCII only, each other character
+ * shown as "?", cut to CLIENT_NAME_LOG_LENGTH characters, or null when the client gave no name. A
+ * client chooses its name, so the log never takes it whole.
+ * @param {unknown} name
+ * @returns {string|null}
+ */
+export function clientNameForLog(name) {
+  if (typeof name !== "string" || name.trim() === "") return null;
+  return name.slice(0, CLIENT_NAME_LOG_LENGTH).replace(/[^\x20-\x7e]/g, "?");
+}

@@ -40,7 +40,7 @@ import {
 } from "../../data/dynamoDbMcpSessionRepository.js";
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
 import { hostedInstructions, hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
-import { clientKindOf } from "../../../mcp/lib/client-kind.js";
+import { clientKindOf, clientNameForLog } from "../../../mcp/lib/client-kind.js";
 import { createSession, restoreCloudBook } from "../../../mcp/lib/book-tools.js";
 import { MCP_VENDOR_VERSION } from "../../../mcp/lib/client-headers.js";
 
@@ -296,7 +296,7 @@ export async function ingestHandler(event) {
   if (startsSession) {
     const created = await createMcpSession(hashedSub, client);
     // The raw name, once a session, so the fold in client-kind.js can be checked against what clients send.
-    logger.info({ message: "MCP session client", clientName, client });
+    logger.info({ message: "MCP session client", clientName: clientNameForLog(clientName), client });
     extraHeaders = { [SESSION_HEADER]: created.sessionId };
   } else if (!stored) {
     stored = await createMcpSession(hashedSub, client);

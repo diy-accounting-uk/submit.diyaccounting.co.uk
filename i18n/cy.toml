@@ -18808,9 +18808,9 @@ cy = '''Polisi preifatrwydd - DIY Accounting Submit'''
 hash = "ba445cff3898"
 cy = '''Polisi preifatrwydd'''
 
-[strings."privacy.last-updated-22-november-2026-83c508"]
-hash = "83c508914894"
-cy = '''Diweddarwyd ddiwethaf: 22 Tachwedd 2026'''
+[strings."privacy.last-updated-26-november-2026-ff995c"]
+hash = "ff995c055eb2"
+cy = '''Diweddarwyd ddiwethaf: 26 Tachwedd 2026'''
 
 [strings."privacy.contents-437aea"]
 hash = "437aea62a5bd"
@@ -19379,6 +19379,10 @@ cy = '''<strong>Eich derbynebau TAW</strong>: ar gyfer pob Ffurflen TAW a ffeili
 [strings."privacy.the-tools-send-no-internal-identifier-ce2c61"]
 hash = "ce2c618ff0b4"
 cy = '''Nid yw’r offer yn anfon unrhyw ddynodydd mewnol o’ch cyfrif, unrhyw ddynodydd sesiwn na chais, nac unrhyw ddata log.'''
+
+[strings."privacy.when-an-ai-client-opens-a-cfcfd6"]
+hash = "cfcfd689c0f3"
+cy = '''Pan fydd cleient AI yn agor sesiwn, rydym yn cofnodi pa fath o gleient ydyw (ChatGPT, Claude, Gemini, Copilot, cleient arall neu anhysbys), o’r enw y mae’r cleient yn ei roi, gyda dynodydd eich cyfrif wedi’i hashio. Rydym yn ei ddefnyddio i gyfrif pa gleientiaid AI y mae pobl yn eu defnyddio. Mae’r ddolen i’r ffurflen TAW yn enwi’r un math o gleient cyn y "#", fel bod ein tudalennau’n gallu cyfrif yr ymweliadau a anfonodd cleient AI.'''
 
 [strings."privacy.purpose-the-ai-client-uses-the-511f68"]
 hash = "511f688fb9db"
