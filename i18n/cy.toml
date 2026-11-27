@@ -20894,9 +20894,9 @@ cy = '''Mae creu tocyn digidol neu ffisegol i’w roi i rywun arall yn costio 10
 hash = "bc274891b428"
 cy = '''Ffi ffeilio'''
 
-[strings."terms.filing-a-confirmation-statement-with-companies-ec7aa2"]
-hash = "ec7aa26a5a8f"
-cy = '''Mae ffeilio datganiad cadarnhau gyda Thŷ’r Cwmnïau yn golygu tâl o £61.35 am bob ffeilio, yn ychwanegol at y bundle a’r credyd.'''
+[strings."terms.filing-a-confirmation-statement-through-submit-e34b58"]
+hash = "e34b5807e54c"
+cy = '''Mae ffeilio datganiad cadarnhau drwy gyflwynydd Tŷ’r Cwmnïau Submit yn costio £61.35 am bob ffeilio, yn ychwanegol at y bundle; mae’r £61.35 yn cynnwys ffi £50 Tŷ’r Cwmnïau. Os byddwch yn ffeilio o dan eich cyflwynydd Tŷ’r Cwmnïau eich hun, mae Tŷ’r Cwmnïau yn codi ei ffi £50 ar eich cyfrif credyd, ac nid yw Submit yn codi dim am y ffeilio.'''
 
 [strings."terms.subscriptions-a151f2"]
 hash = "a151f2e912fe"
@@ -21890,9 +21890,9 @@ cy = '''A allaf ffeilio cyfrifon neu ddatganiad cadarnhau gyda Thŷ’r Cwmnïau
 hash = "209627165e51"
 cy = '''Gallwch. Mae cyfrifon micro-endid, cyfrifon cwmni bach a’r datganiad cadarnhau mewn <strong>Cynhyrchu (production)</strong>. Mae ffeilio yn mynd at Dŷ’r Cwmnïau.'''
 
-[strings."help.each-filing-needs-the-resident-ltd-4e2fb8"]
-hash = "4e2fb81434be"
-cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> ar gyfer pob ffeilio. Mae ffeilio cyfrifon yn costio un credyd. Nid yw datganiad cadarnhau yn costio credyd, ac mae tâl o £61.35 am bob ffeilio.'''
+[strings."help.each-filing-needs-the-resident-ltd-0a63cc"]
+hash = "0a63ccc2355c"
+cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> ar gyfer pob ffeilio. Mae ffeilio cyfrifon yn costio un credyd. Nid yw datganiad cadarnhau yn costio credyd. Wedi’i ffeilio drwy gyflwynydd Tŷ’r Cwmnïau Submit, mae’n costio £61.35, sy’n cynnwys ffi £50 Tŷ’r Cwmnïau. Wedi’i ffeilio o dan eich cyflwynydd Tŷ’r Cwmnïau eich hun, mae Tŷ’r Cwmnïau yn codi ei ffi £50 ar eich cyfrif credyd, ac nid yw Submit yn codi dim am y ffeilio.'''
 
 [strings."help.the-psc-verification-statement-is-in-2d8a7b"]
 hash = "2d8a7b2a4142"
