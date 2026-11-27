@@ -585,12 +585,15 @@ export const TOOLS = {
       "Works out the figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company: the accounting " +
       "period, the computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment " +
       "income, losses brought forward), the profit and loss account, and the book's own trading profit and Corporation " +
-      "Tax as a check. With a path, also writes the answer as the JSON file the Company Tax Return page's book import " +
-      "reads. Use this when the person asks what their Corporation Tax will be, for their CT600 figures, or how their " +
-      "taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net " +
+      "Tax as a check. With a path, also writes the answer as the JSON file the Company Tax Return page's \"Fill from " +
+      'your records" card reads. Use this when the person asks what their Corporation Tax will be, for their CT600 ' +
+      "figures, or how their taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net " +
       "non-trading loan relationship debits, and it does not file the return or contact HMRC.",
     inputSchema: {
-      path: z.string().optional().describe("Where to write the answer as JSON for the Company Tax Return page's import"),
+      path: z
+        .string()
+        .optional()
+        .describe("Where to write the answer as JSON for the Company Tax Return page's Fill from your records card"),
     },
     handler: deriveCompanyTaxReturn,
   },

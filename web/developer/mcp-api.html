@@ -145,11 +145,11 @@
       </details>
       <details class="tool" id="tool-derive_company_tax_return">
         <summary><code>derive_company_tax_return</code> <span class="tag">hosted, production</span></summary>
-        <p>Works out the figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company: the accounting period, the computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment income, losses brought forward), the profit and loss account, and the book's own trading profit and Corporation Tax as a check. With a path, also writes the answer as the JSON file the Company Tax Return page's book import reads. Use this when the person asks what their Corporation Tax will be, for their CT600 figures, or how their taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net non-trading loan relationship debits, and it does not file the return or contact HMRC.</p>
+        <p>Works out the figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company: the accounting period, the computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment income, losses brought forward), the profit and loss account, and the book's own trading profit and Corporation Tax as a check. With a path, also writes the answer as the JSON file the Company Tax Return page's &quot;Fill from your records&quot; card reads. Use this when the person asks what their Corporation Tax will be, for their CT600 figures, or how their taxable profit is worked out. It refuses a book that is not a company's, makes a trading loss or carries net non-trading loan relationship debits, and it does not file the return or contact HMRC.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
-            <tr><td><code>path</code></td><td>string</td><td>no</td><td>Where to write the answer as JSON for the Company Tax Return page's import</td></tr>
+            <tr><td><code>path</code></td><td>string</td><td>no</td><td>Where to write the answer as JSON for the Company Tax Return page's Fill from your records card</td></tr>
           </tbody>
         </table>
         <details>
@@ -158,7 +158,7 @@
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {
     &quot;path&quot;: {
-      &quot;description&quot;: &quot;Where to write the answer as JSON for the Company Tax Return page's import&quot;,
+      &quot;description&quot;: &quot;Where to write the answer as JSON for the Company Tax Return page's Fill from your records card&quot;,
       &quot;type&quot;: &quot;string&quot;
     }
   },
