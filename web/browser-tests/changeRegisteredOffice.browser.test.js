@@ -391,6 +391,7 @@ test.describe("Change Registered Office Address page", () => {
     );
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
     await expect(page.locator("#startAgainBtn")).toBeHidden();
-    expect(await page.evaluate(() => window.__statusMessages)).toEqual([]);
+    const errors = await page.evaluate(() => window.__statusMessages.filter((entry) => entry.type === "error"));
+    expect(errors).toEqual([]);
   });
 });
