@@ -552,10 +552,6 @@ cy = '''Beth sy’n newid o 6 Ebrill 2027 i unig fasnachwr neu landlord sydd ag 
 hash = "f229a5de4d29"
 cy = '''<a href="mcp.html">Cysylltydd ar gyfer cynorthwywyr AI</a> (yn Saesneg)'''
 
-[strings."tools.use-submit-from-an-ai-assistant-b39ce7"]
-hash = "b39ce71ec6c3"
-cy = '''Defnyddiwch Submit o gynorthwyydd AI sy’n cefnogi MCP: darllen llyfr cyfrifon, cyfrifo a pharatoi Ffurflen TAW.'''
-
 [strings."tools.spreadsheets-c54847"]
 hash = "c548470c80f0"
 cy = '''<a href="spreadsheets.html">Taenlenni</a>'''
@@ -1609,10 +1605,6 @@ cy = '''Yn gweithio gyda Basic PAYE Tools CThEF'''
 [strings."spreadsheets.diya-gl-ba572e"]
 hash = "ba572e5e80fd"
 cy = '''<a href="https://diya-gl.co.uk/" target="_blank" rel="noopener"> DIYA-GL </a> (yn Saesneg)'''
-
-[strings."spreadsheets.free-double-entry-bookkeeping-for-basic-a94f39"]
-hash = "a94f39a59a1a"
-cy = '''Cadw cyfrifon dwbl am ddim ar gyfer Basic Sole Trader, Self Employed, Taxi Driver a chwmni cyfyngedig. Cadwch eich llyfrau yn y porwr, a’u cadw yn y cwmwl pan fyddwch wedi mewngofnodi.'''
 
 [strings."spreadsheets.double-entry-bookkeeping-c7e300"]
 hash = "c7e300dd620d"
@@ -3244,10 +3236,6 @@ cy = '''Gweld eich rhwymedigaethau TAW'''
 [strings."vat-submit.sign-in-to-submit-a-vat-57f235"]
 hash = "57f2353f63b4"
 cy = '''Mewngofnodwch i gyflwyno Ffurflen TAW'''
-
-[strings."vat-submit.sign-in-to-submit-your-vat-723188"]
-hash = "72318891853f"
-cy = '''Mewngofnodwch i gyflwyno’ch Ffurflen TAW i CThEF. Mae eich llyfrau, eich cysylltiad â CThEF a’ch derbynebau yn cael eu cadw gyda’ch cyfrif.'''
 
 [strings."vat-submit.vat-period-to-submit-236d4c"]
 hash = "236d4ccf5d13"
@@ -18394,10 +18382,6 @@ cy = '''Nid yw’r cyfrifon ar y dderbynneb honno yn nodi eu cyfnod, felly ni al
 hash = "e2c63ae380ef"
 cy = '''Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.'''
 
-[strings."ch-small-company.the-accounts-filed-were-a-full-78a2db"]
-hash = "78a2dba52fee"
-cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu gollyngwch lyfr y cwmni ar y cerdyn uchod.</span>'''
-
 [strings."ch.revision.prior-profit-and-loss-empty"]
 hash = "0d8f32fc2a79"
 cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.'''
@@ -19140,14 +19124,6 @@ cy = '''<strong>Logiau gweithredu Lambda</strong>: Logiau gweithredol strwythure
 hash = "d2ee287576f9"
 cy = '''<strong>Trywydd archwilio API CThEF</strong>: Cofnodion wedi’u masgio o geisiadau ac ymatebion API ar gyfer cydymffurfio a datrys problemau (mae data sensitif wedi’i olygu allan)'''
 
-[strings."privacy.google-drive-and-books-7c6792"]
-hash = "7c6792f6ee69"
-cy = '''Google Drive a llyfrau'''
-
-[strings."privacy.you-can-open-a-book-from-81c83e"]
-hash = "81c83eb9b7b3"
-cy = '''Gallwch agor llyfr o’ch Google Drive eich hun, neu gadw llyfr iddo. Mae hyn yn defnyddio mewngofnodi Google a’r caniatâd <code>drive.file</code>, sy’n gadael i’r wefan weld dim ond y ffeiliau rydych yn eu dewis neu’n eu creu gyda hi. Mae’r llyfr yn aros yn eich porwr. Dim ond y ffigurau rydych yn eu ffeilio sy’n cyrraedd gweinyddion Submit.'''
-
 [strings."privacy.google-s-own-privacy-policy-governs-9a8873"]
 hash = "9a8873bb46e1"
 cy = '''Polisi preifatrwydd Google ei hun sy’n llywodraethu eich cyfrif Drive.'''
@@ -19347,14 +19323,6 @@ cy = '''Pan fydd eich cleient AI yn galw ein pwynt terfyn MCP a letyir, rydym yn
 [strings."privacy.what-the-hosted-mcp-endpoint-sends-cacd9a"]
 hash = "cacd9a1f90bc"
 cy = '''Yr hyn y mae’r pwynt terfyn MCP a letyir yn ei anfon at eich cleient AI'''
-
-[strings."privacy.your-saved-books-the-id-title-cffbed"]
-hash = "cffbed94530f"
-cy = '''<strong>Eich llyfrau a gadwyd</strong>: id, teitl a chynnyrch pob llyfr, a’r cyfnod y mae’n ei gwmpasu.'''
-
-[strings."privacy.an-open-book-the-name-of-edb9fa"]
-hash = "edb9fa02aec9"
-cy = '''<strong>Llyfr agored</strong>: enw’r busnes, y cynnyrch, y cyfnod, nifer llinellau’r dyddlyfr a chanlyniadau gwiriadau’r llyfr.'''
 
 [strings."privacy.a-vat-return-worked-out-from-85e2a6"]
 hash = "85e2a61e7425"
@@ -20506,10 +20474,6 @@ cy = '''Mae’r Telerau Defnyddio hyn (“Telerau”) yn rheoli eich mynediad at
 hash = "3a7da1343a4e"
 cy = '''1. Yr hyn y mae’r Gwasanaeth yn ei wneud'''
 
-[strings."terms.diy-accounting-submit-is-a-web-732339"]
-hash = "73233923f9c7"
-cy = '''Rhaglen we yw DIY Accounting Submit sy’n helpu busnesau yn y DU a’u cyfrifwyr i anfon ffeiliadau at CThEF a Thŷ’r Cwmnïau, ac i gadw’r llyfrau sy’n sail iddynt. Mae’r Gwasanaeth yn cynnig:'''
-
 [strings."terms.vat-making-tax-digital-view-vat-6c4117"]
 hash = "6c41179d7329"
 cy = '''<strong>TAW (Troi Treth yn Ddigidol).</strong> Gweld rhwymedigaethau, rhwymedigaethau talu (<span lang="en-GB">liabilities</span>), taliadau a chosbau TAW. Cyflwyno Ffurflenni TAW i CThEF. Gweld Ffurflenni a gyflwynwyd a derbynebau.'''
@@ -20525,10 +20489,6 @@ cy = '''<strong>Tŷ’r Cwmnïau.</strong> Chwilio am gwmni. Newid cyfeiriad swy
 [strings."terms.diya-gl-books-save-and-load-ba7937"]
 hash = "ba79370780b9"
 cy = '''<strong>Llyfrau DIYA-GL.</strong> Cadw a llwytho llyfrau DIYA-GL yn eich cyfrif.'''
-
-[strings."terms.mcp-server-read-and-edit-a-0356f6"]
-hash = "0356f6469947"
-cy = '''<strong>Gweinydd MCP.</strong> Darllen a golygu llyfr, a ffeilio ohono, drwy gynorthwyydd deallusrwydd artiffisial sy’n cefnogi’r Model Context Protocol.'''
 
 [strings."terms.receipts-and-history-view-receipts-of-c864be"]
 hash = "c864bef93b19"
@@ -28853,6 +28813,48 @@ cy = '''<strong>Eich ffeilio cyfrifon</strong>: ar gyfer pob set o gyfrifon a ff
 hash = "ba0784ce7a1a"
 cy = '''<strong>Diben</strong>: mae’r cleient AI yn defnyddio’r data i ddangos eich llyfrau DIYA-GL i chi, i gyfrifo Ffurflen TAW, cyfrifon cwmni neu Ffurflen Dreth y Cwmni, ac i ddweud wrthych pryd mae ffeilio cwmni yn ddyledus. Yna rydych chi’n gwirio’r ffigurau ac yn eu ffeilio eich hun yn eich porwr. Nid ydym yn defnyddio’r data at unrhyw ddiben arall.'''
 
-[strings."privacy.retention-we-keep-no-copy-of-8e7d3d"]
-hash = "8e7d3d7dbf91"
-cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau heb derfyn amser. Rydym yn cadw derbynebau TAW a chyfrifon am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''
+# == The customer wording on the cards, FAQ, guide, terms, privacy and marketing site, from WRD2 to WRD4 ==
+
+[strings."tools.use-submit-from-an-ai-assistant-cb7379"]
+hash = "cb7379a97c28"
+cy = '''Defnyddiwch Submit o gynorthwyydd AI sy’n cefnogi MCP: darllen llyfr DIYA-GL, cyfrifo a pharatoi Ffurflen TAW.'''
+
+[strings."spreadsheets.free-double-entry-bookkeeping-for-basic-6a5732"]
+hash = "6a57320c3bc2"
+cy = '''Cadw cyfrifon dwbl am ddim ar gyfer Basic Sole Trader, Self Employed, Taxi Driver a chwmni cyfyngedig. Cadwch eich cofnodion yn y porwr, a’u cadw yn y cwmwl pan fyddwch wedi mewngofnodi.'''
+
+[strings."privacy.google-drive-and-diya-gl-books-5059a2"]
+hash = "5059a20e75cb"
+cy = '''Google Drive a llyfrau DIYA-GL'''
+
+[strings."privacy.you-can-open-a-diya-gl-01e5b3"]
+hash = "01e5b3a20e05"
+cy = '''Gallwch agor llyfr DIYA-GL o’ch Google Drive eich hun, neu gadw un iddo. Mae hyn yn defnyddio mewngofnodi Google a’r caniatâd <code>drive.file</code>, sy’n gadael i’r wefan weld dim ond y ffeiliau rydych yn eu dewis neu’n eu creu gyda hi. Mae’r llyfr yn aros yn eich porwr. Dim ond y ffigurau rydych yn eu ffeilio sy’n cyrraedd gweinyddion Submit.'''
+
+[strings."privacy.your-saved-diya-gl-books-the-29a948"]
+hash = "29a94837556d"
+cy = '''<strong>Eich llyfrau DIYA-GL a gadwyd</strong>: id, teitl a chynnyrch pob llyfr, a’r cyfnod y mae’n ei gwmpasu.'''
+
+[strings."privacy.an-open-diya-gl-book-the-74309f"]
+hash = "74309f234e32"
+cy = '''<strong>Llyfr DIYA-GL agored</strong>: enw’r busnes, y cynnyrch, y cyfnod, nifer llinellau’r dyddlyfr a chanlyniadau gwiriadau’r llyfr.'''
+
+[strings."terms.diy-accounting-submit-is-a-web-7b7897"]
+hash = "7b7897e157cc"
+cy = '''Rhaglen we yw DIY Accounting Submit sy’n helpu busnesau yn y DU a’u cyfrifwyr i anfon ffeiliadau at CThEF a Thŷ’r Cwmnïau, ac i gadw’r cofnodion sy’n sail iddynt. Mae’r Gwasanaeth yn cynnig:'''
+
+[strings."terms.mcp-server-read-and-edit-a-119871"]
+hash = "119871f328bf"
+cy = '''<strong>Gweinydd MCP.</strong> Darllen a golygu llyfr DIYA-GL, a ffeilio ohono, drwy gynorthwyydd deallusrwydd artiffisial sy’n cefnogi’r Model Context Protocol.'''
+
+[strings."vat-submit.sign-in-to-submit-your-vat-5ea85e"]
+hash = "5ea85e8e75bd"
+cy = '''Mewngofnodwch i gyflwyno’ch Ffurflen TAW i CThEF. Mae eich llyfrau DIYA-GL cadw, eich cysylltiad â CThEF a’ch derbynebau yn cael eu cadw gyda’ch cyfrif.'''
+
+[strings."ch-small-company.the-accounts-filed-were-a-full-dde403"]
+hash = "dde40382d9aa"
+cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu gollyngwch lyfr DIYA-GL neu becyn taenlenni’r cwmni ar y cerdyn Llenwi o’ch cofnodion uchod.</span>'''
+
+[strings."privacy.retention-we-keep-no-copy-of-35260a"]
+hash = "35260a52911d"
+cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau DIYA-GL heb derfyn amser. Rydym yn cadw derbynebau TAW a chyfrifon am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''

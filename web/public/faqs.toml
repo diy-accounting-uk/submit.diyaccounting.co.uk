@@ -565,7 +565,7 @@ priority = 35
 id = "diya-gl-books"
 activity = "diya-gl-storage"
 category = "bundles"
-question = "What is diya-gl and can I save my books here?"
+question = "What is diya-gl and can I save my DIYA-GL book here?"
 answer = """
 diya-gl is our bookkeeping software. It keeps a book of your sales and purchases and works out the figures for your filings.
 

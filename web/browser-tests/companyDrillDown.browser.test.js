@@ -547,7 +547,7 @@ test.describe("Company lookup drill-down", () => {
     expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(false);
   });
 
-  test("the Welsh books card says in Welsh that a statement date after today cannot be read", async ({ page }) => {
+  test("the Welsh accounting records card says in Welsh that a statement date after today cannot be read", async ({ page }) => {
     await serveSite(page, {
       submitEnv: "DIYA_GL_BASE_URL=https://ci.diya-gl.co.uk/\n",
       filingDataRefusal: {

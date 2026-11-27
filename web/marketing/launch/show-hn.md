@@ -17,7 +17,7 @@ https://submit.diyaccounting.co.uk/mcp.html
 
 I make DIY Accounting Submit™, a UK service that sends VAT returns to HMRC under Making Tax Digital. It is listed on HMRC's software finder for Making Tax Digital VAT.
 
-The new part is a hosted MCP connector. In Claude, add a custom connector with the address https://submit.diyaccounting.co.uk/mcp and sign in. The assistant can then list your saved bookkeeping books, open one, and work out the nine VAT return boxes for a period. It can also read the VAT receipts we stored for you.
+The new part is a hosted MCP connector. In Claude, add a custom connector with the address https://submit.diyaccounting.co.uk/mcp and sign in. The assistant can then list your saved DIYA-GL books, open one, and work out the nine VAT return boxes for a period. It can also read the VAT receipts we stored for you.
 
 The connector does not reach HMRC and it files nothing. A filing is a legal declaration, so a person makes it.
 

@@ -31,7 +31,7 @@ DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital fro
 
 DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital. Type the nine boxes, or drop a DIY Accounting spreadsheet or a DIYA-GL book on the page to fill them in. HMRC's receipt comes back with its Form Bundle Number, and we keep it with your account. You can see which VAT periods are due and look up any return you have sent. It is listed on HMRC's software finder for Making Tax Digital VAT. Start with a free day pass, then £9.99/yr / £0.99/mo.
 
-The assistant connector: add https://submit.diyaccounting.co.uk/mcp to an assistant such as Claude and sign in. The assistant opens your saved books and works out the nine VAT return boxes for a period. It files nothing.
+The assistant connector: add https://submit.diyaccounting.co.uk/mcp to an assistant such as Claude and sign in. The assistant opens your saved DIYA-GL books and works out the nine VAT return boxes for a period. It files nothing.
 
 <!-- handoff-sentence -->
 The assistant can also give you a link that opens the VAT form with the figures filled in. You check them, declare and file there, in your browser.

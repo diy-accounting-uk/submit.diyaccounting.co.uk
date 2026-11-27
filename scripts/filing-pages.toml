@@ -404,7 +404,7 @@ line = "The checker in a frame, with the one line of script that puts it on anot
 rank = 10
 href = "mcp.html"
 title = "Connector for AI assistants"
-line = "Use Submit from an AI assistant that supports MCP: read a book, derive and prepare a VAT return."
+line = "Use Submit from an AI assistant that supports MCP: read a DIYA-GL book, derive and prepare a VAT return."
 
 [[tools_page.extra]]
 rank = 11

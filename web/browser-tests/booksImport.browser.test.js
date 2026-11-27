@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/booksImport.browser.test.js
-// The "Fill from your books" card on the VAT return, the ITSA quarterly update and the ITSA annual
+// The "Fill from your records" card on the VAT return, the ITSA quarterly update and the ITSA annual
 // submission pages: a DIYA-GL book dropped or chosen is read in the browser and fills the form
 // from the figures the package's own derivations answer for the period the form names. The books
 // are the example books the diya-gl package's tests use, zipped here the way the diya-gl page
@@ -711,7 +711,7 @@ test.describe("figures sent from a DIYA-GL page in the URL fragment", () => {
     await page.goto(VAT_URL + toFragment(handoff), { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("#booksImportStatus")).toContainText(
-      "The figures sent from your books could not be used: the VAT figures vatDueSales is not a number. Nothing filled.",
+      "The figures sent from your DIYA-GL book could not be used: the VAT figures vatDueSales is not a number. Nothing filled.",
     );
     await expect(page.locator("#vatDueSales")).toHaveValue("");
     expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
@@ -722,7 +722,7 @@ test.describe("figures sent from a DIYA-GL page in the URL fragment", () => {
 
     await page.goto(VAT_URL + "#books=not%20encoded!", { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("#booksImportStatus")).toContainText("The figures sent from your books could not be used:");
+    await expect(page.locator("#booksImportStatus")).toContainText("The figures sent from your DIYA-GL book could not be used:");
     expect(await page.evaluate(() => location.hash)).toBe("");
     expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
   });
@@ -1699,7 +1699,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
   });
 
   for (const width of [1280, 390]) {
-    test(`shows the books card above the revision section (${width})`, async ({ page }) => {
+    test(`shows the Fill from your records card above the revision section (${width})`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await openAmendPage(page, MICRO_URL, microFiled(), PRECISION.number);
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));

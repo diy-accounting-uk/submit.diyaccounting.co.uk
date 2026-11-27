@@ -445,15 +445,15 @@ window.WELSH_TEXT = {
   "ch.books.auth-code-hint":
     "Mae Tŷ’r Cwmnïau yn rhoi’r cyfranddalwyr a’r cyfalaf cyfranddaliadau ar gyfer cod dilysu’r cwmni. Anfonir y cod ar gyfer y cais hwn yn unig ac ni chaiff ei gadw.",
   "ch.books.auth-code-needed": "Rhowch god dilysu’r cwmni i ychwanegu’r cyfranddalwyr a’r cyfalaf.",
-  "ch.books.building": "Yn gwneud y llyfrau…",
+  "ch.books.building": "Yn gwneud y llyfrau DIYA-GL…",
   "ch.books.capital-added": "Mae’r cyfranddalwyr a’r cyfalaf cyfranddaliadau yn y llyfr.",
   "ch.books.differences": "Beth i’w wirio yn y llyfr:",
   "ch.books.download-package": "Lawrlwytho’r flwyddyn nesaf fel pecyn taenlen",
-  "ch.books.failed": "Nid oedd modd gwneud y llyfrau: {reason}",
+  "ch.books.failed": "Nid oedd modd gwneud y llyfrau DIYA-GL: {reason}",
   "ch.books.first-period": "Nid yw’r cwmni wedi ffeilio cyfrifon eto, felly mae’r llyfr yn dechrau heb falansau agoriadol.",
-  "ch.books.heading": "Llyfrau’r cwmni",
+  "ch.books.heading": "Cofnodion cyfrifyddu yn DIYA-GL",
   "ch.books.intro":
-    "Dechreuwch lyfrau’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff y llyfrau eu gwneud yn y porwr hwn, ac nid oes dim yn cael ei storio.",
+    "Dechreuwch gofnodion cyfrifyddu’r cwmni yn ap DIYA-GL o’r hyn sydd gan Dŷ’r Cwmnïau: mae’r cyfrifon diwethaf a ffeiliwyd yn rhoi balansau agoriadol y flwyddyn nesaf. Caiff pob llyfr DIYA-GL ei wneud yn y porwr hwn, ac nid oes dim yn cael ei storio.",
   "ch.books.next-period": "Mae llyfr y flwyddyn nesaf yn rhedeg o {start} i {end}.",
   "ch.books.no-filed-book":
     "Nid oes gan y cyfrifon diwethaf ar y gofrestr ddogfen iXBRL y gall y dudalen hon ei darllen, felly nid oes balansau agoriadol yn llyfr y flwyddyn nesaf.",
@@ -2119,7 +2119,7 @@ window.WELSH_TEXT = {
   "ch.revision.downloads-open": "Agor yn DIYA-GL",
   "ch.revision.downloads-package": "Lawrlwytho fel pecyn taenlen",
   "ch.revision.downloads-summary":
-    "Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn llyfrau uchod.",
+    "Crynodeb o’r cyfrifon a ffeiliwyd yw’r llyfr: y balansau agoriadol ac un llinell ar gyfer pob ffigur a ffeiliwyd. Cywirwch ef yn ap DIYA-GL neu yn y taenlenni, yna gollyngwch ef ar y cerdyn Llenwi o’ch cofnodion uchod.",
   "ch.revision.downloads-unavailable": "Nid oedd modd troi’r cyfrifon hyn yn llyfr DIYA-GL, felly ni ellir eu lawrlwytho yma.",
   "ch.revision.line-accruals": "croniadau",
   "ch.revision.line-accruals-deferred-income": "croniadau ac incwm gohiriedig",
@@ -3404,8 +3404,8 @@ window.WELSH_TEXT = {
   "widget.books-drive-sheet":
     "Methu mewnforio {file}: Google Sheet yw hwn. Dewiswch y llyfr DIYA-GL, y gweithlyfr taenlen (.xlsx) neu’r zip pecyn yn lle hynny.",
   "widget.books-drive-waiting": "Yn aros am Google Drive...",
-  "widget.books-drop": "Gollyngwch lyfr yma",
-  "widget.books-file-label": "Ffeil y llyfr i’w mewnforio",
+  "widget.books-drop": "Gollyngwch ffeil yma",
+  "widget.books-file-label": "Ffeil i’w mewnforio",
   "widget.books-filed-boxes": "Mae atebion y Ffurflen ei hun fel y’u ffeiliwyd yn llenwi {count}.",
   "widget.books-filed-failed": "Ni ellid llenwi o {file}: {reason}.",
   "widget.books-filed-kind-accounts": "Cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau",
@@ -3418,8 +3418,8 @@ window.WELSH_TEXT = {
   "widget.books-filed-use": "Llenwi o’r ffeilio hwn",
   "widget.books-filled-ixbrl": "Llenwyd {fields} o {file} ({taxonomy}) ar gyfer y cyfnod {start} hyd at {end}.",
   "widget.books-handoff-sign-in": "Mewngofnodwch a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.",
-  "widget.books-handoff-unusable": "Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfrau: {reason}. Ni lenwyd dim.",
-  "widget.books-heading": "Llenwi o’ch llyfrau",
+  "widget.books-handoff-unusable": "Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfr DIYA-GL: {reason}. Ni lenwyd dim.",
+  "widget.books-heading": "Llenwi o’ch cofnodion",
   "widget.books-hint":
     "Gollyngwch eich llyfr DIYA-GL, eich gweithlyfr taenlen neu eich zip pecyn yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.",
   "widget.books-hint-company":
@@ -3437,7 +3437,7 @@ window.WELSH_TEXT = {
   "widget.books-reading": "Yn darllen {file}...",
   "widget.books-reading-saved": "Yn darllen y llyfr a gadwyd...",
   "widget.books-saved-failed": "Methu defnyddio’r llyfr a gadwyd: {reason}.",
-  "widget.books-saved-label": "Neu defnyddiwch un o lyfrau cadw’r cleient",
+  "widget.books-saved-label": "Neu defnyddiwch un o lyfrau DIYA-GL cadw’r cleient",
   "widget.books-saved-option": "{title} (fersiwn {version})",
   "widget.books-saved-use": "Llenwi o’r llyfr hwn",
   "widget.books-small-filled": "Llenwyd {count} maes o {file} ar gyfer y cyfnod {start} i {end}.",

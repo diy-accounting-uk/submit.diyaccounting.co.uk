@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/public/widgets/books-import.js
-// The "Fill from your books" card: a drop zone and a file dialog that read a DIYA-GL book in
+// The "Fill from your records" card: a drop zone and a file dialog that read a DIYA-GL book in
 // the browser (a DIYA-GL zip, a spreadsheets workbook or package zip, or a book as JSON) and fill
 // the filing form on the page from the figures the book derives for the period the form names.
 // The book never leaves the browser; only what the customer files reaches the server.
@@ -1172,7 +1172,7 @@
     const filler = FILLERS[kind];
     if (!container || !filler) throw new Error(`booksImport.mount: unknown kind ${kind}`);
 
-    const heading = element("h2", { id: "booksImportHeading" }, siteText("widget.books-heading", "Fill from your books"));
+    const heading = element("h2", { id: "booksImportHeading" }, siteText("widget.books-heading", "Fill from your records"));
     const hint = element(
       "p",
       { id: "booksImportHint", class: "hint" },
@@ -1200,13 +1200,13 @@
       { type: "button", id: "booksImportChoose", class: "secondary-button" },
       siteText("widget.books-choose", "Choose a file"),
     );
-    const dropText = element("span", {}, siteText("widget.books-drop", "Drop a book here"));
+    const dropText = element("span", {}, siteText("widget.books-drop", "Drop a file here"));
     dropZone.append(dropText, chooseButton);
     const fileInput = element("input", {
       "type": "file",
       "id": "booksImportFile",
       "name": "booksImportFile",
-      "aria-label": siteText("widget.books-file-label", "Book file to import"),
+      "aria-label": siteText("widget.books-file-label", "File to import"),
       "accept": takesIxbrl(kind) ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
       ...(takesIxbrl(kind) ? { multiple: "" } : {}),
       "class": "books-import-file",
@@ -1232,7 +1232,7 @@
     const savedBooksLabel = element(
       "label",
       { for: "savedBooksSelect" },
-      siteText("widget.books-saved-label", "Or use one of the client's saved books"),
+      siteText("widget.books-saved-label", "Or use one of the client's saved DIYA-GL books"),
     );
     const savedBooksSelect = element("select", { id: "savedBooksSelect", name: "savedBooksSelect" });
     const savedBooksUse = element(
@@ -1338,7 +1338,7 @@
 
     async function readFiles(files) {
       if (files.length === 1) return readFile(files[0]);
-      if (!takesIxbrl(kind)) throw new FileProblem("this page reads one book at a time; drop one file");
+      if (!takesIxbrl(kind)) throw new FileProblem("this page reads one file at a time");
       return readSet(await loadBundle(), files);
     }
 
@@ -1392,9 +1392,13 @@
         if (!(error instanceof HandoffProblem)) throw error;
         sessionStorage.removeItem(HANDOFF_KEY);
         say(
-          siteText("widget.books-handoff-unusable", "The figures sent from your books could not be used: {reason}. Nothing filled.", {
-            reason: error.message,
-          }),
+          siteText(
+            "widget.books-handoff-unusable",
+            "The figures sent from your DIYA-GL book could not be used: {reason}. Nothing filled.",
+            {
+              reason: error.message,
+            },
+          ),
         );
         return;
       }

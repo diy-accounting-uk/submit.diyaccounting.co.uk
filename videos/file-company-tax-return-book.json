@@ -241,7 +241,7 @@
           "label": "Reading the book",
           "scrollTo": {
             "role": "heading",
-            "name": "Fill from your books"
+            "name": "Fill from your records"
           },
           "timeoutMs": 60000,
           "caption": "The accounts and the tax figures fill from the book.",

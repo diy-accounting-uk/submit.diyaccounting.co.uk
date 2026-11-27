@@ -1,7 +1,7 @@
 ---
 title: "A VAT return from an AI assistant: what the assistant does and what the browser does"
 published: false
-description: "An AI assistant works out the nine VAT boxes from your book. You check them and file in the browser."
+description: "An AI assistant works out the nine VAT boxes from your DIYA-GL book. You check them and file in the browser."
 tags: mcp, ai, tax, webdev
 cover_image:
 ---

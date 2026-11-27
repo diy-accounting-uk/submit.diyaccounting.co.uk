@@ -616,7 +616,14 @@ describe("the privacy policy's part on the hosted MCP endpoint", () => {
 
   it("names each category of data the tools send, the purpose, the recipients and the retention", () => {
     expect(start).toBeGreaterThan(0);
-    const categories = ["saved books", "open book", "VAT registration number", "journal line", "counterparty", "link to the VAT form"];
+    const categories = [
+      "saved DIYA-GL books",
+      "open DIYA-GL book",
+      "VAT registration number",
+      "journal line",
+      "counterparty",
+      "link to the VAT form",
+    ];
     categories.push("form bundle number", "payment indicator", "charge reference");
     categories.push("filing deadlines", "Companies House", "company accounts", "Company Tax Return", "accounts filings");
     for (const phrase of [...categories, "Purpose", "Recipient", "OpenAI", "Anthropic", "Google", "Retention", "24 hours"]) {

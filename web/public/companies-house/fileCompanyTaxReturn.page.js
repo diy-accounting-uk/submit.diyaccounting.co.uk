@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // File Company Tax Return: companyView -> formView -> previewView -> resultView. The customer
-// types the figures (or a book fills them through the "Fill from your books" card); the form
+// types the figures (or a book fills them through the "Fill from your records" card); the form
 // checks them as they are entered and works the tax out beside them. The Government Gateway user
 // ID and password are read from the page when the return is submitted, sent once and held nowhere
 // else.

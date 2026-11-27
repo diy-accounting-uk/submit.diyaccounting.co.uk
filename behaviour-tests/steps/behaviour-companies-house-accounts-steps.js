@@ -288,7 +288,7 @@ export async function verifyPreviewContains(
 const bookFixturesDirectory = path.resolve(process.cwd(), "fixtures/diya-gl");
 
 /**
- * Zip a fixture book (book.toml and lines.jsonl) for the "Fill from your books" card, with the
+ * Zip a fixture book (book.toml and lines.jsonl) for the "Fill from your records" card, with the
  * company number the sandbox looks up in place of the fixture's own, and return the file's path.
  * peopleNamed maps a name the fixture gives a director or member to the name the zipped book gives
  * them instead.
@@ -330,11 +330,11 @@ export function writeBuiltIxbrlFile(caseName, company, outputDirectory) {
 }
 
 /**
- * Drop a book on the accounts form's "Fill from your books" card and check the fields it fills.
+ * Drop a book on the accounts form's "Fill from your records" card and check the fields it fills.
  * expectedFields maps an input id to the value the book supplies.
  */
 export async function fillAccountsFormFromBook(page, bookZipFile, expectedStatus, expectedFields, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user drops a book on Fill from your books and the accounts form fills", async () => {
+  await test.step("The user drops a DIYA-GL book on Fill from your records and the accounts form fills", async () => {
     await expect(page.locator("#booksImportDrop")).toBeVisible();
     await page.locator("#booksImportFile").setInputFiles(bookZipFile);
     await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 60_000 });
