@@ -42,7 +42,7 @@
     "com.openai": {
       "interface": {
         "displayName": "DIY Accounting Submit: MTD VAT",
-        "shortDescription": "MTD VAT return, ready for HMRC",
+        "shortDescription": "VAT return to file with HMRC",
         "longDescription": "Work out a UK VAT return under Making Tax Digital (MTD) for VAT from the bookkeeping you keep in DIY Accounting Submit.\n\nWhat it does:\n- Lists the books saved in your account and opens one. A book is one business's bookkeeping: the sales, purchases and bank lines that make up its accounts.\n- Derives the nine boxes of the VAT return for a quarter, with the journal lines behind them, so you can check each figure against your records.\n- Gives you a link to the VAT form on the Submit site with the figures filled in. You open it, connect to HMRC, check the figures, tick the declaration and file the return yourself in the browser.\n- Reads the receipts stored for the VAT returns you filed: the time HMRC processed the return and HMRC's form bundle number.\n\nWho it is for: a VAT-registered UK business that keeps its bookkeeping in DIY Accounting Submit, for example a limited company (Ltd) or a sole trader.\n\nLimits: no tool in this plugin files a return or pays HMRC. You need an existing DIY Accounting Submit account that holds your saved bookkeeping. The plugin gives no tax advice.",
         "developerName": "DIY Accounting Limited",
         "category": "Finance",
