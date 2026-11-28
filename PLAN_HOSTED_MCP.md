@@ -21,7 +21,7 @@ Recorded in MCP1's row: the operator approved the launch on 2026-11-22, each too
 
 Prod's hosted MCP connector offers each filing tool as its journey goes live, with the harness behind an operator-only activity and the listings current.
 
-**Status**: 8 open tasks (MCP1, MCP2, MCP4 to MCP9), each boarded on `NEXT.md` with this plan's section as its brief (operator, 2026-11-28).
+**Status**: 2 open tasks (MCP1, MCP9), each boarded on `NEXT.md` with this plan's section as its brief; MCP2 and MCP4 to MCP8 are on `main` (PR #882, ba00a8050).
 
 ## Facts the tasks share
 
@@ -32,13 +32,7 @@ Prod's hosted MCP connector offers each filing tool as its journey goes live, wi
 | Label | Class | State | Blocked by | Unblocks | Repository |
 | --- | --- | --- | --- | --- | --- |
 | MCP1 | machine-only | blocked | UH1, UH3 (`PLAN_ITSA_APPROVAL.md`) | nothing | submit |
-| MCP2 | machine-only | ready | nothing | MCP4, MCP6, MCP9 | submit |
-| MCP4 | machine-only | ready (after MCP2, same worker) | nothing | MCP5, MCP9 | submit |
-| MCP5 | machine-only | ready (after MCP4, same worker) | nothing | MCP9 | submit |
-| MCP6 | machine-only | ready | nothing | MCP9 | submit |
-| MCP7 | machine-only | ready | nothing | MCP9 | submit |
-| MCP8 | machine-only | ready | nothing | MCP9 | submit |
-| MCP9 | machine-only | blocked | MCP2, MCP4 to MCP8 proved on ci | nothing | submit |
+| MCP9 | machine-only | ready | nothing | nothing | submit |
 
 Model, size and repository are in each entry. "Blocked by" lists the tasks and events not yet done.
 
