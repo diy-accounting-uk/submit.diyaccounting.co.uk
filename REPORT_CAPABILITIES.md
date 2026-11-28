@@ -362,7 +362,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user: use when a fresh HMRC MTD sandbox test user is needed for VAT or Income Tax testing.
     - [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure: use when Google Cloud or GA4 infrastructure must be planned or applied from its declared state.
     - [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning: use when a local or CI run needs a fresh Cognito test user and credentials.
-    - [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials: use when a local deploy or debug session needs the diya-management SSO profile in the shell.
+    - [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials: use when a local deploy or debug session needs the submit ci or prod SSO profile in the shell.
     - [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK: use when a fresh AWS account needs its CDK bootstrap stacks, OIDC provider and deployment roles created.
   - [Shared runtime libraries](#shared-runtime-libraries-ops)
     - [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs: use when text or an object bound for a log line or shared output may carry PII or secret values.
@@ -3452,10 +3452,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-141 Look up the customer behind a submission-failure alarm
 
 - **Use when:** a prod-env-hmrc-submission-failure or prod-env-itsa-submission-failure alarm needs the customer, what HMRC answered and their entitlement.
-- **Does:** alarm-customer-lookup.mjs reads failure events from the activity_events_all view in Athena for the alarm's window. It then runs Query, never Scan, on the hmrc-api-requests and bundles tables by hashed sub, and Cognito ListUsers by sub. It writes one Markdown file with personal data. The customer-lookup job in alarm-triage.yml commits it to support/alarms/ in the private repository with a deploy key, then sends Telegram the alarm name, the issue link and the path.
-- **Run:** `node scripts/alarm-customer-lookup.mjs --alarm-name <alarm> --timestamp <iso> --issue-number <n> --issue-url <url> --out <file>`
-- **Entry:** `scripts/alarm-customer-lookup.mjs:collectCustomers`; `.github/workflows/alarm-triage.yml:customer-lookup`
-- **Files:** scripts/alarm-customer-lookup.mjs, app/unit-tests/scripts/alarmCustomerLookup.test.js, .github/workflows/alarm-triage.yml, .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
+- **Does:** alarm-customer-lookup.mjs reads failure events from the activity_events_all view in Athena for the alarm's window. It then runs Query, never Scan, on the hmrc-api-requests and bundles tables by hashed sub, and Cognito ListUsers by sub. It writes one Markdown file with personal data. alarm-customer-lookup.yml, which alarm-triage.yml's customer-lookup job starts, commits it to support/alarms/ in the private repository with a deploy key, then sends Telegram the alarm name, the issue link and the path.
+- **Run:** `node scripts/alarm-customer-lookup.mjs --alarm-name <alarm> --timestamp <iso> --issue-number <n> --issue-url <url> --out <file> [--max-wait-seconds <n>]`
+- **Entry:** `scripts/alarm-customer-lookup.mjs:collectCustomers`; `.github/workflows/alarm-customer-lookup.yml:customer-lookup`
+- **Files:** scripts/alarm-customer-lookup.mjs, app/unit-tests/scripts/alarmCustomerLookup.test.js, .github/workflows/alarm-customer-lookup.yml, .github/workflows/alarm-triage.yml, .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
 - **Keywords:** customer lookup, submission failure, hashed sub, private repository, deploy key, telegram ping, athena, support alarms
 - **Related:** OPS-18, OPS-76
 
@@ -4238,12 +4238,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-69 Assume and clear local AWS deployment credentials
 
-- **Use when:** a local deploy or debug session needs the diya-management SSO profile in the shell.
-- **Does:** aws-use-submit-profile.sh points the current shell at the diya-management SSO profile (checking the session and printing the identity), for local deploy or debug work. aws-unset-iam-session.sh clears any exported AWS_* credentials afterwards.
-- **Run:** `. ./scripts/aws-use-submit-profile.sh`; `./scripts/aws-unset-iam-session.sh`
+- **Use when:** a local deploy or debug session needs the submit ci or prod SSO profile in the shell.
+- **Does:** aws-use-submit-profile.sh points the current shell at the diya-submit-ci or diya-submit-prod SSO profile (checking the session and printing the identity), for local deploy or debug work. aws-unset-iam-session.sh clears any exported AWS_* credentials afterwards.
+- **Run:** `. ./scripts/aws-use-submit-profile.sh ci` (or `prod`); `./scripts/aws-unset-iam-session.sh`
 - **Entry:** `scripts/aws-use-submit-profile.sh`
 - **Files:** scripts/aws-use-submit-profile.sh, scripts/aws-unset-iam-session.sh
-- **Keywords:** sso profile, diya-management, local aws credentials, unset iam session, aws sso login
+- **Keywords:** sso profile, diya-submit-ci, diya-submit-prod, local aws credentials, unset iam session, aws sso login
 - **Related:** OPS-07
 
 #### OPS-103 Bootstrap a new AWS account for CDK
@@ -8108,9 +8108,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya-gl zip: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - diya-gl-cert: [SS-37](#ss-37-request-acm-certificates)
 - diya-gl-mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
-- diya-management: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
+- diya-submit-ci: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - diya-submit-mcp: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - diya-submit-plugin: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
+- diya-submit-prod: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)

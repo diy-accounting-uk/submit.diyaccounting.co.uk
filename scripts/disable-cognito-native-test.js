@@ -13,7 +13,7 @@
 // The environment is the one the credentials file records.
 //
 // Prerequisites: AWS SSO profile must be selected first:
-//   . ./scripts/aws-use-submit-profile.sh
+//   . ./scripts/aws-use-submit-profile.sh ci (or prod, the environment the credentials file records)
 
 import fs from "fs";
 import path from "path";
@@ -33,7 +33,7 @@ async function main() {
   // Check AWS credentials
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
     console.error("ERROR: No AWS credentials found.");
-    console.error("Run: . ./scripts/aws-use-submit-profile.sh");
+    console.error("Run: . ./scripts/aws-use-submit-profile.sh ci (or prod)");
     process.exit(1);
   }
 

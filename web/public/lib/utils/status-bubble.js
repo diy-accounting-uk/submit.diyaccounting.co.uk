@@ -11,6 +11,8 @@
 //   the reader to the message and a close button.
 // Neither has a live-region role: the container, and an error's role="alert", already announce
 // each message once.
+// While a bubble shows, the page's scroll padding clears it, so a page that scrolls a part of itself
+// to the top of the window does not put that part under the bubble.
 
 // page-chrome.js gives the text in the chosen language; without it the English stands.
 function siteText(id, english, values) {
@@ -63,11 +65,18 @@ export function startStatusBubble() {
   let shownMessage = null;
   let closeTimer = null;
 
+  function clearScrollPadding() {
+    const shown = stack.childElementCount > 0;
+    const gap = parseFloat(getComputedStyle(stack).rowGap) || 0;
+    document.documentElement.style.scrollPaddingTop = shown ? `${Math.ceil(stack.getBoundingClientRect().bottom + gap)}px` : "";
+  }
+
   function close() {
     clearTimeout(closeTimer);
     bubble?.remove();
     bubble = null;
     shownMessage = null;
+    clearScrollPadding();
   }
 
   function goToMessage(message) {
@@ -113,6 +122,7 @@ export function startStatusBubble() {
     stack.appendChild(bubble);
     shownMessage = message;
     if (SELF_CLOSING_KINDS.has(kind)) closeTimer = setTimeout(close, STATUS_BUBBLE_CLOSE_MS);
+    clearScrollPadding();
   }
 
   function spinnerShows() {
@@ -125,6 +135,7 @@ export function startStatusBubble() {
     if (!working || inView(container)) {
       workingBubble?.remove();
       workingBubble = null;
+      clearScrollPadding();
       return;
     }
     if (!workingBubble) {
@@ -146,6 +157,7 @@ export function startStatusBubble() {
     const detail = workingBubble.querySelector(".status-working-text");
     detail.textContent = progress ? messageText(progress) : "";
     detail.hidden = !progress;
+    clearScrollPadding();
   }
 
   new IntersectionObserver((entries) => {

@@ -1287,6 +1287,12 @@ function languageHeaders() {
 }
 
 async function handleSubmitFiling() {
+  // Without a pass the route refuses the filing, so send nothing.
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("companiesHouse");
+    return;
+  }
+
   showLoading();
   hideStatus();
   let payload;
@@ -1318,6 +1324,10 @@ async function handleSubmitFiling() {
     // filingData.paymentPeriodPaid, which can be stale by the time the customer submits.
     if (error.status === 402 && payload) {
       await startActivityCheckout(payload.companyNumber, payload.reviewDate);
+      return;
+    }
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      window.EntitlementStatus.showPassNeeded("companiesHouse");
       return;
     }
     console.error("Companies House confirmation statement filing failed:", error);

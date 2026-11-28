@@ -171,15 +171,18 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
   });
 }
 
+const mockSignInTimeout = 30000;
+
 export async function initMockAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user continues with the mock identity provider and sees the sign-in form", async () => {
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-init-mock-auth.png`, readerView: true });
     await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
     await loggedClick(page, "button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider", { screenshotPath });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
+    await expect(
+      page.locator('input[type="submit"][value="Sign-in"]'),
+      "initMockAuth: the mock identity provider's sign-in form did not appear",
+    ).toBeVisible({ timeout: mockSignInTimeout });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-init-mock-auth.png`, readerView: true });
-    await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
   });
 }
 
@@ -209,8 +212,23 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
     // <input class="button-primary" type="submit" value="Sign-in">
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-mock.png`, readerView: true });
     await loggedClick(page, 'input[type="submit"][value="Sign-in"]', "Submitting sign-in form", { screenshotPath });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
+    // The callback page stores the ID token, then replaces itself with the return page. The
+    // simulator serves the sign-in form from the app's origin, where an earlier sign-in's token
+    // can still be stored, so the form must also be gone.
+    await page
+      .waitForFunction(
+        () =>
+          Boolean(localStorage.getItem("cognitoIdToken")) &&
+          !location.pathname.endsWith("/auth/loginWithMockCallback.html") &&
+          !document.querySelector('input[type="submit"][value="Sign-in"]'),
+        null,
+        { timeout: mockSignInTimeout },
+      )
+      .catch((error) => {
+        throw new Error(`submitMockAuth: no signed-in app page within ${mockSignInTimeout} ms of the Sign-in click (at ${page.url()})`, {
+          cause: error,
+        });
+      });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-mock-signed-in.png`, readerView: true });
   });
 }

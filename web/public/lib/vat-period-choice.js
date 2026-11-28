@@ -11,6 +11,9 @@
 
   const ANOTHER_PERIOD = "another";
   const MAX_SEARCH_DAYS = 365;
+  // The drift the server allows on each boundary when it matches the dates to an obligation.
+  const OBLIGATION_DATE_TOLERANCE_DAYS = 3;
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
   const activeBindings = new WeakMap();
   const boundObligations = new WeakMap();
@@ -42,6 +45,26 @@
 
   function findMatchingObligation(obligations, periodStart, periodEnd) {
     return obligations.find((o) => o.start === periodStart && o.end === periodEnd) || null;
+  }
+
+  // The obligation the server would match the dates to: each boundary within the tolerance, the
+  // closest first. Null when none is close enough.
+  function findCloseObligation(obligations, periodStart, periodEnd) {
+    const requestedStart = Date.parse(`${periodStart}T00:00:00Z`);
+    const requestedEnd = Date.parse(`${periodEnd}T00:00:00Z`);
+    if (!Array.isArray(obligations) || Number.isNaN(requestedStart) || Number.isNaN(requestedEnd)) return null;
+    let closest = null;
+    let closestDrift = Infinity;
+    for (const obligation of obligations) {
+      const startDrift = Math.abs(Date.parse(`${obligation.start}T00:00:00Z`) - requestedStart) / DAY_MS;
+      const endDrift = Math.abs(Date.parse(`${obligation.end}T00:00:00Z`) - requestedEnd) / DAY_MS;
+      if (!(startDrift <= OBLIGATION_DATE_TOLERANCE_DAYS && endDrift <= OBLIGATION_DATE_TOLERANCE_DAYS)) continue;
+      if (startDrift + endDrift < closestDrift) {
+        closest = obligation;
+        closestDrift = startDrift + endDrift;
+      }
+    }
+    return closest;
   }
 
   // HMRC allows a search window of at most 366 days; the window ends today.
@@ -136,13 +159,25 @@
     return obligations[Number(select.value)] || null;
   }
 
+  /**
+   * The open obligations bound to the select, or null when none are bound.
+   *
+   * @param {HTMLSelectElement} select
+   * @returns {Array|null}
+   */
+  function boundOpenObligations(select) {
+    return boundObligations.get(select) || null;
+  }
+
   window.vatPeriodChoice = {
     ANOTHER_PERIOD,
     openObligations,
     obligationLabel,
     findMatchingObligation,
+    findCloseObligation,
     obligationSearchWindow,
     bindChoice,
     chosenObligation,
+    boundOpenObligations,
   };
 })();

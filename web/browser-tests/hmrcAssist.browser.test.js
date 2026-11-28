@@ -641,6 +641,9 @@ test.describe("HMRC Assist check on the VAT return", () => {
       await expect(page.locator("#submitBtn")).toBeEnabled();
       await expect(page.locator("#hmrcAssistCheckBtn")).toBeEnabled();
       await expect(page.locator("#vatDueSales")).toHaveValue(BOXES.vatDueSales);
+      const panel = page.locator("#failureDetail");
+      await expect(panel).toBeVisible();
+      await expect(panel.locator('[data-part="sent"]')).toHaveText("Nothing was filed. HMRC Assist reads the figures and files nothing.");
     });
   }
 

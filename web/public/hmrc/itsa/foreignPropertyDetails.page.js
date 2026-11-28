@@ -230,13 +230,18 @@ async function runRequest(request, hmrcGrantId) {
       hideStatus();
     }
   } catch (error) {
-    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
+    if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+    else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
   } finally {
     hideLoading();
   }
 }
 
 async function ensureAuthorizedThen(request) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -267,6 +272,10 @@ async function continueAfterOAuth() {
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   await runRequest(pending, hmrcGrantId);
 }
 

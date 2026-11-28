@@ -182,6 +182,12 @@ async function continueLoadCurrentTotal() {
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyLoadTotalRequest") || "null");
     if (!pendingRequest) return;
 
+    if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingUkPropertyLoadTotalRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
+
     showLoading();
     hideStatus();
 
@@ -192,7 +198,9 @@ async function continueLoadCurrentTotal() {
     sessionStorage.removeItem("pendingUkPropertyLoadTotalRequest");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    if (error.status === 404) {
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      window.EntitlementStatus.showPassNeeded("hmrc");
+    } else if (error.status === 404) {
       showStatus(siteText("itsa-se-amend.current-total-none", "HMRC has no total on file yet for this tax year."), "info");
     } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
@@ -216,6 +224,11 @@ async function handleLoadCurrentTotal() {
   const taxYear = document.getElementById("taxYear").value.trim();
 
   if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
+
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
 
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
@@ -254,7 +267,9 @@ async function handleLoadCurrentTotal() {
       const result = await fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId);
       applyCurrentTotal(result);
     } catch (error) {
-      if (error.status === 404) {
+      if (window.EntitlementStatus?.isBundleRefusal(error)) {
+        window.EntitlementStatus.showPassNeeded("hmrc");
+      } else if (error.status === 404) {
         showStatus(siteText("itsa-se-amend.current-total-none", "HMRC has no total on file yet for this tax year."), "info");
       } else {
         showStatus(
@@ -327,7 +342,7 @@ async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderVali
   if (!response.ok) {
     const error = new Error(hmrcErrorMessage(result, siteText("itsa.period-amend-failed-fallback", "Failed to amend the period summary")));
     error.status = response.status;
-    error.reason = result.reason;
+    error.reason = result.reason || result.error?.code;
     throw error;
   }
   return result;
@@ -339,6 +354,12 @@ async function continuePeriodAmend() {
     const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyPeriodAmendRequest") || "null");
 
     if (!pendingRequest) return;
+
+    if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingUkPropertyPeriodAmendRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
 
     hideSearchCriteria();
     showLoading();
@@ -360,7 +381,11 @@ async function continuePeriodAmend() {
     sessionStorage.removeItem("pendingUkPropertyPeriodAmendRequest");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    if (error.status === 401) {
+    const refusedForNoPass = window.EntitlementStatus?.isBundleRefusal(error);
+    if (refusedForNoPass) {
+      hideStatus();
+      window.EntitlementStatus.showPassNeeded("hmrc");
+    } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       showStatus(siteText("itsa.token-expired-reauth", "Access token expired. Please re-authenticate."), "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
@@ -374,7 +399,8 @@ async function continuePeriodAmend() {
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingUkPropertyPeriodAmendRequest");
-    window.hmrcScopeCheck.clearHmrcToken();
+    // A refusal by our own entitlement check leaves the HMRC grant good for the retry after a pass.
+    if (!refusedForNoPass) window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -406,6 +432,11 @@ async function handleFormSubmission(event) {
     window.itsaSubmissionModel.resolveItsaSubmissionModel(amendData.taxYear) === "cumulative";
 
   if (!isCumulative && !window.formErrors.requireFields(["submissionId"])) return;
+
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
 
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
@@ -457,7 +488,10 @@ async function handleFormSubmission(event) {
       hideStatus();
       window.dispatchEvent(new CustomEvent("bundle-changed"));
     } catch (error) {
-      if (error.status === 401) {
+      if (window.EntitlementStatus?.isBundleRefusal(error)) {
+        hideStatus();
+        window.EntitlementStatus.showPassNeeded("hmrc");
+      } else if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
         showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
       } else if (error.status === 403 && error.reason === "tokens_exhausted") {

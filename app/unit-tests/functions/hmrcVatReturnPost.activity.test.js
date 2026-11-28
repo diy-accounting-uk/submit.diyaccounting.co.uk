@@ -67,6 +67,13 @@ vi.mock("@app/lib/emfMetrics.js", () => ({
   emitMetric: (...args) => mockEmitMetric(...args),
 }));
 
+const mockEnforceBundles = vi.hoisted(() => vi.fn());
+vi.mock("@app/services/bundleManagement.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  mockEnforceBundles.mockImplementation(actual.enforceBundles);
+  return { ...actual, enforceBundles: (...args) => mockEnforceBundles(...args) };
+});
+
 vi.mock("@app/lib/mcpHmrcGrantAccess.js", async (importOriginal) =>
   (await import("@app/test-helpers/hmrcGrantTestDouble.js")).hmrcGrantAccessDouble(await importOriginal()),
 );
@@ -193,6 +200,18 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     expect(response.statusCode).toBe(400);
 
     expect(failureEventsWithCategory("obligation-not-matched")).toHaveLength(1);
+    expect(metricCalls("VatSubmissionFailure")).toHaveLength(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("a refusal by the entitlement check records the block without a failure metric", async () => {
+    const { BundleEntitlementError } = await import("@app/services/bundleManagement.js");
+    mockEnforceBundles.mockRejectedValueOnce(new BundleEntitlementError("no bundle", { code: "BUNDLE_ENTITLEMENT_REQUIRED" }));
+
+    const response = await hmrcVatReturnPostHandler(buildSubmissionEvent());
+    expect(response.statusCode).toBe(403);
+
+    expect(failureEventsWithCategory("access-denied")).toHaveLength(1);
     expect(metricCalls("VatSubmissionFailure")).toHaveLength(0);
     expect(mockFetch).not.toHaveBeenCalled();
   });

@@ -369,7 +369,9 @@ async function runRequest(request, hmrcGrantId) {
       hideStatus();
     }
   } catch (error) {
-    if (error.status === 401) {
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      window.EntitlementStatus.showPassNeeded("hmrc");
+    } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
@@ -421,6 +423,10 @@ async function continueAfterOAuth() {
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   if (pending.action === "trigger") document.getElementById("taxYear").value = pending.criteria.taxYear;
   await runRequest(pending, hmrcGrantId);
 }
@@ -430,6 +436,11 @@ async function handleTriggerFormSubmission(event) {
   const required = ["nino", "businessId", "taxYear", "accountingPeriodStartDate", "accountingPeriodEndDate"];
   if (!window.formErrors.requireFields(required)) return;
   const criteria = readCriteria();
+
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
 
   try {
     const hmrcGrantIdForCheck = window.hmrcScopeCheck.storedGrantId();
@@ -535,6 +546,10 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
     if (foreignFhlEea) adjustDetails.foreignFhlEea = foreignFhlEea;
   }
   const criteria = readCriteria();
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   await ensureAuthorizedThen({
     action: "adjust",
     adjustDetails,

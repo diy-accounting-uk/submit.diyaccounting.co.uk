@@ -216,7 +216,7 @@ Values live only in GitHub secrets and AWS Secrets Manager. `secrets-rotation.to
 | `OPERATOR_EMAILS` | secret | Operator email addresses for the deployed environment. | `deploy-env-secrets.yml` |
 | `OPS_APP_ID` | variable | Id of the ops GitHub App. | 5 workflows |
 | `OPS_APP_INSTALLATION_ID` | variable | Installation id of the ops GitHub App. | `deploy-cdk-stack.yml` `deploy-env-image-stack.yml` `deploy-stacks.yml` |
-| `OPS_APP_PRIVATE_KEY` | secret | Private key of the GitHub App that raises alarm issues. | `alarm-triage.yml` `deploy-env-secrets.yml` `infra-apply.yml` |
+| `OPS_APP_PRIVATE_KEY` | secret | Private key of the GitHub App that raises alarm issues. | `alarm-customer-lookup.yml` `deploy-env-secrets.yml` `infra-apply.yml` |
 | `PLUGIN_REPO_DEPLOY_KEY` | secret | SSH deploy key that pushes the plugin repository. | `sync-plugin-repo.yml` |
 
 **Environment ci and prod** (27)
@@ -240,7 +240,7 @@ Values live only in GitHub secrets and AWS Secrets Manager. `secrets-rotation.to
 | `STRIPE_TEST_WEBHOOK_SECRET` | secret | Stripe test-mode webhook signing secret. | `deploy-env-secrets.yml` |
 | `STRIPE_WEBHOOK_SECRET` | secret | Stripe live-mode webhook signing secret. | `deploy-env-secrets.yml` |
 | `SUBMIT_ACCOUNT_ID` | variable | AWS account id of the environment. | 15 workflows |
-| `SUBMIT_ACTIONS_ROLE_ARN` | variable | AWS role that workflows assume for read and run tasks. | 53 workflows |
+| `SUBMIT_ACTIONS_ROLE_ARN` | variable | AWS role that workflows assume for read and run tasks. | 54 workflows |
 | `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | variable | AWS role for alarm triage reads. | `alarm-remedy-close.yml` `alarm-replay.yml` `alarm-triage.yml` `dashboard-review-nightly.yml` |
 | `SUBMIT_CERTIFICATE_ARN` | variable | ACM certificate for the site. | `deploy-environment.yml` |
 | `SUBMIT_DEPLOY_ROLE_ARN` | variable | AWS role that deploys stacks. | 50 workflows |
@@ -249,7 +249,7 @@ Values live only in GitHub secrets and AWS Secrets Manager. `secrets-rotation.to
 | `SUBMIT_MARKETING_CERTIFICATE_ARN` | variable | ACM certificate for the marketing site. | `deploy-cdk-stack.yml` `deploy-environment.yml` |
 | `SUBMIT_OPERATOR_NOTIFY_EMAIL` | variable | Address that receives operator notifications. | `deploy-env-image-stack.yml` |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | variable | ACM certificate for the API. | `deploy-env-image-stack.yml` `deploy.yml` `promote-ci-apex.yml` `set-origins.yml` |
-| `TELEGRAM_BOT_TOKEN` | secret | Telegram bot token for operator alerts. | `alarm-triage.yml` `deploy-env-secrets.yml` |
+| `TELEGRAM_BOT_TOKEN` | secret | Telegram bot token for operator alerts. | `alarm-customer-lookup.yml` `deploy-env-secrets.yml` |
 
 **Environment ci** (10)
 

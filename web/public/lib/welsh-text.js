@@ -691,6 +691,7 @@ window.WELSH_TEXT = {
     "Mae CThEF yn cymryd y cyfrifon llawn gyda’r Ffurflen, felly maent yn rhan o’r ffurflen hon. Rhowch bunnoedd cyfan, er enghraifft 600 neu 1,200.",
   "ch.ct.accounts-locked":
     "Wedi’u ffeilio yn Nhŷ’r Cwmnïau ar {date}, cyflwyniad {number}. Ni all y cyfrifon newid yma. Newidiwch yr atebion treth yn unig.",
+  "ch.ct.accounts-notes": "Nodiadau i’r cyfrifon",
   "ch.ct.accounts-revising":
     "Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau. Newidiwch y ffigurau a’r dyddiad y mae’r cyfarwyddwyr yn cymeradwyo’r cyfrifon diwygiedig.",
   "ch.ct.add-participator": "Ychwanegu cyfranogwr arall",
@@ -1003,6 +1004,11 @@ window.WELSH_TEXT = {
   "ch.ct.return-due": "Ffurflen yn ddyledus",
   "ch.ct.return-due-rule": "Mae’r ddwy Ffurflen yn ddyledus 12 mis ar ôl i’r cyfnod cyfrifon ddod i ben",
   "ch.ct.return-lower": "Ffurflen",
+  "ch.ct.return-not-sent": "Ni anfonwyd Ffurflen Dreth y Cwmni at CThEF",
+  "ch.ct.return-not-sent-ch-accepted":
+    "Mae gan Dŷ’r Cwmnïau y cyfrifon, felly nid ydynt yn cael eu hanfon eto. Gwiriwch y Ffurflen Dreth a’i hanfon at CThEF.",
+  "ch.ct.return-not-sent-ch-held":
+    "Mae gan Dŷ’r Cwmnïau y cyfrifon ac nid yw wedi penderfynu arnynt. Anfonwch y Ffurflen Dreth nawr, neu arhoswch am Dŷ’r Cwmnïau.",
   "ch.ct.return-of-2-message": "Ffurflen {part} o 2: {message}",
   "ch.ct.return-of-2-range": "Ffurflen {part} o 2: {range}",
   "ch.ct.return-part-word": "Statws Ffurflen {part} o 2 ",
@@ -3285,6 +3291,7 @@ window.WELSH_TEXT = {
   "vat-penalties.status-posted": "Wedi’i godi",
   "vat-penalties.threshold": "Trothwy pwyntiau cosb",
   "vat-read.status-sandbox-text": "Mae hyn yn darllen gwasanaeth prawf CThEF, nid eich cofnodion go iawn.",
+  "vat-submit.assist-failure-sent": "Ni chafodd dim ei ffeilio. Mae HMRC Assist yn darllen y ffigurau ac nid yw’n ffeilio dim.",
   "vat-submit.assist-unavailable": "Nid yw adborth HMRC Assist ar gael ar hyn o bryd. Gallwch gyflwyno’ch Ffurflen TAW o hyd.",
   "vat-submit.box-name-1": "y TAW sy’n ddyledus ar werthiannau",
   "vat-submit.box-name-2": "y TAW sy’n ddyledus ar gaffaeliadau",
@@ -3303,11 +3310,24 @@ window.WELSH_TEXT = {
   "vat-submit.enter-box-8": "Nodwch gyfanswm gwerth y nwyddau a anfonwyd i’r UE",
   "vat-submit.enter-box-9": "Nodwch gyfanswm y caffaeliadau o’r UE",
   "vat-submit.error-prefix": "Gwall:",
+  "vat-submit.failure-sent-refused": "Ni dderbyniodd CThEF y Ffurflen. Ni chafodd dim ei ffeilio.",
+  "vat-submit.failure-sent-unknown":
+    "Ni chafodd Submit ateb CThEF, felly ni all ddweud a oes gan CThEF y Ffurflen. Gwiriwch eich derbynebau cyn i chi ei hanfon eto.",
+  "vat-submit.get-day-pass": "Cael tocyn diwrnod",
+  "vat-submit.narrate-checking": "Wrthi’n gwirio eich atebion...",
+  "vat-submit.narrate-sending": "Wrthi’n anfon y Ffurflen TAW at CThEF...",
+  "vat-submit.narrate-waiting-hmrc": "Wrthi’n aros am ateb CThEF...",
   "vat-submit.net-max": "Mae’n rhaid i’r TAW net sy’n ddyledus fod yn £99,999,999,999.99 neu lai",
   "vat-submit.net-positive": "Mae’n rhaid i’r TAW net sy’n ddyledus fod yn swm positif (wedi’i gyfrifo fel y gwahaniaeth absoliwt)",
   "vat-submit.net-valid": "Mae’n rhaid i’r TAW net sy’n ddyledus fod yn rhif dilys",
   "vat-submit.no-open-periods": "Nid yw CThEF yn rhestru unrhyw gyfnodau TAW agored ar gyfer y rhif hwn. Nodwch y dyddiadau isod.",
   "vat-submit.no-tokens": "Dim credydau (tokens) ar ôl.",
+  "vat-submit.pass-needed-cause":
+    "Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n gadael i chi gyflwyno Ffurflen TAW.",
+  "vat-submit.pass-needed-title": "Mae angen tocyn arnoch i gyflwyno Ffurflen TAW",
+  "vat-submit.period-not-open":
+    "Nid oes dim wedi’i anfon at CThEF. Nid yw CThEF yn disgwyl Ffurflen TAW ar gyfer {requested}. Ei gyfnodau TAW agored yw: {periods}. Dewiswch un a chyflwynwch eto.",
+  "vat-submit.periods-need-pass": "Mae angen tocyn arnoch i ddarllen eich cyfnodau TAW agored gan CThEF ac i gyflwyno Ffurflen TAW.",
   "vat-submit.periods-unreadable": "Nid oedd modd darllen rhestr CThEF o gyfnodau TAW agored. Nodwch y dyddiadau isod.",
   "vat-submit.range-pence": "Mae’n rhaid i’r swm ar gyfer {label} fod rhwng £-9,999,999,999,999.99 a £9,999,999,999,999.99",
   "vat-submit.range-whole": "Mae’n rhaid i’r swm ar gyfer {label} fod rhwng £-9,999,999,999,999 a £9,999,999,999,999",
@@ -3323,7 +3343,6 @@ window.WELSH_TEXT = {
   "vat-submit.status-sandbox": "Statws: amgylchedd prawf (sandbox).",
   "vat-submit.status-sandbox-text":
     "Mae’r Ffurflenni TAW y byddwch yn eu cyflwyno yma yn mynd i wasanaeth prawf CThEF ac nid ydynt yn cyrraedd unrhyw gofnod go iawn.",
-  "vat-submit.submitting": "Yn cyflwyno’r Ffurflen TAW i CThEF...",
   "vat-submit.tick-declaration": "Ticiwch y blwch i gadarnhau’r datganiad",
   "vat-submit.token-use": "Bydd y cyflwyniad hwn yn defnyddio 1 credyd (token) ({remaining} ar ôl)",
   "vat-submit.tokens-refresh": "Bydd y credydau’n cael eu hadnewyddu ar {date}.",
@@ -3382,6 +3401,20 @@ window.WELSH_TEXT = {
   "vat.box-9-definition":
     "Blwch 9: cyfanswm gwerth caffael yr holl nwyddau a’r costau cysylltiedig, ac eithrio TAW, o Aelod-wladwriaethau’r UE.",
   "vat.box-row": "Blwch {box}: {label}",
+  "vat.failure-amount": "Ni dderbyniodd CThEF ffigur blwch. Cywirwch y blwch y mae’n ei enwi ac anfonwch eto.",
+  "vat.failure-answers": "Mae eich atebion yn dal yn y ffurflen hon ac wedi’u cadw yn y porwr hwn nes i chi gau’r tab.",
+  "vat.failure-box-3": "Ni dderbyniodd CThEF flwch 3: rhaid iddo fod yn flwch 1 a blwch 2 gyda’i gilydd.",
+  "vat.failure-box-5": "Ni dderbyniodd CThEF flwch 5: rhaid iddo fod y gwahaniaeth rhwng blychau 3 a 4.",
+  "vat.failure-duplicate":
+    "Mae gan CThEF Ffurflen TAW ar gyfer y cyfnod hwn yn barod. Mae eich derbynneb ar y dudalen derbynebau. I newid Ffurflen a gyflwynwyd, cysylltwch â CThEF.",
+  "vat.failure-insolvent": "Nid yw CThEF yn derbyn Ffurflen ar-lein gan fasnachwr y mae’n ei restru’n fethdalwr. Cysylltwch â CThEF.",
+  "vat.failure-not-authorised":
+    "Nid oes gan y mewngofnodi CThEF a ddefnyddiwyd gennych fynediad at y rhif TAW hwn. Cysylltwch â CThEF gyda Dynodydd Defnyddiwr Porth y Llywodraeth y busnes hwn.",
+  "vat.failure-not-ended": "Nid yw’r cyfnod TAW wedi dod i ben. Anfonwch y Ffurflen ar ôl dyddiad gorffen y cyfnod.",
+  "vat.failure-period": "Nid yw CThEF yn gwybod am y cyfnod TAW hwn. Dewiswch y cyfnod o gyfnodau agored CThEF ac anfonwch eto.",
+  "vat.failure-receipts": "Gweld eich derbynebau",
+  "vat.failure-vrn": "Ni dderbyniodd CThEF y rhif cofrestru TAW. Gwiriwch y 9 rhif ac anfonwch eto.",
+  "vat.notice-link": "Hysbysiad TAW 700/12, blwch {box}",
   "vat.period-label": "{start} hyd at {end}",
   "vat.period-label-due": "{start} hyd at {end}, dyddiad cau {due}",
   "vat.record-name": "Ffurflen TAW",
@@ -3392,6 +3425,14 @@ window.WELSH_TEXT = {
   "vat.record-vat-due": "TAW sy’n ddyledus",
   "vat.record-vrn": "Rhif cofrestru TAW {vrn}",
   "vat.see-receipts": "Gweld eich derbynebau",
+  "vat.source-box-2-note":
+    "Mae’r daenlen yn gosod blwch 2 i 0 ac yn gofyn i chi gyfrifo unrhyw swm eich hun (ei nodyn yn B25). Dim ond ar gyfer nwyddau a ddaw i Ogledd Iwerddon o aelod-wladwriaethau’r UE y mae blwch 2 bellach.",
+  "vat.source-box-3-note":
+    "Mae’r daenlen yn labelu blwch 3 gyda geiriau blwch 1. Ei ffigur yw blwch 1 a blwch 2 gyda’i gilydd, fel blwch 3 CThEF.",
+  "vat.source-box-5-note":
+    "Mae label y daenlen yn enwi swm i’w dalu. Blwch 5 CThEF yw’r gwahaniaeth rhwng blychau 3 a 4 y naill ffordd neu’r llall, i’w dalu neu i’w adhawlio.",
+  "vat.source-first-quarter": "Chwarter cyntaf",
+  "vat.source-later-quarters": "Mae taflenni VATQtr2 i VATQtr5 yn dal yr un gell ar gyfer y chwarteri wedyn.",
   "vat.status-accepted": "Derbyniwyd gan CThEF",
   "vat.status-undecided": "Statws: wrthi’n gwirio’ch cyfrif.",
   "vat.status-undecided-text":
@@ -3406,6 +3447,8 @@ window.WELSH_TEXT = {
   "widget.assist-feedback-heading": "Adborth CThEF",
   "widget.assist-feedback-language": "Iaith adborth CThEF",
   "widget.assist-hold-time-left": "Yr amser sydd ar ôl cyn i’r saib ar gyflwyno ddod i ben",
+  "widget.assist-narrate-sending": "Wrthi’n anfon eich ffigurau at HMRC Assist...",
+  "widget.assist-narrate-waiting": "Wrthi’n aros am ateb HMRC Assist...",
   "widget.assist-no-feedback": "Nid oes gan HMRC Assist adborth ar y Ffurflen hon",
   "widget.assist-seconds-left": "{seconds} eiliad ar ôl",
   "widget.assist-seconds-short": "{seconds}e",
@@ -3536,6 +3579,7 @@ window.WELSH_TEXT = {
   "widget.field-sources":
     "Mae’r diffiniadau’n dod o {cited}. Rydym wedi cyfieithu i’r Gymraeg y rhai sydd yn Saesneg yn unig yn y ffynhonnell.",
   "widget.field-value": "Gwerth",
+  "widget.get-day-pass": "Cael tocyn diwrnod",
   "widget.go-to-message": "Ewch i’r neges",
   "widget.hmrc-auth-failed": "Methodd y mewngofnodi: {reason}",
   "widget.hmrc-auth-redirecting": "Yn eich anfon i CThEF i fewngofnodi yn {url}...",
@@ -3549,6 +3593,10 @@ window.WELSH_TEXT = {
   "widget.money-pounds-pence": "Nodwch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54. Gwiriwch {label}.",
   "widget.money-whole-pounds": "Nodwch swm mewn punnoedd cyfan, fel £600 neu £1,200. Gwiriwch {label}.",
   "widget.no": "Na",
+  "widget.pass-needed-cause-companies-house":
+    "Nid oes dim wedi’i anfon at Dŷ’r Cwmnïau. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.",
+  "widget.pass-needed-cause-hmrc": "Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.",
+  "widget.pass-needed-title": "Mae angen tocyn arnoch ar gyfer hyn",
   "widget.record-date": "Dyddiad",
   "widget.record-next": "Beth i’w wneud nesaf",
   "widget.record-or": "neu",

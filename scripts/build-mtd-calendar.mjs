@@ -15,7 +15,7 @@
 // Usage: node scripts/build-mtd-calendar.mjs   (npm run build:mtd-calendar)
 // Every fact below needs at least one source file listing its id; the build throws otherwise.
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -129,6 +129,8 @@ export const COMPANY_YEARLY_FACTS = [
 ];
 
 // status is one of production, sandbox, preview or "not offered". A cell is [status, note?].
+// videoEntry is the id of the row's entry in web/public/videos/publish.json, which holds its
+// YouTube id.
 export const CHANNELS = ["Web form", "diya-gl book drop", "Spreadsheets drop", "iXBRL drop", "MCP", "API"];
 const NOT_OFFERED = ["not offered"];
 export const AVAILABILITY = [
@@ -136,7 +138,7 @@ export const AVAILABILITY = [
     filing: "HMRC VAT return",
     web: "hmrc/vat/submitVat.html",
     activity: "submit-vat",
-    video: "XUt2gdYxR1g",
+    videoEntry: "submit-return",
     cells: [
       ["production"],
       ["production"],
@@ -150,7 +152,7 @@ export const AVAILABILITY = [
     filing: "HMRC Income Tax (MTD)",
     web: "hmrc/itsa/dashboard.html",
     activity: "self-employed",
-    video: "H1LRSZG984Q",
+    videoEntry: "itsa-quarterly-update",
     cells: [
       ["sandbox", "self-employment, UK and foreign property"],
       ["sandbox"],
@@ -164,7 +166,7 @@ export const AVAILABILITY = [
     filing: "HMRC Company Tax Return (CT600)",
     web: "companies-house/fileCompanyTaxReturn.html",
     activity: "file-company-tax-return",
-    video: "ZoUTlFPvUes",
+    videoEntry: "file-company-tax-return-book",
     cells: [
       ["production", "period of account up to 18 months"],
       ["production", "book export file"],
@@ -178,7 +180,7 @@ export const AVAILABILITY = [
     filing: "HMRC Assist check on a VAT return",
     web: "hmrc/vat/submitVat.html",
     activity: "vat-assist-check",
-    video: "cyOZsF9qe28",
+    videoEntry: "vat-hmrc-assist",
     cells: [["preview"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
@@ -186,27 +188,27 @@ export const AVAILABILITY = [
     web: "companies-house/fileMicroEntityAccounts.html",
     activity: "file-micro-entity-accounts",
     otherActivities: ["file-small-company-accounts"],
-    video: "yPSpvLKrTJU",
+    videoEntry: "file-micro-entity-accounts",
     cells: [["production"], ["production"], ["production", "package zip"], ["production"], ["production", "micro-entity"], NOT_OFFERED],
   },
   {
     filing: "Companies House confirmation statement",
     web: "companies-house/fileConfirmationStatement.html",
     activity: "file-confirmation-statement",
-    video: "P0aG_mLfhZI",
+    videoEntry: "file-confirmation-statement",
     cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production"], NOT_OFFERED],
   },
   {
     filing: "Companies House PSC verification statement",
     activity: "file-psc-verification-statement",
-    video: "zyo32coCwso",
+    videoEntry: "file-psc-verification-statement",
     cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
     filing: "Companies House registered office and registered email",
     web: "companies-house/changeRegisteredOffice.html",
     activity: "change-registered-office",
-    video: "sN_FhTnAqF4",
+    videoEntry: "change-registered-office",
     cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
@@ -356,6 +358,15 @@ function cellHtml([status, note]) {
   return escapeHtml(status) + (note ? ` <span class="calendar-date">${escapeHtml(note)}</span>` : "");
 }
 
+const PUBLISH_JSON = join(ROOT, "web/public/videos/publish.json");
+
+/** The YouTube id of a published video, by its entry id in publish.json. */
+export function publishedVideoId(entryId, publish = JSON.parse(readFileSync(PUBLISH_JSON, "utf-8"))) {
+  const entry = publish.videos.find((video) => video.id === entryId);
+  if (!entry?.publish || !entry.videoId) throw new Error(`publish.json has no published video ${entryId}`);
+  return entry.videoId;
+}
+
 export function availabilityClass(status) {
   return `avail-${status.replace(" ", "-")}`;
 }
@@ -365,7 +376,7 @@ function availabilityHtml() {
     const links = [
       row.web ? `<a href="${row.web}" data-activity="${row.activity}">Web form</a>` : "",
       `<a href="guide.html">Guide</a>`,
-      row.video ? `<a href="https://www.youtube.com/watch?v=${row.video}" rel="noopener">Video</a>` : "",
+      row.videoEntry ? `<a href="https://www.youtube.com/watch?v=${publishedVideoId(row.videoEntry)}" rel="noopener">Video</a>` : "",
     ]
       .filter(Boolean)
       .join(", ");

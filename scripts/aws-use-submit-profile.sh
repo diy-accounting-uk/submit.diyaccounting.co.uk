@@ -3,22 +3,31 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 # @capability OPS-69 Assume and clear local AWS deployment credentials
-# - **Use when:** a local deploy or debug session needs the diya-management SSO profile in the shell.
-# - **Does:** aws-use-submit-profile.sh points the current shell at the diya-management SSO profile (checking the session and printing the identity), for local deploy or debug work. aws-unset-iam-session.sh clears any exported AWS_* credentials afterwards.
-# - **Run:** `. ./scripts/aws-use-submit-profile.sh`; `./scripts/aws-unset-iam-session.sh`
+# - **Use when:** a local deploy or debug session needs the submit ci or prod SSO profile in the shell.
+# - **Does:** aws-use-submit-profile.sh points the current shell at the diya-submit-ci or diya-submit-prod SSO profile (checking the session and printing the identity), for local deploy or debug work. aws-unset-iam-session.sh clears any exported AWS_* credentials afterwards.
+# - **Run:** `. ./scripts/aws-use-submit-profile.sh ci` (or `prod`); `./scripts/aws-unset-iam-session.sh`
 # - **Entry:** `scripts/aws-use-submit-profile.sh`
 # - **Files:** scripts/aws-use-submit-profile.sh, scripts/aws-unset-iam-session.sh
-# - **Keywords:** sso profile, diya-management, local aws credentials, unset iam session, aws sso login
+# - **Keywords:** sso profile, diya-submit-ci, diya-submit-prod, local aws credentials, unset iam session, aws sso login
 # - **Related:** OPS-07
 # @end-capability
 
 # scripts/aws-use-submit-profile.sh
-# Usage: . ./scripts/aws-use-submit-profile.sh
-# Points the current shell at the diya-management SSO profile (account 887764105431).
+# Usage: . ./scripts/aws-use-submit-profile.sh ci|prod
+# Points the current shell at the submit SSO profile of one environment: ci is diya-submit-ci
+# (account 367191799875), prod is diya-submit-prod (account 972912397388).
+case "${1:-}" in
+  ci | prod) ;;
+  *)
+    echo "Usage: . ./scripts/aws-use-submit-profile.sh ci|prod"
+    # shellcheck disable=SC2317
+    return 2 2>/dev/null || exit 2
+    ;;
+esac
 unset AWS_ACCESS_KEY_ID
 unset AWS_SECRET_ACCESS_KEY
 unset AWS_SESSION_TOKEN
-export AWS_PROFILE="diya-management"
+export AWS_PROFILE="diya-submit-${1}"
 export AWS_REGION="eu-west-2"
 export AWS_DEFAULT_REGION="eu-west-2"
 if ! identity=$(aws sts get-caller-identity --output json 2>&1); then

@@ -152,20 +152,18 @@ button {
   text-decoration: none;
 }
 
-/* External link icon (new tab) */
+/* External link icon (new tab). An inline word joiner, not an inline-block, so the icon stays with the
+   link's last word and the punctuation after it stays on the same line. */
 a[target="_blank"]::after,
 a.external-link::after {
-  content: "";
-  display: inline-block;
-  width: 0.7em;
-  height: 0.7em;
-  margin-left: 0.25em;
-  vertical-align: baseline;
+  content: "\2060";
+  display: inline;
+  padding-left: 0.95em;
   background-color: currentColor;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3h7v7'/%3E%3Cpath d='M21 3l-9 9'/%3E%3Cpath d='M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'/%3E%3C/svg%3E")
-    no-repeat center / contain;
+    no-repeat right 55% / 0.7em 0.7em;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3h7v7'/%3E%3Cpath d='M21 3l-9 9'/%3E%3Cpath d='M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'/%3E%3C/svg%3E")
-    no-repeat center / contain;
+    no-repeat right 55% / 0.7em 0.7em;
 }
 
 /* ============================================
