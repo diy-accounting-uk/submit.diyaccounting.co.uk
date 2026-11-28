@@ -52,6 +52,8 @@ export function showHmrcFailure(error, { notSent, answers }) {
  * @returns {Promise<T>} what send returns; a failure is shown and thrown on
  */
 export async function fileWithHmrc({ sending, notSent, answers }, send) {
+  // A panel from an earlier try would read as this try's answer.
+  document.getElementById("failureDetail")?.remove();
   window.narrateStage?.(sending);
   hmrcWritesInFlight += 1;
   try {

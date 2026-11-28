@@ -83,8 +83,13 @@ function isDated(taxYear) {
 
 const byId = (prefix, id) => document.getElementById(`${prefix}-${id}`);
 
+// A country's or a property's field is led by its SA106 box. The SA106 has no box of its own for
+// the furnished holiday lettings in the EEA, so their fields keep their labels.
 function moneyGroup(prefix, field) {
-  return window.selfEmploymentExpenses.moneyGroup({ id: `${prefix}-${field.id}`, label: field.label, min: 0 }, field.hint || MONEY_HINT);
+  const group = { id: `${prefix}-${field.id}`, label: field.label, min: 0 };
+  const hint = field.hint || MONEY_HINT;
+  if (prefix === FHL_PREFIX) return window.selfEmploymentExpenses.moneyGroup(group, hint);
+  return window.foreignPropertyRegister.moneyGroup(field.id, group, hint);
 }
 
 function allowanceChoice(prefix, value, id, text, checked) {
@@ -137,7 +142,10 @@ function mountSection(container, prefix, { fhl, dated }) {
       prefix,
       window.structuredBuildingAllowanceRows.create(rowsContainer, {
         idPrefix: `${prefix}-sba`,
-        title: siteText("itsa.field-structures-and-buildings-allowance", "Structures and Buildings Allowance"),
+        title: window.foreignPropertyRegister.labelOf("structuredBuildingAllowance", {
+          id: `${prefix}-sba`,
+          label: siteText("itsa.field-structures-and-buildings-allowance", "Structures and Buildings Allowance"),
+        }),
         intro: siteText("itsa-uk-annual.sba-intro", "One claim for each building. Cannot be used with the property income allowance."),
       }),
     );
@@ -428,25 +436,27 @@ async function runRequest(request, hmrcGrantId) {
       await loadAnnual(request.criteria, hmrcGrantId);
       hideStatus();
     } else {
-      showStatus(siteText("itsa.annual-saving", "Saving annual submission..."), "info");
-      await saveAnnual(request, hmrcGrantId);
-      hideStatus();
+      await window.fileWithHmrc(
+        {
+          sending: siteText("itsa-fp-annual.narrate-sending", "Sending the foreign property annual submission to HMRC..."),
+          notSent: siteText("itsa-fp-annual.failure-not-sent", "HMRC has not got the annual submission."),
+          answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
+        },
+        () => saveAnnual(request, hmrcGrantId),
+      );
     }
   } catch (error) {
+    // A failed save is told in the failure panel, so the page adds no message of its own.
+    const told = request.action !== "load";
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
+      if (!told) showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
-    } else {
-      showStatus(
-        request.action === "load"
-          ? siteText("itsa.annual-load-failed", "Failed to load the annual submission: {reason}", { reason: error.message })
-          : siteText("itsa.annual-save-failed", "Failed to save the annual submission: {reason}", { reason: error.message }),
-        "error",
-      );
+    } else if (!told) {
+      showStatus(siteText("itsa.annual-load-failed", "Failed to load the annual submission: {reason}", { reason: error.message }), "error");
     }
   } finally {
     hideLoading();

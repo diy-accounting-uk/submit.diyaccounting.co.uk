@@ -196,8 +196,15 @@ async function runRequest(request, hmrcGrantId) {
       );
     } else {
       hideSearchCriteria();
-      showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
-      const result = await sendPeriod(request, hmrcGrantId);
+      hideStatus();
+      const result = await window.fileWithHmrc(
+        {
+          sending: siteText("itsa-fp-period.narrate-sending", "Sending the foreign property update to HMRC..."),
+          notSent: siteText("itsa-fp-period.failure-not-sent", "HMRC has not got the foreign property update."),
+          answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
+        },
+        () => sendPeriod(request, hmrcGrantId),
+      );
       displayResult(result);
       document.getElementById("foreignPropertyPeriodResults").style.display = "block";
       hideRequestForm();
@@ -205,10 +212,12 @@ async function runRequest(request, hmrcGrantId) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
     }
   } catch (error) {
+    // A failed send is told in the failure panel, so the page adds no message of its own.
+    const told = request.action === "submit";
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
+      if (!told) showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 404 && request.action === "loadTotal") {
       showStatus(
         siteText("itsa.current-total-none", "HMRC has no total on file yet for this tax year. Enter the figures for the year so far."),
@@ -217,7 +226,7 @@ async function runRequest(request, hmrcGrantId) {
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
-    } else {
+    } else if (!told) {
       showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     }
     if (request.action === "submit") showSearchCriteria();

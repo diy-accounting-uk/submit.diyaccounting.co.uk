@@ -166,24 +166,33 @@ async function runRequest(request, hmrcGrantId) {
       );
     } else {
       hideSearchCriteria();
-      showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
-      await sendPeriod(request, hmrcGrantId);
+      hideStatus();
+      await window.fileWithHmrc(
+        {
+          sending: siteText("itsa-fp-amend.narrate-sending", "Sending the amended foreign property figures to HMRC..."),
+          notSent: siteText("itsa-fp-amend.failure-not-sent", "HMRC has not got the amended figures."),
+          answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
+        },
+        () => sendPeriod(request, hmrcGrantId),
+      );
       document.getElementById("periodAmendResults").style.display = "block";
       hideRequestForm();
       hideStatus();
       window.dispatchEvent(new CustomEvent("bundle-changed"));
     }
   } catch (error) {
+    // A failed send is told in the failure panel, so the page adds no message of its own.
+    const told = request.action === "submit";
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
+      if (!told) showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 404 && request.action === "load") {
       showStatus(siteText("itsa-fp-amend.no-period", "HMRC holds no period summary for these details."), "info");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
-    } else {
+    } else if (!told) {
       showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     }
     if (request.action === "submit") showSearchCriteria();

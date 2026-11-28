@@ -101,7 +101,26 @@ export function serveUkPropertyPeriodFields(page) {
 }
 
 // The real country list, foreign property entry fields, entry list and period form, for the foreign property pages.
+// The SA106 register and field-detail.js with the modules it imports.
+const FOREIGN_PROPERTY_REGISTER_MODULES = [
+  "foreign-property-register.js",
+  "field-detail.js",
+  "ct600-fields.js",
+  "long-period.js",
+  "first-accounts.js",
+  "balance-sheet-headings.js",
+  "ct600-source-cells.js",
+  "accounts-page-lines.js",
+];
+
+export async function serveForeignPropertyRegister(page) {
+  for (const module of FOREIGN_PROPERTY_REGISTER_MODULES) {
+    await serveFile(page, `**/lib/${module}`, `lib/${module}`, "application/javascript");
+  }
+}
+
 export async function serveForeignPropertyScripts(page) {
+  await serveForeignPropertyRegister(page);
   await serveFile(page, "**/lib/country-codes.js", "lib/country-codes.js", "application/javascript");
   await serveFile(page, "**/lib/foreign-property-fields.js", "lib/foreign-property-fields.js", "application/javascript");
   await serveFile(page, "**/widgets/foreign-property-entries.js", "widgets/foreign-property-entries.js", "application/javascript");

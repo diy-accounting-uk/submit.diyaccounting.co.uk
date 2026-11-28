@@ -42,6 +42,8 @@ const REFERENCE_PATTERNS = [
   [/^R(\d+)/, ([, paragraph]) => siteText("field.reference-regulations", "Schedule 1 paragraph {paragraph}", { paragraph })],
   [/^Notes$/, () => siteText("field.reference-notes", "Notes to the accounts")],
   [/^Declaration$/, () => siteText("field.reference-declaration", "Declaration")],
+  [/^SA106 box (\d+(?:\.\d)?)$/, ([, box]) => siteText("field.reference-sa106-box", "SA106 box {box}", { box })],
+  [/^SA106 column ([A-F])$/, ([, column]) => siteText("field.reference-sa106-column", "SA106 column {column}", { column })],
   [/\b[Bb]oxes (\d+ (?:and|or) \d+)/, ([, boxes]) => siteText("field.reference-boxes", "Boxes {boxes}", { boxes })],
   [/\b[Bb]ox (\d+ or \d+|\d+)/, ([, box]) => siteText("field.reference-box", "Box {box}", { box })],
 ];
@@ -95,6 +97,9 @@ export function sourceLinkOf(field) {
   }
   if (href.startsWith("https://www.gov.uk/government/publications/life-of-a-company-annual-requirements")) {
     return { href, text: siteText("field.source-life-of-a-company", "Life of a company: accounts") };
+  }
+  if (href === "https://www.gov.uk/government/publications/self-assessment-foreign-sa106") {
+    return { href, text: siteText("field.source-sa106-notes", "Foreign (SA106) notes") };
   }
   const section = COMPANIES_ACT.exec(href);
   if (section)

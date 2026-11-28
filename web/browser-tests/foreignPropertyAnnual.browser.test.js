@@ -38,9 +38,16 @@ const STUBS = `
 window.__sent = [];
 window.__annual = null;
 window.__properties = ${JSON.stringify(PROPERTIES)};
-window.showStatus = function(){}; window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};
+window.__status = [];
+window.showStatus = function(message, type){ window.__status.push({ message: message, type: type }); };
+window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};
 window.generateRandomState = function(){ return "s"; };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
+window.__writes = [];
+window.fileWithHmrc = function(words, send){
+  window.__writes.push(Object.assign({}, words));
+  return send().catch(function(error){ window.__writes[window.__writes.length - 1].failed = true; throw error; });
+};
 window.resolveSyntheticTestScenario = function(explicit, account, fallback){ return explicit || (account === "synthetic" ? fallback : null); };
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "details", taxYear: taxYear });
@@ -173,6 +180,44 @@ test.describe("foreign property annual submission: countries", () => {
     await expect(page.locator("#annual-1-allowances-structuredBuildingAllowance-Claim\\ 1-amount")).toBeVisible();
     await expect(page.locator("#annual-1-allowances-structuredBuildingAllowance-Claim\\ 1-building-postcode")).toHaveText("TF3 4GH");
     await shoot(page, "annual-saved");
+    expect(await page.evaluate(() => window.__writes)).toEqual([
+      {
+        sending: "Sending the foreign property annual submission to HMRC...",
+        notSent: "HMRC has not got the annual submission.",
+        answers: "Your answers are still in this form.",
+      },
+    ]);
+  });
+
+  test("leads a country's fields with their SA106 boxes, and links HMRC's SA106 notes", async ({ page }) => {
+    await openPage(page);
+    await loadSubmission(page, "2025-26");
+    await addCountry(page, "fa-1", "FRA");
+    await page.locator("#fa-1-allowanceTypeItemised").check();
+
+    await expect(page.locator('label[for="fa-1-balancingCharge"]')).toHaveText("SA106 box 20: Balancing charge");
+    await expect(page.locator('label[for="fa-1-privateUseAdjustment"]')).toHaveText("SA106 box 19: Private use adjustment");
+    await expect(page.locator('label[for="fa-1-zeroEmissionsCarAllowance"]')).toHaveText("SA106 box 21.1: Zero emissions car allowance");
+    await expect(page.locator("#fa-1-annualInvestmentAllowance-hint")).toHaveText(
+      "Counts towards the total in box 21. Foreign (SA106) notes.",
+    );
+    await expect(page.locator("#fa-1-sbaRows legend").first()).toHaveText("SA106 box 22.1: Structures and Buildings Allowance");
+    await shoot(page, "annual-sa106-fields");
+  });
+
+  test("a save HMRC refuses is told in the failure panel, not in a message of the page's own", async ({ page }) => {
+    await openPage(page);
+    await loadSubmission(page, "2025-26");
+    await page.evaluate(() => {
+      window.putForeignPropertyAnnual = () => Promise.reject(Object.assign(new Error("HMRC rejected the request"), { status: 400 }));
+    });
+    await addCountry(page, "fa-1", "FRA");
+    await page.locator("#fa-1-balancingCharge").fill("120.5");
+    await page.locator("#saveBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__writes.map((write) => write.failed))).toEqual([true]);
+    expect(await page.evaluate(() => window.__status.filter((status) => status.type === "error"))).toEqual([]);
+    await expect(page.locator("#fa-1-balancingCharge")).toHaveValue("120.5");
   });
 
   test("offers the allowances of 2025-26 and not the two that end with 2024-25", async ({ page }) => {

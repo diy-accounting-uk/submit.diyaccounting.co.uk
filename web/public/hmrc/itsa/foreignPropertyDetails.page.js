@@ -31,6 +31,7 @@ function el(tag, className, text) {
 }
 
 function initializePage() {
+  window.foreignPropertyRegister.registerLabel("countryCode", document.querySelector('label[for="propertyCountry"]'));
   window.showHmrcStatusForService(
     siteText(
       "itsa.status-sandbox-text",
@@ -221,8 +222,14 @@ async function runRequest(request, hmrcGrantId) {
     showLoading();
     hideStatus();
     if (request.action === "save") {
-      showStatus(siteText("itsa-fp-details.saving", "Saving the property..."), "info");
-      await saveProperty(request, hmrcGrantId);
+      await window.fileWithHmrc(
+        {
+          sending: siteText("itsa-fp-details.narrate-sending", "Sending the property to HMRC..."),
+          notSent: siteText("itsa-fp-details.failure-not-sent", "HMRC has not got the property."),
+          answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
+        },
+        () => saveProperty(request, hmrcGrantId),
+      );
       showStatus(siteText("itsa-fp-details.saved", "Property saved."), "success");
     } else {
       showStatus(siteText("itsa.fp-loading-properties", "Loading your foreign properties..."), "info");
@@ -230,7 +237,8 @@ async function runRequest(request, hmrcGrantId) {
       hideStatus();
     }
   } catch (error) {
-    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
+    // A failed save is told in the failure panel, so the page adds no message of its own.
+    if (request.action !== "save") showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
   } finally {
     hideLoading();
   }

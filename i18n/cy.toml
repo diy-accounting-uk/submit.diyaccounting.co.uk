@@ -9813,10 +9813,6 @@ cy = '''Newid {name}'''
 hash = "5be714a216cb"
 cy = '''Ychwanegu eiddo'''
 
-[strings."itsa-fp-details.saving"]
-hash = "a0d35e0781c9"
-cy = '''Wrthi’n cadw’r eiddo...'''
-
 [strings."itsa-fp-details.saved"]
 hash = "0e28649f645e"
 cy = '''Mae’r eiddo wedi’i gadw.'''
@@ -29225,3 +29221,69 @@ cy = '''Eiddo yn y DU, blychau {first} i {last}'''
 [strings."field.source-sa105-notes"]
 hash = "fd1bc3163988"
 cy = '''nodiadau eiddo yn y DU (SA105)'''
+
+# == Foreign property: the SA106 places of its fields, and the stages and failure panel of its writes ==
+
+[strings."field.reference-sa106-box"]
+hash = "ee2b3f012b9c"
+cy = '''SA106 blwch {box}'''
+
+[strings."field.reference-sa106-column"]
+hash = "286bbda84ac6"
+cy = '''SA106 colofn {column}'''
+
+[strings."field.source-sa106-notes"]
+hash = "8549cda0cf7e"
+cy = '''Nodiadau Tramor (SA106)'''
+
+[strings."itsa.fp-part-of-box"]
+hash = "1225c11258df"
+cy = '''Yn cyfrif tuag at y cyfanswm ym mlwch {box}.'''
+
+[strings."itsa-fp-period.narrate-sending"]
+hash = "9762d5358c86"
+cy = '''Wrthi’n anfon y diweddariad eiddo tramor at CThEF...'''
+
+[strings."itsa-fp-period.failure-not-sent"]
+hash = "474dbcf36203"
+cy = '''Nid yw CThEF wedi cael y diweddariad eiddo tramor.'''
+
+[strings."itsa-fp-amend.narrate-sending"]
+hash = "cde947397847"
+cy = '''Wrthi’n anfon y ffigurau eiddo tramor diwygiedig at CThEF...'''
+
+[strings."itsa-fp-amend.failure-not-sent"]
+hash = "39f8b227caf2"
+cy = '''Nid yw CThEF wedi cael y ffigurau diwygiedig.'''
+
+[strings."itsa-fp-details.narrate-sending"]
+hash = "c4ed9fa20326"
+cy = '''Wrthi’n anfon yr eiddo at CThEF...'''
+
+[strings."itsa-fp-details.failure-not-sent"]
+hash = "848ffdc28647"
+cy = '''Nid yw CThEF wedi cael yr eiddo.'''
+
+[strings."itsa-fp-annual.narrate-sending"]
+hash = "887f82e42aca"
+cy = '''Wrthi’n anfon y cyflwyniad blynyddol eiddo tramor at CThEF...'''
+
+[strings."itsa-fp-annual.failure-not-sent"]
+hash = "ba7a11d74fad"
+cy = '''Nid yw CThEF wedi cael y cyflwyniad blynyddol.'''
+
+[strings."itsa-fp-adjustments.narrate-requesting"]
+hash = "c12f4f354a4a"
+cy = '''Wrthi’n gofyn i CThEF am y crynodeb diwedd blwyddyn...'''
+
+[strings."itsa-fp-adjustments.failure-not-requested"]
+hash = "3218adf8c30a"
+cy = '''Nid yw CThEF wedi llunio’r crynodeb diwedd blwyddyn.'''
+
+[strings."itsa-fp-adjustments.narrate-sending"]
+hash = "00a81dde4ebf"
+cy = '''Wrthi’n anfon yr addasiad at CThEF...'''
+
+[strings."itsa-fp-adjustments.failure-not-sent"]
+hash = "ce8007dae694"
+cy = '''Nid yw CThEF wedi cael yr addasiad.'''

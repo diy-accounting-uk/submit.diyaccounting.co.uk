@@ -86,6 +86,17 @@ describe("a write to HMRC through fileWithHmrc", () => {
     expect(document.getElementById("failureDetail").dataset.kind).toBe("your-credentials");
   });
 
+  test("a try that succeeds takes away the panel an earlier try left", async () => {
+    authorizedFetch.mockResolvedValueOnce(jsonResponse(503, { message: "HMRC unavailable", error: { hmrcResponseCode: 503 } }));
+    await expect(fileWithHmrc(WORDS, () => putSelfEmploymentAnnual(ANNUAL, "grant-1"))).rejects.toMatchObject({ status: 503 });
+    expect(document.getElementById("failureDetail")).not.toBeNull();
+
+    authorizedFetch.mockResolvedValueOnce(jsonResponse(200, {}));
+    await fileWithHmrc(WORDS, () => putSelfEmploymentAnnual(ANNUAL, "grant-1"));
+
+    expect(document.getElementById("failureDetail")).toBeNull();
+  });
+
   test("a write outside fileWithHmrc polls as before", async () => {
     authorizedFetch.mockResolvedValueOnce(jsonResponse(200, {}));
     await putSelfEmploymentAnnual(ANNUAL, "grant-1");
