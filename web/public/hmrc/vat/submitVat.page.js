@@ -503,6 +503,7 @@ async function continueVatSubmission() {
     }
 
     console.log("Retrieved submission data:", submissionData);
+    window.narrateStage?.(siteText("vat-submit.narrate-checking", "Checking your answers..."));
 
     if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
       sessionStorage.removeItem("submission_data");
@@ -545,7 +546,8 @@ async function continueVatSubmission() {
     hideForm();
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus(siteText("vat-submit.submitting", "Submitting VAT return to HMRC..."), "info");
+    document.getElementById("failureDetail")?.remove();
+    window.narrateStage?.(siteText("vat-submit.narrate-sending", "Sending the return to HMRC..."));
 
     // Submit VAT return with 9-box data
     const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, hmrcGrantId);
@@ -571,7 +573,10 @@ async function continueVatSubmission() {
     console.error("Submission error:", error);
     const refusedForNoPass = isBundleRefusal(error);
     if (refusedForNoPass) showPassNeeded();
-    else showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
+    else {
+      showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
+      window.vatFilingFailure?.show(error, returnSentText(error));
+    }
     // Auto-expand form on error so user can retry. A submission only starts once the
     // declaration is ticked, so the box stays ticked after the page reload of the HMRC sign-in.
     showForm();
@@ -761,12 +766,26 @@ function showObligationStatus(message) {
   document.getElementById("obligationStatus").textContent = message;
 }
 
+// What a failed return left at HMRC: an answer from HMRC refused it; no answer leaves it unknown.
+function returnSentText(error) {
+  if (typeof error?.status !== "number" || error.status >= 500) {
+    return siteText(
+      "vat-submit.failure-sent-unknown",
+      "Submit did not get HMRC's answer, so it cannot say whether HMRC has the return. Check your receipts before you send it again.",
+    );
+  }
+  return siteText("vat-submit.failure-sent-refused", "HMRC did not take the return. Nothing was filed.");
+}
+
 function bundlesPageHref() {
   return window.siteLanguage?.chrome() === "cy" ? "/cy/bundles.html" : "/bundles.html";
 }
 
 function isBundleRefusal(error) {
-  return error?.code === "BUNDLE_ENTITLEMENT_REQUIRED" || (error?.status === 403 && /bundle/i.test(error?.message || ""));
+  return (
+    error?.code === "BUNDLE_ENTITLEMENT_REQUIRED" ||
+    (error?.status === 403 && error?.reason !== "tokens_exhausted" && /bundle entitlement/i.test(error?.message || ""))
+  );
 }
 
 function showPassNeeded() {
@@ -839,7 +858,7 @@ async function loadOpenObligations() {
       headers: requestHeaders,
     });
     hideStatus(); // Clear the polling banner the fetch leaves behind
-    if (response.status === 403 && /bundle/i.test(await response.text())) {
+    if (response.status === 403 && /BUNDLE_ENTITLEMENT_REQUIRED|bundle entitlement/i.test(await response.text())) {
       obligationsLoadedForVrn = null;
       showObligationPassNeeded();
       return;
@@ -1147,6 +1166,11 @@ onDOMReady(async function () {
       ].map((id) => document.getElementById(id)),
       submitButton: document.getElementById("submitBtn"),
       ensureAccess: ensureHmrcAssistAccess,
+      onFailure: (error) =>
+        window.vatFilingFailure?.show(
+          error,
+          siteText("vat-submit.assist-failure-sent", "Nothing was filed. HMRC Assist reads the figures and files nothing."),
+        ),
       highlightIds: HMRC_ASSIST_BOX_IDS,
       unavailableText: siteText(
         "vat-submit.assist-unavailable",
