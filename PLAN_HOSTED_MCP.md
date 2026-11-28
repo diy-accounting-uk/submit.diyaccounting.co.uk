@@ -9,6 +9,8 @@
 
 The operator asked to keep only those three chains and the defects on `NEXT.md`. This plan holds the tasks that left it.
 
+> "yes" (operator, 2026-11-28, to MCP7 and MCP8: the connector gives the assistant HMRC and Companies House rules and rates with their sources, help from the Submit guide and the diya-gl knowledge base, and the DIYA-GL book format, through read-only tools.)
+
 > "Yes" (operator, 2026-11-28, to MCP5 and MCP6: a cloud book started from the Companies House register, and links to the filled-in accounts and CT600 forms, so that a chat assistant can take a limited company from the register to its accounts and Company Tax Return.)
 
 > "Yes" (operator, 2026-11-28, to: add diya-gl's bookkeeping tools to Submit's hosted connector, read tools first after ODSC1, then a design for write tools with cloud save and undo, then its build; one connector for the customer, with diya-gl's local stdio server kept for books on disk.)
@@ -19,7 +21,7 @@ Recorded in MCP1's row: the operator approved the launch on 2026-11-22, each too
 
 Prod's hosted MCP connector offers each filing tool as its journey goes live, with the harness behind an operator-only activity and the listings current.
 
-**Status**: 6 open tasks (MCP1 to MCP6), tracked here, not on `NEXT.md`.
+**Status**: 8 open tasks (MCP1 to MCP8), tracked here, not on `NEXT.md`.
 
 ## Facts the tasks share
 
@@ -35,6 +37,8 @@ The harness page `web/public/mcp-harness.html` loads scripts from `web/public/mc
 | MCP4 | machine-only | blocked | MCP3, MCP2 | MCP5 | submit |
 | MCP5 | machine-only | blocked | MCP4 | nothing | submit |
 | MCP6 | machine-only | blocked | MCP2 | nothing | submit |
+| MCP7 | machine-only | blocked | ODSC1 (`NEXT.md`) | nothing | submit |
+| MCP8 | machine-only | blocked | ODSC1 (`NEXT.md`) | nothing | submit |
 
 Model, size and repository are in each entry. "Blocked by" lists the tasks and events not yet done.
 
@@ -63,4 +67,12 @@ A hosted tool starts the DIYA cloud book of a limited company's next accounting 
 ### MCP6. Links to the filled-in accounts and CT600 forms
 
 `prepare_micro_entity_accounts`, `prepare_small_company_accounts` and `prepare_company_tax_return` follow `prepare_vat_return` (`mcp/lib/handoff-tools.js`, `vatHandoffLink`): each derives the figures again from the open book and gives the link to its form with the figures in the URL fragment (`#books=<base64url JSON>`, read by `web/public/lib/auth-url-builder.js` line 122), and files nothing. The forms are `web/public/companies-house/fileMicroEntityAccounts.html`, `fileSmallCompanyAccounts.html` and `fileCompanyTaxReturn.html` (and their Welsh pages); each page fills its fields from the fragment as the VAT form does, and the person checks, enters the authentication code or Government Gateway credentials, and files. Each tool goes on prod's connector when its journey is live on prod (MCP1's rule), with its sentence in the prod instructions ("Open this link, check the figures ... Nothing has been filed."). Tests: `mcp/test/` for each link's fragment, a browser case per form that opens a link and finds the fields filled, `mcp/test/hosted-tools.test.js` and `mcp/test/plugin.test.js`. **Model**: Sonnet. **Size**: ~8 files.
+
+### MCP7. Rules and rates with their sources
+
+A READS tool `look_up_rule` takes a term or a fact id ("annual investment allowance", "section 455 rate", "accounts due 9 months") and answers the value, the gov.uk quote, the URL and the date it was read. The quotes, URLs and fact ids are the source files in `.claude/skills/tax-sources/sources/` (58 files today; `scripts/tax-sources.mjs` `loadSources` reads them, and a unit test fails a source older than 30 days); the values are those `scripts/build-rates-page.mjs` takes from the diya-gl engine's tax data (`ENGINE_DATA_DIR`, with `RATES_FACT_IDS` in `scripts/rates-fact-ids.mjs`) and from `scripts/build-mtd-calendar.mjs`. Build one generated JSON for the `mcp/` package from the same inputs (a script beside the two builders, run by them, so the three cannot disagree), and match a term against the fact ids and the source titles. Each derivation's answer (`derive_vat_return`, `derive_micro_entity_accounts`, `derive_small_company_accounts`, `derive_company_tax_return` in `mcp/lib/server.js`) gains the source link of each rate or rule it used (for example marginal relief and the section 455 rate in the Company Tax Return). The prod instructions add: give the rule with its source, quote it and do not advise; for a person's own case, send them to HMRC or Companies House. Register on `HOSTED_TOOL_NAMES` and `PROD_HOSTED_TOOL_NAMES` (`mcp/lib/hosted-tools.js`). Lands after OpenAI approves 0.1.7 (ODSC1), as MCP2 does. Tests: the JSON against the sources (every fact id has a source and a value), a term search, a derivation answer with its links, `mcp/test/hosted-tools.test.js`, `mcp/test/plugin.test.js`. **Model**: Sonnet. **Size**: ~6 files.
+
+### MCP8. Help from the Submit guide and the diya-gl knowledge base, and the DIYA-GL book format
+
+A READS tool `find_help` searches the Submit guide (`web/public/guide.html` sections, `mcp.html`, `rates.html`, `mtd-calendar.html`) and the diya-gl knowledge base (253 articles in `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles`, keywords in `app/data/knowledge-base-search.toml`, the published `knowledge-base.toml` beside `knowledge-base.html`; `buildKnowledgeBase` in `app/lib/knowledge-base.js`), and answers titles, a two-line summary and the public URL of each match. Read the knowledge base from its published file or the diya-gl package, not from the sibling checkout, so the hosted build needs no second repository; if neither ships it, a diya-gl release that ships `knowledge-base.toml` comes first. A READS tool `book_format` answers the DIYA-GL book format (book.toml and lines.jsonl, from `diya-gl/README.md` in the package) and the CT600 box map (`app/data/filing/ct600-v3.toml`), so the assistant knows the shape before MCP4's `edit_lines`. Wording: "your records", "DIYA-GL book", never "your books". Register on prod's connector after ODSC1. Tests: a search that finds a guide section and an article, the book format answer, `mcp/test/hosted-tools.test.js`, `mcp/test/plugin.test.js`. **Model**: Sonnet. **Size**: ~5 files.
 
