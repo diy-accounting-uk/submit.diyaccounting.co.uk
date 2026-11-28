@@ -61,7 +61,11 @@ async function serveSite(page, routes) {
       return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     }
     if (url.pathname === "/api/v1/bundle") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles: [], tokensRemaining: 10 }) });
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ bundles: [{ bundleId: "resident-pro", allocated: true }], tokensRemaining: 10 }),
+      });
     }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
     const filePath = path.join(PUBLIC_ROOT, decodeURIComponent(url.pathname));

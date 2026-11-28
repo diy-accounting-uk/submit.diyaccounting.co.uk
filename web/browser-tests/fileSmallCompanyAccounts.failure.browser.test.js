@@ -13,7 +13,11 @@ import { serveRealSite, declineConsent, SITE_ORIGIN } from "./serveRealSite.js";
 const SCREENSHOT_DIR = path.join(process.cwd(), "target/screenshots/accounts-failure");
 
 async function openPage(page, { welsh = false } = {}) {
-  await serveRealSite(page, { signedIn: true });
+  // The account holds a pass for the accounts, so the page sends the filing.
+  await serveRealSite(page, {
+    signedIn: true,
+    apiHandler: (url) => (url.pathname === "/api/v1/bundle" ? { bundles: [{ bundleId: "resident-ltd", allocated: true }] } : undefined),
+  });
   const pagePath = welsh ? "cy/companies-house/fileSmallCompanyAccounts.html" : "companies-house/fileSmallCompanyAccounts.html";
   await page.goto(`${SITE_ORIGIN}/${pagePath}`, { waitUntil: "networkidle" });
   await declineConsent(page);
