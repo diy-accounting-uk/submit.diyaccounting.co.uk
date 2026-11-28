@@ -580,6 +580,38 @@ test.describe("File Company Tax Return entry form", () => {
     });
   });
 
+  test("the Welsh page says in Welsh that no token is left and the return was not sent to HMRC", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 403,
+      body: { message: "Token limit reached", reason: "tokens_exhausted", tokensRemaining: 0 },
+    };
+    await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
+    await serveRealSite(page, [], submission);
+    await page.goto(PAGE_URL.replace("/companies-house/", "/cy/companies-house/"), { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("00000007");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await page.locator("#booksImportFile").setInputFiles({
+      name: "precision-code.diya-gl.zip",
+      mimeType: "application/zip",
+      buffer: await zippedPrecisionCodeBook(),
+    });
+    await expect(page.locator("#booksImportStatus")).toContainText(/^Llenwyd \d+ maes o precision-code\.diya-gl\.zip/, { timeout: 60_000 });
+    await page.locator("#regimeSmall").check();
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    const status = page.locator("#statusMessagesContainer .status-error");
+    await expect(status).toContainText("Dim credydau (tokens) ar ôl.", { timeout: 30_000 });
+    await expect(status).toContainText("ni anfonwyd y Ffurflen Dreth at CThEF");
+    await expect(status).not.toContainText("No tokens remaining");
+  });
+
   test("at phone width the IRmark receipt of an accepted return breaks inside the customer's copy", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openForm(page, [], {

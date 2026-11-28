@@ -29434,3 +29434,12 @@ cy = '''Llyfr gwaith pecyn Hunangyflogedig.'''
 [strings."ch.accounts.no-tokens"]
 hash = "39319b90b3d0"
 cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+
+# == The Company Tax Return page's status line when no token is left, ids ch.ct.no-tokens-* ==
+[strings."ch.ct.no-tokens-none"]
+hash = "32a30045f88d"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau na CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+
+[strings."ch.ct.no-tokens-hmrc"]
+hash = "86530e47f953"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd y Ffurflen Dreth at CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''

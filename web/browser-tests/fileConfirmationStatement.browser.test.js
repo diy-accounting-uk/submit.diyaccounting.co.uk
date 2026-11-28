@@ -1132,6 +1132,40 @@ test.describe("File Confirmation Statement page", () => {
     await page.screenshot({ path: recordScreenshotPath("confirmation-statement-failure-panel", 1280), fullPage: true });
   });
 
+  test("the Welsh page says in Welsh that no token is left and nothing was sent", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      submitError: { message: "Token limit reached", status: 403, body: { message: "Token limit reached", reason: "tokens_exhausted" } },
+    });
+    const welshText = fs.readFileSync(path.join(process.cwd(), "web/public/lib/welsh-text.js"), "utf-8");
+    await page.addInitScript((source) => {
+      new Function(source)();
+      window.siteText = (id, english, values) =>
+        (window.WELSH_TEXT[id] ?? english).replace(/\{([a-z]+)\}/g, (whole, name) =>
+          values && name in values ? String(values[name]) : whole,
+        );
+    }, welshText);
+    const welshHtml = fs
+      .readFileSync(path.join(process.cwd(), "web/public/cy/companies-house/fileConfirmationStatement.html"), "utf-8")
+      .replace("<head>", '<head><base href="http://localhost:3000/cy/companies-house/">');
+    await page.route("**/fileConfirmationStatement.html*", (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: welshHtml }),
+    );
+    await page.goto("http://localhost:3000/cy/companies-house/fileConfirmationStatement.html", { waitUntil: "domcontentloaded" });
+    await delay(200);
+    await reachPreview(page);
+    await page.click("#submitFilingBtn");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__statusMessages.filter((entry) => entry.type === "error").map((entry) => entry.message)))
+      .toContainEqual(expect.stringContaining("Dim credydau (tokens) ar ôl."));
+    const errors = await page.evaluate(() =>
+      window.__statusMessages.filter((entry) => entry.type === "error").map((entry) => entry.message),
+    );
+    expect(errors.join(" ")).toContain("ni anfonwyd dim at Dŷ’r Cwmnïau");
+    expect(errors.join(" ")).not.toContain("Token limit reached");
+  });
+
   test("a fault in Submit on the filing gives Help and the reference to quote", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, {

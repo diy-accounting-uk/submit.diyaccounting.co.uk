@@ -70,6 +70,7 @@ import { hasRegisterEntry, labelWithReference, noteOf, sourceDisclosure } from "
 import { ct600RecordHtml } from "../lib/filing-record.js";
 import { addSectionVideos } from "../lib/section-video.js";
 import { classifyFilingFailure, showFailureDetail } from "../lib/filing-failure.js";
+import { noTokensText } from "../lib/accounts-filing-failure.js";
 import { longDateText, returnDueDate, taxDueDate } from "../lib/long-period.js";
 import { SECTION_413_URL, followedTerms } from "../lib/advance-terms.js";
 import {
@@ -3190,6 +3191,23 @@ function showSendCost(accountsFirst) {
 
 // A refusal for no token left: the balance on the page is out of date, and the send step is where
 // the customer can see what is left.
+// The refusal for no token left, in the page's language, naming what was not sent: the accounts alone,
+// the accounts and the return when the accounts go first, or the return.
+function noTokensSentence(error) {
+  if (error.service === "companiesHouse") {
+    return sending.mode === "both"
+      ? siteText(
+          "ch.ct.no-tokens-none",
+          "No tokens remaining. Your token allowance has been used, so nothing was sent to Companies House or HMRC. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
+        )
+      : noTokensText();
+  }
+  return siteText(
+    "ch.ct.no-tokens-hmrc",
+    "No tokens remaining. Your token allowance has been used, so the return was not sent to HMRC. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
+  );
+}
+
 function showTokensExhausted(message) {
   showView("previewView");
   window.hideStatus();
@@ -4062,8 +4080,10 @@ async function runSend(send) {
       const accountsFiled = sending.companiesHouse?.statusCode === "ACCEPT";
       showTokensExhausted(
         accountsFiled
-          ? siteText("ch.ct.accounts-filed-then", "The accounts are filed with Companies House. {message}", { message: error.message })
-          : error.message,
+          ? siteText("ch.ct.accounts-filed-then", "The accounts are filed with Companies House. {message}", {
+              message: noTokensSentence(error),
+            })
+          : noTokensSentence(error),
       );
       return;
     }
@@ -4111,7 +4131,7 @@ async function handleSubmitReturn() {
         // The accounts never reached Companies House, so nothing is filed and the review stays open.
         if (!sending.companiesHouse) {
           if (error.reason === "tokens_exhausted") {
-            showTokensExhausted(error.message);
+            showTokensExhausted(noTokensSentence(error));
             return;
           }
           showView("previewView");

@@ -35,6 +35,7 @@ const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/;
 // Each field's reference and note, and the panel a failed filing leaves; this script is not a module.
 const confirmationStatementFields = import("../lib/confirmation-statement-fields.js");
 const filingFailure = import("../lib/filing-failure.js");
+const accountsFilingFailure = import("../lib/accounts-filing-failure.js");
 
 // The two headers the status poll (a GET) carries the own presenter in.
 function ownPresenterHeaders() {
@@ -957,6 +958,13 @@ async function showFilingFailure(error, sent) {
 // A GovTalkErrors block (error.body.errors) means the gateway never accepted the envelope,
 // so it carries plain words a customer can read, not the gateway's own technical Text - the
 // caught error's own message is the fallback when there is no GovTalkErrors block to read.
+// A refusal for no token left takes the page's own sentence; any other error is described as below.
+async function submissionErrorText(error, fallback) {
+  const reason = error?.reason ?? error?.body?.reason;
+  if (reason === "tokens_exhausted") return (await accountsFilingFailure).noTokensText();
+  return describeSubmissionError(error, fallback);
+}
+
 function describeSubmissionError(error, fallback) {
   const govTalkErrors = error?.body?.errors;
   if (Array.isArray(govTalkErrors) && govTalkErrors.length > 0) {
@@ -1188,7 +1196,7 @@ async function handlePscVerificationSubmit(index, matches) {
     console.error("PSC verification statement filing failed:", error);
     resultContainer.replaceChildren(
       buildParagraph(
-        [describeSubmissionError(error, window.siteText("ch.cs.psc-failed", "Failed to file the PSC verification statement."))],
+        [await submissionErrorText(error, window.siteText("ch.cs.psc-failed", "Failed to file the PSC verification statement."))],
         "error",
       ),
     );
@@ -1366,7 +1374,7 @@ async function handleSubmitFiling() {
     }
     console.error("Companies House confirmation statement filing failed:", error);
     showStatus(
-      describeSubmissionError(
+      await submissionErrorText(
         error,
         window.siteText("ch.cs.file-failed", "Failed to file the confirmation statement with Companies House."),
       ),

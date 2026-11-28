@@ -938,6 +938,10 @@ window.WELSH_TEXT = {
   "ch.ct.micro-note": "Mae Tŷ’r Cwmnïau yn cael mantolen a nodiadau’r micro-endid. Mae’r cyfrif elw a cholled yn mynd i CThEF yn unig.",
   "ch.ct.micro-profit-hint": "Mae’r elw cyn treth a’r elw am y flwyddyn yn cael eu cyfrifo o’r llinellau hyn.",
   "ch.ct.no": "Na",
+  "ch.ct.no-tokens-hmrc":
+    "Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd y Ffurflen Dreth at CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.",
+  "ch.ct.no-tokens-none":
+    "Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau na CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.",
   "ch.ct.not-settled": "Nid yw CThEF wedi setlo’r Ffurflen eto. Statws Ffurflen ",
   "ch.ct.note-added": "Wedi’i ychwanegu yn y cyfnod",
   "ch.ct.note-at-start": "Ar ddechrau’r cyfnod",
