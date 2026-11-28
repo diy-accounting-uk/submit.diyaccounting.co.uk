@@ -229,6 +229,9 @@ window.WELSH_TEXT = {
   "ch.accounts.enter-presenter-id": "Rhowch eich ID cyflwynydd",
   "ch.accounts.failure-sent-not-filed": "Ni chymerodd Tŷ’r Cwmnïau y cyfrifon, ac ni ffeiliwyd dim.",
   "ch.accounts.failure-sent-preview": "Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim gael ei anfon.",
+  "ch.accounts.failure-technical": "Manylion technegol",
+  "ch.accounts.field-share-class-hint":
+    "Mae cyfranddaliadau o’r un dosbarth pan fo’r hawliau sydd ynghlwm wrthynt yr un fath ym mhob ffordd.",
   "ch.accounts.file-failed": "Methwyd â ffeilio’r cyfrifon gyda Thŷ’r Cwmnïau.",
   "ch.accounts.gateway-accepted": "Derbyniodd y porth gyflwyniad {number} am {time}. Wrthi’n aros am Dŷ’r Cwmnïau...",
   "ch.accounts.lookup-failed": "Methwyd â chwilio am y cwmni.",

@@ -378,7 +378,7 @@ async function handleAccountsFormSubmit(event) {
     document.getElementById("previewView").scrollIntoView();
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
-    showStatus(error.message || window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
+    showStatus(window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
     accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.preview);
   } finally {
     hideLoading();
@@ -582,9 +582,7 @@ async function handleSubmitFiling() {
     if (tokensExhausted) hideStatus();
     const { registerRefusalOfError } = await import("../lib/accounts-revision-register.js");
     showStatus(
-      registerRefusalOfError(error) ||
-        error.message ||
-        window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
+      registerRefusalOfError(error) || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
       "error",
     );
     accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.filing);

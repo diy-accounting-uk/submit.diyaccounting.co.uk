@@ -29124,3 +29124,12 @@ cy = '''Ni agorodd Stripe eich tudalen danysgrifio.'''
 [strings."stripe.failure-after-portal"]
 hash = "0125bad5cdea"
 cy = '''Nid yw eich tanysgrifiad na’ch Bundles wedi newid.'''
+# == The accounts pages' technical detail of a failure and their share class note (lib/accounts-filing-failure.js, lib/accounts-page-fields.js) ==
+
+[strings."ch.accounts.failure-technical"]
+hash = "d635f31f91f8"
+cy = '''Manylion technegol'''
+
+[strings."ch.accounts.field-share-class-hint"]
+hash = "342eaab53976"
+cy = '''Mae cyfranddaliadau o’r un dosbarth pan fo’r hawliau sydd ynghlwm wrthynt yr un fath ym mhob ffordd.'''

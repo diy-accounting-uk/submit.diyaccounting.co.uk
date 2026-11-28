@@ -38,11 +38,28 @@ export function accountsSentText(stage) {
  * @param {"preview"|"filing"} stage
  */
 export function showAccountsFailure(doc, error, stage) {
-  return showFailureDetail(doc, {
+  const failure = classifyFilingFailure(error, { service: "companiesHouse" });
+  const panel = showFailureDetail(doc, {
     sent: accountsSentText(stage),
     answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
-    failure: classifyFilingFailure(error, { service: "companiesHouse" }),
+    failure,
   });
+  const message = String(error?.message ?? "").trim();
+  if (message && !failure.errors?.includes(message)) panel.querySelector(".failure-detail__close").before(technicalDetail(doc, message));
+  return panel;
+}
+
+// The message the request layer gave, as it came, in a closed disclosure: the status line says what
+// happened in the page's language, and this keeps the words to quote when asking for help.
+function technicalDetail(doc, message) {
+  const details = doc.createElement("details");
+  details.dataset.part = "technical";
+  const summary = doc.createElement("summary");
+  summary.textContent = siteText("ch.accounts.failure-technical", "Technical detail");
+  const text = doc.createElement("p");
+  text.textContent = message;
+  details.append(summary, text);
+  return details;
 }
 
 /** Remove the panel of an earlier failure, when the person tries again. */

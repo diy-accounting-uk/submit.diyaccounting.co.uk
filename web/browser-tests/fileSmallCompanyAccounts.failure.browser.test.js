@@ -47,7 +47,10 @@ test("an error Companies House answered shows the panel with its error and that 
   await expect(panel.locator("[data-part='sent']")).toHaveText("Companies House did not take the accounts, and nothing was filed.");
   await expect(panel.locator("[data-part='answers']")).toHaveText("Your answers are still in this form.");
   await expect(panel.locator("[data-part='errors']")).toContainText("The period end date is after the made up date");
-  await expect(page.locator("#statusMessagesContainer")).toContainText("Companies House rejected the submission");
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Failed to file the accounts with Companies House.");
+  await expect(page.locator("#statusMessagesContainer")).not.toContainText("Companies House rejected the submission");
+  await expect(panel.locator("[data-part='technical']")).not.toHaveAttribute("open", "");
+  await expect(panel.locator("[data-part='technical'] p")).toHaveText("Companies House rejected the submission");
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await panel.scrollIntoViewIfNeeded();
@@ -98,7 +101,7 @@ test("filing again removes the panel of the earlier failure", async ({ page }) =
   await expect(page.locator("#failureDetail")).toHaveCount(0);
 });
 
-test("the Welsh page says in Welsh that nothing was filed", async ({ page }) => {
+test("the Welsh page says in Welsh that nothing was filed, and keeps the English message in the technical detail", async ({ page }) => {
   await openPage(page, { welsh: true });
   await fileRefusedWith(page, {
     status: 502,
@@ -107,6 +110,9 @@ test("the Welsh page says in Welsh that nothing was filed", async ({ page }) => 
   });
   const panel = page.locator("#failureDetail");
   await expect(panel.locator("[data-part='sent']")).toHaveText("Ni chymerodd Tŷ’r Cwmnïau y cyfrifon, ac ni ffeiliwyd dim.");
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Methwyd â ffeilio’r cyfrifon gyda Thŷ’r Cwmnïau.");
+  await expect(panel.locator("[data-part='technical'] summary")).toHaveText("Manylion technegol");
+  await expect(panel.locator("[data-part='technical'] p")).toHaveText("Companies House rejected the submission");
   await page.setViewportSize({ width: 390, height: 900 });
   await panel.scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, "small-business-error-cy-390.png"), fullPage: false });
