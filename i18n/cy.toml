@@ -28875,3 +28875,20 @@ cy = '''Treth Gorfforaeth sy’n daladwy'''
 [strings."ch.ct600.problem-note-depreciation"]
 hash = "2d7d9e94b9ed"
 cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
+
+# == The VAT return's pass check before the obligations read and the submit, ids vat-submit.*pass* ==
+[strings."vat-submit.pass-needed-title"]
+hash = "a350c1774519"
+cy = '''Mae angen tocyn arnoch i gyflwyno Ffurflen TAW'''
+
+[strings."vat-submit.pass-needed-cause"]
+hash = "630934c976a7"
+cy = '''Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n gadael i chi gyflwyno Ffurflen TAW.'''
+
+[strings."vat-submit.get-day-pass"]
+hash = "588425249452"
+cy = '''Cael tocyn diwrnod'''
+
+[strings."vat-submit.periods-need-pass"]
+hash = "4a60078c7bc7"
+cy = '''Mae angen tocyn arnoch i ddarllen eich cyfnodau TAW agored gan CThEF ac i gyflwyno Ffurflen TAW.'''

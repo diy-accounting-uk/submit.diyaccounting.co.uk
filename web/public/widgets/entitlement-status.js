@@ -274,6 +274,29 @@
     return requiresStatus(catalog, requiredBundles);
   }
 
+  /**
+   * Whether the signed-in person holds a bundle this page's activity needs, read fresh so a pass
+   * bought in another tab counts.
+   * @returns {Promise<boolean|null>} True or false, or null when the bundle read failed
+   */
+  async function activityBundleHeld() {
+    const catalog = await fetchCatalog();
+    const activity = catalog ? findMatchingActivity(catalog, window.location.pathname) : null;
+    if (!activity) return true;
+    const required = activity.bundles || [];
+    if (required.some((bundleId) => getAutomaticBundles(catalog).includes(bundleId))) return true;
+    try {
+      const response = await window.fetchWithIdToken("/api/v1/bundle", {});
+      if (!response.ok) return null;
+      const data = await response.json();
+      const held = (data?.bundles || []).filter((bundle) => bundle.allocated).map((bundle) => bundle.bundleId);
+      return required.some((bundleId) => held.includes(bundleId));
+    } catch (err) {
+      console.warn("Failed to read bundles for the entitlement check:", err);
+      return null;
+    }
+  }
+
   function unavailablePanel(heading, text, linkHref, linkText) {
     const panel = document.createElement("section");
     panel.className = "signed-out-panel";
@@ -400,6 +423,7 @@
   // Expose functions globally for backward compatibility and testing
   if (typeof window !== "undefined") {
     window.EntitlementStatus = {
+      activityBundleHeld,
       update: updateEntitlementStatus,
       initialize: initEntitlementStatus,
     };

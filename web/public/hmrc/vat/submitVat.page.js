@@ -361,6 +361,12 @@ async function handleFormSubmission(event) {
   window.formErrors.showFormErrors(errors);
   if (errors.length > 0) return;
 
+  // Without a pass the server refuses the return, so stop before the HMRC sign-in.
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    showPassNeeded();
+    return;
+  }
+
   // Store submission data for the submission handler
   submissionData = {
     vatNumber,
@@ -498,6 +504,14 @@ async function continueVatSubmission() {
 
     console.log("Retrieved submission data:", submissionData);
 
+    if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("submission_data");
+      showForm();
+      document.getElementById("declaration").checked = true;
+      showPassNeeded();
+      return;
+    }
+
     // Hide form while submitting
     hideForm();
     showLoading();
@@ -526,7 +540,9 @@ async function continueVatSubmission() {
     console.log("Continue submission handler (success, session storage cleared)");
   } catch (error) {
     console.error("Submission error:", error);
-    showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
+    const refusedForNoPass = isBundleRefusal(error);
+    if (refusedForNoPass) showPassNeeded();
+    else showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
     // Auto-expand form on error so user can retry. A submission only starts once the
     // declaration is ticked, so the box stays ticked after the page reload of the HMRC sign-in.
     showForm();
@@ -534,8 +550,11 @@ async function continueVatSubmission() {
     // Clear submission data to prevent auto-retry loop on next page load
     // User will need to manually retry by filling the form again
     sessionStorage.removeItem("submission_data");
-    sessionStorage.removeItem("hmrcGrantId");
-    sessionStorage.removeItem("hmrcTokenScope");
+    // A refusal by our own entitlement check leaves the HMRC grant good for the retry after a pass.
+    if (!refusedForNoPass) {
+      sessionStorage.removeItem("hmrcGrantId");
+      sessionStorage.removeItem("hmrcTokenScope");
+    }
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
     console.log("Submission failed, cleared session storage to prevent retry loop");
@@ -710,6 +729,42 @@ function showObligationStatus(message) {
   document.getElementById("obligationStatus").textContent = message;
 }
 
+function bundlesPageHref() {
+  return window.siteLanguage?.chrome() === "cy" ? "/cy/bundles.html" : "/bundles.html";
+}
+
+function isBundleRefusal(error) {
+  return error?.code === "BUNDLE_ENTITLEMENT_REQUIRED" || (error?.status === 403 && /bundle/i.test(error?.message || ""));
+}
+
+function showPassNeeded() {
+  showFailure(
+    {
+      failure: {
+        cause: siteText(
+          "vat-submit.pass-needed-cause",
+          "Nothing has been sent to HMRC. Your account has no pass or bundle that lets you submit a VAT return.",
+        ),
+        next: { label: siteText("vat-submit.get-day-pass", "Get a day pass"), href: bundlesPageHref() },
+      },
+    },
+    siteText("vat-submit.pass-needed-title", "You need a pass to submit a VAT return"),
+  );
+}
+
+function showObligationPassNeeded() {
+  const link = document.createElement("a");
+  link.href = bundlesPageHref();
+  link.textContent = siteText("vat-submit.get-day-pass", "Get a day pass");
+  document
+    .getElementById("obligationStatus")
+    .replaceChildren(
+      siteText("vat-submit.periods-need-pass", "You need a pass to read your open VAT periods from HMRC and to submit a return."),
+      " ",
+      link,
+    );
+}
+
 async function loadOpenObligations() {
   const vrn = document.getElementById("vatNumber").value.trim();
   if (!/^\d{9}$/.test(vrn) || obligationsLoadedForVrn === vrn) return;
@@ -729,6 +784,12 @@ async function loadOpenObligations() {
   }
   connectBtn.style.display = "none";
 
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    obligationsLoadedForVrn = null;
+    showObligationPassNeeded();
+    return;
+  }
+
   try {
     const { from, to } = window.vatPeriodChoice.obligationSearchWindow(Date.now());
     const params = new URLSearchParams({ vrn, from, to, status: "O" });
@@ -746,6 +807,11 @@ async function loadOpenObligations() {
       headers: requestHeaders,
     });
     hideStatus(); // Clear the polling banner the fetch leaves behind
+    if (response.status === 403 && /bundle/i.test(await response.text())) {
+      obligationsLoadedForVrn = null;
+      showObligationPassNeeded();
+      return;
+    }
     if (!response.ok) throw new Error(`Obligations request failed with status ${response.status}`);
     const result = await response.json();
     const open = window.vatPeriodChoice.openObligations(result.obligations);

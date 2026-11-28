@@ -78,7 +78,7 @@ const answerLate = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms
 // read that never answers; a function gives the time for each read from its request. bundlesSynthetic says, as each
 // bundle read is sent, whether the bundles are synthetic; bundleStatus gives each read's HTTP status.
 // query is the page's query string. onApiRequest is called with each request to another /api route.
-// missingScripts names the site scripts that fail to load.
+// missingScripts names the site scripts that fail to load. liveDayPass gives a live account a held day pass.
 async function openVatPage(
   page,
   pageName,
@@ -94,6 +94,7 @@ async function openVatPage(
     query = "",
     onApiRequest,
     missingScripts,
+    liveDayPass = false,
   },
 ) {
   await serveRealSite(page, onApiRequest, missingScripts);
@@ -102,7 +103,8 @@ async function openVatPage(
     const answerMs = typeof bundleAnswerMs === "function" ? bundleAnswerMs(route.request()) : bundleAnswerMs;
     if (answerMs === null) return;
     const tokens = tokensRemaining === undefined ? {} : { allocated: true, tokensGranted: tokensRemaining, tokensRemaining };
-    const bundles = bundlesSynthetic() ? [{ bundleId: "day-guest", qualifiers: { synthetic: true }, ...tokens }] : [];
+    const liveBundles = liveDayPass ? [{ bundleId: "day-guest", allocated: true }] : [];
+    const bundles = bundlesSynthetic() ? [{ bundleId: "day-guest", qualifiers: { synthetic: true }, ...tokens }] : liveBundles;
     const status = bundleStatus();
     await answerLate(answerMs);
     await route.fulfill({
@@ -460,6 +462,7 @@ test.describe("The submit page while the account is decided", () => {
     await holdHmrcGrant(page);
     await openVatPage(page, "submitVat.html", {
       synthetic: false,
+      liveDayPass: true,
       bundleAnswerMs: 3000,
       onApiRequest: (request) => requests.push(request),
     });
