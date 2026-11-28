@@ -117,6 +117,38 @@
         "operationId" : "stripeWebhook"
       }
     },
+    "/books/{bookId}/versions/{version}/download" : {
+      "get" : {
+        "summary" : "Download a book version",
+        "description" : "Answers a five-minute link that downloads one version of a book as a workbook, a package zip, the stored zip or JSON",
+        "operationId" : "downloadBookVersion",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "version",
+          "in" : "path",
+          "required" : true,
+          "description" : "\"latest\" or a positive version number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "format",
+          "in" : "query",
+          "required" : false,
+          "description" : "xlsx (the default), zip, diya-gl-zip or json",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/bundle" : {
       "get" : {
         "summary" : "Get user bundles",

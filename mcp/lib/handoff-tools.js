@@ -41,7 +41,7 @@ const VAT_FIGURE_NAMES = [
 
 // The link goes to a person, so it carries the public address of the environment, the one the
 // customer signs in on. DIYA_SUBMIT_BASE_URL is the deployment's own host, which the tools call.
-function publicBaseUrl() {
+export function publicBaseUrl() {
   const value = process.env.DIY_SUBMIT_BASE_URL;
   if (!value) throw new Error("DIY_SUBMIT_BASE_URL is not set");
   return value.replace(/\/$/, "");

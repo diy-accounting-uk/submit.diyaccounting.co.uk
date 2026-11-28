@@ -9,24 +9,22 @@ import { VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
 import { handleMcpRequest } from "../lib/http.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { BOOK_READ_TOOLS } from "../lib/book-read-tools.js";
+import { HOSTED_WRITE_TOOL_NAMES } from "../lib/hosted-write-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
 const NOT_HOSTED = ["sign_in", "sign_out", "save_book", "write_finance_package"];
 
 describe("the hosted tool set", () => {
-  it("names only registered tools, and leaves out exactly the tools that cannot run hosted", () => {
+  it("names only registered tools and the hosted-only write tools, and leaves out exactly the tools that cannot run hosted", () => {
     const all = Object.keys({ ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS });
-    for (const name of HOSTED_TOOL_NAMES) expect(all).toContain(name);
+    for (const name of HOSTED_TOOL_NAMES) expect([...all, ...HOSTED_WRITE_TOOL_NAMES]).toContain(name);
     expect(all.filter((name) => !HOSTED_TOOL_NAMES.includes(name)).sort()).toEqual([...NOT_HOSTED].sort());
   });
 
-  it("overrides open_book, run_for_clients and the two derivations that write a file locally only", () => {
-    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual([
-      "derive_company_tax_return",
-      "derive_itsa_annual_submission",
-      "open_book",
-      "run_for_clients",
-    ]);
+  it("overrides open_book, run_for_clients, the two derivations that write a file locally only, and adds the write tools", () => {
+    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual(
+      ["derive_company_tax_return", "derive_itsa_annual_submission", "open_book", "run_for_clients", ...HOSTED_WRITE_TOOL_NAMES].sort(),
+    );
     expect(Object.keys(HOSTED_OVERRIDES.derive_company_tax_return.inputSchema)).toEqual([]);
     expect(Object.keys(HOSTED_OVERRIDES.open_book.inputSchema)).toEqual(["bookId", "clientId"]);
     expect(Object.keys(HOSTED_OVERRIDES.derive_itsa_annual_submission.inputSchema)).toEqual(["taxYear"]);

@@ -201,6 +201,54 @@ export async function getVersion(ownerPrefix, bookId, version) {
   return { bytes, etag: normaliseETag(response.ETag) };
 }
 
+// A built download stays under downloads/, which the bucket's lifecycle rule empties after a day.
+export const DOWNLOAD_LINK_SECONDS = 300;
+
+/**
+ * The key of a download built for one owner: under downloads/, never under a book's own prefix.
+ *
+ * @param {string} ownerPrefix
+ * @param {string} downloadId - a v4 UUID
+ * @param {string} filename
+ * @returns {string}
+ */
+export function downloadKey(ownerPrefix, downloadId, filename) {
+  return `downloads/${ownerPrefix}/${downloadId}/${filename}`;
+}
+
+/**
+ * Stores a built download.
+ *
+ * @param {{key: string, bytes: Buffer|Uint8Array, contentType: string}} params
+ */
+export async function putDownload({ key, bytes, contentType }) {
+  const client = await getS3Client();
+  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  await client.send(
+    new PutObjectCommand({ Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true), Key: key, Body: bytes, ContentType: contentType }),
+  );
+}
+
+/**
+ * A link that downloads one object as an attachment with the given file name, for
+ * DOWNLOAD_LINK_SECONDS.
+ *
+ * @param {string} key
+ * @param {string} filename
+ * @returns {Promise<string>}
+ */
+export async function presignDownload(key, filename) {
+  const client = await getS3Client();
+  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+  const command = new GetObjectCommand({
+    Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true),
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${filename.replace(/[^\w.\- ]/g, "_")}"`,
+  });
+  return getSignedUrl(client, command, { expiresIn: DOWNLOAD_LINK_SECONDS });
+}
+
 /**
  * Deletes a version's zip object. Used when pruning beyond the kept-version limit.
  *

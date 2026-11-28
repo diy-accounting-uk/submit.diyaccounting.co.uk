@@ -170,6 +170,7 @@ export default [
       "web/public/videos*.page.js",
       "web/public/guide.page.js",
       "web/public/settings.page.js",
+      "web/public/records.page.js",
       "web/public/companies-house/fileCompanyTaxReturn.page.js",
       "web/public/hmrc/itsa/taxCalculation.page.js",
       "web/public/hmrc/itsa/finalDeclaration.page.js",

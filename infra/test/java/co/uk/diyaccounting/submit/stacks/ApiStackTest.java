@@ -174,7 +174,9 @@ class ApiStackTest {
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
-                        "JwtConfiguration", Match.objectLike(Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID))))));
+                        "JwtConfiguration",
+                        Match.objectLike(
+                                Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID, USER_POOL_CLIENT_ID))))));
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
@@ -219,8 +221,9 @@ class ApiStackTest {
         ApiStack stack = synthApiStack();
         Template template = Template.fromStack(stack);
 
-        String mainAuthorizerId = authorizerLogicalIdForAudience(template, USER_POOL_CLIENT_ID);
-        String booksAuthorizerId = authorizerLogicalIdForAudience(template, BOOKS_USER_POOL_CLIENT_ID);
+        String mainAuthorizerId = authorizerLogicalIdForAudience(template, List.of(USER_POOL_CLIENT_ID));
+        String booksAuthorizerId =
+                authorizerLogicalIdForAudience(template, List.of(BOOKS_USER_POOL_CLIENT_ID, USER_POOL_CLIENT_ID));
 
         var putRoutes = template.findResources(
                 "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "PUT /api/v1/books/{bookId}")));
@@ -264,7 +267,7 @@ class ApiStackTest {
     }
 
     @Test
-    void aBooksRouteAcceptsEitherTheBooksOrTheMcpClientOnceAnMcpClientIdIsConfigured() {
+    void aBooksRouteAcceptsTheBooksTheSubmitOrTheMcpClientOnceAnMcpClientIdIsConfigured() {
         ApiStack stack = synthApiStack(MCP_USER_POOL_CLIENT_ID);
         Template template = Template.fromStack(stack);
 
@@ -274,8 +277,13 @@ class ApiStackTest {
                         "Properties",
                         Map.of(
                                 "JwtConfiguration",
-                                Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID, MCP_USER_POOL_CLIENT_ID)))));
-        assertEquals(1, booksAuthorizers.size(), "expected exactly one books authoriser accepting both audiences");
+                                Map.of(
+                                        "Audience",
+                                        List.of(
+                                                BOOKS_USER_POOL_CLIENT_ID,
+                                                USER_POOL_CLIENT_ID,
+                                                MCP_USER_POOL_CLIENT_ID)))));
+        assertEquals(1, booksAuthorizers.size(), "expected exactly one books authoriser accepting the three audiences");
         String booksAuthorizerId = booksAuthorizers.keySet().iterator().next();
 
         var putRoutes = template.findResources(
@@ -394,10 +402,10 @@ class ApiStackTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static String authorizerLogicalIdForAudience(Template template, String audience) {
+    private static String authorizerLogicalIdForAudience(Template template, List<String> audience) {
         var authorizers = template.findResources(
                 "AWS::ApiGatewayV2::Authorizer",
-                Map.of("Properties", Map.of("JwtConfiguration", Map.of("Audience", List.of(audience)))));
+                Map.of("Properties", Map.of("JwtConfiguration", Map.of("Audience", audience))));
         assertEquals(1, authorizers.size(), "expected exactly one authorizer with audience " + audience);
         return authorizers.keySet().iterator().next();
     }

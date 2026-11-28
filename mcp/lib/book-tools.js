@@ -21,6 +21,7 @@
 // State: one loaded book per session, a plain object this module owns the
 // shape of. open_book replaces it outright; save_book reads it.
 
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, extname, resolve as resolvePath } from "node:path";
 
@@ -127,6 +128,15 @@ function summarise(session, bookChecks) {
     bookChecks: bookChecks.summary,
     failedChecks: bookChecks.results.filter((r) => r.result === "fail").map((r) => ({ id: r.id, title: r.title })),
   };
+}
+
+/**
+ * The summary open_book answers, for the session's loaded book.
+ * @param {Object} session
+ */
+export async function loadedBookSummary(session) {
+  requireLoaded(session);
+  return summarise(session, await bookChecksFor(session.book, session.lines));
 }
 
 /**
@@ -287,24 +297,50 @@ function isoDateOrNull(value) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
+// An error from a cloud book route, carrying the HTTP status and the route's code so a caller can
+// answer a stale version, a full account or an oversized book in its own words.
+function cloudRouteError(response, body, fallback) {
+  const error = new Error(body?.message || fallback);
+  error.status = response.status;
+  error.code = body?.error?.code ?? body?.message ?? null;
+  return error;
+}
+
 /**
- * The session's loaded book to the DIY Accounting Submit account by book id, over the same route the spreadsheets
- * site's DIYA-GL pages write (PUT /api/v1/books/{bookId}). Carries the if-match etag from the
- * session's last cloud open or save of this same bookId; a book saved here for the first time (no
- * prior cloud open) sends none, matching a brand-new book on that route.
+ * A new cloud book's id: the version 4 UUID the storage route's book id pattern takes.
+ * @returns {string}
  */
-async function saveCloudBook(session, { bookId, clientId } = {}) {
-  requireLoaded(session);
-  if (!bookId) throw new Error("save_book with cloud: true requires bookId");
-  const { book, lines } = session;
-  const info = book.documentInfo ?? {};
-  const entity = book.entityInformation ?? {};
+export function newCloudBookId() {
+  return randomUUID();
+}
 
-  const { results } = await bookChecksFor(book, lines);
-  const bookchecks = JSON.parse(bookChecksJson(results));
-  const zipBytes = Buffer.from(await writeDiyaGlZip({ book, lines, report: reportFor(book, lines), bookchecks }));
+/**
+ * The stored DIYA-GL zip of one version of a cloud book, and the book's metadata, over the route
+ * open_book's cloud form reads (GET /api/v1/books/{bookId}/versions/{version}).
+ * @param {Object} session
+ * @param {{bookId: string, clientId?: string|null, version: number|"latest"}} params
+ * @returns {Promise<{bytes: Buffer, metadata: Object}>}
+ */
+export async function readCloudVersion(session, { bookId, clientId, version }) {
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const response = await fetch(`${baseUrl()}/api/v1/books/${encodeURIComponent(bookId)}/versions/${encodeURIComponent(version)}${query}`, {
+    headers: { Authorization: `Bearer ${await session.credentials.accessToken()}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw cloudRouteError(response, body, `Reading version ${version} failed with HTTP ${response.status}`);
+  return { bytes: Buffer.from(body.zipBase64, "base64"), metadata: body.metadata };
+}
 
-  const ifMatch = session.cloud?.bookId === bookId ? session.cloud.etag : undefined;
+/**
+ * Stores a DIYA-GL zip as the next version of a cloud book (PUT /api/v1/books/{bookId}). ifMatch is
+ * the etag of the version the zip replaces, or null for a new book. change says what made this
+ * version, for the version list and the activity record.
+ * @returns {Promise<Object>} the book's metadata after the write
+ */
+export async function putCloudZip(
+  session,
+  { bookId, clientId, zipBytes, title, product, periodCoveredStart, periodCoveredEnd, ifMatch, change },
+) {
   const response = await fetch(`${baseUrl()}/api/v1/books/${encodeURIComponent(bookId)}`, {
     method: "PUT",
     headers: {
@@ -313,21 +349,68 @@ async function saveCloudBook(session, { bookId, clientId } = {}) {
       ...(ifMatch ? { "if-match": ifMatch } : {}),
     },
     body: JSON.stringify({
-      title: entity.organizationIdentifier || bookId,
-      product: session.product,
-      periodCoveredStart: isoDateOrNull(info.periodCoveredStart),
-      periodCoveredEnd: isoDateOrNull(info.periodCoveredEnd),
+      title,
+      product,
+      periodCoveredStart,
+      periodCoveredEnd,
       zipBase64: zipBytes.toString("base64"),
       ...(clientId ? { clientId } : {}),
+      ...(change ? { change } : {}),
     }),
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(body?.message || `save_book (cloud) failed with HTTP ${response.status}`);
-  }
+  if (!response.ok) throw cloudRouteError(response, body, `save_book (cloud) failed with HTTP ${response.status}`);
+  return body.metadata;
+}
 
-  session.cloud = { bookId, clientId: clientId ?? null, etag: body.metadata.latestETag };
-  return { path: null, format: "cloud", bookId, etag: body.metadata.latestETag, lineCount: lines.length, bytes: zipBytes.length };
+/**
+ * The DIYA-GL zip of a book and lines, with the report and the book checks computed from them: the
+ * bytes the cloud stores.
+ * @returns {Promise<Buffer>}
+ */
+export async function diyaGlZipOf(book, lines) {
+  const { results } = await bookChecksFor(book, lines);
+  const bookchecks = JSON.parse(bookChecksJson(results));
+  return Buffer.from(await writeDiyaGlZip({ book, lines, report: reportFor(book, lines), bookchecks }));
+}
+
+/**
+ * The session's loaded book to the DIY Accounting Submit account by book id, over the same route the spreadsheets
+ * site's DIYA-GL pages write (PUT /api/v1/books/{bookId}). Carries the if-match etag from the
+ * session's last cloud open or save of this same bookId; a book saved here for the first time (no
+ * prior cloud open), or one saved with newBook, sends none, matching a brand-new book on that route.
+ */
+async function saveCloudBook(session, { bookId, clientId, change, newBook = false } = {}) {
+  requireLoaded(session);
+  if (!bookId) throw new Error("save_book with cloud: true requires bookId");
+  const { book, lines } = session;
+  const info = book.documentInfo ?? {};
+  const entity = book.entityInformation ?? {};
+
+  const zipBytes = await diyaGlZipOf(book, lines);
+  const ifMatch = !newBook && session.cloud?.bookId === bookId ? session.cloud.etag : undefined;
+  const metadata = await putCloudZip(session, {
+    bookId,
+    clientId,
+    zipBytes,
+    title: entity.organizationIdentifier || bookId,
+    product: session.product,
+    periodCoveredStart: isoDateOrNull(info.periodCoveredStart),
+    periodCoveredEnd: isoDateOrNull(info.periodCoveredEnd),
+    ifMatch,
+    change,
+  });
+
+  session.cloud = { bookId, clientId: clientId ?? null, etag: metadata.latestETag };
+  return {
+    path: null,
+    format: "cloud",
+    bookId,
+    etag: metadata.latestETag,
+    version: metadata.latestVersion,
+    lineCount: lines.length,
+    bytes: zipBytes.length,
+  };
 }
 
 /**
@@ -342,8 +425,8 @@ async function saveCloudBook(session, { bookId, clientId } = {}) {
  * @param {Object} session
  * @param {{path: string, format?: string} | {cloud: true, bookId: string, clientId?: string}} params
  */
-export async function saveBook(session, { path, format, cloud, bookId, clientId } = {}) {
-  if (cloud) return saveCloudBook(session, { bookId, clientId });
+export async function saveBook(session, { path, format, cloud, bookId, clientId, change, newBook } = {}) {
+  if (cloud) return saveCloudBook(session, { bookId, clientId, change, newBook });
   if (!path) throw new Error("save_book requires a path, or cloud: true and bookId");
   requireLoaded(session);
   const { book, lines } = session;

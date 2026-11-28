@@ -252,6 +252,42 @@ describe("diyaGlPut", () => {
     );
   });
 
+  test("stores the change that made a version on the version and in the book-saved detail", async () => {
+    const metaKey = metadataKeyFor("test-sub", BOOK_ID);
+    const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.kind === "list") return { CommonPrefixes: [] };
+      if (command.kind === "put" && command.input.Key === v1Key) return { ETag: '"zip-v1-etag"' };
+      if (command.kind === "put" && command.input.Key === metaKey) return { ETag: '"meta-v1-etag"' };
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+
+    const result = await ingestHandler(buildPutEvent({ body: { change: { tool: "edit_lines", editCount: 3 } } }));
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).metadata.versions[0].change).toEqual({ tool: "edit_lines", editCount: 3 });
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "book-saved", detail: expect.objectContaining({ change: { tool: "edit_lines", editCount: 3 } }) }),
+    );
+  });
+
+  test.each([
+    ["a tool it does not know", { tool: "delete_everything" }],
+    ["an edit count above fifty", { tool: "edit_lines", editCount: 51 }],
+    ["a restored version that is not a whole number", { tool: "undo_book_change", restoredVersion: 1.5 }],
+    ["a change that is not an object", "edit_lines"],
+  ])("400s a change naming %s, with no S3 write", async (unused, change) => {
+    const result = await ingestHandler(buildPutEvent({ body: { change } }));
+
+    expect(result.statusCode).toBe(400);
+    expect(mockS3Send).not.toHaveBeenCalled();
+  });
+
   test("gives a resident save a null expiresAt and the resident tag, when the tier is on and the caller is subscribed", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     getUserBundles.mockResolvedValue([

@@ -1,0 +1,84 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Your records - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/records.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/records.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/records.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/records.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>Your records</h1>
+      <p class="subtitle">The DIYA-GL books saved in your account</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div class="form-container">
+        <div
+          data-requires-sign-in
+          data-sign-in-title="Sign in to see your records"
+          data-sign-in-text="Your DIYA-GL books are kept with your account. Sign in to upload, download or look at them."
+        >
+          <section class="settings-group" id="upload" aria-labelledby="uploadHeading">
+            <h2 id="uploadHeading">Upload a spreadsheet</h2>
+            <p class="hint">
+              Choose a DIY Accounting spreadsheet, a package zip, a DIYA-GL zip or a DIYA-GL book as JSON. A DIYA-GL book is one business's
+              sales, purchases and bank lines for a year. The file is read in this browser, and only the DIYA-GL book made from it is saved
+              in your account.
+            </p>
+            <label for="uploadFile">File to upload</label>
+            <input type="file" id="uploadFile" accept=".xlsx,.zip,.json" />
+            <p class="hint" id="uploadResult" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="settings-group" aria-labelledby="booksHeading">
+            <h2 id="booksHeading">Your DIYA-GL books</h2>
+            <p class="hint">
+              Each change to a DIYA-GL book is kept as a version, with what made it. Download any DIYA-GL book as a workbook, a package zip,
+              a DIYA-GL zip or a DIYA-GL book as JSON.
+            </p>
+            <p class="hint" id="downloadResult" role="status" aria-live="polite"></p>
+            <ul id="bookList" class="record-list"></ul>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="lib/request-cache.js"></script>
+    <script src="lib/toml-parser.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script src="widgets/signed-out-panel.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script type="module" src="records.page.js"></script>
+  </body>
+</html>
