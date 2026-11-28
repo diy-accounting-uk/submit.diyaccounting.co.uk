@@ -28990,3 +28990,12 @@ cy = '''Mae gan Dŷ’r Cwmnïau y ffurflen (cyflwyniad {number}) ac ni allai Su
 [strings."ch.form.failure-sent-none"]
 hash = "f0ee7e6d42ea"
 cy = '''Nid oes gan Dŷ’r Cwmnïau unrhyw gyflwyniad o’r ffurflen hon. Ni chafodd dim ei ffeilio.'''
+# == What a failed preview or filing of the accounts sent (lib/accounts-filing-failure.js), ids ch.accounts.failure-* ==
+
+[strings."ch.accounts.failure-sent-preview"]
+hash = "8f791a3446ab"
+cy = '''Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim gael ei anfon.'''
+
+[strings."ch.accounts.failure-sent-not-filed"]
+hash = "a84a29447b9c"
+cy = '''Ni chymerodd Tŷ’r Cwmnïau y cyfrifon, ac ni ffeiliwyd dim.'''

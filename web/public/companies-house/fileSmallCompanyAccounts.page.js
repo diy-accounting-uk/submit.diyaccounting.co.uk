@@ -677,6 +677,8 @@ async function handleAccountsFormSubmit(event) {
 
   showLoading();
   hideStatus();
+  const accountsFailure = await import("../lib/accounts-filing-failure.js");
+  accountsFailure.clearAccountsFailure(document);
   try {
     const preview = await window.renderMicroEntityAccounts(buildAccountsPayload());
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
@@ -696,6 +698,7 @@ async function handleAccountsFormSubmit(event) {
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
     showStatus(error.message || window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
+    accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.preview);
   } finally {
     hideLoading();
   }
@@ -847,6 +850,8 @@ async function handleSubmitFiling() {
 
   showLoading();
   hideStatus();
+  const accountsFailure = await import("../lib/accounts-filing-failure.js");
+  accountsFailure.clearAccountsFailure(document);
   try {
     const filedAccounts = buildAccountsPayload();
     const accounts = { ...filedAccounts, companyAuthCode };
@@ -880,6 +885,7 @@ async function handleSubmitFiling() {
         window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
       "error",
     );
+    accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.filing);
     if (tokensExhausted) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
       document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });
