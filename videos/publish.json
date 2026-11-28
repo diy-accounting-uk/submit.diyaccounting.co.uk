@@ -3928,8 +3928,8 @@
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
-      "sourceArtifact": null,
+      "sourceRun": "46091502224",
+      "sourceArtifact": "video-file-company-tax-return-book-simulator",
       "videoFile": "target/videos/file-company-tax-return-book/file-company-tax-return-book.mp4",
       "captionFile": "target/videos/file-company-tax-return-book/file-company-tax-return-book.vtt",
       "activity": "file-company-tax-return",
@@ -3937,7 +3937,7 @@
       "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This video files a Company Tax Return from a diya-gl book: sign in, take out Resident Ltd, look up a company, drop the book on the form, check the figures it fills, preview the CT600, file it, and end on your copy of the filed return. Recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk/?utm_source=youtube&utm_medium=video.\n\n00:00 Home\n00:01 Sign in\n00:09 Resident Ltd\n00:22 Which company?\n00:54 Fill from a DIYA-GL book\n01:32 Complete the answers\n02:07 Review the return\n02:37 File it\n03:07 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "ZoUTlFPvUes",
+      "videoId": null,
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -4201,8 +4201,8 @@
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
-      "sourceArtifact": null,
+      "sourceRun": "46088723514",
+      "sourceArtifact": "video-file-company-tax-return-typed-simulator",
       "videoFile": "target/videos/file-company-tax-return-typed/file-company-tax-return-typed.mp4",
       "captionFile": "target/videos/file-company-tax-return-typed/file-company-tax-return-typed.vtt",
       "activity": "file-company-tax-return",
@@ -4210,7 +4210,7 @@
       "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This video types a Company Tax Return by hand. A live check catches a wrong figure as you leave the field, and the message clears once you correct it. Then it previews the CT600, files it, and ends on your copy of the filed return with HMRC’s receipt. Recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk/?utm_source=youtube&utm_medium=video.\n\n00:00 Home\n00:02 Sign in\n00:07 Resident Ltd\n00:16 Which company?\n00:44 The period\n01:00 The figures\n01:47 The details\n02:22 Review the return\n02:50 File it\n03:14 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "tLEHujmk_RM",
+      "videoId": null,
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -9499,8 +9499,8 @@
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
-      "sourceArtifact": null,
+      "sourceRun": "46089789303",
+      "sourceArtifact": "video-file-company-tax-return-with-accounts-simulator",
       "videoFile": "target/videos/file-company-tax-return-with-accounts/file-company-tax-return-with-accounts.mp4",
       "captionFile": "target/videos/file-company-tax-return-with-accounts/file-company-tax-return-with-accounts.vtt",
       "activity": "file-company-tax-return-with-accounts",
@@ -9958,7 +9958,7 @@
           "fullHeight": 1080
         }
       ],
-      "videoId": "aQAF5hAcxeQ",
+      "videoId": null,
       "sections": {
         "section-accounts": 65,
         "section-sendTo": 88,
@@ -9972,8 +9972,8 @@
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
-      "sourceArtifact": null,
+      "sourceRun": "46088734188",
+      "sourceArtifact": "video-file-company-tax-return-long-period-simulator",
       "videoFile": "target/videos/file-company-tax-return-long-period/file-company-tax-return-long-period.mp4",
       "captionFile": "target/videos/file-company-tax-return-long-period/file-company-tax-return-long-period.vtt",
       "activity": "file-company-tax-return",
@@ -10359,7 +10359,7 @@
           "fullHeight": 552
         }
       ],
-      "videoId": "Lwt-U4Emrao",
+      "videoId": null,
       "sections": {
         "section-company": 52,
         "section-period": 59,
