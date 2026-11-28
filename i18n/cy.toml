@@ -869,10 +869,6 @@ cy = '''Un diwrnod, dim cerdyn. I ddal ati i ffeilio ar ôl heddiw, dewiswch gyn
 hash = "8b895b87b336"
 cy = '''Yn gofyn...'''
 
-[strings."bundles.redirecting"]
-hash = "28ffe466e979"
-cy = '''Yn mynd i’r dudalen dalu...'''
-
 [strings."bundles.or"]
 hash = "7175517a370b"
 cy = '''neu'''
@@ -1121,21 +1117,9 @@ cy = '''Wedi’i gynnwys yn {name}'''
 hash = "020171449da6"
 cy = '''Wedi’i ychwanegu ✓ {name}'''
 
-[strings."bundles.checkout-failed"]
-hash = "061fa343146b"
-cy = '''Methu dechrau’r taliad: {reason}'''
-
 [strings."bundles.sign-in-first"]
 hash = "708821b693b0"
 cy = '''Mewngofnodwch yn gyntaf.'''
-
-[strings."bundles.loading-portal"]
-hash = "187be9a5769b"
-cy = '''Yn llwytho’r porth...'''
-
-[strings."bundles.portal-failed"]
-hash = "6a4036be83f6"
-cy = '''Methu agor porth y tanysgrifiad: {reason}'''
 
 [strings."bundles.catalog-unavailable"]
 hash = "d5d2f25c32e4"
@@ -14023,18 +14007,6 @@ cy = '''Hunaniaeth heb ei gwirio'''
 [strings."ch.cs.file-failed"]
 hash = "695f75c19c10"
 cy = '''Methwyd â ffeilio’r datganiad cadarnhau gyda Thŷ’r Cwmnïau.'''
-
-[strings."ch.cs.payment-failed-reason"]
-hash = "85528157871a"
-cy = '''Methwyd â dechrau’r taliad: {reason}'''
-
-[strings."ch.cs.unknown-error"]
-hash = "27c2ccd962c2"
-cy = '''Gwall anhysbys'''
-
-[strings."ch.cs.payment-failed"]
-hash = "fcb4da20d6b6"
-cy = '''Methwyd â dechrau’r taliad.'''
 
 [strings."ch.cs.payment-received"]
 hash = "addcc72c5c15"
@@ -27291,14 +27263,6 @@ cy = '''Gwasanaeth yr un diwrnod: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {
 hash = "4ec0440be989"
 cy = '''Gwasanaeth safonol: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {price}'''
 
-[strings."ch.name.paying"]
-hash = "f7a8c9f6cce7"
-cy = '''Yn mynd â chi i dalu’r ffi cyn anfon y ffeilio...'''
-
-[strings."ch.name.payment-failed"]
-hash = "2df1cb37c483"
-cy = '''Methu dechrau’r taliad: {reason}'''
-
 [strings."ch.name.payment-not-completed"]
 hash = "5b10e061153d"
 cy = '''Ni chwblhawyd y taliad. Ni ffeiliwyd dim.'''
@@ -29096,3 +29060,67 @@ cy = '''Ffurflen Tŷ’r Cwmnïau {form}'''
 [strings."chform.join-vowel"]
 hash = "1c088992cac5"
 cy = '''{first} ac {last}'''
+
+[strings."stripe.failure-connection"]
+hash = "334bbcc2de09"
+cy = '''Ni atebodd Submit, felly ni ofynnwyd i Stripe. Gwiriwch eich cysylltiad a rhowch gynnig arall arni.'''
+
+[strings."stripe.failure-firewall"]
+hash = "0d1652553db0"
+cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn cyn iddo gyrraedd Stripe. Rhowch gynnig arall arni yn nes ymlaen.'''
+
+[strings."stripe.failure-sign-in-refused"]
+hash = "2428f1495040"
+cy = '''Ni dderbyniodd Submit eich mewngofnod ar gyfer y cais hwn.'''
+
+[strings."stripe.failure-no-subscription"]
+hash = "7a98e854d65e"
+cy = '''Nid oes gan eich cyfrif danysgrifiad a delir drwy Stripe, felly nid oes tudalen danysgrifio i’w hagor.'''
+
+[strings."stripe.failure-already-paid"]
+hash = "85c5a674fc1a"
+cy = '''Mae’r ffi ar gyfer y ffeilio hwn eisoes wedi’i thalu. Ewch yn ôl i’r ffeilio a’i anfon.'''
+
+[strings."stripe.failure-refused"]
+hash = "585f5d73fbe4"
+cy = '''Gwrthododd Submit y cais cyn gofyn i Stripe. Nam yn Submit yw hwn, nid yn eich cyfrif.'''
+
+[strings."stripe.failure-no-answer"]
+hash = "c6eed9367790"
+cy = '''Ni chafodd Submit dudalen i’w hagor gan Stripe. Nam yn Submit neu yn Stripe yw hwn, nid yn eich cyfrif. Rhowch gynnig arall arni yn nes ymlaen.'''
+
+[strings."stripe.narrate-asking-checkout"]
+hash = "adb11709bc1c"
+cy = '''Yn gofyn i Stripe am dudalen dalu...'''
+
+[strings."stripe.narrate-going-checkout"]
+hash = "d7b56f3c45e5"
+cy = '''Yn mynd â chi i Stripe i dalu...'''
+
+[strings."stripe.failure-sent-checkout"]
+hash = "471f032994ef"
+cy = '''Ni chodwyd tâl. Ni agorodd Stripe dudalen dalu.'''
+
+[strings."stripe.failure-after-bundle"]
+hash = "0622f9afc084"
+cy = '''Nid yw eich Bundles wedi newid.'''
+
+[strings."stripe.failure-after-activity"]
+hash = "268bf1d9e2a8"
+cy = '''Ni ffeiliwyd dim gyda Thŷ’r Cwmnïau. Caiff y ffeilio ei anfon ar ôl i’r ffi gael ei thalu.'''
+
+[strings."stripe.narrate-asking-portal"]
+hash = "a2ddd718d1ed"
+cy = '''Yn gofyn i Stripe am eich tudalen danysgrifio...'''
+
+[strings."stripe.narrate-going-portal"]
+hash = "0f395ecb20a0"
+cy = '''Yn mynd â chi i’ch tudalen danysgrifio yn Stripe...'''
+
+[strings."stripe.failure-sent-portal"]
+hash = "2c28a836107a"
+cy = '''Ni agorodd Stripe eich tudalen danysgrifio.'''
+
+[strings."stripe.failure-after-portal"]
+hash = "0125bad5cdea"
+cy = '''Nid yw eich tanysgrifiad na’ch Bundles wedi newid.'''

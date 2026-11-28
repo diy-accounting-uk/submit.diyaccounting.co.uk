@@ -8,6 +8,8 @@
 // House answered; Companies House not answering when Submit read the company, before anything was
 // sent. A 502 that carries their errors is their answer and takes one of the credentials or
 // business error kinds by its error numbers.
+// A Stripe journey adds two kinds: no answer from Submit at all, and a request the site's firewall
+// blocked.
 
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
@@ -20,6 +22,8 @@ export const FAILURE_KINDS = {
   yourCredentials: "your-credentials",
   businessError: "business-error",
   notAnswering: "not-answering",
+  connection: "connection",
+  blocked: "blocked",
 };
 
 export const HELP_HREF = "/help.html";
@@ -248,4 +252,82 @@ export function showFailureDetail(doc, detail) {
   if (container) container.after(panel);
   else doc.body.prepend(panel);
   return panel;
+}
+
+/**
+ * The kind of a failure on a Stripe journey (a checkout or the subscription page) and its next step.
+ * A billing route answers JSON; the site's firewall answers a blocked request with an HTML page.
+ * @param {{status?: number, reason?: string, html?: boolean, requestId?: string}} error - the client's error for the answer
+ * @returns {{kind: string, service: string, cause: string, next: {label: string, href: string}|null, requestId?: string}}
+ */
+export function classifyStripeFailure(error) {
+  const status = error?.status;
+  const reference = error?.requestId ? { requestId: error.requestId } : {};
+  if (typeof status !== "number") {
+    return {
+      kind: FAILURE_KINDS.connection,
+      service: "submit",
+      cause: siteText("stripe.failure-connection", "Submit did not answer, so Stripe was not asked. Check your connection and try again."),
+      next: null,
+    };
+  }
+  if (status === 401) {
+    return yourCredentials("submit", siteText("widget.failure-sign-in-expired", "Your sign-in has expired."), signInNext());
+  }
+  if (status === 403 && error.html) {
+    return {
+      kind: FAILURE_KINDS.blocked,
+      service: "submit",
+      cause: siteText("stripe.failure-firewall", "The site's firewall blocked this request before it reached Stripe. Try again later."),
+      next: helpNext(),
+      ...reference,
+    };
+  }
+  if (status === 403) {
+    return yourCredentials(
+      "submit",
+      siteText("stripe.failure-sign-in-refused", "Submit did not accept your sign-in for this request."),
+      signInNext(),
+    );
+  }
+  if (status === 404) {
+    return yourCredentials(
+      "stripe",
+      siteText(
+        "stripe.failure-no-subscription",
+        "Your account has no subscription paid through Stripe, so there is no subscription page to open.",
+      ),
+      bundlesNext(),
+    );
+  }
+  if (status === 409 || error.reason === "already-paid") {
+    return {
+      kind: FAILURE_KINDS.businessError,
+      service: "stripe",
+      cause: siteText("stripe.failure-already-paid", "The fee for this filing is already paid. Go back to the filing and send it."),
+      next: null,
+    };
+  }
+  if (status >= 400 && status < 500) {
+    return {
+      kind: FAILURE_KINDS.submitFault,
+      service: "submit",
+      cause: siteText(
+        "stripe.failure-refused",
+        "Submit refused the request before asking Stripe. This is a fault in Submit, not in your account.",
+      ),
+      next: helpNext(),
+      ...reference,
+    };
+  }
+  return {
+    kind: FAILURE_KINDS.submitFault,
+    service: "stripe",
+    cause: siteText(
+      "stripe.failure-no-answer",
+      "Submit did not get a page to open from Stripe. This is a fault in Submit or at Stripe, not in your account. Try again later.",
+    ),
+    next: helpNext(),
+    ...reference,
+  };
 }

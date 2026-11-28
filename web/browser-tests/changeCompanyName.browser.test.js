@@ -45,6 +45,8 @@ async function serveSite(
   {
     filings = [],
     checkouts = [],
+    checkoutAnswer,
+    holds = {},
     outcome = { statusCode: "ACCEPT", rejections: [] },
     filingAnswer,
     profile = PROFILE,
@@ -70,10 +72,13 @@ async function serveSite(
     if (pathname === "/api/v1/companies-house/company/00000001") return json(registerProfile);
     if (pathname === "/api/v1/billing/activity-checkout" && request.method() === "POST") {
       checkouts.push(JSON.parse(request.postData()));
+      await holds.checkout?.pass();
+      if (checkoutAnswer) return route.fulfill(checkoutAnswer);
       return json({ checkoutUrl: `${SITE}/stripe-checkout-stub.html` });
     }
-    if (pathname === "/stripe-checkout-stub.html")
+    if (pathname === "/stripe-checkout-stub.html") {
       return route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>Checkout</title>" });
+    }
     if (pathname === "/api/v1/companies-house/change-of-name" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       if (filingAnswer) return json(filingAnswer.body, filingAnswer.status);
@@ -99,6 +104,49 @@ async function serveSite(
     return route.fulfill({ status: 404, contentType: "text/plain", body: "Not found" });
   });
 }
+
+// A route that waits until the test opens it: arrived settles when the request comes, and the
+// answer goes once open is called.
+function hold() {
+  let arrive;
+  let open;
+  const arrived = new Promise((resolve) => (arrive = resolve));
+  const opened = new Promise((resolve) => (open = resolve));
+  return {
+    arrived,
+    open,
+    pass: () => {
+      arrive();
+      return opened;
+    },
+  };
+}
+
+const ROLL13_DIR = path.join(process.cwd(), "target/roll13");
+
+async function shootStripe(page, name) {
+  fs.mkdirSync(ROLL13_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(ROLL13_DIR, `${name}-${page.viewportSize().width}.png`), fullPage: false });
+}
+
+// Every stage the page shows, in order, kept in session storage so that the record outlives the
+// trip to Stripe's page on the same origin.
+function recordStages(page) {
+  return page.addInitScript(() => {
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        for (const node of change.addedNodes) {
+          if (node.nodeType !== 1 || !node.matches('.status-message[data-request-id="submission-stage"]')) continue;
+          const stages = JSON.parse(sessionStorage.getItem("test.stages") || "[]");
+          stages.push(node.querySelector(".status-message-content").textContent);
+          sessionStorage.setItem("test.stages", JSON.stringify(stages));
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+}
+
+const recordedStages = async (page) => JSON.parse((await page.evaluate(() => sessionStorage.getItem("test.stages"))) || "[]");
 
 async function shoot(page, name) {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
@@ -597,3 +645,103 @@ test("Companies House refusing the fee on Submit's presenter account shows the f
   await expect(panel.locator('[data-part="errors"] li')).toHaveText(["Insufficient credit on the presenter account"]);
   await shoot(page, "failure-submit-credentials");
 });
+
+for (const [language, prefix, words] of [
+  [
+    "English",
+    "",
+    {
+      lookUp: "Look up the company",
+      cont: "Continue",
+      file: "File with Companies House",
+      asking: "Asking Stripe for a checkout...",
+      going: "Taking you to Stripe to pay...",
+      sent: "Nothing was charged. Stripe did not open a checkout.",
+      after: "Nothing was filed with Companies House. The filing is sent after the fee is paid.",
+      kind: "Submit did not get a page to open from Stripe. This is a fault in Submit or at Stripe, not in your account. Try again later.",
+    },
+  ],
+  [
+    "Welsh",
+    "/cy",
+    {
+      lookUp: "Chwilio am y cwmni",
+      cont: "Parhau",
+      file: "Ffeilio gyda Thŷ’r Cwmnïau",
+      asking: "Yn gofyn i Stripe am dudalen dalu...",
+      going: "Yn mynd â chi i Stripe i dalu...",
+      sent: "Ni chodwyd tâl. Ni agorodd Stripe dudalen dalu.",
+      after: "Ni ffeiliwyd dim gyda Thŷ’r Cwmnïau. Caiff y ffeilio ei anfon ar ôl i’r ffi gael ei thalu.",
+      kind: "Ni chafodd Submit dudalen i’w hagor gan Stripe. Nam yn Submit neu yn Stripe yw hwn, nid yn eich cyfrif. Rhowch gynnig arall arni yn nes ymlaen.",
+    },
+  ],
+]) {
+  const feeDue = {
+    status: 402,
+    body: {
+      message: "pay first",
+      code: "fee-due",
+      activityId: "change-company-name",
+      subjectKey: "00000001:standard:BRAMWELL TENNANT TRADING LIMITED",
+    },
+  };
+
+  async function fileUntilTheFee(page) {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto(`${SITE}${prefix}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+    await lookUpAndFill(page, { lookUp: words.lookUp, proposedName: "Bramwell Tennant Trading Limited" });
+    await page.getByRole("button", { name: words.cont }).click();
+    await page.getByRole("button", { name: words.file }).click();
+  }
+
+  const stage = (page) =>
+    page.locator('#statusMessagesContainer .status-message[data-request-id="submission-stage"] .status-message-content');
+
+  for (const width of [1280, 390]) {
+    test(`the fee's checkout says it is asking Stripe, then that it is taking the reader to Stripe, one stage at a time, in ${language} at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const holds = { checkout: hold() };
+      await recordStages(page);
+      await serveSite(page, { filingAnswer: feeDue, holds });
+      await fileUntilTheFee(page);
+
+      await holds.checkout.arrived;
+      await expect(stage(page)).toHaveText([words.asking]);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await shootStripe(page, `activity-asking${prefix ? "-cy" : ""}`);
+      holds.checkout.open();
+
+      await page.waitForURL("**/stripe-checkout-stub.html");
+      expect((await recordedStages(page)).slice(-2)).toEqual([words.asking, words.going]);
+    });
+
+    test(`a checkout Stripe could not open ends the stage and shows the failure panel, in ${language} at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await serveSite(page, {
+        filingAnswer: feeDue,
+        checkoutAnswer: {
+          status: 500,
+          contentType: "application/json",
+          headers: { "x-request-id": "6f1c2a9e-7b3d-4e2a-9c61-2d8f0b5e7a13" },
+          body: JSON.stringify({ message: "Failed to create checkout session" }),
+        },
+      });
+      await fileUntilTheFee(page);
+
+      const panel = page.locator("#statusMessagesContainer + #failureDetail");
+      await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+      await expect(stage(page)).toHaveCount(0);
+      await expect(panel.locator("[data-part=sent]")).toHaveText(words.sent);
+      await expect(panel.locator("[data-part=answers]")).toHaveText(words.after);
+      await expect(panel.locator("[data-part=kind]")).toHaveText(words.kind);
+      await expect(panel.locator("[data-part=next]")).toContainText("6f1c2a9e-7b3d-4e2a-9c61-2d8f0b5e7a13");
+      expect(await page.evaluate(() => sessionStorage.getItem("companiesHouseChangeOfNameResume"))).toBeNull();
+      expect(new URL(page.url()).pathname).toBe(`${prefix}/companies-house/changeCompanyName.html`);
+      expect(await noSideScroll(page)).toBe(true);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await shootStripe(page, `activity-failed${prefix ? "-cy" : ""}`);
+    });
+  }
+}

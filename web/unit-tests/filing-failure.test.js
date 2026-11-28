@@ -4,7 +4,7 @@
 // web/unit-tests/filing-failure.test.js
 
 import { describe, test, expect } from "vitest";
-import { FAILURE_KINDS, HELP_HREF, classifyFilingFailure } from "../public/lib/filing-failure.js";
+import { FAILURE_KINDS, HELP_HREF, classifyFilingFailure, classifyStripeFailure } from "../public/lib/filing-failure.js";
 
 // The client's error for an answer: its status, the server's JSON body, and the request id header.
 function answer(status, body = {}, requestId) {
@@ -131,5 +131,57 @@ describe("Companies House not answering before anything was sent", () => {
     expect(classifyFilingFailure(answer(502, { message: "Bad gateway" }), { service: "companiesHouse" }).kind).toBe(
       FAILURE_KINDS.submitFault,
     );
+  });
+});
+
+describe("the kind of a Stripe journey's failure", () => {
+  test("a request that got no answer from Submit says Stripe was not asked, with no link", () => {
+    const failure = classifyStripeFailure(new TypeError("Failed to fetch"));
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.connection, next: null });
+    expect(failure.cause).toBe("Submit did not answer, so Stripe was not asked. Check your connection and try again.");
+  });
+
+  test("an expired sign-in sends the person to sign in again", () => {
+    const failure = classifyStripeFailure(answer(401, { message: "Authentication required" }));
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.yourCredentials, next: { href: "/auth/login.html" } });
+  });
+
+  test("the firewall's HTML 403 is a blocked request with Help and the firewall's reference", () => {
+    const error = answer(403, {}, "cf-ref-1");
+    error.html = true;
+    const failure = classifyStripeFailure(error);
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.blocked, requestId: "cf-ref-1", next: { href: HELP_HREF } });
+    expect(failure.cause).toBe("The site's firewall blocked this request before it reached Stripe. Try again later.");
+  });
+
+  test("a JSON 403 is the person's sign-in refused", () => {
+    const failure = classifyStripeFailure(answer(403, { message: "Forbidden" }));
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.yourCredentials, next: { href: "/auth/login.html" } });
+    expect(failure.cause).toBe("Submit did not accept your sign-in for this request.");
+  });
+
+  test("the portal's 404 says the account has no Stripe subscription and points at the bundles", () => {
+    const failure = classifyStripeFailure(answer(404, { message: "No active subscription found" }));
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.yourCredentials, service: "stripe", next: { href: "/bundles.html" } });
+  });
+
+  test("an activity fee already paid says to go back and send the filing", () => {
+    const failure = classifyStripeFailure(answer(409, { message: "already-paid", code: "already-paid" }));
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.businessError, next: null });
+    expect(failure.cause).toBe("The fee for this filing is already paid. Go back to the filing and send it.");
+  });
+
+  test("a 400 refusal of what the page asked for is a fault in Submit, with Help and the request id", () => {
+    const failure = classifyStripeFailure(answer(400, { message: "bundle-not-listed", code: "bundle-not-listed" }, "req-400"));
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.submitFault, requestId: "req-400", next: { href: HELP_HREF } });
+    expect(failure.cause).toBe("Submit refused the request before asking Stripe. This is a fault in Submit, not in your account.");
+  });
+
+  test("a 5xx, or an answer with no page to open, is a fault in Submit or at Stripe", () => {
+    for (const status of [500, 502, 200]) {
+      const failure = classifyStripeFailure(answer(status, { message: "Failed to create checkout session" }, "req-5"));
+      expect(failure).toMatchObject({ kind: FAILURE_KINDS.submitFault, service: "stripe", requestId: "req-5" });
+      expect(failure.cause).toContain("This is a fault in Submit or at Stripe, not in your account.");
+    }
   });
 });

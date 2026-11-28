@@ -143,6 +143,8 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/services/catalogue-aggregates.js", "lib/services/catalogue-aggregates.js", "application/javascript");
   await serveFile(page, "**/lib/bundle-listing.js", "lib/bundle-listing.js", "application/javascript");
   await serveFile(page, "**/lib/ct600-agent.js", "lib/ct600-agent.js", "application/javascript");
+  await serveFile(page, "**/lib/stripe-checkout.js", "lib/stripe-checkout.js", "application/javascript");
+  await serveFile(page, "**/lib/filing-failure.js", "lib/filing-failure.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);

@@ -1393,28 +1393,12 @@ async function handleSubmitFiling() {
 async function startActivityCheckout(companyNumber, reviewDate) {
   showLoading();
   try {
-    const subjectKey = `${companyNumber}:${reviewDate}`;
-    const returnTo = `${window.location.origin}${window.location.pathname}`;
-    const response = await window.fetchWithIdToken("/api/v1/billing/activity-checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey, returnTo }),
+    const stripeCheckout = await import("/lib/stripe-checkout.js");
+    await stripeCheckout.startActivityCheckout({
+      activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID,
+      subjectKey: `${companyNumber}:${reviewDate}`,
+      beforeRedirect: () => sessionStorage.setItem(CHECKOUT_RESUME_KEY, JSON.stringify({ companyNumber, reviewDate })),
     });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.checkoutUrl) {
-      showStatus(
-        window.siteText("ch.cs.payment-failed-reason", "Failed to start payment: {reason}", {
-          reason: body.message || body.error || window.siteText("ch.cs.unknown-error", "Unknown error"),
-        }),
-        "error",
-      );
-      return;
-    }
-    sessionStorage.setItem(CHECKOUT_RESUME_KEY, JSON.stringify({ companyNumber, reviewDate }));
-    window.location.href = body.checkoutUrl;
-  } catch (error) {
-    console.error("Failed to start the confirmation statement payment:", error);
-    showStatus(error.message || window.siteText("ch.cs.payment-failed", "Failed to start payment."), "error");
   } finally {
     hideLoading();
   }

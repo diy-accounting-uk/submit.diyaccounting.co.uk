@@ -94,6 +94,7 @@ test.describe("File Confirmation Statement page", () => {
       paidReviewDate = null,
       submitError = null,
       pscSubmitError = null,
+      checkoutAnswer = null,
     } = {},
   ) {
     await page.addInitScript(
@@ -108,6 +109,7 @@ test.describe("File Confirmation Statement page", () => {
         paidReviewDateArg,
         submitErrorArg,
         pscSubmitErrorArg,
+        checkoutAnswerArg,
       }) => {
         const answerError = ({ message, status, body, requestId }) =>
           Object.assign(new Error(message), { status, body, ...(requestId ? { requestId } : {}) });
@@ -115,8 +117,13 @@ test.describe("File Confirmation Statement page", () => {
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
         window.hideLoading = window.hideLoading || (() => {});
-        window.narrateStage = (message) => window.showStatus(message, "info");
-        window.endStage = () => {};
+        // Each stage goes into session storage too, so the record outlives the trip to the checkout page.
+        window.narrateStage = (message) => {
+          window.showStatus(message, "info");
+          const stages = JSON.parse(sessionStorage.getItem("test.stages") || "[]");
+          sessionStorage.setItem("test.stages", JSON.stringify([...stages, message]));
+        };
+        window.endStage = () => window.__statusMessages.push({ message: "(stage ended)", type: "info" });
         window.__statusMessages = [];
         window.showStatus = (message, type) => {
           window.__statusMessages.push({ message, type });
@@ -142,7 +149,13 @@ test.describe("File Confirmation Statement page", () => {
             const checkoutUrl = `http://localhost:3000/simulator/activity-checkout?activityId=${encodeURIComponent(
               body.activityId,
             )}&subjectKey=${encodeURIComponent(body.subjectKey)}`;
-            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ checkoutUrl }) });
+            const answer = checkoutAnswerArg ?? { status: 200, body: { checkoutUrl } };
+            return Promise.resolve(
+              new Response(JSON.stringify(answer.body), {
+                status: answer.status,
+                headers: { "content-type": "application/json", ...answer.headers },
+              }),
+            );
           }
           return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
         };
@@ -208,6 +221,7 @@ test.describe("File Confirmation Statement page", () => {
         paidReviewDateArg: paidReviewDate,
         submitErrorArg: submitError,
         pscSubmitErrorArg: pscSubmitError,
+        checkoutAnswerArg: checkoutAnswer,
       },
     );
 
@@ -669,6 +683,56 @@ test.describe("File Confirmation Statement page", () => {
     expect(page.activityCheckoutRequests[0].subjectKey).toBe("00000001:2026-09-21");
     const resume = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResume"));
     expect(JSON.parse(resume)).toEqual({ companyNumber: "00000001", reviewDate: "2026-09-21" });
+    const stages = JSON.parse(await page.evaluate(() => sessionStorage.getItem("test.stages")));
+    expect(stages.slice(-2)).toEqual(["Asking Stripe for a checkout...", "Taking you to Stripe to pay..."]);
+  });
+
+  async function submitUntilTheFee(page, checkoutAnswer) {
+    setupPage(page);
+    await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false }, feeDueOnSubmit: true, checkoutAnswer });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+    return page.locator("#statusMessagesContainer + #failureDetail");
+  }
+
+  test("a checkout Stripe could not open ends the stage, stays on the page and shows the failure panel with Help and the reference", async ({
+    page,
+  }) => {
+    const panel = await submitUntilTheFee(page, {
+      status: 500,
+      headers: { "x-request-id": "6f1c2a9e-7b3d-4e2a-9c61-2d8f0b5e7a13" },
+      body: { message: "Failed to create checkout session" },
+    });
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator("[data-part=sent]")).toHaveText("Nothing was charged. Stripe did not open a checkout.");
+    await expect(panel.locator("[data-part=answers]")).toHaveText(
+      "Nothing was filed with Companies House. The filing is sent after the fee is paid.",
+    );
+    await expect(panel.locator("[data-part=next] a")).toHaveAttribute("href", "/help.html");
+    await expect(panel.locator("[data-part=next]")).toContainText("6f1c2a9e-7b3d-4e2a-9c61-2d8f0b5e7a13");
+    const messages = (await page.evaluate(() => window.__statusMessages)).map((m) => m.message);
+    expect(messages.slice(messages.indexOf("Asking Stripe for a checkout..."))).toEqual([
+      "Asking Stripe for a checkout...",
+      "(stage ended)",
+    ]);
+    expect(page.url()).toContain("fileConfirmationStatement.html");
+    expect(await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResume"))).toBeNull();
+    expect(page.activityCheckoutRequests).toHaveLength(0);
+  });
+
+  test("a fee already paid says so in the failure panel and points back to the filing", async ({ page }) => {
+    const panel = await submitUntilTheFee(page, { status: 409, body: { message: "already-paid", code: "already-paid" } });
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "The fee for this filing is already paid. Go back to the filing and send it.",
+    );
   });
 
   test("resumes the lookup and shows a payment-received banner when returning from checkout", async ({ page }) => {
