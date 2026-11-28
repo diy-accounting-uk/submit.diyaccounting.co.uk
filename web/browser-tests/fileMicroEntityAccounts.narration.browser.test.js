@@ -9,7 +9,10 @@ import { test, expect } from "@playwright/test";
 import { serveRealSite, SITE_ORIGIN } from "./serveRealSite.js";
 
 test("sending the accounts says so before Companies House answers", async ({ page }) => {
-  await serveRealSite(page, { signedIn: true });
+  await serveRealSite(page, {
+    signedIn: true,
+    apiHandler: (url) => (url.pathname === "/api/v1/bundle" ? { bundles: [{ bundleId: "resident-ltd", allocated: true }] } : undefined),
+  });
   await page.goto(`${SITE_ORIGIN}/companies-house/fileMicroEntityAccounts.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => {
     document.getElementById("companyAuthCode").value = "ABC123";

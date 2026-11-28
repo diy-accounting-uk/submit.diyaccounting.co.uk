@@ -66,6 +66,13 @@ vi.mock("@app/lib/emfMetrics.js", () => ({
   emitMetric: (...args) => mockEmitMetric(...args),
 }));
 
+const mockEnforceBundles = vi.hoisted(() => vi.fn());
+vi.mock("@app/services/bundleManagement.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  mockEnforceBundles.mockImplementation(actual.enforceBundles);
+  return { ...actual, enforceBundles: (...args) => mockEnforceBundles(...args) };
+});
+
 import { ingestHandler as hmrcItsaSelfEmploymentPeriodPostHandler } from "@app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -196,6 +203,18 @@ describe("hmrcItsaSelfEmploymentPeriodPost token charge, receipt and failure rep
     );
     expect(metricCalls("ItsaSubmissionSuccess")).toHaveLength(1);
     expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(0);
+  });
+
+  test("a refusal by the entitlement check records the block without a failure metric", async () => {
+    const { BundleEntitlementError } = await import("@app/services/bundleManagement.js");
+    mockEnforceBundles.mockRejectedValueOnce(new BundleEntitlementError("no bundle", { code: "BUNDLE_ENTITLEMENT_REQUIRED" }));
+
+    const response = await hmrcItsaSelfEmploymentPeriodPostHandler(buildInitialSubmissionEvent());
+    expect(response.statusCode).toBe(403);
+
+    expect(failureEventsWithCategory("access-denied")).toHaveLength(1);
+    expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(0);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("an HMRC rejection emits a failure event and a failure metric", async () => {

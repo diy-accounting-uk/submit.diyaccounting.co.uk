@@ -152,7 +152,11 @@ test.describe("File Company Tax Return entry form", () => {
         return;
       }
       if (url.pathname === "/api/v1/bundle") {
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles: [], tokensRemaining: 0 }) });
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 0 }),
+        });
         return;
       }
       if (url.pathname === "/api/v1/practice/clients" && practice.clientsStatus) {

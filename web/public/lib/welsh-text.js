@@ -3558,6 +3558,7 @@ window.WELSH_TEXT = {
   "widget.field-sources":
     "Mae’r diffiniadau’n dod o {cited}. Rydym wedi cyfieithu i’r Gymraeg y rhai sydd yn Saesneg yn unig yn y ffynhonnell.",
   "widget.field-value": "Gwerth",
+  "widget.get-day-pass": "Cael tocyn diwrnod",
   "widget.go-to-message": "Ewch i’r neges",
   "widget.hmrc-auth-failed": "Methodd y mewngofnodi: {reason}",
   "widget.hmrc-auth-redirecting": "Yn eich anfon i CThEF i fewngofnodi yn {url}...",
@@ -3571,6 +3572,10 @@ window.WELSH_TEXT = {
   "widget.money-pounds-pence": "Nodwch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54. Gwiriwch {label}.",
   "widget.money-whole-pounds": "Nodwch swm mewn punnoedd cyfan, fel £600 neu £1,200. Gwiriwch {label}.",
   "widget.no": "Na",
+  "widget.pass-needed-cause-companies-house":
+    "Nid oes dim wedi’i anfon at Dŷ’r Cwmnïau. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.",
+  "widget.pass-needed-cause-hmrc": "Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.",
+  "widget.pass-needed-title": "Mae angen tocyn arnoch ar gyfer hyn",
   "widget.record-date": "Dyddiad",
   "widget.record-next": "Beth i’w wneud nesaf",
   "widget.record-or": "neu",

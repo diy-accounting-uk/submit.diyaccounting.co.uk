@@ -4059,6 +4059,12 @@ function companyAuthCodeProblem() {
 }
 
 async function runSend(send) {
+  // Without a pass the routes refuse the filing, so send nothing. Until the accounts are sent the
+  // first send is to Companies House.
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded(accountsStillToSend() ? "companiesHouse" : "hmrc");
+    return;
+  }
   hideAmendPanel();
   window.showLoading();
   window.hideStatus();
@@ -4075,6 +4081,10 @@ async function runSend(send) {
           ? siteText("ch.ct.accounts-filed-then", "The accounts are filed with Companies House. {message}", { message: error.message })
           : error.message,
       );
+      return;
+    }
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      window.EntitlementStatus.showPassNeeded(error.service === "companiesHouse" || accountsStillToSend() ? "companiesHouse" : "hmrc");
       return;
     }
     if (error.status === 409) showView("previewView");
@@ -4147,6 +4157,7 @@ async function handleSubmitReturn() {
       } catch (error) {
         // The accounts never reached Companies House, so nothing is filed and the review stays open.
         if (!sending.companiesHouse) {
+          if (window.EntitlementStatus?.isBundleRefusal(error)) throw error;
           if (error.reason === "tokens_exhausted") {
             showTokensExhausted(error.message);
             return;

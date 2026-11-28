@@ -65,10 +65,11 @@ function emitSubmissionMetric(metricName, actor) {
  * @param {string} params.summary - Human-readable summary for alerting
  * @param {string} [params.userSub]
  * @param {Object} [params.detail] - Additional non-identifying detail fields
+ * @param {boolean} [params.emitMetric=true] - Whether to emit the failure metric
  */
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, emitMetric = true }) {
   const actor = resolveActorClass();
-  emitSubmissionMetric("ItsaSubmissionFailure", actor);
+  if (emitMetric) emitSubmissionMetric("ItsaSubmissionFailure", actor);
   await publishActivityFailureEvent({
     event: "itsa-annual-submission-failed",
     summary,
@@ -299,7 +300,11 @@ export async function ingestHandler(event) {
   try {
     ({ userSub, bundleIds } = await enforceBundles(event));
   } catch (error) {
-    await recordSubmissionFailure({ failure: "access-denied", summary: "ITSA annual submission blocked: no entitlement" });
+    await recordSubmissionFailure({
+      failure: "access-denied",
+      summary: "ITSA annual submission blocked: no entitlement",
+      emitMetric: false,
+    });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 

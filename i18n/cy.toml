@@ -29014,3 +29014,20 @@ cy = '''Wrthi’n anfon eich ffigurau at HMRC Assist...'''
 [strings."widget.assist-narrate-waiting"]
 hash = "d0b7ee18729e"
 cy = '''Wrthi’n aros am ateb HMRC Assist...'''
+
+# == The pass check on the filing pages, ids widget.*pass* ==
+[strings."widget.pass-needed-title"]
+hash = "3e694739e78a"
+cy = '''Mae angen tocyn arnoch ar gyfer hyn'''
+
+[strings."widget.pass-needed-cause-hmrc"]
+hash = "c108dca88914"
+cy = '''Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.'''
+
+[strings."widget.pass-needed-cause-companies-house"]
+hash = "cc66c920c092"
+cy = '''Nid oes dim wedi’i anfon at Dŷ’r Cwmnïau. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.'''
+
+[strings."widget.get-day-pass"]
+hash = "588425249452"
+cy = '''Cael tocyn diwrnod'''

@@ -297,6 +297,38 @@
     }
   }
 
+  /**
+   * Whether an error from a filing route is our own entitlement check refusing it for want of a pass.
+   * @param {Error & {status?: number, code?: string, reason?: string}} error
+   * @returns {boolean}
+   */
+  function isBundleRefusal(error) {
+    if (!error) return false;
+    if (error.code === "BUNDLE_ENTITLEMENT_REQUIRED" || error.code === "BUNDLE_FORBIDDEN") return true;
+    if (error.reason === "BUNDLE_ENTITLEMENT_REQUIRED" || error.reason === "BUNDLE_FORBIDDEN") return true;
+    return error.status === 403 && /bundle/i.test(error.message || "");
+  }
+
+  /**
+   * Shows that nothing was sent because the account holds no pass for this page's activity, with a
+   * link to take out a day pass.
+   * @param {"hmrc"|"companiesHouse"} service - Where the filing would have gone
+   */
+  function showPassNeeded(service) {
+    const cause =
+      service === "companiesHouse"
+        ? siteText(
+            "widget.pass-needed-cause-companies-house",
+            "Nothing has been sent to Companies House. Your account has no pass or bundle that allows this.",
+          )
+        : siteText("widget.pass-needed-cause-hmrc", "Nothing has been sent to HMRC. Your account has no pass or bundle that allows this.");
+    const href = window.siteLanguage?.chrome() === "cy" ? "/cy/bundles.html" : "/bundles.html";
+    window.showFailure(
+      { failure: { cause, next: { label: siteText("widget.get-day-pass", "Get a day pass"), href } } },
+      siteText("widget.pass-needed-title", "You need a pass for this"),
+    );
+  }
+
   function unavailablePanel(heading, text, linkHref, linkText) {
     const panel = document.createElement("section");
     panel.className = "signed-out-panel";
@@ -424,6 +456,8 @@
   if (typeof window !== "undefined") {
     window.EntitlementStatus = {
       activityBundleHeld,
+      isBundleRefusal,
+      showPassNeeded,
       update: updateEntitlementStatus,
       initialize: initEntitlementStatus,
     };

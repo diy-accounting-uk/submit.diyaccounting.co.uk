@@ -314,6 +314,11 @@ async function showRegisterNow() {
 }
 
 async function handleFile() {
+  // Without a pass the route refuses the filing, so send nothing and keep the answers on the page.
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("companiesHouse");
+    return;
+  }
   const scenario = document.getElementById("govTestScenario").value.trim();
   const headers = scenario ? { "Gov-Test-Scenario": scenario } : {};
   document.getElementById("registerNow").style.display = "none";

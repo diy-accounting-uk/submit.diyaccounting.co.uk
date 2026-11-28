@@ -22,8 +22,14 @@ const HELPER_FORMS = [
   "removeOfficer",
 ];
 
+// The signed-in person holds the pass the filing pages need.
+const HELD_BUNDLES = { bundles: [{ bundleId: "resident-ltd", allocated: true }] };
+
 async function openPage(page, name) {
-  await serveRealSite(page, { signedIn: true });
+  await serveRealSite(page, {
+    signedIn: true,
+    apiHandler: (url) => (url.pathname === "/api/v1/bundle" ? HELD_BUNDLES : undefined),
+  });
   await page.goto(`${SITE_ORIGIN}/companies-house/${name}.html`, { waitUntil: "networkidle" });
 }
 
