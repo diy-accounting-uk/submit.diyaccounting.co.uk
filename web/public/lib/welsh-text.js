@@ -691,6 +691,7 @@ window.WELSH_TEXT = {
     "Mae CThEF yn cymryd y cyfrifon llawn gyda’r Ffurflen, felly maent yn rhan o’r ffurflen hon. Rhowch bunnoedd cyfan, er enghraifft 600 neu 1,200.",
   "ch.ct.accounts-locked":
     "Wedi’u ffeilio yn Nhŷ’r Cwmnïau ar {date}, cyflwyniad {number}. Ni all y cyfrifon newid yma. Newidiwch yr atebion treth yn unig.",
+  "ch.ct.accounts-notes": "Nodiadau i’r cyfrifon",
   "ch.ct.accounts-revising":
     "Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau. Newidiwch y ffigurau a’r dyddiad y mae’r cyfarwyddwyr yn cymeradwyo’r cyfrifon diwygiedig.",
   "ch.ct.add-participator": "Ychwanegu cyfranogwr arall",
@@ -1003,6 +1004,11 @@ window.WELSH_TEXT = {
   "ch.ct.return-due": "Ffurflen yn ddyledus",
   "ch.ct.return-due-rule": "Mae’r ddwy Ffurflen yn ddyledus 12 mis ar ôl i’r cyfnod cyfrifon ddod i ben",
   "ch.ct.return-lower": "Ffurflen",
+  "ch.ct.return-not-sent": "Ni anfonwyd Ffurflen Dreth y Cwmni at CThEF",
+  "ch.ct.return-not-sent-ch-accepted":
+    "Mae gan Dŷ’r Cwmnïau y cyfrifon, felly nid ydynt yn cael eu hanfon eto. Gwiriwch y Ffurflen Dreth a’i hanfon at CThEF.",
+  "ch.ct.return-not-sent-ch-held":
+    "Mae gan Dŷ’r Cwmnïau y cyfrifon ac nid yw wedi penderfynu arnynt. Anfonwch y Ffurflen Dreth nawr, neu arhoswch am Dŷ’r Cwmnïau.",
   "ch.ct.return-of-2-message": "Ffurflen {part} o 2: {message}",
   "ch.ct.return-of-2-range": "Ffurflen {part} o 2: {range}",
   "ch.ct.return-part-word": "Statws Ffurflen {part} o 2 ",

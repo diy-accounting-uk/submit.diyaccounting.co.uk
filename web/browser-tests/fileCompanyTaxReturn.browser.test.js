@@ -926,9 +926,20 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(turnover.locator("th")).toHaveText("Turnover");
     await expect(page.locator("#review-row-currentTurnover")).toContainText(/£[\d,]+/);
     await expect(page.locator('table[data-ledger="balanceSheet"] tbody tr').first().locator("th")).toHaveText("Fixed assets");
+    const notes = page.locator('table[data-ledger="balanceSheet"] + table');
+    await expect(notes.locator("caption")).toHaveText("Notes to the accounts");
+    await expect(notes.locator("tr", { hasText: "Principal activity" })).toHaveCount(1);
 
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 900 });
+      const [balanceSheetBottom, captionBox, firstNoteTop] = await Promise.all([
+        page.locator('table[data-ledger="balanceSheet"]').boundingBox(),
+        notes.locator("caption").boundingBox(),
+        notes.locator("tbody tr").first().boundingBox(),
+      ]);
+      expect(captionBox.height).toBeGreaterThan(0);
+      expect(captionBox.y).toBeGreaterThanOrEqual(balanceSheetBottom.y + balanceSheetBottom.height - 1);
+      expect(captionBox.y + captionBox.height).toBeLessThanOrEqual(firstNoteTop.y + 1);
       await page.locator("#previewView").screenshot({ path: `target/screenshots/ct600-review/review-${width}.png` });
     }
     const answerUnderQuestion = async (rowId) =>
@@ -2165,7 +2176,57 @@ test.describe("File Company Tax Return entry form", () => {
         return heading - document.getElementById("waitForCompaniesHouseBtn").getBoundingClientRect().bottom;
       });
       expect(gapAboveHmrc).toBeGreaterThanOrEqual(16);
-      await page.locator("#resultView").screenshot({ path: recordScreenshotPath(`ct600-joint-result-${scheme}`, 390) });
+    });
+  }
+
+  for (const scheme of ["light", "dark"]) {
+    test(`a joint filing whose return never reached HMRC says what happened to the accounts and to the return at 390 px in ${scheme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 900 });
+      await page.emulateMedia({ colorScheme: scheme });
+      await openForm(page, [], { requests: [], reply: () => ({ status: 502, body: { message: "HMRC did not answer" } }) });
+      await page.route("**/api/v1/companies-house/accounts", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+        }),
+      );
+      await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }),
+        }),
+      );
+      await dropBook(page);
+      await completeTheAnswersTheBookLeaves(page);
+      await page.locator("#sendToBoth").check();
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await page.locator("#companyAuthCode").fill("ABC123");
+      await page.locator("#gatewayUserId").fill("gateway-user");
+      await page.locator("#gatewayPassword").fill("gateway-password");
+      await page.locator("#submitReturnBtn").click();
+
+      await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the accounts", { timeout: 30_000 });
+      await expect(page.locator("#hmrcHeading")).toBeVisible();
+      await expect(page.locator("#returnResult .outcome__title")).toHaveText("The Company Tax Return was not sent to HMRC");
+      await expect(page.locator("#returnResult")).toContainText("Companies House has the accounts, so they are not sent again.");
+      const headingBottom =
+        (await page.locator("#hmrcHeading").boundingBox()).y + (await page.locator("#hmrcHeading").boundingBox()).height;
+      const outcomeTop = (await page.locator("#returnOutcome").boundingBox()).y;
+      expect(outcomeTop - headingBottom).toBeLessThan(48);
+      await expect(page.locator("#sendCtNowBtn")).toBeHidden();
+      await expect(page.locator("#tryAgainBtn")).toBeVisible();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: recordScreenshotPath(`ct600-joint-result-${scheme}`, 390), fullPage: true });
+
+      await page.locator("#tryAgainBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
+      await expect(page.locator("#submitReturnBtn")).toHaveText("Submit to HMRC");
     });
   }
 
@@ -2252,6 +2313,17 @@ test.describe("File Company Tax Return entry form", () => {
       await expect(receipt.locator("tr", { hasText: "IRmark receipt" }).locator("td.text-value")).toHaveText(
         "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
       );
+      const receiptValueLines = await receipt.locator("td.text-value").evaluateAll((cells) =>
+        Object.fromEntries(
+          cells.map((cell) => {
+            const label = cell.previousElementSibling.textContent.trim();
+            return [label, Math.round(cell.getBoundingClientRect().height / parseFloat(getComputedStyle(cell).lineHeight))];
+          }),
+        ),
+      );
+      expect(receiptValueLines["IRmark receipt"]).toBeLessThanOrEqual(2);
+      expect(receiptValueLines["IRmark we sent"]).toBeLessThanOrEqual(2);
+      expect(receiptValueLines["Correlation ID"]).toBe(1);
       await expect(copy.locator(".customer-copy-links a").first()).toHaveAttribute(
         "href",
         "filings.html?receipt=2026-10-24T11%3A30%3A00.000Z-ABCDEF0123456789.json",

@@ -28892,3 +28892,22 @@ cy = '''Cael tocyn diwrnod'''
 [strings."vat-submit.periods-need-pass"]
 hash = "4a60078c7bc7"
 cy = '''Mae angen tocyn arnoch i ddarllen eich cyfnodau TAW agored gan CThEF ac i gyflwyno Ffurflen TAW.'''
+# the same words as field.reference-notes above
+[strings."ch.ct.accounts-notes"]
+hash = "3b39acff6c1b"
+cy = '''Nodiadau i’r cyfrifon'''
+
+# built from the Welsh of the joint filing's existing outcome lines
+[strings."ch.ct.return-not-sent"]
+hash = "04ab3b62c523"
+cy = '''Ni anfonwyd Ffurflen Dreth y Cwmni at CThEF'''
+
+# built from the Welsh of the joint filing's existing outcome lines
+[strings."ch.ct.return-not-sent-ch-accepted"]
+hash = "9c0aa87912fc"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon, felly nid ydynt yn cael eu hanfon eto. Gwiriwch y Ffurflen Dreth a’i hanfon at CThEF.'''
+
+# built from the Welsh of the joint filing's existing outcome lines
+[strings."ch.ct.return-not-sent-ch-held"]
+hash = "9f676194172b"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon ac nid yw wedi penderfynu arnynt. Anfonwch y Ffurflen Dreth nawr, neu arhoswch am Dŷ’r Cwmnïau.'''

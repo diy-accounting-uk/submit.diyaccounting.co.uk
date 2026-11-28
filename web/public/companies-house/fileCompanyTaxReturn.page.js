@@ -2465,7 +2465,8 @@ function companyChangeLink() {
   return link;
 }
 
-function answersTable(rows) {
+// The answers under the accounts' statements are the notes to those accounts, so they carry a caption as the statements do.
+function answersTable(rows, caption = null) {
   const body = rows.map((row) => {
     const tr = tableRow(row.reference ?? "", row.label, row.value, changeLink(row.id, row.label));
     tr.children[0].classList.add("review-table__box-cell");
@@ -2475,7 +2476,8 @@ function answersTable(rows) {
   });
   return create(
     "table",
-    { class: "results-table review-table review-table--boxes review-table--answers" },
+    { class: `results-table review-table review-table--boxes review-table--answers${caption ? " review-table--notes" : ""}` },
+    ...(caption ? [create("caption", {}, caption)] : []),
     create("colgroup", {}, ...["box", "question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
     create(
       "thead",
@@ -2497,6 +2499,8 @@ function answersTable(rows) {
 
 const ABSENT_FIGURE = "—";
 const NOT_GIVEN_TEXT = siteText("ch.ct600.not-given", "Not given");
+
+const ACCOUNTS_NOTES_TITLE = siteText("ch.ct.accounts-notes", "Notes to the accounts");
 
 const LEDGER_TITLES = {
   profitAndLoss: siteText("ch.ct.profit-and-loss", "Profit and loss account"),
@@ -2546,6 +2550,10 @@ function ledgerReviewTable(table, rows) {
   );
 }
 
+function answersAfter(ledgers, answers) {
+  return ledgers.size > 0 ? answersTable(answers, ACCOUNTS_NOTES_TITLE) : answersTable(answers);
+}
+
 // A review section: its answers with their box, and the accounts' figures as their statements.
 function reviewTable(id, title, rows) {
   const parts = [];
@@ -2556,7 +2564,7 @@ function reviewTable(id, title, rows) {
       answers.push(row);
       continue;
     }
-    if (answers.length > 0) parts.push(answersTable(answers));
+    if (answers.length > 0) parts.push(answersAfter(ledgers, answers));
     answers = [];
     if (!ledgers.has(row.ledger.table)) {
       ledgers.set(row.ledger.table, []);
@@ -2564,7 +2572,7 @@ function reviewTable(id, title, rows) {
     }
     ledgers.get(row.ledger.table).push(row);
   }
-  if (answers.length > 0) parts.push(answersTable(answers));
+  if (answers.length > 0) parts.push(answersAfter(ledgers, answers));
   return create(
     "section",
     { id: `review-${id}` },
@@ -4069,10 +4077,35 @@ async function runSend(send) {
     }
     if (error.status === 409) showView("previewView");
     window.showStatus(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."), "error");
-    showFilingFailure(error, error.service ?? (sending.mode === "both" && !sending.companiesHouse ? "companiesHouse" : "hmrc"));
+    const stage = error.service ?? (sending.mode === "both" && !sending.companiesHouse ? "companiesHouse" : "hmrc");
+    showFilingFailure(error, stage);
+    if (stage === "hmrc" && error.status !== 409) showReturnNotSent();
   } finally {
     window.hideLoading();
   }
+}
+
+// A joint filing whose Company Tax Return never reached HMRC: the result says so under HMRC, beside what
+// Companies House did with the accounts, and offers the way to send the return.
+function showReturnNotSent() {
+  if (sending.mode !== "both" || !sending.companiesHouse || sending.taxReturnSent || sending.longPeriod) return;
+  const accepted = companiesHouseAccepted();
+  setOutcome("error");
+  element("returnResult").replaceChildren(
+    outcomeTitle(siteText("ch.ct.return-not-sent", "The Company Tax Return was not sent to HMRC")),
+    paragraph(
+      accepted
+        ? siteText(
+            "ch.ct.return-not-sent-ch-accepted",
+            "Companies House has the accounts, so they are not sent again. Check the return and send it to HMRC.",
+          )
+        : siteText(
+            "ch.ct.return-not-sent-ch-held",
+            "Companies House has the accounts and has not decided on them. Send the return now, or wait for Companies House.",
+          ),
+    ),
+  );
+  element("tryAgainBtn").style.display = accepted ? "inline-block" : "none";
 }
 
 async function handleSubmitReturn() {
