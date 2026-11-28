@@ -18,7 +18,7 @@ import prettier from "prettier";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const OUTPUT_PATH = join(ROOT, "mcp", "lib", "help-index.json");
 const PUBLIC_DIR = join(ROOT, "web", "public");
-const DIYA_GL_DIR = join(ROOT, "mcp", "node_modules", "@diy-accounting-uk", "diya-gl");
+const DIYA_GL_DIR = join(ROOT, "node_modules", "@diy-accounting-uk", "diya-gl");
 const SCHEMA_DIR = join(DIYA_GL_DIR, "dist", "web", "spreadsheets.diyaccounting.co.uk", "public", "schema");
 const CT600_PATH = join(DIYA_GL_DIR, "dist", "app", "data", "filing", "ct600-v3.toml");
 
