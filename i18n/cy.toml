@@ -28983,3 +28983,10 @@ cy = '''Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r cyfarwyddwr pan ddilyswyd ei 
 [strings."ch.cs.field-psc-code-hint"]
 hash = "54e84da00853"
 cy = '''Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r unigolyn hwn pan ddilyswyd ei hunaniaeth. Mae gan unigolyn un cod ar gyfer pob rôl.'''
+[strings."ch.form.failure-sent-held"]
+hash = "c2b7c00cb77a"
+cy = '''Mae gan Dŷ’r Cwmnïau y ffurflen (cyflwyniad {number}) ac ni allai Submit ddarllen ei benderfyniad.'''
+
+[strings."ch.form.failure-sent-none"]
+hash = "f0ee7e6d42ea"
+cy = '''Nid oes gan Dŷ’r Cwmnïau unrhyw gyflwyniad o’r ffurflen hon. Ni chafodd dim ei ffeilio.'''

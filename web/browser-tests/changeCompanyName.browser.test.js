@@ -572,3 +572,28 @@ test("a name written with a number word is caught as the same as one written wit
   await expect(page.locator('input[name="letterKind"][value="same-as-no-objection"]')).toBeChecked();
   expect(filings).toHaveLength(0);
 });
+
+test("Companies House refusing the fee on Submit's presenter account shows the failure panel as Submit's own credentials", async ({
+  page,
+}) => {
+  await serveSite(page);
+  await page.route("**/api/v1/companies-house/change-of-name", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Companies House rejected the change of name submission envelope",
+        submissionNumber: "000123",
+        errors: [{ number: "9984", text: "Insufficient credit on the presenter account" }],
+      }),
+    }),
+  );
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "BRAMWELL ACCREDITED TRAINING LIMITED" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#statusMessagesContainer + #failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "submit-credentials", { timeout: 15000 });
+  await expect(panel.locator('[data-part="errors"] li')).toHaveText(["Insufficient credit on the presenter account"]);
+  await shoot(page, "failure-submit-credentials");
+});

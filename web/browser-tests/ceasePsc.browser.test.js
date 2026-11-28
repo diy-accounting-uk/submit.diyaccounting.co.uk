@@ -273,6 +273,102 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   await expect(result).toContainText("9998: The person named does not match the register.");
 });
 
+// A later route takes precedence over serveSite's, so each case answers the filing route itself.
+async function answerFiling(page, routePath, status, body) {
+  await page.route(`**${routePath}`, (route) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) }));
+}
+
+async function fileCessation(page, prefix = "") {
+  await page.goto(`${SITE}${prefix}/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
+  await fillAndReview(
+    page,
+    prefix
+      ? {
+          psc: `${CORPORATE_PSC} (Endid cyfreithiol neu berson cofrestradwy arall)`,
+          lookUp: "Chwilio am y personau â rheolaeth arwyddocaol",
+          cont: "Parhau",
+        }
+      : { psc: "Eleanor Bramwell (Individual)", lookUp: "Look up the persons with significant control", cont: "Continue" },
+  );
+}
+
+test("a fault in Submit while sending shows the failure panel under the status messages, with Help", async ({ page }) => {
+  await serveSite(page);
+  await answerFiling(page, "/api/v1/companies-house/psc-cessation", 500, { message: "Internal server error" });
+  await fileCessation(page);
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#statusMessagesContainer + #failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "submit-fault", { timeout: 15000 });
+  await expect(panel.locator("h2")).toHaveText("What happened");
+  await expect(panel.locator('[data-part="sent"]')).toHaveText("Companies House holds no submission of this form. Nothing was filed.");
+  await expect(panel.locator('[data-part="answers"]')).toHaveText("Your answers are still in this form.");
+  await expect(panel.locator('[data-part="kind"]')).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
+  await expect(panel.locator('[data-part="next"] a')).toHaveAttribute("href", "/help.html");
+  await expect(page.locator("#filingResult")).toContainText("Internal server error");
+  await shoot(page, "failure-submit-fault");
+  await panel.locator(".failure-detail__close").click();
+  await expect(page.locator("#failureDetail")).toHaveCount(0);
+});
+
+test("Companies House refusing Submit's presenter account says nothing is wrong with the reader's account", async ({ page }) => {
+  await serveSite(page);
+  await answerFiling(page, "/api/v1/companies-house/psc-cessation", 500, {
+    message: "Companies House rejected the PSC cessation submission envelope",
+    submissionNumber: "000123",
+    errors: [{ number: "502", text: "Authentication failure" }],
+  });
+  await fileCessation(page);
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "submit-credentials", { timeout: 15000 });
+  await expect(panel.locator('[data-part="kind"]')).toHaveText(
+    "Companies House refused Submit's own credentials. Nothing is wrong with your account. Try again later.",
+  );
+  await expect(panel.locator('[data-part="errors"] li')).toHaveText(["Authentication failure"]);
+});
+
+test("an outcome Submit could not read says Companies House has the form, and an accepted outcome on Check again clears the panel", async ({
+  page,
+}) => {
+  let polls = 0;
+  await serveSite(page);
+  await page.route("**/api/v1/companies-house/forms/psc-cessation/000123", (route) => {
+    polls += 1;
+    if (polls === 1)
+      return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) });
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ submissionNumber: "000123", statusCode: "ACCEPT", rejections: [] }),
+    });
+  });
+  await fileCessation(page);
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#failureDetail");
+  await expect(panel.locator('[data-part="sent"]')).toHaveText(
+    "Companies House has the form (submission 000123) and Submit could not read its decision.",
+    { timeout: 15000 },
+  );
+  await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+  await page.locator("#checkAgainBtn").click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  await expect(page.locator("#failureDetail")).toHaveCount(0);
+});
+
+test("the failure panel is in Welsh on the Welsh page", async ({ page }) => {
+  await serveSite(page);
+  await answerFiling(page, "/api/v1/companies-house/psc-cessation", 500, { message: "Internal server error" });
+  await fileCessation(page, "/cy");
+  await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
+  const panel = page.locator("#failureDetail");
+  await expect(panel.locator('[data-part="sent"]')).toHaveText(
+    "Nid oes gan Dŷ’r Cwmnïau unrhyw gyflwyniad o’r ffurflen hon. Ni chafodd dim ei ffeilio.",
+    { timeout: 15000 },
+  );
+  await expect(panel.locator('[data-part="answers"]')).toHaveText("Mae eich atebion yn dal yn y ffurflen hon.");
+  await shoot(page, "failure-submit-fault-cy");
+});
+
 test("an accepted filing links to its receipt, which the receipts page opens", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await serveSite(page, { outcome: { statusCode: "ACCEPT", rejections: [], receiptId: "2026-11-20T10:00:00.000Z-000123" } });

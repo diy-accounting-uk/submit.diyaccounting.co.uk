@@ -6,8 +6,9 @@
 // it sends the form (window.submitCompaniesHouseForm, from submit.js), says the gateway took it,
 // polls the outcome through companies-house-gateway-poll.js (window.pollCompaniesHouseForm), and
 // writes the outcome, Companies House's reasons for a rejection, or the error into the page's
-// result element. A form page gathers its fields and calls fileAndShowOutcome; it registers the
-// refusals it words itself with registerMessages.
+// result element. A failure to send the form, or to read its outcome, also gets the failure panel
+// of filing-failure.js under the status messages. A form page gathers its fields and calls
+// fileAndShowOutcome; it registers the refusals it words itself with registerMessages.
 
 (function () {
   "use strict";
@@ -15,6 +16,19 @@
   function siteText(id, english, values) {
     if (window.siteText) return window.siteText(id, english, values);
     return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
+  // The panel that says what a failure left behind: what Companies House holds, where the answers
+  // are, the kind of failure and its next step.
+  async function showFailurePanel(error, sent) {
+    // filing-failure.js is a module and this file a classic script; an external classic script
+    // resolves import() against its own address, so this loads the module beside it.
+    const { classifyFilingFailure, showFailureDetail } = await import("./filing-failure.js");
+    showFailureDetail(document, {
+      sent,
+      answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
+      failure: classifyFilingFailure(error, { service: "companiesHouse" }),
+    });
   }
 
   function paragraph(text, className) {
@@ -108,6 +122,16 @@
         ...(poll.mayCheckAgain(submission) ? [checkAgainButton(askAgain)] : []),
       );
       if (!poll.mayCheckAgain(submission)) startAgainButton.style.display = "";
+      await showFailurePanel(
+        error,
+        siteText(
+          "ch.form.failure-sent-held",
+          "Companies House has the form (submission {number}) and Submit could not read its decision.",
+          {
+            number: submission.submissionNumber,
+          },
+        ),
+      );
       return null;
     }
     if (!poll.isSettled(outcome)) {
@@ -130,6 +154,7 @@
       ...(outcome.rejections || []).map((rejection) => paragraph(window.companiesHouseRejections.rejectionText(rejection))),
     ];
     if (accepted && outcome.receiptId) lines.push(receiptLink(outcome.receiptId));
+    document.getElementById("failureDetail")?.remove();
     result.replaceChildren(...lines);
     startAgainButton.style.display = "";
     if (onSettled) await onSettled(outcome);
@@ -153,6 +178,7 @@
    */
   async function fileAndShowOutcome({ kind, form, result, headers = {}, onRefusal, onPaymentRequired, onSettled }) {
     result.replaceChildren();
+    document.getElementById("failureDetail")?.remove();
     let submission;
     try {
       window.narrateStage(siteText("ch.narrate-sending-form", "Sending the form to Companies House..."));
@@ -164,6 +190,10 @@
       }
       if (onRefusal && onRefusal(error)) return null;
       result.replaceChildren(paragraph(errorText(error), "error-message"));
+      await showFailurePanel(
+        error,
+        siteText("ch.form.failure-sent-none", "Companies House holds no submission of this form. Nothing was filed."),
+      );
       return null;
     }
     result.replaceChildren(

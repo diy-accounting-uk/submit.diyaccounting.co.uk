@@ -1742,6 +1742,8 @@ window.WELSH_TEXT = {
   "ch.first-accounts.prior-year-shown":
     "Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.",
   "ch.form.check-again": "Gwirio eto",
+  "ch.form.failure-sent-held": "Mae gan Dŷ’r Cwmnïau y ffurflen (cyflwyniad {number}) ac ni allai Submit ddarllen ei benderfyniad.",
+  "ch.form.failure-sent-none": "Nid oes gan Dŷ’r Cwmnïau unrhyw gyflwyniad o’r ffurflen hon. Ni chafodd dim ei ffeilio.",
   "ch.form.gateway-text": "Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}",
   "ch.form.line-break": "toriad llinell",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
