@@ -1895,9 +1895,9 @@ cy = '''ddim ar gael'''
 hash = "4e7d87d11fc9"
 cy = '''cynhyrchu (production) <span class="calendar-date">gweinydd lleol; mae’r cysylltydd ar y we yn cyfrifo’r ffigurau ac yn cysylltu â’r ffurflen ar y we</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-13e435"]
-hash = "13e43514acd8"
-cy = '''<a href="hmrc/vat/submitVat.html" data-activity="submit-vat">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=XUt2gdYxR1g" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-2d8aeb"]
+hash = "2d8aeb2c72b7"
+cy = '''<a href="hmrc/vat/submitVat.html" data-activity="submit-vat">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=-MHj2K6BB9E" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.hmrc-income-tax-mtd-af49d6"]
 hash = "af49d6d15973"
@@ -1915,9 +1915,9 @@ cy = '''prawf (sandbox)'''
 hash = "b3bb348f8a5c"
 cy = '''prawf (sandbox) <span class="calendar-date">ffigurau yn unig</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-22bb09"]
-hash = "22bb0931e0d9"
-cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=H1LRSZG984Q" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-d039e4"]
+hash = "d039e4ce115d"
+cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=XT5KXfDZHHg" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.hmrc-company-tax-return-ct600-8a1c6e"]
 hash = "8a1c6e669367"
@@ -1931,9 +1931,9 @@ cy = '''Gwiriad HMRC Assist ar Ffurflen TAW'''
 hash = "5975cf1bba43"
 cy = '''rhagolwg (preview)'''
 
-[strings."mtd-calendar.web-form-guide-video-c25dd2"]
-hash = "c25dd2814c4a"
-cy = '''<a href="hmrc/vat/submitVat.html" data-activity="vat-assist-check">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=cyOZsF9qe28" rel="noopener">Fideo</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-f57ce8"]
+hash = "f57ce8b91ae8"
+cy = '''<a href="hmrc/vat/submitVat.html" data-activity="vat-assist-check">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=iiUaHLyfLIc" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-accounts-micro-entity-small-ed0557"]
 hash = "ed0557d967ec"
@@ -1943,33 +1943,33 @@ cy = '''Cyfrifon Tŷ’r Cwmnïau (micro-endid, cwmni bach, segur)'''
 hash = "164ccd139c50"
 cy = '''cynhyrchu (production) <span class="calendar-date">micro-endid</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-a0c9b5"]
-hash = "a0c9b5728662"
-cy = '''<a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-micro-entity-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=yPSpvLKrTJU" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-ad8d4e"]
+hash = "ad8d4ecb3ad3"
+cy = '''<a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-micro-entity-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=THVJJwOe3AM" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-confirmation-statement-afa872"]
 hash = "afa872a4f861"
 cy = '''Datganiad cadarnhau Tŷ’r Cwmnïau'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-428a93"]
-hash = "428a9344d8dc"
-cy = '''<a href="companies-house/fileConfirmationStatement.html" data-activity="file-confirmation-statement">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=P0aG_mLfhZI" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-f64cf9"]
+hash = "f64cf96be50b"
+cy = '''<a href="companies-house/fileConfirmationStatement.html" data-activity="file-confirmation-statement">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=OExNkU6FYOE" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-psc-verification-statement-a728e0"]
 hash = "a728e0bd84f5"
 cy = '''Datganiad dilysu PSC Tŷ’r Cwmnïau'''
 
-[strings."mtd-calendar.guide-video-81060b"]
-hash = "81060bf89496"
-cy = '''<a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=zyo32coCwso" rel="noopener">Fideo</a> (yn Saesneg)'''
+[strings."mtd-calendar.guide-video-fda265"]
+hash = "fda265306639"
+cy = '''<a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=zYER5A-yzgk" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-registered-office-and-registered-4084e9"]
 hash = "4084e96d19ce"
 cy = '''Swyddfa gofrestredig a chyfeiriad e-bost cofrestredig Tŷ’r Cwmnïau'''
 
-[strings."mtd-calendar.web-form-guide-video-4a9892"]
-hash = "4a9892c85e92"
-cy = '''<a href="companies-house/changeRegisteredOffice.html" data-activity="change-registered-office">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=sN_FhTnAqF4" rel="noopener">Fideo</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-1924c2"]
+hash = "1924c2978f0b"
+cy = '''<a href="companies-house/changeRegisteredOffice.html" data-activity="change-registered-office">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=1dLr2i1tzUk" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.accounts-at-companies-house-and-ct600-d1399f"]
 hash = "d1399f34f121"
