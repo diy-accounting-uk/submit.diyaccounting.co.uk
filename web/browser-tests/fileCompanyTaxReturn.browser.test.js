@@ -2179,38 +2179,42 @@ test.describe("File Company Tax Return entry form", () => {
     });
   }
 
+  // A joint filing whose accounts Companies House accepts and whose return then fails to reach HMRC.
+  async function failJointReturn(page) {
+    await openForm(page, [], { requests: [], reply: () => ({ status: 502, body: { message: "HMRC did not answer" } }) });
+    await page.route("**/api/v1/companies-house/accounts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+      }),
+    );
+    await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }),
+      }),
+    );
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#sendToBoth").check();
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+    await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the accounts", { timeout: 30_000 });
+  }
+
   for (const scheme of ["light", "dark"]) {
     test(`a joint filing whose return never reached HMRC says what happened to the accounts and to the return at 390 px in ${scheme}`, async ({
       page,
     }) => {
       await page.setViewportSize({ width: 390, height: 900 });
       await page.emulateMedia({ colorScheme: scheme });
-      await openForm(page, [], { requests: [], reply: () => ({ status: 502, body: { message: "HMRC did not answer" } }) });
-      await page.route("**/api/v1/companies-house/accounts", (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
-        }),
-      );
-      await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }),
-        }),
-      );
-      await dropBook(page);
-      await completeTheAnswersTheBookLeaves(page);
-      await page.locator("#sendToBoth").check();
-      await page.locator("#previewBtn").click();
-      await expect(page.locator("#previewView")).toBeVisible();
-      await page.locator("#companyAuthCode").fill("ABC123");
-      await page.locator("#gatewayUserId").fill("gateway-user");
-      await page.locator("#gatewayPassword").fill("gateway-password");
-      await page.locator("#submitReturnBtn").click();
-
-      await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the accounts", { timeout: 30_000 });
+      await failJointReturn(page);
       await expect(page.locator("#hmrcHeading")).toBeVisible();
       await expect(page.locator("#returnResult .outcome__title")).toHaveText("The Company Tax Return was not sent to HMRC");
       await expect(page.locator("#returnResult")).toContainText("Companies House has the accounts, so they are not sent again.");
@@ -2227,6 +2231,29 @@ test.describe("File Company Tax Return entry form", () => {
       await expect(page.locator("#previewView")).toBeVisible();
       await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
       await expect(page.locator("#submitReturnBtn")).toHaveText("Submit to HMRC");
+    });
+  }
+
+  for (const [width, height] of [
+    [1280, 720],
+    [390, 900],
+  ]) {
+    test(`after a failed send the result comes to the top of the window clear of the message bubble at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await failJointReturn(page);
+      await expect(page.locator("#loadingSpinner")).toBeHidden();
+      const bubble = page.locator(".status-bubble");
+      await expect(bubble).toBeVisible();
+      await expect(bubble).toContainText("HMRC did not answer");
+      const heading = page.locator("#resultView > h2");
+      await expect
+        .poll(async () => {
+          const [bubbleBox, headingBox] = await Promise.all([bubble.boundingBox(), heading.boundingBox()]);
+          return headingBox.y - (bubbleBox.y + bubbleBox.height);
+        })
+        .toBeGreaterThanOrEqual(0);
+      const headingBox = await heading.boundingBox();
+      expect(headingBox.y + headingBox.height).toBeLessThanOrEqual(height);
     });
   }
 

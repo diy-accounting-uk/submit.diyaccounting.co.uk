@@ -4062,9 +4062,11 @@ async function runSend(send) {
   hideAmendPanel();
   window.showLoading();
   window.hideStatus();
+  let failed = false;
   try {
     await send();
   } catch (error) {
+    failed = true;
     console.error("Filing failed:", error);
     if (error.reason === "tokens_exhausted") {
       const accountsFiled = sending.companiesHouse?.statusCode === "ACCEPT";
@@ -4083,6 +4085,8 @@ async function runSend(send) {
   } finally {
     window.hideLoading();
   }
+  // The result says what happened to each part; it comes to the top of the window, clear of the message bubble.
+  if (failed && currentView === "resultView") element("resultView").scrollIntoView({ block: "start" });
 }
 
 // A joint filing whose Company Tax Return never reached HMRC: the result says so under HMRC, beside what
