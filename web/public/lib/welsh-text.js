@@ -2727,6 +2727,9 @@ window.WELSH_TEXT = {
   "itsa.expense-basis-total": "Un cyfanswm ar gyfer yr holl dreuliau",
   "itsa.expenses": "Treuliau",
   "itsa.failed": "Wedi methu: {reason}",
+  "itsa.failure-hmrc-authorisation":
+    "Ni dderbyniodd CThEF yr awdurdodiad sydd gan Submit ar eich rhan. Anfonwch eto, a mewngofnodwch i CThEF pan fydd yn gofyn.",
+  "itsa.failure-hmrc-unavailable": "Ni allai CThEF dderbyn y cais ar hyn o bryd. Rhowch gynnig arall arni nes ymlaen.",
   "itsa.fhl-eea": "Llety gwyliau wedi’i ddodrefnu yn yr AEE",
   "itsa.fhl-eea-long": "Llety gwyliau wedi’i ddodrefnu yn yr Ardal Economaidd Ewropeaidd",
   "itsa.field-accountancy-legal-and-other-professional-fees": "Ffioedd cyfrifyddiaeth, cyfreithiol a phroffesiynol eraill",

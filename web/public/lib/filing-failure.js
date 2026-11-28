@@ -3,13 +3,12 @@
 
 // web/public/lib/filing-failure.js
 // What kind of failure a filing met, from the status and the body of the answer, and what the
-// person does next. Five kinds: a fault in Submit; Submit's own HMRC or Companies House credentials
+// person does next. Six kinds: a fault in Submit; Submit's own HMRC or Companies House credentials
 // refused; the person's own credentials or account refused; a business error HMRC or Companies
-// House answered; Companies House not answering when Submit read the company, before anything was
-// sent. A 502 that carries their errors is their answer and takes one of the credentials or
-// business error kinds by its error numbers.
-// A Stripe journey adds two kinds: no answer from Submit at all, and a request the site's firewall
-// blocked.
+// House answered; HMRC unable to take the request; Companies House not answering when Submit read
+// the company, before anything was sent. A 502 that carries their errors is their answer and takes
+// its kind by its error numbers; an MTD API's answer takes it by HMRC's status and codes. A Stripe
+// journey adds two kinds: no answer from Submit at all, and a request the site's firewall blocked.
 
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
@@ -24,6 +23,7 @@ export const FAILURE_KINDS = {
   notAnswering: "not-answering",
   connection: "connection",
   blocked: "blocked",
+  serviceUnavailable: "service-unavailable",
 };
 
 export const HELP_HREF = "/help.html";
@@ -46,10 +46,31 @@ function serviceName(service) {
   return service === "companiesHouse" ? siteText("ct.failure-service-ch", "Companies House") : siteText("ct.failure-service-hmrc", "HMRC");
 }
 
+// The codes HMRC's MTD APIs give when they do not accept the authorisation a request carries.
+const HMRC_AUTHORISATION_CODES = new Set([
+  "CLIENT_OR_AGENT_NOT_AUTHORISED",
+  "INVALID_CREDENTIALS",
+  "MISSING_CREDENTIALS",
+  "INVALID_BEARER_TOKEN",
+  "UNAUTHORIZED",
+]);
+
 /** The errors HMRC or Companies House gave, as the server passes them on. */
 export function serviceErrorsOf(error) {
   const errors = error?.body?.error?.errors ?? error?.body?.errors;
-  return Array.isArray(errors) ? errors : [];
+  if (Array.isArray(errors)) return errors;
+  return hmrcApiErrorsOf(error);
+}
+
+// HMRC's MTD APIs answer {code, message} or {code, message, errors: [{code, message}]}, which the
+// server passes on as error.responseBody beside HMRC's status.
+function hmrcApiErrorsOf(error) {
+  const body = error?.body?.error?.responseBody;
+  if (!body || typeof body !== "object") return [];
+  let entries = [];
+  if (Array.isArray(body.errors) && body.errors.length > 0) entries = body.errors;
+  else if (body.code) entries = [body];
+  return entries.map((entry) => ({ code: String(entry.code ?? ""), text: entry.message, location: entry.code }));
 }
 
 // GovTalk answers carry an error's words in text, Companies House's filing API in error.
@@ -77,7 +98,8 @@ function yourCredentials(service, cause, next) {
 
 /**
  * The kind of a filing's failure and its next step.
- * @param {{status?: number, reason?: string, message?: string, body?: object, requestId?: string}} error - the client's error for the answer
+ * @param {{status?: number, reason?: string, message?: string, body?: object, requestId?: string}} error - the client's error for the
+ *   answer; for HMRC's MTD APIs, body.error carries hmrcResponseCode and responseBody
  * @param {{service: "hmrc"|"companiesHouse"}} where - the service the request was for
  * @returns {{kind: string, service: string, cause: string, next: {label: string, href: string}|null, errors?: string[], requestId?: string}}
  */
@@ -86,6 +108,33 @@ export function classifyFilingFailure(error, { service }) {
   const reason = error?.reason ?? error?.body?.reason;
   const errors = serviceErrorsOf(error);
   const numbers = errors.map((entry) => String(entry?.number ?? ""));
+  const hmrcStatus = error?.body?.error?.hmrcResponseCode;
+
+  if (
+    service === "hmrc" &&
+    (reason === "hmrc_scope_insufficient" ||
+      hmrcStatus === 401 ||
+      errors.some((entry) => HMRC_AUTHORISATION_CODES.has(String(entry?.code ?? ""))))
+  ) {
+    return yourCredentials(
+      "hmrc",
+      siteText(
+        "itsa.failure-hmrc-authorisation",
+        "HMRC did not accept the authorisation Submit holds for you. Send again, and sign in to HMRC when it asks.",
+      ),
+      null,
+    );
+  }
+  if (service === "hmrc" && typeof hmrcStatus === "number" && (hmrcStatus === 429 || hmrcStatus >= 500)) {
+    return {
+      kind: FAILURE_KINDS.serviceUnavailable,
+      service,
+      cause: siteText("itsa.failure-hmrc-unavailable", "HMRC could not take the request just now. Try again later."),
+      next: null,
+      errors: errors.map(errorText).filter(Boolean),
+    };
+  }
+  if (service === "hmrc" && typeof hmrcStatus === "number" && errors.length > 0) return businessError(service, errors);
 
   if (status === 401) {
     return yourCredentials(service, siteText("widget.failure-sign-in-expired", "Your sign-in has expired."), signInNext());
@@ -140,15 +189,7 @@ export function classifyFilingFailure(error, { service }) {
     ) {
       return submitFault(error);
     }
-    return {
-      kind: FAILURE_KINDS.businessError,
-      service,
-      cause: siteText("ct.failure-business", "{service} answered with this error. Correct the answer it names and send again.", {
-        service: serviceName(service),
-      }),
-      next: null,
-      errors: errors.map(errorText).filter(Boolean),
-    };
+    return businessError(service, errors);
   }
   if (error?.body?.code === COMPANY_UNREAD) {
     return {
@@ -170,6 +211,18 @@ export function classifyFilingFailure(error, { service }) {
     cause: siteText("ct.failure-refused", "The answers were refused before anything was sent. Correct them and send again."),
     next: null,
     errors: error?.message ? [error.message] : [],
+  };
+}
+
+function businessError(service, errors) {
+  return {
+    kind: FAILURE_KINDS.businessError,
+    service,
+    cause: siteText("ct.failure-business", "{service} answered with this error. Correct the answer it names and send again.", {
+      service: serviceName(service),
+    }),
+    next: null,
+    errors: errors.map(errorText).filter(Boolean),
   };
 }
 

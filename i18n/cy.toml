@@ -29151,3 +29151,13 @@ cy = '''Ni atebodd Tŷ’r Cwmnïau. Rhowch gynnig arall arni ymhen ychydig funu
 [strings."ch.lookup.submit-fault"]
 hash = "853e65d46461"
 cy = '''Ni allai Submit chwilio am y cwmni. Nam yn Submit yw hwn: rhowch gynnig arall arni, a gofynnwch am help os bydd yn digwydd eto.'''
+
+# == The failure panel of a write to HMRC's MTD APIs ==
+
+[strings."itsa.failure-hmrc-authorisation"]
+hash = "be09800d74ae"
+cy = '''Ni dderbyniodd CThEF yr awdurdodiad sydd gan Submit ar eich rhan. Anfonwch eto, a mewngofnodwch i CThEF pan fydd yn gofyn.'''
+
+[strings."itsa.failure-hmrc-unavailable"]
+hash = "a7efae7d7603"
+cy = '''Ni allai CThEF dderbyn y cais ar hyn o bryd. Rhowch gynnig arall arni nes ymlaen.'''

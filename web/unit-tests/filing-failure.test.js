@@ -185,3 +185,72 @@ describe("the kind of a Stripe journey's failure", () => {
     }
   });
 });
+
+describe("the kind of a failure HMRC's MTD APIs answered", () => {
+  // The server passes HMRC's answer on as error.hmrcResponseCode and error.responseBody.
+  const mtd = (status, hmrcResponseCode, responseBody) =>
+    answer(status, { message: "HMRC rejected the request", error: { hmrcResponseCode, responseBody } });
+
+  test("a rule HMRC names is a business error, listed with its code", () => {
+    const failure = classifyFilingFailure(
+      mtd(400, 400, { code: "RULE_BOTH_EXPENSES_SUPPLIED", message: "Both expenses and consolidated expenses must not be present" }),
+      { service: "hmrc" },
+    );
+    expect(failure.kind).toBe(FAILURE_KINDS.businessError);
+    expect(failure.errors).toEqual(["Both expenses and consolidated expenses must not be present (RULE_BOTH_EXPENSES_SUPPLIED)"]);
+  });
+
+  test("several errors are each listed", () => {
+    const body = {
+      code: "INVALID_REQUEST",
+      message: "Invalid request",
+      errors: [
+        { code: "FORMAT_VALUE", message: "The value must be between 0 and 99999999999.99" },
+        { code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED", message: "An empty or non-matching body was submitted" },
+      ],
+    };
+    expect(classifyFilingFailure(mtd(400, 400, body), { service: "hmrc" }).errors).toEqual([
+      "The value must be between 0 and 99999999999.99 (FORMAT_VALUE)",
+      "An empty or non-matching body was submitted (RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED)",
+    ]);
+  });
+
+  test("a rule HMRC answers with 403 is a business error, not a missing bundle", () => {
+    const failure = classifyFilingFailure(mtd(403, 403, { code: "RULE_TAX_YEAR_NOT_ENDED", message: "Tax year not ended" }), {
+      service: "hmrc",
+    });
+    expect(failure.kind).toBe(FAILURE_KINDS.businessError);
+  });
+
+  test("HMRC not accepting the authorisation is the person's own credentials", () => {
+    for (const error of [
+      mtd(403, 403, { code: "CLIENT_OR_AGENT_NOT_AUTHORISED", message: "The client or agent is not authorised" }),
+      mtd(500, 401, { code: "INVALID_CREDENTIALS", message: "Invalid Authentication information provided" }),
+      answer(403, { reason: "hmrc_scope_insufficient" }),
+    ]) {
+      const failure = classifyFilingFailure(error, { service: "hmrc" });
+      expect(failure).toMatchObject({ kind: FAILURE_KINDS.yourCredentials, service: "hmrc", next: null });
+      expect(failure.cause).toBe(
+        "HMRC did not accept the authorisation Submit holds for you. Send again, and sign in to HMRC when it asks.",
+      );
+    }
+  });
+
+  test("HMRC unable to take the request, or limiting the rate, is neither a fault in Submit nor the person's", () => {
+    for (const error of [
+      mtd(500, 503, { code: "SERVICE_UNAVAILABLE", message: "Service unavailable" }),
+      mtd(500, 429, { code: "MESSAGE_THROTTLED_OUT", message: "Too many requests" }),
+    ]) {
+      const failure = classifyFilingFailure(error, { service: "hmrc" });
+      expect(failure.kind).toBe(FAILURE_KINDS.serviceUnavailable);
+      expect(failure.cause).toBe("HMRC could not take the request just now. Try again later.");
+    }
+  });
+
+  test("Submit's own 403 with no HMRC answer is still a missing bundle", () => {
+    expect(classifyFilingFailure(answer(403, { reason: "BUNDLE_ENTITLEMENT_REQUIRED" }), { service: "hmrc" }).kind).toBe(
+      FAILURE_KINDS.yourCredentials,
+    );
+    expect(classifyFilingFailure(answer(403, {}), { service: "hmrc" }).next?.href).toBe("/bundles.html");
+  });
+});

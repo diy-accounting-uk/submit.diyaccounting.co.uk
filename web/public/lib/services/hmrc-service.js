@@ -4,11 +4,65 @@
 // HMRC service for VAT submission and fraud prevention headers
 
 import { authorizedFetch } from "./api-client.js";
+import { classifyFilingFailure, showFailureDetail } from "../filing-failure.js";
 
 // page-chrome.js gives the text in the reader's language; under Node, and without it, the English stands.
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
   return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
+// The number of fileWithHmrc writes in flight. While one is, a write's poll shows its waiting
+// message as the submission's stage; outside one, a write polls as it always has.
+let hmrcWritesInFlight = 0;
+
+/** The waiting stage of a write to HMRC. */
+export function hmrcWaitingMessage() {
+  return siteText("ct.narrate-waiting-hmrc", "Waiting for HMRC's answer...");
+}
+
+/**
+ * The poll options of a write to HMRC, for a page that sends the write itself with
+ * authorizedFetch inside fileWithHmrc. Empty outside fileWithHmrc.
+ * @returns {{pollPendingMessage?: string, pollStage?: boolean}}
+ */
+export function hmrcWritePollOptions() {
+  return hmrcWritesInFlight > 0 ? { pollPendingMessage: hmrcWaitingMessage(), pollStage: true } : {};
+}
+
+/**
+ * Show the failure panel for a write to HMRC that failed.
+ * @param {Error & {status?: number, body?: object, reason?: string, requestId?: string}} error - as hmrcRequestFailure builds it
+ * @param {{notSent: string, answers: string}} words - what HMRC has not got, and where the person's answers are
+ */
+export function showHmrcFailure(error, { notSent, answers }) {
+  return showFailureDetail(document, { sent: notSent, answers, failure: classifyFilingFailure(error, { service: "hmrc" }) });
+}
+
+/**
+ * One write to HMRC from an Income Tax page: the sending stage, then HMRC's waiting stage while
+ * the request polls, and on a failure the panel that says what happened. The stage ends however
+ * the write ends.
+ * @template T
+ * @param {{sending: string, notSent: string, answers: string}} words - the sending stage, e.g.
+ *   "Sending the quarterly update to HMRC..."; what a failure leaves HMRC without, e.g. "HMRC has
+ *   not got the quarterly update."; and where the answers are, e.g. "Your figures are still in the form."
+ * @param {() => Promise<T>} send - the write: a function of this module, or authorizedFetch with
+ *   hmrcWritePollOptions() whose failure is thrown as hmrcRequestFailure
+ * @returns {Promise<T>} what send returns; a failure is shown and thrown on
+ */
+export async function fileWithHmrc({ sending, notSent, answers }, send) {
+  window.narrateStage?.(sending);
+  hmrcWritesInFlight += 1;
+  try {
+    return await send();
+  } catch (error) {
+    showHmrcFailure(error, { notSent, answers });
+    throw error;
+  } finally {
+    hmrcWritesInFlight -= 1;
+    window.endStage?.();
+  }
 }
 
 /**
@@ -389,7 +443,7 @@ export async function submitVat(
     console.error(
       `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to submit VAT.${failureReason(responseJson)}`, response, responseJson);
+    throw hmrcRequestFailure(`Failed to submit VAT.${failureReason(responseJson)}`, response, responseJson);
   }
   return responseJson;
 }
@@ -443,7 +497,7 @@ export async function getBusinessDetails(
     console.error(
       `Failed to retrieve business details. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-business-details", "Failed to retrieve business details.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -508,7 +562,7 @@ export async function getObligations(
     console.error(
       `Failed to retrieve obligations. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-obligations", "Failed to retrieve obligations.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -556,7 +610,7 @@ export async function postSelfEmploymentPeriod(
     periodDisallowableExpenses: periodData.periodDisallowableExpenses,
   });
 
-  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const response = await authorizedFetch(url, { method: "POST", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     // The HMRC authorization is missing a required scope - clear the stale token so the
@@ -572,12 +626,12 @@ export async function postSelfEmploymentPeriod(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to file the quarterly update. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-file-the-quarterly-update", "Failed to file the quarterly update.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -632,12 +686,12 @@ export async function getSelfEmploymentAnnual(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-the-annual-submission", "Failed to retrieve the annual submission.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -682,7 +736,7 @@ export async function putSelfEmploymentAnnual(
     nonFinancials: annualDetails.nonFinancials,
   });
 
-  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const response = await authorizedFetch(url, { method: "PUT", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -696,12 +750,12 @@ export async function putSelfEmploymentAnnual(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-save-the-annual-submission", "Failed to save the annual submission.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -745,7 +799,7 @@ export async function triggerBsas(
     runFraudPreventionHeaderValidation,
   });
 
-  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const response = await authorizedFetch(url, { method: "POST", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -759,12 +813,12 @@ export async function triggerBsas(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to trigger the year-end summary. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-trigger-the-year-end-summary", "Failed to trigger the year-end summary.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -819,7 +873,7 @@ export async function getBsasSelfEmployment(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     const message = `Failed to retrieve the year-end summary. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
@@ -868,7 +922,7 @@ export async function adjustBsasSelfEmployment(
     zeroAdjustments: adjustDetails.zeroAdjustments,
   });
 
-  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const response = await authorizedFetch(url, { method: "POST", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -882,12 +936,12 @@ export async function adjustBsasSelfEmployment(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-submit-the-year-end-adjustment", "Failed to submit the year-end adjustment.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -942,12 +996,12 @@ export async function getUkPropertyAnnual(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-the-annual-submission", "Failed to retrieve the annual submission.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -991,7 +1045,7 @@ export async function putUkPropertyAnnual(
     allowances: annualDetails.allowances,
   });
 
-  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const response = await authorizedFetch(url, { method: "PUT", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -1005,12 +1059,12 @@ export async function putUkPropertyAnnual(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-save-the-annual-submission", "Failed to save the annual submission.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1040,7 +1094,12 @@ async function foreignPropertyRequest(failure, method, url, body, hmrcGrantId, g
   };
   if (testScenario && method !== "GET") headers["Gov-Test-Scenario"] = testScenario;
 
-  const response = await authorizedFetch(url, { method, headers, ...(body && { body: JSON.stringify(body) }) });
+  const response = await authorizedFetch(url, {
+    method,
+    headers,
+    ...(body && { body: JSON.stringify(body) }),
+    ...(method !== "GET" && hmrcWritePollOptions()),
+  });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -1054,12 +1113,12 @@ async function foreignPropertyRequest(failure, method, url, body, hmrcGrantId, g
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `${failure} Remote call failed: ${method} ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`${failure}${failureReason(responseJson)}`, response, responseJson);
+    throw hmrcRequestFailure(`${failure}${failureReason(responseJson)}`, response, responseJson);
   }
   return responseJson;
 }
@@ -1362,7 +1421,7 @@ export async function getBsasUkProperty(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     const message = `Failed to retrieve the year-end summary. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
@@ -1410,7 +1469,7 @@ export async function adjustBsasUkProperty(
     zeroAdjustments: adjustDetails.zeroAdjustments,
   });
 
-  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const response = await authorizedFetch(url, { method: "POST", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -1424,12 +1483,12 @@ export async function adjustBsasUkProperty(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-submit-the-year-end-adjustment", "Failed to submit the year-end adjustment.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1621,6 +1680,7 @@ export async function triggerCalculation(
     pollPendingMessage: siteText("itsa.calculating", "Calculating..."),
     pollSuccessMessage: siteText("itsa.calculation-ready", "Calculation ready."),
     pollErrorMessage: siteText("itsa.calculation-failed", "Failed to calculate."),
+    ...hmrcWritePollOptions(),
   });
   const responseJson = await response.json();
   if (!response.ok) {
@@ -1635,12 +1695,12 @@ export async function triggerCalculation(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to trigger the tax calculation. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-trigger-the-tax-calculation", "Failed to trigger the tax calculation.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1695,12 +1755,12 @@ export async function getCalculation(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to retrieve the tax calculation. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-the-tax-calculation", "Failed to retrieve the tax calculation.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1745,7 +1805,7 @@ export async function postFinalDeclaration(
     runFraudPreventionHeaderValidation,
   });
 
-  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const response = await authorizedFetch(url, { method: "POST", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -1759,7 +1819,7 @@ export async function postFinalDeclaration(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     // Token allowance used up - carry the reason and status so the caller can show the
     // submission-cost widget's own exhausted-balance sentence instead of a generic one.
@@ -1775,7 +1835,7 @@ export async function postFinalDeclaration(
     console.error(
       `Failed to submit the final declaration. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-submit-the-final-declaration", "Failed to submit the final declaration.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1830,12 +1890,12 @@ export async function getLossesAndClaims(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to retrieve losses and claims. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-losses-and-claims", "Failed to retrieve losses and claims.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1881,7 +1941,7 @@ export async function putLossesAndClaims(
     suspendTemporalValidations: lossesDetails.suspendTemporalValidations,
   });
 
-  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const response = await authorizedFetch(url, { method: "PUT", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -1895,12 +1955,12 @@ export async function putLossesAndClaims(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to save losses and claims. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-save-losses-and-claims", "Failed to save losses and claims.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -1953,12 +2013,12 @@ export async function getTaxLiabilityAdjustments(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to retrieve tax liability adjustments. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-retrieve-tax-liability-adjustments", "Failed to retrieve tax liability adjustments.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -2001,7 +2061,7 @@ export async function putTaxLiabilityAdjustments(
     suspendTemporalValidations: adjustmentsDetails.suspendTemporalValidations,
   });
 
-  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const response = await authorizedFetch(url, { method: "PUT", headers, body, ...hmrcWritePollOptions() });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
@@ -2015,12 +2075,12 @@ export async function putTaxLiabilityAdjustments(
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
       }
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     console.error(
       `Failed to save tax liability adjustments. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(
+    throw hmrcRequestFailure(
       `${siteText("itsa.service-save-tax-liability-adjustments", "Failed to save tax liability adjustments.")}${failureReason(responseJson)}`,
       response,
       responseJson,
@@ -2066,14 +2126,29 @@ if (typeof window !== "undefined") {
   window.putLossesAndClaims = putLossesAndClaims;
   window.getTaxLiabilityAdjustments = getTaxLiabilityAdjustments;
   window.putTaxLiabilityAdjustments = putTaxLiabilityAdjustments;
+  window.fileWithHmrc = fileWithHmrc;
+  window.hmrcWritePollOptions = hmrcWritePollOptions;
+  window.hmrcRequestFailure = hmrcRequestFailure;
+  window.showHmrcFailure = showHmrcFailure;
+  window.hmrcWaitingMessage = hmrcWaitingMessage;
 }
 
-function requestFailure(message, response, responseJson) {
+/**
+ * The error of a write or read HMRC, or Submit in front of it, did not take: the status, the
+ * server's JSON body and the request id, as the failure panel reads them.
+ * @param {string} message
+ * @param {Response} response
+ * @param {object} responseJson
+ */
+export function hmrcRequestFailure(message, response, responseJson) {
   const error = new Error(message);
   error.status = response.status;
   error.service = "hmrc";
   error.code = responseJson?.responseBody?.code || responseJson?.code || "";
   error.reason = responseJson?.reason;
+  error.body = responseJson;
+  const requestId = response.headers?.get?.("x-request-id");
+  if (requestId) error.requestId = requestId;
   return error;
 }
 

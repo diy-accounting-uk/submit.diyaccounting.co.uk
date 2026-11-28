@@ -5,7 +5,7 @@
 // @vitest-environment happy-dom
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { showStatus, dismissStatus } from "../public/lib/utils/dom-utils.js";
+import { showStatus, dismissStatus, narrateStage, endStage } from "../public/lib/utils/dom-utils.js";
 import { executeAsyncRequestPolling } from "../public/lib/services/api-client.js";
 
 const texts = () => Array.from(document.querySelectorAll(".status-message-content")).map((el) => el.textContent);
@@ -68,5 +68,40 @@ describe("the polling client's Still processing message", () => {
     showStatus("Calculating...", "info");
     await poll(new Response("{}", { status: 200 }));
     expect(texts()).toEqual(["Calculating..."]);
+  });
+});
+
+describe("a poll that is a stage of a submission", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    document.body.innerHTML = '<div id="statusMessagesContainer"></div>';
+    window.showStatus = showStatus;
+    window.dismissStatus = dismissStatus;
+    window.narrateStage = narrateStage;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows its waiting message in place of the stage before it, and leaves the stage for the submission to end", async () => {
+    narrateStage("Sending the update to HMRC...");
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(accepted())
+      .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    const ending = executeAsyncRequestPolling(
+      accepted(),
+      URL_PATH,
+      { pollPendingMessage: "Waiting for HMRC's answer...", pollStage: true },
+      new Headers(),
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(texts()).toEqual(["Waiting for HMRC's answer..."]);
+    await vi.advanceTimersByTimeAsync(2000);
+    await ending;
+    expect(texts()).toEqual(["Waiting for HMRC's answer..."]);
+    endStage();
+    expect(texts()).toEqual([]);
   });
 });
