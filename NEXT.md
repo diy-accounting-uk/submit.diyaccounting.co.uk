@@ -101,6 +101,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
+- [ ] **WRD9. The older knowledge base articles take WRD8's wording.** In the spreadsheets repository, `web/spreadsheets.diyaccounting.co.uk/public/articles/` holds 22 files (an `.html` and an `.md` per article) with 49 hits for `git grep -c -i -w books`. Each hit that means the person's records becomes "records" or "bookkeeping", and one that names a DIYA-GL file becomes "DIYA-GL book", by the customer-wording rule in `CLAUDE.md`; "net book value" and Companies House's "Bookkeeping activities" stay. Edit the `.md` and its `.html` together, then `node app/bin/build-knowledge-base.js` and `npx vitest run app/test/knowledge-base.test.js`. Push with `SKIP_PUSH_TESTS=1`; that PR's `test.yml` runs the suite. **Source**: operator, 2026-11-28 (WRD8 left the older articles; the answer was to change them). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~23 files. **Repository**: spreadsheets.
+
 ## Machine-ask
 
 ## Human-driven
