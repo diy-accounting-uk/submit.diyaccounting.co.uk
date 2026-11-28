@@ -55,6 +55,10 @@ const logger = createLogger({ source: "app/functions/diyaGl/diyaGlPut.js" });
 const VALID_PRODUCTS = ["bst", "se", "taxi", "ltd"];
 const PROVENANCE_FIELDS = ["formatVersion", "engineVersion", "taxDataHash", "templateHash", "reconciledCommit"];
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+// What may have made a version: an assistant's tool on the hosted connector, or an import on the
+// records page.
+const CHANGE_TOOLS = ["edit_lines", "new_book", "new_book_from_register", "roll_forward", "undo_book_change", "import"];
+const MAX_EDITS_PER_CHANGE = 50;
 
 class WriteRaceError extends Error {}
 
@@ -104,18 +108,36 @@ function normaliseProvenance(provenance) {
   return normalised;
 }
 
+function isBoundedInteger(value, max) {
+  return Number.isInteger(value) && value >= 1 && value <= max;
+}
+
+/**
+ * The change a version records, or undefined for none, or null for one that is not valid.
+ * @param {unknown} change
+ * @returns {{tool: string, editCount?: number, restoredVersion?: number}|undefined|null}
+ */
+function normaliseChange(change) {
+  if (change === undefined || change === null) return undefined;
+  if (typeof change !== "object" || Array.isArray(change) || !CHANGE_TOOLS.includes(change.tool)) return null;
+  const { tool, editCount, restoredVersion } = change;
+  if (editCount !== undefined && !isBoundedInteger(editCount, MAX_EDITS_PER_CHANGE)) return null;
+  if (restoredVersion !== undefined && !isBoundedInteger(restoredVersion, Number.MAX_SAFE_INTEGER)) return null;
+  return { tool, ...(editCount !== undefined ? { editCount } : {}), ...(restoredVersion !== undefined ? { restoredVersion } : {}) };
+}
+
 /**
  * Validates and normalises the PUT request body per section 2.3 of the storage plan.
  *
  * @param {object} body
  * @returns {{title: string, product: string, periodCoveredStart: string|null,
- *   periodCoveredEnd: string|null, provenance: object, zipBase64: string} | null}
+ *   periodCoveredEnd: string|null, provenance: object, zipBase64: string, change?: object} | null}
  */
 function validatePutBody(body) {
   if (!body || typeof body !== "object") {
     return null;
   }
-  const { title, product, periodCoveredStart, periodCoveredEnd, provenance, zipBase64 } = body;
+  const { title, product, periodCoveredStart, periodCoveredEnd, provenance, zipBase64, change } = body;
 
   if (typeof zipBase64 !== "string" || zipBase64.length === 0) {
     return null;
@@ -133,6 +155,10 @@ function validatePutBody(body) {
   if (normalisedProvenance === null) {
     return null;
   }
+  const normalisedChange = normaliseChange(change);
+  if (normalisedChange === null) {
+    return null;
+  }
 
   return {
     title: title.trim(),
@@ -141,6 +167,7 @@ function validatePutBody(body) {
     periodCoveredEnd: periodCoveredEnd ?? null,
     provenance: normalisedProvenance,
     zipBase64,
+    ...(normalisedChange ? { change: normalisedChange } : {}),
   };
 }
 
@@ -168,7 +195,13 @@ async function attemptWrite({ ownerPrefix, bookId, existing, fields, decodedByte
 
   const now = new Date().toISOString();
   const versions = existing ? [...existing.metadata.versions] : [];
-  versions.push({ version: nextVersion, etag: zipETag, size: decodedBytes.length, createdAt: now });
+  versions.push({
+    version: nextVersion,
+    etag: zipETag,
+    size: decodedBytes.length,
+    createdAt: now,
+    ...(fields.change ? { change: fields.change } : {}),
+  });
 
   while (versions.length > versionsKept) {
     const oldest = versions.shift();
@@ -372,7 +405,12 @@ export async function ingestHandler(event) {
         userSub: user.sub,
         appClient,
         clientId,
-        detail: { product: fields.product, retention: metadata.retention, version: metadata.latestVersion },
+        detail: {
+          product: fields.product,
+          retention: metadata.retention,
+          version: metadata.latestVersion,
+          ...(fields.change ? { change: fields.change } : {}),
+        },
       });
 
       return http200OkResponse({

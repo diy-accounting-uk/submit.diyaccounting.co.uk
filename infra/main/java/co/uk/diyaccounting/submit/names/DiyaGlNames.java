@@ -57,6 +57,15 @@ public class DiyaGlNames {
     public boolean diyaGlDeleteLambdaJwtAuthorizer;
     public boolean diyaGlDeleteLambdaCustomAuthorizer;
 
+    public String diyaGlDownloadGetIngestLambdaHandler;
+    public String diyaGlDownloadGetIngestLambdaFunctionName;
+    public String diyaGlDownloadGetIngestLambdaArn;
+    public String diyaGlDownloadGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod diyaGlDownloadGetLambdaHttpMethod;
+    public String diyaGlDownloadGetLambdaUrlPath;
+    public boolean diyaGlDownloadGetLambdaJwtAuthorizer;
+    public boolean diyaGlDownloadGetLambdaCustomAuthorizer;
+
     public String practiceClientBookMovePostIngestLambdaHandler;
     public String practiceClientBookMovePostIngestLambdaFunctionName;
     public String practiceClientBookMovePostIngestLambdaArn;
@@ -166,6 +175,34 @@ public class DiyaGlNames {
                 "Deletes a book and every stored version for the authenticated books user",
                 "deleteBook",
                 List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
+
+        // DIYA-GL Download GET Lambda (books JWT auth): a version as a short-lived download link
+        this.diyaGlDownloadGetLambdaHttpMethod = HttpMethod.GET;
+        this.diyaGlDownloadGetLambdaUrlPath = "/api/v1/books/{bookId}/versions/{version}/download";
+        this.diyaGlDownloadGetLambdaJwtAuthorizer = false;
+        this.diyaGlDownloadGetLambdaCustomAuthorizer = false;
+        var diyaGlDownloadGetLambdaHandlerName = "diyaGlDownloadGet.ingestHandler";
+        var diyaGlDownloadGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(diyaGlDownloadGetLambdaHandlerName);
+        this.diyaGlDownloadGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, diyaGlDownloadGetLambdaHandlerDashed);
+        this.diyaGlDownloadGetIngestLambdaHandler =
+                "%s/diyaGl/%s".formatted(root.appLambdaHandlerPrefix, diyaGlDownloadGetLambdaHandlerName);
+        this.diyaGlDownloadGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, diyaGlDownloadGetLambdaHandlerDashed);
+        this.diyaGlDownloadGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.diyaGlDownloadGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.diyaGlDownloadGetLambdaHttpMethod,
+                this.diyaGlDownloadGetLambdaUrlPath,
+                "Download a book version",
+                "Answers a five-minute link that downloads one version of a book as a workbook, a package zip,"
+                        + " the stored zip or JSON",
+                "downloadBookVersion",
+                List.of(
+                        new ApiParameter("bookId", "path", true, "The book's id"),
+                        new ApiParameter("version", "path", true, "\"latest\" or a positive version number"),
+                        new ApiParameter("format", "query", false, "xlsx (the default), zip, diya-gl-zip or json"))));
 
         // Practice client book move POST Lambda: copies one of the practice's own books to a
         // client's book set and deletes the source. Standard JWT auth like the other practice

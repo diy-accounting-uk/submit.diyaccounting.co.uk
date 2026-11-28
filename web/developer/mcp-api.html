@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (43)</h2>
+        <h2>Tools (55)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -77,6 +77,77 @@
   &quot;required&quot;: [
     &quot;displayName&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-book">
+        <summary><code>book</code></summary>
+        <p>The profile of the open DIYA-GL book: the product, the accounting period, the business (name, trade, address, VAT registration, cash or accruals basis), the tax settings, the bank accounts, the journals with their line counts and dates, and the registers it carries (directors, employees, debtors, creditors, fixed assets, dividends, members, opening balances, stock). Use this when the person asks what period their records cover, whether they are VAT registered, or who their directors or employees are. It does not change the book.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-book_format">
+        <summary><code>book_format</code></summary>
+        <p>Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each box's number, label, section and format, narrowed to one section when section is given. Use this before reading or changing lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It reads no DIYA-GL book and changes nothing.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>part</code></td><td>&quot;book&quot; | &quot;ct600&quot;</td><td>no</td><td>book (the default) for the DIYA-GL book format, ct600 for the CT600 box map</td></tr>
+            <tr><td><code>section</code></td><td>string</td><td>no</td><td>With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;part&quot;: {
+      &quot;description&quot;: &quot;book (the default) for the DIYA-GL book format, ct600 for the CT600 box map&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;book&quot;,
+        &quot;ct600&quot;
+      ]
+    },
+    &quot;section&quot;: {
+      &quot;description&quot;: &quot;With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-chart">
+        <summary><code>chart</code></summary>
+        <p>The chart of accounts of the open DIYA-GL book: each account's id, name, group, class and normal side, for a company the accounts line it feeds, the spreadsheet column it lands in, how many lines post to it with their total in pence, and the report rows it reaches. Use this when the person asks which account to use for something, where a cost shows in their accounts, or which accounts have no activity. It does not change the book.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-checks">
+        <summary><code>checks</code></summary>
+        <p>Every book check and warning over the open DIYA-GL book, each with its verdict (pass, warn or fail), what it means and the entryNumbers of the lines that fail it, with the pass, warn and fail counts. Use this when the person asks whether anything is wrong with their records, which entries fall outside the year, which sales have no invoice number, whether there are duplicates, or how near they are to the VAT threshold. It does not change the book or contact HMRC.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -351,6 +422,48 @@
 }</code></pre>
         </details>
       </details>
+      <details class="tool" id="tool-find_help">
+        <summary><code>find_help</code></summary>
+        <p>Searches the DIY Accounting Submit guide (its how-to journeys and the MCP, rates and MTD calendar pages) and the diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. It needs no DIYA-GL book, reads nothing of the person's records, and gives no advice on their own case.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>query</code></td><td>string</td><td>yes</td><td>The question or the words to search for, as the person put it</td></tr>
+            <tr><td><code>source</code></td><td>&quot;guide&quot; | &quot;knowledge-base&quot;</td><td>no</td><td>Search only the Submit guide (guide) or only the diya-gl knowledge base (knowledge-base)</td></tr>
+            <tr><td><code>limit</code></td><td>integer</td><td>no</td><td>How many matches to answer, 1 to 10; 5 when omitted</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;query&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;description&quot;: &quot;The question or the words to search for, as the person put it&quot;
+    },
+    &quot;source&quot;: {
+      &quot;description&quot;: &quot;Search only the Submit guide (guide) or only the diya-gl knowledge base (knowledge-base)&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;guide&quot;,
+        &quot;knowledge-base&quot;
+      ]
+    },
+    &quot;limit&quot;: {
+      &quot;description&quot;: &quot;How many matches to answer, 1 to 10; 5 when omitted&quot;,
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: 1,
+      &quot;maximum&quot;: 10
+    }
+  },
+  &quot;required&quot;: [
+    &quot;query&quot;
+  ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
       <details class="tool" id="tool-get_confirmation_statement_data_sandbox">
         <summary><code>get_confirmation_statement_data_sandbox</code></summary>
         <p>The register data a confirmation statement form is built from -- MadeUpDate, NextDueDate, SIC codes, RegisteredEmailAddress, officers, PSCs, StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC exemption flags, and whether the payment period is paid -- over the deployed API. The company authentication code is not an argument: the user types it on the link request_companies_house_codes (kind confirmation-statement-data) answers, and this call names that entry by codesEntryId, which it uses up.</p>
@@ -514,6 +627,91 @@
     &quot;service&quot;,
     &quot;knownFact&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-lines">
+        <summary><code>lines</code></summary>
+        <p>Reads the lines of the open DIYA-GL book (every sale, purchase, bank movement, payslip and journal entry, with its entryNumber, journal, account, date, amount, customer, supplier or payee, description, reference and VAT fields), filtered and optionally grouped with a count and a total in pence. Filters combine: journal, account, dates, text and reference. Use this when the person asks who their best customer is, which suppliers cost most, what they spent on something in a month, or for their largest sales or purchases. It does not change the book.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>journal</code></td><td>string | string[]</td><td>no</td><td>The journals to keep: sales, purchases, bank, payroll or journal</td></tr>
+            <tr><td><code>accountMainID</code></td><td>string | string[]</td><td>no</td><td>The account ids to keep, for example 4000 (the chart tool lists them)</td></tr>
+            <tr><td><code>from</code></td><td>string</td><td>no</td><td>The earliest date kept, YYYY-MM-DD inclusive</td></tr>
+            <tr><td><code>to</code></td><td>string</td><td>no</td><td>The latest date kept, YYYY-MM-DD inclusive</td></tr>
+            <tr><td><code>text</code></td><td>string</td><td>no</td><td>Text found in the customer, supplier or payee, or the description, ignoring case</td></tr>
+            <tr><td><code>documentReference</code></td><td>string</td><td>no</td><td>Text found in the reference, ignoring case</td></tr>
+            <tr><td><code>groupBy</code></td><td>&quot;detailComment&quot; | &quot;accountMainID&quot; | &quot;month&quot;</td><td>no</td><td>detailComment (customer or supplier), accountMainID or month (YYYY-MM)</td></tr>
+            <tr><td><code>top</code></td><td>integer</td><td>no</td><td>Keep at most this many groups, or without groupBy the largest lines</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;journal&quot;: {
+      &quot;description&quot;: &quot;The journals to keep: sales, purchases, bank, payroll or journal&quot;,
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      ]
+    },
+    &quot;accountMainID&quot;: {
+      &quot;description&quot;: &quot;The account ids to keep, for example 4000 (the chart tool lists them)&quot;,
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      ]
+    },
+    &quot;from&quot;: {
+      &quot;description&quot;: &quot;The earliest date kept, YYYY-MM-DD inclusive&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;to&quot;: {
+      &quot;description&quot;: &quot;The latest date kept, YYYY-MM-DD inclusive&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;text&quot;: {
+      &quot;description&quot;: &quot;Text found in the customer, supplier or payee, or the description, ignoring case&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;documentReference&quot;: {
+      &quot;description&quot;: &quot;Text found in the reference, ignoring case&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;groupBy&quot;: {
+      &quot;description&quot;: &quot;detailComment (customer or supplier), accountMainID or month (YYYY-MM)&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;detailComment&quot;,
+        &quot;accountMainID&quot;,
+        &quot;month&quot;
+      ]
+    },
+    &quot;top&quot;: {
+      &quot;description&quot;: &quot;Keep at most this many groups, or without groupBy the largest lines&quot;,
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: 1,
+      &quot;maximum&quot;: 9007199254740991
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -811,6 +1009,32 @@
 }</code></pre>
         </details>
       </details>
+      <details class="tool" id="tool-look_up_rule">
+        <summary><code>look_up_rule</code></summary>
+        <p>Looks up an HMRC or Companies House rule or rate by its words or its fact id (such as &quot;annual investment allowance&quot;, &quot;marginal relief&quot;, &quot;accounts due 9 months&quot; or corporation-tax-main-rate-fy2026) and answers each match with its figure or words, the tax year or financial year it applies to, and the gov.uk page that states it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or Companies House for that. It needs no DIYA-GL book and contacts no outside service.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>query</code></td><td>string</td><td>yes</td><td>A fact id, or the words of the rule or rate, such as annual investment allowance</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;query&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;description&quot;: &quot;A fact id, or the words of the rule or rate, such as annual investment allowance&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;query&quot;
+  ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
       <details class="tool" id="tool-move_book_to_client">
         <summary><code>move_book_to_client</code></summary>
         <p>Move one of the practice's own DIYA-GL books to a client's book set (during migration from sole trader to practice). Calls DIY Accounting Submit's own move route, which copies the book and every kept version, verifies each copy, then deletes the source. Refuses when the client already has a book with this id, or the practice has no such book of its own.</p>
@@ -913,6 +1137,45 @@
     &quot;kind&quot;,
     &quot;submissionNumber&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_company_tax_return">
+        <summary><code>prepare_company_tax_return</code></summary>
+        <p>Works out the Company Tax Return figures from the open DIYA-GL book, as derive_company_tax_return does, and answers a link to the Company Tax Return (CT600) form on DIY Accounting Submit with the period, the profit and loss account and the computation figures filled in. The person opens the link, looks up the company, checks the figures, fills the balance sheet and the rest of the return, and files there with their Government Gateway sign-in. Use this when the person asks to file their Company Tax Return or CT600. It never files anything and contacts no outside service.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_micro_entity_accounts">
+        <summary><code>prepare_micro_entity_accounts</code></summary>
+        <p>Works out the micro-entity accounts from the open DIYA-GL book, as derive_micro_entity_accounts does, and answers a link to the micro-entity accounts form on DIY Accounting Submit with the period, both years' balance sheets, the employee count and the director filled in. The person opens the link, looks up the company, checks the figures, adds the date approved and the statements, and files there with the company's authentication code. Use this when the person asks to file their micro-entity accounts at Companies House. It never files anything and contacts no outside service: the figures filed are the ones the person sees on the page.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_small_company_accounts">
+        <summary><code>prepare_small_company_accounts</code></summary>
+        <p>Works out the small company accounts from the open DIYA-GL book, as derive_small_company_accounts does, and answers a link to the small company accounts form on DIY Accounting Submit with the period, the profit and loss account, both years' balance sheets, the fixed asset note, the employee count and the directors filled in. The person opens the link, looks up the company, checks the figures, adds the accounting policies, the date approved and the statements, and files there with the company's authentication code. Use this when the person asks to file their small company accounts at Companies House. It never files anything and contacts no outside service.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2142,6 +2405,39 @@
     &quot;statementsAccepted&quot;,
     &quot;smallCompany&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-report">
+        <summary><code>report</code></summary>
+        <p>Works out the figures of the open DIYA-GL book (one business's sales, purchases and bank lines for a year): the profit and loss account, the balance sheet, the tax and VAT figures and the compliance checks, each figure with the label the spreadsheet prints for it, and the book checks. Use this when the person asks what their profit, turnover, tax bill or VAT due is, or which lines make up a figure (entryNumbers). It does not change the book, file anything or contact HMRC.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>entryNumbers</code></td><td>boolean | string[]</td><td>no</td><td>true gives every figure the entryNumbers of the lines behind it; a list of figure keys (for example section/profit-loss-account/sales-turnover) gives them to those figures only</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;entryNumbers&quot;: {
+      &quot;description&quot;: &quot;true gives every figure the entryNumbers of the lines behind it; a list of figure keys (for example section/profit-loss-account/sales-turnover) gives them to those figures only&quot;,
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;boolean&quot;
+        },
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      ]
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -3878,6 +4174,55 @@
     &quot;totalValueGoodsSuppliedExVAT&quot;,
     &quot;totalAcquisitionsExVAT&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-trial_balance">
+        <summary><code>trial_balance</code></summary>
+        <p>The trial balance of the open DIYA-GL book of a company: every account's balance in the debit or the credit column and the two totals, over the year, one month, one VAT quarter or a date range, with the year-end postings of the registers. Name an account to also get the lines and postings behind its balance. Use this when the person asks whether their trial balance balances, what an account's balance is, or what moved in a month. Company DIYA-GL books only. It does not change the book or contact HMRC.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>period</code></td><td>&quot;year&quot; | &quot;month&quot; | &quot;vatQuarter&quot; | &quot;custom&quot;</td><td>no</td><td>year (the default), month, vatQuarter, or custom with from and to</td></tr>
+            <tr><td><code>month</code></td><td>string</td><td>no</td><td>YYYY-MM of the month, or of the VAT quarter's last month; needed for month and vatQuarter</td></tr>
+            <tr><td><code>from</code></td><td>string</td><td>no</td><td>First day, YYYY-MM-DD inclusive, for a custom range</td></tr>
+            <tr><td><code>to</code></td><td>string</td><td>no</td><td>Last day, YYYY-MM-DD inclusive, for a custom range</td></tr>
+            <tr><td><code>account</code></td><td>string</td><td>no</td><td>An account id (for example 1300); adds that account's postings</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;period&quot;: {
+      &quot;description&quot;: &quot;year (the default), month, vatQuarter, or custom with from and to&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;year&quot;,
+        &quot;month&quot;,
+        &quot;vatQuarter&quot;,
+        &quot;custom&quot;
+      ]
+    },
+    &quot;month&quot;: {
+      &quot;description&quot;: &quot;YYYY-MM of the month, or of the VAT quarter's last month; needed for month and vatQuarter&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;from&quot;: {
+      &quot;description&quot;: &quot;First day, YYYY-MM-DD inclusive, for a custom range&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;to&quot;: {
+      &quot;description&quot;: &quot;Last day, YYYY-MM-DD inclusive, for a custom range&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;account&quot;: {
+      &quot;description&quot;: &quot;An account id (for example 1300); adds that account's postings&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>

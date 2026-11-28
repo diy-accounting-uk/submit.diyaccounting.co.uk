@@ -12,7 +12,10 @@ export const READS = annotations(true, false, false);
 export const READS_OUTSIDE = annotations(true, false, true);
 // Writes or sends something that replaces or cannot be taken back; touches no outside service.
 export const CHANGES = annotations(false, true, false);
-// Files, invites or hands out an authorisation at HMRC or Companies House.
+// Files, invites or hands out an authorisation at HMRC or Companies House, or changes the person's
+// DIYA-GL book in their DIY Accounting Submit account.
 export const CHANGES_OUTSIDE = annotations(false, true, true);
 // Adds something new and replaces nothing; touches no outside service.
 export const ADDS = annotations(false, false, false);
+// Adds a DIYA-GL book to the person's DIY Accounting Submit account and replaces nothing.
+export const ADDS_OUTSIDE = annotations(false, false, true);

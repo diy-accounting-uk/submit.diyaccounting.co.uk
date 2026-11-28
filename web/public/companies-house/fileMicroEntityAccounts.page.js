@@ -196,7 +196,9 @@ async function handleCompanySubmit(event) {
     showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
     window.booksImport.showFilingsFor(company.companyNumber);
-    window.priorYearFill.fill(company.companyNumber, "micro", profile);
+    const priorYearFilled = window.priorYearFill.fill(company.companyNumber, "micro", profile);
+    // Figures an assistant's link carries fill after the last accounts place their prior year, so the link's figures stand.
+    Promise.resolve(priorYearFilled).finally(() => window.booksImport.applyPendingHandoff());
   } catch (error) {
     const { showCompanyLookupFailure } = await import("../lib/company-lookup-failure.js");
     showCompanyLookupFailure(showStatus, error, companyNumber);

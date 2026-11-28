@@ -2446,6 +2446,7 @@ async function handleCompanySubmit(event) {
     renderDraftPanel();
     window.booksImport.showFilingsFor(company.companyNumber, agentClient?.clientId);
     await offerLastYear();
+    window.booksImport.applyPendingHandoff();
   } catch (error) {
     const { showCompanyLookupFailure } = await import("../lib/company-lookup-failure.js");
     showCompanyLookupFailure(window.showStatus, error, companyNumber);

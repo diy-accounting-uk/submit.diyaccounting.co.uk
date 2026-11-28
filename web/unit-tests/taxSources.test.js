@@ -20,10 +20,13 @@ import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
 import { allRatesFactIds } from "../../scripts/build-rates-page.mjs";
 import { articleFactIds } from "../../scripts/build-filing-pages.mjs";
 import { DUE_RULE_FACT_IDS } from "../../web/public/lib/due/due-rules.js";
+import { SOURCED_RULE_FACTS } from "../../scripts/rules-facts.mjs";
 
 const sources = loadSources();
 const DAY_MS = 24 * 60 * 60 * 1000;
 const pageFactIds = () => [...allFactIds(), ...allRatesFactIds(), ...articleFactIds(), ...Object.values(DUE_RULE_FACT_IDS)];
+// The facts look_up_rule answers from the table beside the builders, which no page shows.
+const lookUpRuleFactIds = () => SOURCED_RULE_FACTS.map((fact) => fact.id);
 
 describe("tax sources", () => {
   test("every fact on the MTD calendar has a source file listing its id", () => {
@@ -32,8 +35,8 @@ describe("tax sources", () => {
     expect(unsourced).toEqual([]);
   });
 
-  test("every source file lists only facts some page shows", () => {
-    const shown = new Set(pageFactIds());
+  test("every source file lists only facts some page or look_up_rule shows", () => {
+    const shown = new Set([...pageFactIds(), ...lookUpRuleFactIds()]);
     const orphaned = sources.flatMap((s) => s.facts.filter((id) => !shown.has(id)).map((id) => `${s.name}: ${id}`));
     expect(orphaned).toEqual([]);
   });

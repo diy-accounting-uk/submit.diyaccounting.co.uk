@@ -707,6 +707,11 @@
     } catch (error) {
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
+    return applyMicroEntityAccounts(accounts, fileName);
+  }
+
+  // Fills the micro-entity form from the accounts a book derives, read here or sent in a link.
+  function applyMicroEntityAccounts(accounts, fileName) {
     refuseOtherCompany(accounts, fileName);
     refuseOtherPeriod(accounts, fileName);
     let filled = 0;
@@ -860,6 +865,11 @@
     } catch (error) {
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
+    return applySmallCompanyAccounts(accounts, fileName);
+  }
+
+  // Fills the small company form from the accounts a book derives, read here or sent in a link.
+  function applySmallCompanyAccounts(accounts, fileName) {
     refuseOtherCompany(accounts, fileName);
     refuseOtherPeriod(accounts, fileName);
     let filled = 0;
@@ -1055,7 +1065,67 @@
     };
   }
 
-  const HANDOFF_PARSERS = { "vat": parseVatHandoff, "itsa-quarterly": parseQuarterlyHandoff, "itsa-annual": parseAnnualHandoff };
+  const MAX_FIGURES_DEPTH = 6;
+  const MAX_FIGURES_TEXT = 2000;
+
+  // Copies a tree of figures: objects, arrays, finite numbers, booleans, null and text of a bounded length.
+  function requireFiguresTree(value, label, depth = 0) {
+    if (depth > MAX_FIGURES_DEPTH) throw new HandoffProblem(`${label} nest too deeply`);
+    if (value === null || typeof value === "boolean") return value;
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) throw new HandoffProblem(`${label} holds a number that is not finite`);
+      return value;
+    }
+    if (typeof value === "string") {
+      if (value.length > MAX_FIGURES_TEXT) throw new HandoffProblem(`${label} holds text that is too long`);
+      return value;
+    }
+    if (Array.isArray(value)) return value.map((entry) => requireFiguresTree(entry, label, depth + 1));
+    if (isPlainObject(value)) {
+      return Object.fromEntries(
+        Object.entries(value).map(([name, entry]) => {
+          if (!FIGURE_NAME.test(name))
+            throw new HandoffProblem(`${label} name ${JSON.stringify(name.slice(0, 40))}, which is not a figure name`);
+          return [name, requireFiguresTree(entry, label, depth + 1)];
+        }),
+      );
+    }
+    throw new HandoffProblem(`${label} hold something that is not a figure`);
+  }
+
+  // The figures of a company's accounts or Company Tax Return, for the period the link names.
+  function parseCompanyFiguresHandoff(period, figures, required) {
+    const periodStart = requireDate(period.periodStart, "the period start");
+    const periodEnd = requireDate(period.periodEnd, "the period end");
+    if (!isPlainObject(figures)) throw new HandoffProblem("the figures are missing");
+    const copy = requireFiguresTree(figures, "the figures");
+    if (copy.periodStart !== periodStart || copy.periodEnd !== periodEnd) {
+      throw new HandoffProblem("the figures are for another period than the link names");
+    }
+    required.forEach((path) => {
+      const found = path.split(".").reduce((node, name) => (isPlainObject(node) ? node[name] : undefined), copy);
+      if (!isPlainObject(found)) throw new HandoffProblem(`the figures carry no ${path}`);
+    });
+    return { period: { periodStart, periodEnd }, figures: copy };
+  }
+
+  const HANDOFF_PARSERS = {
+    "vat": parseVatHandoff,
+    "itsa-quarterly": parseQuarterlyHandoff,
+    "itsa-annual": parseAnnualHandoff,
+    "ct600": (period, figures) => parseCompanyFiguresHandoff(period, figures, ["profitAndLoss"]),
+    "micro-entity-accounts": (period, figures) =>
+      parseCompanyFiguresHandoff(period, figures, ["profitAndLoss", "balanceSheet.currentYear", "balanceSheet.priorYear"]),
+    "small-company-accounts": (period, figures) =>
+      parseCompanyFiguresHandoff(period, figures, [
+        "profitAndLoss.currentYear",
+        "profitAndLossFormat2.currentYear",
+        "balanceSheet.currentYear",
+      ]),
+  };
+
+  // The forms that name a company: figures sent to one fill once the company is looked up.
+  const COMPANY_KINDS = new Set(["ct600", "micro-entity-accounts", "small-company-accounts"]);
 
   // The figures a DIYA-GL page sent, validated: known kind, dates and tax years in their forms,
   // only numbers, only names the form has. Throws a HandoffProblem naming the first fault.
@@ -1122,9 +1192,21 @@
     "itsa-annual": { fill: fillItsaAnnual, applyHandoff: applyAnnualHandoff, watched: [] },
     "uk-property-period": { fill: fillUkPropertyPeriod, watched: ["fromDate", "toDate"] },
     "uk-property-annual": { fill: fillUkPropertyAnnual, watched: [] },
-    "ct600": { fill: fillCt600, watched: [] },
-    "micro-entity-accounts": { fill: fillMicroEntityAccounts, watched: [] },
-    "small-company-accounts": { fill: fillSmallCompanyAccounts, watched: [] },
+    "ct600": {
+      fill: fillCt600,
+      applyHandoff: (handoff, hooks) => applyCt600Figures({ figures: handoff.figures }, handoff.sourceFileName, hooks),
+      watched: [],
+    },
+    "micro-entity-accounts": {
+      fill: fillMicroEntityAccounts,
+      applyHandoff: (handoff) => applyMicroEntityAccounts(handoff.figures, handoff.sourceFileName),
+      watched: [],
+    },
+    "small-company-accounts": {
+      fill: fillSmallCompanyAccounts,
+      applyHandoff: (handoff) => applySmallCompanyAccounts(handoff.figures, handoff.sourceFileName),
+      watched: [],
+    },
   };
 
   const FILED_RECEIPT_KINDS = {
@@ -1378,9 +1460,10 @@
       }
     }
 
-    // Figures a DIYA-GL page sent: kept through sign-in in sessionStorage, filled once the
-    // customer is signed in, and dropped from storage once used or refused.
-    function applyPendingHandoff() {
+    // Figures a DIYA-GL page or an assistant's link sent: kept through sign-in in sessionStorage,
+    // filled once the customer is signed in (and, on a company's form, once the company is looked
+    // up), and dropped from storage once used or refused.
+    async function applyPendingHandoff() {
       const stored = sessionStorage.getItem(HANDOFF_KEY);
       if (!stored) return;
       let handoff;
@@ -1413,8 +1496,20 @@
         say(`Load the annual submission for ${handoff.period.taxYear} and the figures from ${handoff.sourceFileName} fill the form.`);
         return;
       }
+      if (COMPANY_KINDS.has(kind) && !(document.getElementById("formCompanyNumber")?.textContent || "").trim()) {
+        const companyNumberInput = document.getElementById("companyNumber");
+        if (companyNumberInput && !companyNumberInput.value && typeof handoff.figures.companyNumber === "string") {
+          companyNumberInput.value = handoff.figures.companyNumber;
+        }
+        say(
+          siteText("widget.books-handoff-company", "Look up the company and the figures from {file} fill this form.", {
+            file: handoff.sourceFileName,
+          }),
+        );
+        return;
+      }
       try {
-        say(filler.applyHandoff(handoff, options));
+        say(await filler.applyHandoff(handoff, options));
       } catch (error) {
         if (!(error instanceof Refusal)) throw error;
         say(error.message);

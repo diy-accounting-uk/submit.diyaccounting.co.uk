@@ -28,6 +28,8 @@ import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/f
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 import { pageScrollsSideways } from "./submissionRecordAssets.js";
 import { PEOPLE, registerCompany, REGISTER_COMPANY_NUMBERS } from "@app/http-simulator/fixtures/register.js";
+import { createSession, openBook } from "../../mcp/lib/book-tools.js";
+import { prepareCompanyTaxReturn, prepareMicroEntityAccounts, prepareSmallCompanyAccounts } from "../../mcp/lib/handoff-tools.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -1709,4 +1711,157 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await page.screenshot({ path: path.join(directory, `books-card-amend-mode-${width}.png`), fullPage: true });
     });
   }
+});
+
+const CT600_URL = "http://localhost:3000/companies-house/fileCompanyTaxReturn.html";
+const LINKED_BOOK = "precision-code-ltd-full";
+
+// The answer an assistant's prepare tool gives over the Precision Code book, its link aimed at this site.
+async function assistantAnswer(prepare) {
+  const previous = process.env.DIY_SUBMIT_BASE_URL;
+  process.env.DIY_SUBMIT_BASE_URL = "http://localhost:3000";
+  try {
+    const session = createSession({ client: "claude" });
+    await openBook(session, { path: path.join(BOOKS_DIR, LINKED_BOOK) });
+    return await prepare(session);
+  } finally {
+    if (previous === undefined) delete process.env.DIY_SUBMIT_BASE_URL;
+    else process.env.DIY_SUBMIT_BASE_URL = previous;
+  }
+}
+
+function linkFigures(link) {
+  return JSON.parse(Buffer.from(link.slice(link.indexOf("#books=") + "#books=".length), "base64url").toString("utf8")).figures;
+}
+
+// Opens a link signed in, with the company lookup answering for companyNumber.
+async function arriveWithLink(page, link, companyNumber) {
+  await serveRealSite(page);
+  // The link's campaign query asks for a cookie choice; this reader has already declined.
+  await page.addInitScript(() => localStorage.setItem("consent.analytics", "declined"));
+  await page.route(`**/api/v1/companies-house/company/${companyNumber}`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ companyNumber, companyName: profileName(companyNumber) }),
+    }),
+  );
+  await page.goto(link, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#booksImportFile")).toBeAttached();
+}
+
+async function lookUpCompany(page, companyNumber) {
+  await page.locator("#companyNumber").fill(companyNumber);
+  await page.locator("#companyLookupBtn").click();
+  await expect(page.locator("#formView")).toBeVisible();
+}
+
+test.describe("figures an assistant's link sends to a company's form", () => {
+  test("the micro-entity link waits for the company lookup, offers the company number, then fills both balance sheets", async ({
+    page,
+  }) => {
+    const answer = await assistantAnswer(prepareMicroEntityAccounts);
+    const figures = linkFigures(answer.link);
+    await arriveWithLink(page, answer.link, answer.companyNumber);
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(`Look up the company and the figures from ${LINKED_BOOK} fill this form.`);
+    await expect(page.locator("#companyNumber")).toHaveValue(answer.companyNumber);
+    expect(await page.evaluate(() => location.hash)).toBe("");
+
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      `from ${LINKED_BOOK} for the period ${figures.periodStart} to ${figures.periodEnd}.`,
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#periodStart")).toHaveValue(figures.periodStart);
+    await expect(page.locator("#periodEnd")).toHaveValue(figures.periodEnd);
+    await expect(page.locator("#currentFixedAssets")).toHaveValue(String(figures.balanceSheet.currentYear.fixedAssets));
+    await expect(page.locator("#currentCalledUpShareCapital")).toHaveValue(String(figures.balanceSheet.currentYear.calledUpShareCapital));
+    await expect(page.locator("#priorFixedAssets")).toHaveValue(String(figures.balanceSheet.priorYear.fixedAssets));
+    await expect(page.locator("#averageEmployees")).toHaveValue(String(figures.averageNumberOfEmployees));
+    await expect(page.locator("#directorName")).toHaveValue(figures.directorName);
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+  });
+
+  test("the small company link fills the profit and loss account, the balance sheet and the directors after the lookup", async ({
+    page,
+  }) => {
+    const answer = await assistantAnswer(prepareSmallCompanyAccounts);
+    const figures = linkFigures(answer.link);
+    await arriveWithLink(page, answer.link, answer.companyNumber);
+    await expect(page.locator("#booksImportStatus")).toHaveText(`Look up the company and the figures from ${LINKED_BOOK} fill this form.`);
+
+    await lookUpCompany(page, answer.companyNumber);
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      `from ${LINKED_BOOK} for the period ${figures.periodStart} to ${figures.periodEnd}.`,
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#currentTurnover")).toHaveValue(String(figures.profitAndLoss.currentYear.turnover));
+    await expect(page.locator("#currentCashAtBank")).toHaveValue(String(figures.balanceSheet.currentYear.cashAtBank));
+    await expect(page.locator("#directors")).toHaveValue(figures.directors.join("\n"));
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+  });
+
+  test("the Company Tax Return link fills the period and the profit and loss account after the lookup", async ({ page }) => {
+    const answer = await assistantAnswer(prepareCompanyTaxReturn);
+    const figures = linkFigures(answer.link);
+    await arriveWithLink(page, answer.link, PRECISION.number);
+    await expect(page.locator("#booksImportStatus")).toHaveText(`Look up the company and the figures from ${LINKED_BOOK} fill this form.`);
+
+    await lookUpCompany(page, PRECISION.number);
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      `from ${LINKED_BOOK} for the period ${figures.periodStart} to ${figures.periodEnd}.`,
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#periodStart")).toHaveValue(figures.periodStart);
+    await expect(page.locator("#periodEnd")).toHaveValue(figures.periodEnd);
+    await expect(page.locator("#currentTurnover")).toHaveValue(String(figures.profitAndLoss.current.turnover));
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+  });
+
+  test("a link for another company fills nothing when a different company is looked up", async ({ page }) => {
+    const answer = await assistantAnswer(prepareMicroEntityAccounts);
+    await arriveWithLink(page, answer.link, JOINERY.number);
+
+    await lookUpCompany(page, JOINERY.number);
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      `${LINKED_BOOK} is for company ${answer.companyNumber}; this form is for company ${JOINERY.number}. Nothing filled.`,
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
+  });
+
+  test("the Welsh micro-entity page asks for the lookup in Welsh and fills after it", async ({ page }) => {
+    const answer = await assistantAnswer(prepareMicroEntityAccounts);
+    const figures = linkFigures(answer.link);
+    const welshLink = answer.link.replace("/companies-house/", "/cy/companies-house/");
+    await arriveWithLink(page, welshLink, answer.companyNumber);
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      `Chwiliwch am y cwmni a bydd y ffigurau o ${LINKED_BOOK} yn llenwi’r ffurflen hon.`,
+    );
+
+    await lookUpCompany(page, answer.companyNumber);
+    await expect(page.locator("#currentFixedAssets")).toHaveValue(String(figures.balanceSheet.currentYear.fixedAssets), {
+      timeout: 60_000,
+    });
+    await expect(page.locator("#periodEnd")).toHaveValue(figures.periodEnd);
+  });
+
+  test("a link whose figures name another period than the link fills nothing", async ({ page }) => {
+    const answer = await assistantAnswer(prepareMicroEntityAccounts);
+    const fragment = JSON.parse(Buffer.from(answer.link.slice(answer.link.indexOf("#books=") + 7), "base64url").toString("utf8"));
+    fragment.period.periodEnd = "2030-03-31";
+    await arriveWithLink(page, MICRO_URL + toFragment(fragment), answer.companyNumber);
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      "The figures sent from your DIYA-GL book could not be used: the figures are for another period than the link names. Nothing filled.",
+    );
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+  });
 });

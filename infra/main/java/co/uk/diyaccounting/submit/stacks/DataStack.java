@@ -1356,6 +1356,12 @@ public class DataStack extends Stack {
                                 .noncurrentVersionExpiration(Duration.days(30))
                                 .build(),
                         LifecycleRule.builder()
+                                .id("expire-downloads")
+                                .prefix("downloads/")
+                                .expiration(Duration.days(1))
+                                .noncurrentVersionExpiration(Duration.days(1))
+                                .build(),
+                        LifecycleRule.builder()
                                 .id("expire-sandbox")
                                 .tagFilters(Map.of("retention", "sandbox"))
                                 .expiration(Duration.days(37))

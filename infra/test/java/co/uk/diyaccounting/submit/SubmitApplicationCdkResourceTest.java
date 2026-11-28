@@ -393,7 +393,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         assertGroupedStackHealthAlarm(
                 Template.fromStack(submitApplication.diyaGlStack),
-                List.of("diya-gl", "practice-client-book-move-post"),
+                List.of("diya-gl", "diya-gl-download-get", "practice-client-book-move-post"),
                 List.of(),
                 routedPrefixes);
 
@@ -556,7 +556,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // Every route the two API stacks build: one per method on a path, a HEAD route beside each GET
         // route and on the two token paths, and an OPTIONS preflight route per books path.
         assertEquals(
-                225,
+                228,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")
