@@ -112,3 +112,24 @@ describe("the kind of a filing's failure", () => {
     expect(failure.errors).toEqual([body.message]);
   });
 });
+
+describe("Companies House not answering before anything was sent", () => {
+  test("a 502 saying Submit could not read the company says Companies House did not answer, and to try again later", () => {
+    const failure = classifyFilingFailure(
+      answer(502, {
+        message: "Could not read the company from Companies House to check the filing, so it has not been sent",
+        code: "company-unread",
+        status: 503,
+      }),
+      { service: "companiesHouse" },
+    );
+    expect(failure).toMatchObject({ kind: FAILURE_KINDS.notAnswering, service: "companiesHouse", next: null });
+    expect(failure.cause).toBe("Companies House did not answer when Submit read the company, so nothing was sent. Try again later.");
+  });
+
+  test("a 502 with no code stays a fault in Submit", () => {
+    expect(classifyFilingFailure(answer(502, { message: "Bad gateway" }), { service: "companiesHouse" }).kind).toBe(
+      FAILURE_KINDS.submitFault,
+    );
+  });
+});

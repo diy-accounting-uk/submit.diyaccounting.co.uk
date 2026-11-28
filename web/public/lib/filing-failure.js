@@ -3,10 +3,11 @@
 
 // web/public/lib/filing-failure.js
 // What kind of failure a filing met, from the status and the body of the answer, and what the
-// person does next. Four kinds: a fault in Submit; Submit's own HMRC or Companies House credentials
+// person does next. Five kinds: a fault in Submit; Submit's own HMRC or Companies House credentials
 // refused; the person's own credentials or account refused; a business error HMRC or Companies
-// House answered. A 502 that carries their errors is their answer and takes one of the last three
-// by its error numbers.
+// House answered; Companies House not answering when Submit read the company, before anything was
+// sent. A 502 that carries their errors is their answer and takes one of the credentials or
+// business error kinds by its error numbers.
 
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
@@ -18,6 +19,7 @@ export const FAILURE_KINDS = {
   submitCredentials: "submit-credentials",
   yourCredentials: "your-credentials",
   businessError: "business-error",
+  notAnswering: "not-answering",
 };
 
 export const HELP_HREF = "/help.html";
@@ -30,6 +32,9 @@ const HMRC_SCHEMA_FAULT = "1001";
 // Companies House's GovTalk numbers for the presenter account Submit files under: its
 // authentication, the account itself and its credit for the fee.
 const COMPANIES_HOUSE_PRESENTER_ERRORS = new Set(["502", "5003", "5006", "9984"]);
+// The code a Companies House route answers with when it could not read the company before sending,
+// so nothing was sent.
+const COMPANY_UNREAD = "company-unread";
 // Companies House's GovTalk number for a form Submit built wrongly.
 const COMPANIES_HOUSE_SOFTWARE_FAULT = "505";
 
@@ -141,6 +146,18 @@ export function classifyFilingFailure(error, { service }) {
       errors: errors.map(errorText).filter(Boolean),
     };
   }
+  if (error?.body?.code === COMPANY_UNREAD) {
+    return {
+      kind: FAILURE_KINDS.notAnswering,
+      service: "companiesHouse",
+      cause: siteText(
+        "ct.failure-not-answering",
+        "{service} did not answer when Submit read the company, so nothing was sent. Try again later.",
+        { service: serviceName("companiesHouse") },
+      ),
+      next: null,
+    };
+  }
   // No answer at all, or a 5xx: nothing says the answers were refused, so it is not a refusal.
   if (typeof status !== "number" || status >= 500) return submitFault(error);
   return {
@@ -167,9 +184,10 @@ function submitFault(error) {
  * what was not, where the answers are, and the kind of failure with its next step. It stays until
  * the reader closes it or a newer failure replaces it.
  * @param {Document} doc
- * @param {{sent: string, answers: string, failure: ReturnType<typeof classifyFilingFailure>}} detail
+ * @param {{sent: string, answers: string, failure: ReturnType<typeof classifyFilingFailure>, technical?: string}} detail - technical
+ *   is the server's own message, in English, shown closed under "Technical detail"
  */
-export function failureDetailElement(doc, { sent, answers, failure }) {
+export function failureDetailElement(doc, { sent, answers, failure, technical }) {
   const make = (tag, attributes, ...children) => {
     const node = doc.createElement(tag);
     for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
@@ -206,6 +224,17 @@ export function failureDetailElement(doc, { sent, answers, failure }) {
       );
     }
     panel.append(next);
+  }
+  // A message the panel already lists among the errors is not repeated.
+  if (technical && !failure.errors?.includes(technical)) {
+    panel.append(
+      make(
+        "details",
+        { "data-part": "technical" },
+        make("summary", {}, siteText("ct.failure-technical", "Technical detail")),
+        make("p", { lang: "en" }, technical),
+      ),
+    );
   }
   panel.append(close);
   return panel;

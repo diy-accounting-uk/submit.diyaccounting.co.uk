@@ -340,7 +340,7 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   await expect(result).toContainText("9998: The company has no inspection location.");
 });
 
-test("a company Submit could not read from Companies House before sending shows the failure panel as a fault in Submit", async ({
+test("a company Submit could not read from Companies House before sending shows the failure panel as Companies House not answering", async ({
   page,
 }) => {
   await serveSite(page);
@@ -362,7 +362,10 @@ test("a company Submit could not read from Companies House before sending shows 
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "File with Companies House" }).click();
   const panel = page.locator("#statusMessagesContainer + #failureDetail");
-  await expect(panel).toHaveAttribute("data-kind", "submit-fault", { timeout: 15000 });
-  await expect(panel.locator('[data-part="next"] a')).toHaveText("Help");
-  await shoot(page, "failure-submit-fault");
+  await expect(panel).toHaveAttribute("data-kind", "not-answering", { timeout: 15000 });
+  await expect(panel.locator('[data-part="kind"]')).toHaveText(
+    "Companies House did not answer when Submit read the company, so nothing was sent. Try again later.",
+  );
+  await expect(panel.locator('[data-part="next"]')).toHaveCount(0);
+  await shoot(page, "failure-not-answering");
 });

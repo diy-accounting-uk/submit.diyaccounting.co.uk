@@ -304,7 +304,9 @@ test("a fault in Submit while sending shows the failure panel under the status m
   await expect(panel.locator('[data-part="answers"]')).toHaveText("Your answers are still in this form.");
   await expect(panel.locator('[data-part="kind"]')).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
   await expect(panel.locator('[data-part="next"] a')).toHaveAttribute("href", "/help.html");
-  await expect(page.locator("#filingResult")).toContainText("Internal server error");
+  await expect(page.locator("#filingResult")).toHaveText("The form was not filed. “What happened” above says why and what to do next.");
+  await expect(panel.locator('[data-part="technical"] summary')).toHaveText("Technical detail");
+  await expect(panel.locator('[data-part="technical"] p')).toHaveText("Internal server error");
   await shoot(page, "failure-submit-fault");
   await panel.locator(".failure-detail__close").click();
   await expect(page.locator("#failureDetail")).toHaveCount(0);
@@ -325,6 +327,7 @@ test("Companies House refusing Submit's presenter account says nothing is wrong 
     "Companies House refused Submit's own credentials. Nothing is wrong with your account. Try again later.",
   );
   await expect(panel.locator('[data-part="errors"] li')).toHaveText(["Authentication failure"]);
+  await expect(panel.locator('[data-part="sent"]')).toHaveText("The gateway refused the form (submission 000123). Nothing was filed.");
 });
 
 test("an outcome Submit could not read says Companies House has the form, and an accepted outcome on Check again clears the panel", async ({
@@ -366,6 +369,11 @@ test("the failure panel is in Welsh on the Welsh page", async ({ page }) => {
     { timeout: 15000 },
   );
   await expect(panel.locator('[data-part="answers"]')).toHaveText("Mae eich atebion yn dal yn y ffurflen hon.");
+  await expect(page.locator("#filingResult")).not.toContainText("Internal server error");
+  await expect(page.locator("#filingResult")).toHaveText(
+    "Ni ffeiliwyd y ffurflen. Mae “Beth ddigwyddodd” uchod yn dweud pam a beth i’w wneud nesaf.",
+  );
+  await expect(panel.locator('[data-part="technical"] p')).toHaveText("Internal server error");
   await shoot(page, "failure-submit-fault-cy");
 });
 
@@ -452,7 +460,7 @@ test("a refusal the route names by id shows in the page's language", async ({ pa
   await expect(page.locator("#filingResult")).toHaveText("Ni all y dyddiad cadarnhau fod ar ôl heddiw.");
 });
 
-test("a refusal the page has no words for shows the route's message", async ({ page }) => {
+test("a refusal the page has no words for shows the page's sentence, and the failure panel lists the route's message", async ({ page }) => {
   await serveSite(page, { filingAnswer: { status: 400, body: { message: "Missing companyName", messageIds: ["ch.other.unknown"] } } });
   await page.goto(`${SITE}/companies-house/ceasePsc.html`, { waitUntil: "networkidle" });
   await fillAndReview(page, {
@@ -462,7 +470,9 @@ test("a refusal the page has no words for shows the route's message", async ({ p
   });
   await page.getByRole("button", { name: "File with Companies House" }).click();
 
-  await expect(page.locator("#filingResult")).toHaveText("Missing companyName");
+  await expect(page.locator("#filingResult")).toHaveText("The form was not filed. “What happened” above says why and what to do next.");
+  await expect(page.locator('#failureDetail [data-part="errors"] li')).toHaveText(["Missing companyName"]);
+  await expect(page.locator('#failureDetail [data-part="technical"]')).toHaveCount(0);
 });
 
 // Two current PSCs of one name, told apart only by the month and year of birth the register gives.

@@ -20,7 +20,7 @@
 
   // The panel that says what a failure left behind: what Companies House holds, where the answers
   // are, the kind of failure and its next step.
-  async function showFailurePanel(error, sent) {
+  async function showFailurePanel(error, sent, technical) {
     // filing-failure.js is a module and this file a classic script; an external classic script
     // resolves import() against its own address, so this loads the module beside it.
     const { classifyFilingFailure, showFailureDetail } = await import("./filing-failure.js");
@@ -28,6 +28,7 @@
       sent,
       answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
       failure: classifyFilingFailure(error, { service: "companiesHouse" }),
+      technical,
     });
   }
 
@@ -80,6 +81,14 @@
       return ids.map((id) => pageMessages.get(id)()).join(" ");
     }
     return error?.body?.message || error?.message;
+  }
+
+  // The result line of a form that was not sent: the page's own words for the refusals the route
+  // names, or the page's sentence that points to the failure panel, which holds the route's message.
+  function notSentText(error) {
+    const ids = error?.body?.messageIds;
+    if (Array.isArray(ids) && ids.length > 0 && ids.every((id) => pageMessages.has(id))) return errorText(error);
+    return siteText("ch.form.not-filed", "The form was not filed. “What happened” above says why and what to do next.");
   }
 
   // A Check again button that asks for the submission's outcome again.
@@ -189,10 +198,15 @@
         return null;
       }
       if (onRefusal && onRefusal(error)) return null;
-      result.replaceChildren(paragraph(errorText(error), "error-message"));
+      result.replaceChildren(paragraph(notSentText(error), "error-message"));
       await showFailurePanel(
         error,
-        siteText("ch.form.failure-sent-none", "Companies House holds no submission of this form. Nothing was filed."),
+        error?.body?.submissionNumber
+          ? siteText("ch.form.failure-sent-refused", "The gateway refused the form (submission {number}). Nothing was filed.", {
+              number: error.body.submissionNumber,
+            })
+          : siteText("ch.form.failure-sent-none", "Companies House holds no submission of this form. Nothing was filed."),
+        error?.body?.message || error?.message,
       );
       return null;
     }

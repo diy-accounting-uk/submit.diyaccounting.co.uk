@@ -1748,8 +1748,10 @@ window.WELSH_TEXT = {
   "ch.form.check-again": "Gwirio eto",
   "ch.form.failure-sent-held": "Mae gan Dŷ’r Cwmnïau y ffurflen (cyflwyniad {number}) ac ni allai Submit ddarllen ei benderfyniad.",
   "ch.form.failure-sent-none": "Nid oes gan Dŷ’r Cwmnïau unrhyw gyflwyniad o’r ffurflen hon. Ni chafodd dim ei ffeilio.",
+  "ch.form.failure-sent-refused": "Gwrthododd y porth y ffurflen (cyflwyniad {number}). Ni chafodd dim ei ffeilio.",
   "ch.form.gateway-text": "Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}",
   "ch.form.line-break": "toriad llinell",
+  "ch.form.not-filed": "Ni ffeiliwyd y ffurflen. Mae “Beth ddigwyddodd” uchod yn dweud pam a beth i’w wneud nesaf.",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.form.receipt-link": "Gweld y dderbynneb ar gyfer y ffeilio hwn",
   "ch.form.sent": "Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...",
@@ -2414,6 +2416,8 @@ window.WELSH_TEXT = {
     "Ni dderbyniodd CThEF yr ID defnyddiwr na’r cyfrinair Porth y Llywodraeth. Gwiriwch y ddau, a bod gan yr ID defnyddiwr Dreth Gorfforaeth ar gyfer y cwmni hwn.",
   "ct.failure-heading": "Beth ddigwyddodd",
   "ct.failure-help": "Cymorth",
+  "ct.failure-not-answering":
+    "Ni atebodd {service} pan ddarllenodd Submit y cwmni, felly ni anfonwyd dim. Rhowch gynnig arall arni nes ymlaen.",
   "ct.failure-our-credentials":
     "Gwrthododd {service} gymwysterau Submit ei hun. Does dim byd o’i le ar eich cyfrif. Rhowch gynnig arall arni nes ymlaen.",
   "ct.failure-refused": "Gwrthodwyd yr atebion cyn i ddim gael ei anfon. Cywirwch nhw ac anfonwch eto.",
@@ -2425,6 +2429,7 @@ window.WELSH_TEXT = {
   "ct.failure-service-ch": "Tŷ’r Cwmnïau",
   "ct.failure-service-hmrc": "CThEF",
   "ct.failure-submit-fault": "Nam yn Submit yw hwn, nid yn eich atebion na’ch mewngofnodi.",
+  "ct.failure-technical": "Manylion technegol",
   "ct.narrate-accounts-then-return": "Mae gan Dŷ’r Cwmnïau y cyfrifon; wrthi’n anfon y Ffurflen Dreth at CThEF...",
   "ct.narrate-checking": "Wrthi’n gwirio eich atebion...",
   "ct.narrate-sending-accounts": "Wrthi’n anfon y cyfrifon at Dŷ’r Cwmnïau...",

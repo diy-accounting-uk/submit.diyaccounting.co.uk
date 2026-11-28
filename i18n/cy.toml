@@ -29015,3 +29015,20 @@ cy = '''Y datganiad cyfeiriad e-bost priodol'''
 [strings."ch.change.field-error"]
 hash = "946a665c8e23"
 cy = '''{label}: {error}'''
+
+# == The Companies House forms' result line and failure panel, ids ch.form.not-filed, ch.form.failure-sent-refused, ct.failure-not-answering, ct.failure-technical ==
+[strings."ch.form.not-filed"]
+hash = "e8c1896b677c"
+cy = '''Ni ffeiliwyd y ffurflen. Mae “Beth ddigwyddodd” uchod yn dweud pam a beth i’w wneud nesaf.'''
+
+[strings."ch.form.failure-sent-refused"]
+hash = "211e7cd82f1f"
+cy = '''Gwrthododd y porth y ffurflen (cyflwyniad {number}). Ni chafodd dim ei ffeilio.'''
+
+[strings."ct.failure-not-answering"]
+hash = "2573997c578b"
+cy = '''Ni atebodd {service} pan ddarllenodd Submit y cwmni, felly ni anfonwyd dim. Rhowch gynnig arall arni nes ymlaen.'''
+
+[strings."ct.failure-technical"]
+hash = "d635f31f91f8"
+cy = '''Manylion technegol'''
