@@ -1567,6 +1567,255 @@
           "quote": "Partnerships will also need to use Making Tax Digital for Income Tax in the future. We’ll set out the timeline for this at a later date."
         }
       ]
+    },
+    {
+      "id": "ch-officer-changes-14-days",
+      "kind": "rule",
+      "title": "Companies House: changes to directors",
+      "value": "Tell Companies House within 14 days of a change to a company's directors or their details, such as an address.",
+      "display": "Tell Companies House within 14 days of a change to a company's directors or their details, such as an address.",
+      "sources": [
+        {
+          "title": "Running a limited company: your responsibilities: Company information you must report",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/running-a-limited-company/company-changes-you-must-report",
+          "retrieved": "2026-11-24",
+          "quote": "You must tell Companies House within 14 days if there are changes to: directors or their personal details, like their address"
+        }
+      ]
+    },
+    {
+      "id": "ch-psc-changes-14-days",
+      "kind": "rule",
+      "title": "Companies House: changes to people with significant control",
+      "value": "Tell Companies House within 14 days of a change to a company's people with significant control.",
+      "display": "Tell Companies House within 14 days of a change to a company's people with significant control.",
+      "sources": [
+        {
+          "title": "Running a limited company: your responsibilities: Company information you must report",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/running-a-limited-company/company-changes-you-must-report",
+          "retrieved": "2026-11-24",
+          "quote": "You must tell Companies House within 14 days if there are changes to: ‘people with significant control’"
+        }
+      ]
+    },
+    {
+      "id": "ct-accounting-period-12-months",
+      "kind": "rule",
+      "title": "Corporation Tax: the longest accounting period",
+      "value": "An accounting period for Corporation Tax is at most 12 months, so accounts that cover a longer period need two Company Tax Returns.",
+      "display": "An accounting period for Corporation Tax is at most 12 months, so accounts that cover a longer period need two Company Tax Returns.",
+      "sources": [
+        {
+          "title": "Accounting periods for Corporation Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/corporation-tax-accounting-period",
+          "retrieved": "2026-11-24",
+          "quote": "You must file 2 returns to cover the period of your accounts because your accounting period cannot be longer than 12 months."
+        }
+      ]
+    },
+    {
+      "id": "itsa-digital-records",
+      "kind": "rule",
+      "title": "Making Tax Digital for Income Tax: digital records",
+      "value": "Under Making Tax Digital for Income Tax, your software creates your digital records.",
+      "display": "Under Making Tax Digital for Income Tax, your software creates your digital records.",
+      "sources": [
+        {
+          "title": "Use Making Tax Digital for Income Tax - Create digital records - Guidance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/keep-digital-records",
+          "retrieved": "2026-11-24",
+          "quote": "You will need to use your software to create digital records."
+        }
+      ]
+    },
+    {
+      "id": "itsa-qualifying-income",
+      "kind": "rule",
+      "title": "Making Tax Digital for Income Tax: qualifying income",
+      "value": "Qualifying income for Making Tax Digital for Income Tax is the amount before expenses (turnover), from the tax return for the previous tax year.",
+      "display": "Qualifying income for Making Tax Digital for Income Tax is the amount before expenses (turnover), from the tax return for the previous tax year.",
+      "sources": [
+        {
+          "title": "Work out your qualifying income for Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/work-out-your-qualifying-income-for-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "This is the amount before expenses (also known as turnover), based on the tax return you submitted in the previous tax year."
+        }
+      ]
+    },
+    {
+      "id": "sa-balancing-payment",
+      "kind": "rule",
+      "title": "Self Assessment: the balancing payment",
+      "value": "The Self Assessment balancing payment is due by midnight on 31 January after the end of the tax year.",
+      "display": "The Self Assessment balancing payment is due by midnight on 31 January after the end of the tax year.",
+      "sources": [
+        {
+          "title": "Understand your Self Assessment tax bill: Payments on account",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/understand-self-assessment-bill/payments-on-account",
+          "retrieved": "2026-11-24",
+          "quote": "You must make your balancing payment by midnight on 31 January the following year."
+        }
+      ]
+    },
+    {
+      "id": "sa-payments-on-account",
+      "kind": "rule",
+      "title": "Self Assessment: payments on account",
+      "value": "Self Assessment payments on account are due by midnight on 31 January and 31 July.",
+      "display": "Self Assessment payments on account are due by midnight on 31 January and 31 July.",
+      "sources": [
+        {
+          "title": "Understand your Self Assessment tax bill: Payments on account",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/understand-self-assessment-bill/payments-on-account",
+          "retrieved": "2026-11-24",
+          "quote": "These payments are due by midnight on 31 January and 31 July."
+        }
+      ]
+    },
+    {
+      "id": "vat-payment-same-deadline",
+      "kind": "rule",
+      "title": "VAT: the payment deadline",
+      "value": "A VAT payment must reach HMRC by the same deadline as the return, even when the deadline falls on a weekend or a bank holiday.",
+      "display": "A VAT payment must reach HMRC by the same deadline as the return, even when the deadline falls on a weekend or a bank holiday.",
+      "sources": [
+        {
+          "title": "Sending a VAT Return: When to do a VAT Return",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-returns/deadlines",
+          "retrieved": "2026-11-24",
+          "quote": "You must submit your return and make sure your payment reaches HMRC on or before the deadline, even if it’s on a weekend or bank holiday."
+        }
+      ]
+    },
+    {
+      "id": "vat-penalty-200",
+      "kind": "rule",
+      "title": "VAT: the late submission penalty",
+      "value": "At the penalty points threshold, a late VAT return brings a £200 penalty, and each later late return while at the threshold another £200.",
+      "display": "At the penalty points threshold, a late VAT return brings a £200 penalty, and each later late return while at the threshold another £200.",
+      "sources": [
+        {
+          "title": "Penalty points and penalties if you submit your VAT Return late",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late",
+          "retrieved": "2026-11-24",
+          "quote": "When you reach the threshold, you’ll receive a £200 penalty. You’ll also receive a further £200 penalty for each subsequent late submission while you’re at the threshold."
+        }
+      ]
+    },
+    {
+      "id": "vat-penalty-points-removal",
+      "kind": "rule",
+      "title": "VAT: removing penalty points at the threshold",
+      "value": "Penalty points are removed once every return in a period of compliance is on time and every outstanding return for the previous 24 months is submitted.",
+      "display": "Penalty points are removed once every return in a period of compliance is on time and every outstanding return for the previous 24 months is submitted.",
+      "sources": [
+        {
+          "title": "Remove penalty points you’ve received after submitting your VAT Return late",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late",
+          "retrieved": "2026-11-24",
+          "quote": "Accounting period Period of compliance Returns to make Annual 24 months 2 Quarterly 12 months 4 Monthly 6 months 6"
+        },
+        {
+          "title": "Remove penalty points you’ve received after submitting your VAT Return late",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late",
+          "retrieved": "2026-11-24",
+          "quote": "A: complete a period of compliance, submitting all returns by the deadline. B: submit all outstanding returns for the previous 24 months."
+        }
+      ]
+    },
+    {
+      "id": "vat-penalty-points-expire",
+      "kind": "rule",
+      "title": "VAT: when a penalty point expires",
+      "value": "A penalty point expires on the last day of the month 24 months after the month of the return's deadline, or 25 months after it when the deadline is the last day of a month.",
+      "display": "A penalty point expires on the last day of the month 24 months after the month of the return's deadline, or 25 months after it when the deadline is the last day of a month.",
+      "sources": [
+        {
+          "title": "Remove penalty points you’ve received after submitting your VAT Return late",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late",
+          "retrieved": "2026-11-24",
+          "quote": "not the last day of a month — a penalty point expires on the last day of the month, 24 months after this the last day of a month — a penalty point expires on the last day of the month, 25 months after this"
+        }
+      ]
+    },
+    {
+      "id": "vat-penalty-points-thresholds",
+      "kind": "rule",
+      "title": "VAT: penalty points thresholds",
+      "value": "The penalty points threshold is 2 points for annual returns, 4 for quarterly returns and 5 for monthly returns.",
+      "display": "The penalty points threshold is 2 points for annual returns, 4 for quarterly returns and 5 for monthly returns.",
+      "sources": [
+        {
+          "title": "Penalty points and penalties if you submit your VAT Return late",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late",
+          "retrieved": "2026-11-24",
+          "quote": "Accounting period Penalty points threshold Annually 2 Quarterly 4 Monthly 5"
+        }
+      ]
+    },
+    {
+      "id": "vat-return-due-date",
+      "kind": "rule",
+      "title": "VAT: the return deadline",
+      "value": "A VAT return is usually due online one calendar month and 7 days after the end of the accounting period.",
+      "display": "A VAT return is usually due online one calendar month and 7 days after the end of the accounting period.",
+      "sources": [
+        {
+          "title": "Sending a VAT Return: When to do a VAT Return",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-returns/deadlines",
+          "retrieved": "2026-11-24",
+          "quote": "The deadline for submitting your return online is usually one calendar month and 7 days after the end of an accounting period."
+        }
+      ]
+    },
+    {
+      "id": "ct-s455-rate-2022-04",
+      "kind": "rate",
+      "title": "Corporation Tax: section 455 tax on a loan to a participator",
+      "period": "loans made from 6 April 2022 to 5 April 2026",
+      "value": 0.3375,
+      "display": "33.75%",
+      "sources": [
+        {
+          "title": "CTM61505 - Close companies: loans to participators and arrangements conferring benefit on participator: general - HMRC internal manual",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/hmrc-internal-manuals/company-taxation-manual/ctm61505",
+          "retrieved": "2026-11-28",
+          "quote": "For loans made on or after 6 April 2022, the rate was 33.75 per cent and from 6 April 2026 35.75 per cent."
+        }
+      ]
+    },
+    {
+      "id": "ct-s455-rate-2026-04",
+      "kind": "rate",
+      "title": "Corporation Tax: section 455 tax on a loan to a participator",
+      "period": "loans made from 6 April 2026",
+      "value": 0.3575,
+      "display": "35.75%",
+      "sources": [
+        {
+          "title": "CTM61505 - Close companies: loans to participators and arrangements conferring benefit on participator: general - HMRC internal manual",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/hmrc-internal-manuals/company-taxation-manual/ctm61505",
+          "retrieved": "2026-11-28",
+          "quote": "For loans made on or after 6 April 2022, the rate was 33.75 per cent and from 6 April 2026 35.75 per cent."
+        }
+      ]
     }
   ]
 }

@@ -16,6 +16,7 @@ import { loadSources, sourcePublisher } from "./tax-sources.mjs";
 import { RATE_TABLES, TAX_YEARS, displayText, readEngineTable, rowValue } from "./build-rates-page.mjs";
 import { FINANCIAL_YEAR_COLUMNS } from "./rates-fact-ids.mjs";
 import { DATED_FACTS, QUARTERLY_FACT, FINAL_DECLARATION_FACT, COMPANY_YEARLY_FACTS, UNDATED_FACTS } from "./build-mtd-calendar.mjs";
+import { SOURCED_RULE_FACTS } from "./rules-facts.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const RULES_DATA_PATH = join(ROOT, "mcp", "lib", "rules-data.json");
@@ -49,13 +50,26 @@ function calendarRules() {
   }));
 }
 
+// The facts a source cites that neither builder shows, from the table beside the builders.
+function sourcedRules() {
+  return SOURCED_RULE_FACTS.map(({ id, kind = "rule", title, period, value, display }) => ({
+    id,
+    kind,
+    title,
+    ...(period ? { period } : {}),
+    value,
+    display: display ?? value,
+  }));
+}
+
 /**
- * Every rule and rate with its sources. Throws for a fact that no source lists.
+ * Every rule and rate with its sources. Throws for a fact that no source lists, and for a fact a
+ * source lists that has no value.
  * @param {Array<object>} sources - loadSources()'s answer
  * @returns {{rules: Array<object>}}
  */
 export function buildRulesData(sources = loadSources()) {
-  const rules = [...rateRules(), ...calendarRules()].map((rule) => {
+  const rules = [...rateRules(), ...calendarRules(), ...sourcedRules()].map((rule) => {
     const cited = sources.filter((source) => (source.facts ?? []).includes(rule.id));
     if (cited.length === 0) throw new Error(`No source lists the fact ${rule.id}`);
     return {
@@ -69,6 +83,9 @@ export function buildRulesData(sources = loadSources()) {
       })),
     };
   });
+  const withValue = new Set(rules.map((rule) => rule.id));
+  const unvalued = [...new Set(sources.flatMap((source) => source.facts ?? []))].filter((fact) => !withValue.has(fact)).sort();
+  if (unvalued.length > 0) throw new Error(`No value for the facts ${unvalued.join(", ")}`);
   return { rules };
 }
 

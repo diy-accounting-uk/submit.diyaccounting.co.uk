@@ -18,6 +18,7 @@ import { buildRulesData, renderRulesData } from "../../scripts/build-rules-data.
 import { loadSources } from "../../scripts/tax-sources.mjs";
 import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
 import { allFactIds } from "../../scripts/build-mtd-calendar.mjs";
+import { SOURCED_RULE_FACTS } from "../../scripts/rules-facts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(HERE, "fixtures");
@@ -30,7 +31,9 @@ describe("the rules data", () => {
 
   it("holds every rates page and calendar fact, each with a value and a gov.uk source of its own", () => {
     const sources = loadSources();
-    expect(RULES_DATA.rules.map((rule) => rule.id).sort()).toEqual([...RATES_FACT_IDS, ...allFactIds()].sort());
+    expect(RULES_DATA.rules.map((rule) => rule.id).sort()).toEqual(
+      [...RATES_FACT_IDS, ...allFactIds(), ...SOURCED_RULE_FACTS.map((fact) => fact.id)].sort(),
+    );
     for (const rule of RULES_DATA.rules) {
       expect(rule.value, rule.id).not.toBeUndefined();
       expect(rule.display, rule.id).toBeTruthy();
@@ -42,6 +45,19 @@ describe("the rules data", () => {
         expect(source.retrieved, rule.id).toBe(file.retrieved);
       }
     }
+  });
+
+  it("answers every fact that a tax-sources file lists", () => {
+    const answered = new Set(RULES_DATA.rules.map((rule) => rule.id));
+    const cited = [...new Set(loadSources().flatMap((source) => source.facts))];
+    expect(cited.filter((fact) => !answered.has(fact))).toEqual([]);
+  });
+
+  it("refuses to build when a source lists a fact that has no value", () => {
+    const sources = loadSources().map((source, index) =>
+      index === 0 ? { ...source, facts: [...source.facts, "vat-unknown-fact"] } : source,
+    );
+    expect(() => buildRulesData(sources)).toThrow("No value for the facts vat-unknown-fact");
   });
 
   it("refuses to build a fact that no source lists", () => {
@@ -72,6 +88,17 @@ describe("look_up_rule", () => {
       }),
     );
     expect(guidance).toContain("send the person to HMRC or Companies House");
+  });
+
+  it("answers the section 455 rate of a loan made from 6 April 2026, with its gov.uk source", () => {
+    const [match] = lookUpRule({}, { query: "ct-s455-rate-2026-04" }).matches;
+    expect(match).toEqual(expect.objectContaining({ id: "ct-s455-rate-2026-04", value: 0.3575, display: "35.75%" }));
+    expect(match.sources[0]).toEqual(
+      expect.objectContaining({
+        url: "https://www.gov.uk/hmrc-internal-manuals/company-taxation-manual/ctm61505",
+        quote: expect.stringContaining("from 6 April 2026 35.75 per cent"),
+      }),
+    );
   });
 
   it("answers one rule for its fact id, with the figure the rates page shows", () => {
