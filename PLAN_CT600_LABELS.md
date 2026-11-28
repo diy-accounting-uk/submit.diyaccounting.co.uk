@@ -145,7 +145,18 @@ The operator's screenshots show the cost of the gap. The workbook's "Current Ass
 | CTL1B | The computation lines take their labels from HMRC's CT2024 taxonomy package (answer 3); the brief is its row on `NEXT.md` | CTL1A (one batch, in that order) | machine-only | Sonnet | ~4 files |
 | CTL9 | The filed copy and its parts (the CT600 boxes, the tax computation, the accounts, HMRC's receipt) use one name per concept from the register, no "preview" on a live filing, dates in words, and print without a blank page | CTL7 | machine-only | Sonnet | ~8 files |
 | CTL8 | The look pass: the Welsh proof, `visual-review` on the page, the guide screenshots again, `ui-ux-pro-max` on the CT600 guide frames, and the CT600 videos recorded again | CTN2, CTN4, CTL1A, CTL1B | machine-only | Sonnet | screenshots and videos |
-| ROLL1 | The roll-out inventory: every route that writes to HMRC, Companies House or Stripe, against its page and which of the three parts it has; then one task per journey (section OCTL1; the brief is its row on `NEXT.md`) | nothing (OCTL1 decided 2026-11-27) | machine-only | Sonnet | 1 file |
+| ROLL2 | The VAT return gets the three parts: the nine boxes' field pattern from the VAT workbook, the failure panel, and stages that name HMRC; the Assist widget narrates its report and shows its failure in the panel (section OCTL1, the inventory; files: hmrc/vat/submitVat.page.js, submitVat.html, a VAT field registry beside ct600-fields.js, widgets/hmrc-assist-messages.js, filing-failure.js (an HMRC VAT error map), i18n/cy.toml, welsh-text.js, the browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~9 files |
+| ROLL3 | One HMRC narration and failure helper for the Income Tax pages: a `pollPendingMessage` and waiting stage that name HMRC, and the failure panel, in hmrc-service.js (section OCTL1, the inventory; files: lib/services/hmrc-service.js, filing-failure.js, lib/utils/dom-utils.js if needed, i18n, a unit test; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~5 files |
+| ROLL4 | Income Tax self-employment: the field pattern on the quarterly update, its amend, the annual submission and the adjustments, and parts 2 and 3 through ROLL3's helper (section OCTL1, the inventory; files: selfEmploymentPeriod.page.js, selfEmploymentPeriodAmend.page.js, annualSubmission.page.js, adjustments.page.js, lib/self-employment-expenses.js, a self-employment field registry, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~12 files |
+| ROLL5 | Income Tax UK property: the same for the period, its amend (they share uk-property-period-fields.js), the annual submission and the adjustments (section OCTL1, the inventory; files: ukPropertyPeriod.page.js, ukPropertyPeriodAmend.page.js, ukPropertyAnnualSubmission.page.js, ukPropertyAdjustments.page.js, lib/uk-property-period-fields.js, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~10 files |
+| ROLL6 | Income Tax foreign property: the same for the period, its amend (they share foreign-property-fields.js and foreign-property-period-form.js), the details, the annual submission and the adjustments (section OCTL1, the inventory; files: foreignPropertyPeriod.page.js, foreignPropertyPeriodAmend.page.js, foreignPropertyDetails.page.js, foreignPropertyAnnualSubmission.page.js, foreignPropertyAdjustments.page.js, lib/foreign-property-fields.js, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~11 files |
+| ROLL7 | Income Tax year end: parts 2 and 3 on the calculation, the tax liability adjustments, the losses and claims and the final declaration, and the field pattern on the two forms; a decision on the two DELETE routes no page calls (section OCTL1, the inventory; files: taxCalculation.page.js, taxLiabilityAdjustments.page.js, lossesAndClaims.page.js, finalDeclaration.page.js, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~8 files |
+| ROLL8 | The micro-entity, dormant, revised and small company accounts get the failure panel, and the field pattern on the lines the CT600 does not share (section OCTL1, the inventory; files: fileMicroEntityAccounts.page.js, fileSmallCompanyAccounts.page.js, lib/accounts-page-lines.js, lib/accounts-line-detail.js, filing-failure.js, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~8 files |
+| ROLL9 | The confirmation statement and the PSC verification statement get the failure panel and the field pattern (section OCTL1, the inventory; files: fileConfirmationStatement.page.js, a confirmation statement field registry, filing-failure.js, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~6 files |
+| ROLL10 | The eleven shared Companies House forms get the failure panel, once, in companies-house-form-page.js (section OCTL1, the inventory; files: lib/companies-house-form-page.js, filing-failure.js, i18n, one browser test per form family; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~5 files |
+| ROLL11 | The eleven shared Companies House forms get the field pattern: each field's form box reference and note from the form's guidance (most have no workbook place) (section OCTL1, the inventory; files: lib/companies-house-forms.js or a forms field registry, the eleven page scripts, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~16 files |
+| ROLL12 | The registered office and registered email changes get the failure panel and the field pattern (section OCTL1, the inventory; files: changeRegisteredOffice.page.js, changeRegisteredEmail.page.js, filing-failure.js, i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Haiku | ~5 files |
+| ROLL13 | The Stripe journeys narrate their stages and show a failure panel: the bundle checkout and portal, the activity checkout, the usage page's portal (section OCTL1, the inventory; files: bundles.page.js, usage.page.js, the activity checkout calls in changeCompanyName.page.js and fileConfirmationStatement.page.js (one shared helper), filing-failure.js (a Stripe kind), i18n, browser tests; the brief is its row on `NEXT.md`) | nothing | machine-only | Sonnet | ~7 files |
 
 ### CTL0. The worked tax panel goes to £0
 
@@ -358,6 +369,97 @@ The write journeys, by service:
 | Stripe | the bundle checkout (`billingCheckoutPost.js`), the activity checkout (`billingActivityCheckoutPost.js`), the recovery of a paid checkout (`billingRecoverPost.js`), the billing portal (`billingPortalGet.js`) |
 
 The first step of the roll-out is an inventory of every route in `app/functions/hmrc/`, `app/functions/companies-house/` and `app/functions/billing/` that writes to the service, against the page that calls it and which of the three parts it has today; a write the table above misses joins it. Each journey then becomes a plan row; journeys of one service that share a page script run in one batch.
+
+#### The inventory (2026-11-28)
+
+Read on `claude/dingo-fixes` at `b2eee4f29`. The three parts:
+
+1. **Field pattern**: each field's reference and note, its workbook place and the worked panels, as `web/public/lib/ct600-fields.js` gives them to `fileCompanyTaxReturn.page.js` through `web/public/lib/field-detail.js`.
+2. **Failure detail panel** (CTN2, `8afdc4bfb`, review `d38511838`): `web/public/lib/filing-failure.js` (`classifyFilingFailure`, `failureDetailElement`, `showFailureDetail`). Only `fileCompanyTaxReturn.page.js` uses it.
+3. **Staged narration** (CTN4, `56ab9451d`, review `f99669366`): `window.narrateStage` and `window.endStage` from `web/public/lib/utils/dom-utils.js`, one stage at a time, with a waiting stage that names the service. The HMRC pages that poll pass `pollPendingMessage: "Still processing..."`, which names no service.
+
+Cell values: `yes`, `no`, `part` (some of the part is there, as the note says), `n-a` (the journey has no form).
+
+#### Inventory
+
+##### HMRC
+
+| Route file | Method and path | Page | 1 | 2 | 3 |
+|---|---|---|---|---|---|
+| hmrcVatReturnPost.js | POST /api/v1/hmrc/vat/return | hmrc/vat/submitVat.page.js | part: "Box 1" to "Box 9" lead the labels; no note, workbook place or panel | no | part: one "Submitting VAT return to HMRC..." message |
+| hmrcVatAssistReportPost.js | POST /api/v1/hmrc/vat/assist/report | widgets/hmrc-assist-messages.js on submitVat.html | n-a | no | no |
+| hmrcVatAssistAcknowledgePost.js | POST /api/v1/hmrc/vat/assist/acknowledge | widgets/hmrc-assist-messages.js on submitVat.html | n-a | no | no |
+| hmrcCtReturnPost.js | POST /api/v1/hmrc/ct/return | companies-house/fileCompanyTaxReturn.page.js (and the joint filing on it) | yes | yes | yes |
+| hmrcItsaSelfEmploymentPeriodPost.js | POST /api/v1/hmrc/itsa/self-employment/period | hmrc/itsa/selfEmploymentPeriod.page.js | no | no | no |
+| hmrcItsaSelfEmploymentPeriodPut.js | PUT /api/v1/hmrc/itsa/self-employment/period | hmrc/itsa/selfEmploymentPeriodAmend.page.js | no | no | no |
+| hmrcItsaSelfEmploymentAnnualPut.js | PUT /api/v1/hmrc/itsa/self-employment/annual | hmrc/itsa/annualSubmission.page.js | no | no | no |
+| hmrcItsaBsasTriggerPost.js | POST /api/v1/hmrc/itsa/bsas/trigger | hmrc/itsa/adjustments.page.js, ukPropertyAdjustments.page.js, foreignPropertyAdjustments.page.js | n-a | no | no |
+| hmrcItsaBsasSelfEmploymentAdjustPost.js | POST /api/v1/hmrc/itsa/bsas/self-employment/adjust | hmrc/itsa/adjustments.page.js | no | no | no |
+| hmrcItsaUkPropertyPeriodPost.js | POST /api/v1/hmrc/itsa/uk-property/period | hmrc/itsa/ukPropertyPeriod.page.js | no | no | no |
+| hmrcItsaUkPropertyPeriodPut.js | PUT /api/v1/hmrc/itsa/uk-property/period | hmrc/itsa/ukPropertyPeriodAmend.page.js | no | no | no |
+| hmrcItsaUkPropertyAnnualPut.js | PUT /api/v1/hmrc/itsa/uk-property/annual | hmrc/itsa/ukPropertyAnnualSubmission.page.js | no | no | no |
+| hmrcItsaBsasUkPropertyAdjustPost.js | POST /api/v1/hmrc/itsa/bsas/uk-property/adjust | hmrc/itsa/ukPropertyAdjustments.page.js | no | no | no |
+| hmrcItsaForeignPropertyPeriodPost.js | POST /api/v1/hmrc/itsa/foreign-property/period | hmrc/itsa/foreignPropertyPeriod.page.js | no | no | no |
+| hmrcItsaForeignPropertyPeriodPut.js | PUT /api/v1/hmrc/itsa/foreign-property/period | hmrc/itsa/foreignPropertyPeriod.page.js (a cumulative tax year), foreignPropertyPeriodAmend.page.js | no | no | no |
+| hmrcItsaForeignPropertyAnnualPut.js | PUT /api/v1/hmrc/itsa/foreign-property/annual | hmrc/itsa/foreignPropertyAnnualSubmission.page.js | no | no | no |
+| hmrcItsaForeignPropertyDetailsPost.js | POST /api/v1/hmrc/itsa/foreign-property/details | hmrc/itsa/foreignPropertyDetails.page.js | no | no | no |
+| hmrcItsaForeignPropertyDetailsPut.js | PUT /api/v1/hmrc/itsa/foreign-property/details | hmrc/itsa/foreignPropertyDetails.page.js | no | no | no |
+| hmrcItsaBsasForeignPropertyAdjustPost.js | POST /api/v1/hmrc/itsa/bsas/foreign-property/adjust | hmrc/itsa/foreignPropertyAdjustments.page.js | no | no | no |
+| hmrcItsaCalculationTriggerPost.js | POST /api/v1/hmrc/itsa/calculation/trigger | hmrc/itsa/taxCalculation.page.js, taxLiabilityAdjustments.page.js | n-a | no | part: `pollPendingMessage` "Calculating...", no service named |
+| hmrcItsaAssistReportPost.js | POST /api/v1/hmrc/itsa/assist/report | widgets/hmrc-assist-messages.js on taxCalculation.html, finalDeclaration.html | n-a | no | no |
+| hmrcItsaAssistAcknowledgePost.js | POST /api/v1/hmrc/itsa/assist/acknowledge | widgets/hmrc-assist-messages.js on taxCalculation.html, finalDeclaration.html | n-a | no | no |
+| hmrcItsaTaxLiabilityAdjustmentsPut.js | PUT /api/v1/hmrc/itsa/tax-liability-adjustments | hmrc/itsa/taxLiabilityAdjustments.page.js | no | no | no |
+| hmrcItsaTaxLiabilityAdjustmentsDelete.js | DELETE /api/v1/hmrc/itsa/tax-liability-adjustments | none: no page calls it | | | |
+| hmrcItsaLossesAndClaimsPut.js | PUT /api/v1/hmrc/itsa/losses-and-claims | hmrc/itsa/lossesAndClaims.page.js | no | no | no |
+| hmrcItsaLossesAndClaimsDelete.js | DELETE /api/v1/hmrc/itsa/losses-and-claims | none: no page calls it | | | |
+| hmrcItsaFinalDeclarationPost.js | POST /api/v1/hmrc/itsa/final-declaration | hmrc/itsa/finalDeclaration.page.js | n-a | no | no |
+
+##### Companies House
+
+| Route file | Method and path | Page | 1 | 2 | 3 |
+|---|---|---|---|---|---|
+| companiesHouseAccountsPost.js | POST /api/v1/companies-house/accounts | companies-house/fileMicroEntityAccounts.page.js (micro-entity, dormant, revised) | part: the lines the CT600 shares, through `accounts-line-detail.js` | no | yes |
+| companiesHouseAccountsPost.js | POST /api/v1/companies-house/accounts | companies-house/fileSmallCompanyAccounts.page.js (small company, revised) | part: as above | no | yes |
+| companiesHouseAccountsPost.js | POST /api/v1/companies-house/accounts | companies-house/fileCompanyTaxReturn.page.js (the joint filing's accounts) | yes | yes | yes |
+| companiesHouseConfirmationStatementPost.js | POST /api/v1/companies-house/confirmation-statement | companies-house/fileConfirmationStatement.page.js | no | no | yes |
+| companiesHousePscVerificationStatementPost.js | POST /api/v1/companies-house/psc-verification-statement | companies-house/fileConfirmationStatement.page.js | no | no | yes |
+| companiesHouseTransactionPost.js, companiesHouseTransactionPut.js, companiesHouseRegisteredOfficeAddressPost.js | POST /transaction, POST /transaction/:id/registered-office-address, PUT /transaction/:id (under /api/v1/companies-house) | companies-house/changeRegisteredOffice.page.js | no | no | yes |
+| companiesHouseTransactionPost.js, companiesHouseTransactionPut.js, companiesHouseRegisteredEmailAddressPost.js | POST /transaction, POST /transaction/:id/registered-email-address, PUT /transaction/:id | companies-house/changeRegisteredEmail.page.js | no | no | yes |
+| companiesHouseAccountingReferenceDatePost.js | POST /api/v1/companies-house/accounting-reference-date | companies-house/changeAccountingRefDate.page.js | no | no | yes |
+| companiesHouseAllotmentOfSharesPost.js | POST /api/v1/companies-house/allotment-of-shares | companies-house/allotShares.page.js | no | no | yes |
+| companiesHouseChangeOfNamePost.js | POST /api/v1/companies-house/change-of-name | companies-house/changeCompanyName.page.js | no | no | yes |
+| companiesHouseOfficerAppointmentPost.js | POST /api/v1/companies-house/officer-appointment | companies-house/appointOfficer.page.js | no | no | yes |
+| companiesHouseOfficerChangePost.js | POST /api/v1/companies-house/officer-change | companies-house/changeOfficer.page.js | no | no | yes |
+| companiesHouseOfficerResignationPost.js | POST /api/v1/companies-house/officer-resignation | companies-house/removeOfficer.page.js | no | no | yes |
+| companiesHousePscNotificationPost.js | POST /api/v1/companies-house/psc-notification | companies-house/notifyPsc.page.js | no | no | yes |
+| companiesHousePscChangeDetailsPost.js | POST /api/v1/companies-house/psc-change-details | companies-house/changePscDetails.page.js | no | no | yes |
+| companiesHousePscCessationPost.js | POST /api/v1/companies-house/psc-cessation | companies-house/ceasePsc.page.js | no | no | yes |
+| companiesHousePscStatementNotificationPost.js | POST /api/v1/companies-house/psc-statement-notification | companies-house/pscStatements.page.js | no | no | yes |
+| companiesHousePscStatementWithdrawalPost.js | POST /api/v1/companies-house/psc-statement-withdrawal | companies-house/pscStatements.page.js | no | no | yes |
+| companiesHouseRecordLocationPost.js | POST /api/v1/companies-house/record-location | companies-house/recordsLocation.page.js | no | no | yes |
+| companiesHouseSailAddressPost.js | POST /api/v1/companies-house/sail-address | companies-house/recordsLocation.page.js | no | no | yes |
+
+The eleven forms from `changeAccountingRefDate` to `recordsLocation` load `web/public/lib/companies-house-form-page.js`, which narrates their stages; parts 2 and 3 for them are one change in that module.
+
+##### Stripe
+
+| Route file | Method and path | Page | 1 | 2 | 3 |
+|---|---|---|---|---|---|
+| billingCheckoutPost.js | POST /api/v1/billing/checkout | bundles.page.js | n-a | no | part: "Requesting bundle..." before the redirect to Stripe |
+| billingActivityCheckoutPost.js | POST /api/v1/billing/activity-checkout | companies-house/changeCompanyName.page.js, fileConfirmationStatement.page.js | n-a | no | no |
+| billingPortalGet.js | GET /api/v1/billing/portal (creates a Stripe portal session) | bundles.page.js, usage.page.js | n-a | no | no |
+| billingRecoverPost.js | POST /api/v1/billing/recover | none: the route answers 501 and writes nothing to Stripe | | | |
+
+##### Routes in the three folders that write nothing to the service
+
+`hmrcTokenPost.js` and `companiesHouseTokenPost.js` (the OAuth code exchange), `hmrcCtReturnPreviewPost.js` (builds the return, sends nothing), `companiesHouseAccountsRenderPost.js` and `companiesHouseConfirmationStatementRenderPost.js` (render only), `companiesHouseFilingDataPost.js` (reads the register), `billingWebhookPost.js` (Stripe's events in), `hmrcFphCheckWorker.js`, `hmrcCtReturnStatusCheck.js` and `companiesHouseSubmissionStatusPoll.js` (workers with no page), and every GET but the billing portal.
+
+##### Writes the OCTL1 table misses
+
+- The HMRC Assist report and acknowledgement, VAT and Income Tax (four routes, one widget).
+- The PSC verification statement, filed from the confirmation statement page.
+- The two Income Tax DELETE routes, which no page calls: a row decides whether a page gets them or the routes go.
+- The recovery of a paid checkout is in the table but writes nothing today (501).
 
 ## Proof
 
