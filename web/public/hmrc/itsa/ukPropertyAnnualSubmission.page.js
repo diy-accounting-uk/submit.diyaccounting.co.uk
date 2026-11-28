@@ -194,6 +194,27 @@ async function saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValid
   return await putUkPropertyAnnual(annualDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation);
 }
 
+// The stage the save shows while it sends, and the failure panel's first two lines.
+function annualFilingWords() {
+  return {
+    sending: siteText("itsa.uk-narrate-sending-annual", "Sending the UK property annual submission to HMRC..."),
+    notSent: siteText("itsa.uk-failure-not-sent-annual", "HMRC has not got the UK property annual submission."),
+    answers: siteText("itsa.uk-failure-answers-form", "Your figures are still in the form."),
+  };
+}
+
+// Saves through the HMRC write helper, marking a failure the helper's panel already shows.
+async function saveWithStages(annualDetails, runFraudPreventionHeaderValidation, hmrcGrantId) {
+  try {
+    return await window.fileWithHmrc(annualFilingWords(), () =>
+      saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, hmrcGrantId),
+    );
+  } catch (error) {
+    error.shownInPanel = true;
+    throw error;
+  }
+}
+
 async function continueAfterOAuth() {
   try {
     const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
@@ -221,8 +242,7 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
     } else if (pendingSave) {
       showLoading();
-      showStatus(siteText("itsa.annual-saving", "Saving annual submission..."), "info");
-      const saved = await saveAnnualSubmission(pendingSave.annualDetails, pendingSave.runFraudPreventionHeaderValidation, hmrcGrantId);
+      const saved = await saveWithStages(pendingSave.annualDetails, pendingSave.runFraudPreventionHeaderValidation, hmrcGrantId);
       await showSavedRecord("uk-property", pendingSave.annualDetails, saved?.correlationId);
       hideStatus();
       sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
@@ -232,7 +252,8 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
+    if (error.shownInPanel) hideStatus();
+    else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
     sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
     window.hmrcScopeCheck.clearHmrcToken();
@@ -335,15 +356,17 @@ async function handleSaveClick() {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa.annual-saving", "Saving annual submission..."), "info");
-        const saved = await saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, hmrcGrantId);
+        const saved = await saveWithStages(annualDetails, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord("uk-property", annualDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
-        showStatus(
-          siteText("itsa.annual-save-failed", "Failed to save the annual submission: {reason}", { reason: error.message }),
-          "error",
-        );
+        if (error.shownInPanel) hideStatus();
+        else {
+          showStatus(
+            siteText("itsa.annual-save-failed", "Failed to save the annual submission: {reason}", { reason: error.message }),
+            "error",
+          );
+        }
       } finally {
         hideLoading();
       }

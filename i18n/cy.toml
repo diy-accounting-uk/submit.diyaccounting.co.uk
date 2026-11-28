@@ -29161,3 +29161,67 @@ cy = '''Ni dderbyniodd CThEF yr awdurdodiad sydd gan Submit ar eich rhan. Anfonw
 [strings."itsa.failure-hmrc-unavailable"]
 hash = "a7efae7d7603"
 cy = '''Ni allai CThEF dderbyn y cais ar hyn o bryd. Rhowch gynnig arall arni nes ymlaen.'''
+
+# == The UK property pages' writes to HMRC: their stages and failure panel, ids itsa.uk-narrate-* and itsa.uk-failure-* ==
+
+[strings."itsa.uk-narrate-sending-period"]
+hash = "84f960e98412"
+cy = '''Wrthi’n anfon y diweddariad eiddo yn y DU at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-period"]
+hash = "1cd02481572c"
+cy = '''Nid yw CThEF wedi cael y diweddariad eiddo yn y DU.'''
+
+[strings."itsa.uk-failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa.uk-narrate-sending-amend"]
+hash = "185c1961a8fa"
+cy = '''Wrthi’n anfon y diweddariad eiddo yn y DU wedi’i ddiwygio at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-amend"]
+hash = "e4fe365c1fb9"
+cy = '''Nid yw CThEF wedi cael y diweddariad eiddo yn y DU wedi’i ddiwygio.'''
+
+[strings."itsa.uk-narrate-sending-annual"]
+hash = "d3cc39df60d6"
+cy = '''Wrthi’n anfon cyflwyniad blynyddol eiddo yn y DU at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-annual"]
+hash = "2fd52ebfb561"
+cy = '''Nid yw CThEF wedi cael cyflwyniad blynyddol eiddo yn y DU.'''
+
+[strings."itsa.uk-narrate-sending-trigger"]
+hash = "53db0ab02252"
+cy = '''Wrthi’n gofyn i CThEF am grynodeb diwedd blwyddyn eiddo yn y DU...'''
+
+[strings."itsa.uk-failure-not-sent-trigger"]
+hash = "8c32f9c07f8f"
+cy = '''Nid yw CThEF wedi gwneud crynodeb diwedd blwyddyn eiddo yn y DU.'''
+
+[strings."itsa.uk-failure-answers-trigger"]
+hash = "6b93e393a5cf"
+cy = '''Mae eich atebion yn dal yn y ffurflen.'''
+
+[strings."itsa.uk-narrate-sending-adjustment"]
+hash = "644836d5ab65"
+cy = '''Wrthi’n anfon yr addasiad eiddo yn y DU at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-adjustment"]
+hash = "669a925e6cda"
+cy = '''Nid yw CThEF wedi cael yr addasiad eiddo yn y DU.'''
+
+# == The UK property fields' references to the Self Assessment UK property pages (SA105), ids field.*-sa105-* ==
+
+[strings."field.reference-sa105-box"]
+hash = "18cfe6205b97"
+cy = '''Eiddo yn y DU, blwch {box}'''
+
+[strings."field.reference-sa105-boxes"]
+hash = "5b25339445ba"
+cy = '''Eiddo yn y DU, blychau {first} i {last}'''
+
+[strings."field.source-sa105-notes"]
+hash = "fd1bc3163988"
+cy = '''nodiadau eiddo yn y DU (SA105)'''

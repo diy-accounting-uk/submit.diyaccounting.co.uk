@@ -106,17 +106,49 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   await run(hmrcGrantId);
 }
 
+// One write to HMRC through the HMRC write helper, marking a failure the helper's panel already shows.
+async function writeWithStages(words, send) {
+  try {
+    return await window.fileWithHmrc(words, send);
+  } catch (error) {
+    error.shownInPanel = true;
+    throw error;
+  }
+}
+
+function triggerFilingWords() {
+  return {
+    sending: siteText("itsa.uk-narrate-sending-trigger", "Asking HMRC for the UK property year-end summary..."),
+    notSent: siteText("itsa.uk-failure-not-sent-trigger", "HMRC has not made the UK property year-end summary."),
+    answers: siteText("itsa.uk-failure-answers-trigger", "Your answers are still in the form."),
+  };
+}
+
+function adjustmentFilingWords() {
+  return {
+    sending: siteText("itsa.uk-narrate-sending-adjustment", "Sending the UK property adjustment to HMRC..."),
+    notSent: siteText("itsa.uk-failure-not-sent-adjustment", "HMRC has not got the UK property adjustment."),
+    answers: siteText("itsa.uk-failure-answers-form", "Your figures are still in the form."),
+  };
+}
+
 async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
-  showStatus(siteText("itsa.year-end-requesting", "Requesting the year-end summary..."), "info");
-  const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+  const triggerResult = await writeWithStages(triggerFilingWords(), () =>
+    triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId),
+  );
   triggeredNino = triggerDetails.nino;
   triggeredTaxYear = document.getElementById("taxYear").value.trim();
   triggeredCalculationId = triggerResult.calculationId;
 
-  showStatus(siteText("itsa.year-end-retrieving", "Retrieving year-end summary..."), "info");
-  const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, hmrcGrantId, testScenario);
+  window.narrateStage?.(siteText("itsa.year-end-retrieving", "Retrieving year-end summary..."));
+  let bsas;
+  try {
+    bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, hmrcGrantId, testScenario);
+  } finally {
+    window.endStage?.();
+  }
   displaySummary(bsas);
   document.getElementById("triggerForm").style.display = "none";
   document.getElementById("summaryContainer").style.display = "block";
@@ -170,10 +202,13 @@ async function handleTriggerFormSubmission(event) {
       try {
         await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
       } catch (error) {
-        showStatus(
-          siteText("itsa.year-end-request-failed", "Failed to request the year-end summary: {reason}", { reason: error.message }),
-          "error",
-        );
+        if (error.shownInPanel) hideStatus();
+        else {
+          showStatus(
+            siteText("itsa.year-end-request-failed", "Failed to request the year-end summary: {reason}", { reason: error.message }),
+            "error",
+          );
+        }
       } finally {
         hideLoading();
       }
@@ -198,12 +233,13 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingUkPropertyBsasTriggerRequest");
     } else if (pendingAdjust) {
       showLoading();
-      showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
-      await submitAdjustment(
-        pendingAdjust.adjustDetails,
-        pendingAdjust.testScenario,
-        pendingAdjust.runFraudPreventionHeaderValidation,
-        hmrcGrantId,
+      await writeWithStages(adjustmentFilingWords(), () =>
+        submitAdjustment(
+          pendingAdjust.adjustDetails,
+          pendingAdjust.testScenario,
+          pendingAdjust.runFraudPreventionHeaderValidation,
+          hmrcGrantId,
+        ),
       );
       document.getElementById("summaryContainer").style.display = "none";
       document.getElementById("adjustmentResults").style.display = "block";
@@ -215,7 +251,8 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
+    if (error.shownInPanel) hideStatus();
+    else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingUkPropertyBsasTriggerRequest");
     sessionStorage.removeItem("pendingUkPropertyBsasAdjustRequest");
     window.hmrcScopeCheck.clearHmrcToken();
@@ -258,13 +295,16 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
-        await submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+        await writeWithStages(adjustmentFilingWords(), () =>
+          submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId),
+        );
         document.getElementById("summaryContainer").style.display = "none";
         document.getElementById("adjustmentResults").style.display = "block";
         hideStatus();
       } catch (error) {
-        showStatus(siteText("itsa.adjustment-failed", "Failed to submit the adjustment: {reason}", { reason: error.message }), "error");
+        if (error.shownInPanel) hideStatus();
+        else
+          showStatus(siteText("itsa.adjustment-failed", "Failed to submit the adjustment: {reason}", { reason: error.message }), "error");
       } finally {
         hideLoading();
       }

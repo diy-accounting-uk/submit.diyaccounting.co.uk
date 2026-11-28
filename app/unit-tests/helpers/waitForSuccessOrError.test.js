@@ -27,9 +27,16 @@ function atCall(sequence, callNumber) {
 // `errorMatchesSequence` lets a test vary what's visible from one call to the next: call #1 is
 // the baseline snapshot taken before the wait loop starts, and each call after that is one poll
 // — so `[[], [errA]]` models an error banner that wasn't there when the wait began but appears
-// on the first poll. `successVisibleSequence` does the same for the success selector.
-function makeFakePage({ errorMatchesSequence = [[]], successVisibleSequence = [false], statusText = "" } = {}) {
+// on the first poll. `failureMatchesSequence` does the same for the failure panel, and
+// `successVisibleSequence` for the success selector.
+function makeFakePage({
+  errorMatchesSequence = [[]],
+  failureMatchesSequence = [[]],
+  successVisibleSequence = [false],
+  statusText = "",
+} = {}) {
   let errorCallCount = 0;
+  let failureCallCount = 0;
   let successCallCount = 0;
   return {
     locator: vi.fn((selector) => {
@@ -38,6 +45,14 @@ function makeFakePage({ errorMatchesSequence = [[]], successVisibleSequence = [f
           all: vi.fn().mockImplementation(() => {
             errorCallCount++;
             return Promise.resolve(atCall(errorMatchesSequence, errorCallCount));
+          }),
+        };
+      }
+      if (selector === ".failure-detail") {
+        return {
+          all: vi.fn().mockImplementation(() => {
+            failureCallCount++;
+            return Promise.resolve(atCall(failureMatchesSequence, failureCallCount));
           }),
         };
       }
@@ -127,6 +142,14 @@ describe("waitForSuccessOrError", () => {
     const newError = () => makeLocator({ visible: true, text: "Access token expired. Please try again." });
     const page = makeFakePage({
       errorMatchesSequence: [[staleError()], [staleError(), newError()]],
+    });
+
+    await expect(waitForSuccessOrError(page, { successSelector: "#result", pollIntervalMs: 1 })).rejects.toThrow(/FAIL FAST/);
+  });
+
+  test("fails fast when the failure panel appears after the wait begins", async () => {
+    const page = makeFakePage({
+      failureMatchesSequence: [[], [makeLocator({ visible: true, text: "What happened HMRC answered with this error." })]],
     });
 
     await expect(waitForSuccessOrError(page, { successSelector: "#result", pollIntervalMs: 1 })).rejects.toThrow(/FAIL FAST/);

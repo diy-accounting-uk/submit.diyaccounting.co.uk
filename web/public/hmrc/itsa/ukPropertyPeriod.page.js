@@ -169,7 +169,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollPendingMessage: window.hmrcWaitingMessage(),
     pollSuccessMessage: siteText("itsa.current-total-loaded", "Current total loaded."),
     pollErrorMessage: siteText("itsa.current-total-failed", "Failed to load the current total."),
   });
@@ -341,21 +341,29 @@ async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderVa
       "x-wait-time-ms": "0",
     },
     body: JSON.stringify({ ...periodData, runFraudPreventionHeaderValidation }),
-    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    ...window.hmrcWritePollOptions(),
     pollSuccessMessage: siteText("itsa.quarterly-filed", "Quarterly update filed."),
     pollErrorMessage: siteText("itsa.quarterly-file-failed", "Failed to file the quarterly update."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(
+    throw window.hmrcRequestFailure(
       hmrcErrorMessage(result, siteText("itsa.quarterly-file-failed-fallback", "Failed to file the quarterly update")),
+      response,
+      result,
     );
-    error.status = response.status;
-    error.reason = result.reason;
-    throw error;
   }
   return result;
+}
+
+// The stage the submission shows while it sends, and the failure panel's first two lines.
+function periodFilingWords() {
+  return {
+    sending: siteText("itsa.uk-narrate-sending-period", "Sending the UK property update to HMRC..."),
+    notSent: siteText("itsa.uk-failure-not-sent-period", "HMRC has not got the UK property update."),
+    answers: siteText("itsa.uk-failure-answers-form", "Your figures are still in the form."),
+  };
 }
 
 async function continuePeriodSubmission() {
@@ -371,13 +379,9 @@ async function continuePeriodSubmission() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
 
-    const result = await submitPeriod(
-      pendingRequest.periodData,
-      pendingRequest.testScenario,
-      pendingRequest.runFraudPreventionHeaderValidation,
-      hmrcGrantId,
+    const result = await window.fileWithHmrc(periodFilingWords(), () =>
+      submitPeriod(pendingRequest.periodData, pendingRequest.testScenario, pendingRequest.runFraudPreventionHeaderValidation, hmrcGrantId),
     );
 
     displayResult(result);
@@ -399,10 +403,7 @@ async function continuePeriodSubmission() {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(
-        siteText("itsa.quarterly-file-failed-reason", "Failed to file the quarterly update: {reason}", { reason: error.message }),
-        "error",
-      );
+      hideStatus();
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingUkPropertyPeriodRequest");
@@ -484,9 +485,10 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus();
-      showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
 
-      const result = await submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+      const result = await window.fileWithHmrc(periodFilingWords(), () =>
+        submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId),
+      );
 
       displayResult(result);
       document.getElementById("ukPropertyPeriodResults").style.display = "block";
@@ -502,10 +504,7 @@ async function handleFormSubmission(event) {
         hideStatus();
         window.SubmissionCost?.refresh();
       } else {
-        showStatus(
-          siteText("itsa.quarterly-file-failed-reason", "Failed to file the quarterly update: {reason}", { reason: error.message }),
-          "error",
-        );
+        hideStatus();
       }
     } finally {
       hideLoading();

@@ -156,6 +156,19 @@ export async function servePageScripts(page) {
 }
 
 // The real page script of an ITSA page whose other scripts are stubbed out.
+// A page whose hmrc-service.js these tests serve empty still sends its writes: the HMRC write helper
+// stands in as a pass-through, and a refused write throws an error carrying the status and reason.
+async function standInForHmrcWriteHelper(page) {
+  await page.addInitScript(() => {
+    window.fileWithHmrc = window.fileWithHmrc || ((words, send) => send());
+    window.hmrcWritePollOptions = window.hmrcWritePollOptions || (() => ({}));
+    window.hmrcWaitingMessage = window.hmrcWaitingMessage || (() => "Waiting for HMRC's answer...");
+    window.hmrcRequestFailure =
+      window.hmrcRequestFailure ||
+      ((message, response, body) => Object.assign(new Error(message), { status: response.status, reason: body?.reason, body }));
+  });
+}
+
 export async function serveItsaPageScripts(page) {
   await page.route("**/lib/hmrc-scope-check.js", async (route) => {
     await route.fulfill({
@@ -195,6 +208,7 @@ export async function serveItsaPageScripts(page) {
     "application/javascript",
   );
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
+  await standInForHmrcWriteHelper(page);
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);
     await route.fulfill({

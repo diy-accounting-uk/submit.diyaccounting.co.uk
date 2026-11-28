@@ -23,7 +23,7 @@ import {
   isSyntheticMode,
   takeScreenshot,
 } from "../helpers/behaviour-helpers.js";
-import { waitForScenarioError, waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
+import { waitForFailurePanel, waitForScenarioError, waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-itsa-steps";
 
@@ -609,7 +609,7 @@ export async function verifyItsaUkPropertyPeriodResults(page, periodQuery, scree
         case "NOT_CONTIGUOUS":
         case "DUPLICATE_SUBMISSION":
         case "TYPE_OF_BUSINESS_INCORRECT":
-          await waitForScenarioError(page);
+          await waitForFailurePanel(page);
           const ukPropertyPeriodResults = page.locator("#ukPropertyPeriodResults");
           await expect(ukPropertyPeriodResults).toBeHidden();
           break;

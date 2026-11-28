@@ -24,6 +24,11 @@ function create(tag, attributes = {}, ...children) {
 
 // The reference of a field with no box, from the register's code: the first code it names.
 const REFERENCE_PATTERNS = [
+  [
+    /^SA105 boxes ([\d.]+) to ([\d.]+)$/,
+    ([, first, last]) => siteText("field.reference-sa105-boxes", "UK property boxes {first} to {last}", { first, last }),
+  ],
+  [/^SA105 box ([\d.]+)$/, ([, box]) => siteText("field.reference-sa105-box", "UK property box {box}", { box })],
   [/^CT600A (A\d+)/, ([, box]) => siteText("field.reference-ct600a", "CT600A {box}", { box })],
   [/μ?BS1 ([A-Z][A-Z.\d]*)/, ([, item]) => siteText("field.reference-balance-sheet", "Balance sheet item {item}", { item })],
   [/PL2 (\d+\([ab]\)|\d+)/, ([, item]) => siteText("field.reference-profit-and-loss", "Profit and loss item {item}", { item })],
@@ -84,6 +89,9 @@ export function sourceLinkOf(field) {
   }
   if (href.startsWith("https://www.gov.uk/guidance/supplementary-pages-ct600a")) {
     return { href, text: siteText("field.source-ct600a-guide", "CT600A guide") };
+  }
+  if (href.startsWith("https://www.gov.uk/government/publications/self-assessment-uk-property-sa105")) {
+    return { href, text: siteText("field.source-sa105-notes", "UK property notes (SA105)") };
   }
   if (href.startsWith("https://www.gov.uk/government/publications/life-of-a-company-annual-requirements")) {
     return { href, text: siteText("field.source-life-of-a-company", "Life of a company: accounts") };
