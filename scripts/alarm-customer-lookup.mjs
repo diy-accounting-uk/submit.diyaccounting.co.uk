@@ -4,10 +4,10 @@
 
 // @capability OPS-141 Look up the customer behind a submission-failure alarm
 // - **Use when:** a prod-env-hmrc-submission-failure or prod-env-itsa-submission-failure alarm needs the customer, what HMRC answered and their entitlement.
-// - **Does:** alarm-customer-lookup.mjs reads failure events from the activity_events_all view in Athena for the alarm's window. It then runs Query, never Scan, on the hmrc-api-requests and bundles tables by hashed sub, and Cognito ListUsers by sub. It writes one Markdown file with personal data. The customer-lookup job in alarm-triage.yml commits it to support/alarms/ in the private repository with a deploy key, then sends Telegram the alarm name, the issue link and the path.
-// - **Run:** `node scripts/alarm-customer-lookup.mjs --alarm-name <alarm> --timestamp <iso> --issue-number <n> --issue-url <url> --out <file>`
-// - **Entry:** `scripts/alarm-customer-lookup.mjs:collectCustomers`; `.github/workflows/alarm-triage.yml:customer-lookup`
-// - **Files:** scripts/alarm-customer-lookup.mjs, app/unit-tests/scripts/alarmCustomerLookup.test.js, .github/workflows/alarm-triage.yml, .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
+// - **Does:** alarm-customer-lookup.mjs reads failure events from the activity_events_all view in Athena for the alarm's window. It then runs Query, never Scan, on the hmrc-api-requests and bundles tables by hashed sub, and Cognito ListUsers by sub. It writes one Markdown file with personal data. alarm-customer-lookup.yml, which alarm-triage.yml's customer-lookup job starts, commits it to support/alarms/ in the private repository with a deploy key, then sends Telegram the alarm name, the issue link and the path.
+// - **Run:** `node scripts/alarm-customer-lookup.mjs --alarm-name <alarm> --timestamp <iso> --issue-number <n> --issue-url <url> --out <file> [--max-wait-seconds <n>]`
+// - **Entry:** `scripts/alarm-customer-lookup.mjs:collectCustomers`; `.github/workflows/alarm-customer-lookup.yml:customer-lookup`
+// - **Files:** scripts/alarm-customer-lookup.mjs, app/unit-tests/scripts/alarmCustomerLookup.test.js, .github/workflows/alarm-customer-lookup.yml, .github/workflows/alarm-triage.yml, .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
 // - **Keywords:** customer lookup, submission failure, hashed sub, private repository, deploy key, telegram ping, athena, support alarms
 // - **Related:** OPS-18, OPS-76
 // @end-capability
@@ -38,9 +38,22 @@ const WINDOW_AFTER_MS = 5 * 60 * 1000;
 const MAX_CUSTOMERS = 5;
 const QUERY_POLL_MS = 2000;
 const QUERY_TIMEOUT_MS = 120000;
+// The activity stream's Firehose buffers up to 900 seconds before it writes to the lake
+// (AnalyticsStack.java), so an event at the window's end can reach activity_events_all that late.
+export const LAKE_DELIVERY_MS = 900 * 1000;
+// The longest the lookup waits for the lake before it writes "not yet known" instead of a count.
+export const DEFAULT_MAX_WAIT_MS = 25 * 60 * 1000;
 
 export function parseArgs(argv) {
-  const opts = { alarmName: "", timestamp: "", issueNumber: "", issueUrl: "", out: "", region: "eu-west-2" };
+  const opts = {
+    alarmName: "",
+    timestamp: "",
+    issueNumber: "",
+    issueUrl: "",
+    out: "",
+    region: "eu-west-2",
+    maxWaitSeconds: String(DEFAULT_MAX_WAIT_MS / 1000),
+  };
   const names = {
     "--alarm-name": "alarmName",
     "--timestamp": "timestamp",
@@ -48,6 +61,7 @@ export function parseArgs(argv) {
     "--issue-url": "issueUrl",
     "--out": "out",
     "--region": "region",
+    "--max-wait-seconds": "maxWaitSeconds",
   };
   for (let i = 0; i < argv.length; i++) {
     const key = names[argv[i]];
@@ -68,6 +82,22 @@ export function windowOf(timestamp) {
   const at = new Date(timestamp).getTime();
   if (Number.isNaN(at)) throw new Error(`unparseable timestamp: ${timestamp}`);
   return { start: new Date(at - WINDOW_BEFORE_MS), end: new Date(at + WINDOW_AFTER_MS) };
+}
+
+/**
+ * When the lake can hold every event of the window: the window's end plus the activity stream's
+ * delivery buffer. Before then, a query can miss events and a count of 0 means nothing.
+ * @param {{start: Date, end: Date}} window
+ * @param {Date} now
+ * @param {number} maxWaitMs - the longest the caller will wait
+ * @returns {{readyAt: Date, waitMs: number, countKnown: boolean}} waitMs is how long to wait
+ *   before the query; countKnown is false when the lake cannot hold the window within maxWaitMs
+ */
+export function lakeWait(window, now, maxWaitMs) {
+  const readyAt = new Date(window.end.getTime() + LAKE_DELIVERY_MS);
+  const untilReady = Math.max(0, readyAt.getTime() - now.getTime());
+  if (untilReady > maxWaitMs) return { readyAt, waitMs: 0, countKnown: false };
+  return { readyAt, waitMs: untilReady, countKnown: true };
 }
 
 export function athenaTimestamp(date) {
@@ -145,19 +175,22 @@ function table(headers, rows) {
  * Renders the per-alarm file. `customers` is a list of
  * { hashedSub, events, hmrcExchanges, account, bundles }, already read from AWS.
  */
-export function formatLookupFile({ alarmName, issueNumber, issueUrl, timestamp, window, customers }) {
+export function formatLookupFile({ alarmName, issueNumber, issueUrl, timestamp, window, customers, countKnown = true, readyAt }) {
+  const count = countKnown
+    ? String(customers.length)
+    : `not yet known: the lake holds the window's events only from ${readyAt.toISOString()}; run the lookup again after then`;
   const lines = [
     `# ${alarmName} #${issueNumber || "n/a"}`,
     "",
     `- Issue: ${issueUrl || "n/a"}`,
     `- Alarm timestamp: ${timestamp}`,
     `- Window: ${window.start.toISOString()} to ${window.end.toISOString()}`,
-    `- Customers with a failed submission in the window: ${customers.length}`,
+    `- Customers with a failed submission in the window: ${count}`,
     "",
     "This file holds personal data. It lives in the private repository only.",
     "",
   ];
-  if (customers.length === 0) {
+  if (countKnown && customers.length === 0) {
     lines.push("No non-test activity event with a failure was found in the window.", "");
   }
   for (const customer of customers) {
@@ -323,7 +356,14 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const envPrefix = envPrefixOf(opts.alarmName);
   const window = windowOf(opts.timestamp);
-  const customers = await collectCustomers({ envPrefix, alarmName: opts.alarmName, window, region: opts.region });
+  const maxWaitMs = Number(opts.maxWaitSeconds) * 1000;
+  if (!Number.isFinite(maxWaitMs) || maxWaitMs < 0) throw new Error(`--max-wait-seconds is not a number: ${opts.maxWaitSeconds}`);
+  const { readyAt, waitMs, countKnown } = lakeWait(window, new Date(), maxWaitMs);
+  if (waitMs > 0) {
+    console.log(`waiting ${Math.ceil(waitMs / 1000)}s, until ${readyAt.toISOString()}, for the lake to hold the window's events`);
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
+  const customers = countKnown ? await collectCustomers({ envPrefix, alarmName: opts.alarmName, window, region: opts.region }) : [];
   writeFileSync(
     opts.out,
     formatLookupFile({
@@ -333,9 +373,11 @@ async function main() {
       timestamp: opts.timestamp,
       window,
       customers,
+      countKnown,
+      readyAt,
     }),
   );
-  console.log(`wrote ${opts.out}: ${customers.length} customer(s)`);
+  console.log(`wrote ${opts.out}: ${countKnown ? `${customers.length} customer(s)` : "count not yet known"}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
