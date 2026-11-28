@@ -56,10 +56,13 @@ const BUSINESS_METRICS_NAMESPACE = "Submit/Business";
  * @param {string} params.summary - Human-readable summary for alerting
  * @param {string} [params.userSub]
  * @param {Object} [params.detail] - Additional non-identifying detail fields
+ * @param {boolean} [params.emitMetric=true] - Whether to emit the failure metric
  */
-async function recordDetailsFailure({ failure, summary, userSub, detail = {} }) {
+async function recordDetailsFailure({ failure, summary, userSub, detail = {}, emitMetric: emitFailureMetric = true }) {
   const actor = resolveActorClass();
-  emitMetric({ namespace: BUSINESS_METRICS_NAMESPACE, metricName: "ItsaSubmissionFailure", dimensions: { Actor: actor } });
+  if (emitFailureMetric) {
+    emitMetric({ namespace: BUSINESS_METRICS_NAMESPACE, metricName: "ItsaSubmissionFailure", dimensions: { Actor: actor } });
+  }
   await publishActivityFailureEvent({
     event: "itsa-foreign-property-details-update-failed",
     summary,
@@ -172,7 +175,11 @@ export async function ingestHandler(event) {
   try {
     ({ userSub, bundleIds } = await enforceBundles(event));
   } catch (error) {
-    await recordDetailsFailure({ failure: "access-denied", summary: "ITSA foreign property details update blocked: no entitlement" });
+    await recordDetailsFailure({
+      failure: "access-denied",
+      summary: "ITSA foreign property details update blocked: no entitlement",
+      emitMetric: false,
+    });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 

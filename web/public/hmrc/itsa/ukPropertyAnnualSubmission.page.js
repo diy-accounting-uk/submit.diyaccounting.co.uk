@@ -221,6 +221,13 @@ async function continueAfterOAuth() {
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingUkPropertyAnnualLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingUkPropertyAnnualSaveRequest") || "null");
 
+    if ((pendingLoad || pendingSave) && (await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
+      sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
+
     if (pendingLoad) {
       showLoading();
       showStatus(siteText("itsa.annual-loading", "Loading annual submission..."), "info");
@@ -252,12 +259,16 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    if (error.shownInPanel) hideStatus();
+    const refusedForNoPass = window.EntitlementStatus?.isBundleRefusal(error);
+    if (refusedForNoPass) window.EntitlementStatus.showPassNeeded("hmrc");
+    else if (error.shownInPanel) hideStatus();
     else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
     sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
-    window.hmrcScopeCheck.clearHmrcToken();
-    sessionStorage.removeItem("hmrcTokenScope");
+    if (!refusedForNoPass) {
+      window.hmrcScopeCheck.clearHmrcToken();
+      sessionStorage.removeItem("hmrcTokenScope");
+    }
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -271,6 +282,10 @@ function handleOAuthCallback() {
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -321,10 +336,12 @@ async function handleLoadFormSubmission(event) {
         document.getElementById("annualEditForm").style.display = "block";
         hideStatus();
       } catch (error) {
-        showStatus(
-          siteText("itsa.annual-load-failed", "Failed to load the annual submission: {reason}", { reason: error.message }),
-          "error",
-        );
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else
+          showStatus(
+            siteText("itsa.annual-load-failed", "Failed to load the annual submission: {reason}", { reason: error.message }),
+            "error",
+          );
       } finally {
         hideLoading();
       }
@@ -360,7 +377,8 @@ async function handleSaveClick() {
         await showSavedRecord("uk-property", annualDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
-        if (error.shownInPanel) hideStatus();
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else if (error.shownInPanel) hideStatus();
         else {
           showStatus(
             siteText("itsa.annual-save-failed", "Failed to save the annual submission: {reason}", { reason: error.message }),

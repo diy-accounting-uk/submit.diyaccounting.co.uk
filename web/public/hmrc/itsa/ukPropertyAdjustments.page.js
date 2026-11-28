@@ -175,6 +175,11 @@ async function handleTriggerFormSubmission(event) {
     typeOfBusiness: "uk-property",
   };
 
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
+
   try {
     const hmrcGrantIdForCheck = window.hmrcScopeCheck.storedGrantId();
     if (hmrcGrantIdForCheck) {
@@ -202,7 +207,8 @@ async function handleTriggerFormSubmission(event) {
       try {
         await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
       } catch (error) {
-        if (error.shownInPanel) hideStatus();
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else if (error.shownInPanel) hideStatus();
         else {
           showStatus(
             siteText("itsa.year-end-request-failed", "Failed to request the year-end summary: {reason}", { reason: error.message }),
@@ -221,6 +227,13 @@ async function continueAfterOAuth() {
     const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingTrigger = JSON.parse(sessionStorage.getItem("pendingUkPropertyBsasTriggerRequest") || "null");
     const pendingAdjust = JSON.parse(sessionStorage.getItem("pendingUkPropertyBsasAdjustRequest") || "null");
+
+    if ((pendingTrigger || pendingAdjust) && (await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingUkPropertyBsasTriggerRequest");
+      sessionStorage.removeItem("pendingUkPropertyBsasAdjustRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
 
     if (pendingTrigger) {
       document.getElementById("taxYear").value = pendingTrigger.taxYear;
@@ -251,11 +264,13 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    if (error.shownInPanel) hideStatus();
+    const refusedForNoPass = window.EntitlementStatus?.isBundleRefusal(error);
+    if (refusedForNoPass) window.EntitlementStatus.showPassNeeded("hmrc");
+    else if (error.shownInPanel) hideStatus();
     else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingUkPropertyBsasTriggerRequest");
     sessionStorage.removeItem("pendingUkPropertyBsasAdjustRequest");
-    window.hmrcScopeCheck.clearHmrcToken();
+    if (!refusedForNoPass) window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -288,6 +303,11 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
     if (repairsAndMaintenance !== null) adjustDetails.expenses = { repairsAndMaintenance };
   }
 
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
+
   await ensureAuthorizedThen(
     "pendingUkPropertyBsasAdjustRequest",
     { adjustDetails, testScenario, runFraudPreventionHeaderValidation },
@@ -302,7 +322,8 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
         document.getElementById("adjustmentResults").style.display = "block";
         hideStatus();
       } catch (error) {
-        if (error.shownInPanel) hideStatus();
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else if (error.shownInPanel) hideStatus();
         else
           showStatus(siteText("itsa.adjustment-failed", "Failed to submit the adjustment: {reason}", { reason: error.message }), "error");
       } finally {

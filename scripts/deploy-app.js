@@ -20,7 +20,7 @@
 //   node scripts/deploy-app.js [--deployment <name>] [--skip-docker] [--skip-lambdas] [--skip-web]
 //
 // Prerequisites:
-//   - AWS SSO profile: . ./scripts/aws-use-submit-profile.sh
+//   - AWS SSO profile of the environment: . ./scripts/aws-use-submit-profile.sh ci (or prod)
 //   - Environment variables loaded via dotenv (use npm run deploy:app-ci or deploy:app-prod)
 //
 // Environment variables (from .env.ci or .env.prod via dotenv):
@@ -487,7 +487,7 @@ async function main() {
   // Check AWS credentials
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
     console.error("ERROR: No AWS credentials found.");
-    console.error("Run: . ./scripts/aws-use-submit-profile.sh");
+    console.error("Run: . ./scripts/aws-use-submit-profile.sh ci (or prod, for npm run deploy:app-prod)");
     process.exit(1);
   }
   const config = resolveDeployment(flags);

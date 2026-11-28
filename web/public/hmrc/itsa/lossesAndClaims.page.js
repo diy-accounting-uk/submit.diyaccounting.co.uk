@@ -218,6 +218,13 @@ async function continueAfterOAuth() {
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingLossesLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingLossesSaveRequest") || "null");
 
+    if ((pendingLoad || pendingSave) && (await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingLossesLoadRequest");
+      sessionStorage.removeItem("pendingLossesSaveRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
+
     if (pendingLoad) {
       showLoading();
       showStatus(siteText("itsa-losses.loading", "Loading losses and claims..."), "info");
@@ -256,11 +263,15 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
+    const refusedForNoPass = window.EntitlementStatus?.isBundleRefusal(error);
+    if (refusedForNoPass) window.EntitlementStatus.showPassNeeded("hmrc");
+    else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingLossesLoadRequest");
     sessionStorage.removeItem("pendingLossesSaveRequest");
-    window.hmrcScopeCheck.clearHmrcToken();
-    sessionStorage.removeItem("hmrcTokenScope");
+    if (!refusedForNoPass) {
+      window.hmrcScopeCheck.clearHmrcToken();
+      sessionStorage.removeItem("hmrcTokenScope");
+    }
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -274,6 +285,10 @@ function handleOAuthCallback() {
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -327,7 +342,9 @@ async function handleLoadFormSubmission(event) {
         document.getElementById("lossesEditForm").style.display = "block";
         hideStatus();
       } catch (error) {
-        if (error.status === 404 || /not.?found/i.test(error.message)) {
+        if (window.EntitlementStatus?.isBundleRefusal(error)) {
+          window.EntitlementStatus.showPassNeeded("hmrc");
+        } else if (error.status === 404 || /not.?found/i.test(error.message)) {
           loadedNino = nino;
           loadedBusinessId = businessId;
           loadedTaxYear = taxYear;
@@ -377,7 +394,9 @@ async function handleSaveClick() {
         await showSavedRecord(lossesDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
-        showStatus(siteText("itsa-losses.save-failed", "Failed to save losses and claims: {reason}", { reason: error.message }), "error");
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else
+          showStatus(siteText("itsa-losses.save-failed", "Failed to save losses and claims: {reason}", { reason: error.message }), "error");
       } finally {
         hideLoading();
       }

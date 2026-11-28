@@ -59,7 +59,8 @@ export async function fileWithHmrc({ sending, notSent, answers }, send) {
   try {
     return await send();
   } catch (error) {
-    showHmrcFailure(error, { notSent, answers });
+    // A refusal for want of a pass is the page's to show, with the pass panel.
+    if (!window.EntitlementStatus?.isBundleRefusal?.(error)) showHmrcFailure(error, { notSent, answers });
     throw error;
   } finally {
     hmrcWritesInFlight -= 1;
@@ -410,6 +411,7 @@ export async function submitVat(
     method: "POST",
     headers,
     body,
+    pollPendingMessage: siteText("vat-submit.narrate-waiting-hmrc", "Waiting for HMRC's answer..."),
   });
   const responseJson = await response.json();
   if (!response.ok) {
@@ -418,14 +420,16 @@ export async function submitVat(
     if (responseJson?.reason === "obligation_already_fulfilled") {
       const message = `${responseJson.userMessage} ${responseJson.actionAdvice}`.trim();
       console.warn(message);
-      throw new Error(message);
+      throw hmrcRequestFailure(message, response, responseJson);
     }
     // Token allowance used up — tell the customer plainly instead of showing the raw response.
     if (responseJson?.reason === "tokens_exhausted") {
       const message =
         "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
       console.warn(message);
-      throw new Error(message);
+      const failure = hmrcRequestFailure(message, response, responseJson);
+      failure.code = "tokens_exhausted";
+      throw failure;
     }
     // The HMRC authorization is missing a required scope — clear the stale token so the
     // customer re-authorizes instead of retrying with the same token.
@@ -2147,7 +2151,7 @@ export function hmrcRequestFailure(message, response, responseJson) {
   error.status = response.status;
   error.service = "hmrc";
   error.code = responseJson?.responseBody?.code || responseJson?.code || "";
-  error.reason = responseJson?.reason;
+  error.reason = responseJson?.reason || responseJson?.error?.code;
   error.body = responseJson;
   const requestId = response.headers?.get?.("x-request-id");
   if (requestId) error.requestId = requestId;

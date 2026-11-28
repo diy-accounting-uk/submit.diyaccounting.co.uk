@@ -39,6 +39,9 @@ const COMPANIES_HOUSE_REASON = {
   instanceNumber: "1",
 };
 
+// The signed-in person holds the pass the filing pages need.
+const HELD_BUNDLES = { bundles: [{ bundleId: "resident-ltd", allocated: true }] };
+
 async function serveSite(page, { language, apiBodies = {} }) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -47,7 +50,8 @@ async function serveSite(page, { language, apiBodies = {} }) {
       return;
     }
     if (url.pathname.startsWith("/api/")) {
-      const body = Object.entries(apiBodies).find(([prefix]) => url.pathname.startsWith(prefix))?.[1] ?? {};
+      const body =
+        Object.entries({ "/api/v1/bundle": HELD_BUNDLES, ...apiBodies }).find(([prefix]) => url.pathname.startsWith(prefix))?.[1] ?? {};
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
       return;
     }

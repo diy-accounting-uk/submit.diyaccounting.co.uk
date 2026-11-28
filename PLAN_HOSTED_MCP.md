@@ -25,7 +25,7 @@ Prod's hosted MCP connector offers each filing tool as its journey goes live, wi
 
 ## Facts the tasks share
 
-`hostedToolNames` (`mcp/lib/hosted-tools.js` line 95) serves `PROD_HOSTED_TOOL_NAMES` on prod and to the reviewer group, and `HOSTED_TOOL_NAMES` everywhere else. MCP2 and MCP4 to MCP8 register their tools in `HOSTED_TOOL_NAMES` only and merge to `main` with prod's scanned tool set unchanged; MCP9 moves them onto prod after OpenAI approves 0.1.7 (ODSC1). A page or route these tasks add is linked from no prod page until MCP9. The harness page `web/public/mcp-harness.html` loads scripts from `web/public/mcp-harness/<name>.json` (`?script=<name>`); its call endpoint `/api/v1/dev/mcp-harness/call` exists on the local Express server only (`app/bin/server.js`), so a harness proof runs locally (MCP1). The hosted MCP tools read the session's HMRC grant through `hmrcGrantFor` in `mcp/lib/submit-tools.js` (line 167) (MCP1). Prod's hosted connector has eleven tools, `prepare_vat_return` and `derive_company_tax_return` among them (`PROD_HOSTED_TOOL_NAMES` in `mcp/lib/hosted-tools.js`, line 70). The availability facts: `web/public/mtd-calendar.html` is generated. Its availability table is `AVAILABILITY` in `scripts/build-mtd-calendar.mjs` (line 128) and its dates come from `.claude/skills/tax-sources/sources`, so a change edits those and runs `npm run build:mtd-calendar`.
+`hostedToolNames` (`mcp/lib/hosted-tools.js` line 95) serves `PROD_HOSTED_TOOL_NAMES` on prod and to the reviewer group, and `HOSTED_TOOL_NAMES` everywhere else. MCP2 and MCP4 to MCP8 register their tools in `HOSTED_TOOL_NAMES` only and merge to `main` with prod's scanned tool set unchanged; MCP9 moves them onto prod (OpenAI published 0.1.7 on 2026-11-28). A page or route these tasks add is linked from no prod page until MCP9. The harness page `web/public/mcp-harness.html` loads scripts from `web/public/mcp-harness/<name>.json` (`?script=<name>`); its call endpoint `/api/v1/dev/mcp-harness/call` exists on the local Express server only (`app/bin/server.js`), so a harness proof runs locally (MCP1). The hosted MCP tools read the session's HMRC grant through `hmrcGrantFor` in `mcp/lib/submit-tools.js` (line 167) (MCP1). Prod's hosted connector has eleven tools, `prepare_vat_return` and `derive_company_tax_return` among them (`PROD_HOSTED_TOOL_NAMES` in `mcp/lib/hosted-tools.js`, line 70). The availability facts: `web/public/mtd-calendar.html` is generated. Its availability table is `AVAILABILITY` in `scripts/build-mtd-calendar.mjs` (line 128) and its dates come from `.claude/skills/tax-sources/sources`, so a change edits those and runs `npm run build:mtd-calendar`.
 
 ## Tasks
 
@@ -38,7 +38,7 @@ Prod's hosted MCP connector offers each filing tool as its journey goes live, wi
 | MCP6 | machine-only | ready | nothing | MCP9 | submit |
 | MCP7 | machine-only | ready | nothing | MCP9 | submit |
 | MCP8 | machine-only | ready | nothing | MCP9 | submit |
-| MCP9 | machine-only | blocked | ODSC1 (`NEXT.md`); MCP2, MCP4 to MCP8 proved on ci | nothing | submit |
+| MCP9 | machine-only | blocked | MCP2, MCP4 to MCP8 proved on ci | nothing | submit |
 
 Model, size and repository are in each entry. "Blocked by" lists the tasks and events not yet done.
 

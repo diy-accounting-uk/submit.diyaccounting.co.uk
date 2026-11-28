@@ -1879,9 +1879,9 @@ cy = '''ddim ar gael'''
 hash = "4e7d87d11fc9"
 cy = '''cynhyrchu (production) <span class="calendar-date">gweinydd lleol; mae’r cysylltydd ar y we yn cyfrifo’r ffigurau ac yn cysylltu â’r ffurflen ar y we</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-13e435"]
-hash = "13e43514acd8"
-cy = '''<a href="hmrc/vat/submitVat.html" data-activity="submit-vat">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=XUt2gdYxR1g" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-2d8aeb"]
+hash = "2d8aeb2c72b7"
+cy = '''<a href="hmrc/vat/submitVat.html" data-activity="submit-vat">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=-MHj2K6BB9E" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.hmrc-income-tax-mtd-af49d6"]
 hash = "af49d6d15973"
@@ -1899,9 +1899,9 @@ cy = '''prawf (sandbox)'''
 hash = "b3bb348f8a5c"
 cy = '''prawf (sandbox) <span class="calendar-date">ffigurau yn unig</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-22bb09"]
-hash = "22bb0931e0d9"
-cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=H1LRSZG984Q" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-d039e4"]
+hash = "d039e4ce115d"
+cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=XT5KXfDZHHg" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.hmrc-company-tax-return-ct600-8a1c6e"]
 hash = "8a1c6e669367"
@@ -1915,9 +1915,9 @@ cy = '''Gwiriad HMRC Assist ar Ffurflen TAW'''
 hash = "5975cf1bba43"
 cy = '''rhagolwg (preview)'''
 
-[strings."mtd-calendar.web-form-guide-video-c25dd2"]
-hash = "c25dd2814c4a"
-cy = '''<a href="hmrc/vat/submitVat.html" data-activity="vat-assist-check">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=cyOZsF9qe28" rel="noopener">Fideo</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-f57ce8"]
+hash = "f57ce8b91ae8"
+cy = '''<a href="hmrc/vat/submitVat.html" data-activity="vat-assist-check">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=iiUaHLyfLIc" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-accounts-micro-entity-small-ed0557"]
 hash = "ed0557d967ec"
@@ -1927,33 +1927,33 @@ cy = '''Cyfrifon Tŷ’r Cwmnïau (micro-endid, cwmni bach, segur)'''
 hash = "164ccd139c50"
 cy = '''cynhyrchu (production) <span class="calendar-date">micro-endid</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-a0c9b5"]
-hash = "a0c9b5728662"
-cy = '''<a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-micro-entity-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=yPSpvLKrTJU" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-ad8d4e"]
+hash = "ad8d4ecb3ad3"
+cy = '''<a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-micro-entity-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=THVJJwOe3AM" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-confirmation-statement-afa872"]
 hash = "afa872a4f861"
 cy = '''Datganiad cadarnhau Tŷ’r Cwmnïau'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-428a93"]
-hash = "428a9344d8dc"
-cy = '''<a href="companies-house/fileConfirmationStatement.html" data-activity="file-confirmation-statement">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=P0aG_mLfhZI" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-f64cf9"]
+hash = "f64cf96be50b"
+cy = '''<a href="companies-house/fileConfirmationStatement.html" data-activity="file-confirmation-statement">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=OExNkU6FYOE" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-psc-verification-statement-a728e0"]
 hash = "a728e0bd84f5"
 cy = '''Datganiad dilysu PSC Tŷ’r Cwmnïau'''
 
-[strings."mtd-calendar.guide-video-81060b"]
-hash = "81060bf89496"
-cy = '''<a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=zyo32coCwso" rel="noopener">Fideo</a> (yn Saesneg)'''
+[strings."mtd-calendar.guide-video-fda265"]
+hash = "fda265306639"
+cy = '''<a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=zYER5A-yzgk" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.companies-house-registered-office-and-registered-4084e9"]
 hash = "4084e96d19ce"
 cy = '''Swyddfa gofrestredig a chyfeiriad e-bost cofrestredig Tŷ’r Cwmnïau'''
 
-[strings."mtd-calendar.web-form-guide-video-4a9892"]
-hash = "4a9892c85e92"
-cy = '''<a href="companies-house/changeRegisteredOffice.html" data-activity="change-registered-office">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=sN_FhTnAqF4" rel="noopener">Fideo</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-1924c2"]
+hash = "1924c2978f0b"
+cy = '''<a href="companies-house/changeRegisteredOffice.html" data-activity="change-registered-office">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=1dLr2i1tzUk" rel="noopener">Fideo</a> (yn Saesneg)'''
 
 [strings."mtd-calendar.accounts-at-companies-house-and-ct600-d1399f"]
 hash = "d1399f34f121"
@@ -4209,9 +4209,6 @@ cy = '''Yn eich anfon i CThEF i fewngofnodi yn {url}...'''
 hash = "2b6c0c78d25e"
 cy = '''Methodd y mewngofnodi: {reason}'''
 
-[strings."vat-submit.submitting"]
-hash = "c6d14204dc13"
-cy = '''Yn cyflwyno’r Ffurflen TAW i CThEF...'''
 
 [strings."vat-submit.could-not-submit"]
 hash = "8cb42615ee2c"
@@ -28620,9 +28617,9 @@ cy = '''Wrthi’n anfon y newid at Dŷ’r Cwmnïau...'''
 hash = "bb0667425d3c"
 cy = '''cynhyrchu (production) <span class="calendar-date">ffigurau yn unig</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-5d0317"]
-hash = "5d031786c8ec"
-cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-44bd60"]
+hash = "44bd60696d12"
+cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=2-Em1dKQD0g" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 # == The privacy policy's hosted MCP part, eleven tools ==
 
@@ -29443,3 +29440,162 @@ cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnydd
 [strings."ch.ct.no-tokens-hmrc"]
 hash = "86530e47f953"
 cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd y Ffurflen Dreth at CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+
+# == The VAT return's pass check before the obligations read and the submit, ids vat-submit.*pass* ==
+[strings."vat-submit.pass-needed-title"]
+hash = "a350c1774519"
+cy = '''Mae angen tocyn arnoch i gyflwyno Ffurflen TAW'''
+
+[strings."vat-submit.pass-needed-cause"]
+hash = "630934c976a7"
+cy = '''Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n gadael i chi gyflwyno Ffurflen TAW.'''
+
+[strings."vat-submit.get-day-pass"]
+hash = "588425249452"
+cy = '''Cael tocyn diwrnod'''
+
+[strings."vat-submit.periods-need-pass"]
+hash = "4a60078c7bc7"
+cy = '''Mae angen tocyn arnoch i ddarllen eich cyfnodau TAW agored gan CThEF ac i gyflwyno Ffurflen TAW.'''
+# the same words as field.reference-notes above
+[strings."ch.ct.accounts-notes"]
+hash = "3b39acff6c1b"
+cy = '''Nodiadau i’r cyfrifon'''
+
+# built from the Welsh of the joint filing's existing outcome lines
+[strings."ch.ct.return-not-sent"]
+hash = "04ab3b62c523"
+cy = '''Ni anfonwyd Ffurflen Dreth y Cwmni at CThEF'''
+
+# built from the Welsh of the joint filing's existing outcome lines
+[strings."ch.ct.return-not-sent-ch-accepted"]
+hash = "9c0aa87912fc"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon, felly nid ydynt yn cael eu hanfon eto. Gwiriwch y Ffurflen Dreth a’i hanfon at CThEF.'''
+
+# built from the Welsh of the joint filing's existing outcome lines
+[strings."ch.ct.return-not-sent-ch-held"]
+hash = "9f676194172b"
+cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon ac nid yw wedi penderfynu arnynt. Anfonwch y Ffurflen Dreth nawr, neu arhoswch am Dŷ’r Cwmnïau.'''
+
+# == The VAT return's check of stored dates against HMRC's open periods, id vat-submit.period-not-open ==
+[strings."vat-submit.period-not-open"]
+hash = "42736d68084a"
+cy = '''Nid oes dim wedi’i anfon at CThEF. Nid yw CThEF yn disgwyl Ffurflen TAW ar gyfer {requested}. Ei gyfnodau TAW agored yw: {periods}. Dewiswch un a chyflwynwch eto.'''
+
+# == The VAT return's box notes, spreadsheet cells, stages and failure panel, ids vat.*, vat-submit.narrate-*, vat-submit.*-sent*, widget.assist-narrate-* ==
+[strings."vat.notice-link"]
+hash = "3b6dc32f5cbe"
+cy = '''Hysbysiad TAW 700/12, blwch {box}'''
+
+[strings."vat.source-first-quarter"]
+hash = "1d4bbf29075f"
+cy = '''Chwarter cyntaf'''
+
+[strings."vat.source-later-quarters"]
+hash = "314fc77a5a1c"
+cy = '''Mae taflenni VATQtr2 i VATQtr5 yn dal yr un gell ar gyfer y chwarteri wedyn.'''
+
+[strings."vat.source-box-2-note"]
+hash = "add66190f65c"
+cy = '''Mae’r daenlen yn gosod blwch 2 i 0 ac yn gofyn i chi gyfrifo unrhyw swm eich hun (ei nodyn yn B25). Dim ond ar gyfer nwyddau a ddaw i Ogledd Iwerddon o aelod-wladwriaethau’r UE y mae blwch 2 bellach.'''
+
+[strings."vat.source-box-3-note"]
+hash = "16481941f132"
+cy = '''Mae’r daenlen yn labelu blwch 3 gyda geiriau blwch 1. Ei ffigur yw blwch 1 a blwch 2 gyda’i gilydd, fel blwch 3 CThEF.'''
+
+[strings."vat.source-box-5-note"]
+hash = "e1b7745e8d23"
+cy = '''Mae label y daenlen yn enwi swm i’w dalu. Blwch 5 CThEF yw’r gwahaniaeth rhwng blychau 3 a 4 y naill ffordd neu’r llall, i’w dalu neu i’w adhawlio.'''
+
+[strings."vat.failure-answers"]
+hash = "1ef9c5f7fc29"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon ac wedi’u cadw yn y porwr hwn nes i chi gau’r tab.'''
+
+[strings."vat-submit.narrate-checking"]
+hash = "55b3b828404d"
+cy = '''Wrthi’n gwirio eich atebion...'''
+
+[strings."vat-submit.narrate-sending"]
+hash = "efa009b1f01e"
+cy = '''Wrthi’n anfon y Ffurflen TAW at CThEF...'''
+
+[strings."vat-submit.narrate-waiting-hmrc"]
+hash = "93e39e82df6d"
+cy = '''Wrthi’n aros am ateb CThEF...'''
+
+[strings."vat-submit.failure-sent-unknown"]
+hash = "cecaf7931987"
+cy = '''Ni chafodd Submit ateb CThEF, felly ni all ddweud a oes gan CThEF y Ffurflen. Gwiriwch eich derbynebau cyn i chi ei hanfon eto.'''
+
+[strings."vat-submit.failure-sent-refused"]
+hash = "52f54e9dc977"
+cy = '''Ni dderbyniodd CThEF y Ffurflen. Ni chafodd dim ei ffeilio.'''
+
+[strings."vat-submit.assist-failure-sent"]
+hash = "a943ba694888"
+cy = '''Ni chafodd dim ei ffeilio. Mae HMRC Assist yn darllen y ffigurau ac nid yw’n ffeilio dim.'''
+
+[strings."vat.failure-vrn"]
+hash = "da14c9bedc20"
+cy = '''Ni dderbyniodd CThEF y rhif cofrestru TAW. Gwiriwch y 9 rhif ac anfonwch eto.'''
+
+[strings."vat.failure-period"]
+hash = "40f62754dd00"
+cy = '''Nid yw CThEF yn gwybod am y cyfnod TAW hwn. Dewiswch y cyfnod o gyfnodau agored CThEF ac anfonwch eto.'''
+
+[strings."vat.failure-duplicate"]
+hash = "fdeeb1aab211"
+cy = '''Mae gan CThEF Ffurflen TAW ar gyfer y cyfnod hwn yn barod. Mae eich derbynneb ar y dudalen derbynebau. I newid Ffurflen a gyflwynwyd, cysylltwch â CThEF.'''
+
+[strings."vat.failure-receipts"]
+hash = "ab780dfb3ddb"
+cy = '''Gweld eich derbynebau'''
+
+[strings."vat.failure-not-ended"]
+hash = "0e8c1cf8d83f"
+cy = '''Nid yw’r cyfnod TAW wedi dod i ben. Anfonwch y Ffurflen ar ôl dyddiad gorffen y cyfnod.'''
+
+[strings."vat.failure-amount"]
+hash = "e311489fe34a"
+cy = '''Ni dderbyniodd CThEF ffigur blwch. Cywirwch y blwch y mae’n ei enwi ac anfonwch eto.'''
+
+[strings."vat.failure-box-3"]
+hash = "e71675838f51"
+cy = '''Ni dderbyniodd CThEF flwch 3: rhaid iddo fod yn flwch 1 a blwch 2 gyda’i gilydd.'''
+
+[strings."vat.failure-box-5"]
+hash = "ec0a3fdbec67"
+cy = '''Ni dderbyniodd CThEF flwch 5: rhaid iddo fod y gwahaniaeth rhwng blychau 3 a 4.'''
+
+[strings."vat.failure-not-authorised"]
+hash = "7215c56651aa"
+cy = '''Nid oes gan y mewngofnodi CThEF a ddefnyddiwyd gennych fynediad at y rhif TAW hwn. Cysylltwch â CThEF gyda Dynodydd Defnyddiwr Porth y Llywodraeth y busnes hwn.'''
+
+[strings."vat.failure-insolvent"]
+hash = "88365b16f5da"
+cy = '''Nid yw CThEF yn derbyn Ffurflen ar-lein gan fasnachwr y mae’n ei restru’n fethdalwr. Cysylltwch â CThEF.'''
+
+[strings."widget.assist-narrate-sending"]
+hash = "577a8d8cfac4"
+cy = '''Wrthi’n anfon eich ffigurau at HMRC Assist...'''
+
+[strings."widget.assist-narrate-waiting"]
+hash = "d0b7ee18729e"
+cy = '''Wrthi’n aros am ateb HMRC Assist...'''
+
+# == The pass check on the filing pages, ids widget.*pass* ==
+[strings."widget.pass-needed-title"]
+hash = "3e694739e78a"
+cy = '''Mae angen tocyn arnoch ar gyfer hyn'''
+
+[strings."widget.pass-needed-cause-hmrc"]
+hash = "c108dca88914"
+cy = '''Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.'''
+
+[strings."widget.pass-needed-cause-companies-house"]
+hash = "cc66c920c092"
+cy = '''Nid oes dim wedi’i anfon at Dŷ’r Cwmnïau. Nid oes gan eich cyfrif docyn na Bundle sy’n caniatáu hyn.'''
+
+[strings."widget.get-day-pass"]
+hash = "588425249452"
+cy = '''Cael tocyn diwrnod'''

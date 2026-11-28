@@ -214,7 +214,10 @@ async function runRequest(request, hmrcGrantId) {
   } catch (error) {
     // A failed send is told in the failure panel, so the page adds no message of its own.
     const told = request.action === "submit";
-    if (error.status === 401) {
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      hideStatus();
+      window.EntitlementStatus.showPassNeeded("hmrc");
+    } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       if (!told) showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
@@ -236,6 +239,11 @@ async function runRequest(request, hmrcGrantId) {
 }
 
 async function ensureAuthorizedThen(request) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
+
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -270,6 +278,10 @@ async function continueAfterOAuth() {
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   await runRequest(pending, hmrcGrantId);
 }
 

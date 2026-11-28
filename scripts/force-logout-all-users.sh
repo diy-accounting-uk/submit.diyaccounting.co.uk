@@ -34,7 +34,7 @@
 # Usage: scripts/force-logout-all-users.sh <env>
 #
 # Prerequisites: AWS SSO profile already selected, e.g.
-#   . ./scripts/aws-use-submit-profile.sh
+#   . ./scripts/aws-use-submit-profile.sh <env>   (ci or prod, the same <env>)
 
 set -euo pipefail
 

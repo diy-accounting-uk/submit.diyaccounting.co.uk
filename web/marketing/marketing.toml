@@ -677,7 +677,7 @@ They work in Microsoft Excel and OpenOffice Calc, come with step-by-step guides,
 [[sections]]
 id = "diya-gl"
 name = "DIYA-GL"
-summary = "DIYA-GL™ opens your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser."
+summary = "DIYA-GL™ keeps your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company records, free in your browser."
 site = "https://diya-gl.co.uk/"
 brand = "diya-gl"
 hasDark = true
@@ -729,7 +729,7 @@ hasDark = true
   selector = "section.home-strip"
   width = 1280
   signedIn = false
-  alt = "The DIYA-GL home strip: the four kinds of books and where they are kept"
+  alt = "The DIYA-GL home strip: the four kinds of DIYA-GL book and where they are kept"
 
   [[sections.fragments]]
   id = "topbar"
@@ -751,101 +751,101 @@ hasDark = true
 
   [[sections.products]]
   id = "diya-gl-basic-sole-trader"
-  name = "Basic Sole Trader books"
+  name = "Basic Sole Trader bookkeeping"
 
   [[sections.products]]
   id = "diya-gl-self-employed"
-  name = "Self Employed books"
+  name = "Self Employed bookkeeping"
 
   [[sections.products]]
   id = "diya-gl-taxi-driver"
-  name = "Taxi Driver books"
+  name = "Taxi Driver bookkeeping"
 
   [[sections.products]]
   id = "diya-gl-limited-company"
-  name = "Limited Company books"
+  name = "Limited Company bookkeeping"
 
   [[sections.sets]]
   id = "diya-gl-basic-sole-trader"
   product = "diya-gl-basic-sole-trader"
-  title = "Basic Sole Trader books"
+  title = "Basic Sole Trader bookkeeping"
   link = "https://diya-gl.co.uk/bst.html"
-  emailSubject = "Sole trader books, free in your browser"
+  emailSubject = "Sole trader bookkeeping, free in your browser"
 
     [sections.sets.image]
-    headline = "Sole trader books"
+    headline = "Sole trader bookkeeping"
     subline = "Free in your browser."
 
     [sections.sets.posts]
-    headline = "Sole trader books, free in your browser"
-    short = "Keep your Basic Sole Trader books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
+    headline = "Sole trader bookkeeping, free in your browser"
+    short = "Keep your Basic Sole Trader records in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
     medium = """
-DIYA-GL™ opens Basic Sole Trader books in your browser, free.
+DIYA-GL™ keeps Basic Sole Trader records in your browser, free.
 
-With no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.
+With no account, your records stay on your device until you clear your browser data, and you can download the DIYA-GL book to keep it for good. Sign in and the 35-day sandbox keeps the book for 35 days after each save, on any device.
 
 {link}"""
 
   [[sections.sets]]
   id = "diya-gl-self-employed"
   product = "diya-gl-self-employed"
-  title = "Self Employed books"
+  title = "Self Employed bookkeeping"
   link = "https://diya-gl.co.uk/se.html"
-  emailSubject = "Self-employed books, free in your browser"
+  emailSubject = "Self-employed bookkeeping, free in your browser"
 
     [sections.sets.image]
-    headline = "Self-employed books"
+    headline = "Self-employed bookkeeping"
     subline = "Free in your browser."
 
     [sections.sets.posts]
-    headline = "Self-employed books, free in your browser"
-    short = "Keep your Self Employed books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
+    headline = "Self-employed bookkeeping, free in your browser"
+    short = "Keep your Self Employed records in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
     medium = """
-DIYA-GL™ opens Self Employed books in your browser, free.
+DIYA-GL™ keeps Self Employed records in your browser, free.
 
-With no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.
+With no account, your records stay on your device until you clear your browser data, and you can download the DIYA-GL book to keep it for good. Sign in and the 35-day sandbox keeps the book for 35 days after each save, on any device.
 
 {link}"""
 
   [[sections.sets]]
   id = "diya-gl-taxi-driver"
   product = "diya-gl-taxi-driver"
-  title = "Taxi Driver books"
+  title = "Taxi Driver bookkeeping"
   link = "https://diya-gl.co.uk/taxi.html"
-  emailSubject = "Taxi driver books, free in your browser"
+  emailSubject = "Taxi driver bookkeeping, free in your browser"
 
     [sections.sets.image]
-    headline = "Taxi driver books"
+    headline = "Taxi driver bookkeeping"
     subline = "Free in your browser."
 
     [sections.sets.posts]
-    headline = "Taxi driver books, free in your browser"
-    short = "Keep your Taxi Driver books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
+    headline = "Taxi driver bookkeeping, free in your browser"
+    short = "Keep your Taxi Driver records in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
     medium = """
-DIYA-GL™ opens Taxi Driver books in your browser, free.
+DIYA-GL™ keeps Taxi Driver records in your browser, free.
 
-With no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.
+With no account, your records stay on your device until you clear your browser data, and you can download the DIYA-GL book to keep it for good. Sign in and the 35-day sandbox keeps the book for 35 days after each save, on any device.
 
 {link}"""
 
   [[sections.sets]]
   id = "diya-gl-limited-company"
   product = "diya-gl-limited-company"
-  title = "Limited Company books"
+  title = "Limited Company bookkeeping"
   link = "https://diya-gl.co.uk/ltd.html"
-  emailSubject = "Limited company books, free in your browser"
+  emailSubject = "Limited company bookkeeping, free in your browser"
 
     [sections.sets.image]
-    headline = "Limited company books"
+    headline = "Limited company bookkeeping"
     subline = "Free in your browser."
 
     [sections.sets.posts]
-    headline = "Limited company books, free in your browser"
-    short = "Keep your Limited Company books in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
+    headline = "Limited company bookkeeping, free in your browser"
+    short = "Keep your Limited Company records in DIYA-GL™, free in your browser. No account needed; download the file to keep it. {link}"
     medium = """
-DIYA-GL™ opens Limited Company books in your browser, free.
+DIYA-GL™ keeps Limited Company records in your browser, free.
 
-With no account, your books stay on your device until you clear your browser data, and you can download the file to keep it for good. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device.
+With no account, your records stay on your device until you clear your browser data, and you can download the DIYA-GL book to keep it for good. Sign in and the 35-day sandbox keeps the book for 35 days after each save, on any device.
 
 {link}"""
 
@@ -854,19 +854,19 @@ With no account, your books stay on your device until you clear your browser dat
   product = ""
   title = "DIYA-GL"
   link = "https://diya-gl.co.uk/"
-  emailSubject = "Your books, free in the browser"
+  emailSubject = "Bookkeeping, free in the browser"
 
     [sections.sets.image]
     headline = "DIYA-GL™"
-    subline = "Your books, free in the browser."
+    subline = "Bookkeeping, free in the browser."
 
     [sections.sets.posts]
-    headline = "DIYA-GL™: your books, free in the browser"
-    short = "DIYA-GL™ opens Basic Sole Trader, Self Employed, Taxi Driver and Limited Company books, free in your browser. {link}"
+    headline = "DIYA-GL™: bookkeeping, free in the browser"
+    short = "DIYA-GL™ keeps Basic Sole Trader, Self Employed, Taxi Driver and Limited Company records, free in your browser. {link}"
     medium = """
-DIYA-GL™ is bookkeeping in your browser, from the makers of DIY Accounting Spreadsheets™. It opens Basic Sole Trader, Self Employed, Taxi Driver and Limited Company books, free.
+DIYA-GL™ is bookkeeping in your browser, from the makers of DIY Accounting Spreadsheets™. It keeps Basic Sole Trader, Self Employed, Taxi Driver and Limited Company records, free.
 
-With no account, your books stay on your device, and you can download the file to keep it. Sign in and the 35-day sandbox keeps them for 35 days after each save, on any device.
+With no account, your records stay on your device, and you can download the DIYA-GL book to keep it. Sign in and the 35-day sandbox keeps it for 35 days after each save, on any device.
 
 {link}"""
 
@@ -958,7 +958,7 @@ hasDark = false
     medium = """
 DIY Accounting™ is a family company. Our founder, Terry Cartwright, was a Chartered Management Accountant and Chartered Company Secretary. He started designing payroll and accounting spreadsheets in 2006.
 
-Terry died in December 2009, and his children have run the company since. We make DIY Accounting Spreadsheets™, DIYA-GL™ for books in the browser, and DIY Accounting Submit™ for VAT returns to HMRC and accounts to Companies House.
+Terry died in December 2009, and his children have run the company since. We make DIY Accounting Spreadsheets™, DIYA-GL™ for bookkeeping in the browser, and DIY Accounting Submit™ for VAT returns to HMRC and accounts to Companies House.
 
 {link}"""
 
@@ -1222,7 +1222,7 @@ There is a package for each kind of business. Basic Sole Trader is for a sole tr
 
 Each workbook holds the spreadsheets that its business needs: sales and purchases, and where they apply cash and bank reconciliation, VAT returns, the profit and loss account, the balance sheet, final accounts and the tax figures. The totals add up as the entries go in.
 
-Each download is one accounting period, so a business picks the year end that matches its accounts. The workbooks work in Microsoft Excel and OpenOffice Calc, come with step-by-step guides, and are free to download, funded by voluntary donations. A VAT-registered business can send its VAT return from the workbook with DIY Accounting Submit, and DIYA-GL opens the same books in a browser."""
+Each download is one accounting period, so a business picks the year end that matches its accounts. The workbooks work in Microsoft Excel and OpenOffice Calc, come with step-by-step guides, and are free to download, funded by voluntary donations. A VAT-registered business can send its VAT return from the workbook with DIY Accounting Submit, and DIYA-GL keeps the same records in a browser."""
 keywords = ["bookkeeping spreadsheet", "accounts spreadsheet", "Excel", "sole trader", "self-employed", "limited company", "taxi driver", "payslips", "VAT return", "free"]
 categories = ["Accounting software", "Bookkeeping software", "Spreadsheet templates"]
 features = [
@@ -1276,13 +1276,13 @@ tagline = "Free bookkeeping spreadsheet for sole traders"
 oneLine = "Sales, purchases, profit and loss and the short tax return figures in Excel, free."
 description160 = "A free Excel bookkeeping workbook for sole traders who are not VAT registered and have no employees: sales, purchases, profit and loss and tax figures."
 description500 = """Basic Sole Trader is the simplest package of DIY Accounting Spreadsheets. It is for sole traders who are not VAT registered and have no employees. Enter your sales and purchases in Excel, and the workbook produces a profit and loss account, the figures for the short self-employed tax return and an income tax calculation. It works in Microsoft Excel and OpenOffice Calc and is free to download."""
-long = """Basic Sole Trader is the simplest package of DIY Accounting Spreadsheets. It is made for a sole trader who is not VAT registered and has no employees, and who wants to keep the books in Excel without learning double-entry bookkeeping.
+long = """Basic Sole Trader is the simplest package of DIY Accounting Spreadsheets. It is made for a sole trader who is not VAT registered and has no employees, and who wants to keep the records in Excel without learning double-entry bookkeeping.
 
 The workbook holds a sales spreadsheet and a purchases spreadsheet. Each sale and each purchase goes on one row, with its date, its amount and its heading, and the totals for each month and for the year add up as the entries go in. A purchases-paid sheet records when each bill was paid, and a fixed assets sheet records equipment that the business buys.
 
 From those entries the workbook produces a profit and loss account for the year, the figures for the short self-employed tax return, and an income tax calculation, so the sole trader can see what tax the year is likely to bring.
 
-Each download is one accounting period, so the sole trader picks the year end that matches the accounts. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant, and DIY Accounting Limited, a family company, has made it since 2006. The same books open in a browser with DIYA-GL."""
+Each download is one accounting period, so the sole trader picks the year end that matches the accounts. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant, and DIY Accounting Limited, a family company, has made it since 2006. DIYA-GL keeps the same records in a browser."""
 keywords = ["sole trader", "bookkeeping spreadsheet", "Excel", "self-employed tax return", "profit and loss", "income tax", "free"]
 categories = ["Bookkeeping software", "Accounting software", "Spreadsheet templates"]
 features = [
@@ -1340,9 +1340,9 @@ tagline = "Free accounts spreadsheets for the self-employed"
 oneLine = "Sales, purchases, bank, VAT returns and both self-employed tax returns in Excel, free."
 description160 = "A free Excel accounts workbook for anyone self-employed, VAT registered or not: sales, purchases, bank, VAT returns, profit and loss and tax returns."
 description500 = """Self Employed is the DIY Accounting Spreadsheets package for anyone self-employed, VAT registered or not, with or without employees. It covers sales and sales invoices, purchases, cash and bank reconciliation, quarterly VAT returns, the profit and loss account and payslips. It produces the figures for both the short and the full self-employed tax return. It works in Microsoft Excel and OpenOffice Calc and is free to download."""
-long = """Self Employed is the DIY Accounting Spreadsheets package for anyone who works for themselves, whether VAT registered or not, and with or without employees. It keeps the whole year's books in one Excel workbook.
+long = """Self Employed is the DIY Accounting Spreadsheets package for anyone who works for themselves, whether VAT registered or not, and with or without employees. It keeps the whole year's records in one Excel workbook.
 
-The workbook holds a sales spreadsheet and sales invoices, a purchases spreadsheet, and a cash and bank reconciliation that checks the books against the bank statement. Each entry goes on one row with its date, its amount and its heading, and the totals add up as the entries go in.
+The workbook holds a sales spreadsheet and sales invoices, a purchases spreadsheet, and a cash and bank reconciliation that checks the records against the bank statement. Each entry goes on one row with its date, its amount and its heading, and the totals add up as the entries go in.
 
 For a VAT-registered business, the workbook produces the quarterly VAT return figures from the same entries, and DIY Accounting Submit can send that return to HMRC under Making Tax Digital. For any business, it produces the profit and loss account and the figures for both the short and the full self-employed tax return. A payslips sheet covers a business with employees.
 
@@ -1405,13 +1405,13 @@ tagline = "Free bookkeeping spreadsheet for taxi drivers"
 oneLine = "Income, expenses, mileage and the self-employed tax return for taxi drivers, free in Excel."
 description160 = "A free Excel bookkeeping workbook for taxi and private hire drivers, van drivers and couriers. It picks the cheaper of mileage or running costs."
 description500 = """Taxi Driver, also called Cabsmart, is the DIY Accounting Spreadsheets package for self-employed taxi and private hire drivers, van drivers and couriers. Record income and expenses, and the workbook compares the mileage allowance with your real vehicle running costs and uses the method that saves more tax. It produces the profit and loss account, the self-employed tax return figures and an income tax estimate. It is free to download."""
-long = """Taxi Driver, also called Cabsmart, is the DIY Accounting Spreadsheets package for self-employed taxi drivers and private hire drivers, and also for van drivers and couriers. It keeps a driver's books for the year in one Excel workbook.
+long = """Taxi Driver, also called Cabsmart, is the DIY Accounting Spreadsheets package for self-employed taxi drivers and private hire drivers, and also for van drivers and couriers. It keeps a driver's records for the year in one Excel workbook.
 
 The driver records income and expenses under the headings that a driver's work has. The workbook then makes the choice that matters most for a driver's tax: it compares the mileage allowance with the real running costs of the vehicle and uses whichever method gives the larger claim. A fixed assets sheet works out the capital allowances on the vehicle and other equipment.
 
 From those entries the workbook produces the profit and loss account, the figures for the self-employed tax return, and an estimate of the income tax for the year, so the driver can put money aside for it.
 
-Each download is one accounting period, so the driver picks the year end that matches the accounts. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant, and DIY Accounting Limited, a family company, has made it since 2006. A driver who is VAT registered can send the VAT return with DIY Accounting Submit, and DIYA-GL opens the same books in a browser."""
+Each download is one accounting period, so the driver picks the year end that matches the accounts. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant, and DIY Accounting Limited, a family company, has made it since 2006. A driver who is VAT registered can send the VAT return with DIY Accounting Submit, and DIYA-GL keeps the same records in a browser."""
 keywords = ["taxi driver", "private hire", "courier", "mileage allowance", "bookkeeping spreadsheet", "Excel", "self-employed tax return", "free"]
 categories = ["Bookkeeping software", "Accounting software", "Spreadsheet templates"]
 features = [
@@ -1473,16 +1473,16 @@ category = "Bookkeeping spreadsheets"
 priceText = "Free to download"
 priceNote = "Funded by voluntary donations."
 tagline = "Free accounts spreadsheets for limited companies"
-oneLine = "Double-entry books, VAT returns, year-end accounts and CT600 figures in Excel, free."
-description160 = "A free Excel accounts workbook for limited companies: double-entry books, VAT returns, balance sheet, year-end accounts and Corporation Tax figures."
+oneLine = "Double-entry bookkeeping, VAT returns, year-end accounts and CT600 figures in Excel, free."
+description160 = "A free Excel accounts workbook for limited companies: double-entry bookkeeping, VAT returns, balance sheet, year-end accounts and Corporation Tax figures."
 description500 = """Company Accounts is the DIY Accounting Spreadsheets package for limited companies, VAT registered or not, with or without employees. It uses double-entry bookkeeping and produces quarterly VAT returns, the profit and loss account, the balance sheet, year-end accounts for Companies House and the CT600 Corporation Tax figures. Payslips cover 5, 10 or 20 employees. It works in Microsoft Excel and OpenOffice Calc and is free to download."""
-long = """Company Accounts is the DIY Accounting Spreadsheets package for a limited company, whether VAT registered or not, and with or without employees. It keeps the company's books for the year in Excel with double-entry bookkeeping.
+long = """Company Accounts is the DIY Accounting Spreadsheets package for a limited company, whether VAT registered or not, and with or without employees. It keeps the company's records for the year in Excel with double-entry bookkeeping.
 
-The workbook holds a sales spreadsheet and sales invoices, a purchases spreadsheet, and a cash and bank reconciliation that checks the books against the bank statements. A fixed assets sheet works out the capital allowances, and the payslips cover 5, 10 or 20 employees.
+The workbook holds a sales spreadsheet and sales invoices, a purchases spreadsheet, and a cash and bank reconciliation that checks the records against the bank statements. A fixed assets sheet works out the capital allowances, and the payslips cover 5, 10 or 20 employees.
 
 From those entries the workbook produces the quarterly VAT returns, the monthly and yearly profit and loss account, the balance sheet, the final accounts for Companies House, and the CT600 Corporation Tax calculation. DIY Accounting Submit can send the VAT return to HMRC under Making Tax Digital and file the micro-entity or small company accounts with Companies House.
 
-Each download is one accounting period, so the company picks the year end that matches its accounts. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant who was also a Chartered Company Secretary, and DIY Accounting Limited, a family company, has made it since 2006. DIYA-GL opens the same books in a browser."""
+Each download is one accounting period, so the company picks the year end that matches its accounts. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant who was also a Chartered Company Secretary, and DIY Accounting Limited, a family company, has made it since 2006. DIYA-GL keeps the same records in a browser."""
 keywords = ["limited company", "company accounts", "double-entry bookkeeping", "Excel", "balance sheet", "CT600", "Corporation Tax", "VAT return", "free"]
 categories = ["Accounting software", "Bookkeeping software", "Spreadsheet templates"]
 features = [
@@ -1540,7 +1540,7 @@ long = """Payslips is the DIY Accounting Spreadsheets package for a small employ
 
 The employer enters the figures that the calculator gives for each pay day: the gross pay, the tax, the National Insurance and any other deductions. The workbook then prints a payslip for each employee on plain paper, weekly or monthly, with no special stationery.
 
-It keeps a running total of each employee's wages and deductions through the tax year, so the year-to-date figures on each payslip stay right and the employer can check the totals against the calculator at the year end. There are two versions, one for up to 5 employees and one for up to 10 employees. The Company Accounts package holds payslips for up to 20 employees beside the company's books.
+It keeps a running total of each employee's wages and deductions through the tax year, so the year-to-date figures on each payslip stay right and the employer can check the totals against the calculator at the year end. There are two versions, one for up to 5 employees and one for up to 10 employees. The Company Accounts package holds payslips for up to 20 employees beside the company's records.
 
 Each download covers one tax year. The workbook works in Microsoft Excel and OpenOffice Calc and comes with a step-by-step guide. It is free to download and funded by voluntary donations. It was designed by a Chartered Management Accountant, and DIY Accounting Limited, a family company, has made payroll and accounting spreadsheets since 2006."""
 keywords = ["payslips", "payroll spreadsheet", "small employer", "Basic PAYE Tools", "Excel", "PAYE", "free"]
@@ -1589,27 +1589,27 @@ section = "diya-gl"
 link = "https://diya-gl.co.uk/"
 category = "Bookkeeping software"
 priceText = "Free"
-priceNote = "No account needed. Signed in, the 35-day sandbox keeps books for 35 days after each save."
-tagline = "Your books, free in the browser"
-oneLine = "Open your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser."
-description160 = "DIYA-GL opens your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser."
-description500 = """DIYA-GL opens your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company books, free in your browser. With no account, your books stay on your device, and you can download the file to keep it. Sign in and the 35-day sandbox keeps your books for 35 days after each save, on any device. It comes from the family company behind DIY Accounting Spreadsheets and DIY Accounting Submit."""
-long = """DIYA-GL is bookkeeping in the browser, from the family company that makes DIY Accounting Spreadsheets. It opens the same four kinds of books as the spreadsheets: Basic Sole Trader, Self Employed, Taxi Driver and Limited Company.
+priceNote = "No account needed. Signed in, the 35-day sandbox keeps your DIYA-GL books for 35 days after each save."
+tagline = "Bookkeeping, free in the browser"
+oneLine = "Keep your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company records, free in your browser."
+description160 = "DIYA-GL keeps your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company records, free in your browser."
+description500 = """DIYA-GL keeps your Basic Sole Trader, Self Employed, Taxi Driver or Limited Company records, free in your browser. With no account, your records stay on your device, and you can download the DIYA-GL book to keep it. Sign in and the 35-day sandbox keeps the book for 35 days after each save, on any device. It comes from the family company behind DIY Accounting Spreadsheets and DIY Accounting Submit."""
+long = """DIYA-GL is bookkeeping in the browser, from the family company that makes DIY Accounting Spreadsheets. It keeps the same four kinds of records as the spreadsheets: Basic Sole Trader, Self Employed, Taxi Driver and Limited Company.
 
-A book can start new, or open from a DIY Accounting workbook, a zip of workbooks or a saved book file. Nothing is uploaded to open it: the file stays on the device. The book opens as sheets, as the workbook has them, and DIYA-GL works out its totals again from the entries. Where a figure read from a workbook differs from the figure that DIYA-GL works out, it shows the difference as a pencil correction, so a mistake in the workbook can be found.
+A DIYA-GL book, one business's sales, purchases and bank lines, can start new, or open from a DIY Accounting workbook, a zip of workbooks or a saved book file. Nothing is uploaded to open it: the file stays on the device. The book opens as sheets, as the workbook has them, and DIYA-GL works out its totals again from the entries. Where a figure read from a workbook differs from the figure that DIYA-GL works out, it shows the difference as a pencil correction, so a mistake in the workbook can be found.
 
-With no account, the books stay on the device until the browser data is cleared, and the book downloads as a file to keep for good. Signed in, the 35-day sandbox keeps the books for 35 days after each save, on any device.
+With no account, the records stay on the device until the browser data is cleared, and the book downloads as a file to keep for good. Signed in, the 35-day sandbox keeps the book for 35 days after each save, on any device.
 
 DIYA-GL is free. A VAT-registered business can fill its VAT return in DIY Accounting Submit from a DIYA-GL book, and DIYA-GL's own MCP server lets an AI assistant read a book. It is made by DIY Accounting Limited, a family company that has made accounting spreadsheets since 2006."""
 keywords = ["bookkeeping", "general ledger", "browser", "sole trader", "self-employed", "limited company", "taxi driver", "free"]
 categories = ["Bookkeeping software", "Accounting software", "Small business software"]
 features = [
-  "Opens Basic Sole Trader, Self Employed, Taxi Driver and Limited Company books",
+  "Keeps Basic Sole Trader, Self Employed, Taxi Driver and Limited Company records",
   "Opens DIY Accounting workbooks with nothing uploaded",
   "Starts a new book, or opens a workbook, a zip of workbooks or a saved book",
   "Shows where a workbook's figure differs from the worked-out figure",
   "Downloads the book as a file to keep",
-  "A 35-day sandbox on sign-in keeps books on any device",
+  "A 35-day sandbox on sign-in keeps the book on any device",
 ]
 integrations = ["DIY Accounting Spreadsheets", "DIY Accounting Submit", "MCP server for AI assistants"]
 videos = ["accounting-diya-gl-profit", "mcp-diya-gl", "short-diya-gl-books"]
@@ -1619,7 +1619,7 @@ videos = ["accounting-diya-gl-profit", "mcp-diya-gl", "short-diya-gl-books"]
   source = "diya-gl"
   page = "index.html"
   signedIn = false
-  alt = "The DIYA-GL home page: the four kinds of books"
+  alt = "The DIYA-GL home page: the four kinds of DIYA-GL book"
 
   [[listingProduct.screenshots]]
   id = "open-a-book"
@@ -1649,10 +1649,10 @@ priceNote = ""
 tagline = "Accounting software from a family company"
 oneLine = "The family company behind DIY Accounting Spreadsheets, DIYA-GL and DIY Accounting Submit."
 description160 = "DIY Accounting Limited is the family company behind DIY Accounting Spreadsheets, DIYA-GL and DIY Accounting Submit."
-description500 = """DIY Accounting Limited is a family company. Our founder, Terry Cartwright, started designing our accounting spreadsheets in 2006. We make DIY Accounting Spreadsheets, free Excel bookkeeping and accounts workbooks for UK small businesses; DIYA-GL, which opens those books free in your browser; and DIY Accounting Submit, which files VAT returns with HMRC and company accounts with Companies House."""
+description500 = """DIY Accounting Limited is a family company. Our founder, Terry Cartwright, started designing our accounting spreadsheets in 2006. We make DIY Accounting Spreadsheets, free Excel bookkeeping and accounts workbooks for UK small businesses; DIYA-GL, free bookkeeping in your browser; and DIY Accounting Submit, which files VAT returns with HMRC and company accounts with Companies House."""
 long = """DIY Accounting Limited is a family company, registered in England and Wales, that makes bookkeeping and filing software for UK small businesses. Its founder, Terry Cartwright, was a Chartered Management Accountant and a Chartered Company Secretary. He began designing payroll and accounting systems on Excel spreadsheets in 2006, and he answered customers' questions himself. His children have run the company since January 2010, with the same aim of ease of use and personal customer service.
 
-The company makes three products. DIY Accounting Spreadsheets are free Excel workbooks for sole traders, the self-employed, limited companies and taxi drivers, with a payslip workbook for small employers. DIYA-GL opens those same books free in a browser, with nothing uploaded, and keeps them in a 35-day sandbox for a signed-in user.
+The company makes three products. DIY Accounting Spreadsheets are free Excel workbooks for sole traders, the self-employed, limited companies and taxi drivers, with a payslip workbook for small employers. DIYA-GL keeps the same records free in a browser, with nothing uploaded, and keeps them in a 35-day sandbox for a signed-in user.
 
 DIY Accounting Submit files returns from the figures a business already keeps. It sends VAT returns to HMRC under Making Tax Digital, and files micro-entity and small company accounts and the confirmation statement with Companies House. It is listed on HMRC's software finder for Making Tax Digital VAT.
 
@@ -2370,7 +2370,7 @@ linkedin = "https://www.linkedin.com/company/3095113/"
 founded = 2006
 headCount = 4
 country = "United Kingdom"
-boilerplate = "DIY Accounting Limited is a family company, registered in England and Wales. Its founder, Terry Cartwright, a Chartered Management Accountant, started designing its accounting spreadsheets in 2006. It makes DIY Accounting Spreadsheets, free Excel bookkeeping and accounts workbooks for UK small businesses; DIYA-GL, which opens those books free in the browser; and DIY Accounting Submit, which files VAT returns with HMRC and company accounts with Companies House."
+boilerplate = "DIY Accounting Limited is a family company, registered in England and Wales. Its founder, Terry Cartwright, a Chartered Management Accountant, started designing its accounting spreadsheets in 2006. It makes DIY Accounting Spreadsheets, free Excel bookkeeping and accounts workbooks for UK small businesses; DIYA-GL, free bookkeeping in the browser; and DIY Accounting Submit, which files VAT returns with HMRC and company accounts with Companies House."
 founderName = "Terry Cartwright"
 founderShort = "Terry Cartwright founded DIY Accounting. A Chartered Management Accountant (ACMA) and Chartered Company Secretary (ACIS), he began designing payroll and accounting systems on Excel spreadsheets in 2006, and he designed all of its accounting and payroll software himself. Terry passed away in December 2009, and his children now manage the company."
 founderLong = "Terry Cartwright founded DIY Accounting. He qualified as a Chartered Management Accountant (ACMA) in 1971 and designed a revenue budgeting system for British Rail. He was Management and Works Accountant at New World Gas Cookers, then qualified as a Chartered Company Secretary (ACIS). At British Steel he became Head of Finance and Administration for the Refractories division. He worked in Saudi Arabia as Chief Accountant for an American corporation, then as Chief Accountant at Dunlop Industrial Hose. In the early 1980s he started his own retail and wholesale company, with turnover approaching £1 million. In the 1990s he returned to accountancy and served as Finance Director for a communications company. In 2006 he started DIY Accounting, designing payroll and accounting systems on Excel spreadsheets. As a Chartered Company Secretary he also acted as a company formation agent. Terry passed away in December 2009, and his children now manage the company."

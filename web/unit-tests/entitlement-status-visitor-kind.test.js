@@ -110,3 +110,29 @@ describe("entitlement widget operator flag", () => {
     expect(stored.get("visitorKind.operator")).toBe("1");
   });
 });
+
+describe("entitlement widget pass refusal", () => {
+  it("names a refusal by our own entitlement check, and nothing else, as wanting a pass", () => {
+    const { window } = loadWidget();
+    const { isBundleRefusal } = window.EntitlementStatus;
+
+    expect(isBundleRefusal({ code: "BUNDLE_ENTITLEMENT_REQUIRED" })).toBe(true);
+    expect(isBundleRefusal({ status: 403, reason: "BUNDLE_FORBIDDEN" })).toBe(true);
+    expect(isBundleRefusal(Object.assign(new Error("Forbidden - missing or insufficient bundle entitlement"), { status: 403 }))).toBe(true);
+    expect(isBundleRefusal({ status: 403, reason: "tokens_exhausted", message: "No tokens left" })).toBe(false);
+    expect(isBundleRefusal(Object.assign(new Error("HMRC did not allow access"), { status: 403 }))).toBe(false);
+    expect(isBundleRefusal(undefined)).toBe(false);
+  });
+
+  it("shows in Welsh that nothing reached Companies House, with a link to a day pass", () => {
+    const { window } = loadWidget({ language: "cy" });
+    window.showFailure = vi.fn();
+
+    window.EntitlementStatus.showPassNeeded("companiesHouse");
+
+    const [error, title] = window.showFailure.mock.calls[0];
+    expect(title).toBe("Mae angen tocyn arnoch ar gyfer hyn");
+    expect(error.failure.cause).toMatch(/^Nid oes dim wedi’i anfon at Dŷ’r Cwmnïau\./);
+    expect(error.failure.next).toEqual({ label: "Cael tocyn diwrnod", href: "/cy/bundles.html" });
+  });
+});

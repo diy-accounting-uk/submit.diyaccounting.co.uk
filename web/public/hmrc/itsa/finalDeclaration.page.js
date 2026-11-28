@@ -315,6 +315,10 @@ function showDeclarationCopy(declarationDetails, result) {
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -375,10 +379,12 @@ async function handleRetrieveFormSubmission(event) {
         hideStatus();
         await displayBusinessesAndLossPositions(calculation, nino, taxYear, hmrcGrantId);
       } catch (error) {
-        showStatus(
-          siteText("itsa-final.retrieve-failed", "Failed to retrieve the calculation: {reason}", { reason: error.message }),
-          "error",
-        );
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else
+          showStatus(
+            siteText("itsa-final.retrieve-failed", "Failed to retrieve the calculation: {reason}", { reason: error.message }),
+            "error",
+          );
       } finally {
         hideLoading();
       }
@@ -422,7 +428,9 @@ async function handleSubmitDeclaration() {
       } catch (error) {
         // A figure changed since the calculation the customer confirmed - the fix is a
         // fresh calculation, not a retry of this same submission.
-        if (
+        if (window.EntitlementStatus?.isBundleRefusal(error)) {
+          window.EntitlementStatus.showPassNeeded("hmrc");
+        } else if (
           String(error.message || "").includes("RULE_RECENT_SUBMISSIONS_EXIST") ||
           String(error.message || "").includes("More recent submissions exist")
         ) {
@@ -449,6 +457,13 @@ async function continueAfterOAuth() {
     const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
     const pendingRetrieve = JSON.parse(sessionStorage.getItem("pendingFinalDeclarationRetrieveRequest") || "null");
     const pendingSubmit = JSON.parse(sessionStorage.getItem("pendingFinalDeclarationSubmitRequest") || "null");
+
+    if ((pendingRetrieve || pendingSubmit) && (await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
+      sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
 
     if (pendingRetrieve) {
       showLoading();
@@ -492,7 +507,10 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    if (error.status === 403 && error.reason === "tokens_exhausted") {
+    const refusedForNoPass = window.EntitlementStatus?.isBundleRefusal(error);
+    if (refusedForNoPass) {
+      window.EntitlementStatus.showPassNeeded("hmrc");
+    } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
@@ -500,8 +518,10 @@ async function continueAfterOAuth() {
     }
     sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
     sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
-    window.hmrcScopeCheck.clearHmrcToken();
-    sessionStorage.removeItem("hmrcTokenScope");
+    if (!refusedForNoPass) {
+      window.hmrcScopeCheck.clearHmrcToken();
+      sessionStorage.removeItem("hmrcTokenScope");
+    }
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {

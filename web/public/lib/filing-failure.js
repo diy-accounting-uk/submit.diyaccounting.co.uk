@@ -384,3 +384,91 @@ export function classifyStripeFailure(error) {
     ...reference,
   };
 }
+
+// --- The VAT return: HMRC's error codes for a return ----------------------------------------------
+
+const VAT_RECEIPTS_HREF = "/hmrc/receipt/receipts.html";
+const VAT_RETURN_HREF = "/hmrc/vat/submitVat.html";
+
+function connectHmrcAgainNext() {
+  return { label: siteText("widget.connect-hmrc-again", "Connect to HMRC again"), href: VAT_RETURN_HREF };
+}
+
+// HMRC's own words for the error, where its answer carries them; else the client's message.
+function hmrcMessageOf(error) {
+  const message = error?.body?.responseBody?.message ?? error?.message;
+  return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
+function vatBusinessError(cause, error, next = null) {
+  const message = hmrcMessageOf(error);
+  return { kind: FAILURE_KINDS.businessError, service: "hmrc", cause, next, errors: message ? [message] : [] };
+}
+
+// HMRC's codes for a VAT return it refused, with what the person reads and does next. A code
+// that names Submit's own request is a fault in Submit.
+const HMRC_VAT_ERRORS = {
+  VRN_INVALID: (error) =>
+    vatBusinessError(
+      siteText("vat.failure-vrn", "HMRC did not accept the VAT registration number. Check the 9 numbers and send again."),
+      error,
+    ),
+  PERIOD_KEY_INVALID: (error) =>
+    vatBusinessError(
+      siteText("vat.failure-period", "HMRC does not know this VAT period. Choose the period from HMRC's open periods and send again."),
+      error,
+    ),
+  DUPLICATE_SUBMISSION: (error) =>
+    vatBusinessError(
+      siteText(
+        "vat.failure-duplicate",
+        "HMRC already has a return for this period. Your receipt is on the receipts page. To change a submitted return, contact HMRC.",
+      ),
+      error,
+      { label: siteText("vat.failure-receipts", "See your receipts"), href: VAT_RECEIPTS_HREF },
+    ),
+  TAX_PERIOD_NOT_ENDED: (error) =>
+    vatBusinessError(
+      siteText("vat.failure-not-ended", "The VAT period has not ended. Send the return after the period's end date."),
+      error,
+    ),
+  INVALID_MONETARY_AMOUNT: (error) =>
+    vatBusinessError(siteText("vat.failure-amount", "HMRC did not accept a box figure. Correct the box it names and send again."), error),
+  VAT_TOTAL_VALUE: (error) =>
+    vatBusinessError(siteText("vat.failure-box-3", "HMRC did not accept box 3: it must be box 1 plus box 2."), error),
+  VAT_NET_VALUE: (error) =>
+    vatBusinessError(siteText("vat.failure-box-5", "HMRC did not accept box 5: it must be the difference between boxes 3 and 4."), error),
+  CLIENT_OR_AGENT_NOT_AUTHORISED: () =>
+    yourCredentials(
+      "hmrc",
+      siteText(
+        "vat.failure-not-authorised",
+        "The HMRC sign-in you used has no access to this VAT number. Connect to HMRC with the Government Gateway user ID of this business.",
+      ),
+      connectHmrcAgainNext(),
+    ),
+  INVALID_CREDENTIALS: () =>
+    yourCredentials("hmrc", siteText("widget.failure-hmrc-expired", "Your HMRC connection has expired."), connectHmrcAgainNext()),
+  INSOLVENT_TRADER: (error) =>
+    vatBusinessError(
+      siteText("vat.failure-insolvent", "HMRC does not take a return online for a trader it lists as insolvent. Contact HMRC."),
+      error,
+    ),
+  NOT_FINALISED: (error) => submitFault(error),
+};
+HMRC_VAT_ERRORS.INVALID_VRN = HMRC_VAT_ERRORS.VRN_INVALID;
+HMRC_VAT_ERRORS.INVALID_PERIODKEY = HMRC_VAT_ERRORS.PERIOD_KEY_INVALID;
+HMRC_VAT_ERRORS.INVALID_NUMERIC_VALUE = HMRC_VAT_ERRORS.INVALID_MONETARY_AMOUNT;
+HMRC_VAT_ERRORS.RULE_INSOLVENT_TRADER = HMRC_VAT_ERRORS.INSOLVENT_TRADER;
+
+/**
+ * The kind of a VAT return's failure: HMRC's error code where it gave one, Submit's own reason
+ * for a period HMRC already has, and otherwise the kinds every filing shares.
+ * @param {{status?: number, code?: string, reason?: string, message?: string, body?: object}} error
+ */
+export function classifyHmrcVatFailure(error) {
+  const code = error?.reason === "obligation_already_fulfilled" ? "DUPLICATE_SUBMISSION" : error?.code;
+  const byCode = HMRC_VAT_ERRORS[code];
+  if (byCode) return byCode(error);
+  return classifyFilingFailure(error, { service: "hmrc" });
+}

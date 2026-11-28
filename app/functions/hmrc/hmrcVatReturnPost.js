@@ -507,7 +507,8 @@ export async function ingestHandler(event) {
     // Note: Tracing headers (x-request-id, traceparent) are available via context
     // but not currently included in 403 error responses. The request URL is passed
     // for logging purposes. See httpResponseHelper.js for response header handling.
-    await recordSubmissionFailure({ failure: "access-denied", summary: "VAT return blocked: no entitlement", clientId });
+    // Our own entitlement check refused it before any call to HMRC, so it is no failed filing.
+    await recordSubmissionFailure({ failure: "access-denied", summary: "VAT return blocked: no entitlement", emitMetric: false, clientId });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 

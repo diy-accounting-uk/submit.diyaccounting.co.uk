@@ -140,6 +140,13 @@ async function continueAfterOAuth() {
     const pendingLoad = JSON.parse(sessionStorage.getItem("pendingAdjustmentsLoadRequest") || "null");
     const pendingSave = JSON.parse(sessionStorage.getItem("pendingAdjustmentsSaveRequest") || "null");
 
+    if ((pendingLoad || pendingSave) && (await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
+      sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
+      window.EntitlementStatus.showPassNeeded("hmrc");
+      return;
+    }
+
     if (pendingLoad) {
       showLoading();
       showStatus(siteText("itsa-tla.loading", "Loading tax liability adjustments..."), "info");
@@ -175,10 +182,12 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
+    const refusedForNoPass = window.EntitlementStatus?.isBundleRefusal(error);
+    if (refusedForNoPass) window.EntitlementStatus.showPassNeeded("hmrc");
+    else showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
     sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
-    window.hmrcScopeCheck.clearHmrcToken();
+    if (!refusedForNoPass) window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
   } finally {
@@ -192,6 +201,10 @@ function handleOAuthCallback() {
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -240,7 +253,9 @@ async function handleLoadFormSubmission(event) {
         document.getElementById("adjustmentsEditForm").style.display = "block";
         hideStatus();
       } catch (error) {
-        if (error.status === 404 || /not.?found/i.test(error.message)) {
+        if (window.EntitlementStatus?.isBundleRefusal(error)) {
+          window.EntitlementStatus.showPassNeeded("hmrc");
+        } else if (error.status === 404 || /not.?found/i.test(error.message)) {
           loadedNino = nino;
           loadedTaxYear = taxYear;
           populateEditForm(null);
@@ -288,10 +303,12 @@ async function handleSaveClick() {
         await showSavedRecord(adjustmentsDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
-        showStatus(
-          siteText("itsa-tla.save-failed", "Failed to save tax liability adjustments: {reason}", { reason: error.message }),
-          "error",
-        );
+        if (window.EntitlementStatus?.isBundleRefusal(error)) window.EntitlementStatus.showPassNeeded("hmrc");
+        else
+          showStatus(
+            siteText("itsa-tla.save-failed", "Failed to save tax liability adjustments: {reason}", { reason: error.message }),
+            "error",
+          );
       } finally {
         hideLoading();
       }

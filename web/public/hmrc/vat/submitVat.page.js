@@ -361,6 +361,12 @@ async function handleFormSubmission(event) {
   window.formErrors.showFormErrors(errors);
   if (errors.length > 0) return;
 
+  // Without a pass the server refuses the return, so stop before the HMRC sign-in.
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    showPassNeeded();
+    return;
+  }
+
   // Store submission data for the submission handler
   submissionData = {
     vatNumber,
@@ -497,12 +503,51 @@ async function continueVatSubmission() {
     }
 
     console.log("Retrieved submission data:", submissionData);
+    window.narrateStage?.(siteText("vat-submit.narrate-checking", "Checking your answers..."));
+
+    if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      sessionStorage.removeItem("submission_data");
+      showForm();
+      document.getElementById("declaration").checked = true;
+      showPassNeeded();
+      return;
+    }
+
+    // The list holds only the periods inside the dates HMRC was asked about; an older period can
+    // still be open, so only dates inside them are checked against the list.
+    const insideSearchedDates =
+      obligationsSearchWindow &&
+      submissionData.periodStart >= obligationsSearchWindow.from &&
+      submissionData.periodEnd <= obligationsSearchWindow.to;
+    const openPeriods =
+      obligationsBoundForVrn === submissionData.vatNumber && insideSearchedDates
+        ? window.vatPeriodChoice.boundOpenObligations(document.getElementById("obligationChoice"))
+        : null;
+    if (openPeriods && !window.vatPeriodChoice.findCloseObligation(openPeriods, submissionData.periodStart, submissionData.periodEnd)) {
+      sessionStorage.removeItem("submission_data");
+      showForm();
+      document.getElementById("declaration").checked = true;
+      showStatus(
+        siteText(
+          "vat-submit.period-not-open",
+          "Nothing has been sent to HMRC. HMRC is not expecting a return for {requested}. Its open VAT periods are: {periods}. Choose one and submit again.",
+          {
+            requested: window.vatPeriodChoice.obligationLabel({ start: submissionData.periodStart, end: submissionData.periodEnd }),
+            periods: openPeriods.map((obligation) => window.vatPeriodChoice.obligationLabel(obligation)).join("; "),
+          },
+        ),
+        "error",
+      );
+      document.getElementById("obligationChoice").focus();
+      return;
+    }
 
     // Hide form while submitting
     hideForm();
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus(siteText("vat-submit.submitting", "Submitting VAT return to HMRC..."), "info");
+    document.getElementById("failureDetail")?.remove();
+    window.narrateStage?.(siteText("vat-submit.narrate-sending", "Sending the return to HMRC..."));
 
     // Submit VAT return with 9-box data
     const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, hmrcGrantId);
@@ -526,7 +571,12 @@ async function continueVatSubmission() {
     console.log("Continue submission handler (success, session storage cleared)");
   } catch (error) {
     console.error("Submission error:", error);
-    showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
+    const refusedForNoPass = isBundleRefusal(error);
+    if (refusedForNoPass) showPassNeeded();
+    else {
+      showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
+      window.vatFilingFailure?.show(error, returnSentText(error));
+    }
     // Auto-expand form on error so user can retry. A submission only starts once the
     // declaration is ticked, so the box stays ticked after the page reload of the HMRC sign-in.
     showForm();
@@ -534,8 +584,11 @@ async function continueVatSubmission() {
     // Clear submission data to prevent auto-retry loop on next page load
     // User will need to manually retry by filling the form again
     sessionStorage.removeItem("submission_data");
-    sessionStorage.removeItem("hmrcGrantId");
-    sessionStorage.removeItem("hmrcTokenScope");
+    // A refusal by our own entitlement check leaves the HMRC grant good for the retry after a pass.
+    if (!refusedForNoPass) {
+      sessionStorage.removeItem("hmrcGrantId");
+      sessionStorage.removeItem("hmrcTokenScope");
+    }
     sessionStorage.removeItem("oauth_state");
     sessionStorage.removeItem("currentActivity");
     console.log("Submission failed, cleared session storage to prevent retry loop");
@@ -676,6 +729,9 @@ let vatFormContainer = null;
 // when the page loads with a token in place and when the VRN is entered; without a token the form
 // offers a connect button and keeps the free date inputs.
 let obligationsLoadedForVrn = null;
+// The VRN whose open obligations the period list holds, and the dates HMRC was asked about.
+let obligationsBoundForVrn = null;
+let obligationsSearchWindow = null;
 let hmrcAssist = null;
 const HMRC_ASSIST_CHECK_PENDING_KEY = "hmrcAssistCheckPending";
 
@@ -710,6 +766,56 @@ function showObligationStatus(message) {
   document.getElementById("obligationStatus").textContent = message;
 }
 
+// What a failed return left at HMRC: an answer from HMRC refused it; no answer leaves it unknown.
+function returnSentText(error) {
+  if (typeof error?.status !== "number" || error.status >= 500) {
+    return siteText(
+      "vat-submit.failure-sent-unknown",
+      "Submit did not get HMRC's answer, so it cannot say whether HMRC has the return. Check your receipts before you send it again.",
+    );
+  }
+  return siteText("vat-submit.failure-sent-refused", "HMRC did not take the return. Nothing was filed.");
+}
+
+function bundlesPageHref() {
+  return window.siteLanguage?.chrome() === "cy" ? "/cy/bundles.html" : "/bundles.html";
+}
+
+function isBundleRefusal(error) {
+  return (
+    error?.code === "BUNDLE_ENTITLEMENT_REQUIRED" ||
+    (error?.status === 403 && error?.reason !== "tokens_exhausted" && /bundle entitlement/i.test(error?.message || ""))
+  );
+}
+
+function showPassNeeded() {
+  showFailure(
+    {
+      failure: {
+        cause: siteText(
+          "vat-submit.pass-needed-cause",
+          "Nothing has been sent to HMRC. Your account has no pass or bundle that lets you submit a VAT return.",
+        ),
+        next: { label: siteText("vat-submit.get-day-pass", "Get a day pass"), href: bundlesPageHref() },
+      },
+    },
+    siteText("vat-submit.pass-needed-title", "You need a pass to submit a VAT return"),
+  );
+}
+
+function showObligationPassNeeded() {
+  const link = document.createElement("a");
+  link.href = bundlesPageHref();
+  link.textContent = siteText("vat-submit.get-day-pass", "Get a day pass");
+  document
+    .getElementById("obligationStatus")
+    .replaceChildren(
+      siteText("vat-submit.periods-need-pass", "You need a pass to read your open VAT periods from HMRC and to submit a return."),
+      " ",
+      link,
+    );
+}
+
 async function loadOpenObligations() {
   const vrn = document.getElementById("vatNumber").value.trim();
   if (!/^\d{9}$/.test(vrn) || obligationsLoadedForVrn === vrn) return;
@@ -729,6 +835,12 @@ async function loadOpenObligations() {
   }
   connectBtn.style.display = "none";
 
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    obligationsLoadedForVrn = null;
+    showObligationPassNeeded();
+    return;
+  }
+
   try {
     const { from, to } = window.vatPeriodChoice.obligationSearchWindow(Date.now());
     const params = new URLSearchParams({ vrn, from, to, status: "O" });
@@ -746,6 +858,11 @@ async function loadOpenObligations() {
       headers: requestHeaders,
     });
     hideStatus(); // Clear the polling banner the fetch leaves behind
+    if (response.status === 403 && /BUNDLE_ENTITLEMENT_REQUIRED|bundle entitlement/i.test(await response.text())) {
+      obligationsLoadedForVrn = null;
+      showObligationPassNeeded();
+      return;
+    }
     if (!response.ok) throw new Error(`Obligations request failed with status ${response.status}`);
     const result = await response.json();
     const open = window.vatPeriodChoice.openObligations(result.obligations);
@@ -765,6 +882,8 @@ async function loadOpenObligations() {
       },
       open,
     );
+    obligationsBoundForVrn = vrn;
+    obligationsSearchWindow = { from, to };
     showObligationStatus("");
     hmrcAssist?.refresh();
   } catch (error) {
@@ -1047,6 +1166,11 @@ onDOMReady(async function () {
       ].map((id) => document.getElementById(id)),
       submitButton: document.getElementById("submitBtn"),
       ensureAccess: ensureHmrcAssistAccess,
+      onFailure: (error) =>
+        window.vatFilingFailure?.show(
+          error,
+          siteText("vat-submit.assist-failure-sent", "Nothing was filed. HMRC Assist reads the figures and files nothing."),
+        ),
       highlightIds: HMRC_ASSIST_BOX_IDS,
       unavailableText: siteText(
         "vat-submit.assist-unavailable",
