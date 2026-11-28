@@ -28919,3 +28919,67 @@ cy = '''Mae eich atebion yn dal ar y dudalen hon. Mae anfon eto yn parhau o’r 
 [strings."ch.change.failure-answers-new"]
 hash = "dbce1ba39d99"
 cy = '''Dewiswch Dechrau ffeilio newydd a rhowch yr atebion eto gyda’r cywiriad.'''
+# == The confirmation statement's field notes and its failure panel, ids ch.cs.field-* and ch.cs.failure-* ==
+[strings."ch.cs.failure-sent-preview"]
+hash = "8f791a3446ab"
+cy = '''Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim gael ei anfon.'''
+
+[strings."ch.cs.failure-answers"]
+hash = "a1600a6059d9"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon. Dim ond yn y dudalen hon y cedwir y cod dilysu a’r codau personol, felly bydd tudalen newydd yn gofyn amdanynt eto.'''
+
+[strings."ch.cs.failure-sent-psc-none"]
+hash = "e6af006f662b"
+cy = '''Ni dderbyniodd Tŷ’r Cwmnïau y datganiad dilysu ar gyfer {name}. Ni ffeiliwyd dim.'''
+
+[strings."ch.cs.failure-sent-held"]
+hash = "0c3ca905f483"
+cy = '''Mae gan Dŷ’r Cwmnïau y datganiad (cyflwyniad {number}).'''
+
+[strings."ch.cs.failure-sent-none"]
+hash = "63d69f6f1b1e"
+cy = '''Ni dderbyniodd Tŷ’r Cwmnïau y datganiad cadarnhau. Ni ffeiliwyd dim.'''
+
+[strings."ch.cs.field-review-date-hint"]
+hash = "fcf09d3bb0c6"
+cy = '''Rhaid i’r gofrestr fod yn gywir ar y dyddiad hwn. Ni all fod yn hwyrach na’r dyddiad cadarnhau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni.'''
+
+[strings."ch.cs.field-sic-codes-hint"]
+hash = "42c261bde6cb"
+cy = '''Prif weithgareddau busnes y cwmni fel codau SIC. Rhowch hyd at bedwar, wedi’u gwahanu gan gomas.'''
+
+[strings."ch.cs.field-amount-unpaid-hint"]
+hash = "040e342d2221"
+cy = '''Yr hyn sydd gan y cyfranddalwyr yn ddyledus o hyd ar y cyfrannau a ddyroddwyd.'''
+
+[strings."ch.cs.field-issued-shares-hint"]
+hash = "33a319683e50"
+cy = '''Pob cyfran y mae’r cwmni wedi’i dyroddi, ar draws ei holl ddosbarthiadau.'''
+
+[strings."ch.cs.field-share-currency-hint"]
+hash = "67861511acad"
+cy = '''Arian cyfred y cyfalaf cyfranddaliadau, er enghraifft GBP.'''
+
+[strings."ch.cs.field-nominal-value-hint"]
+hash = "31b061fa28df"
+cy = '''Gwerth nominal yr holl gyfrannau a ddyroddwyd gyda’i gilydd.'''
+
+[strings."ch.cs.field-registered-email-hint"]
+hash = "2a4511cb9123"
+cy = '''Mae Tŷ’r Cwmnïau yn ysgrifennu at y cwmni yn y cyfeiriad hwn. Nid yw ar y gofrestr gyhoeddus.'''
+
+[strings."ch.cs.field-lawful-purpose-hint"]
+hash = "a8263c702dd2"
+cy = '''Mae pob datganiad cadarnhau yn cadarnhau bod yr hyn y mae’r cwmni’n bwriadu ei wneud yn gyfreithlon.'''
+
+[strings."ch.cs.field-state-confirmation-hint"]
+hash = "f56fa2d1b8e6"
+cy = '''Mae’r cwmni’n cadarnhau bod gan Dŷ’r Cwmnïau bopeth y mae’n rhaid iddo ei gael, neu y bydd yn ei gael gyda’r datganiad hwn.'''
+
+[strings."ch.cs.field-director-code-hint"]
+hash = "614b580e0b1f"
+cy = '''Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r cyfarwyddwr pan ddilyswyd ei hunaniaeth, er enghraifft CWMPS832223.'''
+
+[strings."ch.cs.field-psc-code-hint"]
+hash = "54e84da00853"
+cy = '''Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r unigolyn hwn pan ddilyswyd ei hunaniaeth. Mae gan unigolyn un cod ar gyfer pob rôl.'''

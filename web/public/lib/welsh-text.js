@@ -597,11 +597,32 @@ window.WELSH_TEXT = {
     "Rhaid i {name} wirio ei hunaniaeth gyda Thŷ’r Cwmnïau, ac mae angen ei enwau cyntaf eraill a’i god personol o 11 nod (llythrennau a digidau) ar y datganiad hwn cyn y gellir ei gyflwyno.",
   "ch.cs.director-required": "Mae angen datganiad gwirio gan o leiaf un cyfarwyddwr presennol.",
   "ch.cs.enter-date": "Rhowch ddyddiad y datganiad cadarnhau.",
+  "ch.cs.failure-answers":
+    "Mae eich atebion yn dal yn y ffurflen hon. Dim ond yn y dudalen hon y cedwir y cod dilysu a’r codau personol, felly bydd tudalen newydd yn gofyn amdanynt eto.",
+  "ch.cs.failure-sent-held": "Mae gan Dŷ’r Cwmnïau y datganiad (cyflwyniad {number}).",
+  "ch.cs.failure-sent-none": "Ni dderbyniodd Tŷ’r Cwmnïau y datganiad cadarnhau. Ni ffeiliwyd dim.",
+  "ch.cs.failure-sent-preview": "Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim gael ei anfon.",
+  "ch.cs.failure-sent-psc-none": "Ni dderbyniodd Tŷ’r Cwmnïau y datganiad dilysu ar gyfer {name}. Ni ffeiliwyd dim.",
   "ch.cs.fee-applies": "Mae ffi yn berthnasol i’r cyfnod talu hwn - mae’r swm yn cael ei ddangos cyn i chi gyflwyno.",
   "ch.cs.fee-charged": "Bydd {fee} yn cael ei godi cyn i hyn gael ei gyflwyno i Dŷ’r Cwmnïau.",
   "ch.cs.fee-own-presenter":
     "Mae Tŷ’r Cwmnïau yn codi ei ffi ar y cyfrif credyd y tu ôl i’ch cyflwynydd. Nid yw Submit yn codi ffi ei hun.",
   "ch.cs.fee-paid": "Dim ffi: mae’r cyfnod talu hwn wedi’i dalu eisoes.",
+  "ch.cs.field-amount-unpaid-hint": "Yr hyn sydd gan y cyfranddalwyr yn ddyledus o hyd ar y cyfrannau a ddyroddwyd.",
+  "ch.cs.field-director-code-hint":
+    "Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r cyfarwyddwr pan ddilyswyd ei hunaniaeth, er enghraifft CWMPS832223.",
+  "ch.cs.field-issued-shares-hint": "Pob cyfran y mae’r cwmni wedi’i dyroddi, ar draws ei holl ddosbarthiadau.",
+  "ch.cs.field-lawful-purpose-hint": "Mae pob datganiad cadarnhau yn cadarnhau bod yr hyn y mae’r cwmni’n bwriadu ei wneud yn gyfreithlon.",
+  "ch.cs.field-nominal-value-hint": "Gwerth nominal yr holl gyfrannau a ddyroddwyd gyda’i gilydd.",
+  "ch.cs.field-psc-code-hint":
+    "Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r unigolyn hwn pan ddilyswyd ei hunaniaeth. Mae gan unigolyn un cod ar gyfer pob rôl.",
+  "ch.cs.field-registered-email-hint": "Mae Tŷ’r Cwmnïau yn ysgrifennu at y cwmni yn y cyfeiriad hwn. Nid yw ar y gofrestr gyhoeddus.",
+  "ch.cs.field-review-date-hint":
+    "Rhaid i’r gofrestr fod yn gywir ar y dyddiad hwn. Ni all fod yn hwyrach na’r dyddiad cadarnhau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni.",
+  "ch.cs.field-share-currency-hint": "Arian cyfred y cyfalaf cyfranddaliadau, er enghraifft GBP.",
+  "ch.cs.field-sic-codes-hint": "Prif weithgareddau busnes y cwmni fel codau SIC. Rhowch hyd at bedwar, wedi’u gwahanu gan gomas.",
+  "ch.cs.field-state-confirmation-hint":
+    "Mae’r cwmni’n cadarnhau bod gan Dŷ’r Cwmnïau bopeth y mae’n rhaid iddo ei gael, neu y bydd yn ei gael gyda’r datganiad hwn.",
   "ch.cs.file-failed": "Methwyd â ffeilio’r datganiad cadarnhau gyda Thŷ’r Cwmnïau.",
   "ch.cs.filing-early":
     "Os caiff ei ffeilio nawr, mae’r datganiad wedi’i wneud hyd at heddiw, ac mae’r dyddiad cadarnhau nesaf yn symud i flwyddyn o heddiw.",

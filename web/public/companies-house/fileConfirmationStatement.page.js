@@ -32,6 +32,10 @@ const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResume";
 // letters and digits interleaved) is caught before a submit round trip.
 const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/;
 
+// Each field's reference and note, and the panel a failed filing leaves; this script is not a module.
+const confirmationStatementFields = import("../lib/confirmation-statement-fields.js");
+const filingFailure = import("../lib/filing-failure.js");
+
 // The two headers the status poll (a GET) carries the own presenter in.
 function ownPresenterHeaders() {
   return ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
@@ -506,6 +510,11 @@ function renderDirectorRows(directors) {
   currentDirectors = directors;
   const container = document.getElementById("directorRowsContainer");
   container.replaceChildren(...directors.map((director, index) => buildDirectorRow(index, director)));
+  confirmationStatementFields.then((fields) =>
+    directors.forEach((director, index) =>
+      fields.showFieldDetail(document, fields.DIRECTOR_PERSONAL_CODE_FIELD, `directorPersonalCode-${index}`),
+    ),
+  );
 }
 
 function renderShareClasses(shares) {
@@ -919,9 +928,30 @@ async function handleReviewFormSubmit(event) {
   } catch (error) {
     console.error("Failed to render the confirmation statement preview:", error);
     showStatus(error.message || window.siteText("ch.cs.preview-failed", "Failed to render the confirmation statement preview."), "error");
+    await showFilingFailure(
+      error,
+      window.siteText("ch.cs.failure-sent-preview", "Nothing was sent to Companies House. The preview is built before anything is sent."),
+    );
   } finally {
     hideLoading();
   }
+}
+
+// --- What a failure left behind ----------------------------------------------------------------
+
+// The codes live only in this page's variables, so the answers are in the form and nowhere else.
+function answersWhereText() {
+  return window.siteText(
+    "ch.cs.failure-answers",
+    "Your answers are still in this form. The authentication code and the personal codes are kept only in this page, so a new page asks for them again.",
+  );
+}
+
+// The panel under the status messages: what was sent and what was not, where the answers are, and
+// the kind of failure with its next step.
+async function showFilingFailure(error, sent) {
+  const { classifyFilingFailure, showFailureDetail } = await filingFailure;
+  showFailureDetail(document, { sent, answers: answersWhereText(), failure: classifyFilingFailure(error, { service: "companiesHouse" }) });
 }
 
 // A GovTalkErrors block (error.body.errors) means the gateway never accepted the envelope,
@@ -991,6 +1021,9 @@ function renderPscFollowUp() {
     "Companies House verifies a person with significant control separately from the confirmation statement, through a PSC verification statement filed after this one, inside the window starting the day after the review date. Enter each person's own PSC personal code below to file theirs now.",
   );
   container.replaceChildren(heading, explanation, ...matches.map((match) => buildPscFollowUpRow(match, matches)));
+  confirmationStatementFields.then((fields) =>
+    matches.forEach(({ index }) => fields.showFieldDetail(document, fields.PSC_PERSONAL_CODE_FIELD, `pscPersonalCode-${index}`)),
+  );
 }
 
 function buildPscFollowUpRow({ director, index, psc }, matches) {
@@ -1159,6 +1192,16 @@ async function handlePscVerificationSubmit(index, matches) {
         "error",
       ),
     );
+    await showFilingFailure(
+      error,
+      window.siteText(
+        "ch.cs.failure-sent-psc-none",
+        "Companies House did not take the verification statement for {name}. Nothing was filed.",
+        {
+          name: [entry.director.forename, entry.director.surname].filter(Boolean).join(" ") || entry.psc.name,
+        },
+      ),
+    );
   } finally {
     hideLoading();
   }
@@ -1290,6 +1333,7 @@ async function handleSubmitFiling() {
   showLoading();
   hideStatus();
   let payload;
+  let submission;
   try {
     payload = { ...buildStatementPayload(), companyAuthCode };
     const govTestScenario = document.getElementById("govTestScenario").value.trim();
@@ -1297,7 +1341,7 @@ async function handleSubmitFiling() {
     // The own presenter rides in the submit request alone. The record rendered afterwards is built from payload,
     // so it is kept off payload and sent separately.
     window.narrateStage(window.siteText("ch.narrate-sending-statement", "Sending the confirmation statement to Companies House..."));
-    const submission = await window.submitConfirmationStatement(ownPresenter ? { ...payload, ownPresenter } : payload, {
+    submission = await window.submitConfirmationStatement(ownPresenter ? { ...payload, ownPresenter } : payload, {
       ...govTestScenarioHeaders,
       ...languageHeaders(),
     });
@@ -1327,6 +1371,14 @@ async function handleSubmitFiling() {
         window.siteText("ch.cs.file-failed", "Failed to file the confirmation statement with Companies House."),
       ),
       "error",
+    );
+    await showFilingFailure(
+      error,
+      submission
+        ? window.siteText("ch.cs.failure-sent-held", "Companies House has the statement (submission {number}).", {
+            number: submission.submissionNumber,
+          })
+        : window.siteText("ch.cs.failure-sent-none", "Companies House did not take the confirmation statement. Nothing was filed."),
     );
   } finally {
     hideLoading();
@@ -1449,6 +1501,8 @@ if (window.__submitReady__) {
 } else {
   document.addEventListener("submit-ready", resumeAfterCheckoutIfReady, { once: true });
 }
+
+confirmationStatementFields.then((fields) => fields.showConfirmationStatementFields(document));
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("authForm").addEventListener("submit", handleAuthSubmit);

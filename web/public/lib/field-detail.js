@@ -33,7 +33,7 @@ const REFERENCE_PATTERNS = [
     /^CA (\d+[A-Z]?); CA (\d+[A-Z]?)$/,
     ([, first, second]) => siteText("field.reference-companies-act-two", "Companies Act sections {first} and {second}", { first, second }),
   ],
-  [/^CA (\d+[A-Z]?)/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
+  [/^CA (\d+[A-Z]{0,2})/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
   [/^R(\d+)/, ([, paragraph]) => siteText("field.reference-regulations", "Schedule 1 paragraph {paragraph}", { paragraph })],
   [/^Notes$/, () => siteText("field.reference-notes", "Notes to the accounts")],
   [/^Declaration$/, () => siteText("field.reference-declaration", "Declaration")],

@@ -22,6 +22,7 @@ function confirmationStatementErrorFromResponse(response, body) {
   const error = new Error(message);
   error.status = response.status;
   error.body = body;
+  error.requestId = response.headers?.get?.("x-request-id") ?? undefined;
   return error;
 }
 
