@@ -17,6 +17,7 @@ import {
   expectCleanFigures,
   serveItsaPageScripts,
   serveCarriedIdentifiers,
+  serveHmrcWrite,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -36,7 +37,9 @@ test.describe("ITSA Tax Calculation - Form", () => {
     return page.locator('section[aria-label="Allowances and deductions"]');
   }
 
-  async function loadPage(page) {
+  // atRealOrigin navigates to the page, so its module scripts load; setContent leaves the
+  // document at about:blank, where they do not.
+  async function loadPage(page, { atRealOrigin = false } = {}) {
     await page.route("**/*.js", async (route) => {
       const request = route.request();
       if (request.resourceType() === "script") {
@@ -49,6 +52,7 @@ test.describe("ITSA Tax Calculation - Form", () => {
     await serveCarriedIdentifiers(page);
     await serveHmrcFieldTableAssets(page);
     await serveHmrcAssistWidget(page);
+    await serveHmrcWrite(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
@@ -62,10 +66,13 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 </script>`,
     );
 
-    await page.setContent(modifiedHtml, {
-      url: "http://localhost:3000/hmrc/itsa/taxCalculation.html",
-      waitUntil: "domcontentloaded",
-    });
+    const url = "http://localhost:3000/hmrc/itsa/taxCalculation.html";
+    if (atRealOrigin) {
+      await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml }));
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+    } else {
+      await page.setContent(modifiedHtml, { url, waitUntil: "domcontentloaded" });
+    }
     await delay(200);
   }
 
@@ -469,5 +476,33 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
       expect(pageOverflow).toBeLessThanOrEqual(0);
       await page.screenshot({ path: screenshotPath(`taxCalculation-record-${width}`).replace("-1280.png", ".png"), fullPage: true });
     }
+  });
+
+  test("asking for a calculation says it is asking HMRC, and HMRC unable to answer shows the panel with the choices kept", async ({
+    page,
+  }) => {
+    await serveSiteStyles(page);
+    await page.addInitScript(() => sessionStorage.setItem("hmrcGrantId", "grant-1"));
+    await loadPage(page, { atRealOrigin: true });
+    await page.evaluate(() => {
+      window.formErrors = { requireFields: () => true };
+      window.triggerCalculation = () =>
+        new Promise((resolve, reject) => {
+          window.answerHmrc = () =>
+            reject(Object.assign(new Error("HMRC is unavailable"), { status: 502, body: { error: { hmrcResponseCode: 503 } } }));
+        });
+    });
+
+    await page.locator("#nino").fill("AB123456C");
+    await page.locator("#calculationType").selectOption("in-year");
+    await page.locator("#triggerBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Asking HMRC to calculate the tax...");
+    await page.evaluate(() => window.answerHmrc());
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText("HMRC has not calculated the tax.");
+    await expect(panel.locator('[data-part="answers"]')).toHaveText("Your choices are still in the form.");
+    await expect(page.locator("#triggerForm")).toBeVisible();
+    await panel.screenshot({ path: screenshotPath("taxCalculation-failure-panel") });
   });
 });

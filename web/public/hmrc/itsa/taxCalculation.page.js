@@ -180,8 +180,14 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
 async function runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
-  showStatus(siteText("itsa-calculation.calculating", "Calculating... this can take a few seconds."), "info");
-  const calculation = await runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+  const calculation = await window.fileWithHmrc(
+    {
+      sending: siteText("itsa-calculation.narrate-asking", "Asking HMRC to calculate the tax..."),
+      notSent: siteText("itsa-calculation.failure-not-calculated", "HMRC has not calculated the tax."),
+      answers: siteText("itsa-calculation.failure-answers", "Your choices are still in the form."),
+    },
+    () => runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId),
+  );
   displayCalculation(calculation, calculationDetails.nino, calculationDetails.taxYear, calculationDetails.calculationType);
   document.getElementById("triggerForm").style.display = "none";
   document.getElementById("calculationResults").style.display = "block";

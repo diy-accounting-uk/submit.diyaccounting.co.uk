@@ -75,9 +75,17 @@ async function runRetrieveCalculation(nino, taxYear, calculationId, testScenario
   );
 }
 
-async function runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
+// answers says where the declaration stands if the submission fails: still on the page, or to be made again.
+async function runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId, answers) {
   const govClientHeaders = await getGovClientHeaders();
-  return await postFinalDeclaration(declarationDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await window.fileWithHmrc(
+    {
+      sending: siteText("itsa-final.narrate-sending", "Sending the final declaration to HMRC..."),
+      notSent: siteText("itsa-final.failure-not-sent", "HMRC has not got the final declaration."),
+      answers,
+    },
+    () => postFinalDeclaration(declarationDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario),
+  );
 }
 
 const TAX_BREAKDOWN_VALUE_IDS = {
@@ -399,8 +407,13 @@ async function handleSubmitDeclaration() {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa-final.submitting", "Submitting final declaration..."), "info");
-        const result = await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+        const result = await runSubmitDeclaration(
+          declarationDetails,
+          testScenario,
+          runFraudPreventionHeaderValidation,
+          hmrcGrantId,
+          siteText("itsa-final.failure-answers-page", "The calculation and your declaration are still on this page."),
+        );
         showDeclarationCopy(declarationDetails, result);
         document.getElementById("declarationContainer").style.display = "none";
         document.getElementById("finalDeclarationResults").style.display = "block";
@@ -460,12 +473,12 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
     } else if (pendingSubmit) {
       showLoading();
-      showStatus(siteText("itsa-final.submitting", "Submitting final declaration..."), "info");
       const result = await runSubmitDeclaration(
         pendingSubmit.declarationDetails,
         pendingSubmit.testScenario,
         pendingSubmit.runFraudPreventionHeaderValidation,
         hmrcGrantId,
+        siteText("itsa-final.failure-answers-again", "Retrieve the calculation again and confirm the declaration again."),
       );
       showDeclarationCopy(pendingSubmit.declarationDetails, result);
       document.getElementById("declarationContainer").style.display = "none";

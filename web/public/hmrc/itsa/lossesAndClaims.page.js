@@ -199,9 +199,17 @@ async function loadLossesAndClaims(nino, businessId, taxYear, testScenario, runF
   );
 }
 
-async function saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
+// answers says where the figures are if the save fails: still in the form, or to be entered again.
+async function saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId, answers) {
   const govClientHeaders = await getGovClientHeaders();
-  return await putLossesAndClaims(lossesDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return await window.fileWithHmrc(
+    {
+      sending: siteText("itsa-losses.narrate-sending", "Sending the losses and claims to HMRC..."),
+      notSent: siteText("itsa-losses.failure-not-sent", "HMRC has not got the losses and claims."),
+      answers,
+    },
+    () => putLossesAndClaims(lossesDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario),
+  );
 }
 
 async function continueAfterOAuth() {
@@ -232,12 +240,12 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingLossesLoadRequest");
     } else if (pendingSave) {
       showLoading();
-      showStatus(siteText("itsa-losses.saving", "Saving losses and claims..."), "info");
       const saved = await saveLossesAndClaims(
         pendingSave.lossesDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
         hmrcGrantId,
+        siteText("itsa-losses.failure-answers-again", "Your figures were not kept. Load the losses and claims and enter them again."),
       );
       await showSavedRecord(pendingSave.lossesDetails, saved?.correlationId);
       hideStatus();
@@ -359,8 +367,13 @@ async function handleSaveClick() {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa-losses.saving", "Saving losses and claims..."), "info");
-        const saved = await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+        const saved = await saveLossesAndClaims(
+          lossesDetails,
+          testScenario,
+          runFraudPreventionHeaderValidation,
+          hmrcGrantId,
+          siteText("itsa-losses.failure-answers-form", "Your figures are still in the form."),
+        );
         await showSavedRecord(lossesDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
@@ -371,6 +384,8 @@ async function handleSaveClick() {
     },
   );
 }
+
+import("../../lib/itsa-year-end-fields.js").then(({ showYearEndFields }) => showYearEndFields(document, "lossesAndClaims"));
 
 document.getElementById("itsaLossesLoadForm").addEventListener("submit", handleLoadFormSubmission);
 document.getElementById("saveBtn").addEventListener("click", handleSaveClick);

@@ -89,6 +89,9 @@ export function sourceLinkOf(field) {
   if (href.startsWith("https://www.gov.uk/guidance/the-company-tax-return-guide")) {
     return { href, text: siteText("ch.ct.guide-link", "Company Tax Return guide") };
   }
+  if (href.startsWith("https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/")) {
+    return { href, text: siteText("field.source-hmrc-api", "HMRC's description of this field") };
+  }
   if (href.startsWith("https://www.gov.uk/guidance/supplementary-pages-ct600a")) {
     return { href, text: siteText("field.source-ct600a-guide", "CT600A guide") };
   }

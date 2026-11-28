@@ -8089,9 +8089,6 @@ cy = '''Gwirio’ch colledion a’ch hawliadau'''
 hash = "04d7b4833927"
 cy = '''Negeseuon'''
 
-[strings."itsa-calculation.calculating"]
-hash = "3ba4d10b402f"
-cy = '''Wrthi’n cyfrifo... gall hyn gymryd ychydig eiliadau.'''
 
 [strings."itsa-calculation.failed"]
 hash = "6f4c32482ba7"
@@ -10549,9 +10546,6 @@ cy = '''Wrthi’n adalw’r cyfrifiad...'''
 hash = "98988dc3e461"
 cy = '''Methwyd ag adalw’r cyfrifiad: {reason}'''
 
-[strings."itsa-final.submitting"]
-hash = "45461b32475c"
-cy = '''Wrthi’n cyflwyno’r datganiad terfynol...'''
 
 [strings."itsa-final.submit-failed"]
 hash = "4b7f7608790d"
@@ -10581,9 +10575,6 @@ cy = '''Nid oes hawliad wedi’i nodi eto.'''
 hash = "e0066c4f6d9a"
 cy = '''Wrthi’n llwytho’r colledion a’r hawliadau...'''
 
-[strings."itsa-losses.saving"]
-hash = "40d8c3759e7b"
-cy = '''Wrthi’n cadw’r colledion a’r hawliadau...'''
 
 [strings."itsa-losses.load-failed"]
 hash = "822096d607b1"
@@ -10605,9 +10596,6 @@ cy = '''Nid oedd modd adalw cyfrifiad CThEF ar gyfer y flwyddyn honno.'''
 hash = "e8eaaa2b2658"
 cy = '''Wrthi’n llwytho’r addasiadau i’r rhwymedigaeth dreth...'''
 
-[strings."itsa-tla.saving"]
-hash = "2e273e2e8ddc"
-cy = '''Wrthi’n cadw’r addasiadau i’r rhwymedigaeth dreth...'''
 
 [strings."itsa-tla.load-failed"]
 hash = "98104e9627c7"
@@ -29287,3 +29275,119 @@ cy = '''Wrthi’n anfon yr addasiad at CThEF...'''
 [strings."itsa-fp-adjustments.failure-not-sent"]
 hash = "ce8007dae694"
 cy = '''Nid yw CThEF wedi cael yr addasiad.'''
+
+[strings."itsa-final.narrate-sending"]
+hash = "580fc6e88b7c"
+cy = '''Wrthi’n anfon y datganiad terfynol at CThEF...'''
+
+[strings."itsa-final.failure-not-sent"]
+hash = "8d61e2872a5f"
+cy = '''Nid yw CThEF wedi cael y datganiad terfynol.'''
+
+[strings."itsa-final.failure-answers-page"]
+hash = "d2e3efbacef2"
+cy = '''Mae’r cyfrifiad a’ch datganiad yn dal ar y dudalen hon.'''
+
+[strings."itsa-final.failure-answers-again"]
+hash = "a1f8ac730891"
+cy = '''Adalwch y cyfrifiad eto a chadarnhewch y datganiad eto.'''
+
+[strings."itsa-losses.narrate-sending"]
+hash = "892e1cb78686"
+cy = '''Wrthi’n anfon y colledion a’r hawliadau at CThEF...'''
+
+[strings."itsa-losses.failure-not-sent"]
+hash = "1ea6c584cc25"
+cy = '''Nid yw CThEF wedi cael y colledion a’r hawliadau.'''
+
+[strings."itsa-losses.failure-answers-again"]
+hash = "110f840296ae"
+cy = '''Ni chadwyd eich ffigurau. Llwythwch y colledion a’r hawliadau a rhowch nhw eto.'''
+
+[strings."itsa-losses.failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa-calculation.narrate-asking"]
+hash = "d25954f3468d"
+cy = '''Wrthi’n gofyn i CThEF gyfrifo’r dreth...'''
+
+[strings."itsa-calculation.failure-not-calculated"]
+hash = "a4bf24a17561"
+cy = '''Nid yw CThEF wedi cyfrifo’r dreth.'''
+
+[strings."itsa-calculation.failure-answers"]
+hash = "ad140edea2f1"
+cy = '''Mae eich dewisiadau yn dal yn y ffurflen.'''
+
+[strings."itsa-tla.narrate-sending"]
+hash = "58ab127c5814"
+cy = '''Wrthi’n anfon yr addasiadau i’r rhwymedigaeth dreth at CThEF...'''
+
+[strings."itsa-tla.failure-not-sent"]
+hash = "838fa70446f2"
+cy = '''Nid yw CThEF wedi cael yr addasiadau i’r rhwymedigaeth dreth.'''
+
+[strings."itsa-tla.failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa-tla.failure-answers-again"]
+hash = "f8cdb38a4dba"
+cy = '''Ni chadwyd eich ffigurau. Llwythwch yr addasiadau a rhowch nhw eto.'''
+
+[strings."itsa-tla.narrate-asking-figure"]
+hash = "fdd6f552caca"
+cy = '''Wrthi’n gofyn i CThEF am gyfrifiad y flwyddyn honno...'''
+
+[strings."itsa-tla.failure-figure-not-calculated"]
+hash = "011643a38277"
+cy = '''Nid yw CThEF wedi cyfrifo ffigur y flwyddyn honno.'''
+
+[strings."field.source-hmrc-api"]
+hash = "bbae1a3922a4"
+cy = '''Disgrifiad CThEF o’r maes hwn'''
+
+[strings."itsa-tla.income-tax-note"]
+hash = "c0ba728d32da"
+cy = '''Y gostyngiad yn y Dreth Incwm o gario colled yn ôl. Caiff ei gyfrifo o rwymedigaeth blwyddyn gynharach a’i dynnu o gyfanswm eleni.'''
+
+[strings."itsa-tla.class4-note"]
+hash = "1600c8afb931"
+cy = '''Y gostyngiad yn Yswiriant Gwladol Dosbarth 4 o gario colled yn ôl. Caiff ei gyfrifo o rwymedigaeth blwyddyn gynharach a’i dynnu o gyfanswm eleni.'''
+
+[strings."itsa-tla.capital-gains-tax-note"]
+hash = "ec05868d9817"
+cy = '''Y gostyngiad yn y Dreth Enillion Cyfalaf o gario colled yn ôl. Caiff ei gyfrifo o rwymedigaeth blwyddyn gynharach a’i dynnu o gyfanswm eleni.'''
+
+[strings."itsa-losses.brought-forward-note"]
+hash = "0b7c595eb010"
+cy = '''Colledion o flynyddoedd cynharach a osodir yn erbyn elw eleni.'''
+
+[strings."itsa-losses.current-year-losses-note"]
+hash = "5db108eb188b"
+cy = '''Colled fasnachu eleni wedi’i chario ymlaen, i’w gosod yn erbyn elw’r un fasnach yn y dyfodol.'''
+
+[strings."itsa-losses.previous-years-losses-note"]
+hash = "fc37da829f23"
+cy = '''Colledion masnachu o flynyddoedd cynharach wedi’u cario ymlaen, i’w gosod yn erbyn elw’r un fasnach yn y dyfodol.'''
+
+[strings."itsa-losses.current-year-general-income-note"]
+hash = "eab0352715f1"
+cy = '''Colled fasnachu eleni wedi’i gosod yn erbyn eich incwm arall eleni.'''
+
+[strings."itsa-losses.previous-year-general-income-note"]
+hash = "3f10cf6c9a3f"
+cy = '''Colled fasnachu eleni wedi’i chario’n ôl, i’w gosod yn erbyn incwm arall blwyddyn gynharach.'''
+
+[strings."itsa-losses.early-year-losses-note"]
+hash = "ef912bae6aec"
+cy = '''Colled fasnachu eleni wedi’i chario’n ôl, i’w gosod yn erbyn incwm arall blynyddoedd cynharach.'''
+
+[strings."itsa-losses.terminal-losses-note"]
+hash = "ed3a4ff0df67"
+cy = '''Colled fasnachu eleni wedi’i chario’n ôl yn erbyn elw’r tair blynedd cynt, gan ddechrau gyda’r flwyddyn ddiweddaraf.'''
+
+[strings."itsa-losses.apply-first-note"]
+hash = "aa11002c70d2"
+cy = '''Pa hawliad y mae CThEF yn ei gymhwyso gyntaf pan osodir colled eleni yn erbyn incwm arall eleni ac incwm arall blwyddyn gynharach.'''

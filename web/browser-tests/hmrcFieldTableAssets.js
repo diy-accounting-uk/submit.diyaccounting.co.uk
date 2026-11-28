@@ -60,6 +60,44 @@ export async function serveRegisteredChange(page) {
   }
 }
 
+// The real HMRC write helper (window.fileWithHmrc: its stages and its failure panel) and the
+// Income Tax year-end field notes, for an Income Tax page whose other scripts are stubbed out.
+// submit.js loads hmrc-service.js, then puts back every window function the page's stubs set
+// before it, so only what the stubs left out (fileWithHmrc, narrateStage and their kin) is real.
+// Register it after the "**/*.js" stub.
+export async function serveHmrcWrite(page) {
+  for (const name of [
+    "services/hmrc-service",
+    "services/api-client",
+    "services/auth-service",
+    "services/viewer-settings",
+    "utils/correlation-utils",
+    "utils/dom-utils",
+    "utils/crypto-utils",
+    "utils/jwt-utils",
+    "filing-failure",
+    "itsa-year-end-fields",
+    "field-detail",
+    "ct600-fields",
+    "ct600-source-cells",
+    "accounts-page-lines",
+    "balance-sheet-headings",
+    "long-period",
+    "first-accounts",
+  ]) {
+    await serveFile(page, `**/lib/${name}.js`, `lib/${name}.js`, "application/javascript");
+  }
+  await page.route("**/submit.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `const stubbed = Object.fromEntries(Object.entries(window).filter(([, value]) => typeof value === "function"));
+await import("./lib/services/hmrc-service.js");
+Object.assign(window, stubbed);`,
+    }),
+  );
+}
+
 // The real HMRC Assist check, for a page that mounts or reads it.
 export function serveHmrcAssistWidget(page) {
   return serveFile(page, "**/widgets/hmrc-assist-messages.js", "widgets/hmrc-assist-messages.js", "application/javascript");

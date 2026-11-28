@@ -101,6 +101,11 @@ describe("the reference, the note and the spreadsheet disclosure of a field", ()
     expect(sourceImagePath({ sheet: "PubP&L", cell: "F9" })).toBe("/images/ct600-sources/PubPandL-F9.webp");
   });
 
+  test("a field whose term comes from HMRC's API documentation links to HMRC's description of it", () => {
+    const termSource = "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-losses-api/7.0";
+    expect(sourceLinkOf({ id: "terminalLosses", termSource })).toEqual({ href: termSource, text: "HMRC's description of this field" });
+  });
+
   test("the note ends with its source link, and the disclosure is closed with the cells, the label and a picture of each cell", () => {
     const field = MICRO_PROFIT_AND_LOSS_FIELDS.find(({ id }) => id === "otherCharges");
     const note = noteOf(field, "microCurrentOtherCharges");
