@@ -97,6 +97,14 @@ describe("the kind of a filing's failure", () => {
     });
   });
 
+  test("Companies House's filing API errors are their answer, each with the field it names", () => {
+    const body = { errors: [{ error: "Postcode is not valid", location: "postal_code", type: "ch:validation" }] };
+    const failure = classifyFilingFailure(answer(422, body), { service: "companiesHouse" });
+    expect(failure.kind).toBe(FAILURE_KINDS.businessError);
+    expect(failure.cause).toBe("Companies House answered with this error. Correct the answer it names and send again.");
+    expect(failure.errors).toEqual(["Postcode is not valid (postal_code)"]);
+  });
+
   test("a 4xx refusal before anything was sent is a business error with the server's own message", () => {
     const body = { message: "The figures changed after you reviewed them (box 145). Review the return again before you file it." };
     const failure = classifyFilingFailure(answer(409, body), { service: "hmrc" });

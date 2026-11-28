@@ -306,6 +306,7 @@ async function runFilingSequence() {
   showLoading();
   hideStatus();
   document.getElementById("validationErrors").style.display = "none";
+  document.getElementById("failureDetail")?.remove();
   try {
     window.narrateStage(window.siteText("ch.narrate-sending-change", "Sending the change to Companies House..."));
     if (!filing.transactionId) {
@@ -336,15 +337,19 @@ async function runFilingSequence() {
       redirectToAuthorise(scope);
       return;
     }
+    const { showRegisteredChangeFailure } = await import("../lib/registered-change.js");
     if (error.status === 422) {
       renderValidationErrors(error.body?.errors);
       document.getElementById("startAgainBtn").style.display = "inline-block";
       savePendingFiling();
       showView("resultView");
+      showRegisteredChangeFailure(document, error, filing, { answersKept: false, errorsListedOnPage: true });
       return;
     }
     console.error("Companies House filing failed:", error);
-    showStatus(error.message || window.siteText("ch.change.file-failed", "Failed to file the change with Companies House."), "error");
+    // The panel gives the detail, so the status line says only that the filing failed.
+    showStatus(window.siteText("ch.change.file-failed", "Failed to file the change with Companies House."), "error");
+    showRegisteredChangeFailure(document, error, filing, { answersKept: true });
   } finally {
     hideLoading();
   }
@@ -359,6 +364,7 @@ function startAgain() {
   document.getElementById("filingRecord").replaceChildren();
   document.getElementById("startAgainBtn").style.display = "none";
   document.getElementById("checkAgainBtn").style.display = "none";
+  document.getElementById("failureDetail")?.remove();
   hideStatus();
   showView("companyView");
 }
@@ -376,6 +382,8 @@ function resumePendingFilingIfReady() {
     runFilingSequence();
   }
 }
+
+import("../lib/registered-change.js").then(({ showRegisteredChangeFields }) => showRegisteredChangeFields(document, "office"));
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("officeAddressForm").addEventListener("submit", handleFormSubmit);

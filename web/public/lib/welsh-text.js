@@ -557,6 +557,12 @@ window.WELSH_TEXT = {
   "ch.change.accepted": "Derbyniodd Tŷ’r Cwmnïau y newid.",
   "ch.change.check-failed":
     "Anfonwyd y newid i Dŷ’r Cwmnïau, ac nid yw ei ganlyniad yn hysbys eto: methodd y gwiriad statws ({message}). Dewiswch Gwirio eto i ofyn am y canlyniad.",
+  "ch.change.failure-answers-kept": "Mae eich atebion yn dal ar y dudalen hon. Mae anfon eto yn parhau o’r man lle stopiodd y ffeilio.",
+  "ch.change.failure-answers-new": "Dewiswch Dechrau ffeilio newydd a rhowch yr atebion eto gyda’r cywiriad.",
+  "ch.change.failure-sent-change": "Mae gan Dŷ’r Cwmnïau y newid mewn trafodyn agored. Nid yw wedi’i ffeilio.",
+  "ch.change.failure-sent-nothing": "Ni chyrhaeddodd dim Dŷ’r Cwmnïau.",
+  "ch.change.failure-sent-transaction":
+    "Agorodd Tŷ’r Cwmnïau drafodyn ar gyfer y newid ond ni chafodd y newid ei hun. Nid oes dim wedi’i ffeilio.",
   "ch.change.file-failed": "Methwyd â ffeilio’r newid gyda Thŷ’r Cwmnïau.",
   "ch.change.invalid-value": "gwerth annilys",
   "ch.change.processing": "Mae Tŷ’r Cwmnïau yn dal i brosesu’r newid.",
@@ -1648,12 +1654,16 @@ window.WELSH_TEXT = {
   "ch.email.eligibility-failed": "Methwyd â gwirio a yw’r cwmni’n gymwys i newid ei gyfeiriad e-bost cofrestredig.",
   "ch.email.enter-address": "Rhowch y cyfeiriad e-bost cofrestredig newydd",
   "ch.email.format": "Rhowch gyfeiriad e-bost yn y fformat enw@example.com",
+  "ch.email.new-address-hint": "Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru.",
+  "ch.email.new-address-label": "Cyfeiriad e-bost cofrestredig newydd",
   "ch.email.no-address-yet":
     "Nid oes gan y cwmni hwn gyfeiriad e-bost cofrestredig eto. Mae’r ffeilio hwn yn newid cyfeiriad sy’n bodoli; nid yw’n gosod y cyntaf.",
   "ch.email.not-eligible": "Nid yw’r cwmni hwn yn gymwys i newid ei gyfeiriad e-bost cofrestredig ({code}).",
   "ch.email.not-on-register": "Nid yw rhif y cwmni hwnnw ar y gofrestr.",
   "ch.email.record-new-address": "Cyfeiriad e-bost cofrestredig newydd",
   "ch.email.record-title": "Newid cyfeiriad e-bost cofrestredig",
+  "ch.email.statement-hint":
+    "Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i negeseuon e-bost y mae Tŷ’r Cwmnïau yn eu hanfon i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni.",
   "ch.email.status-blocks": "Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.",
   "ch.email.type-not-covered": "Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.",
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
@@ -1870,8 +1880,13 @@ window.WELSH_TEXT = {
   "ch.office.differs-from-register":
     "Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel {office}. Mae’r cyfrifon diwygiedig yn cadw’r swyddfa a nodir yn y cyfrifon a ffeiliwyd oni bai eich bod yn ei newid.",
   "ch.office.filled-from-filed": "Wedi’i llenwi o’r cyfrifon a ffeiliwyd gennych. Newidiwch ran i’w chywiro.",
+  "ch.office.new-address": "Cyfeiriad newydd",
+  "ch.office.new-address-hint":
+    "Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru. Am 14 diwrnod ar ôl hynny, gellir dal i gyflwyno dogfennau i’r cwmni yn yr hen gyfeiriad.",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",
+  "ch.office.statement-hint":
+    "Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i bost a ddanfonir i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni, a rhaid bod modd cofnodi ei ddanfon.",
   "ch.prior.column-source": "Ffigurau’r llynedd: o’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar gyfer y flwyddyn hyd at {date}.",
   "ch.prior.filing-history": "hanes ffeilio’r cwmni",
   "ch.prior.last-were-micro": "Cyfrifon micro-endid oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",

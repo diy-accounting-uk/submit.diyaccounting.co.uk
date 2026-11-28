@@ -42,6 +42,24 @@ export async function serveFilingResultRecord(page) {
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
 }
 
+// The real field references and failure panel of the registered office and email change pages,
+// with the modules they import.
+export async function serveRegisteredChange(page) {
+  for (const name of [
+    "registered-change",
+    "field-detail",
+    "filing-failure",
+    "ct600-fields",
+    "ct600-source-cells",
+    "accounts-page-lines",
+    "balance-sheet-headings",
+    "long-period",
+    "first-accounts",
+  ]) {
+    await serveFile(page, `**/lib/${name}.js`, `lib/${name}.js`, "application/javascript");
+  }
+}
+
 // The real HMRC Assist check, for a page that mounts or reads it.
 export function serveHmrcAssistWidget(page) {
   return serveFile(page, "**/widgets/hmrc-assist-messages.js", "widgets/hmrc-assist-messages.js", "application/javascript");

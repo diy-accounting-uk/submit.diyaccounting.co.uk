@@ -4,7 +4,7 @@
 // web/browser-tests/changeRegisteredOffice.browser.test.js
 
 import { test, expect } from "@playwright/test";
-import { servePageScripts, serveFilingResultRecord } from "./hmrcFieldTableAssets.js";
+import { servePageScripts, serveFilingResultRecord, serveRegisteredChange } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
@@ -135,6 +135,7 @@ test.describe("Change Registered Office Address page", () => {
     });
     await servePageScripts(page);
     await serveFilingResultRecord(page);
+    await serveRegisteredChange(page);
   }
 
   // Answers each read of the transaction with the next entry, the last repeating: "throw" fails the
@@ -394,5 +395,105 @@ test.describe("Change Registered Office Address page", () => {
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
     await expect(page.locator("#startAgainBtn")).toBeHidden();
     expect(await page.evaluate(() => window.__statusMessages.filter(({ type }) => type !== "info"))).toEqual([]);
+  });
+
+  test("the new address and the statement name their section of the Companies Act, each with a note and its link", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+
+    await expect(page.locator("#officeAddressForm h3")).toHaveText("Companies Act section 87: New address");
+    const addressNote = page.locator("#newAddress-hint");
+    await expect(addressNote).toBeVisible();
+    await expect(addressNote).toContainText("For 14 days after that, documents can still be served on the company at the old address.");
+    await expect(addressNote.locator("a")).toHaveAttribute("href", "https://www.legislation.gov.uk/ukpga/2006/46/section/87");
+    const statementNote = page.locator("#acceptOfficeStatement-hint");
+    await expect(statementNote).toContainText("The notice of the change must include this statement.");
+    await expect(statementNote.locator("a")).toHaveAttribute("href", "https://www.legislation.gov.uk/ukpga/2006/46/section/86");
+    await expect(page.locator("#acceptOfficeStatement")).toHaveAttribute("aria-describedby", "acceptOfficeStatement-hint");
+  });
+
+  async function reachReviewWith(page, failures) {
+    setupPage(page);
+    await setupRoutes(page);
+    await page.addInitScript(failures);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await fillInAddress(page);
+    await page.check("#acceptOfficeStatement");
+    await page.click("#continueBtn");
+    await expect(page.locator("#reviewView")).toBeVisible();
+  }
+
+  test("a fault in Submit at the close shows the panel: the change is held open, the answers stay, and sending again files it", async ({
+    page,
+  }) => {
+    await reachReviewWith(page, () => {
+      let closes = 0;
+      window.closeCompaniesHouseTransaction = () => {
+        if (closes++ > 0) return Promise.resolve({ transactionId: "test-transaction-id", status: "closed" });
+        const error = new Error("Request failed with status 500");
+        error.status = 500;
+        error.body = {};
+        error.requestId = "req-close-1";
+        error.service = "companiesHouse";
+        return Promise.reject(error);
+      };
+    });
+
+    await page.click("#submitFilingBtn");
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText(
+      "Companies House holds the change in an open transaction. It has not been filed.",
+    );
+    await expect(panel.locator('[data-part="answers"]')).toHaveText(
+      "Your answers are still on this page. Sending again carries on from where the filing stopped.",
+    );
+    await expect(panel.locator('[data-part="kind"]')).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
+    await expect(panel.locator('[data-part="next"] a')).toHaveAttribute("href", "/help.html");
+    await expect(panel.locator('[data-part="next"]')).toContainText("Quote the reference req-close-1 when you ask for help.");
+    await expect(page.locator("#reviewView")).toBeVisible();
+    const errors = await page.evaluate(() => window.__statusMessages.filter(({ type }) => type === "error"));
+    expect(errors).toEqual([{ message: "Failed to file the change with Companies House.", type: "error" }]);
+
+    await page.click("#submitFilingBtn");
+
+    await expect(page.locator("#filingResult")).toContainText("Companies House accepted the change.", { timeout: 15000 });
+    await expect(page.locator("#failureDetail")).toHaveCount(0);
+    expect(await page.evaluate(() => window.__openTransactionCalls)).toHaveLength(1);
+  });
+
+  test("Companies House refusing a field lists it on the page, and the panel says the change was not received and to start again", async ({
+    page,
+  }) => {
+    await reachReviewWith(page, () => {
+      window.putRegisteredOfficeAddress = () => {
+        const error = new Error("Request failed with status 422");
+        error.status = 422;
+        error.body = { errors: [{ error: "Postcode is not valid", location: "postal_code", type: "ch:validation" }] };
+        error.service = "companiesHouse";
+        return Promise.reject(error);
+      };
+    });
+
+    await page.click("#submitFilingBtn");
+
+    await expect(page.locator("#validationErrors")).toContainText("postal_code: Postcode is not valid");
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText(
+      "Companies House opened a transaction for the change but did not receive the change. Nothing has been filed.",
+    );
+    await expect(panel.locator('[data-part="answers"]')).toHaveText(
+      "Choose Start a new filing and enter the answers again with the correction.",
+    );
+    await expect(panel.locator('[data-part="errors"]')).toHaveCount(0);
+
+    await page.click("#startAgainBtn");
+    await expect(page.locator("#failureDetail")).toHaveCount(0);
   });
 });

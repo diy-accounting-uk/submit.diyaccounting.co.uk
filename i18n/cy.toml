@@ -28875,3 +28875,47 @@ cy = '''Treth Gorfforaeth sy’n daladwy'''
 [strings."ch.ct600.problem-note-depreciation"]
 hash = "2d7d9e94b9ed"
 cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
+
+[strings."ch.office.new-address"]
+hash = "b71b5df47d4b"
+cy = '''Cyfeiriad newydd'''
+
+[strings."ch.office.new-address-hint"]
+hash = "99f10789e84f"
+cy = '''Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru. Am 14 diwrnod ar ôl hynny, gellir dal i gyflwyno dogfennau i’r cwmni yn yr hen gyfeiriad.'''
+
+[strings."ch.office.statement-hint"]
+hash = "b9d2d3d9a036"
+cy = '''Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i bost a ddanfonir i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni, a rhaid bod modd cofnodi ei ddanfon.'''
+
+[strings."ch.email.new-address-label"]
+hash = "165d34bf7cf4"
+cy = '''Cyfeiriad e-bost cofrestredig newydd'''
+
+[strings."ch.email.new-address-hint"]
+hash = "624d53e16b5a"
+cy = '''Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru.'''
+
+[strings."ch.email.statement-hint"]
+hash = "47546a43414a"
+cy = '''Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i negeseuon e-bost y mae Tŷ’r Cwmnïau yn eu hanfon i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni.'''
+
+[strings."ch.change.failure-sent-nothing"]
+hash = "18a589df925f"
+cy = '''Ni chyrhaeddodd dim Dŷ’r Cwmnïau.'''
+
+[strings."ch.change.failure-sent-transaction"]
+hash = "d6a47d460752"
+cy = '''Agorodd Tŷ’r Cwmnïau drafodyn ar gyfer y newid ond ni chafodd y newid ei hun. Nid oes dim wedi’i ffeilio.'''
+
+[strings."ch.change.failure-sent-change"]
+hash = "f7d1f601a96a"
+cy = '''Mae gan Dŷ’r Cwmnïau y newid mewn trafodyn agored. Nid yw wedi’i ffeilio.'''
+
+[strings."ch.change.failure-answers-kept"]
+hash = "486cc5d70435"
+cy = '''Mae eich atebion yn dal ar y dudalen hon. Mae anfon eto yn parhau o’r man lle stopiodd y ffeilio.'''
+
+[strings."ch.change.failure-answers-new"]
+hash = "dbce1ba39d99"
+cy = '''Dewiswch Dechrau ffeilio newydd a rhowch yr atebion eto gyda’r cywiriad.'''

@@ -4,7 +4,7 @@
 // web/browser-tests/changeRegisteredEmail.browser.test.js
 
 import { test, expect } from "@playwright/test";
-import { servePageScripts, serveFilingResultRecord } from "./hmrcFieldTableAssets.js";
+import { servePageScripts, serveFilingResultRecord, serveRegisteredChange } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
@@ -69,6 +69,7 @@ test.describe("Change Registered Email Address page", () => {
     });
     await servePageScripts(page);
     await serveFilingResultRecord(page);
+    await serveRegisteredChange(page);
   }
 
   // Answers each read of the transaction with the next entry, the last repeating: "throw" fails the
@@ -148,5 +149,50 @@ test.describe("Change Registered Email Address page", () => {
     await expect(page.locator("#filingResult")).toContainText("The change is still with Companies House.", { timeout: 20000 });
     await expect(page.locator("#checkAgainBtn")).toBeVisible();
     await expect(page.locator("#startAgainBtn")).toBeHidden();
+  });
+
+  test("the new address and the statement name their section of the Companies Act, each with a note and its link", async ({ page }) => {
+    await setupRoutes(page);
+    await loadPage(page);
+    await page.fill("#companyNumber", "1");
+    await page.click("#companyLookupBtn");
+    await expect(page.locator("#formView")).toBeVisible();
+
+    await expect(page.locator('label[for="registeredEmailAddress"]')).toHaveText("Companies Act section 88B: New registered email address");
+    const addressNote = page.locator("#registeredEmailAddress-hint");
+    await expect(addressNote).toContainText("The change takes effect when Companies House registers it.");
+    await expect(addressNote.locator("a")).toHaveAttribute("href", "https://www.legislation.gov.uk/ukpga/2006/46/section/88B");
+    await expect(page.locator("#registeredEmailAddress")).toHaveAttribute("aria-describedby", "registeredEmailAddress-hint");
+    const statementNote = page.locator("#acceptEmailStatement-hint");
+    await expect(statementNote).toContainText("Emails Companies House sends to the address must reach someone acting for the company.");
+    await expect(statementNote.locator("a")).toHaveAttribute("href", "https://www.legislation.gov.uk/ukpga/2006/46/section/88A");
+  });
+
+  test("no answer when opening the transaction shows the panel: nothing reached Companies House and the answers stay", async ({ page }) => {
+    await setupRoutes(page);
+    await page.addInitScript(() => {
+      window.openCompaniesHouseTransaction = () => {
+        const error = new Error("Request failed with status 503");
+        error.status = 503;
+        error.body = {};
+        error.service = "companiesHouse";
+        return Promise.reject(error);
+      };
+    });
+    await loadPage(page);
+    await page.fill("#companyNumber", "1");
+    await page.click("#companyLookupBtn");
+    await page.fill("#registeredEmailAddress", NEW_EMAIL);
+    await page.check("#acceptEmailStatement");
+    await page.click("#continueBtn");
+    await page.click("#submitFilingBtn");
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText("Nothing reached Companies House.");
+    await expect(panel.locator('[data-part="answers"]')).toHaveText(
+      "Your answers are still on this page. Sending again carries on from where the filing stopped.",
+    );
+    await expect(page.locator("#reviewView")).toBeVisible();
   });
 });

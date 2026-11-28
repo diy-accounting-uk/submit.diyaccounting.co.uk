@@ -43,8 +43,9 @@ export function serviceErrorsOf(error) {
   return Array.isArray(errors) ? errors : [];
 }
 
+// GovTalk answers carry an error's words in text, Companies House's filing API in error.
 function errorText(entry) {
-  const text = String(entry?.text ?? entry?.message ?? "").trim();
+  const text = String(entry?.text ?? entry?.message ?? entry?.error ?? "").trim();
   const location = String(entry?.location ?? "").trim();
   return location ? siteText("ct.failure-error-at", "{text} ({location})", { text, location }) : text;
 }
