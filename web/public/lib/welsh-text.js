@@ -2319,6 +2319,30 @@ window.WELSH_TEXT = {
   "ch.watch.remove-company": "Tynnu {number} o’r rhestr wylio",
   "ch.watch.sign-in-to-add": "Mewngofnodwch i’w ychwanegu at eich rhestr wylio",
   "ch.watch.unread-try-again": "Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni",
+  "chform.aa01-five-years":
+    "Dim ond pan fydd mewn gweinyddiaeth neu pan fydd ganddo gymeradwyaeth yr Ysgrifennydd Gwladol y caiff cwmni ymestyn fwy nag unwaith mewn pum mlynedd.",
+  "chform.aa01-new-date": "Ni allwch newid cyfnod y mae ei gyfrifon yn hwyr.",
+  "chform.aa01-period": "Y cyfnod presennol yw’r un nad yw wedi dod i ben eto; y cyfnod blaenorol yn union yw’r un cyn hwnnw.",
+  "chform.ad02-sail": "Rhaid i’r lleoliad arolygu amgen fod yn y rhan o’r Deyrnas Unedig y mae’r cwmni wedi’i gofrestru ynddi.",
+  "chform.form-link": "Ffurflen Tŷ’r Cwmnïau {form}",
+  "chform.join": "{first} a {last}",
+  "chform.join-vowel": "{first} ac {last}",
+  "chform.nm01-name":
+    "Nid yw Tŷ’r Cwmnïau yn caniatáu enw sydd gan gwmni arall eisoes. Mae angen llythyr ategol ar enw sydd â gair neu ymadrodd sensitif cyn y gall Tŷ’r Cwmnïau newid yr enw.",
+  "chform.psc-became": "Ni all hyn fod cyn 6 Ebrill 2016.",
+  "chform.psc-change-confirmed": "Y dyddiad y cafodd y cwmni gadarnhad bod y manylion wedi newid, sut y newidiasant a dyddiad y newid.",
+  "chform.psc-change-date": "Rhowch bob newid a ddigwyddodd ar y dyddiad hwn. Mae angen ffeilio ar wahân ar gyfer newid ar ddyddiad arall.",
+  "chform.psc-confirmed":
+    "Y diweddaraf o’r dyddiad y cafodd y cwmni gadarnhad o statws y person a’r dyddiad y cafodd eu holl fanylion gofynnol.",
+  "chform.psc07-confirmed":
+    "Os cafodd y cwmni gadarnhad bod y person wedi peidio â bod yn PRhA, a chadarnhad o’r dyddiad y peidiodd, ar ddyddiadau gwahanol, rhowch y diweddaraf o’r ddau.",
+  "chform.psc08-relevant-date":
+    "Y dyddiad y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu, bod y datganiad yn wir, y dyddiad yr oedd yn rhaid cydymffurfio â hysbysiad, neu’r dyddiad y rhoddwyd hysbysiad cyfyngiadau.",
+  "chform.reference-many": "Ffurflenni {forms}, adran {section}",
+  "chform.reference-one": "Ffurflen {form}, adran {section}",
+  "chform.sh01-dates":
+    "Os clustnodwyd pob cyfran ar un diwrnod, rhowch y diwrnod hwnnw fel yr O ddyddiad. Ar gyfer cyfranddaliadau a glustnodwyd dros gyfnod, rhowch y ddau ddyddiad.",
+  "chform.tm-one-appointment": "Mae pob ffeilio yn dod ag un penodiad i ben.",
   "chrome.about": "Amdanom ni",
   "chrome.activity-granted": "Gweithgaredd: mynediad wedi’i roi",
   "chrome.activity-requires": "Gweithgaredd: angen {activities}",

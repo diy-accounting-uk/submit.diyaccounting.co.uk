@@ -29032,3 +29032,75 @@ cy = '''Ni atebodd {service} pan ddarllenodd Submit y cwmni, felly ni anfonwyd d
 [strings."ct.failure-technical"]
 hash = "d635f31f91f8"
 cy = '''Manylion technegol'''
+
+[strings."chform.aa01-period"]
+hash = "6c57439b64bc"
+cy = '''Y cyfnod presennol yw’r un nad yw wedi dod i ben eto; y cyfnod blaenorol yn union yw’r un cyn hwnnw.'''
+
+[strings."chform.aa01-new-date"]
+hash = "bb6667f0297c"
+cy = '''Ni allwch newid cyfnod y mae ei gyfrifon yn hwyr.'''
+
+[strings."chform.aa01-five-years"]
+hash = "6bc735a357c4"
+cy = '''Dim ond pan fydd mewn gweinyddiaeth neu pan fydd ganddo gymeradwyaeth yr Ysgrifennydd Gwladol y caiff cwmni ymestyn fwy nag unwaith mewn pum mlynedd.'''
+
+[strings."chform.sh01-dates"]
+hash = "3dfa8db386d2"
+cy = '''Os clustnodwyd pob cyfran ar un diwrnod, rhowch y diwrnod hwnnw fel yr O ddyddiad. Ar gyfer cyfranddaliadau a glustnodwyd dros gyfnod, rhowch y ddau ddyddiad.'''
+
+[strings."chform.nm01-name"]
+hash = "32fe3eaa797f"
+cy = '''Nid yw Tŷ’r Cwmnïau yn caniatáu enw sydd gan gwmni arall eisoes. Mae angen llythyr ategol ar enw sydd â gair neu ymadrodd sensitif cyn y gall Tŷ’r Cwmnïau newid yr enw.'''
+
+[strings."chform.tm-one-appointment"]
+hash = "c96b50978753"
+cy = '''Mae pob ffeilio yn dod ag un penodiad i ben.'''
+
+[strings."chform.psc-became"]
+hash = "d9a7c9d7b406"
+cy = '''Ni all hyn fod cyn 6 Ebrill 2016.'''
+
+[strings."chform.psc-confirmed"]
+hash = "265c170da867"
+cy = '''Y diweddaraf o’r dyddiad y cafodd y cwmni gadarnhad o statws y person a’r dyddiad y cafodd eu holl fanylion gofynnol.'''
+
+[strings."chform.psc-change-date"]
+hash = "5352778f26f1"
+cy = '''Rhowch bob newid a ddigwyddodd ar y dyddiad hwn. Mae angen ffeilio ar wahân ar gyfer newid ar ddyddiad arall.'''
+
+[strings."chform.psc-change-confirmed"]
+hash = "ced847d24888"
+cy = '''Y dyddiad y cafodd y cwmni gadarnhad bod y manylion wedi newid, sut y newidiasant a dyddiad y newid.'''
+
+[strings."chform.psc07-confirmed"]
+hash = "0f32b08d9e03"
+cy = '''Os cafodd y cwmni gadarnhad bod y person wedi peidio â bod yn PRhA, a chadarnhad o’r dyddiad y peidiodd, ar ddyddiadau gwahanol, rhowch y diweddaraf o’r ddau.'''
+
+[strings."chform.psc08-relevant-date"]
+hash = "1b98cfa3876a"
+cy = '''Y dyddiad y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu, bod y datganiad yn wir, y dyddiad yr oedd yn rhaid cydymffurfio â hysbysiad, neu’r dyddiad y rhoddwyd hysbysiad cyfyngiadau.'''
+
+[strings."chform.ad02-sail"]
+hash = "68d5078c061d"
+cy = '''Rhaid i’r lleoliad arolygu amgen fod yn y rhan o’r Deyrnas Unedig y mae’r cwmni wedi’i gofrestru ynddi.'''
+
+[strings."chform.join"]
+hash = "1c088992cac5"
+cy = '''{first} a {last}'''
+
+[strings."chform.reference-one"]
+hash = "f654480d2153"
+cy = '''Ffurflen {form}, adran {section}'''
+
+[strings."chform.reference-many"]
+hash = "dc40c0705e89"
+cy = '''Ffurflenni {forms}, adran {section}'''
+
+[strings."chform.form-link"]
+hash = "7c7cb47be55d"
+cy = '''Ffurflen Tŷ’r Cwmnïau {form}'''
+
+[strings."chform.join-vowel"]
+hash = "1c088992cac5"
+cy = '''{first} ac {last}'''
