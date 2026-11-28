@@ -9,6 +9,8 @@
 
 The operator asked to keep only those three chains and the defects on `NEXT.md`. This plan holds the tasks that left it.
 
+> "Yes" (operator, 2026-11-28, to MCP5 and MCP6: a cloud book started from the Companies House register, and links to the filled-in accounts and CT600 forms, so that a chat assistant can take a limited company from the register to its accounts and Company Tax Return.)
+
 > "Yes" (operator, 2026-11-28, to: add diya-gl's bookkeeping tools to Submit's hosted connector, read tools first after ODSC1, then a design for write tools with cloud save and undo, then its build; one connector for the customer, with diya-gl's local stdio server kept for books on disk.)
 
 Recorded in MCP1's row: the operator approved the launch on 2026-11-22, each tool going on prod's connector when its journey is live on prod; the listings go ahead with the VAT tool set (operator, 2026-11-12); source operator, 2026-10-30.
@@ -17,7 +19,7 @@ Recorded in MCP1's row: the operator approved the launch on 2026-11-22, each too
 
 Prod's hosted MCP connector offers each filing tool as its journey goes live, with the harness behind an operator-only activity and the listings current.
 
-**Status**: 4 open tasks (MCP1 to MCP4), tracked here, not on `NEXT.md`.
+**Status**: 6 open tasks (MCP1 to MCP6), tracked here, not on `NEXT.md`.
 
 ## Facts the tasks share
 
@@ -30,7 +32,9 @@ The harness page `web/public/mcp-harness.html` loads scripts from `web/public/mc
 | MCP1 | machine-only | blocked | UH1, UH3 (`PLAN_ITSA_APPROVAL.md`) | nothing | submit |
 | MCP2 | machine-only | blocked | ODSC1 (`NEXT.md`) | nothing | submit |
 | MCP3 | machine-only | ready | nothing | MCP4 | submit |
-| MCP4 | machine-only | blocked | MCP3, MCP2 | nothing | submit |
+| MCP4 | machine-only | blocked | MCP3, MCP2 | MCP5 | submit |
+| MCP5 | machine-only | blocked | MCP4 | nothing | submit |
+| MCP6 | machine-only | blocked | MCP2 | nothing | submit |
 
 Model, size and repository are in each entry. "Blocked by" lists the tasks and events not yet done.
 
@@ -51,4 +55,12 @@ Design how `edit_lines`, `new_book`, `new_book_from_register`, `roll_forward`, `
 ### MCP4. Build: diya-gl's write tools on the hosted connector
 
 Build MCP3's design. The brief is MCP3's output in this plan. **Model**: Sonnet. **Size**: from MCP3.
+
+### MCP5. A cloud book started from the Companies House register
+
+A hosted tool starts the DIYA cloud book of a limited company's next accounting period from the register: it reads the company profile, the officers, the statement of capital with the shareholdings and the last filed accounts by company number through Submit's own Companies House reads (`app/functions/companies-house/companiesHouseCompanyGet.js`, `companiesHouseOfficersGet.js`, `companiesHouseFilingHistoryGet.js`, `companiesHousePublicRegisterGet.js`; the same path as `company_filing_deadlines` in `mcp/lib/server.js`), then runs diya-gl's `new_book_from_register` on the server (its input: profile, `officers`, holdings, `capitalDate`, `lastAccounts` from the filed iXBRL, optional `periodEnd`) and saves the result as a new cloud book by MCP4's save. With the filed accounts the opening balance sheet equals the filed closing one. The tool is `CHANGES_OUTSIDE` (it creates a cloud book); it registers on prod's connector with the accounts tools. Tests: a recorded register fixture for a micro-entity and a small company, the book's opening balances against the filed accounts, the officers and holdings in the book. **Model**: Sonnet. **Size**: ~5 files.
+
+### MCP6. Links to the filled-in accounts and CT600 forms
+
+`prepare_micro_entity_accounts`, `prepare_small_company_accounts` and `prepare_company_tax_return` follow `prepare_vat_return` (`mcp/lib/handoff-tools.js`, `vatHandoffLink`): each derives the figures again from the open book and gives the link to its form with the figures in the URL fragment (`#books=<base64url JSON>`, read by `web/public/lib/auth-url-builder.js` line 122), and files nothing. The forms are `web/public/companies-house/fileMicroEntityAccounts.html`, `fileSmallCompanyAccounts.html` and `fileCompanyTaxReturn.html` (and their Welsh pages); each page fills its fields from the fragment as the VAT form does, and the person checks, enters the authentication code or Government Gateway credentials, and files. Each tool goes on prod's connector when its journey is live on prod (MCP1's rule), with its sentence in the prod instructions ("Open this link, check the figures ... Nothing has been filed."). Tests: `mcp/test/` for each link's fragment, a browser case per form that opens a link and finds the fields filled, `mcp/test/hosted-tools.test.js` and `mcp/test/plugin.test.js`. **Model**: Sonnet. **Size**: ~8 files.
 
