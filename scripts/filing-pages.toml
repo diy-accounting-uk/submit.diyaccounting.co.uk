@@ -407,6 +407,12 @@ title = "Connector for AI assistants"
 line = "Use Submit from an AI assistant that supports MCP: read a DIYA-GL book, derive and prepare a VAT return."
 
 [[tools_page.extra]]
+rank = 10.5
+href = "records.html"
+title = "Your records"
+line = "The DIYA-GL books saved in your account: upload a spreadsheet as one, download one, and see each version."
+
+[[tools_page.extra]]
 rank = 11
 href = "spreadsheets.html"
 title = "Spreadsheets"

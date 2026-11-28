@@ -329,6 +329,178 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
   }
 });
 
+// The DIYA-GL book, rule, help and form-link tools, each called once over the open cloud book.
+const BOOK_TOOLS_PROVED = [
+  "report",
+  "trial_balance",
+  "checks",
+  "lines",
+  "chart",
+  "book",
+  "prepare_micro_entity_accounts",
+  "prepare_small_company_accounts",
+  "prepare_company_tax_return",
+  "look_up_rule",
+  "find_help",
+  "book_format",
+  "extract_book",
+  "save_workbook",
+  "edit_lines",
+  "undo_book_change",
+  "roll_forward",
+  "new_book",
+  "new_book_from_register",
+];
+
+const SALE_EDIT = {
+  edit: "addSaleLine",
+  params: {
+    line: {
+      entryNumber: "TXN-9001",
+      sourceJournalID: "sales",
+      postingDate: "2025-06-15",
+      accountMainID: "4000",
+      amount: 1200,
+      documentType: "invoice",
+      documentReference: "INV-9001",
+      detailComment: "Acme Ltd",
+      lineItemComment: "Brickwork",
+      taxCode: "S",
+      taxRate: 0.2,
+    },
+  },
+};
+
+test("a chat client reads, changes and undoes a cloud DIYA-GL book, starts new ones, and gets rules, help and the form links", async ({
+  page,
+}) => {
+  test.skip(testAuthProvider !== "cognito-native", "the sign-in needs the Cognito Hosted UI with a native test user");
+  addOnPageLogging(page);
+
+  const { mcpUrl, tokenUrl, clientId, pkce, state } = await discoverRegisterAndConsent(page);
+  const accessToken = await signInAndRefresh(page, { tokenUrl, clientId, pkce, state });
+
+  const bookId = randomUUID();
+  process.env.DIYA_SUBMIT_BASE_URL = baseUrl;
+  const savingSession = createSession({ credentials: { accessToken: async () => accessToken, idToken: async () => null } });
+  await openBook(savingSession, { path: BOOK_FIXTURE_DIRECTORY });
+  await saveBook(savingSession, { cloud: true, bookId });
+  const startedBookIds = [];
+  const called = [];
+
+  try {
+    const transport = new StreamableHTTPClientTransport(new URL(mcpUrl), {
+      requestInit: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+    const client = new Client({ name: "mcp-hosted-behaviour-test", version: "1.0.0" });
+    await client.connect(transport);
+    const answerOf = async (name, args = {}) => {
+      const result = await client.callTool({ name, arguments: args });
+      expect(result.isError, `${name}: ${JSON.stringify(result.content)}`).toBeFalsy();
+      expect(result.structuredContent, name).toBeDefined();
+      called.push(name);
+      return result.structuredContent;
+    };
+    try {
+      const opened = await client.callTool({ name: "open_book", arguments: { bookId } });
+      expect(opened.isError, JSON.stringify(opened.content)).toBeFalsy();
+
+      /* ****************************** */
+      /*  READ THE OPEN BOOK             */
+      /* ****************************** */
+
+      const report = await answerOf("report");
+      expect(report.report.values.length).toBeGreaterThan(0);
+      expect(report.bookChecks.summary).toBeDefined();
+      const trialBalance = await answerOf("trial_balance");
+      expect(trialBalance.totals.debit).toBe(trialBalance.totals.credit);
+      const checks = await answerOf("checks");
+      expect(checks.checks.every((check) => ["pass", "warn", "fail"].includes(check.verdict))).toBe(true);
+      const lines = await answerOf("lines", { journal: "sales", groupBy: "detailComment", top: 3 });
+      expect(lines.groups.length).toBeGreaterThan(0);
+      expect(lines.groups.length).toBeLessThanOrEqual(3);
+      const chart = await answerOf("chart");
+      expect(chart.product).toBe("ltd");
+      expect(chart.accounts.length).toBeGreaterThan(0);
+      expect(JSON.stringify(await answerOf("book"))).toContain("ltd");
+
+      /* ****************************** */
+      /*  THE FORM LINKS                 */
+      /* ****************************** */
+
+      const micro = await answerOf("prepare_micro_entity_accounts");
+      expect(new URL(micro.link).pathname).toBe("/companies-house/fileMicroEntityAccounts.html");
+      expect(new URL(micro.link).hash.startsWith("#books=")).toBe(true);
+      const small = await answerOf("prepare_small_company_accounts");
+      expect(new URL(small.link).pathname).toBe("/companies-house/fileSmallCompanyAccounts.html");
+      const companyTaxReturn = await answerOf("prepare_company_tax_return");
+      expect(new URL(companyTaxReturn.link).pathname).toBe("/companies-house/fileCompanyTaxReturn.html");
+      expect(companyTaxReturn.instruction).toMatch(/Nothing has been filed/);
+
+      /* ****************************** */
+      /*  RULES, HELP AND THE FORMAT     */
+      /* ****************************** */
+
+      const rule = await answerOf("look_up_rule", { query: "accounts due 9 months" });
+      expect(rule.matches.map((match) => match.id)).toContain("ch-accounts-9-months");
+      const help = await answerOf("find_help", { query: "How do I submit a VAT return?" });
+      expect(help.matches[0].url).toMatch(/^https:\/\//);
+      const format = await answerOf("book_format");
+      expect(format.files.map((file) => file.name)).toEqual(["book.toml", "lines.jsonl"]);
+
+      /* ********************************** */
+      /*  THE UPLOAD AND DOWNLOAD LINKS      */
+      /* ********************************** */
+
+      const upload = await answerOf("extract_book");
+      expect(new URL(upload.uploadLink).pathname).toBe("/records.html");
+      const download = await answerOf("save_workbook", { format: "zip" });
+      expect(new URL(download.downloadLink).searchParams.get("bookId")).toBe(bookId);
+
+      /* ************************************************* */
+      /*  A CHANGE SAVED, THEN UNDONE TO THE FIRST VERSION   */
+      /* ************************************************* */
+
+      const edited = await answerOf("edit_lines", { edits: [SALE_EDIT] });
+      expect(edited.bookId).toBe(bookId);
+      expect(edited.version).toBe(edited.previousVersion + 1);
+      expect(edited.movedFigures.length).toBeGreaterThan(0);
+      const undone = await answerOf("undo_book_change");
+      expect(undone).toMatchObject({ bookId, restoredVersion: edited.previousVersion, previousVersion: edited.version });
+      expect(undone.lineCount).toBe(edited.lineCount - 1);
+
+      /* ******************************************************** */
+      /*  NEW DIYA-GL BOOKS: NEXT YEAR, AN EMPTY ONE, THE REGISTER   */
+      /* ******************************************************** */
+
+      const rolled = await answerOf("roll_forward");
+      startedBookIds.push(rolled.bookId);
+      expect(rolled.priorBookId).toBe(bookId);
+      expect(rolled.bookId).not.toBe(bookId);
+      const started = await answerOf("new_book", { product: "bst", businessName: "Hosted MCP behaviour test", yearEnd: "2026-04-05" });
+      startedBookIds.push(started.bookId);
+      expect(started).toMatchObject({ version: 1, lineCount: 0 });
+      const { companyNumber } = companiesHouseLookupFixture(envFilePath);
+      const fromRegister = await answerOf("new_book_from_register", { companyNumber });
+      startedBookIds.push(fromRegister.bookId);
+      expect(fromRegister.version).toBe(1);
+      expect(typeof fromRegister.fromFiledAccounts).toBe("boolean");
+
+      expect([...called].sort()).toEqual([...BOOK_TOOLS_PROVED].sort());
+    } finally {
+      await client.close();
+    }
+  } finally {
+    for (const id of [bookId, ...startedBookIds]) {
+      const removed = await fetch(siteUrl(`api/v1/books/${id}`), {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      expect(removed.status, `DELETE book ${id}`).toBe(200);
+    }
+  }
+});
+
 // The site's own sign-in in a fresh browser context, answering the Cognito ID token the page keeps.
 // The pass admin route reads the caller's email claim, which the connector's access token does not carry.
 async function siteIdToken(browser) {

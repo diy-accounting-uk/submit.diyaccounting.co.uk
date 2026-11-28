@@ -120,8 +120,9 @@
           <span class="mcp-status mcp-status-available">Available now</span>
           <h2>The hosted connector</h2>
           <p>
-            The hosted connector gives a chat client your saved DIYA-GL books and the VAT derivation, with nothing to install. It signs in
-            with the same account as the web app.
+            The hosted connector gives a chat client your saved DIYA-GL books, the VAT, accounts and Company Tax Return figures worked out
+            from them, and links that open each form with the figures filled in, with nothing to install. It signs in with the same account
+            as the web app. Your DIYA-GL books are listed on <a href="records.html">Your records</a>.
           </p>
           <p>The connector URL is:</p>
           <pre><code>https://submit.diyaccounting.co.uk/mcp</code></pre>
@@ -168,7 +169,7 @@
             <li>Google asks you to link your Google Account and the Diyaccounting account. Choose Continue.</li>
             <li>Sign in to your account on the DIY Accounting Submit page.</li>
             <li>
-              In &ldquo;Save your custom app&rdquo;, keep the name <code>DIY Accounting Submit</code>. It lists the eleven tools under
+              In &ldquo;Save your custom app&rdquo;, keep the name <code>DIY Accounting Submit</code>. It lists the thirty tools under
               Available actions. Choose Connect.
             </li>
           </ol>
@@ -177,7 +178,7 @@
             2025.&rdquo; Gemini asks which DIYA-GL book to use, then shows the nine boxes.
           </p>
           <h3>Tools</h3>
-          <p>The connector has eleven tools. It does not reach HMRC and it files nothing.</p>
+          <p>The connector has thirty tools. It does not reach HMRC and it files nothing.</p>
           <dl>
             <dt><code>list_books</code></dt>
             <dd>List the DIYA-GL books saved in your account, most recently updated first.</dd>
@@ -200,6 +201,45 @@
             <dd>The figures a Company Tax Return (CT600) takes, from the open DIYA-GL book of a company.</dd>
             <dt><code>list_accounts_receipts</code></dt>
             <dd>List the accounts filings Submit stored for your account, accepted and rejected.</dd>
+            <dt><code>prepare_micro_entity_accounts</code>, <code>prepare_small_company_accounts</code></dt>
+            <dd>
+              A link that opens the micro-entity or small company accounts form on this site with the figures from the open DIYA-GL book
+              filled in. You look up the company, check the figures and file there.
+            </dd>
+            <dt><code>prepare_company_tax_return</code></dt>
+            <dd>A link that opens the Company Tax Return form on this site with the figures from the open DIYA-GL book filled in.</dd>
+            <dt><code>report</code>, <code>trial_balance</code>, <code>checks</code></dt>
+            <dd>
+              The open DIYA-GL book's profit and loss account, balance sheet, tax and VAT figures; a company's trial balance; and every book
+              check with the lines that fail it.
+            </dd>
+            <dt><code>lines</code>, <code>chart</code>, <code>book</code></dt>
+            <dd>
+              The book's lines, filtered and grouped, such as your largest customers; its chart of accounts; and its period, business, tax
+              settings and registers.
+            </dd>
+            <dt><code>edit_lines</code>, <code>undo_book_change</code></dt>
+            <dd>
+              Record or correct sales, purchases and bank lines in the open DIYA-GL book. Each change is saved in your account as a new
+              version of the book, and an undo puts back the version before it.
+            </dd>
+            <dt><code>new_book</code>, <code>roll_forward</code>, <code>new_book_from_register</code></dt>
+            <dd>
+              Start a new DIYA-GL book: an empty one for a new business, next year's from the open one, or a company's next year from the
+              Companies House register and its last filed accounts. Each is saved in your account as a new book.
+            </dd>
+            <dt><code>extract_book</code>, <code>save_workbook</code></dt>
+            <dd>
+              A link to <a href="records.html">Your records</a>, where you upload a spreadsheet or package zip as a DIYA-GL book, or
+              download the open book as a spreadsheet or a file.
+            </dd>
+            <dt><code>look_up_rule</code></dt>
+            <dd>A tax rule, rate or deadline with the gov.uk page that states it.</dd>
+            <dt><code>find_help</code>, <code>book_format</code></dt>
+            <dd>
+              The page of the guide, this page or the knowledge base that answers a question; and the fields of a DIYA-GL book or the CT600
+              box map.
+            </dd>
           </dl>
           <p>
             Open the link in your browser, check the figures, tick the declaration and file the return there. Nothing reaches HMRC until you

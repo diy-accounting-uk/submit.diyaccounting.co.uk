@@ -224,11 +224,11 @@ export const HOSTED_WRITE_OVERRIDES = {
     title: "Change lines in a DIYA-GL book",
     annotations: CHANGES_OUTSIDE,
     description:
-      "Adds, changes or removes lines in the open DIYA-GL book (one business's sales, purchases and bank lines) with " +
+      "Changes the lines of the open DIYA-GL book (one business's sales, purchases and bank lines): adds, changes or removes them with " +
       `named edits applied in order, at most ${MAX_EDITS_PER_CALL} a call, and saves the result in the person's DIY ` +
       "Accounting Submit account as the next version of the book. Answers the book's summary, the version and the " +
       "figures that moved. Use this when the person asks to record a sale, a purchase or a bank line, or to correct " +
-      "one. A refused edit changes nothing; undo_book_change takes a saved change back. It files nothing.",
+      "one. A refused edit changes nothing; undo_book_change takes a saved change back. It does not file anything.",
     inputSchema: {
       edits: z
         .array(
@@ -250,7 +250,7 @@ export const HOSTED_WRITE_OVERRIDES = {
       "Starts an empty DIYA-GL book for a new business (the product's starting accounts, the twelve months to the year " +
       "end and that year's tax rates) and saves it in the person's DIY Accounting Submit account as a new book, which " +
       "becomes the open one. Use this when the person starts keeping their records for a new business. It changes no " +
-      "other DIYA-GL book and files nothing.",
+      "other DIYA-GL book and does not file anything.",
     inputSchema: {
       product: z
         .enum(["bst", "taxi", "se", "ltd"])
@@ -280,7 +280,7 @@ export const HOSTED_WRITE_OVERRIDES = {
       "Takes back a change to the open DIYA-GL book by saving an earlier version as the next version: by default the " +
       "version before the latest, or toVersion. Answers the book's summary, the version restored and the figures that " +
       "moved. Use this when the person says a change was wrong. The undo is a version too, so another undo takes it " +
-      "back. It files nothing.",
+      "back. It does not file anything.",
     inputSchema: {
       toVersion: z.number().int().min(1).optional().describe("The version to go back to; defaults to the one before the latest"),
     },
@@ -292,7 +292,7 @@ export const HOSTED_WRITE_OVERRIDES = {
     description:
       "Answers the link to the DIY Accounting Submit page where the person uploads a spreadsheet, a package zip, a " +
       "DIYA-GL zip or a DIYA-GL book as JSON, which is read in their browser and saved in their account as a new " +
-      "DIYA-GL book. Use this when the person wants to bring in records they keep in a spreadsheet. It changes nothing itself.",
+      "DIYA-GL book. Use this when the person wants to bring in records they keep in a spreadsheet. It does not change anything itself.",
     inputSchema: { clientId: clientIdSchema },
     handler: uploadLink,
   },
@@ -302,7 +302,7 @@ export const HOSTED_WRITE_OVERRIDES = {
     description:
       "Answers the link to the DIY Accounting Submit page that downloads the open DIYA-GL book as a workbook (xlsx), a " +
       "package zip, a DIYA-GL zip or a DIYA-GL book as JSON. A product whose spreadsheet is a set of workbooks " +
-      "downloads as a package zip. Use this when the person wants their records as a spreadsheet or a file. It changes nothing.",
+      "downloads as a package zip. Use this when the person wants their records as a spreadsheet or a file. It does not change the book.",
     inputSchema: {
       format: z.enum(DOWNLOAD_FORMATS).optional().describe("xlsx (the default), zip, diya-gl-zip or json"),
     },

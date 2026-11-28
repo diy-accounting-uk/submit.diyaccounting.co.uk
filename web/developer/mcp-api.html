@@ -82,8 +82,8 @@
         </details>
       </details>
       <details class="tool" id="tool-book">
-        <summary><code>book</code></summary>
-        <p>The profile of the open DIYA-GL book: the product, the accounting period, the business (name, trade, address, VAT registration, cash or accruals basis), the tax settings, the bank accounts, the journals with their line counts and dates, and the registers it carries (directors, employees, debtors, creditors, fixed assets, dividends, members, opening balances, stock). Use this when the person asks what period their records cover, whether they are VAT registered, or who their directors or employees are. It does not change the book.</p>
+        <summary><code>book</code> <span class="tag">hosted, production</span></summary>
+        <p>Answers the profile of the open DIYA-GL book: the product, the accounting period, the business (name, trade, address, VAT registration, cash or accruals basis), the tax settings, the bank accounts, the journals with their line counts and dates, and the registers it carries (directors, employees, debtors, creditors, fixed assets, dividends, members, opening balances, stock). Use this when the person asks what period their records cover, whether they are VAT registered, or who their directors or employees are. It does not change the book.</p>
         <p>No parameters.</p>
         <details>
           <summary>Input schema (JSON Schema)</summary>
@@ -95,8 +95,8 @@
         </details>
       </details>
       <details class="tool" id="tool-book_format">
-        <summary><code>book_format</code></summary>
-        <p>Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each box's number, label, section and format, narrowed to one section when section is given. Use this before reading or changing lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It reads no DIYA-GL book and changes nothing.</p>
+        <summary><code>book_format</code> <span class="tag">hosted, production</span></summary>
+        <p>Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each box's number, label, section and format, narrowed to one section when section is given. Use this when you are about to read or change lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It does not read a DIYA-GL book or change anything.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
@@ -127,8 +127,8 @@
         </details>
       </details>
       <details class="tool" id="tool-chart">
-        <summary><code>chart</code></summary>
-        <p>The chart of accounts of the open DIYA-GL book: each account's id, name, group, class and normal side, for a company the accounts line it feeds, the spreadsheet column it lands in, how many lines post to it with their total in pence, and the report rows it reaches. Use this when the person asks which account to use for something, where a cost shows in their accounts, or which accounts have no activity. It does not change the book.</p>
+        <summary><code>chart</code> <span class="tag">hosted, production</span></summary>
+        <p>Answers the chart of accounts of the open DIYA-GL book: each account's id, name, group, class and normal side, for a company the accounts line it feeds, the spreadsheet column it lands in, how many lines post to it with their total in pence, and the report rows it reaches. Use this when the person asks which account to use for something, where a cost shows in their accounts, or which accounts have no activity. It does not change the book.</p>
         <p>No parameters.</p>
         <details>
           <summary>Input schema (JSON Schema)</summary>
@@ -140,8 +140,8 @@
         </details>
       </details>
       <details class="tool" id="tool-checks">
-        <summary><code>checks</code></summary>
-        <p>Every book check and warning over the open DIYA-GL book, each with its verdict (pass, warn or fail), what it means and the entryNumbers of the lines that fail it, with the pass, warn and fail counts. Use this when the person asks whether anything is wrong with their records, which entries fall outside the year, which sales have no invoice number, whether there are duplicates, or how near they are to the VAT threshold. It does not change the book or contact HMRC.</p>
+        <summary><code>checks</code> <span class="tag">hosted, production</span></summary>
+        <p>Answers every book check and warning over the open DIYA-GL book, each with its verdict (pass, warn or fail), what it means and the entryNumbers of the lines that fail it, with the pass, warn and fail counts. Use this when the person asks whether anything is wrong with their records, which entries fall outside the year, which sales have no invoice number, whether there are duplicates, or how near they are to the VAT threshold. It does not change the book or contact HMRC.</p>
         <p>No parameters.</p>
         <details>
           <summary>Input schema (JSON Schema)</summary>
@@ -423,8 +423,8 @@
         </details>
       </details>
       <details class="tool" id="tool-find_help">
-        <summary><code>find_help</code></summary>
-        <p>Searches the DIY Accounting Submit guide (its how-to journeys and the MCP, rates and MTD calendar pages) and the diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. It needs no DIYA-GL book, reads nothing of the person's records, and gives no advice on their own case.</p>
+        <summary><code>find_help</code> <span class="tag">hosted, production</span></summary>
+        <p>Searches the DIY Accounting Submit guide (its how-to journeys and the MCP, rates and MTD calendar pages) and the diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. It needs no DIYA-GL book, does not read the person's records, and gives no advice on their own case.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
@@ -632,7 +632,7 @@
         </details>
       </details>
       <details class="tool" id="tool-lines">
-        <summary><code>lines</code></summary>
+        <summary><code>lines</code> <span class="tag">hosted, production</span></summary>
         <p>Reads the lines of the open DIYA-GL book (every sale, purchase, bank movement, payslip and journal entry, with its entryNumber, journal, account, date, amount, customer, supplier or payee, description, reference and VAT fields), filtered and optionally grouped with a count and a total in pence. Filters combine: journal, account, dates, text and reference. Use this when the person asks who their best customer is, which suppliers cost most, what they spent on something in a month, or for their largest sales or purchases. It does not change the book.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -1010,8 +1010,8 @@
         </details>
       </details>
       <details class="tool" id="tool-look_up_rule">
-        <summary><code>look_up_rule</code></summary>
-        <p>Looks up an HMRC or Companies House rule or rate by its words or its fact id (such as &quot;annual investment allowance&quot;, &quot;marginal relief&quot;, &quot;accounts due 9 months&quot; or corporation-tax-main-rate-fy2026) and answers each match with its figure or words, the tax year or financial year it applies to, and the gov.uk page that states it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or Companies House for that. It needs no DIYA-GL book and contacts no outside service.</p>
+        <summary><code>look_up_rule</code> <span class="tag">hosted, production</span></summary>
+        <p>Looks up an HMRC or Companies House rule or rate by its words or its fact id (such as &quot;annual investment allowance&quot;, &quot;marginal relief&quot;, &quot;accounts due 9 months&quot; or corporation-tax-main-rate-fy2026) and answers each match with its figure or words, the tax year or financial year it applies to, and the gov.uk page that states it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or Companies House for that. It needs no DIYA-GL book and does not contact an outside service.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
@@ -1142,7 +1142,7 @@
         </details>
       </details>
       <details class="tool" id="tool-prepare_company_tax_return">
-        <summary><code>prepare_company_tax_return</code></summary>
+        <summary><code>prepare_company_tax_return</code> <span class="tag">hosted, production</span></summary>
         <p>Works out the Company Tax Return figures from the open DIYA-GL book, as derive_company_tax_return does, and answers a link to the Company Tax Return (CT600) form on DIY Accounting Submit with the period, the profit and loss account and the computation figures filled in. The person opens the link, looks up the company, checks the figures, fills the balance sheet and the rest of the return, and files there with their Government Gateway sign-in. Use this when the person asks to file their Company Tax Return or CT600. It never files anything and contacts no outside service.</p>
         <p>No parameters.</p>
         <details>
@@ -1155,7 +1155,7 @@
         </details>
       </details>
       <details class="tool" id="tool-prepare_micro_entity_accounts">
-        <summary><code>prepare_micro_entity_accounts</code></summary>
+        <summary><code>prepare_micro_entity_accounts</code> <span class="tag">hosted, production</span></summary>
         <p>Works out the micro-entity accounts from the open DIYA-GL book, as derive_micro_entity_accounts does, and answers a link to the micro-entity accounts form on DIY Accounting Submit with the period, both years' balance sheets, the employee count and the director filled in. The person opens the link, looks up the company, checks the figures, adds the date approved and the statements, and files there with the company's authentication code. Use this when the person asks to file their micro-entity accounts at Companies House. It never files anything and contacts no outside service: the figures filed are the ones the person sees on the page.</p>
         <p>No parameters.</p>
         <details>
@@ -1168,7 +1168,7 @@
         </details>
       </details>
       <details class="tool" id="tool-prepare_small_company_accounts">
-        <summary><code>prepare_small_company_accounts</code></summary>
+        <summary><code>prepare_small_company_accounts</code> <span class="tag">hosted, production</span></summary>
         <p>Works out the small company accounts from the open DIYA-GL book, as derive_small_company_accounts does, and answers a link to the small company accounts form on DIY Accounting Submit with the period, the profit and loss account, both years' balance sheets, the fixed asset note, the employee count and the directors filled in. The person opens the link, looks up the company, checks the figures, adds the accounting policies, the date approved and the statements, and files there with the company's authentication code. Use this when the person asks to file their small company accounts at Companies House. It never files anything and contacts no outside service.</p>
         <p>No parameters.</p>
         <details>
@@ -2410,7 +2410,7 @@
         </details>
       </details>
       <details class="tool" id="tool-report">
-        <summary><code>report</code></summary>
+        <summary><code>report</code> <span class="tag">hosted, production</span></summary>
         <p>Works out the figures of the open DIYA-GL book (one business's sales, purchases and bank lines for a year): the profit and loss account, the balance sheet, the tax and VAT figures and the compliance checks, each figure with the label the spreadsheet prints for it, and the book checks. Use this when the person asks what their profit, turnover, tax bill or VAT due is, or which lines make up a figure (entryNumbers). It does not change the book, file anything or contact HMRC.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
@@ -4179,8 +4179,8 @@
         </details>
       </details>
       <details class="tool" id="tool-trial_balance">
-        <summary><code>trial_balance</code></summary>
-        <p>The trial balance of the open DIYA-GL book of a company: every account's balance in the debit or the credit column and the two totals, over the year, one month, one VAT quarter or a date range, with the year-end postings of the registers. Name an account to also get the lines and postings behind its balance. Use this when the person asks whether their trial balance balances, what an account's balance is, or what moved in a month. Company DIYA-GL books only. It does not change the book or contact HMRC.</p>
+        <summary><code>trial_balance</code> <span class="tag">hosted, production</span></summary>
+        <p>Answers the trial balance of the open DIYA-GL book of a company: every account's balance in the debit or the credit column and the two totals, over the year, one month, one VAT quarter or a date range, with the year-end postings of the registers. Name an account to also get the lines and postings behind its balance. Use this when the person asks whether their trial balance balances, what an account's balance is, or what moved in a month. Company DIYA-GL books only. It does not change the book or contact HMRC.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>

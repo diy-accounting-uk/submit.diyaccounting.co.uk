@@ -392,8 +392,9 @@
         <h3 id="hosted-mcp-answers">What the hosted MCP endpoint sends to your AI client</h3>
         <p>
           You can connect an AI client, such as ChatGPT, Claude or Gemini, to the hosted MCP endpoint. You sign in with your Submit account.
-          The client can then call eleven tools. Each tool answers with data from your own account, except the filing deadlines, which come
-          from the Companies House public register:
+          The client can then call thirty tools. Each tool answers with data from your own account, except the filing deadlines and a
+          company's register details, which come from the Companies House public register, and the tax rules and help pages, which are
+          public:
         </p>
         <ul>
           <li><strong>Your saved DIYA-GL books</strong>: the id, title and product of each book, and the period that it covers.</li>
@@ -435,6 +436,29 @@
             company number, the period, the type of accounts and whether Companies House accepted it. For a rejected filing, its submission
             number, the day it was rejected and Companies House's reasons.
           </li>
+          <li>
+            <strong>The figures and lines of an open DIYA-GL book</strong>: its profit and loss account, balance sheet, tax and VAT figures,
+            trial balance, chart of accounts and book checks, and the journal lines that you or the client ask for. For each journal line,
+            the tool sends its entry number, date, account, amount, counterparty, description, reference and VAT fields.
+          </li>
+          <li>
+            <strong>The profile of an open DIYA-GL book</strong>: the name, trade and address of the business, its VAT registration and tax
+            settings, its bank accounts and the registers that the book holds, such as the names of its directors and employees.
+          </li>
+          <li>
+            <strong>Changes that the client makes for you</strong>: when the client records or corrects a line, undoes a change, or starts a
+            new DIYA-GL book or next year's book, the change is saved in your account as a new version or a new book. The tool answers the
+            book's period, line count and checks, and the figures that the change moved.
+          </li>
+          <li>
+            <strong>A new DIYA-GL book from the Companies House register</strong>: for a company number that you give, the company's name,
+            registered office, current directors and secretaries, and the figures of its last filed accounts, from the Companies House
+            public register. This is saved in your account as a new DIYA-GL book.
+          </li>
+          <li>
+            <strong>Links to the accounts and Company Tax Return forms, and to Your records</strong>: as with the VAT form, the part of each
+            form link after the "#" holds the figures that the form takes, and your browser reads it.
+          </li>
         </ul>
         <p>The tools send no internal identifier of your account, no session or request identifier and no log data.</p>
         <p>
@@ -444,9 +468,9 @@
           that an AI client sent.
         </p>
         <p>
-          <strong>Purpose</strong>: the AI client uses the data to show you your DIYA-GL books, to work out a VAT return, company accounts
-          or a Company Tax Return, and to tell you when a company's filings are due. You then check the figures and file them yourself in
-          your browser. We use the data for no other purpose.
+          <strong>Purpose</strong>: the AI client uses the data to show you your DIYA-GL books, to keep your records in them when you ask it
+          to, to work out a VAT return, company accounts or a Company Tax Return, and to tell you when a company's filings are due. You then
+          check the figures and file them yourself in your browser. We use the data for no other purpose.
         </p>
         <p>
           <strong>Recipient</strong>: the supplier of the AI client that you connect. This is OpenAI for ChatGPT, Anthropic for Claude and

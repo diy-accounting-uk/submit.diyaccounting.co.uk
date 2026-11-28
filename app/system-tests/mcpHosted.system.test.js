@@ -144,7 +144,7 @@ describe("System: hosted MCP endpoint through Express", () => {
     await client.close();
   });
 
-  it("lists prod's eleven tools on prod", async () => {
+  it("lists prod's thirty tools on prod", async () => {
     const environmentName = process.env.ENVIRONMENT_NAME;
     process.env.ENVIRONMENT_NAME = "prod";
     try {
@@ -163,6 +163,25 @@ describe("System: hosted MCP endpoint through Express", () => {
           "derive_small_company_accounts",
           "derive_company_tax_return",
           "list_accounts_receipts",
+          "report",
+          "trial_balance",
+          "checks",
+          "lines",
+          "chart",
+          "book",
+          "look_up_rule",
+          "prepare_micro_entity_accounts",
+          "prepare_small_company_accounts",
+          "prepare_company_tax_return",
+          "edit_lines",
+          "new_book",
+          "roll_forward",
+          "undo_book_change",
+          "extract_book",
+          "save_workbook",
+          "new_book_from_register",
+          "find_help",
+          "book_format",
         ].sort(),
       );
       await client.close();

@@ -18,7 +18,7 @@ import { openBook } from "./book-tools.js";
 import { deriveItsaAnnualSubmission } from "./itsa-tools.js";
 import { CHANGES_OUTSIDE, READS } from "./tool-annotations.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
-import { VAT_FILING_SENTENCE } from "./handoff-tools.js";
+import { ACCOUNTS_FILING_SENTENCE, COMPANY_TAX_RETURN_FILING_SENTENCE, VAT_FILING_SENTENCE } from "./handoff-tools.js";
 import { HOSTED_WRITE_OVERRIDES } from "./hosted-write-tools.js";
 import { HOSTED_REGISTER_BOOK_OVERRIDES } from "./hosted-register-book.js";
 
@@ -86,11 +86,12 @@ export const HOSTED_TOOL_NAMES = [
   "book_format",
 ];
 
-// Prod offers the DIYA-GL book tools, the VAT, accounts and Company Tax Return derivations, the link that
-// opens the VAT form with the figures filled in, a company's filing deadlines from the public register,
-// and the stored receipts. No hosted tool on prod files or reaches HMRC, because an AI client cannot
-// give the fraud prevention headers a call needs. The HMRC tools, the sandbox filing tools and the
-// practice tools register in every other environment.
+// Prod offers the DIYA-GL book tools (reading a book, changing it with an undo, starting new ones), the
+// VAT, accounts and Company Tax Return derivations, the links that open the VAT, accounts and CT600 forms
+// with the figures filled in, the rules and rates with their sources, the site's help, a company's filing
+// deadlines from the public register, and the stored receipts. No hosted tool on prod files or reaches
+// HMRC, because an AI client cannot give the fraud prevention headers a call needs. The HMRC tools, the
+// sandbox filing tools and the practice tools register in every other environment.
 const PROD_HOSTED_TOOL_NAMES = [
   "list_books",
   "open_book",
@@ -103,6 +104,25 @@ const PROD_HOSTED_TOOL_NAMES = [
   "derive_small_company_accounts",
   "derive_company_tax_return",
   "list_accounts_receipts",
+  "report",
+  "trial_balance",
+  "checks",
+  "lines",
+  "chart",
+  "book",
+  "look_up_rule",
+  "prepare_micro_entity_accounts",
+  "prepare_small_company_accounts",
+  "prepare_company_tax_return",
+  "edit_lines",
+  "new_book",
+  "roll_forward",
+  "undo_book_change",
+  "extract_book",
+  "save_workbook",
+  "new_book_from_register",
+  "find_help",
+  "book_format",
 ];
 
 // The demo user that directory reviewers sign in as belongs to this Cognito group. Its token sees
@@ -125,15 +145,32 @@ export function hostedToolNames(environmentName, groups = []) {
 const PROD_HOSTED_INSTRUCTIONS =
   "A book is one DIYA-GL file: one business's sales, purchases and bank lines for a year. " +
   'Say "your DIYA-GL book" or "your records" to the person, never "your books". ' +
-  "This connector reads and works out figures: it opens a DIYA-GL book and derives from it a VAT return, a company's " +
-  "micro-entity or small company accounts and a Company Tax Return; it prepares the link that opens the VAT return " +
-  "form with the VAT figures filled in; it looks up a company's filing deadlines on the Companies House register; and " +
-  "it reads stored VAT receipts and accounts filings. No tool files a return or accounts, or pays HMRC or anyone else. " +
-  "When asked to file accounts or a Company Tax Return, or to pay, say that this connector cannot do it and that the " +
-  "person files those on the DIY Accounting Submit website. To file a VAT return, call prepare_vat_return, give the person its link and " +
+  "This connector keeps and reads the person's records and works out figures: it opens a DIYA-GL book and derives " +
+  "from it a VAT return, a company's micro-entity or small company accounts and a Company Tax Return; it prepares the " +
+  "links that open the VAT return, accounts and Company Tax Return forms with the figures filled in; it looks up a " +
+  "company's filing deadlines on the Companies House register; and it reads stored VAT receipts and accounts filings. " +
+  "No tool files a return or accounts, or pays HMRC or anyone else. When asked to pay, say that this connector cannot " +
+  "do it. To file a VAT return, call prepare_vat_return, give the person its link and " +
   `tell them: "${VAT_FILING_SENTENCE}" After derive_vat_return, show the nine boxes and the largest lines behind ` +
   "boxes 1 and 4. When list_books answers no DIYA-GL book, say that no DIYA-GL book is saved in the account and give " +
-  "the link https://submit.diyaccounting.co.uk/mcp.html#what-you-need.";
+  "the link https://submit.diyaccounting.co.uk/mcp.html#what-you-need. " +
+  "report gives the book's profit and loss account, balance sheet, tax and VAT figures, each with the label the " +
+  "spreadsheet prints. trial_balance gives a company's trial balance for the year, a month, a VAT quarter or a date " +
+  "range. checks gives every book check with its verdict and the lines that fail it. lines reads the book's lines, " +
+  "filtered and grouped, to answer who the best customer is or what was spent on something. chart gives the chart of " +
+  "accounts and where each account lands in the accounts. book gives the book's period, business, tax settings and " +
+  "registers. edit_lines records or corrects sales, purchases and bank lines and saves the book as its next version; " +
+  "say what changed, and use undo_book_change when the person says a change was wrong. new_book starts an empty " +
+  "DIYA-GL book for a new business. roll_forward starts next year's DIYA-GL book from the open one. " +
+  "new_book_from_register starts a company's next DIYA-GL book from the Companies House register and its last filed " +
+  "accounts. extract_book gives the link where the person uploads a spreadsheet or package zip as a DIYA-GL book. " +
+  "save_workbook gives the link that downloads the open book as a spreadsheet or a file. look_up_rule answers a tax " +
+  "rule, rate or deadline with its gov.uk source; quote the source and send the person to HMRC or Companies House for " +
+  "a ruling. find_help finds the Submit guide, the MCP page or the knowledge base article that answers a question; " +
+  "give its link. book_format describes the DIYA-GL book's files and fields, or the CT600 box map. " +
+  "prepare_micro_entity_accounts and prepare_small_company_accounts give the link to the accounts form with the " +
+  `figures filled in; tell the person: "${ACCOUNTS_FILING_SENTENCE}" prepare_company_tax_return gives the link to the ` +
+  `Company Tax Return form with the figures filled in; tell the person: "${COMPANY_TAX_RETURN_FILING_SENTENCE}"`;
 
 /**
  * The server instructions the hosted endpoint sends in an environment, for a caller in these groups:

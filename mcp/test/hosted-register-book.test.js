@@ -96,10 +96,10 @@ describe("new_book_from_register on the hosted connector", () => {
     vi.unstubAllGlobals();
   });
 
-  it("is offered outside prod only, and adds a DIYA-GL book without replacing one", () => {
+  it("is offered in every environment, prod included, and adds a DIYA-GL book without replacing one", () => {
     expect(HOSTED_TOOL_NAMES).toContain("new_book_from_register");
-    expect(hostedToolNames("prod")).not.toContain("new_book_from_register");
-    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("new_book_from_register");
+    expect(hostedToolNames("prod")).toContain("new_book_from_register");
+    expect(hostedToolNames("ci", [REVIEWER_GROUP])).toContain("new_book_from_register");
     expect(HOSTED_OVERRIDES.new_book_from_register).toBe(tool);
     expect(tool.annotations).toEqual({ readOnlyHint: false, destructiveHint: false, openWorldHint: true });
   });

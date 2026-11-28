@@ -113,8 +113,8 @@ describe("the help index", () => {
 });
 
 describe("the two tools on the hosted connector", () => {
-  it("lists and answers find_help and book_format outside prod, read-only", async () => {
-    const toolNames = hostedToolNames("ci");
+  it("lists and answers find_help and book_format on prod, read-only", async () => {
+    const toolNames = hostedToolNames("prod");
     const call = (body) =>
       handleMcpRequest(
         new Request("https://submit.diyaccounting.co.uk/mcp", {

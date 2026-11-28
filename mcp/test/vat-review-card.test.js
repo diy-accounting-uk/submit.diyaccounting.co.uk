@@ -13,7 +13,7 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { createSession, openBook } from "../lib/book-tools.js";
 import { createServer } from "../lib/server.js";
-import { HOSTED_TOOL_NAMES, hostedToolNames } from "../lib/hosted-tools.js";
+import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, hostedToolNames } from "../lib/hosted-tools.js";
 import { prepareVatReturn } from "../lib/handoff-tools.js";
 import { deriveVatReturn } from "../lib/vat-tools.js";
 import { MCP_APP_MIME_TYPE, VAT_REVIEW_CARD_URI, vatReviewCardHtml } from "../lib/vat-review-card.js";
@@ -71,7 +71,7 @@ describe("the review card resource", () => {
 
   it("is registered on the prod hosted server, which serves derive_vat_return", async () => {
     expect(HOSTED_TOOL_NAMES).toContain("derive_vat_return");
-    client = await connect(createServer(createSession(), { toolNames: hostedToolNames("prod") }));
+    client = await connect(createServer(createSession(), { toolNames: hostedToolNames("prod"), overrides: HOSTED_OVERRIDES }));
     const { resources } = await client.listResources();
     expect(resources.map((resource) => resource.uri)).toEqual([VAT_REVIEW_CARD_URI]);
   });
