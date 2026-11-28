@@ -32,6 +32,11 @@ const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResume";
 // letters and digits interleaved) is caught before a submit round trip.
 const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/;
 
+// Each field's reference and note, and the panel a failed filing leaves; this script is not a module.
+const confirmationStatementFields = import("../lib/confirmation-statement-fields.js");
+const filingFailure = import("../lib/filing-failure.js");
+const accountsFilingFailure = import("../lib/accounts-filing-failure.js");
+
 // The two headers the status poll (a GET) carries the own presenter in.
 function ownPresenterHeaders() {
   return ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
@@ -258,8 +263,8 @@ async function lookUpCompany(companyNumber) {
     renderPublicPscs(pscsResult.pscs);
     showView("authView");
   } catch (error) {
-    console.error("Failed to look up the company:", error);
-    showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
+    const { showCompanyLookupFailure } = await import("../lib/company-lookup-failure.js");
+    showCompanyLookupFailure(showStatus, error, companyNumber);
   } finally {
     hideLoading();
   }
@@ -506,6 +511,11 @@ function renderDirectorRows(directors) {
   currentDirectors = directors;
   const container = document.getElementById("directorRowsContainer");
   container.replaceChildren(...directors.map((director, index) => buildDirectorRow(index, director)));
+  confirmationStatementFields.then((fields) =>
+    directors.forEach((director, index) =>
+      fields.showFieldDetail(document, fields.DIRECTOR_PERSONAL_CODE_FIELD, `directorPersonalCode-${index}`),
+    ),
+  );
 }
 
 function renderShareClasses(shares) {
@@ -919,14 +929,42 @@ async function handleReviewFormSubmit(event) {
   } catch (error) {
     console.error("Failed to render the confirmation statement preview:", error);
     showStatus(error.message || window.siteText("ch.cs.preview-failed", "Failed to render the confirmation statement preview."), "error");
+    await showFilingFailure(
+      error,
+      window.siteText("ch.cs.failure-sent-preview", "Nothing was sent to Companies House. The preview is built before anything is sent."),
+    );
   } finally {
     hideLoading();
   }
 }
 
+// --- What a failure left behind ----------------------------------------------------------------
+
+// The codes live only in this page's variables, so the answers are in the form and nowhere else.
+function answersWhereText() {
+  return window.siteText(
+    "ch.cs.failure-answers",
+    "Your answers are still in this form. The authentication code and the personal codes are kept only in this page, so a new page asks for them again.",
+  );
+}
+
+// The panel under the status messages: what was sent and what was not, where the answers are, and
+// the kind of failure with its next step.
+async function showFilingFailure(error, sent) {
+  const { classifyFilingFailure, showFailureDetail } = await filingFailure;
+  showFailureDetail(document, { sent, answers: answersWhereText(), failure: classifyFilingFailure(error, { service: "companiesHouse" }) });
+}
+
 // A GovTalkErrors block (error.body.errors) means the gateway never accepted the envelope,
 // so it carries plain words a customer can read, not the gateway's own technical Text - the
 // caught error's own message is the fallback when there is no GovTalkErrors block to read.
+// A refusal for no token left takes the page's own sentence; any other error is described as below.
+async function submissionErrorText(error, fallback) {
+  const reason = error?.reason ?? error?.body?.reason;
+  if (reason === "tokens_exhausted") return (await accountsFilingFailure).noTokensText();
+  return describeSubmissionError(error, fallback);
+}
+
 function describeSubmissionError(error, fallback) {
   const govTalkErrors = error?.body?.errors;
   if (Array.isArray(govTalkErrors) && govTalkErrors.length > 0) {
@@ -991,6 +1029,9 @@ function renderPscFollowUp() {
     "Companies House verifies a person with significant control separately from the confirmation statement, through a PSC verification statement filed after this one, inside the window starting the day after the review date. Enter each person's own PSC personal code below to file theirs now.",
   );
   container.replaceChildren(heading, explanation, ...matches.map((match) => buildPscFollowUpRow(match, matches)));
+  confirmationStatementFields.then((fields) =>
+    matches.forEach(({ index }) => fields.showFieldDetail(document, fields.PSC_PERSONAL_CODE_FIELD, `pscPersonalCode-${index}`)),
+  );
 }
 
 function buildPscFollowUpRow({ director, index, psc }, matches) {
@@ -1155,8 +1196,18 @@ async function handlePscVerificationSubmit(index, matches) {
     console.error("PSC verification statement filing failed:", error);
     resultContainer.replaceChildren(
       buildParagraph(
-        [describeSubmissionError(error, window.siteText("ch.cs.psc-failed", "Failed to file the PSC verification statement."))],
+        [await submissionErrorText(error, window.siteText("ch.cs.psc-failed", "Failed to file the PSC verification statement."))],
         "error",
+      ),
+    );
+    await showFilingFailure(
+      error,
+      window.siteText(
+        "ch.cs.failure-sent-psc-none",
+        "Companies House did not take the verification statement for {name}. Nothing was filed.",
+        {
+          name: [entry.director.forename, entry.director.surname].filter(Boolean).join(" ") || entry.psc.name,
+        },
       ),
     );
   } finally {
@@ -1296,6 +1347,7 @@ async function handleSubmitFiling() {
   showLoading();
   hideStatus();
   let payload;
+  let submission;
   try {
     payload = { ...buildStatementPayload(), companyAuthCode };
     const govTestScenario = document.getElementById("govTestScenario").value.trim();
@@ -1303,7 +1355,7 @@ async function handleSubmitFiling() {
     // The own presenter rides in the submit request alone. The record rendered afterwards is built from payload,
     // so it is kept off payload and sent separately.
     window.narrateStage(window.siteText("ch.narrate-sending-statement", "Sending the confirmation statement to Companies House..."));
-    const submission = await window.submitConfirmationStatement(ownPresenter ? { ...payload, ownPresenter } : payload, {
+    submission = await window.submitConfirmationStatement(ownPresenter ? { ...payload, ownPresenter } : payload, {
       ...govTestScenarioHeaders,
       ...languageHeaders(),
     });
@@ -1332,11 +1384,19 @@ async function handleSubmitFiling() {
     }
     console.error("Companies House confirmation statement filing failed:", error);
     showStatus(
-      describeSubmissionError(
+      await submissionErrorText(
         error,
         window.siteText("ch.cs.file-failed", "Failed to file the confirmation statement with Companies House."),
       ),
       "error",
+    );
+    await showFilingFailure(
+      error,
+      submission
+        ? window.siteText("ch.cs.failure-sent-held", "Companies House has the statement (submission {number}).", {
+            number: submission.submissionNumber,
+          })
+        : window.siteText("ch.cs.failure-sent-none", "Companies House did not take the confirmation statement. Nothing was filed."),
     );
   } finally {
     hideLoading();
@@ -1351,28 +1411,12 @@ async function handleSubmitFiling() {
 async function startActivityCheckout(companyNumber, reviewDate) {
   showLoading();
   try {
-    const subjectKey = `${companyNumber}:${reviewDate}`;
-    const returnTo = `${window.location.origin}${window.location.pathname}`;
-    const response = await window.fetchWithIdToken("/api/v1/billing/activity-checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey, returnTo }),
+    const stripeCheckout = await import("/lib/stripe-checkout.js");
+    await stripeCheckout.startActivityCheckout({
+      activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID,
+      subjectKey: `${companyNumber}:${reviewDate}`,
+      beforeRedirect: () => sessionStorage.setItem(CHECKOUT_RESUME_KEY, JSON.stringify({ companyNumber, reviewDate })),
     });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.checkoutUrl) {
-      showStatus(
-        window.siteText("ch.cs.payment-failed-reason", "Failed to start payment: {reason}", {
-          reason: body.message || body.error || window.siteText("ch.cs.unknown-error", "Unknown error"),
-        }),
-        "error",
-      );
-      return;
-    }
-    sessionStorage.setItem(CHECKOUT_RESUME_KEY, JSON.stringify({ companyNumber, reviewDate }));
-    window.location.href = body.checkoutUrl;
-  } catch (error) {
-    console.error("Failed to start the confirmation statement payment:", error);
-    showStatus(error.message || window.siteText("ch.cs.payment-failed", "Failed to start payment."), "error");
   } finally {
     hideLoading();
   }
@@ -1459,6 +1503,8 @@ if (window.__submitReady__) {
 } else {
   document.addEventListener("submit-ready", resumeAfterCheckoutIfReady, { once: true });
 }
+
+confirmationStatementFields.then((fields) => fields.showConfirmationStatementFields(document));
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("authForm").addEventListener("submit", handleAuthSubmit);

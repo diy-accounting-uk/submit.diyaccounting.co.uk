@@ -116,7 +116,10 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
   let pollCount = 0;
   const startTime = Date.now();
   // The "Still processing" banner belongs to this request: it goes when the request ends, however it ends.
+  // A poll that is a stage of a submission (init.pollStage) shows its message as that stage, which the
+  // submission ends itself.
   const dismissPendingStatus = () => {
+    if (init.pollStage) return;
     if (pollCount > 0 && typeof window !== "undefined" && window.dismissStatus) window.dismissStatus(statusRequestId);
   };
 
@@ -139,10 +142,11 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
     // Only applied to HMRC calls as requested
     const delay = urlPath.includes("/hmrc/") ? Math.min(Math.pow(2, pollCount - 1) * 1000, 4000) : 1000;
 
-    if (typeof window !== "undefined" && window.showStatus) {
-      window.showStatus(init.pollPendingMessage || siteText("widget.still-processing", "Still processing..."), "info", {
-        requestId: statusRequestId,
-      });
+    const pendingMessage = init.pollPendingMessage || siteText("widget.still-processing", "Still processing...");
+    if (init.pollStage && typeof window !== "undefined" && window.narrateStage) {
+      window.narrateStage(pendingMessage);
+    } else if (typeof window !== "undefined" && window.showStatus) {
+      window.showStatus(pendingMessage, "info", { requestId: statusRequestId });
     }
 
     await new Promise((resolve, reject) => {

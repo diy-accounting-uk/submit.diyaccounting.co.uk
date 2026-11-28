@@ -329,3 +329,28 @@ test("one person who is both a director and the secretary is chosen by the appoi
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0]).toMatchObject({ officerRole: "director", surname: "SMITH", dateOfBirth: "1980-03-09" });
 });
+
+test("a company authentication code Companies House did not accept shows the failure panel with the code to check", async ({ page }) => {
+  await serveSite(page);
+  await page.route("**/api/v1/companies-house/officer-resignation", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Companies House did not accept the company authentication code",
+        reason: "invalid-company-authentication-code",
+      }),
+    }),
+  );
+  await page.goto(`${SITE}/companies-house/removeOfficer.html`, { waitUntil: "networkidle" });
+  await lookUp(page, "Look up the directors and secretaries");
+  await page.getByLabel(`${CORPORATE_SECRETARY} (Corporate secretary)`).check();
+  await page.locator("#resignationDate").fill("2026-11-01");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#statusMessagesContainer + #failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "your-credentials", { timeout: 15000 });
+  await expect(panel.locator('[data-part="sent"]')).toHaveText("Companies House holds no submission of this form. Nothing was filed.");
+  await expect(panel.locator('[data-part="kind"]')).toContainText("Companies House did not accept the company authentication code.");
+});

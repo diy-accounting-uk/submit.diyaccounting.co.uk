@@ -178,7 +178,8 @@ test("Click through: change registered office address shows the validation error
 
   await submitFiling(page, screenshotPath);
   await authoriseWithCompaniesHouse(page, companiesHouseCredentials, screenshotPath);
-  await verifyValidationErrorShown(page, "postal_code", screenshotPath);
+  await verifyValidationErrorShown(page, "Postcode", screenshotPath);
+  await expect(page.locator("#validationErrors")).not.toContainText("postal_code");
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

@@ -413,8 +413,12 @@ for (const width of [1280, 390]) {
     await fillIndividual(page);
     const firm = page.locator("#firmControls");
     const trust = page.locator("#trustControls");
-    await expect(firm.locator("legend").first()).toHaveText("Control through a firm");
-    await expect(trust.locator("legend").first()).toHaveText("Control through a trust");
+    await expect(firm.locator("legend").first()).toHaveText(
+      "Forms PSC01 and PSC02, section 6; Form PSC03, section 7: Control through a firm",
+    );
+    await expect(trust.locator("legend").first()).toHaveText(
+      "Forms PSC01 and PSC02, section 7; Form PSC03, section 8: Control through a trust",
+    );
     await firm.locator('input[name="shares-firm"][value="25TO50PERCENT"]').check();
     await firm.locator("#directors-firm").check();
     await trust.locator("#influence-trust").check();
@@ -448,7 +452,9 @@ for (const width of [1280, 390]) {
     await page.locator("#legalForm").fill("Private company limited by shares");
     await page.locator("#lawGoverned").fill("Companies Act 2006");
     const trust = page.locator("#trustControls");
-    await expect(trust.locator("legend").first()).toHaveText("Rheolaeth drwy ymddiriedolaeth");
+    await expect(trust.locator("legend").first()).toHaveText(
+      "Ffurflenni PSC01 a PSC02, adran 7; Ffurflen PSC03, adran 8: Rheolaeth drwy ymddiriedolaeth",
+    );
     await trust.locator('input[name="votes-trust"][value="75TO100PERCENT"]').check();
     await fillDates(page);
     expect(await noSideScroll(page)).toBe(true);

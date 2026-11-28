@@ -55,9 +55,14 @@ window.hideLoading = window.hideLoading || function(){};
 window.generateRandomState = window.generateRandomState || function(){ return "test-state"; };
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
+window.fileWithHmrc = window.fileWithHmrc || function(words, send){ return send(); };
+window.hmrcWritePollOptions = window.hmrcWritePollOptions || function(){ return {}; };
+window.hmrcRequestFailure = window.hmrcRequestFailure || function(message, response, body){ return Object.assign(new Error(message), { status: response.status, reason: body && body.reason, body: body }); };
 </script>`,
   );
 
+  // setContent loads no new document, so the write helper stand-ins of serveItsaPageScripts, an
+  // init script, do not run; the inline script above stands in for them.
   await page.setContent(modifiedHtml, { url, waitUntil: "domcontentloaded" });
 
   await delay(200);

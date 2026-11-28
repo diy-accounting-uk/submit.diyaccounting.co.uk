@@ -151,26 +151,9 @@ function renderSubscriptionManagement(bundles) {
 
 document.getElementById("manageSubscriptionBtn").addEventListener("click", async function () {
   const btn = document.getElementById("manageSubscriptionBtn");
-  btn.textContent = "Loading...";
   btn.disabled = true;
-  try {
-    const response = await window.fetchWithIdToken("/api/v1/billing/portal", {});
-    if (response.ok) {
-      const result = await response.json();
-      const portalUrl = result.data ? result.data.portalUrl : result.portalUrl;
-      if (portalUrl) {
-        window.location.href = portalUrl;
-        return;
-      }
-    }
-    btn.textContent = "Manage Subscription";
-    btn.disabled = false;
-    if (window.showStatus) window.showStatus("Unable to open subscription management. Please try again.", "error");
-  } catch (err) {
-    btn.textContent = "Manage Subscription";
-    btn.disabled = false;
-    if (window.showStatus) window.showStatus("Failed to connect to billing service.", "error");
-  }
+  const { goToStripe } = await import("/lib/stripe-checkout.js");
+  if (!(await goToStripe("subscriptionPage"))) btn.disabled = false;
 });
 
 document.getElementById("refreshUsageBtn").addEventListener("click", function () {

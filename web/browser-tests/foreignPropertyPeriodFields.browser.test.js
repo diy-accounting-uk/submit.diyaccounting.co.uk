@@ -58,6 +58,11 @@ window.hideStatus = function(){}; window.showLoading = function(){}; window.hide
 window.generateRandomState = function(){ return "s"; };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
 window.resolveSyntheticTestScenario = function(explicit, account, fallback){ return explicit || (account === "synthetic" ? fallback : null); };
+window.__writes = [];
+window.fileWithHmrc = function(words, send){
+  window.__writes.push(Object.assign({}, words));
+  return send().catch(function(error){ window.__writes[window.__writes.length - 1].failed = true; throw error; });
+};
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "details", nino: nino, businessId: businessId, taxYear: taxYear });
   return Promise.resolve({ foreignPropertyDetails: window.__properties });
@@ -222,6 +227,49 @@ test.describe("foreign property quarterly update: countries", () => {
     });
     await expect(page.locator("#submissionIdLabel")).toHaveText("Reporting");
     await expect(page.locator("#submissionIdResult")).toHaveText("Year to date");
+    expect(await page.evaluate(() => window.__writes)).toEqual([
+      {
+        sending: "Sending the foreign property update to HMRC...",
+        notSent: "HMRC has not got the foreign property update.",
+        answers: "Your answers are still in this form.",
+      },
+    ]);
+  });
+
+  test("a send HMRC refuses is told in the failure panel, not in a message of the page's own", async ({ page }) => {
+    await openPage(page, "foreignPropertyPeriod.html");
+    await page.evaluate(() => {
+      window.putForeignPropertyPeriod = () => Promise.reject(Object.assign(new Error("HMRC rejected the request"), { status: 400 }));
+    });
+    await fillIdentity(page, "2025-26");
+    await addCountry(page, "fp-1", "FRA");
+    await page.locator("#fp-1-rentAmount").fill("300");
+    await page.locator("#submitBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__writes.map((write) => write.failed))).toEqual([true]);
+    expect(await page.evaluate(() => window.__status.filter((status) => status.type === "error"))).toEqual([]);
+    await expect(page.locator("#fp-1-rentAmount")).toHaveValue("300");
+  });
+
+  test("leads each field with its SA106 box or column, and links HMRC's SA106 notes", async ({ page }) => {
+    await openPage(page, "foreignPropertyPeriod.html");
+    await fillIdentity(page, "2025-26");
+    await addCountry(page, "fp-1", "FRA");
+    await fillEntry(page, "fp-1", { rentAmount: "1000", repairsAndMaintenance: "60" });
+
+    await expect(page.locator('label[for="fp-1-rentAmount"]')).toHaveText("SA106 box 14: Rental income");
+    await expect(page.locator('label[for="fp-1-residentialFinancialCost"]')).toHaveText(
+      "SA106 box 24.1: Residential property finance costs",
+    );
+    await expect(page.locator('label[for="fp-1-foreignTaxCreditRelief"]')).toHaveText("SA106 column E: Claim foreign tax credit relief");
+    const note = page.locator("#fp-1-repairsAndMaintenance-hint");
+    await expect(note).toHaveText("Counts towards the total in box 17. Foreign (SA106) notes.");
+    await expect(note.locator("a")).toHaveAttribute("href", "https://www.gov.uk/government/publications/self-assessment-foreign-sa106");
+    await expect(page.locator("#fp-1-repairsAndMaintenance")).toHaveAttribute(
+      "aria-describedby",
+      "fp-1-repairsAndMaintenance-money-hint fp-1-repairsAndMaintenance-hint",
+    );
+    await shoot(page, "period-sa106-fields");
   });
 
   test("sends the FHL section and the dated countries with dates in a 2024-25 period", async ({ page }) => {
@@ -402,6 +450,9 @@ test.describe("foreign property period amend", () => {
         { countryCode: "FRA", income: { rentIncome: { rentAmount: 95 }, foreignTaxCreditRelief: false }, expenses: {} },
       ],
     });
+    expect(await page.evaluate(() => window.__writes.map((write) => write.sending))).toEqual([
+      "Sending the amended foreign property figures to HMRC...",
+    ]);
   });
 
   test("asks for the submission ID in a dated year and not in a cumulative year", async ({ page }) => {

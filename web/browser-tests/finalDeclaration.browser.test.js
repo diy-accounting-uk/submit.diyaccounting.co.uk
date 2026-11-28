@@ -18,6 +18,7 @@ import {
   screenshotPath,
   expectCleanFigures,
   serveItsaPageScripts,
+  serveHmrcWrite,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -43,6 +44,7 @@ test.describe("ITSA Final Declaration - Form", () => {
     await serveHmrcAssistWidget(page);
     await serveFormErrors(page);
     await serveCarriedIdentifiers(page);
+    await serveHmrcWrite(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
@@ -462,5 +464,50 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     const sent = await page.evaluate(() => window.sentScenarios);
     expect(sent).toEqual({ retrieve: "UK_SE_GIFTAID_EXAMPLE", submit: "FINAL_DECLARATION_RECEIVED" });
+  });
+
+  test("a fault in Submit while sending the declaration shows the panel: HMRC has not got it, and the calculation stays on the page", async ({
+    page,
+  }) => {
+    await serveSiteStyles(page);
+    await page.addInitScript(() => {
+      sessionStorage.setItem("hmrcGrantId", "test-token");
+      window.hmrcScopeCheck = {
+        isTokenSufficient: async () => true,
+        storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+        clearHmrcToken: () => sessionStorage.removeItem("hmrcGrantId"),
+      };
+    });
+    await loadPage(page);
+    await page.evaluate(() => {
+      window.getCalculation = async (nino, taxYear, calculationId) => ({
+        metadata: { calculationId, calculationType: "intent-to-finalise" },
+        calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1700 } },
+        inputs: { incomeSources: { businessIncomeSources: [] } },
+      });
+      window.postFinalDeclaration = () =>
+        new Promise((resolve, reject) => {
+          window.answerHmrc = () =>
+            reject(Object.assign(new Error("Request failed with status 500"), { status: 500, body: {}, requestId: "req-final-1" }));
+        });
+    });
+
+    await page.locator("#nino").fill("AB123456C");
+    await page.locator("#taxYear").selectOption("2024-25");
+    await page.locator("#calculationId").fill("calc-7");
+    await page.locator("#retrieveBtn").click();
+    await page.locator("#declarationTick").check();
+    await page.locator("#submitDeclarationBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Sending the final declaration to HMRC...");
+    await page.evaluate(() => window.answerHmrc());
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText("HMRC has not got the final declaration.");
+    await expect(panel.locator('[data-part="answers"]')).toHaveText("The calculation and your declaration are still on this page.");
+    await expect(panel.locator('[data-part="next"]')).toContainText("Quote the reference req-final-1 when you ask for help.");
+    await expect(page.locator("#declarationContainer")).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 900 });
+    await panel.screenshot({ path: screenshotPath("finalDeclaration-failure-panel").replace("-1280.png", "-390.png") });
   });
 });

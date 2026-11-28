@@ -4,10 +4,11 @@
 // web/public/lib/foreign-property-fields.js
 // The income and expense fields of one foreign property entry (one country, or one property),
 // shared by the quarterly update and the amend page. The names are HMRC's Property Business
-// (MTD) 6.0 names; the labels follow the SA106 boxes. HMRC takes either the itemised expenses or
-// one consolidatedExpenses figure in an entry, never both. Every id carries the entry's prefix,
-// so several entries sit on one page. Needs self-employment-expenses.js (the money field
-// renderer) and money-input.js.
+// (MTD) 6.0 names; each label is led by the figure's SA106 box or column, with a note that links
+// HMRC's notes (foreign-property-register.js). HMRC takes either the itemised expenses or one
+// consolidatedExpenses figure in an entry, never both. Every id carries the entry's prefix, so
+// several entries sit on one page. Needs self-employment-expenses.js (the money field renderer),
+// money-input.js and foreign-property-register.js.
 
 (function () {
   "use strict";
@@ -122,7 +123,7 @@
   }
 
   function group(prefix, field, hint) {
-    return window.selfEmploymentExpenses.moneyGroup({ ...field, id: fieldId(prefix, field.id) }, hint);
+    return window.foreignPropertyRegister.moneyGroup(field.key, { ...field, id: fieldId(prefix, field.id) }, hint);
   }
 
   function section(prefix, id, title, children, open) {
@@ -142,9 +143,16 @@
 
   // Replaces the container's content with the income and expense fields of one entry.
   function mountEntry(container, prefix) {
-    const taxCredit = el("div", { className: "choice" }, [
-      el("input", { type: "checkbox", id: fieldId(prefix, TAX_CREDIT_RELIEF_FIELD.id), name: fieldId(prefix, TAX_CREDIT_RELIEF_FIELD.id) }),
-      el("label", { htmlFor: fieldId(prefix, TAX_CREDIT_RELIEF_FIELD.id), textContent: TAX_CREDIT_RELIEF_FIELD.label }),
+    const relief = { ...TAX_CREDIT_RELIEF_FIELD, id: fieldId(prefix, TAX_CREDIT_RELIEF_FIELD.id) };
+    const reliefNote = window.foreignPropertyRegister.noteFor(relief.key, relief);
+    const reliefInput = el("input", { type: "checkbox", id: relief.id, name: relief.id });
+    reliefInput.setAttribute("aria-describedby", reliefNote.id);
+    const taxCredit = el("div", { className: "form-group" }, [
+      el("div", { className: "choice" }, [
+        reliefInput,
+        el("label", { htmlFor: relief.id, textContent: window.foreignPropertyRegister.labelOf(relief.key, relief) }),
+      ]),
+      reliefNote,
     ]);
     const basis = el("fieldset", { className: "form-group", id: fieldId(prefix, "expenseBasisGroup") }, [
       el("legend", { textContent: siteText("itsa.expense-basis", "How do you report expenses?") }),

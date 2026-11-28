@@ -18,8 +18,8 @@ name, then the wave and the batch that build the row, or `beside` for a row with
 with no such field is in no set. Anything touching code goes through a `claude/*` branch and PR;
 the operator merges.
 
-**Prod runs deployment prod-265e46f** (`deploy.yml` run 46114580958 of `main` at 265e46f09, PR #883, the dingo batch, 2026-11-28); it is prod's only set (`destroy-prod.yml` removed prod-f00e858 at 06:45 UTC; read 2026-11-28 08:40 UTC).
-**ci**: `ci-set2` is the last known good set (PR #883's, created 05:16 UTC); `ci-set1` holds PR #882's merged head (deploy 46124193964, passed), and PR #884's deploy 46124882316 is running.
+**Prod runs deployment prod-ba00a80** (`deploy.yml` run 46128803994 of `main` at ba00a8050, PR #882, the ember batch, 2026-11-28); it is prod's only set (`destroy-prod.yml` removed prod-265e46f at 09:51 UTC).
+**ci**: `ci-set2` is the last known good set; both slots hold `claude/falcon-roll` (PR #884's merged head 83dd93a8f deploys to `ci-set1`, run 46132678528).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,

@@ -869,10 +869,6 @@ cy = '''Un diwrnod, dim cerdyn. I ddal ati i ffeilio ar ôl heddiw, dewiswch gyn
 hash = "8b895b87b336"
 cy = '''Yn gofyn...'''
 
-[strings."bundles.redirecting"]
-hash = "28ffe466e979"
-cy = '''Yn mynd i’r dudalen dalu...'''
-
 [strings."bundles.or"]
 hash = "7175517a370b"
 cy = '''neu'''
@@ -1121,21 +1117,9 @@ cy = '''Wedi’i gynnwys yn {name}'''
 hash = "020171449da6"
 cy = '''Wedi’i ychwanegu ✓ {name}'''
 
-[strings."bundles.checkout-failed"]
-hash = "061fa343146b"
-cy = '''Methu dechrau’r taliad: {reason}'''
-
 [strings."bundles.sign-in-first"]
 hash = "708821b693b0"
 cy = '''Mewngofnodwch yn gyntaf.'''
-
-[strings."bundles.loading-portal"]
-hash = "187be9a5769b"
-cy = '''Yn llwytho’r porth...'''
-
-[strings."bundles.portal-failed"]
-hash = "6a4036be83f6"
-cy = '''Methu agor porth y tanysgrifiad: {reason}'''
 
 [strings."bundles.catalog-unavailable"]
 hash = "d5d2f25c32e4"
@@ -7658,10 +7642,6 @@ cy = '''Un hawliad ar gyfer pob adeilad mewn porthladd rhydd neu barth buddsoddi
 hash = "967d5be78ec5"
 cy = '''Wrthi’n llwytho’r cyflwyniad blynyddol...'''
 
-[strings."itsa.annual-saving"]
-hash = "3d90b2d37866"
-cy = '''Wrthi’n cadw’r cyflwyniad blynyddol...'''
-
 [strings."itsa.annual-load-failed"]
 hash = "f0855da94a8d"
 cy = '''Methwyd â llwytho’r cyflwyniad blynyddol: {reason}'''
@@ -7730,10 +7710,6 @@ cy = '''Methwyd â chyflwyno’r diweddariad chwarterol.'''
 hash = "db311db8a302"
 cy = '''Methwyd â chyflwyno’r diweddariad chwarterol'''
 
-[strings."itsa.quarterly-filing"]
-hash = "67b373c3a1f2"
-cy = '''Wrthi’n cyflwyno’r diweddariad chwarterol...'''
-
 [strings."itsa.quarterly-file-failed-reason"]
 hash = "3825acedd922"
 cy = '''Methwyd â chyflwyno’r diweddariad chwarterol: {reason}'''
@@ -7765,10 +7741,6 @@ cy = '''Methwyd â diwygio’r crynodeb o’r cyfnod.'''
 [strings."itsa.period-amend-failed-fallback"]
 hash = "c1cfbdaf5d82"
 cy = '''Methwyd â diwygio’r crynodeb o’r cyfnod'''
-
-[strings."itsa.period-amending"]
-hash = "d56359b7ce52"
-cy = '''Wrthi’n diwygio’r crynodeb o’r cyfnod...'''
 
 [strings."itsa.period-amend-failed-reason"]
 hash = "781e425bb392"
@@ -8102,9 +8074,6 @@ cy = '''Gwirio’ch colledion a’ch hawliadau'''
 hash = "04d7b4833927"
 cy = '''Negeseuon'''
 
-[strings."itsa-calculation.calculating"]
-hash = "3ba4d10b402f"
-cy = '''Wrthi’n cyfrifo... gall hyn gymryd ychydig eiliadau.'''
 
 [strings."itsa-calculation.failed"]
 hash = "6f4c32482ba7"
@@ -8818,10 +8787,6 @@ cy = '''Mewngofnodwch i ofyn am y crynodeb diwedd blwyddyn ar gyfer busnes eiddo
 hash = "96b1f7921468"
 cy = '''Crynodeb diwedd blwyddyn'''
 
-[strings."itsa.year-end-requesting"]
-hash = "63dae0185951"
-cy = '''Wrthi’n gofyn am y crynodeb diwedd blwyddyn...'''
-
 [strings."itsa.year-end-retrieving"]
 hash = "0b688c29d880"
 cy = '''Wrthi’n adalw’r crynodeb diwedd blwyddyn...'''
@@ -8829,10 +8794,6 @@ cy = '''Wrthi’n adalw’r crynodeb diwedd blwyddyn...'''
 [strings."itsa.year-end-request-failed"]
 hash = "b216a39d927d"
 cy = '''Methwyd â gofyn am y crynodeb diwedd blwyddyn: {reason}'''
-
-[strings."itsa.adjustment-submitting"]
-hash = "ca430dff3f51"
-cy = '''Wrthi’n cyflwyno’r addasiad...'''
 
 [strings."itsa.adjustment-failed"]
 hash = "f339e7cfe3f9"
@@ -9826,10 +9787,6 @@ cy = '''Newid {name}'''
 hash = "5be714a216cb"
 cy = '''Ychwanegu eiddo'''
 
-[strings."itsa-fp-details.saving"]
-hash = "a0d35e0781c9"
-cy = '''Wrthi’n cadw’r eiddo...'''
-
 [strings."itsa-fp-details.saved"]
 hash = "0e28649f645e"
 cy = '''Mae’r eiddo wedi’i gadw.'''
@@ -10566,9 +10523,6 @@ cy = '''Wrthi’n adalw’r cyfrifiad...'''
 hash = "98988dc3e461"
 cy = '''Methwyd ag adalw’r cyfrifiad: {reason}'''
 
-[strings."itsa-final.submitting"]
-hash = "45461b32475c"
-cy = '''Wrthi’n cyflwyno’r datganiad terfynol...'''
 
 [strings."itsa-final.submit-failed"]
 hash = "4b7f7608790d"
@@ -10598,9 +10552,6 @@ cy = '''Nid oes hawliad wedi’i nodi eto.'''
 hash = "e0066c4f6d9a"
 cy = '''Wrthi’n llwytho’r colledion a’r hawliadau...'''
 
-[strings."itsa-losses.saving"]
-hash = "40d8c3759e7b"
-cy = '''Wrthi’n cadw’r colledion a’r hawliadau...'''
 
 [strings."itsa-losses.load-failed"]
 hash = "822096d607b1"
@@ -10622,9 +10573,6 @@ cy = '''Nid oedd modd adalw cyfrifiad CThEF ar gyfer y flwyddyn honno.'''
 hash = "e8eaaa2b2658"
 cy = '''Wrthi’n llwytho’r addasiadau i’r rhwymedigaeth dreth...'''
 
-[strings."itsa-tla.saving"]
-hash = "2e273e2e8ddc"
-cy = '''Wrthi’n cadw’r addasiadau i’r rhwymedigaeth dreth...'''
 
 [strings."itsa-tla.load-failed"]
 hash = "98104e9627c7"
@@ -13585,10 +13533,6 @@ cy = '''Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.'''
 hash = "3b47f8b69df6"
 cy = '''Asedau net: {current} eleni, {prior} y llynedd. {verdict}'''
 
-[strings."ch.accounts.lookup-failed"]
-hash = "37fdf0338e6b"
-cy = '''Methwyd â chwilio am y cwmni.'''
-
 [strings."ch.micro.section-480"]
 hash = "0e9c6dcd2267"
 cy = '''Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.'''
@@ -14020,18 +13964,6 @@ cy = '''Hunaniaeth heb ei gwirio'''
 [strings."ch.cs.file-failed"]
 hash = "695f75c19c10"
 cy = '''Methwyd â ffeilio’r datganiad cadarnhau gyda Thŷ’r Cwmnïau.'''
-
-[strings."ch.cs.payment-failed-reason"]
-hash = "85528157871a"
-cy = '''Methwyd â dechrau’r taliad: {reason}'''
-
-[strings."ch.cs.unknown-error"]
-hash = "27c2ccd962c2"
-cy = '''Gwall anhysbys'''
-
-[strings."ch.cs.payment-failed"]
-hash = "fcb4da20d6b6"
-cy = '''Methwyd â dechrau’r taliad.'''
 
 [strings."ch.cs.payment-received"]
 hash = "addcc72c5c15"
@@ -27288,14 +27220,6 @@ cy = '''Gwasanaeth yr un diwrnod: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {
 hash = "4ec0440be989"
 cy = '''Gwasanaeth safonol: ffi Tŷ’r Cwmnïau £{fee}, rydych yn talu {price}'''
 
-[strings."ch.name.paying"]
-hash = "f7a8c9f6cce7"
-cy = '''Yn mynd â chi i dalu’r ffi cyn anfon y ffeilio...'''
-
-[strings."ch.name.payment-failed"]
-hash = "2df1cb37c483"
-cy = '''Methu dechrau’r taliad: {reason}'''
-
 [strings."ch.name.payment-not-completed"]
 hash = "5b10e061153d"
 cy = '''Ni chwblhawyd y taliad. Ni ffeiliwyd dim.'''
@@ -28867,6 +28791,649 @@ cy = '''Treth Gorfforaeth sy’n daladwy'''
 hash = "2d7d9e94b9ed"
 cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
 
+[strings."ch.office.new-address"]
+hash = "b71b5df47d4b"
+cy = '''Cyfeiriad newydd'''
+
+[strings."ch.office.new-address-hint"]
+hash = "99f10789e84f"
+cy = '''Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru. Am 14 diwrnod ar ôl hynny, gellir dal i gyflwyno dogfennau i’r cwmni yn yr hen gyfeiriad.'''
+
+[strings."ch.office.statement-hint"]
+hash = "b9d2d3d9a036"
+cy = '''Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i bost a ddanfonir i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni, a rhaid bod modd cofnodi ei ddanfon.'''
+
+[strings."ch.email.new-address-label"]
+hash = "165d34bf7cf4"
+cy = '''Cyfeiriad e-bost cofrestredig newydd'''
+
+[strings."ch.email.new-address-hint"]
+hash = "624d53e16b5a"
+cy = '''Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru.'''
+
+[strings."ch.email.statement-hint"]
+hash = "47546a43414a"
+cy = '''Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i negeseuon e-bost y mae Tŷ’r Cwmnïau yn eu hanfon i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni.'''
+
+[strings."ch.change.failure-sent-nothing"]
+hash = "18a589df925f"
+cy = '''Ni chyrhaeddodd dim Dŷ’r Cwmnïau.'''
+
+[strings."ch.change.failure-sent-transaction"]
+hash = "d6a47d460752"
+cy = '''Agorodd Tŷ’r Cwmnïau drafodyn ar gyfer y newid ond ni chafodd y newid ei hun. Nid oes dim wedi’i ffeilio.'''
+
+[strings."ch.change.failure-sent-change"]
+hash = "f7d1f601a96a"
+cy = '''Mae gan Dŷ’r Cwmnïau y newid mewn trafodyn agored. Nid yw wedi’i ffeilio.'''
+
+[strings."ch.change.failure-answers-kept"]
+hash = "486cc5d70435"
+cy = '''Mae eich atebion yn dal ar y dudalen hon. Mae anfon eto yn parhau o’r man lle stopiodd y ffeilio.'''
+
+[strings."ch.change.failure-answers-new"]
+hash = "dbce1ba39d99"
+cy = '''Dewiswch Dechrau ffeilio newydd a rhowch yr atebion eto gyda’r cywiriad.'''
+# == The confirmation statement's field notes and its failure panel, ids ch.cs.field-* and ch.cs.failure-* ==
+[strings."ch.cs.failure-sent-preview"]
+hash = "8f791a3446ab"
+cy = '''Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim gael ei anfon.'''
+
+[strings."ch.cs.failure-answers"]
+hash = "a1600a6059d9"
+cy = '''Mae eich atebion yn dal yn y ffurflen hon. Dim ond yn y dudalen hon y cedwir y cod dilysu a’r codau personol, felly bydd tudalen newydd yn gofyn amdanynt eto.'''
+
+[strings."ch.cs.failure-sent-psc-none"]
+hash = "e6af006f662b"
+cy = '''Ni dderbyniodd Tŷ’r Cwmnïau y datganiad dilysu ar gyfer {name}. Ni ffeiliwyd dim.'''
+
+[strings."ch.cs.failure-sent-held"]
+hash = "0c3ca905f483"
+cy = '''Mae gan Dŷ’r Cwmnïau y datganiad (cyflwyniad {number}).'''
+
+[strings."ch.cs.failure-sent-none"]
+hash = "63d69f6f1b1e"
+cy = '''Ni dderbyniodd Tŷ’r Cwmnïau y datganiad cadarnhau. Ni ffeiliwyd dim.'''
+
+[strings."ch.cs.field-review-date-hint"]
+hash = "fcf09d3bb0c6"
+cy = '''Rhaid i’r gofrestr fod yn gywir ar y dyddiad hwn. Ni all fod yn hwyrach na’r dyddiad cadarnhau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni.'''
+
+[strings."ch.cs.field-sic-codes-hint"]
+hash = "42c261bde6cb"
+cy = '''Prif weithgareddau busnes y cwmni fel codau SIC. Rhowch hyd at bedwar, wedi’u gwahanu gan gomas.'''
+
+[strings."ch.cs.field-amount-unpaid-hint"]
+hash = "040e342d2221"
+cy = '''Yr hyn sydd gan y cyfranddalwyr yn ddyledus o hyd ar y cyfrannau a ddyroddwyd.'''
+
+[strings."ch.cs.field-issued-shares-hint"]
+hash = "33a319683e50"
+cy = '''Pob cyfran y mae’r cwmni wedi’i dyroddi, ar draws ei holl ddosbarthiadau.'''
+
+[strings."ch.cs.field-share-currency-hint"]
+hash = "67861511acad"
+cy = '''Arian cyfred y cyfalaf cyfranddaliadau, er enghraifft GBP.'''
+
+[strings."ch.cs.field-nominal-value-hint"]
+hash = "31b061fa28df"
+cy = '''Gwerth nominal yr holl gyfrannau a ddyroddwyd gyda’i gilydd.'''
+
+[strings."ch.cs.field-registered-email-hint"]
+hash = "2a4511cb9123"
+cy = '''Mae Tŷ’r Cwmnïau yn ysgrifennu at y cwmni yn y cyfeiriad hwn. Nid yw ar y gofrestr gyhoeddus.'''
+
+[strings."ch.cs.field-lawful-purpose-hint"]
+hash = "a8263c702dd2"
+cy = '''Mae pob datganiad cadarnhau yn cadarnhau bod yr hyn y mae’r cwmni’n bwriadu ei wneud yn gyfreithlon.'''
+
+[strings."ch.cs.field-state-confirmation-hint"]
+hash = "f56fa2d1b8e6"
+cy = '''Mae’r cwmni’n cadarnhau bod gan Dŷ’r Cwmnïau bopeth y mae’n rhaid iddo ei gael, neu y bydd yn ei gael gyda’r datganiad hwn.'''
+
+[strings."ch.cs.field-director-code-hint"]
+hash = "614b580e0b1f"
+cy = '''Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r cyfarwyddwr pan ddilyswyd ei hunaniaeth, er enghraifft CWMPS832223.'''
+
+[strings."ch.cs.field-psc-code-hint"]
+hash = "54e84da00853"
+cy = '''Yr 11 nod a roddodd Tŷ’r Cwmnïau i’r unigolyn hwn pan ddilyswyd ei hunaniaeth. Mae gan unigolyn un cod ar gyfer pob rôl.'''
+[strings."ch.form.failure-sent-held"]
+hash = "c2b7c00cb77a"
+cy = '''Mae gan Dŷ’r Cwmnïau y ffurflen (cyflwyniad {number}) ac ni allai Submit ddarllen ei benderfyniad.'''
+
+[strings."ch.form.failure-sent-none"]
+hash = "f0ee7e6d42ea"
+cy = '''Nid oes gan Dŷ’r Cwmnïau unrhyw gyflwyniad o’r ffurflen hon. Ni chafodd dim ei ffeilio.'''
+# == What a failed preview or filing of the accounts sent (lib/accounts-filing-failure.js), ids ch.accounts.failure-* ==
+
+[strings."ch.accounts.failure-sent-preview"]
+hash = "8f791a3446ab"
+cy = '''Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim gael ei anfon.'''
+
+[strings."ch.accounts.failure-sent-not-filed"]
+hash = "a84a29447b9c"
+cy = '''Ni chymerodd Tŷ’r Cwmnïau y cyfrifon, ac ni ffeiliwyd dim.'''
+
+[strings."ch.office.statement-field"]
+hash = "183c9c0738e6"
+cy = '''Y datganiad cyfeiriad priodol'''
+
+[strings."ch.office.looked-up-address-field"]
+hash = "8d4caf264af6"
+cy = '''Y cyfeiriad presennol a chwiliwyd gennych'''
+
+[strings."ch.email.statement-field"]
+hash = "a268a1288127"
+cy = '''Y datganiad cyfeiriad e-bost priodol'''
+
+[strings."ch.change.field-error"]
+hash = "946a665c8e23"
+cy = '''{label}: {error}'''
+
+# == The Companies House forms' result line and failure panel, ids ch.form.not-filed, ch.form.failure-sent-refused, ct.failure-not-answering, ct.failure-technical ==
+[strings."ch.form.not-filed"]
+hash = "e8c1896b677c"
+cy = '''Ni ffeiliwyd y ffurflen. Mae “Beth ddigwyddodd” uchod yn dweud pam a beth i’w wneud nesaf.'''
+
+[strings."ch.form.failure-sent-refused"]
+hash = "211e7cd82f1f"
+cy = '''Gwrthododd y porth y ffurflen (cyflwyniad {number}). Ni chafodd dim ei ffeilio.'''
+
+[strings."ct.failure-not-answering"]
+hash = "2573997c578b"
+cy = '''Ni atebodd {service} pan ddarllenodd Submit y cwmni, felly ni anfonwyd dim. Rhowch gynnig arall arni nes ymlaen.'''
+
+[strings."ct.failure-technical"]
+hash = "d635f31f91f8"
+cy = '''Manylion technegol'''
+
+[strings."chform.aa01-period"]
+hash = "6c57439b64bc"
+cy = '''Y cyfnod presennol yw’r un nad yw wedi dod i ben eto; y cyfnod blaenorol yn union yw’r un cyn hwnnw.'''
+
+[strings."chform.sh01-dates"]
+hash = "3dfa8db386d2"
+cy = '''Os clustnodwyd pob cyfran ar un diwrnod, rhowch y diwrnod hwnnw fel yr O ddyddiad. Ar gyfer cyfranddaliadau a glustnodwyd dros gyfnod, rhowch y ddau ddyddiad.'''
+
+[strings."chform.nm01-name"]
+hash = "32fe3eaa797f"
+cy = '''Nid yw Tŷ’r Cwmnïau yn caniatáu enw sydd gan gwmni arall eisoes. Mae angen llythyr ategol ar enw sydd â gair neu ymadrodd sensitif cyn y gall Tŷ’r Cwmnïau newid yr enw.'''
+
+[strings."chform.tm-one-appointment"]
+hash = "c96b50978753"
+cy = '''Mae pob ffeilio yn dod ag un penodiad i ben.'''
+
+[strings."chform.psc-became"]
+hash = "d9a7c9d7b406"
+cy = '''Ni all hyn fod cyn 6 Ebrill 2016.'''
+
+[strings."chform.psc-confirmed"]
+hash = "265c170da867"
+cy = '''Y diweddaraf o’r dyddiad y cafodd y cwmni gadarnhad o statws y person a’r dyddiad y cafodd eu holl fanylion gofynnol.'''
+
+[strings."chform.psc-change-date"]
+hash = "5352778f26f1"
+cy = '''Rhowch bob newid a ddigwyddodd ar y dyddiad hwn. Mae angen ffeilio ar wahân ar gyfer newid ar ddyddiad arall.'''
+
+[strings."chform.psc-change-confirmed"]
+hash = "ced847d24888"
+cy = '''Y dyddiad y cafodd y cwmni gadarnhad bod y manylion wedi newid, sut y newidiasant a dyddiad y newid.'''
+
+[strings."chform.psc07-confirmed"]
+hash = "0f32b08d9e03"
+cy = '''Os cafodd y cwmni gadarnhad bod y person wedi peidio â bod yn PRhA, a chadarnhad o’r dyddiad y peidiodd, ar ddyddiadau gwahanol, rhowch y diweddaraf o’r ddau.'''
+
+[strings."chform.psc08-relevant-date"]
+hash = "1b98cfa3876a"
+cy = '''Y dyddiad y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu, bod y datganiad yn wir, y dyddiad yr oedd yn rhaid cydymffurfio â hysbysiad, neu’r dyddiad y rhoddwyd hysbysiad cyfyngiadau.'''
+
+[strings."chform.ad02-sail"]
+hash = "68d5078c061d"
+cy = '''Rhaid i’r lleoliad arolygu amgen fod yn y rhan o’r Deyrnas Unedig y mae’r cwmni wedi’i gofrestru ynddi.'''
+
+[strings."chform.join"]
+hash = "1c088992cac5"
+cy = '''{first} a {last}'''
+
+[strings."chform.reference-one"]
+hash = "f654480d2153"
+cy = '''Ffurflen {form}, adran {section}'''
+
+[strings."chform.reference-many"]
+hash = "dc40c0705e89"
+cy = '''Ffurflenni {forms}, adran {section}'''
+
+[strings."chform.form-link"]
+hash = "7c7cb47be55d"
+cy = '''Ffurflen Tŷ’r Cwmnïau {form}'''
+
+[strings."chform.join-vowel"]
+hash = "1c088992cac5"
+cy = '''{first} ac {last}'''
+
+[strings."stripe.failure-connection"]
+hash = "334bbcc2de09"
+cy = '''Ni atebodd Submit, felly ni ofynnwyd i Stripe. Gwiriwch eich cysylltiad a rhowch gynnig arall arni.'''
+
+[strings."stripe.failure-firewall"]
+hash = "0d1652553db0"
+cy = '''Gwnaeth mur gwarchod y wefan rwystro’r cais hwn cyn iddo gyrraedd Stripe. Rhowch gynnig arall arni yn nes ymlaen.'''
+
+[strings."stripe.failure-sign-in-refused"]
+hash = "2428f1495040"
+cy = '''Ni dderbyniodd Submit eich mewngofnod ar gyfer y cais hwn.'''
+
+[strings."stripe.failure-no-subscription"]
+hash = "7a98e854d65e"
+cy = '''Nid oes gan eich cyfrif danysgrifiad a delir drwy Stripe, felly nid oes tudalen danysgrifio i’w hagor.'''
+
+[strings."stripe.failure-already-paid"]
+hash = "85c5a674fc1a"
+cy = '''Mae’r ffi ar gyfer y ffeilio hwn eisoes wedi’i thalu. Ewch yn ôl i’r ffeilio a’i anfon.'''
+
+[strings."stripe.failure-refused"]
+hash = "585f5d73fbe4"
+cy = '''Gwrthododd Submit y cais cyn gofyn i Stripe. Nam yn Submit yw hwn, nid yn eich cyfrif.'''
+
+[strings."stripe.failure-no-answer"]
+hash = "c6eed9367790"
+cy = '''Ni chafodd Submit dudalen i’w hagor gan Stripe. Nam yn Submit neu yn Stripe yw hwn, nid yn eich cyfrif. Rhowch gynnig arall arni yn nes ymlaen.'''
+
+[strings."stripe.narrate-asking-checkout"]
+hash = "adb11709bc1c"
+cy = '''Yn gofyn i Stripe am dudalen dalu...'''
+
+[strings."stripe.narrate-going-checkout"]
+hash = "d7b56f3c45e5"
+cy = '''Yn mynd â chi i Stripe i dalu...'''
+
+[strings."stripe.failure-sent-checkout"]
+hash = "471f032994ef"
+cy = '''Ni chodwyd tâl. Ni agorodd Stripe dudalen dalu.'''
+
+[strings."stripe.failure-after-bundle"]
+hash = "0622f9afc084"
+cy = '''Nid yw eich Bundles wedi newid.'''
+
+[strings."stripe.failure-after-activity"]
+hash = "268bf1d9e2a8"
+cy = '''Ni ffeiliwyd dim gyda Thŷ’r Cwmnïau. Caiff y ffeilio ei anfon ar ôl i’r ffi gael ei thalu.'''
+
+[strings."stripe.narrate-asking-portal"]
+hash = "a2ddd718d1ed"
+cy = '''Yn gofyn i Stripe am eich tudalen danysgrifio...'''
+
+[strings."stripe.narrate-going-portal"]
+hash = "0f395ecb20a0"
+cy = '''Yn mynd â chi i’ch tudalen danysgrifio yn Stripe...'''
+
+[strings."stripe.failure-sent-portal"]
+hash = "2c28a836107a"
+cy = '''Ni agorodd Stripe eich tudalen danysgrifio.'''
+
+[strings."stripe.failure-after-portal"]
+hash = "0125bad5cdea"
+cy = '''Nid yw eich tanysgrifiad na’ch Bundles wedi newid.'''
+# == The accounts pages' technical detail of a failure and their share class note (lib/accounts-filing-failure.js, lib/accounts-page-fields.js) ==
+
+[strings."ch.accounts.failure-technical"]
+hash = "d635f31f91f8"
+cy = '''Manylion technegol'''
+
+[strings."ch.accounts.field-share-class-hint"]
+hash = "342eaab53976"
+cy = '''Mae cyfranddaliadau o’r un dosbarth pan fo’r hawliau sydd ynghlwm wrthynt yr un fath ym mhob ffordd.'''
+
+# == What the status line says when a company lookup fails (lib/company-lookup-failure.js), ids ch.lookup.* ==
+
+[strings."ch.lookup.not-found"]
+hash = "a77a785704c9"
+cy = '''Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif {number}. Gwiriwch y rhif a chwiliwch amdano eto.'''
+
+[strings."ch.lookup.not-a-number"]
+hash = "9ef23ef016af"
+cy = '''Nid yw hwnnw’n rhif cwmni. Mae rhif cwmni yn 8 nod, er enghraifft 00000001.'''
+
+[strings."ch.lookup.too-many"]
+hash = "5da2762f685c"
+cy = '''Gormod o chwiliadau Tŷ’r Cwmnïau ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.lookup.not-answering"]
+hash = "00a2fde1b4aa"
+cy = '''Ni atebodd Tŷ’r Cwmnïau. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.lookup.submit-fault"]
+hash = "853e65d46461"
+cy = '''Ni allai Submit chwilio am y cwmni. Nam yn Submit yw hwn: rhowch gynnig arall arni, a gofynnwch am help os bydd yn digwydd eto.'''
+
+# == The failure panel of a write to HMRC's MTD APIs ==
+
+[strings."itsa.failure-hmrc-authorisation"]
+hash = "be09800d74ae"
+cy = '''Ni dderbyniodd CThEF yr awdurdodiad sydd gan Submit ar eich rhan. Anfonwch eto, a mewngofnodwch i CThEF pan fydd yn gofyn.'''
+
+[strings."itsa.failure-hmrc-unavailable"]
+hash = "a7efae7d7603"
+cy = '''Ni allai CThEF dderbyn y cais ar hyn o bryd. Rhowch gynnig arall arni nes ymlaen.'''
+
+# == The UK property pages' writes to HMRC: their stages and failure panel, ids itsa.uk-narrate-* and itsa.uk-failure-* ==
+
+[strings."itsa.uk-narrate-sending-period"]
+hash = "84f960e98412"
+cy = '''Wrthi’n anfon y diweddariad eiddo yn y DU at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-period"]
+hash = "1cd02481572c"
+cy = '''Nid yw CThEF wedi cael y diweddariad eiddo yn y DU.'''
+
+[strings."itsa.uk-failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa.uk-narrate-sending-amend"]
+hash = "185c1961a8fa"
+cy = '''Wrthi’n anfon y diweddariad eiddo yn y DU wedi’i ddiwygio at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-amend"]
+hash = "e4fe365c1fb9"
+cy = '''Nid yw CThEF wedi cael y diweddariad eiddo yn y DU wedi’i ddiwygio.'''
+
+[strings."itsa.uk-narrate-sending-annual"]
+hash = "d3cc39df60d6"
+cy = '''Wrthi’n anfon cyflwyniad blynyddol eiddo yn y DU at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-annual"]
+hash = "2fd52ebfb561"
+cy = '''Nid yw CThEF wedi cael cyflwyniad blynyddol eiddo yn y DU.'''
+
+[strings."itsa.uk-narrate-sending-trigger"]
+hash = "53db0ab02252"
+cy = '''Wrthi’n gofyn i CThEF am grynodeb diwedd blwyddyn eiddo yn y DU...'''
+
+[strings."itsa.uk-failure-not-sent-trigger"]
+hash = "8c32f9c07f8f"
+cy = '''Nid yw CThEF wedi gwneud crynodeb diwedd blwyddyn eiddo yn y DU.'''
+
+[strings."itsa.uk-failure-answers-trigger"]
+hash = "6b93e393a5cf"
+cy = '''Mae eich atebion yn dal yn y ffurflen.'''
+
+[strings."itsa.uk-narrate-sending-adjustment"]
+hash = "644836d5ab65"
+cy = '''Wrthi’n anfon yr addasiad eiddo yn y DU at CThEF...'''
+
+[strings."itsa.uk-failure-not-sent-adjustment"]
+hash = "669a925e6cda"
+cy = '''Nid yw CThEF wedi cael yr addasiad eiddo yn y DU.'''
+
+# == The UK property fields' references to the Self Assessment UK property pages (SA105), ids field.*-sa105-* ==
+
+[strings."field.reference-sa105-box"]
+hash = "18cfe6205b97"
+cy = '''Eiddo yn y DU, blwch {box}'''
+
+[strings."field.reference-sa105-boxes"]
+hash = "5b25339445ba"
+cy = '''Eiddo yn y DU, blychau {first} i {last}'''
+
+[strings."field.source-sa105-notes"]
+hash = "fd1bc3163988"
+cy = '''nodiadau eiddo yn y DU (SA105)'''
+
+# == Foreign property: the SA106 places of its fields, and the stages and failure panel of its writes ==
+
+[strings."field.reference-sa106-box"]
+hash = "ee2b3f012b9c"
+cy = '''SA106 blwch {box}'''
+
+[strings."field.reference-sa106-column"]
+hash = "286bbda84ac6"
+cy = '''SA106 colofn {column}'''
+
+[strings."field.source-sa106-notes"]
+hash = "8549cda0cf7e"
+cy = '''Nodiadau Tramor (SA106)'''
+
+[strings."itsa.fp-part-of-box"]
+hash = "1225c11258df"
+cy = '''Yn cyfrif tuag at y cyfanswm ym mlwch {box}.'''
+
+[strings."itsa-fp-period.narrate-sending"]
+hash = "9762d5358c86"
+cy = '''Wrthi’n anfon y diweddariad eiddo tramor at CThEF...'''
+
+[strings."itsa-fp-period.failure-not-sent"]
+hash = "474dbcf36203"
+cy = '''Nid yw CThEF wedi cael y diweddariad eiddo tramor.'''
+
+[strings."itsa-fp-amend.narrate-sending"]
+hash = "cde947397847"
+cy = '''Wrthi’n anfon y ffigurau eiddo tramor diwygiedig at CThEF...'''
+
+[strings."itsa-fp-amend.failure-not-sent"]
+hash = "39f8b227caf2"
+cy = '''Nid yw CThEF wedi cael y ffigurau diwygiedig.'''
+
+[strings."itsa-fp-details.narrate-sending"]
+hash = "c4ed9fa20326"
+cy = '''Wrthi’n anfon yr eiddo at CThEF...'''
+
+[strings."itsa-fp-details.failure-not-sent"]
+hash = "848ffdc28647"
+cy = '''Nid yw CThEF wedi cael yr eiddo.'''
+
+[strings."itsa-fp-annual.narrate-sending"]
+hash = "887f82e42aca"
+cy = '''Wrthi’n anfon y cyflwyniad blynyddol eiddo tramor at CThEF...'''
+
+[strings."itsa-fp-annual.failure-not-sent"]
+hash = "ba7a11d74fad"
+cy = '''Nid yw CThEF wedi cael y cyflwyniad blynyddol.'''
+
+[strings."itsa-fp-adjustments.narrate-requesting"]
+hash = "c12f4f354a4a"
+cy = '''Wrthi’n gofyn i CThEF am y crynodeb diwedd blwyddyn...'''
+
+[strings."itsa-fp-adjustments.failure-not-requested"]
+hash = "3218adf8c30a"
+cy = '''Nid yw CThEF wedi llunio’r crynodeb diwedd blwyddyn.'''
+
+[strings."itsa-fp-adjustments.narrate-sending"]
+hash = "00a81dde4ebf"
+cy = '''Wrthi’n anfon yr addasiad at CThEF...'''
+
+[strings."itsa-fp-adjustments.failure-not-sent"]
+hash = "ce8007dae694"
+cy = '''Nid yw CThEF wedi cael yr addasiad.'''
+
+[strings."itsa-final.narrate-sending"]
+hash = "580fc6e88b7c"
+cy = '''Wrthi’n anfon y datganiad terfynol at CThEF...'''
+
+[strings."itsa-final.failure-not-sent"]
+hash = "8d61e2872a5f"
+cy = '''Nid yw CThEF wedi cael y datganiad terfynol.'''
+
+[strings."itsa-final.failure-answers-page"]
+hash = "d2e3efbacef2"
+cy = '''Mae’r cyfrifiad a’ch datganiad yn dal ar y dudalen hon.'''
+
+[strings."itsa-final.failure-answers-again"]
+hash = "a1f8ac730891"
+cy = '''Adalwch y cyfrifiad eto a chadarnhewch y datganiad eto.'''
+
+[strings."itsa-losses.narrate-sending"]
+hash = "892e1cb78686"
+cy = '''Wrthi’n anfon y colledion a’r hawliadau at CThEF...'''
+
+[strings."itsa-losses.failure-not-sent"]
+hash = "1ea6c584cc25"
+cy = '''Nid yw CThEF wedi cael y colledion a’r hawliadau.'''
+
+[strings."itsa-losses.failure-answers-again"]
+hash = "110f840296ae"
+cy = '''Ni chadwyd eich ffigurau. Llwythwch y colledion a’r hawliadau a rhowch nhw eto.'''
+
+[strings."itsa-losses.failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa-calculation.narrate-asking"]
+hash = "d25954f3468d"
+cy = '''Wrthi’n gofyn i CThEF gyfrifo’r dreth...'''
+
+[strings."itsa-calculation.failure-not-calculated"]
+hash = "a4bf24a17561"
+cy = '''Nid yw CThEF wedi cyfrifo’r dreth.'''
+
+[strings."itsa-calculation.failure-answers"]
+hash = "ad140edea2f1"
+cy = '''Mae eich dewisiadau yn dal yn y ffurflen.'''
+
+[strings."itsa-tla.narrate-sending"]
+hash = "58ab127c5814"
+cy = '''Wrthi’n anfon yr addasiadau i’r rhwymedigaeth dreth at CThEF...'''
+
+[strings."itsa-tla.failure-not-sent"]
+hash = "838fa70446f2"
+cy = '''Nid yw CThEF wedi cael yr addasiadau i’r rhwymedigaeth dreth.'''
+
+[strings."itsa-tla.failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa-tla.failure-answers-again"]
+hash = "f8cdb38a4dba"
+cy = '''Ni chadwyd eich ffigurau. Llwythwch yr addasiadau a rhowch nhw eto.'''
+
+[strings."itsa-tla.narrate-asking-figure"]
+hash = "fdd6f552caca"
+cy = '''Wrthi’n gofyn i CThEF am gyfrifiad y flwyddyn honno...'''
+
+[strings."itsa-tla.failure-figure-not-calculated"]
+hash = "011643a38277"
+cy = '''Nid yw CThEF wedi cyfrifo ffigur y flwyddyn honno.'''
+
+[strings."field.source-hmrc-api"]
+hash = "bbae1a3922a4"
+cy = '''Disgrifiad CThEF o’r maes hwn'''
+
+[strings."itsa-tla.income-tax-note"]
+hash = "c0ba728d32da"
+cy = '''Y gostyngiad yn y Dreth Incwm o gario colled yn ôl. Caiff ei gyfrifo o rwymedigaeth blwyddyn gynharach a’i dynnu o gyfanswm eleni.'''
+
+[strings."itsa-tla.class4-note"]
+hash = "1600c8afb931"
+cy = '''Y gostyngiad yn Yswiriant Gwladol Dosbarth 4 o gario colled yn ôl. Caiff ei gyfrifo o rwymedigaeth blwyddyn gynharach a’i dynnu o gyfanswm eleni.'''
+
+[strings."itsa-tla.capital-gains-tax-note"]
+hash = "ec05868d9817"
+cy = '''Y gostyngiad yn y Dreth Enillion Cyfalaf o gario colled yn ôl. Caiff ei gyfrifo o rwymedigaeth blwyddyn gynharach a’i dynnu o gyfanswm eleni.'''
+
+[strings."itsa-losses.brought-forward-note"]
+hash = "0b7c595eb010"
+cy = '''Colledion o flynyddoedd cynharach a osodir yn erbyn elw eleni.'''
+
+[strings."itsa-losses.current-year-losses-note"]
+hash = "5db108eb188b"
+cy = '''Colled fasnachu eleni wedi’i chario ymlaen, i’w gosod yn erbyn elw’r un fasnach yn y dyfodol.'''
+
+[strings."itsa-losses.previous-years-losses-note"]
+hash = "fc37da829f23"
+cy = '''Colledion masnachu o flynyddoedd cynharach wedi’u cario ymlaen, i’w gosod yn erbyn elw’r un fasnach yn y dyfodol.'''
+
+[strings."itsa-losses.current-year-general-income-note"]
+hash = "eab0352715f1"
+cy = '''Colled fasnachu eleni wedi’i gosod yn erbyn eich incwm arall eleni.'''
+
+[strings."itsa-losses.previous-year-general-income-note"]
+hash = "3f10cf6c9a3f"
+cy = '''Colled fasnachu eleni wedi’i chario’n ôl, i’w gosod yn erbyn incwm arall blwyddyn gynharach.'''
+
+[strings."itsa-losses.early-year-losses-note"]
+hash = "ef912bae6aec"
+cy = '''Colled fasnachu eleni wedi’i chario’n ôl, i’w gosod yn erbyn incwm arall blynyddoedd cynharach.'''
+
+[strings."itsa-losses.terminal-losses-note"]
+hash = "ed3a4ff0df67"
+cy = '''Colled fasnachu eleni wedi’i chario’n ôl yn erbyn elw’r tair blynedd cynt, gan ddechrau gyda’r flwyddyn ddiweddaraf.'''
+
+[strings."itsa-losses.apply-first-note"]
+hash = "aa11002c70d2"
+cy = '''Pa hawliad y mae CThEF yn ei gymhwyso gyntaf pan osodir colled eleni yn erbyn incwm arall eleni ac incwm arall blwyddyn gynharach.'''
+
+# == The self-employment pages' stages, failure panel and SA103F field notes ==
+
+[strings."itsa.narrate-sending-quarterly"]
+hash = "c6437d899224"
+cy = '''Wrthi’n anfon y diweddariad chwarterol at CThEF...'''
+
+[strings."itsa.failure-not-sent-quarterly"]
+hash = "6bf8abb5a095"
+cy = '''Nid yw CThEF wedi cael y diweddariad chwarterol.'''
+
+[strings."itsa.narrate-sending-amendment"]
+hash = "1b87f47fa7e5"
+cy = '''Wrthi’n anfon y crynodeb o’r cyfnod wedi’i ddiwygio at CThEF...'''
+
+[strings."itsa.failure-not-sent-amendment"]
+hash = "cedfb6c6cac7"
+cy = '''Nid yw CThEF wedi cael y diwygiad; nid yw’r crynodeb o’r cyfnod sydd ganddo wedi newid.'''
+
+[strings."itsa.narrate-sending-annual"]
+hash = "59a59af4d1ef"
+cy = '''Wrthi’n anfon y cyflwyniad blynyddol at CThEF...'''
+
+[strings."itsa.failure-not-sent-annual"]
+hash = "ba7a11d74fad"
+cy = '''Nid yw CThEF wedi cael y cyflwyniad blynyddol.'''
+
+[strings."itsa.narrate-requesting-summary"]
+hash = "c12f4f354a4a"
+cy = '''Wrthi’n gofyn i CThEF am y crynodeb diwedd blwyddyn...'''
+
+[strings."itsa.failure-not-sent-summary"]
+hash = "3218adf8c30a"
+cy = '''Nid yw CThEF wedi gwneud y crynodeb diwedd blwyddyn.'''
+
+[strings."itsa.narrate-sending-adjustment"]
+hash = "00a81dde4ebf"
+cy = '''Wrthi’n anfon yr addasiad at CThEF...'''
+
+[strings."itsa.failure-not-sent-adjustment"]
+hash = "ce8007dae694"
+cy = '''Nid yw CThEF wedi cael yr addasiad.'''
+
+[strings."itsa.failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa.failure-answers-choices"]
+hash = "ad140edea2f1"
+cy = '''Mae eich dewisiadau yn dal yn y ffurflen.'''
+
+[strings."itsa.field-source-sa103f"]
+hash = "a2aed6cdc801"
+cy = '''nodiadau SA103F'''
+
+[strings."itsa.field-source-se-package"]
+hash = "45cdcbe97fa4"
+cy = '''Llyfr gwaith pecyn Hunangyflogedig.'''
+
+# == The accounts pages' status line when no token is left, id ch.accounts.no-tokens ==
+[strings."ch.accounts.no-tokens"]
+hash = "39319b90b3d0"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+
+# == The Company Tax Return page's status line when no token is left, ids ch.ct.no-tokens-* ==
+[strings."ch.ct.no-tokens-none"]
+hash = "397cc85c2bb5"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau. Ni anfonwyd dim at CThEF chwaith. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+
+[strings."ch.ct.no-tokens-hmrc"]
+hash = "3768cf85b53d"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
 [strings."widget.books-handoff-company"]
 hash = "541f9e0446ec"
 cy = '''Chwiliwch am y cwmni a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.'''

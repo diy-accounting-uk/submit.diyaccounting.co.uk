@@ -279,6 +279,7 @@ test.describe("foreign property annual: Structures and Buildings Allowance claim
       "foreignPropertyAnnualSubmission.html",
       `window.putForeignPropertyAnnual = function(details){ window.__sent.push(details); return Promise.resolve({}); };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
+window.fileWithHmrc = function(words, send){ return send(); };
 window.resolveSyntheticTestScenario = function(){ return null; };
 window.getForeignPropertyAnnual = function(){ return Promise.resolve({}); };`,
     );

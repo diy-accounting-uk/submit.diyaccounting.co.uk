@@ -533,50 +533,27 @@ document.addEventListener("click", async (e) => {
   if (!btn || btn.disabled) return;
 
   if (!(await window.requireSession())) return;
-  const idToken = getIdToken();
 
-  const original = btn.textContent;
-  btn.textContent = siteText("bundles.redirecting", "Redirecting to checkout...");
   btn.disabled = true;
 
-  try {
-    const bundleId = btn.getAttribute("data-bundle-id");
-    const interval = btn.getAttribute("data-interval");
+  const bundleId = btn.getAttribute("data-bundle-id");
+  const interval = btn.getAttribute("data-interval");
 
-    // GA4 ecommerce: begin_checkout when the user starts a Stripe checkout
-    if (typeof gtag === "function") {
-      gtag("event", "begin_checkout", {
-        currency: "GBP",
-        value: 0,
-        items: [{ item_id: bundleId }],
-      });
-    }
-
-    const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {}),
-      },
-      body: JSON.stringify({ bundleId, ...(interval && { interval }), acquisition: readStoredLandingAttribution() }),
+  // GA4 ecommerce: begin_checkout when the user starts a Stripe checkout
+  if (typeof gtag === "function") {
+    gtag("event", "begin_checkout", {
+      currency: "GBP",
+      value: 0,
+      items: [{ item_id: bundleId }],
     });
-    const body = await response.json().catch(() => ({}));
-
-    if (response.ok && body.checkoutUrl) {
-      window.location.href = body.checkoutUrl;
-    } else {
-      showStatus(
-        siteText("bundles.checkout-failed", "Failed to start checkout: {reason}", { reason: body.error || body.message || unknownError() }),
-        "error",
-      );
-      btn.textContent = original;
-      btn.disabled = false;
-    }
-  } catch (err) {
-    showStatus(siteText("bundles.checkout-failed", "Failed to start checkout: {reason}", { reason: err?.message || err }), "error");
-    btn.textContent = original;
-    btn.disabled = false;
   }
+
+  const { goToStripe } = await import("/lib/stripe-checkout.js");
+  const going = await goToStripe("bundleCheckout", {
+    headers: window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {},
+    body: { bundleId, ...(interval && { interval }), acquisition: readStoredLandingAttribution() },
+  });
+  if (!going) btn.disabled = false;
 });
 
 // --- Manage Subscription click handler
@@ -584,38 +561,14 @@ document.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-manage-subscription]");
   if (!btn || btn.disabled) return;
 
-  const idToken = getIdToken();
-  if (!idToken) {
+  if (!getIdToken()) {
     showStatus(siteText("bundles.sign-in-first", "Please sign in first."), "warning");
     return;
   }
 
-  btn.textContent = siteText("bundles.loading-portal", "Loading portal...");
   btn.disabled = true;
-
-  try {
-    const response = await window.fetchWithIdToken("/api/v1/billing/portal", {
-      headers: { "Content-Type": "application/json" },
-    });
-    const body = await response.json().catch(() => ({}));
-
-    if (response.ok && body.portalUrl) {
-      window.location.href = body.portalUrl;
-    } else {
-      showStatus(
-        siteText("bundles.portal-failed", "Failed to open subscription portal: {reason}", {
-          reason: body.error || body.message || unknownError(),
-        }),
-        "error",
-      );
-      btn.textContent = manageSubscriptionText();
-      btn.disabled = false;
-    }
-  } catch (err) {
-    showStatus(siteText("bundles.portal-failed", "Failed to open subscription portal: {reason}", { reason: err?.message || err }), "error");
-    btn.textContent = manageSubscriptionText();
-    btn.disabled = false;
-  }
+  const { goToStripe } = await import("/lib/stripe-checkout.js");
+  if (!(await goToStripe("subscriptionPage"))) btn.disabled = false;
 });
 
 // --- reflect previously granted

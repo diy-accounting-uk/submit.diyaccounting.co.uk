@@ -283,14 +283,10 @@ async function renderFilingRecord(transaction) {
   document.getElementById("filingRecord").replaceChildren(...parsed.body.childNodes);
 }
 
-function renderValidationErrors(errors) {
+function renderValidationErrors(errors, validationErrorText) {
   const container = document.getElementById("validationErrors");
   container.style.display = "block";
-  container.replaceChildren(
-    ...(errors || []).map((entry) =>
-      paragraph(`${entry.location || ""}: ${entry.error || window.siteText("ch.change.invalid-value", "invalid value")}`),
-    ),
-  );
+  container.replaceChildren(...(errors || []).map((entry) => paragraph(validationErrorText("email", entry))));
 }
 
 function redirectToAuthorise(scope) {
@@ -318,6 +314,7 @@ async function runFilingSequence() {
   showLoading();
   hideStatus();
   document.getElementById("validationErrors").style.display = "none";
+  document.getElementById("failureDetail")?.remove();
   try {
     window.narrateStage(window.siteText("ch.narrate-sending-change", "Sending the change to Companies House..."));
     if (!filing.transactionId) {
@@ -351,15 +348,19 @@ async function runFilingSequence() {
       redirectToAuthorise(scope);
       return;
     }
+    const { showRegisteredChangeFailure, validationErrorText } = await import("../lib/registered-change.js");
     if (error.status === 422) {
-      renderValidationErrors(error.body?.errors);
+      renderValidationErrors(error.body?.errors, validationErrorText);
       document.getElementById("startAgainBtn").style.display = "inline-block";
       savePendingFiling();
       showView("resultView");
+      showRegisteredChangeFailure(document, error, filing, { answersKept: false, errorsListedOnPage: true });
       return;
     }
     console.error("Companies House filing failed:", error);
-    showStatus(error.message || window.siteText("ch.change.file-failed", "Failed to file the change with Companies House."), "error");
+    // The panel gives the detail, so the status line says only that the filing failed.
+    showStatus(window.siteText("ch.change.file-failed", "Failed to file the change with Companies House."), "error");
+    showRegisteredChangeFailure(document, error, filing, { answersKept: true });
   } finally {
     hideLoading();
   }
@@ -374,6 +375,7 @@ function startAgain() {
   document.getElementById("filingRecord").replaceChildren();
   document.getElementById("startAgainBtn").style.display = "none";
   document.getElementById("checkAgainBtn").style.display = "none";
+  document.getElementById("failureDetail")?.remove();
   hideStatus();
   showView("companyView");
 }
@@ -398,6 +400,8 @@ async function resumePendingFilingIfReady() {
     await checkEligibilityAndProceed();
   }
 }
+
+import("../lib/registered-change.js").then(({ showRegisteredChangeFields }) => showRegisteredChangeFields(document, "email"));
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("emailAddressForm").addEventListener("submit", handleFormSubmit);

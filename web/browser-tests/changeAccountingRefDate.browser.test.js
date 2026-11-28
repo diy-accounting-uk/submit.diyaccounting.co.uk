@@ -422,3 +422,24 @@ test("the page offers the periods the shared rule gives, the rule the simulator 
   await page.getByRole("button", { name: "Look up the accounting periods" }).click();
   await expect(page.locator("#periodChoices label")).toHaveText(["1 February 2098 to 31 January 2099 (the current period)"]);
 });
+
+test("answers the route refuses show the failure panel saying nothing was sent", async ({ page }) => {
+  await serveSite(page);
+  await page.route("**/api/v1/companies-house/accounting-reference-date", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "The new end date must be a real date" }),
+    }),
+  );
+  await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: `${YEAR}-03-31` });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#statusMessagesContainer + #failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "business-error", { timeout: 15000 });
+  await expect(panel.locator('[data-part="kind"]')).toHaveText(
+    "The answers were refused before anything was sent. Correct them and send again.",
+  );
+  await expect(panel.locator('[data-part="errors"] li')).toHaveText(["The new end date must be a real date"]);
+});

@@ -3,10 +3,12 @@
 
 // web/public/lib/filing-failure.js
 // What kind of failure a filing met, from the status and the body of the answer, and what the
-// person does next. Four kinds: a fault in Submit; Submit's own HMRC or Companies House credentials
+// person does next. Six kinds: a fault in Submit; Submit's own HMRC or Companies House credentials
 // refused; the person's own credentials or account refused; a business error HMRC or Companies
-// House answered. A 502 that carries their errors is their answer and takes one of the last three
-// by its error numbers.
+// House answered; HMRC unable to take the request; Companies House not answering when Submit read
+// the company, before anything was sent. A 502 that carries their errors is their answer and takes
+// its kind by its error numbers; an MTD API's answer takes it by HMRC's status and codes. A Stripe
+// journey adds two kinds: no answer from Submit at all, and a request the site's firewall blocked.
 
 function siteText(id, english, values) {
   if (globalThis.siteText) return globalThis.siteText(id, english, values);
@@ -18,6 +20,10 @@ export const FAILURE_KINDS = {
   submitCredentials: "submit-credentials",
   yourCredentials: "your-credentials",
   businessError: "business-error",
+  notAnswering: "not-answering",
+  connection: "connection",
+  blocked: "blocked",
+  serviceUnavailable: "service-unavailable",
 };
 
 export const HELP_HREF = "/help.html";
@@ -30,6 +36,9 @@ const HMRC_SCHEMA_FAULT = "1001";
 // Companies House's GovTalk numbers for the presenter account Submit files under: its
 // authentication, the account itself and its credit for the fee.
 const COMPANIES_HOUSE_PRESENTER_ERRORS = new Set(["502", "5003", "5006", "9984"]);
+// The code a Companies House route answers with when it could not read the company before sending,
+// so nothing was sent.
+const COMPANY_UNREAD = "company-unread";
 // Companies House's GovTalk number for a form Submit built wrongly.
 const COMPANIES_HOUSE_SOFTWARE_FAULT = "505";
 
@@ -37,14 +46,36 @@ function serviceName(service) {
   return service === "companiesHouse" ? siteText("ct.failure-service-ch", "Companies House") : siteText("ct.failure-service-hmrc", "HMRC");
 }
 
+// The codes HMRC's MTD APIs give when they do not accept the authorisation a request carries.
+const HMRC_AUTHORISATION_CODES = new Set([
+  "CLIENT_OR_AGENT_NOT_AUTHORISED",
+  "INVALID_CREDENTIALS",
+  "MISSING_CREDENTIALS",
+  "INVALID_BEARER_TOKEN",
+  "UNAUTHORIZED",
+]);
+
 /** The errors HMRC or Companies House gave, as the server passes them on. */
 export function serviceErrorsOf(error) {
   const errors = error?.body?.error?.errors ?? error?.body?.errors;
-  return Array.isArray(errors) ? errors : [];
+  if (Array.isArray(errors)) return errors;
+  return hmrcApiErrorsOf(error);
 }
 
+// HMRC's MTD APIs answer {code, message} or {code, message, errors: [{code, message}]}, which the
+// server passes on as error.responseBody beside HMRC's status.
+function hmrcApiErrorsOf(error) {
+  const body = error?.body?.error?.responseBody;
+  if (!body || typeof body !== "object") return [];
+  let entries = [];
+  if (Array.isArray(body.errors) && body.errors.length > 0) entries = body.errors;
+  else if (body.code) entries = [body];
+  return entries.map((entry) => ({ code: String(entry.code ?? ""), text: entry.message, location: entry.code }));
+}
+
+// GovTalk answers carry an error's words in text, Companies House's filing API in error.
 function errorText(entry) {
-  const text = String(entry?.text ?? entry?.message ?? "").trim();
+  const text = String(entry?.text ?? entry?.message ?? entry?.error ?? "").trim();
   const location = String(entry?.location ?? "").trim();
   return location ? siteText("ct.failure-error-at", "{text} ({location})", { text, location }) : text;
 }
@@ -67,7 +98,8 @@ function yourCredentials(service, cause, next) {
 
 /**
  * The kind of a filing's failure and its next step.
- * @param {{status?: number, reason?: string, message?: string, body?: object, requestId?: string}} error - the client's error for the answer
+ * @param {{status?: number, reason?: string, message?: string, body?: object, requestId?: string}} error - the client's error for the
+ *   answer; for HMRC's MTD APIs, body.error carries hmrcResponseCode and responseBody
  * @param {{service: "hmrc"|"companiesHouse"}} where - the service the request was for
  * @returns {{kind: string, service: string, cause: string, next: {label: string, href: string}|null, errors?: string[], requestId?: string}}
  */
@@ -76,6 +108,33 @@ export function classifyFilingFailure(error, { service }) {
   const reason = error?.reason ?? error?.body?.reason;
   const errors = serviceErrorsOf(error);
   const numbers = errors.map((entry) => String(entry?.number ?? ""));
+  const hmrcStatus = error?.body?.error?.hmrcResponseCode;
+
+  if (
+    service === "hmrc" &&
+    (reason === "hmrc_scope_insufficient" ||
+      hmrcStatus === 401 ||
+      errors.some((entry) => HMRC_AUTHORISATION_CODES.has(String(entry?.code ?? ""))))
+  ) {
+    return yourCredentials(
+      "hmrc",
+      siteText(
+        "itsa.failure-hmrc-authorisation",
+        "HMRC did not accept the authorisation Submit holds for you. Send again, and sign in to HMRC when it asks.",
+      ),
+      null,
+    );
+  }
+  if (service === "hmrc" && typeof hmrcStatus === "number" && (hmrcStatus === 429 || hmrcStatus >= 500)) {
+    return {
+      kind: FAILURE_KINDS.serviceUnavailable,
+      service,
+      cause: siteText("itsa.failure-hmrc-unavailable", "HMRC could not take the request just now. Try again later."),
+      next: null,
+      errors: errors.map(errorText).filter(Boolean),
+    };
+  }
+  if (service === "hmrc" && typeof hmrcStatus === "number" && errors.length > 0) return businessError(service, errors);
 
   if (status === 401) {
     return yourCredentials(service, siteText("widget.failure-sign-in-expired", "Your sign-in has expired."), signInNext());
@@ -130,14 +189,18 @@ export function classifyFilingFailure(error, { service }) {
     ) {
       return submitFault(error);
     }
+    return businessError(service, errors);
+  }
+  if (error?.body?.code === COMPANY_UNREAD) {
     return {
-      kind: FAILURE_KINDS.businessError,
-      service,
-      cause: siteText("ct.failure-business", "{service} answered with this error. Correct the answer it names and send again.", {
-        service: serviceName(service),
-      }),
+      kind: FAILURE_KINDS.notAnswering,
+      service: "companiesHouse",
+      cause: siteText(
+        "ct.failure-not-answering",
+        "{service} did not answer when Submit read the company, so nothing was sent. Try again later.",
+        { service: serviceName("companiesHouse") },
+      ),
       next: null,
-      errors: errors.map(errorText).filter(Boolean),
     };
   }
   // No answer at all, or a 5xx: nothing says the answers were refused, so it is not a refusal.
@@ -148,6 +211,18 @@ export function classifyFilingFailure(error, { service }) {
     cause: siteText("ct.failure-refused", "The answers were refused before anything was sent. Correct them and send again."),
     next: null,
     errors: error?.message ? [error.message] : [],
+  };
+}
+
+function businessError(service, errors) {
+  return {
+    kind: FAILURE_KINDS.businessError,
+    service,
+    cause: siteText("ct.failure-business", "{service} answered with this error. Correct the answer it names and send again.", {
+      service: serviceName(service),
+    }),
+    next: null,
+    errors: errors.map(errorText).filter(Boolean),
   };
 }
 
@@ -166,9 +241,10 @@ function submitFault(error) {
  * what was not, where the answers are, and the kind of failure with its next step. It stays until
  * the reader closes it or a newer failure replaces it.
  * @param {Document} doc
- * @param {{sent: string, answers: string, failure: ReturnType<typeof classifyFilingFailure>}} detail
+ * @param {{sent: string, answers: string, failure: ReturnType<typeof classifyFilingFailure>, technical?: string}} detail - technical
+ *   is the server's own message, in English, shown closed under "Technical detail"
  */
-export function failureDetailElement(doc, { sent, answers, failure }) {
+export function failureDetailElement(doc, { sent, answers, failure, technical }) {
   const make = (tag, attributes, ...children) => {
     const node = doc.createElement(tag);
     for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
@@ -206,6 +282,17 @@ export function failureDetailElement(doc, { sent, answers, failure }) {
     }
     panel.append(next);
   }
+  // A message the panel already lists among the errors is not repeated.
+  if (technical && !failure.errors?.includes(technical)) {
+    panel.append(
+      make(
+        "details",
+        { "data-part": "technical" },
+        make("summary", {}, siteText("ct.failure-technical", "Technical detail")),
+        make("p", { lang: "en" }, technical),
+      ),
+    );
+  }
   panel.append(close);
   return panel;
 }
@@ -218,6 +305,84 @@ export function showFailureDetail(doc, detail) {
   if (container) container.after(panel);
   else doc.body.prepend(panel);
   return panel;
+}
+
+/**
+ * The kind of a failure on a Stripe journey (a checkout or the subscription page) and its next step.
+ * A billing route answers JSON; the site's firewall answers a blocked request with an HTML page.
+ * @param {{status?: number, reason?: string, html?: boolean, requestId?: string}} error - the client's error for the answer
+ * @returns {{kind: string, service: string, cause: string, next: {label: string, href: string}|null, requestId?: string}}
+ */
+export function classifyStripeFailure(error) {
+  const status = error?.status;
+  const reference = error?.requestId ? { requestId: error.requestId } : {};
+  if (typeof status !== "number") {
+    return {
+      kind: FAILURE_KINDS.connection,
+      service: "submit",
+      cause: siteText("stripe.failure-connection", "Submit did not answer, so Stripe was not asked. Check your connection and try again."),
+      next: null,
+    };
+  }
+  if (status === 401) {
+    return yourCredentials("submit", siteText("widget.failure-sign-in-expired", "Your sign-in has expired."), signInNext());
+  }
+  if (status === 403 && error.html) {
+    return {
+      kind: FAILURE_KINDS.blocked,
+      service: "submit",
+      cause: siteText("stripe.failure-firewall", "The site's firewall blocked this request before it reached Stripe. Try again later."),
+      next: helpNext(),
+      ...reference,
+    };
+  }
+  if (status === 403) {
+    return yourCredentials(
+      "submit",
+      siteText("stripe.failure-sign-in-refused", "Submit did not accept your sign-in for this request."),
+      signInNext(),
+    );
+  }
+  if (status === 404) {
+    return yourCredentials(
+      "stripe",
+      siteText(
+        "stripe.failure-no-subscription",
+        "Your account has no subscription paid through Stripe, so there is no subscription page to open.",
+      ),
+      bundlesNext(),
+    );
+  }
+  if (status === 409 || error.reason === "already-paid") {
+    return {
+      kind: FAILURE_KINDS.businessError,
+      service: "stripe",
+      cause: siteText("stripe.failure-already-paid", "The fee for this filing is already paid. Go back to the filing and send it."),
+      next: null,
+    };
+  }
+  if (status >= 400 && status < 500) {
+    return {
+      kind: FAILURE_KINDS.submitFault,
+      service: "submit",
+      cause: siteText(
+        "stripe.failure-refused",
+        "Submit refused the request before asking Stripe. This is a fault in Submit, not in your account.",
+      ),
+      next: helpNext(),
+      ...reference,
+    };
+  }
+  return {
+    kind: FAILURE_KINDS.submitFault,
+    service: "stripe",
+    cause: siteText(
+      "stripe.failure-no-answer",
+      "Submit did not get a page to open from Stripe. This is a fault in Submit or at Stripe, not in your account. Try again later.",
+    ),
+    next: helpNext(),
+    ...reference,
+  };
 }
 
 // --- The VAT return: HMRC's error codes for a return ----------------------------------------------

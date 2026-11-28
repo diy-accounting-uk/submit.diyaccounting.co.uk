@@ -476,8 +476,8 @@ async function handleCompanySubmit(event) {
     // Figures an assistant's link carries fill after the last accounts place their prior year, so the link's figures stand.
     Promise.resolve(priorYearFilled).finally(() => window.booksImport.applyPendingHandoff());
   } catch (error) {
-    console.error("Failed to look up the company:", error);
-    showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
+    const { showCompanyLookupFailure } = await import("../lib/company-lookup-failure.js");
+    showCompanyLookupFailure(showStatus, error, companyNumber);
   } finally {
     hideLoading();
   }
@@ -679,6 +679,8 @@ async function handleAccountsFormSubmit(event) {
 
   showLoading();
   hideStatus();
+  const accountsFailure = await import("../lib/accounts-filing-failure.js");
+  accountsFailure.clearAccountsFailure(document);
   try {
     const preview = await window.renderMicroEntityAccounts(buildAccountsPayload());
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
@@ -697,7 +699,8 @@ async function handleAccountsFormSubmit(event) {
     }
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
-    showStatus(error.message || window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
+    showStatus(window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
+    accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.preview);
   } finally {
     hideLoading();
   }
@@ -855,6 +858,8 @@ async function handleSubmitFiling() {
 
   showLoading();
   hideStatus();
+  const accountsFailure = await import("../lib/accounts-filing-failure.js");
+  accountsFailure.clearAccountsFailure(document);
   try {
     const filedAccounts = buildAccountsPayload();
     const accounts = { ...filedAccounts, companyAuthCode };
@@ -888,11 +893,12 @@ async function handleSubmitFiling() {
     if (tokensExhausted) hideStatus();
     const { registerRefusalOfError } = await import("../lib/accounts-revision-register.js");
     showStatus(
-      registerRefusalOfError(error) ||
-        error.message ||
-        window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
+      tokensExhausted
+        ? accountsFailure.noTokensText()
+        : registerRefusalOfError(error) || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
       "error",
     );
+    accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.filing);
     if (tokensExhausted) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
       document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });

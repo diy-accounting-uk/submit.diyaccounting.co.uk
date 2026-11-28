@@ -937,3 +937,30 @@ test.describe("the allotment dates against today", () => {
     await expect(page.locator("#lateReturn")).toContainText("2 Rhagfyr 2026");
   });
 });
+
+test("an error Companies House answers shows the failure panel with its words and the answer to correct", async ({ page }) => {
+  await serveSite(page);
+  await page.route("**/api/v1/companies-house/allotment-of-shares", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Companies House rejected the allotment of shares submission envelope",
+        submissionNumber: "000123",
+        errors: [{ number: "9999", text: "The share class is not recognised", location: "StatementOfCapital" }],
+      }),
+    }),
+  );
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.locator("#startDate").fill("2026-11-02");
+  await fillAllotment(page, { shareClass: "ordinary", number: "10", nominal: "1", paid: "1" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#statusMessagesContainer + #failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "business-error", { timeout: 15000 });
+  await expect(panel.locator('[data-part="kind"]')).toHaveText(
+    "Companies House answered with this error. Correct the answer it names and send again.",
+  );
+  await expect(panel.locator('[data-part="errors"] li')).toHaveText(["The share class is not recognised (StatementOfCapital)"]);
+});

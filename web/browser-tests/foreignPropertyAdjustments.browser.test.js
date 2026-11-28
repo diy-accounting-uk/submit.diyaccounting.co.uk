@@ -74,7 +74,20 @@ const STUBS = `
 window.__sent = [];
 window.__summary = null;
 window.__obligations = [];
-window.showStatus = function(){}; window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};
+window.__status = [];
+window.showStatus = function(message, type){ window.__status.push({ message: message, type: type }); };
+window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};
+window.__writes = [];
+window.fileWithHmrc = function(words, send){
+  window.__writes.push(Object.assign({}, words));
+  return send().catch(function(error){
+    window.__writes[window.__writes.length - 1].failed = true;
+    var panel = document.createElement("div");
+    panel.id = "failureDetail";
+    document.body.append(panel);
+    throw error;
+  });
+};
 window.generateRandomState = function(){ return "s"; };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
 window.resolveSyntheticTestScenario = function(explicit, account, fallback){ return explicit || (account === "synthetic" ? fallback : null); };
@@ -218,6 +231,35 @@ test.describe("foreign property year-end adjustments", () => {
     await expect(totals.nth(2)).toContainText("£10,229.50");
     expect(await page.locator("#adjustmentResults").innerText()).not.toMatch(/NaN|undefined/);
     await shoot(page, "adjustments-result");
+    expect(await page.evaluate(() => window.__writes.map((write) => write.sending))).toEqual([
+      "Asking HMRC for the year-end summary...",
+      "Sending the adjustment to HMRC...",
+    ]);
+  });
+
+  test("leads a country's fields with their SA106 boxes, and links HMRC's SA106 notes", async ({ page }) => {
+    await openPage(page, { summary: COUNTRY_SUMMARY });
+    await trigger(page, "2025-26");
+    await page.locator("#adjust-1-expenses").evaluate((node) => (node.open = true));
+
+    await expect(page.locator('label[for="adjust-1-totalRentsReceived"]')).toHaveText("SA106 box 14: Total rents received");
+    await expect(page.locator('label[for="adjust-1-consolidatedExpenses"]')).toHaveText("SA106 box 17: Expenses as one total");
+    await expect(page.locator("#adjust-1-travelCosts-hint")).toHaveText("Counts towards the total in box 17. Foreign (SA106) notes.");
+    await shoot(page, "adjustments-sa106-fields");
+  });
+
+  test("an adjustment HMRC refuses is told in the failure panel, not in a message of the page's own", async ({ page }) => {
+    await openPage(page, { summary: COUNTRY_SUMMARY });
+    await trigger(page, "2025-26");
+    await page.evaluate(() => {
+      window.adjustBsasForeignProperty = () => Promise.reject(Object.assign(new Error("HMRC rejected the request"), { status: 422 }));
+    });
+    await page.locator("#adjust-1-totalRentsReceived").fill("8500");
+    await page.locator("#submitAdjustmentBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__writes.map((write) => Boolean(write.failed)))).toEqual([false, true]);
+    expect(await page.evaluate(() => window.__status.filter((status) => status.type === "error"))).toEqual([]);
+    await expect(page.locator("#adjust-1-totalRentsReceived")).toHaveValue("8500");
   });
 
   test("sends zero adjustments alone", async ({ page }) => {

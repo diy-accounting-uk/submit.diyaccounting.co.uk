@@ -79,15 +79,25 @@ async function loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHe
   return await getTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
-async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
+// answers says where the figures are if the save fails: still in the form, or to be entered again.
+async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId, answers) {
   const govClientHeaders = await getGovClientHeaders();
-  return await putTaxLiabilityAdjustments(
-    adjustmentsDetails,
-    hmrcGrantId,
-    govClientHeaders,
-    runFraudPreventionHeaderValidation,
-    testScenario,
+  return await window.fileWithHmrc(
+    {
+      sending: siteText("itsa-tla.narrate-sending", "Sending the tax liability adjustments to HMRC..."),
+      notSent: siteText("itsa-tla.failure-not-sent", "HMRC has not got the tax liability adjustments."),
+      answers,
+    },
+    () => putTaxLiabilityAdjustments(adjustmentsDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario),
   );
+}
+
+function answersInForm() {
+  return siteText("itsa-tla.failure-answers-form", "Your figures are still in the form.");
+}
+
+function answersToEnterAgain() {
+  return siteText("itsa-tla.failure-answers-again", "Your figures were not kept. Load the adjustments and enter them again.");
 }
 
 // Retrieves HMRC's own calculation for the year the claim decreases, so the customer has
@@ -105,12 +115,14 @@ async function showEarlierYearFigure() {
     button.disabled = true;
     figureEl.textContent = siteText("itsa-tla.retrieving-figure", "Retrieving from HMRC...");
     const govClientHeaders = await getGovClientHeaders();
-    const result = await triggerCalculation(
-      { nino, taxYear, calculationType: "in-year" },
-      hmrcGrantId,
-      govClientHeaders,
-      false,
-      calculationTestScenario,
+    const result = await window.fileWithHmrc(
+      {
+        sending: siteText("itsa-tla.narrate-asking-figure", "Asking HMRC for that year's calculation..."),
+        notSent: siteText("itsa-tla.failure-figure-not-calculated", "HMRC has not calculated that year's figure."),
+        answers: answersInForm(),
+      },
+      () =>
+        triggerCalculation({ nino, taxYear, calculationType: "in-year" }, hmrcGrantId, govClientHeaders, false, calculationTestScenario),
     );
     const totalIncomeTaxAndNicsDue = result?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue;
     figureEl.textContent = HmrcFieldTable.formatMoney(totalIncomeTaxAndNicsDue);
@@ -154,12 +166,12 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
     } else if (pendingSave) {
       showLoading();
-      showStatus(siteText("itsa-tla.saving", "Saving tax liability adjustments..."), "info");
       const saved = await saveAdjustments(
         pendingSave.adjustmentsDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
         hmrcGrantId,
+        answersToEnterAgain(),
       );
       await showSavedRecord(pendingSave.adjustmentsDetails, saved?.correlationId);
       hideStatus();
@@ -281,8 +293,13 @@ async function handleSaveClick() {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa-tla.saving", "Saving tax liability adjustments..."), "info");
-        const saved = await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+        const saved = await saveAdjustments(
+          adjustmentsDetails,
+          testScenario,
+          runFraudPreventionHeaderValidation,
+          hmrcGrantId,
+          answersInForm(),
+        );
         await showSavedRecord(adjustmentsDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
@@ -298,6 +315,8 @@ async function handleSaveClick() {
     },
   );
 }
+
+import("../../lib/itsa-year-end-fields.js").then(({ showYearEndFields }) => showYearEndFields(document, "taxLiabilityAdjustments"));
 
 document.getElementById("itsaAdjustmentsLoadForm").addEventListener("submit", handleLoadFormSubmission);
 document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
