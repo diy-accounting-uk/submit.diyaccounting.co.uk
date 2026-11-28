@@ -54,16 +54,17 @@ class DiyaGlStackTest {
     }
 
     @Test
-    void stackWiresFiveApiLambdas() {
+    void stackWiresSixApiLambdas() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 5);
+        template.resourceCountIs("AWS::Lambda::Function", 6);
         for (String functionName : List.of(
                 stack.diyaGlListGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlPutLambdaProps.ingestFunctionName(),
                 stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
+                stack.diyaGlDownloadGetLambdaProps.ingestFunctionName(),
                 stack.practiceClientBookMovePostLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
@@ -315,10 +316,10 @@ class DiyaGlStackTest {
         DiyaGlStack stack = synthDiyaGlStack();
 
         assertEquals(
-                9,
+                10,
                 stack.lambdaFunctionProps.size(),
                 "expected four routes doubled (/api/v1/diya-gl and /api/v1/books both served permanently) "
-                        + "plus the practice client book move route, which has no second path");
+                        + "plus the download and the practice client book move routes, which have no second path");
 
         var urlPaths = stack.lambdaFunctionProps.stream()
                 .map(AbstractApiLambdaProps::urlPath)
@@ -330,13 +331,16 @@ class DiyaGlStackTest {
         assertTrue(urlPaths.contains("/api/v1/diya-gl/{bookId}"));
         assertTrue(urlPaths.contains("/api/v1/books/{bookId}"));
         assertTrue(urlPaths.contains("/api/v1/practice/clients/{clientId}/books/{bookId}/move"));
+        assertTrue(urlPaths.contains("/api/v1/books/{bookId}/versions/{version}/download"));
 
         // Every diya-gl route resolves to the same underlying Lambda under both its paths, so
         // each is one implementation published twice, not two drifting copies. The move route has
         // only ever had the one path, so it is excluded from that pairing check.
+        var singlePathFunctions = List.of(
+                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName(),
+                stack.diyaGlDownloadGetLambdaProps.ingestFunctionName());
         var byFunctionName = stack.lambdaFunctionProps.stream()
-                .filter(props -> !props.ingestFunctionName()
-                        .equals(stack.practiceClientBookMovePostLambdaProps.ingestFunctionName()))
+                .filter(props -> !singlePathFunctions.contains(props.ingestFunctionName()))
                 .collect(java.util.stream.Collectors.groupingBy(AbstractApiLambdaProps::ingestFunctionName));
         for (var entry : byFunctionName.entrySet()) {
             assertEquals(
@@ -368,7 +372,27 @@ class DiyaGlStackTest {
         DiyaGlStack stack = synthDiyaGlStack(false);
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 5);
+        template.resourceCountIs("AWS::Lambda::Function", 6);
+    }
+
+    @Test
+    void theDownloadLambdaHasRoomToComposeAPackageAndWritesOnlyUnderDownloads() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+        String functionName = stack.diyaGlDownloadGetLambdaProps.ingestFunctionName();
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of("FunctionName", functionName, "MemorySize", 2048, "Timeout", 60)));
+        var putStatements = iamStatementsForFunction(template, functionName).stream()
+                .filter(statement -> actionsOf(statement).contains("s3:PutObject"))
+                .toList();
+        assertEquals(1, putStatements.size());
+        assertEquals(
+                "arn:aws:s3:::" + DIYA_GL_BUCKET_NAME + "/downloads/*",
+                String.valueOf(putStatements.get(0).get("Resource")));
+        assertTrue(iamStatementsForFunction(template, functionName).stream()
+                .noneMatch(statement -> actionsOf(statement).contains("s3:DeleteObject")));
     }
 
     @Test

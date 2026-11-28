@@ -246,7 +246,9 @@ import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount 
 import { smallCompanyAccountsFromResults } from "./app/services/smallCompanyAccountsFromResults.js";
 import { microEntityAccountsFromResults } from "./app/services/microEntityAccountsFromResults.js";
 export { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
-export { writeBookJson } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+export { writeBookJson, writeDiyaGlZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+export { buildFileReportDocument } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
+export { productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 export { canonicalBookToml, canonicalLinesJsonl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-canonical.js";
 export { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 export { buildBookFromRegister, RegisterBookError } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-register-book.js";
@@ -309,7 +311,8 @@ async function main() {
     banner: { js: LICENCE_COMMENT },
     plugins: [nodeAbsentPlugin(embeddedResources()), overtypeSidecarAbsentPlugin(), ajvAbsentPlugin(generatedSource)],
     metafile: true,
-    define: { "process.env.NODE_ENV": '"production"' },
+    // export.js tests process.argv when it loads, to run as a command; a browser has no argv.
+    define: { "process.env.NODE_ENV": '"production"', "process.argv": "[]" },
   });
 
   const bytes = statSync(BUNDLE_FILE).size;

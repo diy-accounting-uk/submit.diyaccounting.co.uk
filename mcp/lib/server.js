@@ -27,10 +27,13 @@ import { createSession, listBooks, openBook, saveBook, SAVE_FORMATS } from "./bo
 import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveCompanyTaxReturn, deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
-import { prepareVatReturn } from "./handoff-tools.js";
+import { prepareCompanyTaxReturn, prepareMicroEntityAccounts, prepareSmallCompanyAccounts, prepareVatReturn } from "./handoff-tools.js";
+import { bookFormat, findHelp, HELP_SOURCES, MAX_MATCHES } from "./help-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerVatReviewCard, VAT_REVIEW_CARD_TOOLS, VAT_REVIEW_CARD_TOOL_META } from "./vat-review-card.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
+import { BOOK_READ_TOOLS } from "./book-read-tools.js";
+import { lookUpRule, RULE_FACTS_BY_TOOL, withRuleSources } from "./rules-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import { ADDS, CHANGES, CHANGES_OUTSIDE, READS, READS_OUTSIDE } from "./tool-annotations.js";
@@ -1009,13 +1012,109 @@ export const TOOLS = {
     },
     handler: runForClients,
   },
+  look_up_rule: {
+    title: "Look up a tax or filing rule",
+    annotations: READS,
+    description:
+      'Looks up an HMRC or Companies House rule or rate by its words or its fact id (such as "annual investment ' +
+      'allowance", "marginal relief", "accounts due 9 months" or corporation-tax-main-rate-fy2026) and answers each ' +
+      "match with its figure or words, the tax year or financial year it applies to, and the gov.uk page that states " +
+      "it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks " +
+      "what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the " +
+      "rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or " +
+      "Companies House for that. It needs no DIYA-GL book and contacts no outside service.",
+    inputSchema: {
+      query: z.string().describe("A fact id, or the words of the rule or rate, such as annual investment allowance"),
+    },
+    handler: lookUpRule,
+  },
+  prepare_micro_entity_accounts: {
+    title: "Prepare micro-entity accounts to file in the browser",
+    annotations: READS,
+    description:
+      "Works out the micro-entity accounts from the open DIYA-GL book, as derive_micro_entity_accounts does, and answers " +
+      "a link to the micro-entity accounts form on DIY Accounting Submit with the period, both years' balance sheets, " +
+      "the employee count and the director filled in. The person opens the link, looks up the company, checks the " +
+      "figures, adds the date approved and the statements, and files there with the company's authentication code. Use " +
+      "this when the person asks to file their micro-entity accounts at Companies House. It never files anything and " +
+      "contacts no outside service: the figures filed are the ones the person sees on the page.",
+    inputSchema: {},
+    handler: prepareMicroEntityAccounts,
+  },
+  prepare_small_company_accounts: {
+    title: "Prepare small company accounts to file in the browser",
+    annotations: READS,
+    description:
+      "Works out the small company accounts from the open DIYA-GL book, as derive_small_company_accounts does, and " +
+      "answers a link to the small company accounts form on DIY Accounting Submit with the period, the profit and loss " +
+      "account, both years' balance sheets, the fixed asset note, the employee count and the directors filled in. The " +
+      "person opens the link, looks up the company, checks the figures, adds the accounting policies, the date approved " +
+      "and the statements, and files there with the company's authentication code. Use this when the person asks to " +
+      "file their small company accounts at Companies House. It never files anything and contacts no outside service.",
+    inputSchema: {},
+    handler: prepareSmallCompanyAccounts,
+  },
+  prepare_company_tax_return: {
+    title: "Prepare a Company Tax Return to file in the browser",
+    annotations: READS,
+    description:
+      "Works out the Company Tax Return figures from the open DIYA-GL book, as derive_company_tax_return does, and " +
+      "answers a link to the Company Tax Return (CT600) form on DIY Accounting Submit with the period, the profit and " +
+      "loss account and the computation figures filled in. The person opens the link, looks up the company, checks the " +
+      "figures, fills the balance sheet and the rest of the return, and files there with their Government Gateway " +
+      "sign-in. Use this when the person asks to file their Company Tax Return or CT600. It never files anything and " +
+      "contacts no outside service.",
+    inputSchema: {},
+    handler: prepareCompanyTaxReturn,
+  },
+  find_help: {
+    title: "Find help",
+    annotations: READS,
+    description:
+      "Searches the DIY Accounting Submit guide (its how-to journeys and the MCP, rates and MTD calendar pages) and the " +
+      "diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, " +
+      "best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a " +
+      "filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. " +
+      "It needs no DIYA-GL book, reads nothing of the person's records, and gives no advice on their own case.",
+    inputSchema: {
+      query: z.string().describe("The question or the words to search for, as the person put it"),
+      source: z
+        .enum(Object.keys(HELP_SOURCES))
+        .optional()
+        .describe("Search only the Submit guide (guide) or only the diya-gl knowledge base (knowledge-base)"),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_MATCHES)
+        .optional()
+        .describe(`How many matches to answer, 1 to ${MAX_MATCHES}; 5 when omitted`),
+    },
+    handler: findHelp,
+  },
+  book_format: {
+    title: "Describe the DIYA-GL book format",
+    annotations: READS,
+    description:
+      "Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, " +
+      "the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and " +
+      "meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each " +
+      "box's number, label, section and format, narrowed to one section when section is given. Use this before reading or " +
+      "changing lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It reads no DIYA-GL book and " +
+      "changes nothing.",
+    inputSchema: {
+      part: z.enum(["book", "ct600"]).optional().describe("book (the default) for the DIYA-GL book format, ct600 for the CT600 box map"),
+      section: z.string().optional().describe("With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation"),
+    },
+    handler: bookFormat,
+  },
 };
 
 /**
  * An McpServer with the tools registered against one session. Connect it to
  * whichever transport the surface uses. toolNames limits the registration to
  * those names; overrides replaces a named tool's description, inputSchema and
- * handler.
+ * handler. With look_up_rule among the names, each derivation's answer carries ruleSources.
  * @param {Object} [session] - defaults to a fresh, empty session
  * @param {{toolNames?: string[], overrides?: Object, instructions?: string}} [options] - instructions,
  *   when given, go to the client in the initialize result
@@ -1023,11 +1122,14 @@ export const TOOLS = {
  */
 export function createServer(session = createSession(), { toolNames, overrides = {}, instructions } = {}) {
   const server = new McpServer(SERVER_INFO, instructions ? { instructions } : undefined);
-  const known = { ...TOOLS, ...ITSA_TOOLS };
+  const known = { ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS };
   const names = toolNames ?? Object.keys(known);
+  // A derivation answers the source of each rule and rate it used where look_up_rule is offered beside it.
+  const withSources = names.includes("look_up_rule");
   for (const name of names) {
     const tool = overrides[name] ?? known[name];
     if (!tool) throw new Error(`Unknown tool: ${name}`);
+    const handler = withSources && RULE_FACTS_BY_TOOL[name] ? withRuleSources(name, tool.handler) : tool.handler;
     server.registerTool(
       name,
       {
@@ -1039,7 +1141,7 @@ export function createServer(session = createSession(), { toolNames, overrides =
       },
       async (params) => {
         try {
-          return asToolResult(await tool.handler(session, params));
+          return asToolResult(await handler(session, params));
         } catch (err) {
           return asToolError(err);
         }

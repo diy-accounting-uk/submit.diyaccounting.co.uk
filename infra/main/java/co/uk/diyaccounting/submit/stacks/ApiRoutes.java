@@ -85,8 +85,10 @@ final class ApiRoutes {
                 .build();
 
         // A books-client-scoped audience: a books token must never be accepted on the VAT or
-        // Companies House routes, and vice versa. The MCP client reaches the cloud book routes too.
-        var cloudBookAudience = new ArrayList<String>(List.of(booksUserPoolClientId));
+        // Companies House routes. The MCP client reaches the cloud book routes too, and so does the
+        // Submit web client for the records page; the routes authorise by sub, so either reaches
+        // the same person's DIYA-GL books only.
+        var cloudBookAudience = new ArrayList<String>(List.of(booksUserPoolClientId, userPoolClientId));
         if (mcpClientSet) cloudBookAudience.add(mcpUserPoolClientId);
         this.booksJwtAuthorizer = HttpJwtAuthorizer.Builder.create(idPrefix + "-BooksCognitoAuthorizer", issuer)
                 .jwtAudience(cloudBookAudience)

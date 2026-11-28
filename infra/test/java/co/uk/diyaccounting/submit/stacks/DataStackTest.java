@@ -620,6 +620,31 @@ class DataStackTest {
     }
 
     @Test
+    void diyaGlBucketEmptiesItsDownloadsAfterADay() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().data.diyaGlBucketName;
+
+        template.hasResourceProperties(
+                "AWS::S3::Bucket",
+                Map.of(
+                        "BucketName",
+                        expectedDiyaGlBucketName,
+                        "LifecycleConfiguration",
+                        Match.objectLike(Map.of(
+                                "Rules",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Id",
+                                        "expire-downloads",
+                                        "Prefix",
+                                        "downloads/",
+                                        "Status",
+                                        "Enabled",
+                                        "ExpirationInDays",
+                                        1))))))));
+    }
+
+    @Test
     void diyaGlBucketIsVersionedEncryptedAndDestroyable() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);

@@ -2445,6 +2445,7 @@ async function handleCompanySubmit(event) {
     renderDraftPanel();
     window.booksImport.showFilingsFor(company.companyNumber, agentClient?.clientId);
     await offerLastYear();
+    window.booksImport.applyPendingHandoff();
   } catch (error) {
     console.error("Failed to look up the company:", error);
     window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");

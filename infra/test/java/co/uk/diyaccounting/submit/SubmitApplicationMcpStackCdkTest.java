@@ -30,7 +30,7 @@ class SubmitApplicationMcpStackCdkTest extends SubmitApplicationCdkTestEnvironme
         // No COGNITO_MCP_CLIENT_ID is set by the class-level environment variables above, and
         // mcpUserPoolClientId is blank in cdk.json, so this must synth without throwing (unlike
         // the DIYA-GL client id above) and the books authoriser's audience must carry only the
-        // DIYA-GL client id, with no blank entry added for the unset MCP one.
+        // DIYA-GL and Submit web client ids, with no blank entry added for the unset MCP one.
         var submitApplication = new SubmitApplication(app, appProps);
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
 
@@ -38,7 +38,9 @@ class SubmitApplicationMcpStackCdkTest extends SubmitApplicationCdkTestEnvironme
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
                         "JwtConfiguration",
-                        Match.objectLike(Map.of("Audience", List.of("tt-witheight-cognito-books-client-id"))))));
+                        Match.objectLike(Map.of(
+                                "Audience",
+                                List.of("tt-witheight-cognito-books-client-id", "tt-witheight-cognito-client-id"))))));
     }
 
     @Test
@@ -60,6 +62,7 @@ class SubmitApplicationMcpStackCdkTest extends SubmitApplicationCdkTestEnvironme
                                 "Audience",
                                 List.of(
                                         "tt-witheight-cognito-books-client-id",
+                                        "tt-witheight-cognito-client-id",
                                         "tt-witheight-cognito-mcp-client-id"))))));
     }
 

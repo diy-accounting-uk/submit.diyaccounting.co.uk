@@ -377,6 +377,29 @@ describe("mcpHttp ingestHandler", () => {
     expect(mockUpdateMcpSessionCloud).toHaveBeenCalledWith("s-3", { bookId: "book-1", clientId: null, etag: "e2" });
   });
 
+  it("writes back the etag a tool call's save gave the open book, so the next call reopens the saved version", async () => {
+    mockGetMcpSession.mockResolvedValue({
+      sessionId: "s-7",
+      hashedSub: OWN_HASH(),
+      cloud: { bookId: "book-1", clientId: null, etag: "e1" },
+    });
+    mockRestoreCloudBook.mockImplementation(async (session, pointer) => {
+      session.book = { name: "book" };
+      session.lines = [];
+      session.cloud = { ...pointer };
+    });
+    mockHandleMcpRequest.mockImplementationOnce(async (_request, { session }) => {
+      session.cloud = { bookId: "book-1", clientId: null, etag: "e-saved" };
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 2, result: {} }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    await ingestHandler(mcpEvent({ headers: { "mcp-session-id": "s-7" }, body: TOOLS_CALL }));
+    expect(mockUpdateMcpSessionCloud).toHaveBeenCalledWith("s-7", { bookId: "book-1", clientId: null, etag: "e-saved" });
+    expect(mockPutMcpUserBook).toHaveBeenCalledWith(OWN_HASH(), { bookId: "book-1", clientId: null, etag: "e-saved" });
+  });
+
   it("hands the stored HMRC grant to the tools and leaves it alone when no tool changed it", async () => {
     const hmrcGrant = { grantId: "11111111-2222-4333-8444-555555555555", hmrcAccount: "live" };
     mockGetMcpSession.mockResolvedValue({ sessionId: "s-5", hashedSub: OWN_HASH(), cloud: null, hmrcGrant });

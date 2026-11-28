@@ -6,8 +6,10 @@
 // derive_itsa_annual_submission and derive_company_tax_return answer without
 // writing a file, and run_for_clients cannot run the book tools. The tools
 // left out are the sign-in pair (the connector owns sign-in) and the filesystem
-// tools. The practice tools (invite_client, client_authorisation_status,
-// run_for_clients) read the session's HMRC grant and take no token argument.
+// tools. The DIYA-GL book's write tools (hosted-write-tools.js) save each change
+// to the person's account, because the hosted server keeps no book between calls.
+// The practice tools (invite_client, client_authorisation_status, run_for_clients)
+// read the session's HMRC grant and take no token argument.
 
 import { z } from "zod";
 
@@ -17,6 +19,8 @@ import { deriveItsaAnnualSubmission } from "./itsa-tools.js";
 import { CHANGES_OUTSIDE, READS } from "./tool-annotations.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { VAT_FILING_SENTENCE } from "./handoff-tools.js";
+import { HOSTED_WRITE_OVERRIDES } from "./hosted-write-tools.js";
+import { HOSTED_REGISTER_BOOK_OVERRIDES } from "./hosted-register-book.js";
 
 // The book tools read and write the server's filesystem, which a hosted caller never reaches.
 const HOSTED_RUN_FOR_CLIENTS_TOOLS = RUN_FOR_CLIENTS_TOOLS.filter((tool) => tool !== "open_book" && tool !== "save_book");
@@ -61,6 +65,25 @@ export const HOSTED_TOOL_NAMES = [
   "invite_client",
   "client_authorisation_status",
   "run_for_clients",
+  "report",
+  "trial_balance",
+  "checks",
+  "lines",
+  "chart",
+  "book",
+  "look_up_rule",
+  "prepare_micro_entity_accounts",
+  "prepare_small_company_accounts",
+  "prepare_company_tax_return",
+  "edit_lines",
+  "new_book",
+  "roll_forward",
+  "undo_book_change",
+  "extract_book",
+  "save_workbook",
+  "new_book_from_register",
+  "find_help",
+  "book_format",
 ];
 
 // Prod offers the DIYA-GL book tools, the VAT, accounts and Company Tax Return derivations, the link that
@@ -188,4 +211,6 @@ export const HOSTED_OVERRIDES = {
     inputSchema: {},
     handler: (session) => deriveCompanyTaxReturn(session, {}),
   },
+  ...HOSTED_WRITE_OVERRIDES,
+  ...HOSTED_REGISTER_BOOK_OVERRIDES,
 };

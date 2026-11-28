@@ -11,13 +11,14 @@ const LANDLORD_DIRECTORY = path.join(process.cwd(), "mcp/test/fixtures/landlord-
 const bundleUrl = pathToFileURL(path.join(process.cwd(), "web/public/lib/books-bundle.js")).href;
 
 describe("books-bundle.js", () => {
-  it("exposes the book reader, the register book builder, the book writers, the five filing derivations, the CT600 figures and long period model and the two accounts derivations", async () => {
+  it("exposes the book reader, the register book builder, the book writers and the report builder, the five filing derivations, the CT600 figures and long period model and the two accounts derivations", async () => {
     const bundle = await import(bundleUrl);
     expect(Object.keys(bundle).sort()).toEqual([
       "RegisterBookError",
       "accountingPeriodsOf",
       "annualInvestmentAllowanceMaximum",
       "buildBookFromRegister",
+      "buildFileReportDocument",
       "canonicalBookToml",
       "canonicalLinesJsonl",
       "ct600FiguresFromBook",
@@ -31,6 +32,7 @@ describe("books-bundle.js", () => {
       "ltdTaxData",
       "mapIxbrlAccounts",
       "microEntityAccountsFromBook",
+      "productModule",
       "readBookSource",
       "readBookSources",
       "section455RateChangeDate",
@@ -39,6 +41,7 @@ describe("books-bundle.js", () => {
       "stampBook",
       "validateCt600Figures",
       "writeBookJson",
+      "writeDiyaGlZip",
     ]);
     for (const name of Object.keys(bundle)) {
       expect(typeof bundle[name]).toBe("function");

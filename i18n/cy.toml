@@ -28873,6 +28873,130 @@ cy = '''Treth Gorfforaeth sy’n daladwy'''
 hash = "2d7d9e94b9ed"
 cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
 
+[strings."widget.books-handoff-company"]
+hash = "541f9e0446ec"
+cy = '''Chwiliwch am y cwmni a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.'''
+# == The records page: uploads and downloads of the account's DIYA-GL books, ids records.* ==
+[strings."records.title"]
+hash = "071401ed295a"
+cy = '''Eich cofnodion - DIY Accounting Submit'''
+
+[strings."records.your-records-bc8f04"]
+hash = "bc8f04d755fd"
+cy = '''Eich cofnodion'''
+
+[strings."records.the-diya-gl-books-saved-in-2da17e"]
+hash = "2da17e95323a"
+cy = '''Y llyfrau DIYA-GL sydd wedi’u cadw yn eich cyfrif'''
+
+[strings."records.upload-a-spreadsheet-51b5ad"]
+hash = "51b5ad98b88d"
+cy = '''Uwchlwytho taenlen'''
+
+[strings."records.choose-a-diy-accounting-spreadsheet-a-d3852e"]
+hash = "d3852e31e36e"
+cy = '''Dewiswch daenlen DIY Accounting, zip pecyn, zip DIYA-GL neu lyfr DIYA-GL fel JSON. Llyfr DIYA-GL yw llinellau gwerthiannau, prynu a banc un busnes am flwyddyn. Caiff y ffeil ei darllen yn y porwr hwn, a dim ond y llyfr DIYA-GL a wneir ohoni sy’n cael ei gadw yn eich cyfrif.'''
+
+[strings."records.file-to-upload-ce2925"]
+hash = "ce2925d1572c"
+cy = '''Ffeil i’w huwchlwytho'''
+
+[strings."records.your-diya-gl-books-d378b8"]
+hash = "d378b80ed094"
+cy = '''Eich llyfrau DIYA-GL'''
+
+[strings."records.each-change-to-a-diya-gl-51b873"]
+hash = "51b873fe75c9"
+cy = '''Caiff pob newid i lyfr DIYA-GL ei gadw fel fersiwn, gyda’r hyn a’i gwnaeth. Lawrlwythwch unrhyw lyfr DIYA-GL fel gweithlyfr, zip pecyn, zip DIYA-GL neu lyfr DIYA-GL fel JSON.'''
+
+[strings."records.sign-in-to-see-your-records-62953e"]
+hash = "62953ec87275"
+cy = '''Mewngofnodwch i weld eich cofnodion'''
+
+[strings."records.your-diya-gl-books-are-kept-9b2ca1"]
+hash = "9b2ca104d37e"
+cy = '''Caiff eich llyfrau DIYA-GL eu cadw gyda’ch cyfrif. Mewngofnodwch i’w huwchlwytho, eu lawrlwytho neu edrych arnynt.'''
+
+[strings."records.change-edit"]
+hash = "b4a458ae826c"
+cy = '''{count} newid i linellau gan gynorthwyydd'''
+
+[strings."records.change-undo"]
+hash = "259a991dcc14"
+cy = '''Dadwneud, yn ôl i fersiwn {version}'''
+
+[strings."records.change-new"]
+hash = "f9aa580edb16"
+cy = '''Wedi’i ddechrau gan gynorthwyydd'''
+
+[strings."records.change-register"]
+hash = "8bbf9d81bc3a"
+cy = '''Wedi’i ddechrau o gofrestr Tŷ’r Cwmnïau gan gynorthwyydd'''
+
+[strings."records.change-roll"]
+hash = "33708257181b"
+cy = '''Y flwyddyn nesaf wedi’i dechrau gan gynorthwyydd'''
+
+[strings."records.change-import"]
+hash = "ba054617e7a4"
+cy = '''Wedi’i uwchlwytho ar y dudalen hon'''
+
+[strings."records.change-saved"]
+hash = "b5c120b316c2"
+cy = '''Wedi’i gadw'''
+
+[strings."records.upload-no-product"]
+hash = "09d025ec7904"
+cy = '''Nid oes llyfr DIYA-GL yn y ffeil hon y mae’r wefan hon yn ei ddarllen.'''
+
+[strings."records.upload-reading"]
+hash = "509f41761c1d"
+cy = '''Yn darllen {name}...'''
+
+[strings."records.upload-saved"]
+hash = "990691d1c8b3"
+cy = '''Wedi cadw {title} fel llyfr DIYA-GL newydd gyda {count} o linellau.'''
+
+[strings."records.upload-failed"]
+hash = "18a1e1f9bfbf"
+cy = '''Ni chafodd y ffeil ei chadw: {reason}'''
+
+[strings."records.download-xlsx"]
+hash = "26b91175df9d"
+cy = '''Gweithlyfr'''
+
+[strings."records.download-zip"]
+hash = "ed6cca048781"
+cy = '''Zip pecyn'''
+
+[strings."records.download-diya-gl-zip"]
+hash = "ad7b0b0ab21d"
+cy = '''Zip DIYA-GL'''
+
+[strings."records.download-json"]
+hash = "0e30892a0094"
+cy = '''Llyfr DIYA-GL fel JSON'''
+
+[strings."records.book-period"]
+hash = "fd693c1602e8"
+cy = '''{start} i {end}, fersiwn {version}'''
+
+[strings."records.download-failed"]
+hash = "76f1ba24aaeb"
+cy = '''Ni ddechreuodd y lawrlwythiad: {reason}'''
+
+[strings."records.no-books"]
+hash = "79828dd17c58"
+cy = '''Nid oes llyfr DIYA-GL wedi’i gadw yn eich cyfrif eto.'''
+
+[strings."records.download-starting"]
+hash = "1538ce288d9e"
+cy = '''Mae eich lawrlwythiad yn dechrau.'''
+
+[strings."records.list-failed"]
+hash = "5c8f7e50bb9e"
+cy = '''Nid oedd modd rhestru eich llyfrau DIYA-GL: {reason}'''
+
 # == The VAT return's pass check before the obligations read and the submit, ids vat-submit.*pass* ==
 [strings."vat-submit.pass-needed-title"]
 hash = "a350c1774519"

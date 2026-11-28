@@ -30,6 +30,7 @@ import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -63,6 +64,10 @@ public class DiyaGlStack extends Stack {
     public AbstractApiLambdaProps diyaGlDeleteLambdaProps;
     public Function diyaGlDeleteLambda;
     public ILogGroup diyaGlDeleteLambdaLogGroup;
+
+    public AbstractApiLambdaProps diyaGlDownloadGetLambdaProps;
+    public Function diyaGlDownloadGetLambda;
+    public ILogGroup diyaGlDownloadGetLambdaLogGroup;
 
     public AbstractApiLambdaProps practiceClientBookMovePostLambdaProps;
     public Function practiceClientBookMovePostLambda;
@@ -359,6 +364,58 @@ public class DiyaGlStack extends Stack {
                 this.diyaGlDeleteLambda.getNode().getId());
 
         // ============================================================================
+        // DIYA-GL Download GET Lambda (books JWT auth): builds a workbook, a package zip or JSON from
+        // a stored version under downloads/ and answers a short-lived link to it. A company's
+        // package of workbooks takes seconds to compose, so it gets more memory and time.
+        // ============================================================================
+        var diyaGlDownloadGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().diyaGl.diyaGlDownloadGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().diyaGl.diyaGlDownloadGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().diyaGl.diyaGlDownloadGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().diyaGl.diyaGlDownloadGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().diyaGl.diyaGlDownloadGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().diyaGl.diyaGlDownloadGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().diyaGl.diyaGlDownloadGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().diyaGl.diyaGlDownloadGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().diyaGl.diyaGlDownloadGetLambdaCustomAuthorizer)
+                        .booksJwtAuthorizer(true)
+                        .optionsPreflightRoute(true)
+                        .ingestMemorySize(2048)
+                        .ingestLambdaTimeout(Duration.seconds(60))
+                        .environment(commonEnv)
+                        .build());
+        this.diyaGlDownloadGetLambdaProps = diyaGlDownloadGetApiLambda.apiProps;
+        this.diyaGlDownloadGetLambda = diyaGlDownloadGetApiLambda.ingestLambda;
+        this.diyaGlDownloadGetLambdaLogGroup = diyaGlDownloadGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.diyaGlDownloadGetLambdaProps);
+        this.diyaGlDownloadGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(booksObjectsArnPattern))
+                .build());
+        this.diyaGlDownloadGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject", "s3:PutObject"))
+                .resources(List.of(diyaGlBucketArn + "/downloads/*"))
+                .build());
+        practiceClientsTable.grant(this.diyaGlDownloadGetLambda, "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.diyaGlDownloadGetLambda, region, account, props.envName());
+        // The response helper warms the operator list on every API call
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.diyaGlDownloadGetLambda, region, account, props.envName());
+        grantAppClientIdParameterAccess(this.diyaGlDownloadGetLambda, region, account, props.envName());
+        infof(
+                "Created DIYA-GL Download GET Lambda %s",
+                this.diyaGlDownloadGetLambda.getNode().getId());
+
+        // ============================================================================
         // Practice client book move POST Lambda (standard JWT auth, not the books authoriser -
         // the caller is always the signed-in practice, never a client)
         // ============================================================================
@@ -415,6 +472,7 @@ public class DiyaGlStack extends Stack {
                 diyaGlVersionGetApiLambda,
                 diyaGlPutApiLambda,
                 diyaGlDeleteApiLambda,
+                diyaGlDownloadGetApiLambda,
                 practiceClientBookMovePostApiLambda));
 
         Lambda.appStackHealthAlarm(this, props.envName(), props.resourceNamePrefix(), "diya-gl", healthCheckedLambdas);
@@ -423,6 +481,7 @@ public class DiyaGlStack extends Stack {
         cfnOutput(this, "DiyaGlVersionGetLambdaArn", this.diyaGlVersionGetLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlPutLambdaArn", this.diyaGlPutLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlDeleteLambdaArn", this.diyaGlDeleteLambda.getFunctionArn());
+        cfnOutput(this, "DiyaGlDownloadGetLambdaArn", this.diyaGlDownloadGetLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlApiBaseUrl", props.sharedNames().publicBaseUrl + "api/v1/diya-gl");
 
         infof(

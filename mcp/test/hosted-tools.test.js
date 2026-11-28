@@ -8,31 +8,39 @@ import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, REVIEWER_GROUP, hostedInstructions
 import { VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
 import { handleMcpRequest } from "../lib/http.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
+import { BOOK_READ_TOOLS } from "../lib/book-read-tools.js";
+import { HOSTED_WRITE_TOOL_NAMES } from "../lib/hosted-write-tools.js";
+import { HOSTED_REGISTER_BOOK_OVERRIDES } from "../lib/hosted-register-book.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
 const NOT_HOSTED = ["sign_in", "sign_out", "save_book", "write_finance_package"];
 
 describe("the hosted tool set", () => {
-  it("names only registered tools, and leaves out exactly the tools that cannot run hosted", () => {
-    const all = Object.keys({ ...TOOLS, ...ITSA_TOOLS });
-    for (const name of HOSTED_TOOL_NAMES) expect(all).toContain(name);
+  it("names only registered tools and the hosted-only write tools, and leaves out exactly the tools that cannot run hosted", () => {
+    const all = Object.keys({ ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS });
+    for (const name of HOSTED_TOOL_NAMES)
+      expect([...all, ...HOSTED_WRITE_TOOL_NAMES, ...Object.keys(HOSTED_REGISTER_BOOK_OVERRIDES)]).toContain(name);
     expect(all.filter((name) => !HOSTED_TOOL_NAMES.includes(name)).sort()).toEqual([...NOT_HOSTED].sort());
   });
 
-  it("overrides open_book, run_for_clients and the two derivations that write a file locally only", () => {
-    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual([
-      "derive_company_tax_return",
-      "derive_itsa_annual_submission",
-      "open_book",
-      "run_for_clients",
-    ]);
+  it("overrides open_book, run_for_clients, the two derivations that write a file locally only, and adds the write tools", () => {
+    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual(
+      [
+        "derive_company_tax_return",
+        "derive_itsa_annual_submission",
+        "open_book",
+        "run_for_clients",
+        ...HOSTED_WRITE_TOOL_NAMES,
+        ...Object.keys(HOSTED_REGISTER_BOOK_OVERRIDES),
+      ].sort(),
+    );
     expect(Object.keys(HOSTED_OVERRIDES.derive_company_tax_return.inputSchema)).toEqual([]);
     expect(Object.keys(HOSTED_OVERRIDES.open_book.inputSchema)).toEqual(["bookId", "clientId"]);
     expect(Object.keys(HOSTED_OVERRIDES.derive_itsa_annual_submission.inputSchema)).toEqual(["taxYear"]);
   });
 
   it("gives every registered tool a title and all three hints, with the filing tools destructive and open-world", () => {
-    const tables = { ...TOOLS, ...ITSA_TOOLS, ...HOSTED_OVERRIDES };
+    const tables = { ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS, ...HOSTED_OVERRIDES };
     for (const [name, tool] of Object.entries(tables)) {
       expect(tool.title, name).toMatch(/\S/);
       expect(Object.keys(tool.annotations ?? {}).sort(), name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
@@ -112,6 +120,17 @@ describe("the hosted tool set", () => {
     expect(() => createServer(createSession(), { toolNames: ["no_such_tool"] })).toThrow(/Unknown tool/);
   });
 
+  it("offers the accounts and Company Tax Return links outside prod, and not in prod's tool set", () => {
+    const links = ["prepare_micro_entity_accounts", "prepare_small_company_accounts", "prepare_company_tax_return"];
+    for (const name of links) {
+      expect(HOSTED_TOOL_NAMES).toContain(name);
+      expect(hostedToolNames("ci")).toContain(name);
+      expect(hostedToolNames("prod")).not.toContain(name);
+      expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain(name);
+    }
+    for (const name of links) expect(hostedInstructions("prod")).not.toContain(name);
+  });
+
   it("offers every hosted tool outside prod", () => {
     for (const environmentName of ["ci", "simulator", "proxy", undefined]) {
       expect(hostedToolNames(environmentName)).toEqual(HOSTED_TOOL_NAMES);
@@ -140,6 +159,42 @@ describe("the hosted tool set", () => {
     ).toEqual([]);
     const server = createServer(createSession(), { toolNames: prodNames, overrides: HOSTED_OVERRIDES });
     expect(Object.keys(server._registeredTools).sort()).toEqual([...prodNames].sort());
+  });
+
+  it("keeps prod's tool set to the eleven tools prod serves, with look_up_rule outside it", () => {
+    expect([...hostedToolNames("prod")].sort()).toEqual([
+      "company_filing_deadlines",
+      "derive_company_tax_return",
+      "derive_micro_entity_accounts",
+      "derive_small_company_accounts",
+      "derive_vat_return",
+      "get_vat_receipt",
+      "list_accounts_receipts",
+      "list_books",
+      "list_vat_receipts",
+      "open_book",
+      "prepare_vat_return",
+    ]);
+    expect(HOSTED_TOOL_NAMES).toContain("look_up_rule");
+  });
+
+  it("offers find_help and book_format outside prod and keeps prod's eleven tools as they are", () => {
+    expect(hostedToolNames("ci")).toEqual(expect.arrayContaining(["find_help", "book_format"]));
+    expect(hostedToolNames("prod")).toEqual([
+      "list_books",
+      "open_book",
+      "derive_vat_return",
+      "prepare_vat_return",
+      "get_vat_receipt",
+      "list_vat_receipts",
+      "company_filing_deadlines",
+      "derive_micro_entity_accounts",
+      "derive_small_company_accounts",
+      "derive_company_tax_return",
+      "list_accounts_receipts",
+    ]);
+    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("find_help");
+    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("book_format");
   });
 
   it("gives a caller in the reviewer group prod's tool set in every environment", () => {
@@ -228,7 +283,7 @@ describe("the hosted tool set", () => {
 
 describe("every tool's title and description", () => {
   it("names a saved file a DIYA-GL book and the place it is saved the DIY Accounting Submit account", () => {
-    for (const [name, tool] of [...Object.entries(TOOLS), ...Object.entries(HOSTED_OVERRIDES)]) {
+    for (const [name, tool] of [...Object.entries(TOOLS), ...Object.entries(BOOK_READ_TOOLS), ...Object.entries(HOSTED_OVERRIDES)]) {
       const text = `${tool.title} ${tool.description}`;
       expect(text, name).not.toMatch(/DIYA cloud/);
       expect(text, name).not.toMatch(/diya-gl book/);
