@@ -234,6 +234,8 @@ window.WELSH_TEXT = {
     "Mae cyfranddaliadau o’r un dosbarth pan fo’r hawliau sydd ynghlwm wrthynt yr un fath ym mhob ffordd.",
   "ch.accounts.file-failed": "Methwyd â ffeilio’r cyfrifon gyda Thŷ’r Cwmnïau.",
   "ch.accounts.gateway-accepted": "Derbyniodd y porth gyflwyniad {number} am {time}. Wrthi’n aros am Dŷ’r Cwmnïau...",
+  "ch.accounts.no-tokens":
+    "Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.",
   "ch.accounts.not-applicable": "Ddim yn berthnasol",
   "ch.accounts.not-confirmed": "Cyflwynwyd eich cyfrifon. Nid yw Tŷ’r Cwmnïau wedi cadarnhau’r canlyniad eto.",
   "ch.accounts.not-finished": "Mae’r cyfrifon gan Dŷ’r Cwmnïau ac nid yw wedi gorffen eu gwirio.",

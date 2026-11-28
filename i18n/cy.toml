@@ -29429,3 +29429,8 @@ cy = '''nodiadau SA103F'''
 [strings."itsa.field-source-se-package"]
 hash = "45cdcbe97fa4"
 cy = '''Llyfr gwaith pecyn Hunangyflogedig.'''
+
+# == The accounts pages' status line when no token is left, id ch.accounts.no-tokens ==
+[strings."ch.accounts.no-tokens"]
+hash = "39319b90b3d0"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''

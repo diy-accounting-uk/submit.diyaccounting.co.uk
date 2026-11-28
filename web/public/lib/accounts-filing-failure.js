@@ -32,6 +32,17 @@ export function accountsSentText(stage) {
 }
 
 /**
+ * The status line for a filing refused because the account has no token left, in the page's language.
+ * @returns {string}
+ */
+export function noTokensText() {
+  return siteText(
+    "ch.accounts.no-tokens",
+    "No tokens remaining. Your token allowance has been used, so nothing was sent to Companies House. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
+  );
+}
+
+/**
  * Show the panel for a failed preview or filing of the accounts, in place of an earlier one.
  * @param {Document} doc
  * @param {object} error - the client's error for the answer

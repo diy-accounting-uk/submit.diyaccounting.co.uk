@@ -880,7 +880,9 @@ async function handleSubmitFiling() {
     if (tokensExhausted) hideStatus();
     const { registerRefusalOfError } = await import("../lib/accounts-revision-register.js");
     showStatus(
-      registerRefusalOfError(error) || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
+      tokensExhausted
+        ? accountsFailure.noTokensText()
+        : registerRefusalOfError(error) || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
       "error",
     );
     accountsFailure.showAccountsFailure(document, error, accountsFailure.ACCOUNTS_FAILURE_STAGES.filing);
