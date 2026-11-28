@@ -414,8 +414,8 @@ The `fast-deploy` skill says when to use this and how to hand back to the pipeli
 For rapid iteration on `./app` code or `./web/public` assets without full CDK deploy (~15-25 min), use the lean deploy script which directly updates Lambda images and S3 assets (~3-5 min):
 
 ```bash
-# Select the SSO profile first (aws sso login --sso-session diyaccounting)
-. ./scripts/aws-use-submit-profile.sh
+# Select the environment's SSO profile first (aws sso login --sso-session diyaccounting)
+. ./scripts/aws-use-submit-profile.sh ci   # prod before npm run deploy:app-prod
 
 # Full lean deploy to last-known-good CI deployment
 npm run deploy:app-ci
@@ -584,9 +584,11 @@ export AWS_PROFILE=diya-submit-ci
 npm run test:enableCognitoNative
 ```
 
-**Management-account profile** (`diya-management`, account 887764105431):
-- `. ./scripts/aws-use-submit-profile.sh` — exports `AWS_PROFILE=diya-management` and the region into the current shell
+**Submit environment profile**:
+- `. ./scripts/aws-use-submit-profile.sh ci` (or `prod`) — exports `AWS_PROFILE=diya-submit-ci` (account 367191799875) or `diya-submit-prod` (account 972912397388) and the region into the current shell; with no argument or another value it prints its usage and changes nothing
 - Combine it with the aws command in a single Bash call (env vars don't persist between calls)
+
+**Management-account profile** (`diya-management`, account 887764105431): Route53 only, by `--profile` on each command, e.g. `aws --profile diya-management route53 list-hosted-zones`
 
 **Stack naming patterns:**
 - Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)

@@ -14,7 +14,7 @@
 //          node scripts/generate-pass.js                  (defaults: day-guest-test-pass, ci)
 //
 // Prerequisites: AWS SSO profile must be selected first:
-//   . ./scripts/aws-use-submit-profile.sh
+//   . ./scripts/aws-use-submit-profile.sh ci (prod for a prod pass)
 //
 // Pass types (from submit.passes.toml):
 //   day-guest-test-pass    - Day guest synthetic access (1 day, 1 use, testPass: true)
@@ -116,7 +116,7 @@ Options:
   --help, -h              Show this help
 
 Prerequisites:
-  . ./scripts/aws-use-submit-profile.sh`);
+  . ./scripts/aws-use-submit-profile.sh ci (prod for a prod pass)`);
 }
 
 async function main() {
@@ -125,7 +125,7 @@ async function main() {
   // Check AWS credentials
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
     console.error("ERROR: No AWS credentials found.");
-    console.error("Run: . ./scripts/aws-use-submit-profile.sh");
+    console.error(`Run: . ./scripts/aws-use-submit-profile.sh ${args.environment === "prod" ? "prod" : "ci"}`);
     process.exit(1);
   }
 
