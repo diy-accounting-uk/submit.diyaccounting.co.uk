@@ -91,7 +91,9 @@ export async function serveHmrcWrite(page) {
     route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `const stubbed = Object.fromEntries(Object.entries(window).filter(([, value]) => typeof value === "function"));
+      body: `const stubbed = Object.fromEntries(
+  Object.entries(window).filter(([, value]) => typeof value === "function" && !value.hmrcWriteStandIn),
+);
 await import("./lib/services/hmrc-service.js");
 Object.assign(window, stubbed);`,
     }),
@@ -215,14 +217,16 @@ export async function servePageScripts(page) {
 // The real page script of an ITSA page whose other scripts are stubbed out.
 // A page whose hmrc-service.js these tests serve empty still sends its writes: the HMRC write helper
 // stands in as a pass-through, and a refused write throws an error carrying the status and reason.
+// Each stand-in is marked, so serveHmrcWrite, which serves the real helper, does not put it back.
 async function standInForHmrcWriteHelper(page) {
   await page.addInitScript(() => {
-    window.fileWithHmrc = window.fileWithHmrc || ((words, send) => send());
-    window.hmrcWritePollOptions = window.hmrcWritePollOptions || (() => ({}));
-    window.hmrcWaitingMessage = window.hmrcWaitingMessage || (() => "Waiting for HMRC's answer...");
+    const standIn = (fn) => Object.assign(fn, { hmrcWriteStandIn: true });
+    window.fileWithHmrc = window.fileWithHmrc || standIn((words, send) => send());
+    window.hmrcWritePollOptions = window.hmrcWritePollOptions || standIn(() => ({}));
+    window.hmrcWaitingMessage = window.hmrcWaitingMessage || standIn(() => "Waiting for HMRC's answer...");
     window.hmrcRequestFailure =
       window.hmrcRequestFailure ||
-      ((message, response, body) => Object.assign(new Error(message), { status: response.status, reason: body?.reason, body }));
+      standIn((message, response, body) => Object.assign(new Error(message), { status: response.status, reason: body?.reason, body }));
   });
 }
 
