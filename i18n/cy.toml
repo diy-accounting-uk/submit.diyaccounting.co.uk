@@ -29434,12 +29434,12 @@ cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnydd
 
 # == The Company Tax Return page's status line when no token is left, ids ch.ct.no-tokens-* ==
 [strings."ch.ct.no-tokens-none"]
-hash = "32a30045f88d"
-cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau na CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+hash = "397cc85c2bb5"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at Dŷ’r Cwmnïau. Ni anfonwyd dim at CThEF chwaith. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
 
 [strings."ch.ct.no-tokens-hmrc"]
-hash = "86530e47f953"
-cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd y Ffurflen Dreth at CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
+hash = "3768cf85b53d"
+cy = '''Dim credydau (tokens) ar ôl. Mae eich lwfans credydau wedi’i ddefnyddio, felly ni anfonwyd dim at CThEF. Mae credydau’n adnewyddu ar ddechrau’r cyfnod nesaf. Ewch i’r dudalen Bundles am fwy o ddewisiadau.'''
 
 # == The VAT return's pass check before the obligations read and the submit, ids vat-submit.*pass* ==
 [strings."vat-submit.pass-needed-title"]

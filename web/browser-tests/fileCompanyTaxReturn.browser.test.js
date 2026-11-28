@@ -584,7 +584,7 @@ test.describe("File Company Tax Return entry form", () => {
     });
   });
 
-  test("the Welsh page says in Welsh that no token is left and the return was not sent to HMRC", async ({ page }) => {
+  test("the Welsh page says in Welsh that no token is left and nothing was sent to HMRC", async ({ page }) => {
     const submission = {
       requests: [],
       status: 403,
@@ -612,7 +612,7 @@ test.describe("File Company Tax Return entry form", () => {
 
     const status = page.locator("#statusMessagesContainer .status-error");
     await expect(status).toContainText("Dim credydau (tokens) ar ôl.", { timeout: 30_000 });
-    await expect(status).toContainText("ni anfonwyd y Ffurflen Dreth at CThEF");
+    await expect(status).toContainText("ni anfonwyd dim at CThEF");
     await expect(status).not.toContainText("No tokens remaining");
   });
 

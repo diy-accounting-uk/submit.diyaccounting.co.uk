@@ -3206,13 +3206,13 @@ function noTokensSentence(error) {
     return sending.mode === "both"
       ? siteText(
           "ch.ct.no-tokens-none",
-          "No tokens remaining. Your token allowance has been used, so nothing was sent to Companies House or HMRC. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
+          "No tokens remaining. Your token allowance has been used, so nothing was sent to Companies House. Nothing was sent to HMRC either. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
         )
       : noTokensText();
   }
   return siteText(
     "ch.ct.no-tokens-hmrc",
-    "No tokens remaining. Your token allowance has been used, so the return was not sent to HMRC. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
+    "No tokens remaining. Your token allowance has been used, so nothing was sent to HMRC. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
   );
 }
 
