@@ -15,6 +15,8 @@
 
 (operator, 2026-11-26: the rows of `PLAN_FILING_FEE_PROTECTION.md` join this set too.)
 
+(operator, 2026-11-28: `PLAN_DIYA_GL_DISTRIBUTION.md` is archived to `../private.diyaccounting.co.uk/engineering/submit/archive/`, so its DIST rows and the spreadsheets waves leave this set.)
+
 ## Status
 
 defined 2026-11-25; its rows are off `NEXT.md`, and both plans have passed `/plan-review-loop`. Bramble starts only when the operator asks for it; comet's merge does not start it (operator, 2026-11-27). On that request its rows go on the board and wave 1 branches from `origin/main`.
@@ -28,13 +30,10 @@ Use what is paid for (the laptop, the subscriptions, the cloud workers) and spen
 - **submit, 18 rows**: CR4, CR5, CR6, CR7, CR8, CR9 (`PLAN_COMPANY_REPORTS.md`); CL4, DUE5 to DUE13 (`PLAN_DUE_LIST.md`); AC6, AC7 (`PLAN_AGENT_CREDENTIALS.md`). AC3, AC4, AC5 join waves 3 and 4 when AC2 is approved before wave 3 starts.
 - **submit, VAT payments, 6 rows**: PAY1, PAY2, PAY3, PAY4, PAY5, PAY6 (`PLAN_VAT_PAYMENTS.md`).
 - **submit, filing fee protection, 4 rows**: FFP1, FFP2, FFP3, FFP4 (`PLAN_FILING_FEE_PROTECTION.md`).
-- **spreadsheets, 7 rows**: DIST1, DIST2, DIST3, DIST4, DIST5, DIST6, DIST9 (`PLAN_DIYA_GL_DISTRIBUTION.md`; the code is in `../spreadsheets.diyaccounting.co.uk`).
 - **Beside**: AC1 (the inventory, private repository; not yet written, and AC2 follows it, so AC1 runs in wave 1 for AC3 to AC5 to join), AC2 (the permission set; the operator approves it), GLX1 (design rounds with the operator; `PLAN_DIYA_GL_PRODUCT.md` at the workspace root). OPAY1 (the operator adds Initiate payment to the sandbox application before W5, and to the production application; `PLAN_VAT_PAYMENTS.md`).
 - **Left out, with the test that removed each**:
   - CR14 (test 4, the operator's answer): the reports launch in the next set, after the operator's look on ci.
   - ODUE2 (test 4): the operator tries the due list on this set's ci deploy; DUE14 (the launch) follows it in the next set.
-  - DIST7 (test 1): it needs an npm release that carries `mcpName`, which only the merge of this set makes. DIST8 and DIST13 follow DIST7.
-  - DIST10, DIST11, DIST12 (test 4): the operator's go on the signing costs (about £79 a year for Apple, about £95 a year for Microsoft) and the vendor accounts.
   - AC8, AC10 (test 1): they follow AC5 and AC7 live. AC9 (test 4): the operator's settings file.
   - PAY7 (test 1): the payments launch (privacy text, availability, the prod MCP tool set, the listing text) waits on PAY6 on ci and OPAY1; it goes in the next set, as CR14 and DUE14 do.
   - OCR1 (test 4): the operator posts the licence question.
@@ -88,25 +87,10 @@ The due page chain (DUE6, DUE7, DUE8, DUE9, DUE12) and the email chain (DUE10, D
 
 W1 state: pending.
 
-## Waves (spreadsheets)
-
-| Wave | Batch | Rows in order | Model | Files the batch owns |
-|---|---|---|---|---|
-| W1 | dist1 | DIST1 | Sonnet | `app/bin/view.js`, `app/lib/diya-gl-view-server.js`, `app/test/diya-gl-view.test.js` |
-| W1 | dist4 | DIST4 | Sonnet | `app/bin/check.js`, `diya-gl/bin/diya-gl-check.js`, `diya-gl/bin/diya-gl.js`, `diya-gl/package.json`, `app/test/diya-gl-check.test.js` |
-| W1 | dist6 | DIST6 | Sonnet | `app/bin/diya-gl-mcp.js`, `app/lib/mcp/server.js`, `app/lib/mcp/diya-gl-tools.js`, `app/test/diya-gl-mcp.test.js` |
-| W2 | dist2 | DIST2 | Sonnet | `scripts/build-diya-gl-web-snapshot.mjs`, `.github/workflows/publish-diya-gl.yml`, `app/test/diya-gl-web-snapshot.test.js` |
-| W2 | dist3 | DIST3 | Sonnet | `app/bin/shortcut.js`, `app/lib/desktop-shortcut.js`, `diya-gl/bin/diya-gl-shortcut.js`, `diya-gl/bin/diya-gl.js`, `diya-gl/package.json`, `diya-gl/scripts/engine-closure.mjs` |
-| W3 | dist5 | DIST5 | Sonnet | `diya-gl/Dockerfile`, `diya-gl/image-smoke.sh`, `.github/workflows/publish-diya-gl.yml`, `.github/workflows/test.yml` |
-| W4 | dist9 | DIST9 | Opus | `diya-gl/launcher/`, `scripts/build-desktop.mjs`, `.github/workflows/publish-diya-gl.yml`, `app/test/desktop-launcher.test.js` |
-
-W1 state: pending.
-
 ## Gates
 
 - **Each wave branch** (by the integrator worker, "The integrator" in `.claude/skills/collab-loop/SKILL.md`): the merge checks and gates of `scripts/batch-check.sh` without the docker build, `npm run build:welsh` with the Welsh proof, and the simulator suites the wave touches (`companiesHouse` for the CR rows and CL4, `dueList` from DUE6 on, `auth` and `submitVat` for AC6 and AC7, `getVatLiabilities` and `mcpPrepareVatReturn` for the PAY rows, `fileConfirmationStatement` for FFP2). PAY5 adds `npm ci` and `npm test` in `mcp/`, which the root `npm test` does not run. DUE7 and DUE8 add their proxy-lane journeys on a worker with ci credentials. A wave with a stack change runs `./mvnw clean verify` and names the stack resource totals against 500.
 - **The set branch** (`claude/bramble-set`): every gate split across the idle workers (unit, java, browser, lint, all simulator suites), and the docker build on the laptop.
-- **spreadsheets**: `npm test` (the router) on each wave branch on a spreadsheets worker; the set branch's pre-push hook runs on the laptop, or `SKIP_PUSH_TESTS=1` when the PR's `test.yml` runs the suite.
 
 ## The push
 
@@ -124,11 +108,10 @@ W1 state: pending.
    - FFP1 to FFP4: the Proof in `PLAN_FILING_FEE_PROTECTION.md`. A subscriber within ci's 1-hour cooling-off is refused (`fee-cooling-off`); a pass-only account is refused (`fee-needs-paid-subscription`); a fee paid with another card is refunded (`fee-card-not-subscription`); a second fee is refused (`fee-subscriber-cap`); a test-card dispute and an early fraud warning on the subscription hold the account; the dashboard panel and the operator emails show them. The contest path and the refund at filing are proved by unit tests.
 4. `/auto-merge` with `--merge`; `/watch` over `main`; `deploy-finish.yml` destroys the outgoing prod set.
 5. prod proofs: the deploy is healthy and no new activity is listed (`company-reports` and `due-list` list no `prod`); AC7's `scripts/operator-api.mjs /api/v1/operator/snapshot` returns the prod snapshot with the operator's key.
-6. spreadsheets: its PR merges after submit's; its `test.yml` builds the pages snapshot (DIST2), the multi-arch image (DIST5) and the unsigned desktop apps (DIST9) in build-only mode.
 
 ## After the deploy
 
-- The next set: PAY7 (the payments launch, after PAY6 on ci and OPAY1), CR14 (reports launch), DUE14 (due list launch, after ODUE2, with DUE10's privacy text), DIST7 then DIST8 and DIST13, AC8 and AC10 (after AC5 and AC7 are live), and AC3 to AC5 if AC2 was approved after wave 3 started.
+- The next set: PAY7 (the payments launch, after PAY6 on ci and OPAY1), CR14 (reports launch), DUE14 (due list launch, after ODUE2, with DUE10's privacy text), AC8 and AC10 (after AC5 and AC7 are live), and AC3 to AC5 if AC2 was approved after wave 3 started.
 - AC9 is the operator's: the ask rule in `.claude/settings.json`.
 
 ## When the set branch fails
