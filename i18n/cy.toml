@@ -29037,14 +29037,6 @@ cy = '''Manylion technegol'''
 hash = "6c57439b64bc"
 cy = '''Y cyfnod presennol yw’r un nad yw wedi dod i ben eto; y cyfnod blaenorol yn union yw’r un cyn hwnnw.'''
 
-[strings."chform.aa01-new-date"]
-hash = "bb6667f0297c"
-cy = '''Ni allwch newid cyfnod y mae ei gyfrifon yn hwyr.'''
-
-[strings."chform.aa01-five-years"]
-hash = "6bc735a357c4"
-cy = '''Dim ond pan fydd mewn gweinyddiaeth neu pan fydd ganddo gymeradwyaeth yr Ysgrifennydd Gwladol y caiff cwmni ymestyn fwy nag unwaith mewn pum mlynedd.'''
-
 [strings."chform.sh01-dates"]
 hash = "3dfa8db386d2"
 cy = '''Os clustnodwyd pob cyfran ar un diwrnod, rhowch y diwrnod hwnnw fel yr O ddyddiad. Ar gyfer cyfranddaliadau a glustnodwyd dros gyfnod, rhowch y ddau ddyddiad.'''

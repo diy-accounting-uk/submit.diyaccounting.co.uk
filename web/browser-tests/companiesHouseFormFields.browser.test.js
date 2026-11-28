@@ -78,16 +78,26 @@ for (const [language, prefix, formWord, linkWord] of [
   }
 }
 
-test("a field with its own hint keeps it and adds the form's guidance and link after it", async ({ page }) => {
+test("a legend with its own hint keeps it and adds the form's guidance and link after it", async ({ page }) => {
+  await serveRealSite(page, { signedIn: true });
+  await page.goto(`${SITE_ORIGIN}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
+  const legend = page.locator("fieldset:has(#periodChoices) > legend");
+  await expect(legend).toHaveText("Form AA01, section 2: Accounting period to change");
+  await expect(page.locator("#period-hint")).toHaveText(
+    "The current period and the one before it, as Companies House shows them. The form changes one of these two. The current period is the one that has not yet ended; the immediately previous period is the one before it. Companies House form AA01.",
+  );
+  await expect(page.locator("#period-hint a")).toHaveAttribute(
+    "href",
+    "https://www.gov.uk/government/publications/change-your-company-accounting-reference-date-aa01",
+  );
+});
+
+test("a field with its own hint and no guidance keeps the hint and adds the link after it", async ({ page }) => {
   await serveRealSite(page, { signedIn: true });
   await page.goto(`${SITE_ORIGIN}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
   await expect(page.locator('label[for="newPeriodEnd"]')).toHaveText("Form AA01, section 3: New end date of the period");
   await expect(page.locator("#newPeriodEnd-hint")).toHaveText(
-    "An earlier date shortens the period. A later date extends it. You cannot change a period whose accounts are overdue. Companies House form AA01.",
-  );
-  await expect(page.locator("#newPeriodEnd-hint a")).toHaveAttribute(
-    "href",
-    "https://www.gov.uk/government/publications/change-your-company-accounting-reference-date-aa01",
+    "An earlier date shortens the period. A later date extends it. Companies House form AA01.",
   );
   await expect(page.locator("#newPeriodEnd")).toHaveAttribute("aria-describedby", "newPeriodEnd-hint");
 });
@@ -96,10 +106,21 @@ test("a choice with no hint gets a note after the choice, which its box is descr
   await serveRealSite(page, { signedIn: true });
   await page.goto(`${SITE_ORIGIN}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
   const note = page.locator(".choice:has(#extendedBefore) + #extendedBefore-form-note");
-  await expect(note).toHaveText(
-    "A company may extend more than once in five years only when it is in administration or has the Secretary of State's approval. Companies House form AA01.",
-  );
+  await expect(note).toHaveText("Companies House form AA01.");
   await expect(page.locator("#extendedBefore")).toHaveAttribute("aria-describedby", "extendedBefore-form-note");
+});
+
+test("the rules the quoted guidance states are said once on the page", async ({ page }) => {
+  await serveRealSite(page, { signedIn: true });
+  await page.goto(`${SITE_ORIGIN}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
+  // The page's own refusal for overdue accounts quotes the rule too, and shows only when it applies.
+  const text = await page.evaluate(() => {
+    const main = document.querySelector("main").cloneNode(true);
+    main.querySelector("#accountsOverdue").remove();
+    return main.textContent.replace(/\s+/g, " ");
+  });
+  expect(text.match(/accounts are overdue\./g)).toHaveLength(1);
+  expect(text.match(/more than once in five years/g)).toHaveLength(1);
 });
 
 test("forms that share a section are named together, and a form with another section after them", async ({ page }) => {

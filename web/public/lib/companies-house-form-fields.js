@@ -67,20 +67,8 @@
             "The current period is the one that has not yet ended; the immediately previous period is the one before it.",
           ),
       },
-      {
-        label: "newPeriodEnd",
-        sections: { AA01: "3" },
-        guidance: () => siteText("chform.aa01-new-date", "You cannot change a period whose accounts are overdue."),
-      },
-      {
-        label: "extendedBefore",
-        sections: { AA01: "4" },
-        guidance: () =>
-          siteText(
-            "chform.aa01-five-years",
-            "A company may extend more than once in five years only when it is in administration or has the Secretary of State's approval.",
-          ),
-      },
+      { label: "newPeriodEnd", sections: { AA01: "3" } },
+      { label: "extendedBefore", sections: { AA01: "4" } },
       { label: "fiveYearExtensionReason", sections: { AA01: "4" } },
       { label: "extensionAuthorisedCode", sections: { AA01: "4" } },
     ],

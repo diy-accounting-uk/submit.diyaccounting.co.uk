@@ -2319,9 +2319,6 @@ window.WELSH_TEXT = {
   "ch.watch.remove-company": "Tynnu {number} o’r rhestr wylio",
   "ch.watch.sign-in-to-add": "Mewngofnodwch i’w ychwanegu at eich rhestr wylio",
   "ch.watch.unread-try-again": "Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni",
-  "chform.aa01-five-years":
-    "Dim ond pan fydd mewn gweinyddiaeth neu pan fydd ganddo gymeradwyaeth yr Ysgrifennydd Gwladol y caiff cwmni ymestyn fwy nag unwaith mewn pum mlynedd.",
-  "chform.aa01-new-date": "Ni allwch newid cyfnod y mae ei gyfrifon yn hwyr.",
   "chform.aa01-period": "Y cyfnod presennol yw’r un nad yw wedi dod i ben eto; y cyfnod blaenorol yn union yw’r un cyn hwnnw.",
   "chform.ad02-sail": "Rhaid i’r lleoliad arolygu amgen fod yn y rhan o’r Deyrnas Unedig y mae’r cwmni wedi’i gofrestru ynddi.",
   "chform.form-link": "Ffurflen Tŷ’r Cwmnïau {form}",

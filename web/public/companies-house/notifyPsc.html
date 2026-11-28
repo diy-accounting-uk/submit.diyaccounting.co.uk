@@ -150,30 +150,35 @@
             </div>
             <fieldset class="form-group">
               <legend>Service address</legend>
-              <p id="service-hint" class="hint">
+              <p id="service-choice-hint" class="hint">
                 This is the address that will appear on the public record. It does not have to be the individual's usual residential
                 address.
               </p>
               <div class="choice">
-                <input type="radio" id="service-office" name="serviceChoice" value="office" checked aria-describedby="service-hint" /><label
-                  for="service-office"
-                  >The company's registered office</label
-                >
+                <input
+                  type="radio"
+                  id="service-office"
+                  name="serviceChoice"
+                  value="office"
+                  checked
+                  aria-describedby="service-choice-hint"
+                /><label for="service-office">The company's registered office</label>
               </div>
               <div class="choice">
-                <input type="radio" id="service-other" name="serviceChoice" value="other" /><label for="service-other"
+                <input type="radio" id="service-other" name="serviceChoice" value="other" aria-describedby="service-choice-hint" /><label
+                  for="service-other"
                   >Another address</label
                 >
               </div>
             </fieldset>
             <fieldset id="serviceAddress" class="form-group">
               <legend>The service address</legend>
-              <p id="service-hint" class="hint">
+              <p id="service-address-hint" class="hint">
                 If you give the individual's residential address here, it will appear on the public record.
               </p>
               <div class="form-group">
                 <label for="servicePremise">Building name or number</label>
-                <input type="text" id="servicePremise" name="servicePremise" maxlength="50" aria-describedby="service-hint" />
+                <input type="text" id="servicePremise" name="servicePremise" maxlength="50" aria-describedby="service-address-hint" />
               </div>
               <div class="form-group">
                 <label for="serviceStreet">Street</label>
