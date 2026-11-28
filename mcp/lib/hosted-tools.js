@@ -20,6 +20,7 @@ import { CHANGES_OUTSIDE, READS } from "./tool-annotations.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { VAT_FILING_SENTENCE } from "./handoff-tools.js";
 import { HOSTED_WRITE_OVERRIDES } from "./hosted-write-tools.js";
+import { HOSTED_REGISTER_BOOK_OVERRIDES } from "./hosted-register-book.js";
 
 // The book tools read and write the server's filesystem, which a hosted caller never reaches.
 const HOSTED_RUN_FOR_CLIENTS_TOOLS = RUN_FOR_CLIENTS_TOOLS.filter((tool) => tool !== "open_book" && tool !== "save_book");
@@ -80,6 +81,7 @@ export const HOSTED_TOOL_NAMES = [
   "undo_book_change",
   "extract_book",
   "save_workbook",
+  "new_book_from_register",
 ];
 
 // Prod offers the DIYA-GL book tools, the VAT, accounts and Company Tax Return derivations, the link that
@@ -208,4 +210,5 @@ export const HOSTED_OVERRIDES = {
     handler: (session) => deriveCompanyTaxReturn(session, {}),
   },
   ...HOSTED_WRITE_OVERRIDES,
+  ...HOSTED_REGISTER_BOOK_OVERRIDES,
 };

@@ -115,22 +115,31 @@ async function editLines(session, { edits } = {}) {
   return { ...(await summaryOf(session, saved.version)), previousVersion: saved.version - 1, movedFigures: edited.movedFigures };
 }
 
-async function newBook(session, { product, businessName, yearEnd, vatRegistered, clientId } = {}) {
-  const started = await DIYA_GL_TOOLS.new_book.handler({ book: null, lines: null }, { product, businessName, yearEnd, vatRegistered });
-  const candidate = { ...candidateSession(session, started.book, started.lines), cloud: null };
-  const saved = await saveCandidate(candidate, { bookId: newCloudBookId(), clientId, newBook: true, change: { tool: "new_book" } });
+/**
+ * Saves a book as a new DIYA-GL book in the person's account under a new bookId and opens it in the
+ * session once saved. Answers the open book's summary.
+ * @param {Object} session
+ * @param {Object} book
+ * @param {Array} lines
+ * @param {{clientId?: string|null, change: {tool: string}}} options
+ */
+export async function saveNewBook(session, book, lines, { clientId, change }) {
+  const candidate = { ...candidateSession(session, book, lines), cloud: null };
+  const saved = await saveCandidate(candidate, { bookId: newCloudBookId(), clientId, newBook: true, change });
   adopt(session, candidate);
   return summaryOf(session, saved.version);
+}
+
+async function newBook(session, { product, businessName, yearEnd, vatRegistered, clientId } = {}) {
+  const started = await DIYA_GL_TOOLS.new_book.handler({ book: null, lines: null }, { product, businessName, yearEnd, vatRegistered });
+  return saveNewBook(session, started.book, started.lines, { clientId, change: { tool: "new_book" } });
 }
 
 async function rollForward(session) {
   const { bookId: priorBookId, clientId } = requireCloudBook(session);
   const rolled = await DIYA_GL_TOOLS.roll_forward.handler({ book: null, lines: null }, { book: session.book, lines: session.lines });
-  const candidate = { ...candidateSession(session, rolled.book, rolled.lines), cloud: null };
-  const saved = await saveCandidate(candidate, { bookId: newCloudBookId(), clientId, newBook: true, change: { tool: "roll_forward" } });
-  adopt(session, candidate);
   return {
-    ...(await summaryOf(session, saved.version)),
+    ...(await saveNewBook(session, rolled.book, rolled.lines, { clientId, change: { tool: "roll_forward" } })),
     priorBookId,
     failedRollChecks: rolled.rollChecks.filter((check) => check.result !== "pass"),
   };

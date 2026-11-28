@@ -12,65 +12,11 @@ import { createSession, openBook, saveBook } from "../lib/book-tools.js";
 import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, hostedToolNames, REVIEWER_GROUP } from "../lib/hosted-tools.js";
 import { HOSTED_WRITE_OVERRIDES, HOSTED_WRITE_TOOL_NAMES, STALE_BOOK_MESSAGE } from "../lib/hosted-write-tools.js";
 import { createServer } from "../lib/server.js";
+import { fakeBookStore } from "./helpers/fake-book-store.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const BASE = "https://ci.submit.diyaccounting.co.uk";
 const V4_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-
-// The storage routes' behaviour the tools rely on: versioned PUTs guarded by if-match, the list
-// with each book's kept versions, and the read of one version.
-function fakeStore({ versionsKept = 30 } = {}) {
-  const books = new Map();
-  const calls = [];
-  const fetch = vi.fn(async (url, init = {}) => {
-    const { pathname } = new URL(url);
-    const method = init.method ?? "GET";
-    calls.push({ method, pathname, headers: init.headers, body: init.body ? JSON.parse(init.body) : undefined });
-    const answer = (status, body) => ({ ok: status < 400, status, json: async () => body });
-    if (method === "GET" && pathname === "/api/v1/books") {
-      return answer(200, { books: [...books.values()].map((book) => book.metadata) });
-    }
-    const versionMatch = /^\/api\/v1\/books\/([^/]+)\/versions\/([^/]+)$/.exec(pathname);
-    if (method === "GET" && versionMatch) {
-      const book = books.get(versionMatch[1]);
-      const version = versionMatch[2] === "latest" ? book.metadata.latestVersion : Number(versionMatch[2]);
-      return answer(200, { zipBase64: book.zips.get(version), metadata: book.metadata });
-    }
-    const putMatch = /^\/api\/v1\/books\/([^/]+)$/.exec(pathname);
-    if (method === "PUT" && putMatch) {
-      const bookId = putMatch[1];
-      const body = JSON.parse(init.body);
-      const ifMatch = init.headers["if-match"];
-      const existing = books.get(bookId);
-      if (existing ? ifMatch !== existing.metadata.latestETag : ifMatch) {
-        return answer(412, { message: "etag-mismatch", error: { code: "etag-mismatch" } });
-      }
-      const version = existing ? existing.metadata.latestVersion + 1 : 1;
-      const etag = `etag-${bookId.slice(0, 4)}-${version}`;
-      const versions = [
-        ...(existing?.metadata.versions ?? []),
-        { version, etag, createdAt: `t${version}`, ...(body.change ? { change: body.change } : {}) },
-      ];
-      while (versions.length > versionsKept) versions.shift();
-      const zips = existing?.zips ?? new Map();
-      zips.set(version, body.zipBase64);
-      const metadata = {
-        bookId,
-        title: body.title,
-        product: body.product,
-        periodCoveredStart: body.periodCoveredStart,
-        periodCoveredEnd: body.periodCoveredEnd,
-        latestVersion: version,
-        latestETag: etag,
-        versions,
-      };
-      books.set(bookId, { metadata, zips });
-      return answer(200, { metadata });
-    }
-    throw new Error(`Unexpected ${method} ${pathname}`);
-  });
-  return { books, calls, fetch };
-}
 
 async function openSavedBook(store, bookId = "11111111-2222-4333-8444-555555555555") {
   const session = createSession({ credentials: { accessToken: async () => "bearer", idToken: async () => null } });
@@ -106,7 +52,7 @@ describe("the hosted write tools", () => {
   beforeEach(() => {
     process.env.DIYA_SUBMIT_BASE_URL = BASE;
     process.env.DIY_SUBMIT_BASE_URL = BASE;
-    store = fakeStore();
+    store = fakeBookStore();
     vi.stubGlobal("fetch", store.fetch);
   });
 
@@ -236,7 +182,7 @@ describe("the hosted write tools", () => {
   });
 
   it("undo_book_change refuses a version no longer kept, naming the oldest kept and each version's change", async () => {
-    store = fakeStore({ versionsKept: 2 });
+    store = fakeBookStore({ versionsKept: 2 });
     vi.stubGlobal("fetch", store.fetch);
     const session = await openSavedBook(store);
     await HOSTED_WRITE_OVERRIDES.edit_lines.handler(session, { edits: [SALE] });
