@@ -18,8 +18,8 @@ name, then the wave and the batch that build the row, or `beside` for a row with
 with no such field is in no set. Anything touching code goes through a `claude/*` branch and PR;
 the operator merges.
 
-**Prod runs deployment prod-ba00a80** (`deploy.yml` run 46128803994 of `main` at ba00a8050, PR #882, the ember batch, 2026-11-28); it is prod's only set (`destroy-prod.yml` removed prod-265e46f at 09:51 UTC).
-**ci**: `ci-set2` is the last known good set; both slots hold `claude/falcon-roll` (PR #884's merged head 83dd93a8f deploys to `ci-set1`, run 46132678528).
+**Prod runs deployment prod-9fc04be** (`deploy.yml` run 46137520182 of `main` at 9fc04be33, PR #884, the falcon batch, 2026-11-28); `destroy-prod.yml` run 46140677253 removed the previous set at 11:36 UTC; the apex page answers 200 and `/api/v1/bundle` 401.
+**ci**: PR #885 (MCP9) deployed to a ci set (run 46137586550, its payment probe passed on a rerun after a Stripe test-mode rate limit).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
