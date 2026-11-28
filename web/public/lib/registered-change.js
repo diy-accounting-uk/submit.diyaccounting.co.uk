@@ -97,6 +97,41 @@ export function showRegisteredChangeFields(doc, form) {
   }
 }
 
+// The page's own label for each field Companies House's filing API names in a validation error,
+// by the key the route sends it under.
+function fieldLabels(form) {
+  if (form === "office") {
+    return {
+      premises: siteText("ch.address.premises", "Premises"),
+      address_line_1: siteText("ch.address.line-1", "Address line 1"),
+      address_line_2: siteText("ch.address.line-2", "Address line 2"),
+      locality: siteText("ch.address.town", "Town or city"),
+      region: siteText("ch.address.county", "County"),
+      postal_code: siteText("ch.address.postcode", "Postcode"),
+      country: siteText("ch.address.country", "Country"),
+      accept_appropriate_office_address_statement: siteText("ch.office.statement-field", "The appropriate address statement"),
+      reference_etag: siteText("ch.office.looked-up-address-field", "The current address you looked up"),
+    };
+  }
+  return {
+    registered_email_address: siteText("ch.email.new-address-label", "New registered email address"),
+    accept_appropriate_email_address_statement: siteText("ch.email.statement-field", "The appropriate email address statement"),
+  };
+}
+
+/**
+ * One line of a validation error Companies House answered: the field's label and the error. The
+ * location is a JSON path ("$.postal_code"); a field the page has no label for shows the error alone.
+ * @param {"office"|"email"} form
+ * @param {{error?: string, location?: string}} entry
+ */
+export function validationErrorText(form, entry) {
+  const error = entry.error || siteText("ch.change.invalid-value", "invalid value");
+  const key = String(entry.location ?? "").replace(/^\$\./, "");
+  const label = fieldLabels(form)[key];
+  return label ? siteText("ch.change.field-error", "{label}: {error}", { label, error }) : error;
+}
+
 // What reached Companies House before the failure, from the steps the filing has taken: the
 // transaction opened, the change added to it, the transaction closed.
 function sentText(filing) {

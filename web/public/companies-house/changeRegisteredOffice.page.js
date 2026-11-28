@@ -271,14 +271,10 @@ async function renderFilingRecord(transaction) {
   document.getElementById("filingRecord").replaceChildren(...parsed.body.childNodes);
 }
 
-function renderValidationErrors(errors) {
+function renderValidationErrors(errors, validationErrorText) {
   const container = document.getElementById("validationErrors");
   container.style.display = "block";
-  container.replaceChildren(
-    ...(errors || []).map((entry) =>
-      paragraph(`${entry.location || ""}: ${entry.error || window.siteText("ch.change.invalid-value", "invalid value")}`),
-    ),
-  );
+  container.replaceChildren(...(errors || []).map((entry) => paragraph(validationErrorText("office", entry))));
 }
 
 function redirectToAuthorise(scope) {
@@ -337,9 +333,9 @@ async function runFilingSequence() {
       redirectToAuthorise(scope);
       return;
     }
-    const { showRegisteredChangeFailure } = await import("../lib/registered-change.js");
+    const { showRegisteredChangeFailure, validationErrorText } = await import("../lib/registered-change.js");
     if (error.status === 422) {
-      renderValidationErrors(error.body?.errors);
+      renderValidationErrors(error.body?.errors, validationErrorText);
       document.getElementById("startAgainBtn").style.display = "inline-block";
       savePendingFiling();
       showView("resultView");

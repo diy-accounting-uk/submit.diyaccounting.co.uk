@@ -565,6 +565,7 @@ window.WELSH_TEXT = {
   "ch.change.failure-sent-nothing": "Ni chyrhaeddodd dim Dŷ’r Cwmnïau.",
   "ch.change.failure-sent-transaction":
     "Agorodd Tŷ’r Cwmnïau drafodyn ar gyfer y newid ond ni chafodd y newid ei hun. Nid oes dim wedi’i ffeilio.",
+  "ch.change.field-error": "{label}: {error}",
   "ch.change.file-failed": "Methwyd â ffeilio’r newid gyda Thŷ’r Cwmnïau.",
   "ch.change.invalid-value": "gwerth annilys",
   "ch.change.processing": "Mae Tŷ’r Cwmnïau yn dal i brosesu’r newid.",
@@ -1685,6 +1686,7 @@ window.WELSH_TEXT = {
   "ch.email.not-on-register": "Nid yw rhif y cwmni hwnnw ar y gofrestr.",
   "ch.email.record-new-address": "Cyfeiriad e-bost cofrestredig newydd",
   "ch.email.record-title": "Newid cyfeiriad e-bost cofrestredig",
+  "ch.email.statement-field": "Y datganiad cyfeiriad e-bost priodol",
   "ch.email.statement-hint":
     "Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i negeseuon e-bost y mae Tŷ’r Cwmnïau yn eu hanfon i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni.",
   "ch.email.status-blocks": "Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.",
@@ -1905,11 +1907,13 @@ window.WELSH_TEXT = {
   "ch.office.differs-from-register":
     "Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel {office}. Mae’r cyfrifon diwygiedig yn cadw’r swyddfa a nodir yn y cyfrifon a ffeiliwyd oni bai eich bod yn ei newid.",
   "ch.office.filled-from-filed": "Wedi’i llenwi o’r cyfrifon a ffeiliwyd gennych. Newidiwch ran i’w chywiro.",
+  "ch.office.looked-up-address-field": "Y cyfeiriad presennol a chwiliwyd gennych",
   "ch.office.new-address": "Cyfeiriad newydd",
   "ch.office.new-address-hint":
     "Daw’r newid i rym pan fydd Tŷ’r Cwmnïau yn ei gofrestru. Am 14 diwrnod ar ôl hynny, gellir dal i gyflwyno dogfennau i’r cwmni yn yr hen gyfeiriad.",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",
+  "ch.office.statement-field": "Y datganiad cyfeiriad priodol",
   "ch.office.statement-hint":
     "Rhaid i’r hysbysiad o’r newid gynnwys y datganiad hwn. Rhaid i bost a ddanfonir i’r cyfeiriad gyrraedd rhywun sy’n gweithredu ar ran y cwmni, a rhaid bod modd cofnodi ei ddanfon.",
   "ch.prior.column-source": "Ffigurau’r llynedd: o’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau ar gyfer y flwyddyn hyd at {date}.",

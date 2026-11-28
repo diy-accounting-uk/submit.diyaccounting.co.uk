@@ -195,4 +195,36 @@ test.describe("Change Registered Email Address page", () => {
     );
     await expect(page.locator("#reviewView")).toBeVisible();
   });
+
+  test("Companies House refusing the email address lists it by the page's label, never by the API's field key", async ({ page }) => {
+    await setupRoutes(page);
+    await page.addInitScript(() => {
+      window.closeCompaniesHouseTransaction = () => {
+        const error = new Error("Request failed with status 422");
+        error.status = 422;
+        error.body = {
+          errors: [
+            { error: "Email address is not valid", location: "$.registered_email_address", type: "ch:validation" },
+            { error: "Statement must be accepted", location: "$.accept_appropriate_email_address_statement", type: "ch:validation" },
+          ],
+        };
+        error.service = "companiesHouse";
+        return Promise.reject(error);
+      };
+    });
+    await loadPage(page);
+    await page.fill("#companyNumber", "1");
+    await page.click("#companyLookupBtn");
+    await page.fill("#registeredEmailAddress", NEW_EMAIL);
+    await page.check("#acceptEmailStatement");
+    await page.click("#continueBtn");
+    await page.click("#submitFilingBtn");
+
+    const list = page.locator("#validationErrors p");
+    await expect(list).toHaveText([
+      "New registered email address: Email address is not valid",
+      "The appropriate email address statement: Statement must be accepted",
+    ]);
+    await expect(page.locator("#validationErrors")).not.toContainText("registered_email_address");
+  });
 });

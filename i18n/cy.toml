@@ -28999,3 +28999,19 @@ cy = '''Ni anfonwyd dim at Dŷ’r Cwmnïau. Caiff y rhagolwg ei greu cyn i ddim
 [strings."ch.accounts.failure-sent-not-filed"]
 hash = "a84a29447b9c"
 cy = '''Ni chymerodd Tŷ’r Cwmnïau y cyfrifon, ac ni ffeiliwyd dim.'''
+
+[strings."ch.office.statement-field"]
+hash = "183c9c0738e6"
+cy = '''Y datganiad cyfeiriad priodol'''
+
+[strings."ch.office.looked-up-address-field"]
+hash = "8d4caf264af6"
+cy = '''Y cyfeiriad presennol a chwiliwyd gennych'''
+
+[strings."ch.email.statement-field"]
+hash = "a268a1288127"
+cy = '''Y datganiad cyfeiriad e-bost priodol'''
+
+[strings."ch.change.field-error"]
+hash = "946a665c8e23"
+cy = '''{label}: {error}'''

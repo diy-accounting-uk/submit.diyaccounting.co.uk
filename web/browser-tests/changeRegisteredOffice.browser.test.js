@@ -474,7 +474,7 @@ test.describe("Change Registered Office Address page", () => {
       window.putRegisteredOfficeAddress = () => {
         const error = new Error("Request failed with status 422");
         error.status = 422;
-        error.body = { errors: [{ error: "Postcode is not valid", location: "postal_code", type: "ch:validation" }] };
+        error.body = { errors: [{ error: "Postcode is not valid", location: "$.postal_code", type: "ch:validation" }] };
         error.service = "companiesHouse";
         return Promise.reject(error);
       };
@@ -482,7 +482,7 @@ test.describe("Change Registered Office Address page", () => {
 
     await page.click("#submitFilingBtn");
 
-    await expect(page.locator("#validationErrors")).toContainText("postal_code: Postcode is not valid");
+    await expect(page.locator("#validationErrors")).toHaveText("Postcode: Postcode is not valid");
     const panel = page.locator("#failureDetail");
     await expect(panel).toHaveAttribute("data-kind", "business-error");
     await expect(panel.locator('[data-part="sent"]')).toHaveText(
