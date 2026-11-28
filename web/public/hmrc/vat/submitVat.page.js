@@ -512,6 +512,35 @@ async function continueVatSubmission() {
       return;
     }
 
+    // The list holds only the periods inside the dates HMRC was asked about; an older period can
+    // still be open, so only dates inside them are checked against the list.
+    const insideSearchedDates =
+      obligationsSearchWindow &&
+      submissionData.periodStart >= obligationsSearchWindow.from &&
+      submissionData.periodEnd <= obligationsSearchWindow.to;
+    const openPeriods =
+      obligationsBoundForVrn === submissionData.vatNumber && insideSearchedDates
+        ? window.vatPeriodChoice.boundOpenObligations(document.getElementById("obligationChoice"))
+        : null;
+    if (openPeriods && !window.vatPeriodChoice.findCloseObligation(openPeriods, submissionData.periodStart, submissionData.periodEnd)) {
+      sessionStorage.removeItem("submission_data");
+      showForm();
+      document.getElementById("declaration").checked = true;
+      showStatus(
+        siteText(
+          "vat-submit.period-not-open",
+          "Nothing has been sent to HMRC. HMRC is not expecting a return for {requested}. Its open VAT periods are: {periods}. Choose one and submit again.",
+          {
+            requested: window.vatPeriodChoice.obligationLabel({ start: submissionData.periodStart, end: submissionData.periodEnd }),
+            periods: openPeriods.map((obligation) => window.vatPeriodChoice.obligationLabel(obligation)).join("; "),
+          },
+        ),
+        "error",
+      );
+      document.getElementById("obligationChoice").focus();
+      return;
+    }
+
     // Hide form while submitting
     hideForm();
     showLoading();
@@ -695,6 +724,9 @@ let vatFormContainer = null;
 // when the page loads with a token in place and when the VRN is entered; without a token the form
 // offers a connect button and keeps the free date inputs.
 let obligationsLoadedForVrn = null;
+// The VRN whose open obligations the period list holds, and the dates HMRC was asked about.
+let obligationsBoundForVrn = null;
+let obligationsSearchWindow = null;
 let hmrcAssist = null;
 const HMRC_ASSIST_CHECK_PENDING_KEY = "hmrcAssistCheckPending";
 
@@ -831,6 +863,8 @@ async function loadOpenObligations() {
       },
       open,
     );
+    obligationsBoundForVrn = vrn;
+    obligationsSearchWindow = { from, to };
     showObligationStatus("");
     hmrcAssist?.refresh();
   } catch (error) {

@@ -28911,3 +28911,8 @@ cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon, felly nid ydynt yn cael eu hanfon e
 [strings."ch.ct.return-not-sent-ch-held"]
 hash = "9f676194172b"
 cy = '''Mae gan Dŷ’r Cwmnïau y cyfrifon ac nid yw wedi penderfynu arnynt. Anfonwch y Ffurflen Dreth nawr, neu arhoswch am Dŷ’r Cwmnïau.'''
+
+# == The VAT return's check of stored dates against HMRC's open periods, id vat-submit.period-not-open ==
+[strings."vat-submit.period-not-open"]
+hash = "42736d68084a"
+cy = '''Nid oes dim wedi’i anfon at CThEF. Nid yw CThEF yn disgwyl Ffurflen TAW ar gyfer {requested}. Ei gyfnodau TAW agored yw: {periods}. Dewiswch un a chyflwynwch eto.'''

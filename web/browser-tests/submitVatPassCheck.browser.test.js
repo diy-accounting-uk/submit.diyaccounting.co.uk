@@ -5,6 +5,7 @@
 //
 // The VAT return form checks for a pass before it reads HMRC's open periods or sends the return. With
 // no pass it sends nothing and offers a day pass; a refusal for want of a pass keeps the HMRC grant.
+// A return stored before the HMRC sign-in whose dates match none of HMRC's open periods is not sent.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -111,6 +112,70 @@ async function expectPassNeeded(page) {
   await expect(message).toContainText("Nothing has been sent to HMRC.");
   await expect(message.getByRole("link", { name: "Get a day pass" })).toHaveAttribute("href", "/bundles.html");
 }
+
+test.describe("VAT return period check after the HMRC sign-in", () => {
+  const ONE_DAY_PERIOD = { periodKey: "26C3", start: "2026-07-01", end: "2026-07-01", due: "2026-08-07", status: "O" };
+
+  // The page asks HMRC about the 365 days up to today, so today is fixed inside the stored period's year.
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-11-27T12:00:00Z"));
+  });
+
+  test("stored dates that match no open period are not sent and the period list names HMRC's periods", async ({ page }) => {
+    const hmrcRequests = await openSubmitVat(page, {
+      bundles: HELD_DAY_PASS,
+      obligation: { status: 200, body: { obligations: [ONE_DAY_PERIOD] } },
+      session: grantSession({
+        submission_data: JSON.stringify(STORED_RETURN),
+        vat_form_draft: JSON.stringify({
+          vatNumber: STORED_RETURN.vatNumber,
+          periodStart: STORED_RETURN.periodStart,
+          periodEnd: STORED_RETURN.periodEnd,
+        }),
+      }),
+    });
+
+    const message = page.locator("#statusMessagesContainer .status-message.status-error");
+    await expect(message).toContainText("Nothing has been sent to HMRC.");
+    await expect(message).toContainText("HMRC is not expecting a return for 1 July 2026 to 30 September 2026.");
+    await expect(message).toContainText("Its open VAT periods are: 1 July 2026 to 1 July 2026, due 7 August 2026.");
+    await expect(page.locator("#vatForm")).toBeVisible();
+    await expect(page.locator("#obligationChoiceGroup")).toBeVisible();
+    await expect(page.locator("#obligationChoice option")).toHaveText(["1 July 2026 to 1 July 2026, due 7 August 2026", "Another period"]);
+    expect(hmrcRequests).toEqual(["GET /api/v1/hmrc/vat/obligation"]);
+    expect(await page.evaluate(() => sessionStorage.getItem("submission_data"))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcGrantId"))).toBe(GRANT_ID);
+  });
+
+  test("stored dates that match an open period are sent", async ({ page }) => {
+    const hmrcRequests = await openSubmitVat(page, {
+      bundles: HELD_DAY_PASS,
+      obligation: { status: 200, body: { obligations: [{ ...ONE_DAY_PERIOD, end: "2026-09-30" }] } },
+      returnAnswer: { status: 403, body: ENTITLEMENT_REFUSAL },
+      session: grantSession({
+        submission_data: JSON.stringify(STORED_RETURN),
+        vat_form_draft: JSON.stringify({ vatNumber: STORED_RETURN.vatNumber }),
+      }),
+    });
+
+    await expect.poll(() => hmrcRequests).toContain("POST /api/v1/hmrc/vat/return");
+  });
+
+  test("stored dates older than the dates HMRC was asked about are sent for the server to match", async ({ page }) => {
+    const olderReturn = { ...STORED_RETURN, periodStart: "2025-04-01", periodEnd: "2025-06-30" };
+    const hmrcRequests = await openSubmitVat(page, {
+      bundles: HELD_DAY_PASS,
+      obligation: { status: 200, body: { obligations: [ONE_DAY_PERIOD] } },
+      returnAnswer: { status: 403, body: ENTITLEMENT_REFUSAL },
+      session: grantSession({
+        submission_data: JSON.stringify(olderReturn),
+        vat_form_draft: JSON.stringify({ vatNumber: olderReturn.vatNumber }),
+      }),
+    });
+
+    await expect.poll(() => hmrcRequests).toContain("POST /api/v1/hmrc/vat/return");
+  });
+});
 
 test.describe("VAT return pass check", () => {
   test("with no pass, the submit sends nothing, leaves for no HMRC sign-in and offers a day pass", async ({ page }) => {

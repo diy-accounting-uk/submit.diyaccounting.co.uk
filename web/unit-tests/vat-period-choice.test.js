@@ -37,6 +37,21 @@ describe("vat-period-choice", () => {
       expect(choice.findMatchingObligation(obligations, "2017-04-01", "2017-06-29")).toBeNull();
     });
 
+    it("finds the obligation the server would match, within three days on each boundary", () => {
+      const open = choice.openObligations(obligations);
+      expect(choice.findCloseObligation(open, "2017-04-01", "2017-06-30")).toBe(obligations[2]);
+      expect(choice.findCloseObligation(open, "2017-04-03", "2017-06-27")).toBe(obligations[2]);
+      expect(choice.findCloseObligation(open, "2017-04-01", "2017-06-26")).toBeNull();
+      expect(choice.findCloseObligation(open, "2017-07-01", "2017-09-30")).toBe(obligations[1]);
+    });
+
+    it("finds no obligation for dates that span a different period", () => {
+      const oneDay = [{ periodKey: "26C3", start: "2026-07-01", end: "2026-07-01", status: "O" }];
+      expect(choice.findCloseObligation(oneDay, "2026-07-01", "2026-09-30")).toBeNull();
+      expect(choice.findCloseObligation(oneDay, "", "2026-07-01")).toBeNull();
+      expect(choice.findCloseObligation(undefined, "2026-07-01", "2026-07-01")).toBeNull();
+    });
+
     it("searches the 365 days up to today", () => {
       expect(choice.obligationSearchWindow(Date.UTC(2026, 9, 2))).toEqual({ from: "2025-10-03", to: "2026-10-02" });
     });
@@ -71,6 +86,12 @@ describe("vat-period-choice", () => {
       freeDates = document.getElementById("freeDates");
       group = document.getElementById("group");
       open = choice.openObligations(obligations);
+    });
+
+    it("holds the bound obligations, and none before a bind", () => {
+      expect(choice.boundOpenObligations(select)).toBeNull();
+      bind();
+      expect(choice.boundOpenObligations(select)).toBe(open);
     });
 
     it("lists each open obligation then another period, and shows the group", () => {

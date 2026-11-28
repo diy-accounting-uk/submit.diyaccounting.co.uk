@@ -3298,6 +3298,8 @@ window.WELSH_TEXT = {
   "vat-submit.pass-needed-cause":
     "Nid oes dim wedi’i anfon at CThEF. Nid oes gan eich cyfrif docyn na Bundle sy’n gadael i chi gyflwyno Ffurflen TAW.",
   "vat-submit.pass-needed-title": "Mae angen tocyn arnoch i gyflwyno Ffurflen TAW",
+  "vat-submit.period-not-open":
+    "Nid oes dim wedi’i anfon at CThEF. Nid yw CThEF yn disgwyl Ffurflen TAW ar gyfer {requested}. Ei gyfnodau TAW agored yw: {periods}. Dewiswch un a chyflwynwch eto.",
   "vat-submit.periods-need-pass": "Mae angen tocyn arnoch i ddarllen eich cyfnodau TAW agored gan CThEF ac i gyflwyno Ffurflen TAW.",
   "vat-submit.periods-unreadable": "Nid oedd modd darllen rhestr CThEF o gyfnodau TAW agored. Nodwch y dyddiadau isod.",
   "vat-submit.range-pence": "Mae’n rhaid i’r swm ar gyfer {label} fod rhwng £-9,999,999,999,999.99 a £9,999,999,999,999.99",
