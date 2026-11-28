@@ -143,6 +143,23 @@ describe("the hosted tool set", () => {
     expect(Object.keys(server._registeredTools).sort()).toEqual([...prodNames].sort());
   });
 
+  it("keeps prod's tool set to the eleven tools prod serves, with look_up_rule outside it", () => {
+    expect([...hostedToolNames("prod")].sort()).toEqual([
+      "company_filing_deadlines",
+      "derive_company_tax_return",
+      "derive_micro_entity_accounts",
+      "derive_small_company_accounts",
+      "derive_vat_return",
+      "get_vat_receipt",
+      "list_accounts_receipts",
+      "list_books",
+      "list_vat_receipts",
+      "open_book",
+      "prepare_vat_return",
+    ]);
+    expect(HOSTED_TOOL_NAMES).toContain("look_up_rule");
+  });
+
   it("gives a caller in the reviewer group prod's tool set in every environment", () => {
     for (const environmentName of ["ci", "simulator", undefined]) {
       expect(hostedToolNames(environmentName, [REVIEWER_GROUP])).toEqual(hostedToolNames("prod"));

@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (49)</h2>
+        <h2>Tools (50)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -931,6 +931,32 @@
       &quot;type&quot;: &quot;string&quot;
     }
   },
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-look_up_rule">
+        <summary><code>look_up_rule</code></summary>
+        <p>Looks up an HMRC or Companies House rule or rate by its words or its fact id (such as &quot;annual investment allowance&quot;, &quot;marginal relief&quot;, &quot;accounts due 9 months&quot; or corporation-tax-main-rate-fy2026) and answers each match with its figure or words, the tax year or financial year it applies to, and the gov.uk page that states it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or Companies House for that. It needs no DIYA-GL book and contacts no outside service.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>query</code></td><td>string</td><td>yes</td><td>A fact id, or the words of the rule or rate, such as annual investment allowance</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;query&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;description&quot;: &quot;A fact id, or the words of the rule or rate, such as annual investment allowance&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;query&quot;
+  ],
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>

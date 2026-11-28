@@ -158,6 +158,7 @@ describe("the server", () => {
       "list_vat_payments",
       "list_vat_penalties",
       "list_vat_receipts",
+      "look_up_rule",
       "move_book_to_client",
       "open_book",
       "poll_submission",

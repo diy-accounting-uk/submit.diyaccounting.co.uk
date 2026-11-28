@@ -6,6 +6,7 @@
 // Every fact needs at least one source file listing its id; the build throws otherwise.
 
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import toml from "@iarna/toml";
@@ -638,5 +639,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   copyEngineModules();
   writeFileSync(DATA_PATH, await renderRatesData());
   writeFileSync(PAGE_PATH, await renderRatesPage());
+  // The rules data reads this module and the other page builder, so it runs as its own process.
+  execFileSync(process.execPath, [join(ROOT, "scripts", "build-rules-data.mjs")], { stdio: "inherit" });
   console.log(`copied ${ENGINE_MODULES.length} engine modules from diya-gl ${engineVersion()}; wrote ${DATA_PATH} and ${PAGE_PATH}`);
 }

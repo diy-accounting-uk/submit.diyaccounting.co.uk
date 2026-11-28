@@ -32,6 +32,7 @@ import { deriveVatReturn } from "./vat-tools.js";
 import { registerVatReviewCard, VAT_REVIEW_CARD_TOOLS, VAT_REVIEW_CARD_TOOL_META } from "./vat-review-card.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
 import { BOOK_READ_TOOLS } from "./book-read-tools.js";
+import { lookUpRule, RULE_FACTS_BY_TOOL, withRuleSources } from "./rules-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import { ADDS, CHANGES, CHANGES_OUTSIDE, READS, READS_OUTSIDE } from "./tool-annotations.js";
@@ -1010,13 +1011,29 @@ export const TOOLS = {
     },
     handler: runForClients,
   },
+  look_up_rule: {
+    title: "Look up a tax or filing rule",
+    annotations: READS,
+    description:
+      'Looks up an HMRC or Companies House rule or rate by its words or its fact id (such as "annual investment ' +
+      'allowance", "marginal relief", "accounts due 9 months" or corporation-tax-main-rate-fy2026) and answers each ' +
+      "match with its figure or words, the tax year or financial year it applies to, and the gov.uk page that states " +
+      "it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks " +
+      "what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the " +
+      "rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or " +
+      "Companies House for that. It needs no DIYA-GL book and contacts no outside service.",
+    inputSchema: {
+      query: z.string().describe("A fact id, or the words of the rule or rate, such as annual investment allowance"),
+    },
+    handler: lookUpRule,
+  },
 };
 
 /**
  * An McpServer with the tools registered against one session. Connect it to
  * whichever transport the surface uses. toolNames limits the registration to
  * those names; overrides replaces a named tool's description, inputSchema and
- * handler.
+ * handler. With look_up_rule among the names, each derivation's answer carries ruleSources.
  * @param {Object} [session] - defaults to a fresh, empty session
  * @param {{toolNames?: string[], overrides?: Object, instructions?: string}} [options] - instructions,
  *   when given, go to the client in the initialize result
@@ -1026,9 +1043,12 @@ export function createServer(session = createSession(), { toolNames, overrides =
   const server = new McpServer(SERVER_INFO, instructions ? { instructions } : undefined);
   const known = { ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS };
   const names = toolNames ?? Object.keys(known);
+  // A derivation answers the source of each rule and rate it used where look_up_rule is offered beside it.
+  const withSources = names.includes("look_up_rule");
   for (const name of names) {
     const tool = overrides[name] ?? known[name];
     if (!tool) throw new Error(`Unknown tool: ${name}`);
+    const handler = withSources && RULE_FACTS_BY_TOOL[name] ? withRuleSources(name, tool.handler) : tool.handler;
     server.registerTool(
       name,
       {
@@ -1040,7 +1060,7 @@ export function createServer(session = createSession(), { toolNames, overrides =
       },
       async (params) => {
         try {
-          return asToolResult(await tool.handler(session, params));
+          return asToolResult(await handler(session, params));
         } catch (err) {
           return asToolError(err);
         }

@@ -1,0 +1,1572 @@
+{
+  "rules": [
+    {
+      "id": "income-tax-personal-allowance-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Personal Allowance",
+      "period": "tax year 2025-26",
+      "value": 12570,
+      "display": "£12,570",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Allowances 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Personal Allowance £12,570 £12,570 £12,570 £12,570 Income limit for Personal Allowance £100,000 £100,000 £100,000 £100,000"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-personal-allowance-income-limit-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Income limit for Personal Allowance",
+      "period": "tax year 2025-26",
+      "value": 100000,
+      "display": "£100,000",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Allowances 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Personal Allowance £12,570 £12,570 £12,570 £12,570 Income limit for Personal Allowance £100,000 £100,000 £100,000 £100,000"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-basic-rate-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Basic rate",
+      "period": "tax year 2025-26",
+      "value": 0.2,
+      "display": "20%",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "England, Northern Ireland and Wales Band Rate Income after allowances 2026 to 2027 Income after allowances 2025 to 2026 Income after allowances 2024 to 2025 Income after allowances 2023 to 2024 Starting rate for savings 0% Up to £5,000 Up to £5,000 Up to £5,000 Up to £5,000 Basic rate 20% Up to £37,700 Up to £37,700 Up to £37,700 Up to £37,700"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-basic-rate-band-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Basic rate band",
+      "period": "tax year 2025-26",
+      "value": 37700,
+      "display": "£37,700",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "England, Northern Ireland and Wales Band Rate Income after allowances 2026 to 2027 Income after allowances 2025 to 2026 Income after allowances 2024 to 2025 Income after allowances 2023 to 2024 Starting rate for savings 0% Up to £5,000 Up to £5,000 Up to £5,000 Up to £5,000 Basic rate 20% Up to £37,700 Up to £37,700 Up to £37,700 Up to £37,700"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-higher-rate-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Higher rate",
+      "period": "tax year 2025-26",
+      "value": 0.4,
+      "display": "40%",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "England, Northern Ireland and Wales Band Rate Income after allowances 2026 to 2027 Income after allowances 2025 to 2026 Income after allowances 2024 to 2025 Income after allowances 2023 to 2024 Starting rate for savings 0% Up to £5,000 Up to £5,000 Up to £5,000 Up to £5,000 Basic rate 20% Up to £37,700 Up to £37,700 Up to £37,700 Up to £37,700 Higher rate 40% £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-additional-rate-threshold-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Additional rate threshold",
+      "period": "tax year 2025-26",
+      "value": 125140,
+      "display": "£125,140",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Higher rate 40% £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 Additional rate 45% Over £125,141 Over £125,141 Over £125,141 Over £125,141"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-additional-rate-2025-26",
+      "kind": "rate",
+      "title": "Income tax: Additional rate",
+      "period": "tax year 2025-26",
+      "value": 0.45,
+      "display": "45%",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Higher rate 40% £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 Additional rate 45% Over £125,141 Over £125,141 Over £125,141 Over £125,141"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-personal-allowance-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Personal Allowance",
+      "period": "tax year 2026-27",
+      "value": 12570,
+      "display": "£12,570",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Allowances 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Personal Allowance £12,570 £12,570 £12,570 £12,570 Income limit for Personal Allowance £100,000 £100,000 £100,000 £100,000"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-personal-allowance-income-limit-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Income limit for Personal Allowance",
+      "period": "tax year 2026-27",
+      "value": 100000,
+      "display": "£100,000",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Allowances 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Personal Allowance £12,570 £12,570 £12,570 £12,570 Income limit for Personal Allowance £100,000 £100,000 £100,000 £100,000"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-basic-rate-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Basic rate",
+      "period": "tax year 2026-27",
+      "value": 0.2,
+      "display": "20%",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "England, Northern Ireland and Wales Band Rate Income after allowances 2026 to 2027 Income after allowances 2025 to 2026 Income after allowances 2024 to 2025 Income after allowances 2023 to 2024 Starting rate for savings 0% Up to £5,000 Up to £5,000 Up to £5,000 Up to £5,000 Basic rate 20% Up to £37,700 Up to £37,700 Up to £37,700 Up to £37,700"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-basic-rate-band-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Basic rate band",
+      "period": "tax year 2026-27",
+      "value": 37700,
+      "display": "£37,700",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "England, Northern Ireland and Wales Band Rate Income after allowances 2026 to 2027 Income after allowances 2025 to 2026 Income after allowances 2024 to 2025 Income after allowances 2023 to 2024 Starting rate for savings 0% Up to £5,000 Up to £5,000 Up to £5,000 Up to £5,000 Basic rate 20% Up to £37,700 Up to £37,700 Up to £37,700 Up to £37,700"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-higher-rate-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Higher rate",
+      "period": "tax year 2026-27",
+      "value": 0.4,
+      "display": "40%",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "England, Northern Ireland and Wales Band Rate Income after allowances 2026 to 2027 Income after allowances 2025 to 2026 Income after allowances 2024 to 2025 Income after allowances 2023 to 2024 Starting rate for savings 0% Up to £5,000 Up to £5,000 Up to £5,000 Up to £5,000 Basic rate 20% Up to £37,700 Up to £37,700 Up to £37,700 Up to £37,700 Higher rate 40% £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-additional-rate-threshold-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Additional rate threshold",
+      "period": "tax year 2026-27",
+      "value": 125140,
+      "display": "£125,140",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Higher rate 40% £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 Additional rate 45% Over £125,141 Over £125,141 Over £125,141 Over £125,141"
+        }
+      ]
+    },
+    {
+      "id": "income-tax-additional-rate-2026-27",
+      "kind": "rate",
+      "title": "Income tax: Additional rate",
+      "period": "tax year 2026-27",
+      "value": 0.45,
+      "display": "45%",
+      "sources": [
+        {
+          "title": "Income Tax rates and allowances for current and previous tax years",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past",
+          "retrieved": "2026-11-24",
+          "quote": "Higher rate 40% £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 £37,701 to £125,140 Additional rate 45% Over £125,141 Over £125,141 Over £125,141 Over £125,141"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-lower-profits-limit-2025-26",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 lower profits limit",
+      "period": "tax year 2025-26",
+      "value": 12570,
+      "display": "£12,570",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-upper-profits-limit-2025-26",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 upper profits limit",
+      "period": "tax year 2025-26",
+      "value": 50270,
+      "display": "£50,270",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-main-rate-2025-26",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 main rate",
+      "period": "tax year 2025-26",
+      "value": 0.06,
+      "display": "6%",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270 Rate between Lower Profits Limit to the Upper Profits Limit 6% 6% 6% 9% Rate above Upper Profits Limit 2% 2% 2% 2%"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-additional-rate-2025-26",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 additional rate",
+      "period": "tax year 2025-26",
+      "value": 0.02,
+      "display": "2%",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270 Rate between Lower Profits Limit to the Upper Profits Limit 6% 6% 6% 9% Rate above Upper Profits Limit 2% 2% 2% 2%"
+        }
+      ]
+    },
+    {
+      "id": "ni-class2-weekly-rate-2025-26",
+      "kind": "rate",
+      "title": "National Insurance: Class 2 weekly rate (voluntary)",
+      "period": "tax year 2025-26",
+      "value": 3.5,
+      "display": "£3.50",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.1 Class 2 Thresholds 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Small Profits Threshold amount per year £7,105 £6,845 £6,725 £6,725 Rate per week £3.65 £3.50 £3.45 £3.45"
+        }
+      ]
+    },
+    {
+      "id": "ni-class2-small-profits-threshold-2025-26",
+      "kind": "rate",
+      "title": "National Insurance: Class 2 small profits threshold",
+      "period": "tax year 2025-26",
+      "value": 6845,
+      "display": "£6,845",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.1 Class 2 Thresholds 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Small Profits Threshold amount per year £7,105 £6,845 £6,725 £6,725 Rate per week £3.65 £3.50 £3.45 £3.45"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-lower-profits-limit-2026-27",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 lower profits limit",
+      "period": "tax year 2026-27",
+      "value": 12570,
+      "display": "£12,570",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-upper-profits-limit-2026-27",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 upper profits limit",
+      "period": "tax year 2026-27",
+      "value": 50270,
+      "display": "£50,270",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-main-rate-2026-27",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 main rate",
+      "period": "tax year 2026-27",
+      "value": 0.06,
+      "display": "6%",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270 Rate between Lower Profits Limit to the Upper Profits Limit 6% 6% 6% 9% Rate above Upper Profits Limit 2% 2% 2% 2%"
+        }
+      ]
+    },
+    {
+      "id": "ni-class4-additional-rate-2026-27",
+      "kind": "rate",
+      "title": "National Insurance: Class 4 additional rate",
+      "period": "tax year 2026-27",
+      "value": 0.02,
+      "display": "2%",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.2 Class 4 £ per year 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Lower Profits Limit Self-employed people pay Class 4 National Insurance on profits above the Lower Profits Limit £12,570 £12,570 £12,570 £12,570 Upper Profits Limit Self-employed people pay a lower rate of Class 4 National Insurance on profits above the Upper Profits Limit £50,270 £50,270 £50,270 £50,270 Rate between Lower Profits Limit to the Upper Profits Limit 6% 6% 6% 9% Rate above Upper Profits Limit 2% 2% 2% 2%"
+        }
+      ]
+    },
+    {
+      "id": "ni-class2-weekly-rate-2026-27",
+      "kind": "rate",
+      "title": "National Insurance: Class 2 weekly rate (voluntary)",
+      "period": "tax year 2026-27",
+      "value": 3.65,
+      "display": "£3.65",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.1 Class 2 Thresholds 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Small Profits Threshold amount per year £7,105 £6,845 £6,725 £6,725 Rate per week £3.65 £3.50 £3.45 £3.45"
+        }
+      ]
+    },
+    {
+      "id": "ni-class2-small-profits-threshold-2026-27",
+      "kind": "rate",
+      "title": "National Insurance: Class 2 small profits threshold",
+      "period": "tax year 2026-27",
+      "value": 7105,
+      "display": "£7,105",
+      "sources": [
+        {
+          "title": "Rates and allowances: National Insurance contributions",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions",
+          "retrieved": "2026-11-24",
+          "quote": "3.1 Class 2 Thresholds 2026 to 2027 2025 to 2026 2024 to 2025 2023 to 2024 Small Profits Threshold amount per year £7,105 £6,845 £6,725 £6,725 Rate per week £3.65 £3.50 £3.45 £3.45"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-aia-limit-2025-26",
+      "kind": "rate",
+      "title": "Capital allowances: Annual Investment Allowance limit",
+      "period": "tax year 2025-26",
+      "value": 1000000,
+      "display": "£1 million",
+      "sources": [
+        {
+          "title": "Claim capital allowances: Annual investment allowance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/capital-allowances/annual-investment-allowance",
+          "retrieved": "2026-11-24",
+          "quote": "The AIA amount is £1 million."
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-main-rate-2025-26",
+      "kind": "rate",
+      "title": "Capital allowances: Main pool writing down allowance",
+      "period": "tax year 2025-26",
+      "value": 0.18,
+      "display": "18%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The 3 types of pool are the: main pool with a rate of 14% from April 2026, and 18% before special rate pool with a rate of 6% single asset pools where the rate depends on the item"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-special-rate-2025-26",
+      "kind": "rate",
+      "title": "Capital allowances: Special rate pool writing down allowance",
+      "period": "tax year 2025-26",
+      "value": 0.06,
+      "display": "6%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The 3 types of pool are the: main pool with a rate of 14% from April 2026, and 18% before special rate pool with a rate of 6% single asset pools where the rate depends on the item"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-aia-limit-2026-27",
+      "kind": "rate",
+      "title": "Capital allowances: Annual Investment Allowance limit",
+      "period": "tax year 2026-27",
+      "value": 1000000,
+      "display": "£1 million",
+      "sources": [
+        {
+          "title": "Claim capital allowances: Annual investment allowance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/capital-allowances/annual-investment-allowance",
+          "retrieved": "2026-11-24",
+          "quote": "The AIA amount is £1 million."
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-main-rate-2026-27",
+      "kind": "rate",
+      "title": "Capital allowances: Main pool writing down allowance",
+      "period": "tax year 2026-27",
+      "value": 0.14,
+      "display": "14%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The main rate of writing down allowance changed from 18% to 14% on: 1 April 2026 for Corporation Tax 6 April 2026 for Income Tax"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-special-rate-2026-27",
+      "kind": "rate",
+      "title": "Capital allowances: Special rate pool writing down allowance",
+      "period": "tax year 2026-27",
+      "value": 0.06,
+      "display": "6%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The 3 types of pool are the: main pool with a rate of 14% from April 2026, and 18% before special rate pool with a rate of 6% single asset pools where the rate depends on the item"
+        }
+      ]
+    },
+    {
+      "id": "mileage-car-first-10000-2025-26",
+      "kind": "rate",
+      "title": "Mileage allowances: Cars and vans, first 10,000 business miles",
+      "period": "tax year 2025-26",
+      "value": 0.45,
+      "display": "45p",
+      "sources": [
+        {
+          "title": "Travel — mileage and fuel rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-travel-mileage-and-fuel-allowances/travel-mileage-and-fuel-rates-and-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "Approved mileage rates from tax year 2026 to 2027 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 55p 25p Motor cycles 24p 24p Bicycles 20p 20p Approved mileage rates from tax year 2011 to 2026 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 45p 25p"
+        }
+      ]
+    },
+    {
+      "id": "mileage-car-over-10000-2025-26",
+      "kind": "rate",
+      "title": "Mileage allowances: Cars and vans, over 10,000 business miles",
+      "period": "tax year 2025-26",
+      "value": 0.25,
+      "display": "25p",
+      "sources": [
+        {
+          "title": "Travel — mileage and fuel rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-travel-mileage-and-fuel-allowances/travel-mileage-and-fuel-rates-and-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "Approved mileage rates from tax year 2026 to 2027 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 55p 25p Motor cycles 24p 24p Bicycles 20p 20p Approved mileage rates from tax year 2011 to 2026 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 45p 25p"
+        }
+      ]
+    },
+    {
+      "id": "mileage-car-band-miles-2025-26",
+      "kind": "rate",
+      "title": "Mileage allowances: Business miles at the higher rate",
+      "period": "tax year 2025-26",
+      "value": 10000,
+      "display": "10,000",
+      "sources": [
+        {
+          "title": "Travel — mileage and fuel rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-travel-mileage-and-fuel-allowances/travel-mileage-and-fuel-rates-and-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "Approved mileage rates from tax year 2026 to 2027 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 55p 25p Motor cycles 24p 24p Bicycles 20p 20p Approved mileage rates from tax year 2011 to 2026 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 45p 25p"
+        }
+      ]
+    },
+    {
+      "id": "mileage-car-first-10000-2026-27",
+      "kind": "rate",
+      "title": "Mileage allowances: Cars and vans, first 10,000 business miles",
+      "period": "tax year 2026-27",
+      "value": 0.55,
+      "display": "55p",
+      "sources": [
+        {
+          "title": "Travel — mileage and fuel rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-travel-mileage-and-fuel-allowances/travel-mileage-and-fuel-rates-and-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "Approved mileage rates from tax year 2026 to 2027 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 55p 25p Motor cycles 24p 24p Bicycles 20p 20p Approved mileage rates from tax year 2011 to 2026 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 45p 25p"
+        }
+      ]
+    },
+    {
+      "id": "mileage-car-over-10000-2026-27",
+      "kind": "rate",
+      "title": "Mileage allowances: Cars and vans, over 10,000 business miles",
+      "period": "tax year 2026-27",
+      "value": 0.25,
+      "display": "25p",
+      "sources": [
+        {
+          "title": "Travel — mileage and fuel rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-travel-mileage-and-fuel-allowances/travel-mileage-and-fuel-rates-and-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "Approved mileage rates from tax year 2026 to 2027 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 55p 25p Motor cycles 24p 24p Bicycles 20p 20p Approved mileage rates from tax year 2011 to 2026 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 45p 25p"
+        }
+      ]
+    },
+    {
+      "id": "mileage-car-band-miles-2026-27",
+      "kind": "rate",
+      "title": "Mileage allowances: Business miles at the higher rate",
+      "period": "tax year 2026-27",
+      "value": 10000,
+      "display": "10,000",
+      "sources": [
+        {
+          "title": "Travel — mileage and fuel rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-travel-mileage-and-fuel-allowances/travel-mileage-and-fuel-rates-and-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "Approved mileage rates from tax year 2026 to 2027 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 55p 25p Motor cycles 24p 24p Bicycles 20p 20p Approved mileage rates from tax year 2011 to 2026 Vehicle type First 10,000 business miles in the tax year Each business mile over 10,000 in the tax year Cars and vans 45p 25p"
+        }
+      ]
+    },
+    {
+      "id": "cis-deduction-registered-2025-26",
+      "kind": "rate",
+      "title": "Construction Industry Scheme deductions: Registered subcontractor",
+      "period": "tax year 2025-26",
+      "value": 0.2,
+      "display": "20%",
+      "sources": [
+        {
+          "title": "What you must do as a Construction Industry Scheme (CIS) subcontractor: Get paid",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid",
+          "retrieved": "2026-11-24",
+          "quote": "When a contractor pays you under CIS, they’ll take deductions at the standard rate of 20% if both of these apply: you’re registered for CIS they can verify you If either do not apply, contractors will take deductions at a higher rate of 30%."
+        }
+      ]
+    },
+    {
+      "id": "cis-deduction-unregistered-2025-26",
+      "kind": "rate",
+      "title": "Construction Industry Scheme deductions: Subcontractor not registered",
+      "period": "tax year 2025-26",
+      "value": 0.3,
+      "display": "30%",
+      "sources": [
+        {
+          "title": "What you must do as a Construction Industry Scheme (CIS) subcontractor: Get paid",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid",
+          "retrieved": "2026-11-24",
+          "quote": "When a contractor pays you under CIS, they’ll take deductions at the standard rate of 20% if both of these apply: you’re registered for CIS they can verify you If either do not apply, contractors will take deductions at a higher rate of 30%."
+        }
+      ]
+    },
+    {
+      "id": "cis-deduction-gross-2025-26",
+      "kind": "rate",
+      "title": "Construction Industry Scheme deductions: Gross payment status",
+      "period": "tax year 2025-26",
+      "value": 0,
+      "display": "No deduction",
+      "sources": [
+        {
+          "title": "What you must do as a Construction Industry Scheme (CIS) subcontractor: Get paid",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid",
+          "retrieved": "2026-11-24",
+          "quote": "If you have gross payment status, the contractor will not take deductions from your payments."
+        }
+      ]
+    },
+    {
+      "id": "cis-deduction-registered-2026-27",
+      "kind": "rate",
+      "title": "Construction Industry Scheme deductions: Registered subcontractor",
+      "period": "tax year 2026-27",
+      "value": 0.2,
+      "display": "20%",
+      "sources": [
+        {
+          "title": "What you must do as a Construction Industry Scheme (CIS) subcontractor: Get paid",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid",
+          "retrieved": "2026-11-24",
+          "quote": "When a contractor pays you under CIS, they’ll take deductions at the standard rate of 20% if both of these apply: you’re registered for CIS they can verify you If either do not apply, contractors will take deductions at a higher rate of 30%."
+        }
+      ]
+    },
+    {
+      "id": "cis-deduction-unregistered-2026-27",
+      "kind": "rate",
+      "title": "Construction Industry Scheme deductions: Subcontractor not registered",
+      "period": "tax year 2026-27",
+      "value": 0.3,
+      "display": "30%",
+      "sources": [
+        {
+          "title": "What you must do as a Construction Industry Scheme (CIS) subcontractor: Get paid",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid",
+          "retrieved": "2026-11-24",
+          "quote": "When a contractor pays you under CIS, they’ll take deductions at the standard rate of 20% if both of these apply: you’re registered for CIS they can verify you If either do not apply, contractors will take deductions at a higher rate of 30%."
+        }
+      ]
+    },
+    {
+      "id": "cis-deduction-gross-2026-27",
+      "kind": "rate",
+      "title": "Construction Industry Scheme deductions: Gross payment status",
+      "period": "tax year 2026-27",
+      "value": 0,
+      "display": "No deduction",
+      "sources": [
+        {
+          "title": "What you must do as a Construction Industry Scheme (CIS) subcontractor: Get paid",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid",
+          "retrieved": "2026-11-24",
+          "quote": "If you have gross payment status, the contractor will not take deductions from your payments."
+        }
+      ]
+    },
+    {
+      "id": "vat-registration-threshold-2025-26",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Registration threshold",
+      "period": "tax year 2025-26",
+      "value": 90000,
+      "display": "£90,000",
+      "sources": [
+        {
+          "title": "Register for VAT: When to register for VAT",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-registration/when-to-register",
+          "retrieved": "2026-11-24",
+          "quote": "You must register if either: your total taxable turnover for the last 12 months goes over £90,000 (the VAT threshold) you expect your taxable turnover to go over £90,000 in the next 30 days"
+        }
+      ]
+    },
+    {
+      "id": "vat-standard-rate-2025-26",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Standard rate",
+      "period": "tax year 2025-26",
+      "value": 0.2,
+      "display": "20%",
+      "sources": [
+        {
+          "title": "VAT rates",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-rates",
+          "retrieved": "2026-11-24",
+          "quote": "VAT rates for goods and services % of VAT What the rate applies to Standard rate 20% Most goods and services"
+        }
+      ]
+    },
+    {
+      "id": "vat-reduced-rate-2025-26",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Reduced rate",
+      "period": "tax year 2025-26",
+      "value": 0.05,
+      "display": "5%",
+      "sources": [
+        {
+          "title": "VAT rates",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-rates",
+          "retrieved": "2026-11-24",
+          "quote": "Reduced rate 5% Some goods and services, for example, children’s car seats and home energy"
+        }
+      ]
+    },
+    {
+      "id": "vat-flat-rate-joining-limit-2025-26",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Flat Rate Scheme joining limit",
+      "period": "tax year 2025-26",
+      "value": 150000,
+      "display": "£150,000",
+      "sources": [
+        {
+          "title": "VAT Flat Rate Scheme: Who can join",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-flat-rate-scheme/who-can-join",
+          "retrieved": "2026-11-24",
+          "quote": "You can join the Flat Rate Scheme if: you’re a VAT -registered business you expect your VAT taxable turnover to be £150,000 or less (excluding VAT ) in the next 12 months"
+        }
+      ]
+    },
+    {
+      "id": "vat-flat-rate-leaving-limit-2025-26",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Flat Rate Scheme leaving limit",
+      "period": "tax year 2025-26",
+      "value": 230000,
+      "display": "£230,000",
+      "sources": [
+        {
+          "title": "VAT Flat Rate Scheme: If your circumstances change",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-flat-rate-scheme/if-your-circumstances-change",
+          "retrieved": "2026-11-24",
+          "quote": "You must leave the scheme if: you’re no longer eligible to be in it on the anniversary of joining, your turnover in the last 12 months was more than £230,000 (including VAT ) - or you expect it to be in the next 12 months you expect your total income in the next 30 days alone to be more than £230,000 (including VAT )"
+        }
+      ]
+    },
+    {
+      "id": "vat-flat-rate-limited-cost-trader-2025-26",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Flat rate for a limited cost business",
+      "period": "tax year 2025-26",
+      "value": 0.165,
+      "display": "16.5%",
+      "sources": [
+        {
+          "title": "VAT Flat Rate Scheme: Work out your flat rate",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-flat-rate-scheme/how-much-you-pay",
+          "retrieved": "2026-11-24",
+          "quote": "You’re classed as a ‘limited cost business’ if your goods cost less than either: 2% of your turnover £1,000 a year (if your costs are more than 2%) This means you pay a higher rate of 16.5%."
+        }
+      ]
+    },
+    {
+      "id": "vat-registration-threshold-2026-27",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Registration threshold",
+      "period": "tax year 2026-27",
+      "value": 90000,
+      "display": "£90,000",
+      "sources": [
+        {
+          "title": "Register for VAT: When to register for VAT",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-registration/when-to-register",
+          "retrieved": "2026-11-24",
+          "quote": "You must register if either: your total taxable turnover for the last 12 months goes over £90,000 (the VAT threshold) you expect your taxable turnover to go over £90,000 in the next 30 days"
+        }
+      ]
+    },
+    {
+      "id": "vat-standard-rate-2026-27",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Standard rate",
+      "period": "tax year 2026-27",
+      "value": 0.2,
+      "display": "20%",
+      "sources": [
+        {
+          "title": "VAT rates",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-rates",
+          "retrieved": "2026-11-24",
+          "quote": "VAT rates for goods and services % of VAT What the rate applies to Standard rate 20% Most goods and services"
+        }
+      ]
+    },
+    {
+      "id": "vat-reduced-rate-2026-27",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Reduced rate",
+      "period": "tax year 2026-27",
+      "value": 0.05,
+      "display": "5%",
+      "sources": [
+        {
+          "title": "VAT rates",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-rates",
+          "retrieved": "2026-11-24",
+          "quote": "Reduced rate 5% Some goods and services, for example, children’s car seats and home energy"
+        }
+      ]
+    },
+    {
+      "id": "vat-flat-rate-joining-limit-2026-27",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Flat Rate Scheme joining limit",
+      "period": "tax year 2026-27",
+      "value": 150000,
+      "display": "£150,000",
+      "sources": [
+        {
+          "title": "VAT Flat Rate Scheme: Who can join",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-flat-rate-scheme/who-can-join",
+          "retrieved": "2026-11-24",
+          "quote": "You can join the Flat Rate Scheme if: you’re a VAT -registered business you expect your VAT taxable turnover to be £150,000 or less (excluding VAT ) in the next 12 months"
+        }
+      ]
+    },
+    {
+      "id": "vat-flat-rate-leaving-limit-2026-27",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Flat Rate Scheme leaving limit",
+      "period": "tax year 2026-27",
+      "value": 230000,
+      "display": "£230,000",
+      "sources": [
+        {
+          "title": "VAT Flat Rate Scheme: If your circumstances change",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-flat-rate-scheme/if-your-circumstances-change",
+          "retrieved": "2026-11-24",
+          "quote": "You must leave the scheme if: you’re no longer eligible to be in it on the anniversary of joining, your turnover in the last 12 months was more than £230,000 (including VAT ) - or you expect it to be in the next 12 months you expect your total income in the next 30 days alone to be more than £230,000 (including VAT )"
+        }
+      ]
+    },
+    {
+      "id": "vat-flat-rate-limited-cost-trader-2026-27",
+      "kind": "rate",
+      "title": "VAT thresholds and rates: Flat rate for a limited cost business",
+      "period": "tax year 2026-27",
+      "value": 0.165,
+      "display": "16.5%",
+      "sources": [
+        {
+          "title": "VAT Flat Rate Scheme: Work out your flat rate",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/vat-flat-rate-scheme/how-much-you-pay",
+          "retrieved": "2026-11-24",
+          "quote": "You’re classed as a ‘limited cost business’ if your goods cost less than either: 2% of your turnover £1,000 a year (if your costs are more than 2%) This means you pay a higher rate of 16.5%."
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-main-rate-fy2025",
+      "kind": "rate",
+      "title": "Corporation Tax: Main rate",
+      "period": "financial year 2025",
+      "value": 0.25,
+      "display": "25%",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-small-profits-rate-fy2025",
+      "kind": "rate",
+      "title": "Corporation Tax: Small profits rate",
+      "period": "financial year 2025",
+      "value": 0.19,
+      "display": "19%",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-lower-limit-fy2025",
+      "kind": "rate",
+      "title": "Corporation Tax: Lower limit",
+      "period": "financial year 2025",
+      "value": 50000,
+      "display": "£50,000",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-upper-limit-fy2025",
+      "kind": "rate",
+      "title": "Corporation Tax: Upper limit",
+      "period": "financial year 2025",
+      "value": 250000,
+      "display": "£250,000",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-marginal-relief-fraction-fy2025",
+      "kind": "rate",
+      "title": "Corporation Tax: Marginal relief fraction",
+      "period": "financial year 2025",
+      "value": 0.015,
+      "display": "3/200",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-main-rate-fy2026",
+      "kind": "rate",
+      "title": "Corporation Tax: Main rate",
+      "period": "financial year 2026",
+      "value": 0.25,
+      "display": "25%",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-small-profits-rate-fy2026",
+      "kind": "rate",
+      "title": "Corporation Tax: Small profits rate",
+      "period": "financial year 2026",
+      "value": 0.19,
+      "display": "19%",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-lower-limit-fy2026",
+      "kind": "rate",
+      "title": "Corporation Tax: Lower limit",
+      "period": "financial year 2026",
+      "value": 50000,
+      "display": "£50,000",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-upper-limit-fy2026",
+      "kind": "rate",
+      "title": "Corporation Tax: Upper limit",
+      "period": "financial year 2026",
+      "value": 250000,
+      "display": "£250,000",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —"
+        }
+      ]
+    },
+    {
+      "id": "corporation-tax-marginal-relief-fraction-fy2026",
+      "kind": "rate",
+      "title": "Corporation Tax: Marginal relief fraction",
+      "period": "financial year 2026",
+      "value": 0.015,
+      "display": "3/200",
+      "sources": [
+        {
+          "title": "Corporation Tax rates and allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-full-expensing-fy2025",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Full expensing, main pool plant and machinery",
+      "period": "financial year 2025",
+      "value": 1,
+      "display": "100%",
+      "sources": [
+        {
+          "title": "Claim capital allowances: First year allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/capital-allowances/first-year-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "You can claim 100% with full expensing or 50% with its special rate first year allowance against the cost of plant or machinery if: you’re a company you bought it on or after 1 April 2023 it’s not a car"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-company-aia-limit-fy2025",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Annual Investment Allowance limit",
+      "period": "financial year 2025",
+      "value": 1000000,
+      "display": "£1 million",
+      "sources": [
+        {
+          "title": "Claim capital allowances: Annual investment allowance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/capital-allowances/annual-investment-allowance",
+          "retrieved": "2026-11-24",
+          "quote": "The AIA amount is £1 million."
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-company-main-rate-fy2025",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Main pool writing down allowance",
+      "period": "financial year 2025",
+      "value": 0.18,
+      "display": "18%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The 3 types of pool are the: main pool with a rate of 14% from April 2026, and 18% before special rate pool with a rate of 6% single asset pools where the rate depends on the item"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-company-special-rate-fy2025",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Special rate pool writing down allowance",
+      "period": "financial year 2025",
+      "value": 0.06,
+      "display": "6%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The 3 types of pool are the: main pool with a rate of 14% from April 2026, and 18% before special rate pool with a rate of 6% single asset pools where the rate depends on the item"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-full-expensing-fy2026",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Full expensing, main pool plant and machinery",
+      "period": "financial year 2026",
+      "value": 1,
+      "display": "100%",
+      "sources": [
+        {
+          "title": "Claim capital allowances: First year allowances",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/capital-allowances/first-year-allowances",
+          "retrieved": "2026-11-24",
+          "quote": "You can claim 100% with full expensing or 50% with its special rate first year allowance against the cost of plant or machinery if: you’re a company you bought it on or after 1 April 2023 it’s not a car"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-company-aia-limit-fy2026",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Annual Investment Allowance limit",
+      "period": "financial year 2026",
+      "value": 1000000,
+      "display": "£1 million",
+      "sources": [
+        {
+          "title": "Claim capital allowances: Annual investment allowance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/capital-allowances/annual-investment-allowance",
+          "retrieved": "2026-11-24",
+          "quote": "The AIA amount is £1 million."
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-company-main-rate-fy2026",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Main pool writing down allowance",
+      "period": "financial year 2026",
+      "value": 0.14,
+      "display": "14%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The main rate of writing down allowance changed from 18% to 14% on: 1 April 2026 for Corporation Tax 6 April 2026 for Income Tax"
+        }
+      ]
+    },
+    {
+      "id": "capital-allowances-company-special-rate-fy2026",
+      "kind": "rate",
+      "title": "Capital allowances for companies: Special rate pool writing down allowance",
+      "period": "financial year 2026",
+      "value": 0.06,
+      "display": "6%",
+      "sources": [
+        {
+          "title": "Work out your writing down allowances: Rates and pools",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/work-out-capital-allowances/rates-and-pools",
+          "retrieved": "2026-11-24",
+          "quote": "The 3 types of pool are the: main pool with a rate of 14% from April 2026, and 18% before special rate pool with a rate of 6% single asset pools where the rate depends on the item"
+        }
+      ]
+    },
+    {
+      "id": "hmrc-ct-online-service-closed-2026-03",
+      "kind": "rule",
+      "title": "HMRC: free online accounts and Company Tax Return service closed",
+      "date": "2026-03-31",
+      "value": "From 1 April 2026 a company uses commercial software to file its annual accounts and its Company Tax Return with HMRC.",
+      "display": "From 1 April 2026 a company uses commercial software to file its annual accounts and its Company Tax Return with HMRC.",
+      "sources": [
+        {
+          "title": "Filing company accounts and tax returns if you previously used the HMRC online service",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/closure-of-the-service-to-file-your-company-accounts-and-tax-return",
+          "retrieved": "2026-11-24",
+          "quote": "The ‘File your accounts and Company Tax Return’ online service closed on 31 March 2026. From 1 April 2026 you should use commercial software to file annual accounts and Company Tax Returns with HMRC."
+        }
+      ]
+    },
+    {
+      "id": "ch-identity-verification-2025-11",
+      "kind": "rule",
+      "title": "Companies House: director and PSC identity verification",
+      "date": "2025-11-18",
+      "value": "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A new director gives the Companies House personal code as part of the appointment filing, or when the company is incorporated. A new PSC gives the personal code when first added to the Companies House register, or within 14 days of being added.",
+      "display": "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A new director gives the Companies House personal code as part of the appointment filing, or when the company is incorporated. A new PSC gives the personal code when first added to the Companies House register, or within 14 days of being added.",
+      "sources": [
+        {
+          "title": "Verifying your identity for Companies House",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/verifying-your-identity-for-companies-house",
+          "retrieved": "2026-11-24",
+          "quote": "If you become a director, you’ll need to provide it as part of your appointment filing or when you incorporate a company."
+        },
+        {
+          "title": "Verifying your identity for Companies House",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/verifying-your-identity-for-companies-house",
+          "retrieved": "2026-11-24",
+          "quote": "If you’re a director or PSC, you’ll need to use your Companies House personal code to connect your verified identity to our records for each role you hold. This is part of the legal requirement to verify your identity for Companies House."
+        },
+        {
+          "title": "Verifying your identity for Companies House",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/verifying-your-identity-for-companies-house",
+          "retrieved": "2026-11-24",
+          "quote": "If you become a PSC, you’ll need to provide it when you’re first added to the Companies House register, or within 14 days of being added."
+        }
+      ]
+    },
+    {
+      "id": "vat-mtd-all-registered-2022-04",
+      "kind": "rule",
+      "title": "VAT: every VAT-registered business",
+      "date": "2022-04-01",
+      "value": "All VAT-registered businesses use Making Tax Digital for VAT, whatever their turnover. Your first VAT period starting on or after 1 April 2022 is the first one under the rule.",
+      "display": "All VAT-registered businesses use Making Tax Digital for VAT, whatever their turnover. Your first VAT period starting on or after 1 April 2022 is the first one under the rule.",
+      "sources": [
+        {
+          "title": "Making Tax Digital for VAT is coming – are you ready?",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/news/making-tax-digital-for-vat-is-coming-are-you-ready",
+          "retrieved": "2026-11-24",
+          "quote": "Businesses need to have signed up to Making Tax Digital for their first VAT return starting on or after 1 April 2022."
+        }
+      ]
+    },
+    {
+      "id": "itsa-mtd-over-50k-2026-04",
+      "kind": "rule",
+      "title": "Income Tax: qualifying income over £50,000",
+      "date": "2026-04-06",
+      "value": "Sole traders and landlords with qualifying income over £50,000 in the 2024 to 2025 tax year use Making Tax Digital for Income Tax.",
+      "display": "Sole traders and landlords with qualifying income over £50,000 in the 2024 to 2025 tax year use Making Tax Digital for Income Tax.",
+      "sources": [
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "If your qualifying income is over: £50,000 for the 2024 to 2025 tax year, you should’ve started using Making Tax Digital for Income Tax from 6 April 2026 — you can still sign up or sign up your client, if you have not already done so"
+        },
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "You need to use Making Tax Digital for Income Tax if all of the following apply: you’re a sole trader or a landlord registered for Self Assessment you get income from self-employment or property, or both your qualifying income is more than the relevant threshold for the tax year — work out your qualifying income"
+        }
+      ]
+    },
+    {
+      "id": "itsa-mtd-over-30k-2027-04",
+      "kind": "rule",
+      "title": "Income Tax: qualifying income over £30,000",
+      "date": "2027-04-06",
+      "value": "The rule reaches qualifying income over £30,000 in the 2025 to 2026 tax year.",
+      "display": "The rule reaches qualifying income over £30,000 in the 2025 to 2026 tax year.",
+      "sources": [
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "If your qualifying income is over: £50,000 for the 2024 to 2025 tax year, you should’ve started using Making Tax Digital for Income Tax from 6 April 2026 — you can still sign up or sign up your client, if you have not already done so £30,000 for the 2025 to 2026 tax year, you will need to use it from 6 April 2027"
+        },
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "You need to use Making Tax Digital for Income Tax if all of the following apply: you’re a sole trader or a landlord registered for Self Assessment you get income from self-employment or property, or both your qualifying income is more than the relevant threshold for the tax year — work out your qualifying income"
+        }
+      ]
+    },
+    {
+      "id": "itsa-mtd-over-20k-2028-04",
+      "kind": "rule",
+      "title": "Income Tax: qualifying income over £20,000",
+      "date": "2028-04-06",
+      "value": "The rule reaches qualifying income over £20,000 in the 2026 to 2027 tax year.",
+      "display": "The rule reaches qualifying income over £20,000 in the 2026 to 2027 tax year.",
+      "sources": [
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "If your qualifying income is over: £50,000 for the 2024 to 2025 tax year, you should’ve started using Making Tax Digital for Income Tax from 6 April 2026 — you can still sign up or sign up your client, if you have not already done so £30,000 for the 2025 to 2026 tax year, you will need to use it from 6 April 2027 £20,000 for the 2026 to 2027 tax year, you will need to use it from 6 April 2028"
+        },
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "You need to use Making Tax Digital for Income Tax if all of the following apply: you’re a sole trader or a landlord registered for Self Assessment you get income from self-employment or property, or both your qualifying income is more than the relevant threshold for the tax year — work out your qualifying income"
+        }
+      ]
+    },
+    {
+      "id": "ch-accounts-software-2028-04",
+      "kind": "rule",
+      "title": "Companies House: accounts filed by commercial software only",
+      "date": "2028-04-01",
+      "value": "From April 2028 every company files its accounts in iXBRL format using commercial software. The Companies House web and paper services close for accounts. Confirmation statements and other filings stay on the web service.",
+      "display": "From April 2028 every company files its accounts in iXBRL format using commercial software. The Companies House web and paper services close for accounts. Confirmation statements and other filings stay on the web service.",
+      "sources": [
+        {
+          "title": "Companies House update to accounts filing from April 2028",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/news/companies-house-update-to-accounts-filing-from-april-2028",
+          "retrieved": "2026-11-24",
+          "quote": "As announced earlier this year, from April 2028, we will require all UK registered companies to file their accounts in Inline eXtensible Business Reporting Language (iXBRL) format using commercial software."
+        },
+        {
+          "title": "Companies House update to accounts filing from April 2028",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/news/companies-house-update-to-accounts-filing-from-april-2028",
+          "retrieved": "2026-11-24",
+          "quote": "From this date, our web and paper-based filing systems will be closed for accounts filings."
+        },
+        {
+          "title": "Companies House update to accounts filing from April 2028",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/government/news/companies-house-update-to-accounts-filing-from-april-2028",
+          "retrieved": "2026-11-24",
+          "quote": "Companies House web filing services will remain available and fully supported for non-accounts filings, including confirmation statements and updates to director details."
+        }
+      ]
+    },
+    {
+      "id": "itsa-quarterly-update-deadlines",
+      "kind": "rule",
+      "title": "Income Tax quarterly updates",
+      "value": "Send an update for each quarter by its deadline. These are the standard update periods.",
+      "display": "Send an update for each quarter by its deadline. These are the standard update periods. 6 April to 5 July: 7 August. 6 April to 5 October: 7 November. 6 April to 5 January: 7 February. 6 April to 5 April: 7 May, in the following tax year.",
+      "sources": [
+        {
+          "title": "Use Making Tax Digital for Income Tax - Send quarterly updates - Guidance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/send-quarterly-updates",
+          "retrieved": "2026-11-24",
+          "quote": "6 April to 5 July 7 August 6 April to 5 October 7 November 6 April to 5 January 7 February 6 April to 5 April 7 May (the following tax year)"
+        }
+      ]
+    },
+    {
+      "id": "itsa-final-declaration-deadline",
+      "kind": "rule",
+      "title": "Income Tax final declaration",
+      "value": "Submit your tax return by 31 January following the end of the tax year. You can submit it earlier.",
+      "display": "Submit your tax return by 31 January following the end of the tax year. You can submit it earlier.",
+      "sources": [
+        {
+          "title": "Use Making Tax Digital for Income Tax - Submit your tax return - Guidance",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/submit-your-tax-return",
+          "retrieved": "2026-11-24",
+          "quote": "You must submit your tax return by 31 January after the end of the relevant tax year, but you can submit it earlier."
+        }
+      ]
+    },
+    {
+      "id": "ch-confirmation-statement-12-months",
+      "kind": "rule",
+      "title": "Companies House confirmation statement",
+      "value": "File at least one confirmation statement every 12 months, even if nothing has changed. You can file early. You do not have to wait for the current review period to end.",
+      "display": "File at least one confirmation statement every 12 months, even if nothing has changed. You can file early. You do not have to wait for the current review period to end.",
+      "sources": [
+        {
+          "title": "Running a limited company: your responsibilities: Confirmation statement",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/running-a-limited-company/confirmation-statement",
+          "retrieved": "2026-11-24",
+          "quote": "You must review your records and file at least one confirmation statement every 12 months."
+        },
+        {
+          "title": "Running a limited company: your responsibilities: Confirmation statement",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/running-a-limited-company/confirmation-statement",
+          "retrieved": "2026-11-24",
+          "quote": "You do not have to wait until your current review period has ended before filing your confirmation statement."
+        }
+      ]
+    },
+    {
+      "id": "ch-accounts-9-months",
+      "kind": "rule",
+      "title": "Companies House annual accounts",
+      "value": "File the annual accounts with Companies House 9 months after the end of the company's financial year. You can file the accounts and the Company Tax Return together or separately.",
+      "display": "File the annual accounts with Companies House 9 months after the end of the company's financial year. You can file the accounts and the Company Tax Return together or separately.",
+      "sources": [
+        {
+          "title": "Accounts and tax returns for private limited companies: Overview",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/prepare-file-annual-accounts-for-limited-company",
+          "retrieved": "2026-11-24",
+          "quote": "File annual accounts with Companies House 9 months after your company’s financial year ends"
+        },
+        {
+          "title": "Accounts and tax returns for private limited companies: Overview",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/prepare-file-annual-accounts-for-limited-company",
+          "retrieved": "2026-11-24",
+          "quote": "You can file with Companies House and HMRC together or separately."
+        }
+      ]
+    },
+    {
+      "id": "ch-revised-accounts-28-days",
+      "kind": "rule",
+      "title": "Revised accounts at Companies House",
+      "value": "When the directors revise accounts already filed, they must deliver the revised accounts to Companies House within 28 days of the date of revision.",
+      "display": "When the directors revise accounts already filed, they must deliver the revised accounts to Companies House within 28 days of the date of revision.",
+      "sources": [
+        {
+          "title": "The Companies (Revision of Defective Accounts and Reports) Regulations 2008",
+          "publisher": "legislation.gov.uk",
+          "url": "https://www.legislation.gov.uk/uksi/2008/373/regulation/14",
+          "retrieved": "2026-11-24",
+          "quote": "The directors of the company must, within 28 days of the date of revision, deliver to the registrar— (a) in the case of a revision by replacement, a copy of the revised accounts or (as the case may be) the revised report, together with a copy of the auditor's report on those accounts or (as the case may be) on that report, or (b) in the case of a revision by supplementary note, a copy of that note, together with a copy of the auditor's report on the revised accounts or (as the case may be) on the revised report."
+        }
+      ]
+    },
+    {
+      "id": "ct600-12-months",
+      "kind": "rule",
+      "title": "Company Tax Return (CT600)",
+      "value": "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers. A period of account longer than 12 months, up to 18 months, files as two returns, both due 12 months after the period of account ends.",
+      "display": "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers. A period of account longer than 12 months, up to 18 months, files as two returns, both due 12 months after the period of account ends.",
+      "sources": [
+        {
+          "title": "Company Tax Returns: Overview",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/company-tax-returns/deadline-and-penalties",
+          "retrieved": "2026-11-24",
+          "quote": "The deadline for your tax return is 12 months after the end of the accounting period it covers."
+        }
+      ]
+    },
+    {
+      "id": "ct-payment-9-months-1-day",
+      "kind": "rule",
+      "title": "Corporation Tax payment",
+      "value": "Pay Corporation Tax 9 months and 1 day after the end of the accounting period, when taxable profits are up to £1.5 million.",
+      "display": "Pay Corporation Tax 9 months and 1 day after the end of the accounting period, when taxable profits are up to £1.5 million.",
+      "sources": [
+        {
+          "title": "Pay your Corporation Tax bill: Overview",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/pay-corporation-tax",
+          "retrieved": "2026-11-24",
+          "quote": "You must pay your Corporation Tax 9 months and 1 day after the end of your accounting period."
+        }
+      ]
+    },
+    {
+      "id": "itsa-mtd-partnerships-date-unset",
+      "kind": "rule",
+      "title": "Income Tax: partnerships",
+      "value": "Partnerships will use Making Tax Digital for Income Tax. HMRC has not yet set the date.",
+      "display": "Partnerships will use Making Tax Digital for Income Tax. HMRC has not yet set the date.",
+      "sources": [
+        {
+          "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
+          "publisher": "GOV.UK",
+          "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+          "retrieved": "2026-11-24",
+          "quote": "Partnerships will also need to use Making Tax Digital for Income Tax in the future. We’ll set out the timeline for this at a later date."
+        }
+      ]
+    }
+  ]
+}
