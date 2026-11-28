@@ -178,6 +178,25 @@ describe("the hosted tool set", () => {
     expect(HOSTED_TOOL_NAMES).toContain("look_up_rule");
   });
 
+  it("offers find_help and book_format outside prod and keeps prod's eleven tools as they are", () => {
+    expect(hostedToolNames("ci")).toEqual(expect.arrayContaining(["find_help", "book_format"]));
+    expect(hostedToolNames("prod")).toEqual([
+      "list_books",
+      "open_book",
+      "derive_vat_return",
+      "prepare_vat_return",
+      "get_vat_receipt",
+      "list_vat_receipts",
+      "company_filing_deadlines",
+      "derive_micro_entity_accounts",
+      "derive_small_company_accounts",
+      "derive_company_tax_return",
+      "list_accounts_receipts",
+    ]);
+    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("find_help");
+    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("book_format");
+  });
+
   it("gives a caller in the reviewer group prod's tool set in every environment", () => {
     for (const environmentName of ["ci", "simulator", undefined]) {
       expect(hostedToolNames(environmentName, [REVIEWER_GROUP])).toEqual(hostedToolNames("prod"));

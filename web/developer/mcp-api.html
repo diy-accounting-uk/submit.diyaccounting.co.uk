@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (53)</h2>
+        <h2>Tools (55)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -90,6 +90,38 @@
           <pre><code>{
   &quot;type&quot;: &quot;object&quot;,
   &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-book_format">
+        <summary><code>book_format</code></summary>
+        <p>Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each box's number, label, section and format, narrowed to one section when section is given. Use this before reading or changing lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It reads no DIYA-GL book and changes nothing.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>part</code></td><td>&quot;book&quot; | &quot;ct600&quot;</td><td>no</td><td>book (the default) for the DIYA-GL book format, ct600 for the CT600 box map</td></tr>
+            <tr><td><code>section</code></td><td>string</td><td>no</td><td>With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;part&quot;: {
+      &quot;description&quot;: &quot;book (the default) for the DIYA-GL book format, ct600 for the CT600 box map&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;book&quot;,
+        &quot;ct600&quot;
+      ]
+    },
+    &quot;section&quot;: {
+      &quot;description&quot;: &quot;With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -385,6 +417,48 @@
   },
   &quot;required&quot;: [
     &quot;periodEnd&quot;
+  ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-find_help">
+        <summary><code>find_help</code></summary>
+        <p>Searches the DIY Accounting Submit guide (its how-to journeys and the MCP, rates and MTD calendar pages) and the diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. It needs no DIYA-GL book, reads nothing of the person's records, and gives no advice on their own case.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>query</code></td><td>string</td><td>yes</td><td>The question or the words to search for, as the person put it</td></tr>
+            <tr><td><code>source</code></td><td>&quot;guide&quot; | &quot;knowledge-base&quot;</td><td>no</td><td>Search only the Submit guide (guide) or only the diya-gl knowledge base (knowledge-base)</td></tr>
+            <tr><td><code>limit</code></td><td>integer</td><td>no</td><td>How many matches to answer, 1 to 10; 5 when omitted</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;query&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;description&quot;: &quot;The question or the words to search for, as the person put it&quot;
+    },
+    &quot;source&quot;: {
+      &quot;description&quot;: &quot;Search only the Submit guide (guide) or only the diya-gl knowledge base (knowledge-base)&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;guide&quot;,
+        &quot;knowledge-base&quot;
+      ]
+    },
+    &quot;limit&quot;: {
+      &quot;description&quot;: &quot;How many matches to answer, 1 to 10; 5 when omitted&quot;,
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: 1,
+      &quot;maximum&quot;: 10
+    }
+  },
+  &quot;required&quot;: [
+    &quot;query&quot;
   ],
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>

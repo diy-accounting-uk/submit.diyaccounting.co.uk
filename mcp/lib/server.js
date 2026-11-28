@@ -28,6 +28,7 @@ import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveCompanyTaxReturn, deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
 import { prepareCompanyTaxReturn, prepareMicroEntityAccounts, prepareSmallCompanyAccounts, prepareVatReturn } from "./handoff-tools.js";
+import { bookFormat, findHelp, HELP_SOURCES, MAX_MATCHES } from "./help-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerVatReviewCard, VAT_REVIEW_CARD_TOOLS, VAT_REVIEW_CARD_TOOL_META } from "./vat-review-card.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
@@ -1065,6 +1066,47 @@ export const TOOLS = {
       "contacts no outside service.",
     inputSchema: {},
     handler: prepareCompanyTaxReturn,
+  },
+  find_help: {
+    title: "Find help",
+    annotations: READS,
+    description:
+      "Searches the DIY Accounting Submit guide (its how-to journeys and the MCP, rates and MTD calendar pages) and the " +
+      "diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, " +
+      "best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a " +
+      "filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. " +
+      "It needs no DIYA-GL book, reads nothing of the person's records, and gives no advice on their own case.",
+    inputSchema: {
+      query: z.string().describe("The question or the words to search for, as the person put it"),
+      source: z
+        .enum(Object.keys(HELP_SOURCES))
+        .optional()
+        .describe("Search only the Submit guide (guide) or only the diya-gl knowledge base (knowledge-base)"),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_MATCHES)
+        .optional()
+        .describe(`How many matches to answer, 1 to ${MAX_MATCHES}; 5 when omitted`),
+    },
+    handler: findHelp,
+  },
+  book_format: {
+    title: "Describe the DIYA-GL book format",
+    annotations: READS,
+    description:
+      "Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, " +
+      "the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and " +
+      "meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each " +
+      "box's number, label, section and format, narrowed to one section when section is given. Use this before reading or " +
+      "changing lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It reads no DIYA-GL book and " +
+      "changes nothing.",
+    inputSchema: {
+      part: z.enum(["book", "ct600"]).optional().describe("book (the default) for the DIYA-GL book format, ct600 for the CT600 box map"),
+      section: z.string().optional().describe("With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation"),
+    },
+    handler: bookFormat,
   },
 };
 
