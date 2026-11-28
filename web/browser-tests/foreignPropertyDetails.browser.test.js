@@ -34,6 +34,11 @@ window.showStatus = function(message, type){ window.__status.push({ message, typ
 window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};
 window.generateRandomState = function(){ return "s"; };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
+window.__writes = [];
+window.fileWithHmrc = function(words, send){
+  window.__writes.push(Object.assign({}, words));
+  return send().catch(function(error){ window.__writes[window.__writes.length - 1].failed = true; throw error; });
+};
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "get", nino, businessId, taxYear });
   if (window.__notFound) return Promise.reject(Object.assign(new Error("not found"), { status: 404 }));
@@ -158,6 +163,41 @@ test.describe("foreign property details", () => {
     });
     expect(post.details.endDate).toBeUndefined();
     await expect(page.locator("#propertyForm")).toBeHidden();
+    expect(await page.evaluate(() => window.__writes)).toEqual([
+      {
+        sending: "Sending the property to HMRC...",
+        notSent: "HMRC has not got the property.",
+        answers: "Your answers are still in this form.",
+      },
+    ]);
+  });
+
+  test("leads the country with its SA106 column and links HMRC's notes in its hint", async ({ page }) => {
+    await loadList(page);
+    await page.locator("#addPropertyBtn").click();
+    await expect(page.locator('label[for="propertyCountry"]')).toHaveText("SA106 column A: Country or territory");
+    await expect(page.locator("#propertyCountry-hint")).toHaveText(
+      "Where the property is. You cannot change this after you add the property. Foreign (SA106) notes.",
+    );
+    await expect(page.locator("#propertyCountry-hint a")).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/government/publications/self-assessment-foreign-sa106",
+    );
+  });
+
+  test("a save HMRC refuses is told in the failure panel, and the form keeps the answers", async ({ page }) => {
+    await loadList(page);
+    await page.evaluate(() => {
+      window.postForeignPropertyDetails = () => Promise.reject(Object.assign(new Error("HMRC rejected the request"), { status: 400 }));
+    });
+    await page.locator("#addPropertyBtn").click();
+    await page.locator("#propertyName").fill("Porto flat");
+    await page.locator("#propertyCountry").selectOption("PRT");
+    await page.locator("#savePropertyBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__writes.map((write) => write.failed))).toEqual([true]);
+    expect(await page.evaluate(() => window.__status.filter((status) => status.type === "error"))).toEqual([]);
+    await expect(page.locator("#propertyName")).toHaveValue("Porto flat");
   });
 
   test("offers neither GBR nor a free-text country", async ({ page }) => {

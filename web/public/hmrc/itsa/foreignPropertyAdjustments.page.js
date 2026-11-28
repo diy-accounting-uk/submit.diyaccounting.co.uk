@@ -139,8 +139,12 @@ async function retrieveSummary(criteria, calculationId, hmrcGrantId) {
   return window.getBsasForeignProperty(criteria.nino, calculationId, criteria.taxYear, hmrcGrantId, govClientHeaders, false, scenario);
 }
 
+// A country's or a property's field is led by its SA106 box. The SA106 has no box of its own for
+// the furnished holiday lettings in the EEA, so their fields keep their labels.
 function moneyGroup(prefix, field) {
-  return window.selfEmploymentExpenses.moneyGroup({ id: `${prefix}-${field.id}`, label: field.label }, MONEY_HINT);
+  const group = { id: `${prefix}-${field.id}`, label: field.label };
+  if (prefix === FHL_PREFIX) return window.selfEmploymentExpenses.moneyGroup(group, MONEY_HINT);
+  return window.foreignPropertyRegister.moneyGroup(field.id, group, MONEY_HINT);
 }
 
 function mountAdjustmentFields() {
@@ -235,20 +239,27 @@ function displaySummary(bsas, taxYear) {
 }
 
 async function runTriggerAndRetrieve(criteria, hmrcGrantId) {
-  showStatus(siteText("itsa.year-end-requesting", "Requesting the year-end summary..."), "info");
   const govClientHeaders = await getGovClientHeaders();
-  const triggerResult = await triggerBsas(
+  const triggerResult = await window.fileWithHmrc(
     {
-      nino: criteria.nino,
-      businessId: criteria.businessId,
-      accountingPeriodStartDate: criteria.accountingPeriodStartDate,
-      accountingPeriodEndDate: criteria.accountingPeriodEndDate,
-      typeOfBusiness: "foreign-property",
+      sending: siteText("itsa-fp-adjustments.narrate-requesting", "Asking HMRC for the year-end summary..."),
+      notSent: siteText("itsa-fp-adjustments.failure-not-requested", "HMRC has not made the year-end summary."),
+      answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
     },
-    hmrcGrantId,
-    govClientHeaders,
-    criteria.runFraudPreventionHeaderValidation,
-    criteria.testScenario,
+    () =>
+      triggerBsas(
+        {
+          nino: criteria.nino,
+          businessId: criteria.businessId,
+          accountingPeriodStartDate: criteria.accountingPeriodStartDate,
+          accountingPeriodEndDate: criteria.accountingPeriodEndDate,
+          typeOfBusiness: "foreign-property",
+        },
+        hmrcGrantId,
+        govClientHeaders,
+        criteria.runFraudPreventionHeaderValidation,
+        criteria.testScenario,
+      ),
   );
   triggered = { nino: criteria.nino, taxYear: criteria.taxYear, calculationId: triggerResult.calculationId };
   showStatus(siteText("itsa.year-end-retrieving", "Retrieving year-end summary..."), "info");
@@ -364,18 +375,25 @@ async function runRequest(request, hmrcGrantId) {
     if (request.action === "trigger") {
       await runTriggerAndRetrieve(request.criteria, hmrcGrantId);
     } else {
-      showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
-      await sendAdjustment(request, hmrcGrantId);
-      hideStatus();
+      await window.fileWithHmrc(
+        {
+          sending: siteText("itsa-fp-adjustments.narrate-sending", "Sending the adjustment to HMRC..."),
+          notSent: siteText("itsa-fp-adjustments.failure-not-sent", "HMRC has not got the adjustment."),
+          answers: siteText("ct.failure-answers-in-form", "Your answers are still in this form."),
+        },
+        () => sendAdjustment(request, hmrcGrantId),
+      );
     }
   } catch (error) {
+    // A failure fileWithHmrc has shown in the panel gets no message of the page's own.
+    const told = Boolean(document.getElementById("failureDetail"));
     if (window.EntitlementStatus?.isBundleRefusal(error)) {
       window.EntitlementStatus.showPassNeeded("hmrc");
     } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
-    } else {
+      if (!told) showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
+    } else if (!told) {
       showStatus(
         request.action === "trigger"
           ? siteText("itsa.year-end-request-failed", "Failed to request the year-end summary: {reason}", { reason: error.message })

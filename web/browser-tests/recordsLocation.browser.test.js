@@ -339,3 +339,33 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The company has no inspection location.");
 });
+
+test("a company Submit could not read from Companies House before sending shows the failure panel as Companies House not answering", async ({
+  page,
+}) => {
+  await serveSite(page);
+  await page.route("**/api/v1/companies-house/record-location", (route) =>
+    route.fulfill({
+      status: 502,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Could not read the company from Companies House to check the filing, so it has not been sent",
+        code: "company-unread",
+      }),
+    }),
+  );
+  await page.goto(`${SITE}/companies-house/recordsLocation.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByLabel("Records are now kept at the registered office (form AD04)").check();
+  await page.getByLabel("Register of debenture holders").check();
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  const panel = page.locator("#statusMessagesContainer + #failureDetail");
+  await expect(panel).toHaveAttribute("data-kind", "not-answering", { timeout: 15000 });
+  await expect(panel.locator('[data-part="kind"]')).toHaveText(
+    "Companies House did not answer when Submit read the company, so nothing was sent. Try again later.",
+  );
+  await expect(panel.locator('[data-part="next"]')).toHaveCount(0);
+  await shoot(page, "failure-not-answering");
+});

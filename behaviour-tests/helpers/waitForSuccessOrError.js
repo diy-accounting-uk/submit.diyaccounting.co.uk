@@ -18,6 +18,9 @@ function defaultErrorConditions() {
       selector: "#statusMessagesContainer .status-message.status-error",
       textPattern: /failed|error|could not|expired|forbidden|no tokens/i,
     },
+    // A write sent through the HMRC write helper or the filing pages shows its failure in the panel
+    // of filing-failure.js in place of an error line.
+    { selector: ".failure-detail", textPattern: /\S/ },
   ];
 }
 
@@ -172,6 +175,16 @@ export async function waitForSuccessOrError(page, options = {}) {
 // An HMRC sandbox scenario that answers with an error is done when the page shows its error. The request
 // goes out only after the fraud prevention headers are gathered, and the public IP lookup there can take
 // several seconds, so a fixed short wait can read the page before the request has even been sent.
+/**
+ * Wait for the failure panel a write shows when HMRC or Companies House refuses it, with the
+ * service's errors listed.
+ * @param {import('@playwright/test').Page} page
+ * @param {{timeout?: number}} [options]
+ */
+export async function waitForFailurePanel(page, { timeout = 60_000 } = {}) {
+  await expect(page.locator(".failure-detail [data-part=errors] li").first()).toBeVisible({ timeout });
+}
+
 export async function waitForScenarioError(page, { timeout = 60_000 } = {}) {
   await expect(page.locator("#statusMessagesContainer .status-message.status-error").first()).toBeVisible({ timeout });
 }

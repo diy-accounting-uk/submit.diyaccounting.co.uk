@@ -17,6 +17,7 @@ import {
   serveSiteStyles,
   screenshotPath,
   serveItsaPageScripts,
+  serveHmrcWrite,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -39,6 +40,7 @@ async function loadPage(page, html, url) {
   await serveMoneyInput(page);
   await serveFormErrors(page);
   await serveCarriedIdentifiers(page);
+  await serveHmrcWrite(page);
 
   const modifiedHtml = html.replace("<head>", `<head><base href="${new URL(".", url)}">`).replace(
     "<body>",
@@ -74,6 +76,7 @@ async function loadPageAtRealOrigin(page, html, url) {
   await serveMoneyInput(page);
   await serveFormErrors(page);
   await serveCarriedIdentifiers(page);
+  await serveHmrcWrite(page);
 
   const modifiedHtml = html.replace(
     "<body>",
@@ -289,5 +292,139 @@ test.describe("ITSA Tax Liability Adjustments - Form", () => {
     });
     expect(sentScenario).toBeNull();
     await expect(page.locator("#earlierYearFigure")).toHaveText("—");
+  });
+});
+
+// HMRC's answer to a refused write, as the server passes it on: the page makes it an Error.
+function hmrcRefusal(code, message) {
+  return {
+    status: 400,
+    body: { message: "HMRC rejected the request", error: { hmrcResponseCode: 400, responseBody: { code, message } } },
+  };
+}
+
+async function signedInToHmrc(page) {
+  await page.addInitScript(() => sessionStorage.setItem("hmrcGrantId", "grant-1"));
+}
+
+test.describe("ITSA year-end forms - field notes, stages and the failure panel", () => {
+  const TLA_URL = "http://localhost:3000/hmrc/itsa/taxLiabilityAdjustments.html";
+  const LOSSES_URL = "http://localhost:3000/hmrc/itsa/lossesAndClaims.html";
+
+  test("each tax liability adjustment carries HMRC's meaning in a note that links to HMRC's description", async ({ page }) => {
+    await loadPageAtRealOrigin(page, readPage("web/public/hmrc/itsa/taxLiabilityAdjustments.html"), TLA_URL);
+
+    const note = page.locator("#class4-hint");
+    await expect(note).toHaveText(
+      "The decrease in Class 4 National Insurance from carrying a loss back. It is worked out from an earlier year's liability and taken off this year's total. HMRC's description of this field.",
+    );
+    await expect(note.locator("a")).toHaveAttribute(
+      "href",
+      "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individuals-tax-liability-adjustments-api/1.0",
+    );
+    await expect(page.locator("#class4")).toHaveAttribute("aria-describedby", "class4-hint class4-money-hint");
+    await serveSiteStyles(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.evaluate(() => (document.getElementById("adjustmentsEditForm").style.display = "block"));
+    await expect(page.locator("#class4-hint")).toBeVisible();
+    await page.locator("#adjustmentsEditForm").screenshot({ path: screenshotPath("taxLiabilityAdjustments-notes") });
+  });
+
+  test("each loss and claim carries HMRC's meaning in a note that links to HMRC's description", async ({ page }) => {
+    await loadPageAtRealOrigin(page, readPage("web/public/hmrc/itsa/lossesAndClaims.html"), LOSSES_URL);
+
+    await expect(page.locator("#terminalLosses-hint")).toContainText(
+      "This year's trading loss carried back against the profits of the three years before, the latest year first.",
+    );
+    await expect(page.locator("#terminalLosses-hint a")).toHaveAttribute(
+      "href",
+      "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-losses-api/7.0",
+    );
+    for (const id of [
+      "broughtForwardLosses",
+      "currentYearLosses",
+      "previousYearsLosses",
+      "currentYearGeneralIncome",
+      "previousYearGeneralIncome",
+      "earlyYearLosses",
+      "terminalLosses",
+      "applyFirst",
+    ]) {
+      await expect(page.locator(`#${id}-hint a`), id).toHaveText("HMRC's description of this field");
+    }
+  });
+
+  test("saving the adjustments says it is sending to HMRC, and a refusal shows the panel with HMRC's error and the figures kept", async ({
+    page,
+  }) => {
+    await serveSiteStyles(page);
+    await signedInToHmrc(page);
+    await loadPageAtRealOrigin(page, readPage("web/public/hmrc/itsa/taxLiabilityAdjustments.html"), TLA_URL);
+    await page.evaluate(
+      (refusal) => {
+        window.putTaxLiabilityAdjustments = () =>
+          new Promise((resolve, reject) => {
+            window.answerHmrc = () => reject(Object.assign(new Error("HMRC rejected the request"), refusal));
+          });
+        document.getElementById("loadCriteriaForm").style.display = "none";
+        document.getElementById("adjustmentsEditForm").style.display = "block";
+      },
+      hmrcRefusal("RULE_TAX_YEAR_NOT_ENDED", "The tax year has not yet ended"),
+    );
+    await page.locator("#incomeTax").fill("420");
+
+    await page.locator("#saveBtn").click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Sending the tax liability adjustments to HMRC...");
+    await page.evaluate(() => window.answerHmrc());
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText("HMRC has not got the tax liability adjustments.");
+    await expect(panel.locator('[data-part="answers"]')).toHaveText("Your figures are still in the form.");
+    await expect(panel.locator('[data-part="errors"]')).toHaveText("The tax year has not yet ended (RULE_TAX_YEAR_NOT_ENDED)");
+    await expect(page.locator("#statusMessagesContainer")).not.toContainText("Sending the tax liability adjustments to HMRC...");
+    await expect(page.locator("#incomeTax")).toHaveValue("420");
+    await page.screenshot({ path: screenshotPath("taxLiabilityAdjustments-failure-panel"), fullPage: true });
+  });
+
+  test("asking HMRC for the earlier year's figure shows the panel when HMRC cannot calculate it", async ({ page }) => {
+    await signedInToHmrc(page);
+    await loadPageAtRealOrigin(page, readPage("web/public/hmrc/itsa/taxLiabilityAdjustments.html"), TLA_URL);
+    await page.evaluate(() => {
+      window.triggerCalculation = () =>
+        Promise.reject(Object.assign(new Error("Request failed"), { status: 502, body: { error: { hmrcResponseCode: 503 } } }));
+      document.getElementById("adjustmentsEditForm").style.display = "block";
+    });
+
+    await page.locator("#showEarlierYearBtn").click();
+
+    await expect(page.locator("#earlierYearFigure")).toHaveText("Could not retrieve HMRC's calculation for that year.");
+    await expect(page.locator('#failureDetail [data-part="sent"]')).toHaveText("HMRC has not calculated that year's figure.");
+  });
+
+  test("saving the losses and claims shows the panel with HMRC's error when HMRC refuses the claim", async ({ page }) => {
+    await serveSiteStyles(page);
+    await signedInToHmrc(page);
+    await loadPageAtRealOrigin(page, readPage("web/public/hmrc/itsa/lossesAndClaims.html"), LOSSES_URL);
+    await page.evaluate(
+      (refusal) => {
+        window.putLossesAndClaims = () => Promise.reject(Object.assign(new Error("HMRC rejected the request"), refusal));
+        document.getElementById("loadCriteriaForm").style.display = "none";
+        document.getElementById("lossesEditForm").style.display = "block";
+      },
+      hmrcRefusal("RULE_CARRY_BACK_CLAIM", "A carry back claim is not allowed for this business"),
+    );
+    await page.locator("#currentYearLosses").fill("1500");
+
+    await page.locator("#saveBtn").click();
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel.locator('[data-part="sent"]')).toHaveText("HMRC has not got the losses and claims.");
+    await expect(panel.locator('[data-part="answers"]')).toHaveText("Your figures are still in the form.");
+    await expect(panel.locator('[data-part="errors"]')).toHaveText(
+      "A carry back claim is not allowed for this business (RULE_CARRY_BACK_CLAIM)",
+    );
+    await panel.screenshot({ path: screenshotPath("lossesAndClaims-failure-panel") });
   });
 });

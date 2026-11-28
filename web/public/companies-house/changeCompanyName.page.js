@@ -348,38 +348,22 @@ async function handleFile() {
 // Opens the Stripe checkout for the fee of the service the filing asks for. The checkout is a full
 // page navigation, so the filing's non-secret parts go into session storage for the return.
 async function startCheckout(due, form) {
-  const result = document.getElementById("filingResult");
-  try {
-    const response = await window.fetchWithIdToken("/api/v1/billing/activity-checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        activityId: due.activityId,
-        subjectKey: due.subjectKey,
-        priceKey: due.priceKey,
-        returnTo: `${window.location.origin}${window.location.pathname}`,
-      }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.checkoutUrl) throw new Error(body.message || `status ${response.status}`);
-    sessionStorage.setItem(
-      CHECKOUT_RESUME_KEY,
-      JSON.stringify({
-        companyNumber: form.companyNumber,
-        proposedName: form.proposedName,
-        meetingDate: form.meetingDate || "",
-        sameDay: form.sameDay === true,
-      }),
-    );
-    result.replaceChildren(window.siteText("ch.name.paying", "Taking you to pay the fee before the filing is sent..."));
-    window.location.href = body.checkoutUrl;
-  } catch (error) {
-    console.error("Could not start the payment for the change of name:", error);
-    const p = document.createElement("p");
-    p.className = "error-message";
-    p.textContent = window.siteText("ch.name.payment-failed", "Could not start the payment: {reason}", { reason: error.message });
-    result.replaceChildren(p);
-  }
+  const { startActivityCheckout } = await import("/lib/stripe-checkout.js");
+  await startActivityCheckout({
+    activityId: due.activityId,
+    subjectKey: due.subjectKey,
+    priceKey: due.priceKey,
+    beforeRedirect: () =>
+      sessionStorage.setItem(
+        CHECKOUT_RESUME_KEY,
+        JSON.stringify({
+          companyNumber: form.companyNumber,
+          proposedName: form.proposedName,
+          meetingDate: form.meetingDate || "",
+          sameDay: form.sameDay === true,
+        }),
+      ),
+  });
 }
 
 // A return from the Stripe checkout lands here as a fresh page load: it looks the company up again

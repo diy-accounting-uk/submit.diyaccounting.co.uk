@@ -150,7 +150,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollPendingMessage: window.hmrcWaitingMessage(),
     pollSuccessMessage: siteText("itsa.current-total-loaded", "Current total loaded."),
     pollErrorMessage: siteText("itsa.current-total-failed", "Failed to load the current total."),
   });
@@ -333,19 +333,29 @@ async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderVali
       "x-wait-time-ms": "0",
     },
     body: JSON.stringify({ ...amendData, runFraudPreventionHeaderValidation }),
-    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    ...window.hmrcWritePollOptions(),
     pollSuccessMessage: siteText("itsa.period-amended", "Period summary amended."),
     pollErrorMessage: siteText("itsa.period-amend-failed", "Failed to amend the period summary."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, siteText("itsa.period-amend-failed-fallback", "Failed to amend the period summary")));
-    error.status = response.status;
-    error.reason = result.reason || result.error?.code;
-    throw error;
+    throw window.hmrcRequestFailure(
+      hmrcErrorMessage(result, siteText("itsa.period-amend-failed-fallback", "Failed to amend the period summary")),
+      response,
+      result,
+    );
   }
   return result;
+}
+
+// The stage the amendment shows while it sends, and the failure panel's first two lines.
+function amendFilingWords() {
+  return {
+    sending: siteText("itsa.uk-narrate-sending-amend", "Sending the amended UK property update to HMRC..."),
+    notSent: siteText("itsa.uk-failure-not-sent-amend", "HMRC has not got the amended UK property update."),
+    answers: siteText("itsa.uk-failure-answers-form", "Your figures are still in the form."),
+  };
 }
 
 async function continuePeriodAmend() {
@@ -364,13 +374,9 @@ async function continuePeriodAmend() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
 
-    await amendPeriod(
-      pendingRequest.amendData,
-      pendingRequest.testScenario,
-      pendingRequest.runFraudPreventionHeaderValidation,
-      hmrcGrantId,
+    await window.fileWithHmrc(amendFilingWords(), () =>
+      amendPeriod(pendingRequest.amendData, pendingRequest.testScenario, pendingRequest.runFraudPreventionHeaderValidation, hmrcGrantId),
     );
 
     document.getElementById("periodAmendResults").style.display = "block";
@@ -392,10 +398,7 @@ async function continuePeriodAmend() {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(
-        siteText("itsa.period-amend-failed-reason", "Failed to amend the period summary: {reason}", { reason: error.message }),
-        "error",
-      );
+      hideStatus();
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingUkPropertyPeriodAmendRequest");
@@ -480,9 +483,10 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus();
-      showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
 
-      await amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
+      await window.fileWithHmrc(amendFilingWords(), () =>
+        amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId),
+      );
 
       document.getElementById("periodAmendResults").style.display = "block";
       hideStatus();
@@ -498,10 +502,7 @@ async function handleFormSubmission(event) {
         hideStatus();
         window.SubmissionCost?.refresh();
       } else {
-        showStatus(
-          siteText("itsa.period-amend-failed-reason", "Failed to amend the period summary: {reason}", { reason: error.message }),
-          "error",
-        );
+        hideStatus();
       }
     } finally {
       hideLoading();

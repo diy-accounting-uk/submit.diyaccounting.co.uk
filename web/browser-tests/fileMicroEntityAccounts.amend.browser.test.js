@@ -739,7 +739,9 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     });
   }
 
-  test("shows the route's own message for a filing refused for any other reason", async ({ page }) => {
+  test("shows the page's own sentence and keeps the route's message in the panel for a filing refused for any other reason", async ({
+    page,
+  }) => {
     await openAmend(page, accountsReceipt(microDocument()));
     await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
     await expect(page.locator("#revisionSection")).toBeVisible();
@@ -752,7 +754,8 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       document.getElementById("companyAuthCode").value = "ABC123";
       return handleSubmitFiling();
     });
-    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Missing director.name");
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Failed to file the accounts with Companies House.");
+    await expect(page.locator("#failureDetail")).toContainText("Missing director.name");
   });
 
   test("a new filing after the revision files original accounts", async ({ page }) => {

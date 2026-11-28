@@ -42,6 +42,64 @@ export async function serveFilingResultRecord(page) {
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
 }
 
+// The real field references and failure panel of the registered office and email change pages,
+// with the modules they import.
+export async function serveRegisteredChange(page) {
+  for (const name of [
+    "registered-change",
+    "field-detail",
+    "filing-failure",
+    "ct600-fields",
+    "ct600-source-cells",
+    "accounts-page-lines",
+    "balance-sheet-headings",
+    "long-period",
+    "first-accounts",
+  ]) {
+    await serveFile(page, `**/lib/${name}.js`, `lib/${name}.js`, "application/javascript");
+  }
+}
+
+// The real HMRC write helper (window.fileWithHmrc: its stages and its failure panel) and the
+// Income Tax year-end field notes, for an Income Tax page whose other scripts are stubbed out.
+// submit.js loads hmrc-service.js, then puts back every window function the page's stubs set
+// before it, so only what the stubs left out (fileWithHmrc, narrateStage and their kin) is real.
+// Register it after the "**/*.js" stub.
+export async function serveHmrcWrite(page) {
+  for (const name of [
+    "services/hmrc-service",
+    "services/api-client",
+    "services/auth-service",
+    "services/viewer-settings",
+    "utils/correlation-utils",
+    "utils/dom-utils",
+    "utils/crypto-utils",
+    "utils/jwt-utils",
+    "filing-failure",
+    "itsa-year-end-fields",
+    "field-detail",
+    "ct600-fields",
+    "ct600-source-cells",
+    "accounts-page-lines",
+    "balance-sheet-headings",
+    "long-period",
+    "first-accounts",
+  ]) {
+    await serveFile(page, `**/lib/${name}.js`, `lib/${name}.js`, "application/javascript");
+  }
+  await page.route("**/submit.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `const stubbed = Object.fromEntries(
+  Object.entries(window).filter(([, value]) => typeof value === "function" && !value.hmrcWriteStandIn),
+);
+await import("./lib/services/hmrc-service.js");
+Object.assign(window, stubbed);`,
+    }),
+  );
+}
+
 // The real HMRC Assist check, for a page that mounts or reads it.
 export function serveHmrcAssistWidget(page) {
   return serveFile(page, "**/widgets/hmrc-assist-messages.js", "widgets/hmrc-assist-messages.js", "application/javascript");
@@ -83,7 +141,26 @@ export function serveUkPropertyPeriodFields(page) {
 }
 
 // The real country list, foreign property entry fields, entry list and period form, for the foreign property pages.
+// The SA106 register and field-detail.js with the modules it imports.
+const FOREIGN_PROPERTY_REGISTER_MODULES = [
+  "foreign-property-register.js",
+  "field-detail.js",
+  "ct600-fields.js",
+  "long-period.js",
+  "first-accounts.js",
+  "balance-sheet-headings.js",
+  "ct600-source-cells.js",
+  "accounts-page-lines.js",
+];
+
+export async function serveForeignPropertyRegister(page) {
+  for (const module of FOREIGN_PROPERTY_REGISTER_MODULES) {
+    await serveFile(page, `**/lib/${module}`, `lib/${module}`, "application/javascript");
+  }
+}
+
 export async function serveForeignPropertyScripts(page) {
+  await serveForeignPropertyRegister(page);
   await serveFile(page, "**/lib/country-codes.js", "lib/country-codes.js", "application/javascript");
   await serveFile(page, "**/lib/foreign-property-fields.js", "lib/foreign-property-fields.js", "application/javascript");
   await serveFile(page, "**/widgets/foreign-property-entries.js", "widgets/foreign-property-entries.js", "application/javascript");
@@ -113,6 +190,9 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/balance-sheet-headings.js", "lib/balance-sheet-headings.js", "application/javascript");
   await serveFile(page, "**/lib/long-period.js", "lib/long-period.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js", "application/javascript");
+  await serveFile(page, "**/lib/accounts-filing-failure.js", "lib/accounts-filing-failure.js", "application/javascript");
+  await serveFile(page, "**/lib/filing-failure.js", "lib/filing-failure.js", "application/javascript");
+  await serveFile(page, "**/lib/company-lookup-failure.js", "lib/company-lookup-failure.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");
   await serveFile(page, "**/lib/company-drill-paths.js", "lib/company-drill-paths.js", "application/javascript");
   await serveFile(page, "**/lib/watch-list-button.js", "lib/watch-list-button.js", "application/javascript");
@@ -123,6 +203,8 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/services/catalogue-aggregates.js", "lib/services/catalogue-aggregates.js", "application/javascript");
   await serveFile(page, "**/lib/bundle-listing.js", "lib/bundle-listing.js", "application/javascript");
   await serveFile(page, "**/lib/ct600-agent.js", "lib/ct600-agent.js", "application/javascript");
+  await serveFile(page, "**/lib/stripe-checkout.js", "lib/stripe-checkout.js", "application/javascript");
+  await serveFile(page, "**/lib/filing-failure.js", "lib/filing-failure.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
@@ -133,6 +215,21 @@ export async function servePageScripts(page) {
 }
 
 // The real page script of an ITSA page whose other scripts are stubbed out.
+// A page whose hmrc-service.js these tests serve empty still sends its writes: the HMRC write helper
+// stands in as a pass-through, and a refused write throws an error carrying the status and reason.
+// Each stand-in is marked, so serveHmrcWrite, which serves the real helper, does not put it back.
+async function standInForHmrcWriteHelper(page) {
+  await page.addInitScript(() => {
+    const standIn = (fn) => Object.assign(fn, { hmrcWriteStandIn: true });
+    window.fileWithHmrc = window.fileWithHmrc || standIn((words, send) => send());
+    window.hmrcWritePollOptions = window.hmrcWritePollOptions || standIn(() => ({}));
+    window.hmrcWaitingMessage = window.hmrcWaitingMessage || standIn(() => "Waiting for HMRC's answer...");
+    window.hmrcRequestFailure =
+      window.hmrcRequestFailure ||
+      standIn((message, response, body) => Object.assign(new Error(message), { status: response.status, reason: body?.reason, body }));
+  });
+}
+
 export async function serveItsaPageScripts(page) {
   await page.route("**/lib/hmrc-scope-check.js", async (route) => {
     await route.fulfill({
@@ -172,6 +269,7 @@ export async function serveItsaPageScripts(page) {
     "application/javascript",
   );
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
+  await standInForHmrcWriteHelper(page);
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);
     await route.fulfill({

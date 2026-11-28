@@ -41,6 +41,25 @@ const PSCS_RESULT = {
   ],
 };
 
+// The field register and the failure panel the page imports, with the modules they read.
+async function serveFieldDetailAndFailurePanel(page) {
+  for (const library of [
+    "confirmation-statement-fields.js",
+    "field-detail.js",
+    "ct600-source-cells.js",
+    "accounts-page-lines.js",
+    "filing-failure.js",
+  ]) {
+    await page.route(`**/lib/${library}`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: fs.readFileSync(path.join(process.cwd(), "web/public/lib", library), "utf-8"),
+      });
+    });
+  }
+}
+
 const FILING_DATA = {
   sicCodes: ["62012"],
   registeredEmailAddress: COMPANY.email,
@@ -73,21 +92,44 @@ test.describe("File Confirmation Statement page", () => {
       feeDueOnSubmit = false,
       filingDataError = null,
       paidReviewDate = null,
+      submitError = null,
+      pscSubmitError = null,
+      checkoutAnswer = null,
     } = {},
   ) {
     await page.addInitScript(
-      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg, feeDueOnSubmitArg, filingDataErrorArg, paidReviewDateArg }) => {
+      ({
+        profileArg,
+        lookupErrorArg,
+        officersArg,
+        pscsArg,
+        filingDataArg,
+        feeDueOnSubmitArg,
+        filingDataErrorArg,
+        paidReviewDateArg,
+        submitErrorArg,
+        pscSubmitErrorArg,
+        checkoutAnswerArg,
+      }) => {
+        const answerError = ({ message, status, body, requestId }) =>
+          Object.assign(new Error(message), { status, body, ...(requestId ? { requestId } : {}) });
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
         window.hideLoading = window.hideLoading || (() => {});
-        window.narrateStage = (message) => window.showStatus(message, "info");
-        window.endStage = () => {};
+        // Each stage goes into session storage too, so the record outlives the trip to the checkout page.
+        window.narrateStage = (message) => {
+          window.showStatus(message, "info");
+          const stages = JSON.parse(sessionStorage.getItem("test.stages") || "[]");
+          sessionStorage.setItem("test.stages", JSON.stringify([...stages, message]));
+        };
+        window.endStage = () => window.__statusMessages.push({ message: "(stage ended)", type: "info" });
         window.__statusMessages = [];
         window.showStatus = (message, type) => {
           window.__statusMessages.push({ message, type });
         };
         window.__submitReady__ = true;
+        window.describeGovTalkErrors = (errors) => errors.map((entry) => entry.text);
 
         window.normaliseCompanyNumber = (value) => {
           let normalised = String(value || "")
@@ -107,7 +149,13 @@ test.describe("File Confirmation Statement page", () => {
             const checkoutUrl = `http://localhost:3000/simulator/activity-checkout?activityId=${encodeURIComponent(
               body.activityId,
             )}&subjectKey=${encodeURIComponent(body.subjectKey)}`;
-            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ checkoutUrl }) });
+            const answer = checkoutAnswerArg ?? { status: 200, body: { checkoutUrl } };
+            return Promise.resolve(
+              new Response(JSON.stringify(answer.body), {
+                status: answer.status,
+                headers: { "content-type": "application/json", ...answer.headers },
+              }),
+            );
           }
           return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
         };
@@ -147,6 +195,7 @@ test.describe("File Confirmation Statement page", () => {
             error.status = 402;
             return Promise.reject(error);
           }
+          if (submitErrorArg) return Promise.reject(answerError(submitErrorArg));
           return Promise.resolve({ submissionNumber: "ABC123", gatewayTimestamp: "2026-09-24T00:00:00Z" });
         };
         window.pollConfirmationStatement = (submissionNumber) =>
@@ -155,6 +204,7 @@ test.describe("File Confirmation Statement page", () => {
         window.__pscVerificationSubmitCalls = [];
         window.submitPscVerificationStatement = (statement) => {
           window.__pscVerificationSubmitCalls.push(statement);
+          if (pscSubmitErrorArg) return Promise.reject(answerError(pscSubmitErrorArg));
           return Promise.resolve({ submissionNumber: "VS0001", gatewayTimestamp: "2026-09-24T00:00:00Z" });
         };
         window.pollPscVerificationStatement = (submissionNumber) =>
@@ -169,6 +219,9 @@ test.describe("File Confirmation Statement page", () => {
         feeDueOnSubmitArg: feeDueOnSubmit,
         filingDataErrorArg: filingDataError,
         paidReviewDateArg: paidReviewDate,
+        submitErrorArg: submitError,
+        pscSubmitErrorArg: pscSubmitError,
+        checkoutAnswerArg: checkoutAnswer,
       },
     );
 
@@ -185,6 +238,7 @@ test.describe("File Confirmation Statement page", () => {
     await serveMoneyInput(page);
     await serveSiteStyles(page);
     await serveFilingResultAssets(page);
+    await serveFieldDetailAndFailurePanel(page);
 
     // Stands in for the real Stripe/simulator checkout page: records the redirect's query params
     // on the Node side (the browser context that recorded __submitCalls etc. is gone once the
@@ -241,7 +295,7 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#publicPscsBody")).toContainText("Jane Doe");
   });
 
-  test("shows an error and stays on the company view when the lookup fails", async ({ page }) => {
+  test("says in the page's words that Companies House has no such company and stays on the company view", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, { lookupError: { message: "Company not found", status: 404 } });
     await loadPage(page);
@@ -251,7 +305,8 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#companyView")).toBeVisible();
     await expect(page.locator("#authView")).toBeHidden();
     const messages = await page.evaluate(() => window.__statusMessages);
-    expect(messages.some((m) => m.message.includes("Company not found"))).toBe(true);
+    expect(messages.some((m) => m.message.startsWith("Companies House has no company with the number"))).toBe(true);
+    expect(messages.some((m) => m.message.includes("Company not found"))).toBe(false);
   });
 
   test("refuses a company that is not an active private limited company", async ({ page }) => {
@@ -629,6 +684,56 @@ test.describe("File Confirmation Statement page", () => {
     expect(page.activityCheckoutRequests[0].subjectKey).toBe("00000001:2026-09-21");
     const resume = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResume"));
     expect(JSON.parse(resume)).toEqual({ companyNumber: "00000001", reviewDate: "2026-09-21" });
+    const stages = JSON.parse(await page.evaluate(() => sessionStorage.getItem("test.stages")));
+    expect(stages.slice(-2)).toEqual(["Asking Stripe for a checkout...", "Taking you to Stripe to pay..."]);
+  });
+
+  async function submitUntilTheFee(page, checkoutAnswer) {
+    setupPage(page);
+    await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false }, feeDueOnSubmit: true, checkoutAnswer });
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+    return page.locator("#statusMessagesContainer + #failureDetail");
+  }
+
+  test("a checkout Stripe could not open ends the stage, stays on the page and shows the failure panel with Help and the reference", async ({
+    page,
+  }) => {
+    const panel = await submitUntilTheFee(page, {
+      status: 500,
+      headers: { "x-request-id": "6f1c2a9e-7b3d-4e2a-9c61-2d8f0b5e7a13" },
+      body: { message: "Failed to create checkout session" },
+    });
+    await expect(panel).toHaveAttribute("data-kind", "submit-fault");
+    await expect(panel.locator("[data-part=sent]")).toHaveText("Nothing was charged. Stripe did not open a checkout.");
+    await expect(panel.locator("[data-part=answers]")).toHaveText(
+      "Nothing was filed with Companies House. The filing is sent after the fee is paid.",
+    );
+    await expect(panel.locator("[data-part=next] a")).toHaveAttribute("href", "/help.html");
+    await expect(panel.locator("[data-part=next]")).toContainText("6f1c2a9e-7b3d-4e2a-9c61-2d8f0b5e7a13");
+    const messages = (await page.evaluate(() => window.__statusMessages)).map((m) => m.message);
+    expect(messages.slice(messages.indexOf("Asking Stripe for a checkout..."))).toEqual([
+      "Asking Stripe for a checkout...",
+      "(stage ended)",
+    ]);
+    expect(page.url()).toContain("fileConfirmationStatement.html");
+    expect(await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResume"))).toBeNull();
+    expect(page.activityCheckoutRequests).toHaveLength(0);
+  });
+
+  test("a fee already paid says so in the failure panel and points back to the filing", async ({ page }) => {
+    const panel = await submitUntilTheFee(page, { status: 409, body: { message: "already-paid", code: "already-paid" } });
+    await expect(panel).toHaveAttribute("data-kind", "business-error");
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "The fee for this filing is already paid. Go back to the filing and send it.",
+    );
   });
 
   test("resumes the lookup and shows a payment-received banner when returning from checkout", async ({ page }) => {
@@ -957,6 +1062,151 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#filingResult")).not.toContainText("Check again");
     await expect(page.locator("#checkAgainBtn")).toBeHidden();
     expect(await page.evaluate(() => window.__pollCalls)).toHaveLength(0);
+  });
+
+  async function reachPreview(page) {
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+  }
+
+  test("each field of the review form leads with the section of the Companies Act that asks for it, with a note that links to it", async ({
+    page,
+  }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+
+    await expect(page.locator('label[for="reviewDate"]')).toHaveText("Companies Act section 853A: Confirmation statement date");
+    await expect(page.locator('label[for="sicCodes"]')).toHaveText("Companies Act section 853C: SIC codes");
+    await expect(page.locator('label[for="registeredEmailAddress"]')).toHaveText("Companies Act section 88A: Registered email address");
+    await expect(page.locator('label[for="lawfulPurposeStatement"]')).toContainText("Companies Act section 853BA: The company confirms");
+    await expect(page.locator("#sicCodes-hint")).toContainText("Enter up to four, separated by commas.");
+    await expect(page.locator("#sicCodes-hint a")).toHaveAttribute("href", "https://www.legislation.gov.uk/ukpga/2006/46/section/853C");
+    await expect(page.locator("#sicCodes-hint a")).toHaveText("Companies Act 2006, section 853C");
+    await expect(page.locator("#totalAmountUnpaid")).toHaveAttribute(
+      "aria-describedby",
+      "totalAmountUnpaid-hint totalAmountUnpaid-money-hint",
+    );
+    await expect(page.locator('label[for="directorPersonalCode-0"]')).toHaveText(
+      "Companies Act section 1110A: Companies House personal code",
+    );
+    await expect(page.locator("#directorPersonalCode-0-hint")).toContainText("for example CWMPS832223");
+    await page.screenshot({ path: recordScreenshotPath("confirmation-statement-review-fields", 1280), fullPage: true });
+  });
+
+  test("a filing the gateway refused leaves a panel that says nothing was filed and gives Companies House's error", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      submitError: {
+        message: "Companies House rejected the confirmation statement submission envelope",
+        status: 500,
+        body: {
+          message: "Companies House rejected the confirmation statement submission envelope",
+          submissionNumber: "ABC123",
+          errors: [{ number: "9999", text: "Review date is not valid" }],
+        },
+      },
+    });
+    await loadPage(page);
+    await reachPreview(page);
+    await page.click("#submitFilingBtn");
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel).toBeVisible();
+    await expect(page.locator("#statusMessagesContainer + #failureDetail")).toHaveCount(1);
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "Companies House did not take the confirmation statement. Nothing was filed.",
+    );
+    await expect(panel.locator("[data-part=answers]")).toContainText("the personal codes are kept only in this page");
+    await expect(panel.locator("[data-part=kind]")).toHaveText(
+      "Companies House answered with this error. Correct the answer it names and send again.",
+    );
+    await expect(panel.locator("[data-part=errors] li")).toHaveText(["Review date is not valid"]);
+    await page.screenshot({ path: recordScreenshotPath("confirmation-statement-failure-panel", 1280), fullPage: true });
+  });
+
+  test("the Welsh page says in Welsh that no token is left and nothing was sent", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      submitError: { message: "Token limit reached", status: 403, body: { message: "Token limit reached", reason: "tokens_exhausted" } },
+    });
+    const welshText = fs.readFileSync(path.join(process.cwd(), "web/public/lib/welsh-text.js"), "utf-8");
+    await page.addInitScript((source) => {
+      new Function(source)();
+      window.siteText = (id, english, values) =>
+        (window.WELSH_TEXT[id] ?? english).replace(/\{([a-z]+)\}/g, (whole, name) =>
+          values && name in values ? String(values[name]) : whole,
+        );
+    }, welshText);
+    const welshHtml = fs
+      .readFileSync(path.join(process.cwd(), "web/public/cy/companies-house/fileConfirmationStatement.html"), "utf-8")
+      .replace("<head>", '<head><base href="http://localhost:3000/cy/companies-house/">');
+    await page.route("**/fileConfirmationStatement.html*", (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: welshHtml }),
+    );
+    await page.goto("http://localhost:3000/cy/companies-house/fileConfirmationStatement.html", { waitUntil: "domcontentloaded" });
+    await delay(200);
+    await reachPreview(page);
+    await page.click("#submitFilingBtn");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__statusMessages.filter((entry) => entry.type === "error").map((entry) => entry.message)))
+      .toContainEqual(expect.stringContaining("Dim credydau (tokens) ar ôl."));
+    const errors = await page.evaluate(() =>
+      window.__statusMessages.filter((entry) => entry.type === "error").map((entry) => entry.message),
+    );
+    expect(errors.join(" ")).toContain("ni anfonwyd dim at Dŷ’r Cwmnïau");
+    expect(errors.join(" ")).not.toContain("Token limit reached");
+  });
+
+  test("a fault in Submit on the filing gives Help and the reference to quote", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      submitError: { message: "Internal server error", status: 500, body: { message: "Internal server error" }, requestId: "req-roll9" },
+    });
+    await loadPage(page);
+    await reachPreview(page);
+    await page.click("#submitFilingBtn");
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel.locator("[data-part=kind]")).toHaveText("This is a fault in Submit, not in your answers or your sign-in.");
+    await expect(panel.locator("[data-part=next] a")).toHaveAttribute("href", "/help.html");
+    await expect(panel.locator("[data-part=next]")).toContainText("req-roll9");
+    await panel.locator(".failure-detail__close").click();
+    await expect(page.locator("#failureDetail")).toHaveCount(0);
+  });
+
+  test("a PSC verification statement Companies House refused names the person and keeps the PSC row's own error", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      pscSubmitError: {
+        message: "Companies House rejected the PSC verification statement",
+        status: 400,
+        body: { message: "Companies House rejected the PSC verification statement", reason: "invalid-company-authentication-code" },
+      },
+    });
+    await loadPage(page);
+    await reachPreview(page);
+    await page.click("#submitFilingBtn");
+    await expect(page.locator("#pscFollowUp")).toBeVisible();
+    await expect(page.locator('label[for="pscPersonalCode-0"]')).toHaveText("Companies Act section 790LM: PSC personal code");
+
+    await page.fill("#pscPersonalCode-0", "CWMPS832223");
+    await page.click('[data-psc-verify-index="0"]');
+
+    const panel = page.locator("#failureDetail");
+    await expect(panel.locator("[data-part=sent]")).toHaveText(
+      "Companies House did not take the verification statement for Jane Doe. Nothing was filed.",
+    );
+    await expect(panel.locator("[data-part=kind]")).toContainText("Companies House did not accept the company authentication code.");
+    await expect(page.locator("#pscVerifyResult-0 .error")).toBeVisible();
   });
 
   test("shows the filed statement as a record in a customer copy with the submission number, status and date", async ({ page }) => {

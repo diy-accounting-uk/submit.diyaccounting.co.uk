@@ -338,7 +338,20 @@ function readPeriodData(source) {
   };
 }
 
+// What the page says while it sends the update, and what a failure leaves behind.
+function quarterlyWords() {
+  return {
+    sending: siteText("itsa.narrate-sending-quarterly", "Sending the quarterly update to HMRC..."),
+    notSent: siteText("itsa.failure-not-sent-quarterly", "HMRC has not got the quarterly update."),
+    answers: siteText("itsa.failure-answers-form", "Your figures are still in the form."),
+  };
+}
+
 async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
+  return window.fileWithHmrc(quarterlyWords(), () => sendPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId));
+}
+
+async function sendPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
@@ -365,16 +378,16 @@ async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderVa
     pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
     pollSuccessMessage: siteText("itsa.quarterly-filed", "Quarterly update filed."),
     pollErrorMessage: siteText("itsa.quarterly-file-failed", "Failed to file the quarterly update."),
+    ...window.hmrcWritePollOptions(),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(
+    throw window.hmrcRequestFailure(
       hmrcErrorMessage(result, siteText("itsa.quarterly-file-failed-fallback", "Failed to file the quarterly update")),
+      response,
+      result,
     );
-    error.status = response.status;
-    error.reason = result.reason || result.error?.code;
-    throw error;
   }
   return result;
 }
@@ -398,7 +411,6 @@ async function continuePeriodSubmission() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
 
     const result = await submitPeriod(
       pendingRequest.periodData,
@@ -535,7 +547,6 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus();
-      showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
 
       const result = await submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 

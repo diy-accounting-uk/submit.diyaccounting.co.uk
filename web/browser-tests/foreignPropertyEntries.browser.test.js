@@ -9,7 +9,13 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveFormErrors, serveMoneyInput, serveSelfEmploymentExpenses, serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import {
+  serveForeignPropertyRegister,
+  serveFormErrors,
+  serveMoneyInput,
+  serveSelfEmploymentExpenses,
+  serveSiteStyles,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -29,6 +35,7 @@ const HOST_HTML = `<!doctype html>
     <script src="/lib/self-employment-expenses.js"></script>
     <script src="/lib/form-errors.js"></script>
     <script src="/lib/country-codes.js"></script>
+    <script type="module" src="/lib/foreign-property-register.js"></script>
     <script src="/lib/foreign-property-fields.js"></script>
     <script src="/widgets/foreign-property-entries.js"></script>
   </body>
@@ -50,6 +57,7 @@ async function openHost(page, mode, setup) {
   await serveSelfEmploymentExpenses(page);
   await serveFormErrors(page);
   await serveSiteStyles(page);
+  await serveForeignPropertyRegister(page);
   await serveReal(page, "**/lib/country-codes.js", "lib/country-codes.js");
   await serveReal(page, "**/lib/foreign-property-fields.js", "lib/foreign-property-fields.js");
   await serveReal(page, "**/widgets/foreign-property-entries.js", "widgets/foreign-property-entries.js");

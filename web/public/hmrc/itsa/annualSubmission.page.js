@@ -196,9 +196,20 @@ async function loadAnnualSubmission(nino, businessId, taxYear, testScenario, run
   );
 }
 
+// What the page says while it sends the annual submission, and what a failure leaves behind.
+function annualWords() {
+  return {
+    sending: siteText("itsa.narrate-sending-annual", "Sending the annual submission to HMRC..."),
+    notSent: siteText("itsa.failure-not-sent-annual", "HMRC has not got the annual submission."),
+    answers: siteText("itsa.failure-answers-form", "Your figures are still in the form."),
+  };
+}
+
 async function saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await putSelfEmploymentAnnual(annualDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return window.fileWithHmrc(annualWords(), () =>
+    putSelfEmploymentAnnual(annualDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario),
+  );
 }
 
 async function continueAfterOAuth() {
@@ -236,7 +247,6 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingAnnualLoadRequest");
     } else if (pendingSave) {
       showLoading();
-      showStatus(siteText("itsa.annual-saving", "Saving annual submission..."), "info");
       const saved = await saveAnnualSubmission(
         pendingSave.annualDetails,
         pendingSave.testScenario,
@@ -367,7 +377,6 @@ async function handleSaveClick() {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa.annual-saving", "Saving annual submission..."), "info");
         const saved = await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord("self-employment", annualDetails, saved?.correlationId);
         hideStatus();

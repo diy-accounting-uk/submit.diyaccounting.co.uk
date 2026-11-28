@@ -24,6 +24,11 @@ function create(tag, attributes = {}, ...children) {
 
 // The reference of a field with no box, from the register's code: the first code it names.
 const REFERENCE_PATTERNS = [
+  [
+    /^SA105 boxes ([\d.]+) to ([\d.]+)$/,
+    ([, first, last]) => siteText("field.reference-sa105-boxes", "UK property boxes {first} to {last}", { first, last }),
+  ],
+  [/^SA105 box ([\d.]+)$/, ([, box]) => siteText("field.reference-sa105-box", "UK property box {box}", { box })],
   [/^CT600A (A\d+)/, ([, box]) => siteText("field.reference-ct600a", "CT600A {box}", { box })],
   [/μ?BS1 ([A-Z][A-Z.\d]*)/, ([, item]) => siteText("field.reference-balance-sheet", "Balance sheet item {item}", { item })],
   [/PL2 (\d+\([ab]\)|\d+)/, ([, item]) => siteText("field.reference-profit-and-loss", "Profit and loss item {item}", { item })],
@@ -33,12 +38,14 @@ const REFERENCE_PATTERNS = [
     /^CA (\d+[A-Z]?); CA (\d+[A-Z]?)$/,
     ([, first, second]) => siteText("field.reference-companies-act-two", "Companies Act sections {first} and {second}", { first, second }),
   ],
-  [/^CA (\d+[A-Z]?)/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
+  [/^CA (\d+[A-Z]{0,2})/, ([, section]) => siteText("field.reference-companies-act", "Companies Act section {section}", { section })],
   [/^R(\d+)/, ([, paragraph]) => siteText("field.reference-regulations", "Schedule 1 paragraph {paragraph}", { paragraph })],
   [/^Notes$/, () => siteText("field.reference-notes", "Notes to the accounts")],
   [/^Declaration$/, () => siteText("field.reference-declaration", "Declaration")],
+  [/^SA106 box (\d+(?:\.\d)?)$/, ([, box]) => siteText("field.reference-sa106-box", "SA106 box {box}", { box })],
+  [/^SA106 column ([A-F])$/, ([, column]) => siteText("field.reference-sa106-column", "SA106 column {column}", { column })],
   [/\b[Bb]oxes (\d+ (?:and|or) \d+)/, ([, boxes]) => siteText("field.reference-boxes", "Boxes {boxes}", { boxes })],
-  [/\b[Bb]ox (\d+ or \d+|\d+)/, ([, box]) => siteText("field.reference-box", "Box {box}", { box })],
+  [/\b[Bb]ox (\d+ or \d+|\d+\.\d+|\d+)/, ([, box]) => siteText("field.reference-box", "Box {box}", { box })],
 ];
 
 /** The reference that leads a field's label: its box, or the item, section or page the register names. */
@@ -71,7 +78,10 @@ export function sourceLinksOf(field) {
   return link ? [link] : [];
 }
 
-/** Where a field's term comes from: the guide at the box's anchor, or the field's termSource. */
+/**
+ * Where a field's term comes from: the guide at the box's anchor, or the field's termSource, named
+ * by its termSourceText when the field gives one.
+ */
 export function sourceLinkOf(field) {
   if (field.box !== undefined) {
     const anchor = boxRow(field.box)?.anchor;
@@ -79,14 +89,24 @@ export function sourceLinkOf(field) {
   }
   const href = field.termSource;
   if (!href) return null;
+  if (field.termSourceText) return { href, text: field.termSourceText };
   if (href.startsWith("https://www.gov.uk/guidance/the-company-tax-return-guide")) {
     return { href, text: siteText("ch.ct.guide-link", "Company Tax Return guide") };
+  }
+  if (href.startsWith("https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/")) {
+    return { href, text: siteText("field.source-hmrc-api", "HMRC's description of this field") };
   }
   if (href.startsWith("https://www.gov.uk/guidance/supplementary-pages-ct600a")) {
     return { href, text: siteText("field.source-ct600a-guide", "CT600A guide") };
   }
+  if (href.startsWith("https://www.gov.uk/government/publications/self-assessment-uk-property-sa105")) {
+    return { href, text: siteText("field.source-sa105-notes", "UK property notes (SA105)") };
+  }
   if (href.startsWith("https://www.gov.uk/government/publications/life-of-a-company-annual-requirements")) {
     return { href, text: siteText("field.source-life-of-a-company", "Life of a company: accounts") };
+  }
+  if (href === "https://www.gov.uk/government/publications/self-assessment-foreign-sa106") {
+    return { href, text: siteText("field.source-sa106-notes", "Foreign (SA106) notes") };
   }
   const section = COMPANIES_ACT.exec(href);
   if (section)
