@@ -28693,9 +28693,9 @@ cy = '''Wrthi’n anfon y newid at Dŷ’r Cwmnïau...'''
 hash = "bb0667425d3c"
 cy = '''cynhyrchu (production) <span class="calendar-date">ffigurau yn unig</span>'''
 
-[strings."mtd-calendar.web-form-guide-video-mcp-5d0317"]
-hash = "5d031786c8ec"
-cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+[strings."mtd-calendar.web-form-guide-video-mcp-44bd60"]
+hash = "44bd60696d12"
+cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=2-Em1dKQD0g" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
 
 # == The privacy policy's hosted MCP part, eleven tools ==
 
