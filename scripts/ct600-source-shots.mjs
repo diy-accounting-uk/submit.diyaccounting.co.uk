@@ -5,7 +5,7 @@
 // @capability CT-LBL5 Screenshots of the workbook cells behind the CT600 form
 // - **Use when:** the CT600 table in ct600-fields.js names a new or moved workbook cell, or the published package changed, and the page's "In DIY Accounting's spreadsheets" disclosure needs its pictures.
 // - **Does:** ct600-source-shots.mjs reads the published package's Financialaccounts.xlsx with the diya-gl workbook reader, checks that each single cell's row (or its label cell's row) holds the entry's workbookLabel, draws the rows around the cell as a grid with the sheet's own column letters, row numbers and labels, marks the cell, takes a PNG with Playwright and writes a WebP with ffmpeg-static to web/public/images/ct600-sources/<sheet>-<cell>.webp. It fails on a label that is missing.
-// - **Run:** `npm run ct600:source-shots`; `npm run ct600:source-shots -- --package <package directory>`
+// - **Run:** `npm run ct600:source-shots`; `npm run ct600:source-shots -- --package <package directory>`; `npm run ct600:source-shots -- --table vat --package <package directory>` for the VAT return's Vatreturns.xlsx cells
 // - **Entry:** `scripts/ct600-source-shots.mjs`
 // - **Files:** scripts/ct600-source-shots.mjs, web/public/lib/ct600-source-cells.js, web/public/lib/ct600-fields.js, web/public/lib/accounts-page-lines.js, web/unit-tests/ct600SourceCells.test.js, web/public/images/ct600-sources/
 // - **Keywords:** ct600, workbook cell, screenshot, source, label check, webp, spreadsheets disclosure
@@ -20,6 +20,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { resolveFfmpegBinary } from "./lib/video/encode.js";
 import { namedCells, cellsOfReference, sourceImageName, allSources } from "../web/public/lib/ct600-source-cells.js";
+import * as vatFields from "../web/public/lib/vat-fields.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const READER_PATH = path.join(repositoryRoot, "node_modules/@diy-accounting-uk/diya-gl/dist/app/lib/xlsx-reader.js");
@@ -163,9 +164,20 @@ function convertToWebp(ffmpeg, pngPath, webpPath) {
   if (result.status !== 0 || !fs.existsSync(webpPath)) throw new Error(`ffmpeg failed for ${webpPath}: ${result.stderr}`);
 }
 
-export async function shootSourceCells({ packageDirectory = DEFAULT_PACKAGE_DIRECTORY, outputDirectory = OUTPUT_DIRECTORY } = {}) {
+// The cells of each table: the CT600 form and accounts pages, or the VAT return's nine boxes.
+export function tableCells(table) {
+  if (table === "vat") return namedCells(vatFields, {});
+  if (table === "ct600") return namedCells();
+  throw new Error(`No table ${table}: use ct600 or vat`);
+}
+
+export async function shootSourceCells({
+  packageDirectory = DEFAULT_PACKAGE_DIRECTORY,
+  outputDirectory = OUTPUT_DIRECTORY,
+  table = "ct600",
+} = {}) {
   const { readMultiFileXlsxCellValues } = await import(pathToFileURL(READER_PATH).href);
-  const cells = namedCells();
+  const cells = tableCells(table);
   const workbooks = [...new Set(cells.map((c) => c.file))];
   if (workbooks.length !== 1) throw new Error(`Expected one workbook, the table names ${workbooks.join(", ")}`);
   const [workbook] = workbooks;
@@ -189,7 +201,7 @@ export async function shootSourceCells({ packageDirectory = DEFAULT_PACKAGE_DIRE
     await browser.close();
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  return { count: cells.length, entries: allSources().length };
+  return { count: cells.length, entries: table === "vat" ? allSources(vatFields).length : allSources().length };
 }
 
 function optionOf(name, argv) {
@@ -199,7 +211,8 @@ function optionOf(name, argv) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const packageDirectory = optionOf("--package", process.argv.slice(2)) || DEFAULT_PACKAGE_DIRECTORY;
-  shootSourceCells({ packageDirectory })
+  const table = optionOf("--table", process.argv.slice(2)) || "ct600";
+  shootSourceCells({ packageDirectory, table })
     .then(({ count }) => console.log(`Wrote ${count} images to ${path.relative(repositoryRoot, OUTPUT_DIRECTORY)}`))
     .catch((error) => {
       console.error(error.message);

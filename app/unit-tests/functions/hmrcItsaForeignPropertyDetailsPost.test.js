@@ -87,6 +87,11 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const mockEmitMetric = vi.fn();
+vi.mock("@app/lib/emfMetrics.js", () => ({
+  emitMetric: (...args) => mockEmitMetric(...args),
+}));
+
 import {
   ingestHandler as handler,
   workerHandler as worker,
@@ -264,5 +269,12 @@ describe("hmrcItsaForeignPropertyDetailsPost bundle enforcement", () => {
     expect(response.statusCode).toBe(403);
     expect(parseResponseBody(response).code).toBe("BUNDLE_FORBIDDEN");
     expect(mockFetch.mock.calls.filter(([url]) => String(url).includes("/individuals/"))).toHaveLength(0);
+  });
+  test("a refusal by the entitlement check emits no failure metric", async () => {
+    const event = requestEvent();
+    event.requestContext.http.path = "/api/v1/hmrc/itsa/foreign-property/details";
+    const response = await handler(event);
+    expect(response.statusCode).toBe(403);
+    expect(mockEmitMetric.mock.calls.filter(([metric]) => metric.metricName === "ItsaSubmissionFailure")).toHaveLength(0);
   });
 });

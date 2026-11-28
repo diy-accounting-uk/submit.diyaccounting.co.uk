@@ -150,10 +150,19 @@ export function parseSheetCells(value) {
 // The cells with a picture cut from the published workbook: every cell a `source` names.
 let picturedCells = null;
 
+function pictured() {
+  picturedCells ??= new Set(namedCells().map((named) => `${named.sheet}!${named.cell}`));
+  return picturedCells;
+}
+
+/** Mark the cells of another field table as pictured: its sources' cells, as namedCells gives them. */
+export function addPicturedCells(cells) {
+  for (const { sheet, cell } of cells) pictured().add(`${sheet}!${cell}`);
+}
+
 /** A cell's picture, or null when no picture of it has been cut. */
 export function sourceImagePath({ sheet, cell }) {
-  picturedCells ??= new Set(namedCells().map((named) => `${named.sheet}!${named.cell}`));
-  return picturedCells.has(`${sheet}!${cell}`) ? sourceImageUrl({ sheet, cell }) : null;
+  return pictured().has(`${sheet}!${cell}`) ? sourceImageUrl({ sheet, cell }) : null;
 }
 
 function cellsText(cells) {

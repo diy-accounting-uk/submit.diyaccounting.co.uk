@@ -93,8 +93,8 @@
     return headers;
   }
 
-  async function post(url, body) {
-    return window.authorizedFetch(url, { method: "POST", headers: await buildHeaders(), body: JSON.stringify(body) });
+  async function post(url, body, extra = {}) {
+    return window.authorizedFetch(url, { method: "POST", headers: await buildHeaders(), body: JSON.stringify(body), ...extra });
   }
 
   function fragmentOf(path) {
@@ -177,7 +177,17 @@
    * @param {number} [options.ackRetryBaseMs] - First retry delay for the acknowledgement
    */
   function mount(options) {
-    const { kind, container, describeDraft, watch = [], submitButton, highlightIds = [], unavailableText, ensureAccess } = options;
+    const {
+      kind,
+      container,
+      describeDraft,
+      watch = [],
+      submitButton,
+      highlightIds = [],
+      unavailableText,
+      ensureAccess,
+      onFailure,
+    } = options;
     const ackRetryBaseMs = options.ackRetryBaseMs ?? DEFAULT_ACK_RETRY_BASE_MS;
     const routes = ROUTES[kind];
     const doc = container.ownerDocument;
@@ -467,18 +477,32 @@
 
       let outcome = null;
       let failed = false;
+      let failure = null;
+      window.narrateStage?.(siteText("widget.assist-narrate-sending", "Sending your figures to HMRC Assist..."));
       try {
-        const response = await post(routes.report, draft.requestBody);
+        const response = await post(routes.report, draft.requestBody, {
+          pollPendingMessage: siteText("widget.assist-narrate-waiting", "Waiting for HMRC Assist's answer..."),
+        });
         if (response.status === 204) {
           outcome = { noFeedback: true };
         } else if (response.ok) {
           outcome = { report: await response.json() };
         } else {
           failed = true;
+          const body = await response.json().catch(() => ({}));
+          failure = Object.assign(new Error(body?.message || `HMRC Assist answered ${response.status}`), {
+            status: response.status,
+            body,
+            code: body?.responseBody?.code || body?.code || "",
+            reason: body?.reason,
+          });
         }
       } catch (error) {
         console.warn("HMRC Assist request failed:", error);
         failed = true;
+        failure = error;
+      } finally {
+        window.endStage?.();
       }
 
       if (requestOwner === thisGeneration) {
@@ -493,6 +517,7 @@
       if (failed) {
         endHold();
         setStatus(unavailableText);
+        onFailure?.(failure);
       } else if (outcome.noFeedback) {
         endHold();
         setStatus(siteText("widget.assist-no-feedback", "HMRC Assist has no feedback on this return"));

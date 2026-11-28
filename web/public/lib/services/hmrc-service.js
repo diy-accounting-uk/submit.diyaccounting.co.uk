@@ -354,6 +354,7 @@ export async function submitVat(
     method: "POST",
     headers,
     body,
+    pollPendingMessage: siteText("vat-submit.narrate-waiting-hmrc", "Waiting for HMRC's answer..."),
   });
   const responseJson = await response.json();
   if (!response.ok) {
@@ -362,14 +363,16 @@ export async function submitVat(
     if (responseJson?.reason === "obligation_already_fulfilled") {
       const message = `${responseJson.userMessage} ${responseJson.actionAdvice}`.trim();
       console.warn(message);
-      throw new Error(message);
+      throw requestFailure(message, response, responseJson);
     }
     // Token allowance used up — tell the customer plainly instead of showing the raw response.
     if (responseJson?.reason === "tokens_exhausted") {
       const message =
         "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
       console.warn(message);
-      throw new Error(message);
+      const failure = requestFailure(message, response, responseJson);
+      failure.code = "tokens_exhausted";
+      throw failure;
     }
     // The HMRC authorization is missing a required scope — clear the stale token so the
     // customer re-authorizes instead of retrying with the same token.
@@ -2074,6 +2077,7 @@ function requestFailure(message, response, responseJson) {
   error.service = "hmrc";
   error.code = responseJson?.responseBody?.code || responseJson?.code || "";
   error.reason = responseJson?.reason;
+  error.body = responseJson;
   return error;
 }
 

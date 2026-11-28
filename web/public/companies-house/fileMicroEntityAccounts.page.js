@@ -560,6 +560,12 @@ async function handleSubmitFiling() {
   const ownPresenter = ownPresenterInputs.presenter;
   window.formErrors.clearFormErrors();
 
+  // Without a pass the route refuses the filing, so send nothing.
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("companiesHouse");
+    return;
+  }
+
   showLoading();
   hideStatus();
   let submission;
@@ -572,6 +578,11 @@ async function handleSubmitFiling() {
     submission = await window.submitMicroEntityAccounts(accounts, { ...govTestScenarioHeaders, ...languageHeaders() });
   } catch (error) {
     console.error("Companies House accounts filing failed:", error);
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      window.EntitlementStatus.showPassNeeded("companiesHouse");
+      hideLoading();
+      return;
+    }
     const tokensExhausted = error.status === 403 && error.reason === "tokens_exhausted";
     // The request layer already showed its own refusal; the page's message replaces it.
     if (tokensExhausted) hideStatus();

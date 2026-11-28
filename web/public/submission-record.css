@@ -219,22 +219,27 @@
   background: none;
 }
 
-@media (max-width: 40rem) {
-  .customer-copy-sheet .submission-record .page {
-    padding: 1rem;
-  }
+/* A label sits above its value whenever the sheet is narrow, beside a side note as well as on a phone. */
+.customer-copy-sheet {
+  container-type: inline-size;
+}
+@container (max-width: 34rem) {
   .customer-copy-sheet .submission-record table.statement td.label:has(+ td.text-value),
   .customer-copy-sheet .submission-record table.statement td.text-value {
     display: block;
     width: auto;
+    min-width: 0;
     padding: 0;
   }
   .customer-copy-sheet .submission-record table.statement td.label:has(+ td.text-value) {
     padding-top: 0.75rem;
     color: #45505e;
   }
-  .customer-copy-sheet .submission-record table.statement td.text-value {
-    overflow-wrap: anywhere;
+}
+
+@media (max-width: 40rem) {
+  .customer-copy-sheet .submission-record .page {
+    padding: 1rem;
   }
   /* The filed CT600's statement, with its Box column: tighter cells, and a label that breaks between words, not inside one. */
   .customer-copy-sheet .submission-record table.statement:has(td.box-reference) :is(th, td) {

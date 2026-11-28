@@ -286,6 +286,28 @@ test.describe("The bubble for a status message out of view", () => {
     await expect(bubble.locator(".status-bubble-close")).toBeFocused();
   });
 
+  for (const width of [1280, 390]) {
+    test(`a part the page scrolls to the top of the window while a bubble shows sits below the bubble at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openForm(page);
+      await scrollToFoot(page);
+      await showMessage(page, "The return could not be checked.", "error");
+      const bubble = page.locator(".status-bubble");
+      await expect(bubble).toBeVisible();
+
+      const target = page.locator("#section-accounts");
+      await target.evaluate((section) => section.scrollIntoView({ block: "start" }));
+      await expect(page.locator("#statusMessagesContainer")).not.toBeInViewport();
+      await expect(bubble).toBeVisible();
+      const [bubbleBox, targetBox] = await Promise.all([bubble.boundingBox(), target.boundingBox()]);
+      expect(targetBox.y).toBeGreaterThanOrEqual(bubbleBox.y + bubbleBox.height);
+
+      await bubble.locator(".status-bubble-close").click();
+      await expect(bubble).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.style.scrollPaddingTop)).toBe("");
+    });
+  }
+
   test("the bubble reads in Welsh on the Welsh page", async ({ page }) => {
     await serveSite(page);
     await page.goto(PAGE_URL.replace("/companies-house/", "/cy/companies-house/"), { waitUntil: "domcontentloaded" });

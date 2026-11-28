@@ -13,6 +13,9 @@ import {
   failureEventsOf,
   cognitoSubOf,
   formatLookupFile,
+  lakeWait,
+  LAKE_DELIVERY_MS,
+  DEFAULT_MAX_WAIT_MS,
 } from "../../../scripts/alarm-customer-lookup.mjs";
 
 const window = windowOf("2026-09-03T21:50:23.618Z");
@@ -127,5 +130,68 @@ describe("alarm-customer-lookup", () => {
     });
     expect(text).toContain("not found in Cognito");
     expect(text).toContain("No email to search for.");
+  });
+
+  describe("the wait for the lake", () => {
+    // The window ends five minutes after the alarm; the lake holds it 900 seconds after that.
+    const readyAt = new Date(window.end.getTime() + LAKE_DELIVERY_MS);
+
+    test("a lookup one minute after the alarm waits until the window's end plus the delivery buffer", () => {
+      const now = new Date("2026-09-03T21:51:23.618Z");
+      expect(lakeWait(window, now, DEFAULT_MAX_WAIT_MS)).toEqual({
+        readyAt,
+        waitMs: readyAt.getTime() - now.getTime(),
+        countKnown: true,
+      });
+      expect(readyAt.toISOString()).toBe("2026-09-03T22:10:23.618Z");
+    });
+
+    test("a lookup run after the lake holds the window queries at once", () => {
+      expect(lakeWait(window, new Date(readyAt.getTime() + 1), DEFAULT_MAX_WAIT_MS)).toEqual({ readyAt, waitMs: 0, countKnown: true });
+      expect(lakeWait(window, readyAt, DEFAULT_MAX_WAIT_MS)).toEqual({ readyAt, waitMs: 0, countKnown: true });
+    });
+
+    test("a lookup that cannot wait long enough does not query and knows no count", () => {
+      const now = new Date("2026-09-03T21:51:23.618Z");
+      expect(lakeWait(window, now, 60 * 1000)).toEqual({ readyAt, waitMs: 0, countKnown: false });
+    });
+
+    test("the default wait covers a lookup started when the alarm fires", () => {
+      expect(window.end.getTime() + LAKE_DELIVERY_MS - new Date("2026-09-03T21:50:23.618Z").getTime()).toBeLessThanOrEqual(
+        DEFAULT_MAX_WAIT_MS,
+      );
+    });
+
+    test("a count the lake cannot hold yet is written as not yet known, with no nothing-found line", () => {
+      const text = formatLookupFile({
+        alarmName: "prod-env-hmrc-submission-failure",
+        issueNumber: "878",
+        issueUrl: "",
+        timestamp: "2026-09-03T21:50:23.618Z",
+        window,
+        customers: [],
+        countKnown: false,
+        readyAt,
+      });
+      expect(text).toContain(
+        "Customers with a failed submission in the window: not yet known: the lake holds the window's events only from 2026-09-03T22:10:23.618Z",
+      );
+      expect(text).not.toContain("No non-test activity event with a failure was found");
+    });
+
+    test("parseArgs takes the longest wait in seconds", () => {
+      const opts = parseArgs([
+        "--alarm-name",
+        "prod-env-hmrc-submission-failure",
+        "--timestamp",
+        "t",
+        "--out",
+        "o",
+        "--max-wait-seconds",
+        "0",
+      ]);
+      expect(opts.maxWaitSeconds).toBe("0");
+      expect(parseArgs(["--alarm-name", "a", "--timestamp", "t", "--out", "o"]).maxWaitSeconds).toBe(String(DEFAULT_MAX_WAIT_MS / 1000));
+    });
   });
 });

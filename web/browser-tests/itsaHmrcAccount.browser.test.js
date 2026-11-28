@@ -100,7 +100,10 @@ async function openItsaPage(
     if (url.pathname === "/api/v1/bundle") {
       if (bundleAnswerMs === null) return;
       await answerLate(bundleAnswerMs);
-      const bundles = syntheticBundle ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }] : [];
+      const heldIncomeTaxPass = { bundleId: "resident-pro", allocated: true };
+      const bundles = syntheticBundle
+        ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }, heldIncomeTaxPass]
+        : [heldIncomeTaxPass];
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles }) });
       return;
     }

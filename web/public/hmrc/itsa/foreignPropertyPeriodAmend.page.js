@@ -174,7 +174,10 @@ async function runRequest(request, hmrcGrantId) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
     }
   } catch (error) {
-    if (error.status === 401) {
+    if (window.EntitlementStatus?.isBundleRefusal(error)) {
+      hideStatus();
+      window.EntitlementStatus.showPassNeeded("hmrc");
+    } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
       showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
@@ -193,6 +196,11 @@ async function runRequest(request, hmrcGrantId) {
 }
 
 async function ensureAuthorizedThen(request) {
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
+
   const hmrcGrantId = window.hmrcScopeCheck.storedGrantId();
   const scopeSufficient = hmrcGrantId && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!hmrcGrantId;
 
@@ -227,6 +235,10 @@ async function continueAfterOAuth() {
   sessionStorage.removeItem(PENDING_KEY);
   sessionStorage.removeItem("currentActivity");
   sessionStorage.removeItem("oauth_state");
+  if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+    window.EntitlementStatus.showPassNeeded("hmrc");
+    return;
+  }
   await runRequest(pending, hmrcGrantId);
 }
 

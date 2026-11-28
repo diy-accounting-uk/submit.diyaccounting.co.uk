@@ -166,7 +166,8 @@
 }
 
 /* The accounts in a review: a row per line, a column per year, each figure with its Change link. */
-.review-table--ledger caption {
+.review-table--ledger caption,
+.review-table--notes caption {
   text-align: left;
   font-weight: var(--weight-strong);
   padding: var(--space-2) 0;
@@ -191,7 +192,8 @@
     flex-basis: 100%;
   }
 
-  .review-table--ledger caption {
+  .review-table--ledger caption,
+  .review-table--notes caption {
     display: block;
   }
 

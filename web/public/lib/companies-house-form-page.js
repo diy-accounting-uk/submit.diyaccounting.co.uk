@@ -153,6 +153,11 @@
    */
   async function fileAndShowOutcome({ kind, form, result, headers = {}, onRefusal, onPaymentRequired, onSettled }) {
     result.replaceChildren();
+    // Without a pass the route refuses the form, so send nothing.
+    if ((await window.EntitlementStatus?.activityBundleHeld()) === false) {
+      window.EntitlementStatus.showPassNeeded("companiesHouse");
+      return null;
+    }
     let submission;
     try {
       window.narrateStage(siteText("ch.narrate-sending-form", "Sending the form to Companies House..."));
@@ -160,6 +165,11 @@
     } catch (error) {
       if (error?.status === 402 && error.body?.code === "fee-due" && onPaymentRequired) {
         await onPaymentRequired(error.body);
+        return null;
+      }
+      if (window.EntitlementStatus?.isBundleRefusal(error)) {
+        window.endStage();
+        window.EntitlementStatus.showPassNeeded("companiesHouse");
         return null;
       }
       if (onRefusal && onRefusal(error)) return null;

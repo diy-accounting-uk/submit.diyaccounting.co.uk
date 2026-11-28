@@ -123,6 +123,14 @@ describe("alarm-triage.yml", () => {
     expect(jobBlock("customer-lookup")).toContain("needs.triage.outputs.mode != 'escalate'");
   });
 
+  it("starts the customer lookup as its own workflow and does not wait for it", () => {
+    const starter = jobBlock("customer-lookup");
+    expect(starter).toContain("gh workflow run alarm-customer-lookup.yml --repo");
+    expect(starter).toMatch(/permissions:\n {6}actions: write\n/);
+    expect(starter).not.toContain("alarm-customer-lookup.mjs");
+    expect(starter).not.toMatch(/\bsleep\b/);
+  });
+
   it("matches a mirror issue by a whole marker line", () => {
     expect(text).not.toContain("contains($marker)");
   });
@@ -193,5 +201,23 @@ describe("alarm-triage.yml", () => {
     const runTriage = jobBlock("run-triage");
     expect(stepBlock(runTriage, "Filter the triage answer before it is published")).toContain("format: json");
     expect(stepBlock(runTriage, "Open a draft PR when triage named a change")).toContain("steps.judge.outputs.hold != 'true'");
+  });
+});
+
+describe("alarm-customer-lookup.yml", () => {
+  const lookup = readFileSync(resolve(ROOT, ".github/workflows/alarm-customer-lookup.yml"), "utf8");
+
+  it("runs on dispatch only, in a concurrency group of its own for each issue", () => {
+    expect(lookup).toMatch(/\non:\n {2}workflow_dispatch:\n/);
+    expect(lookup).not.toMatch(/\n {2}issues:\n/);
+    expect(lookup).toContain("group: alarm-customer-lookup-${{ inputs.issue-number }}");
+    expect(lookup).not.toMatch(/group: alarm-triage\b/);
+  });
+
+  it("keeps the prod environment, the role chain and a timeout that covers the lake wait", () => {
+    expect(lookup).toContain("environment: prod");
+    expect(lookup).toMatch(AWS_ROLE_STEP);
+    expect(lookup).toContain("timeout-minutes: 40");
+    expect(lookup).toContain("node scripts/alarm-customer-lookup.mjs");
   });
 });

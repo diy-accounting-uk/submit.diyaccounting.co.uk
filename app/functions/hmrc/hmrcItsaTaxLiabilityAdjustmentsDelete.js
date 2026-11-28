@@ -50,9 +50,9 @@ function emitSubmissionMetric(metricName, actor) {
   emitMetric({ namespace: BUSINESS_METRICS_NAMESPACE, metricName, dimensions: { Actor: actor } });
 }
 
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, emitMetric = true }) {
   const actor = resolveActorClass();
-  emitSubmissionMetric("ItsaSubmissionFailure", actor);
+  if (emitMetric) emitSubmissionMetric("ItsaSubmissionFailure", actor);
   await publishActivityFailureEvent({
     event: "itsa-tax-liability-adjustments-deletion-failed",
     summary,
@@ -148,6 +148,7 @@ export async function ingestHandler(event) {
     await recordSubmissionFailure({
       failure: "access-denied",
       summary: "ITSA tax liability adjustments deletion blocked: no entitlement",
+      emitMetric: false,
     });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }

@@ -705,13 +705,16 @@ An example of the Deployment role being assumed in a GitHub Actions Workflow:
 
 ## Local AWS access
 
-Local scripts use the `diya-management` SSO profile (AdministratorAccess in account 887764105431):
+Local scripts use the SSO profile of the environment they work on: `diya-submit-ci` (account
+367191799875) or `diya-submit-prod` (account 972912397388):
 ```bash
 aws sso login --sso-session diyaccounting
-. ./scripts/aws-use-submit-profile.sh
+. ./scripts/aws-use-submit-profile.sh ci
 ```
 
-The script exports `AWS_PROFILE=diya-management` and `AWS_REGION=eu-west-2`, then prints the identity.
+The script takes `ci` or `prod`, exports `AWS_PROFILE=diya-submit-<env>` and `AWS_REGION=eu-west-2`,
+then prints the identity. With no argument, or another value, it prints its usage and changes
+nothing.
 
 ## Deployment from local to AWS
 
@@ -719,73 +722,19 @@ The script exports `AWS_PROFILE=diya-management` and `AWS_REGION=eu-west-2`, the
 
 You'll need to have run `npx cdk bootstrap` to set up the environment for the CDK. This is a one-time setup per AWS account and region.
 
-Select the SSO profile:
+Select the SSO profile of the account to bootstrap:
 ```bash
 
-. ./scripts/aws-use-submit-profile.sh
+. ./scripts/aws-use-submit-profile.sh ci
 ```
 
 The profile has sufficient permissions to bootstrap the CDK environment and deploy the stack.
 ```bash
 
-npx cdk bootstrap aws://887764105431/eu-west-2
+npx cdk bootstrap aws://367191799875/eu-west-2
 ```
 
-```log
-
-~/projects/submit.diyaccounting.co.uk % npx cdk bootstrap aws://887764105431/eu-west-2
-[INFO] Scanning for projects...
-[INFO]
-[INFO] -------------------< submit.diyaccounting.co.uk:web >-------------------
-[INFO] Building web 0.0.1
-[INFO]   from pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO]
-[INFO] --- exec:3.5.1:java (default-cli) @ web ---
-[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
-  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
-  This API will be removed in the next major release.
-[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind is deprecated.
-  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
-  This API will be removed in the next major release.
-[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
-  use `logGroup` instead
-  This API will be removed in the next major release.
-[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
-  use `logGroup` instead
-  This API will be removed in the next major release.
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  3.585 s
-[INFO] Finished at: 2025-07-13T20:03:56+01:00
-[INFO] ------------------------------------------------------------------------
- ⏳  Bootstrapping environment aws://887764105431/eu-west-2...
-Trusted accounts for deployment: (none)
-Trusted accounts for lookup: (none)
-Using default execution policy of 'arn:aws:iam::aws:policy/AdministratorAccess'. Pass '--cloudformation-execution-policies' to customize.
-CDKToolkit: creating CloudFormation changeset...
- ✅  Environment aws://887764105431/eu-west-2 bootstrapped.
-
-NOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)
-
-34892   CDK CLI will collect telemetry data on command usage starting at version 2.1100.0 (unless opted out)
-
-        Overview: We do not collect customer content and we anonymize the
-                  telemetry we do collect. See the attached issue for more
-                  information on what data is collected, why, and how to
-                  opt-out. Telemetry will NOT be collected for any CDK CLI
-                  version prior to version 2.1100.0 - regardless of
-                  opt-in/out.
-
-        Affected versions: cli: ^2.0.0
-
-        More information at: https://github.com/aws/aws-cdk/issues/34892
-
-
-If you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".
-~/projects/submit.diyaccounting.co.uk %
-```
+For prod, select `prod` and bootstrap `aws://972912397388/eu-west-2`.
 
 Package the CDK, deploy the CDK stack which rebuilds the Docker image, and deploy the AWS infrastructure:
 ```bash
@@ -809,7 +758,7 @@ Maven build output:
 Select the SSO profile:
 ```bash
 
-. ./scripts/aws-use-submit-profile.sh
+. ./scripts/aws-use-submit-profile.sh ci
 ```
 
 
