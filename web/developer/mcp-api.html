@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (50)</h2>
+        <h2>Tools (53)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -1063,6 +1063,45 @@
     &quot;kind&quot;,
     &quot;submissionNumber&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_company_tax_return">
+        <summary><code>prepare_company_tax_return</code></summary>
+        <p>Works out the Company Tax Return figures from the open DIYA-GL book, as derive_company_tax_return does, and answers a link to the Company Tax Return (CT600) form on DIY Accounting Submit with the period, the profit and loss account and the computation figures filled in. The person opens the link, looks up the company, checks the figures, fills the balance sheet and the rest of the return, and files there with their Government Gateway sign-in. Use this when the person asks to file their Company Tax Return or CT600. It never files anything and contacts no outside service.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_micro_entity_accounts">
+        <summary><code>prepare_micro_entity_accounts</code></summary>
+        <p>Works out the micro-entity accounts from the open DIYA-GL book, as derive_micro_entity_accounts does, and answers a link to the micro-entity accounts form on DIY Accounting Submit with the period, both years' balance sheets, the employee count and the director filled in. The person opens the link, looks up the company, checks the figures, adds the date approved and the statements, and files there with the company's authentication code. Use this when the person asks to file their micro-entity accounts at Companies House. It never files anything and contacts no outside service: the figures filed are the ones the person sees on the page.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-prepare_small_company_accounts">
+        <summary><code>prepare_small_company_accounts</code></summary>
+        <p>Works out the small company accounts from the open DIYA-GL book, as derive_small_company_accounts does, and answers a link to the small company accounts form on DIY Accounting Submit with the period, the profit and loss account, both years' balance sheets, the fixed asset note, the employee count and the directors filled in. The person opens the link, looks up the company, checks the figures, adds the accounting policies, the date approved and the statements, and files there with the company's authentication code. Use this when the person asks to file their small company accounts at Companies House. It never files anything and contacts no outside service.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>

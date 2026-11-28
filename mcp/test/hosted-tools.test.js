@@ -113,6 +113,17 @@ describe("the hosted tool set", () => {
     expect(() => createServer(createSession(), { toolNames: ["no_such_tool"] })).toThrow(/Unknown tool/);
   });
 
+  it("offers the accounts and Company Tax Return links outside prod, and not in prod's tool set", () => {
+    const links = ["prepare_micro_entity_accounts", "prepare_small_company_accounts", "prepare_company_tax_return"];
+    for (const name of links) {
+      expect(HOSTED_TOOL_NAMES).toContain(name);
+      expect(hostedToolNames("ci")).toContain(name);
+      expect(hostedToolNames("prod")).not.toContain(name);
+      expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain(name);
+    }
+    for (const name of links) expect(hostedInstructions("prod")).not.toContain(name);
+  });
+
   it("offers every hosted tool outside prod", () => {
     for (const environmentName of ["ci", "simulator", "proxy", undefined]) {
       expect(hostedToolNames(environmentName)).toEqual(HOSTED_TOOL_NAMES);

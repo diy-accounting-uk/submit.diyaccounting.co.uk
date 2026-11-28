@@ -28875,3 +28875,7 @@ cy = '''Treth Gorfforaeth sy’n daladwy'''
 [strings."ch.ct600.problem-note-depreciation"]
 hash = "2d7d9e94b9ed"
 cy = '''Rhaid i Addasiadau, dibrisiant fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
+
+[strings."widget.books-handoff-company"]
+hash = "541f9e0446ec"
+cy = '''Chwiliwch am y cwmni a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.'''

@@ -3416,6 +3416,7 @@ window.WELSH_TEXT = {
   "widget.books-filed-option": "{kind}, {start} i {end}, ffeiliwyd {date}",
   "widget.books-filed-use": "Llenwi o’r ffeilio hwn",
   "widget.books-filled-ixbrl": "Llenwyd {fields} o {file} ({taxonomy}) ar gyfer y cyfnod {start} hyd at {end}.",
+  "widget.books-handoff-company": "Chwiliwch am y cwmni a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.",
   "widget.books-handoff-sign-in": "Mewngofnodwch a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.",
   "widget.books-handoff-unusable": "Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfr DIYA-GL: {reason}. Ni lenwyd dim.",
   "widget.books-heading": "Llenwi o’ch cofnodion",

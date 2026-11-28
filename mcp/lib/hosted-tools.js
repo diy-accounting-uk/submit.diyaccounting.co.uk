@@ -68,6 +68,9 @@ export const HOSTED_TOOL_NAMES = [
   "chart",
   "book",
   "look_up_rule",
+  "prepare_micro_entity_accounts",
+  "prepare_small_company_accounts",
+  "prepare_company_tax_return",
 ];
 
 // Prod offers the DIYA-GL book tools, the VAT, accounts and Company Tax Return derivations, the link that

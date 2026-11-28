@@ -493,7 +493,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing: use when a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
     - [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools: use when a VAT return's nine HMRC boxes must be computed from a loaded book before filing or review.
     - [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures: use when a self-employed book's quarterly update or annual submission figures are needed for HMRC's Self Employment Business API.
-    - [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file: use when an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
+    - [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file) Hand the VAT, accounts and Company Tax Return figures to the browser to file: use when an assistant has derived a VAT return, a company's micro-entity or small company accounts or a Company Tax Return, and the user must check and file it on the Submit page.
     - [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant) Show a VAT return as a card inside the assistant: use when an assistant that renders MCP Apps views should show the nine VAT boxes as a card with a button that opens the VAT form.
   - [Filing and practice tools](#filing-and-practice-tools-mcp)
     - [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API: use when confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
@@ -5439,7 +5439,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area MCP -->
 - [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books · [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository · [MCP-28](#mcp-28-record-where-claudes-connector-directory-shows-us-for-each-search-term) Record where Claude's connector directory shows us for each search term · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
-- [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures · [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file · [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant) Show a VAT return as a card inside the assistant
+- [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures · [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file) Hand the VAT, accounts and Company Tax Return figures to the browser to file · [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant) Show a VAT return as a card inside the assistant
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
 - [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site) Explain the MCP connector and servers on the public site · [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers) Read the machine for HMRC fraud prevention headers · [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry) Validate and publish the MCP registry entry
@@ -5533,7 +5533,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing
 - [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools
 - [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
-- [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file
+- [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file) Hand the VAT, accounts and Company Tax Return figures to the browser to file
 - [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant) Show a VAT return as a card inside the assistant
 <!-- /generated:group book-and-derivation-tools-mcp -->
 
@@ -5577,14 +5577,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** itsa, self employment business api, quarterly update, annual submission, se-derivations, sa103, mtd it
 - **Related:** MCP-03
 
-#### MCP-24 Hand the VAT figures to the browser to file
+#### MCP-24 Hand the VAT, accounts and Company Tax Return figures to the browser to file
 
-- **Use when:** an assistant has derived a VAT return and the user must check, declare and file it on the Submit page.
-- **Does:** prepareVatReturn in mcp/lib/handoff-tools.js derives the return again from the loaded book and builds the link to the VAT form with the seven figures in the URL fragment as "#books=<base64url JSON>", after a query that names the assistant as the campaign source ("?utm_source=<client kind>&utm_medium=mcp"). It files nothing and calls no service; the fragment never reaches a server.
+- **Use when:** an assistant has derived a VAT return, a company's micro-entity or small company accounts or a Company Tax Return, and the user must check and file it on the Submit page.
+- **Does:** prepareVatReturn, prepareMicroEntityAccounts, prepareSmallCompanyAccounts and prepareCompanyTaxReturn in mcp/lib/handoff-tools.js derive the figures again from the loaded book and build the link to the form with them in the URL fragment as "#books=<base64url JSON>", after a query that names the assistant as the campaign source ("?utm_source=<client kind>&utm_medium=mcp"). They file nothing and call no service; the fragment never reaches a server.
 - **Run:** no command; see Does and Entry
-- **Entry:** `mcp/lib/handoff-tools.js:prepareVatReturn`; `mcp/lib/handoff-tools.js:vatHandoffLink`
-- **Files:** mcp/lib/handoff-tools.js, mcp/test/handoff-tools.test.js
-- **Keywords:** prepare_vat_return, hand off, books fragment, vat form link, file in the browser
+- **Entry:** `mcp/lib/handoff-tools.js:prepareVatReturn`; `mcp/lib/handoff-tools.js:prepareMicroEntityAccounts`; `mcp/lib/handoff-tools.js:prepareSmallCompanyAccounts`; `mcp/lib/handoff-tools.js:prepareCompanyTaxReturn`; `mcp/lib/handoff-tools.js:handoffLink`
+- **Files:** mcp/lib/handoff-tools.js, mcp/test/handoff-tools.test.js, web/public/widgets/books-import.js
+- **Keywords:** prepare_vat_return, prepare_micro_entity_accounts, prepare_small_company_accounts, prepare_company_tax_return, hand off, books fragment, form link, file in the browser
 - **Related:** MCP-05
 
 #### MCP-25 Show a VAT return as a card inside the assistant
@@ -7519,7 +7519,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - book_saved: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - bookkeeping: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - books api: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
-- books fragment: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- books fragment: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - bounce: [SITE-27](#site-27-email-the-customer-after-a-key-event)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -8293,7 +8293,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ffmpeg: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [DEV-40](#dev-40-record-a-product-demo-video)
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
-- file in the browser: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- file in the browser: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
 - file-revised-accounts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - filed accounts: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
@@ -8339,6 +8339,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - form bundle number: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - form filing: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - form layouts: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
+- form link: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
 - format specification: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - forum answers: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - forwarder: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
@@ -8481,7 +8482,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - guide screenshots: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - gyb mail mirror: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
-- hand off: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- hand off: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
 - handover file: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
@@ -9227,7 +9228,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - prefetch: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
 - prefill accounts: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
 - prefilled package: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
-- prepare_vat_return: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- prepare_company_tax_return: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
+- prepare_micro_entity_accounts: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
+- prepare_small_company_accounts: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
+- prepare_vat_return: [MCP-24](#mcp-24-hand-the-vat-accounts-and-company-tax-return-figures-to-the-browser-to-file)
 - presenter credential: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - presenter poll: [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending)
 - presenter secret: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -10074,7 +10078,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat boxes: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - vat boxes card: [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant)
 - vat endpoints: [OPS-112](#ops-112-provision-the-api-gateway-stack)
-- vat form link: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - vat liabilities: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - vat logic: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - vat mtd: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)

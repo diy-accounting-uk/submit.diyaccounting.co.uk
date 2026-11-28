@@ -27,7 +27,7 @@ import { createSession, listBooks, openBook, saveBook, SAVE_FORMATS } from "./bo
 import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveCompanyTaxReturn, deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
-import { prepareVatReturn } from "./handoff-tools.js";
+import { prepareCompanyTaxReturn, prepareMicroEntityAccounts, prepareSmallCompanyAccounts, prepareVatReturn } from "./handoff-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerVatReviewCard, VAT_REVIEW_CARD_TOOLS, VAT_REVIEW_CARD_TOOL_META } from "./vat-review-card.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
@@ -1026,6 +1026,45 @@ export const TOOLS = {
       query: z.string().describe("A fact id, or the words of the rule or rate, such as annual investment allowance"),
     },
     handler: lookUpRule,
+  },
+  prepare_micro_entity_accounts: {
+    title: "Prepare micro-entity accounts to file in the browser",
+    annotations: READS,
+    description:
+      "Works out the micro-entity accounts from the open DIYA-GL book, as derive_micro_entity_accounts does, and answers " +
+      "a link to the micro-entity accounts form on DIY Accounting Submit with the period, both years' balance sheets, " +
+      "the employee count and the director filled in. The person opens the link, looks up the company, checks the " +
+      "figures, adds the date approved and the statements, and files there with the company's authentication code. Use " +
+      "this when the person asks to file their micro-entity accounts at Companies House. It never files anything and " +
+      "contacts no outside service: the figures filed are the ones the person sees on the page.",
+    inputSchema: {},
+    handler: prepareMicroEntityAccounts,
+  },
+  prepare_small_company_accounts: {
+    title: "Prepare small company accounts to file in the browser",
+    annotations: READS,
+    description:
+      "Works out the small company accounts from the open DIYA-GL book, as derive_small_company_accounts does, and " +
+      "answers a link to the small company accounts form on DIY Accounting Submit with the period, the profit and loss " +
+      "account, both years' balance sheets, the fixed asset note, the employee count and the directors filled in. The " +
+      "person opens the link, looks up the company, checks the figures, adds the accounting policies, the date approved " +
+      "and the statements, and files there with the company's authentication code. Use this when the person asks to " +
+      "file their small company accounts at Companies House. It never files anything and contacts no outside service.",
+    inputSchema: {},
+    handler: prepareSmallCompanyAccounts,
+  },
+  prepare_company_tax_return: {
+    title: "Prepare a Company Tax Return to file in the browser",
+    annotations: READS,
+    description:
+      "Works out the Company Tax Return figures from the open DIYA-GL book, as derive_company_tax_return does, and " +
+      "answers a link to the Company Tax Return (CT600) form on DIY Accounting Submit with the period, the profit and " +
+      "loss account and the computation figures filled in. The person opens the link, looks up the company, checks the " +
+      "figures, fills the balance sheet and the rest of the return, and files there with their Government Gateway " +
+      "sign-in. Use this when the person asks to file their Company Tax Return or CT600. It never files anything and " +
+      "contacts no outside service.",
+    inputSchema: {},
+    handler: prepareCompanyTaxReturn,
   },
 };
 

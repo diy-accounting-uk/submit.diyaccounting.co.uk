@@ -472,7 +472,9 @@ async function handleCompanySubmit(event) {
     showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
     window.booksImport.showFilingsFor(company.companyNumber);
-    window.priorYearFill.fill(company.companyNumber, "small", profile);
+    const priorYearFilled = window.priorYearFill.fill(company.companyNumber, "small", profile);
+    // Figures an assistant's link carries fill after the last accounts place their prior year, so the link's figures stand.
+    Promise.resolve(priorYearFilled).finally(() => window.booksImport.applyPendingHandoff());
   } catch (error) {
     console.error("Failed to look up the company:", error);
     showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
