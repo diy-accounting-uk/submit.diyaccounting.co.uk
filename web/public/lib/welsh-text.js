@@ -234,7 +234,6 @@ window.WELSH_TEXT = {
     "Mae cyfranddaliadau o’r un dosbarth pan fo’r hawliau sydd ynghlwm wrthynt yr un fath ym mhob ffordd.",
   "ch.accounts.file-failed": "Methwyd â ffeilio’r cyfrifon gyda Thŷ’r Cwmnïau.",
   "ch.accounts.gateway-accepted": "Derbyniodd y porth gyflwyniad {number} am {time}. Wrthi’n aros am Dŷ’r Cwmnïau...",
-  "ch.accounts.lookup-failed": "Methwyd â chwilio am y cwmni.",
   "ch.accounts.not-applicable": "Ddim yn berthnasol",
   "ch.accounts.not-confirmed": "Cyflwynwyd eich cyfrifon. Nid yw Tŷ’r Cwmnïau wedi cadarnhau’r canlyniad eto.",
   "ch.accounts.not-finished": "Mae’r cyfrifon gan Dŷ’r Cwmnïau ac nid yw wedi gorffen eu gwirio.",
@@ -1777,6 +1776,12 @@ window.WELSH_TEXT = {
     "Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.",
   "ch.lane.status-production": "Statws: cynhyrchu (production).",
   "ch.lane.status-sandbox": "Statws: amgylchedd prawf (sandbox).",
+  "ch.lookup.not-a-number": "Nid yw hwnnw’n rhif cwmni. Mae rhif cwmni yn 8 nod, er enghraifft 00000001.",
+  "ch.lookup.not-answering": "Ni atebodd Tŷ’r Cwmnïau. Rhowch gynnig arall arni ymhen ychydig funudau.",
+  "ch.lookup.not-found": "Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif {number}. Gwiriwch y rhif a chwiliwch amdano eto.",
+  "ch.lookup.submit-fault":
+    "Ni allai Submit chwilio am y cwmni. Nam yn Submit yw hwn: rhowch gynnig arall arni, a gofynnwch am help os bydd yn digwydd eto.",
+  "ch.lookup.too-many": "Gormod o chwiliadau Tŷ’r Cwmnïau ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.",
   "ch.micro.advance-not-signer":
     "Mae {name} wedi’i enwi ar gyfer blaenswm, ond ar gyfrifon micro-endid mae blaenswm yn enwi’r cyfarwyddwr sy’n llofnodi’r cyfrifon, {signer}. Cywirwch yr enw.",
   "ch.micro.approved-after-today":

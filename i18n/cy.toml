@@ -13572,10 +13572,6 @@ cy = '''Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.'''
 hash = "3b47f8b69df6"
 cy = '''Asedau net: {current} eleni, {prior} y llynedd. {verdict}'''
 
-[strings."ch.accounts.lookup-failed"]
-hash = "37fdf0338e6b"
-cy = '''Methwyd â chwilio am y cwmni.'''
-
 [strings."ch.micro.section-480"]
 hash = "0e9c6dcd2267"
 cy = '''Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.'''
@@ -29133,3 +29129,25 @@ cy = '''Manylion technegol'''
 [strings."ch.accounts.field-share-class-hint"]
 hash = "342eaab53976"
 cy = '''Mae cyfranddaliadau o’r un dosbarth pan fo’r hawliau sydd ynghlwm wrthynt yr un fath ym mhob ffordd.'''
+
+# == What the status line says when a company lookup fails (lib/company-lookup-failure.js), ids ch.lookup.* ==
+
+[strings."ch.lookup.not-found"]
+hash = "a77a785704c9"
+cy = '''Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif {number}. Gwiriwch y rhif a chwiliwch amdano eto.'''
+
+[strings."ch.lookup.not-a-number"]
+hash = "9ef23ef016af"
+cy = '''Nid yw hwnnw’n rhif cwmni. Mae rhif cwmni yn 8 nod, er enghraifft 00000001.'''
+
+[strings."ch.lookup.too-many"]
+hash = "5da2762f685c"
+cy = '''Gormod o chwiliadau Tŷ’r Cwmnïau ar hyn o bryd. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.lookup.not-answering"]
+hash = "00a2fde1b4aa"
+cy = '''Ni atebodd Tŷ’r Cwmnïau. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.lookup.submit-fault"]
+hash = "853e65d46461"
+cy = '''Ni allai Submit chwilio am y cwmni. Nam yn Submit yw hwn: rhowch gynnig arall arni, a gofynnwch am help os bydd yn digwydd eto.'''

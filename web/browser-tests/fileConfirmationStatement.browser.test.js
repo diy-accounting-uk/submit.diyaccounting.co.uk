@@ -295,7 +295,7 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#publicPscsBody")).toContainText("Jane Doe");
   });
 
-  test("shows an error and stays on the company view when the lookup fails", async ({ page }) => {
+  test("says in the page's words that Companies House has no such company and stays on the company view", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, { lookupError: { message: "Company not found", status: 404 } });
     await loadPage(page);
@@ -305,7 +305,8 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#companyView")).toBeVisible();
     await expect(page.locator("#authView")).toBeHidden();
     const messages = await page.evaluate(() => window.__statusMessages);
-    expect(messages.some((m) => m.message.includes("Company not found"))).toBe(true);
+    expect(messages.some((m) => m.message.startsWith("Companies House has no company with the number"))).toBe(true);
+    expect(messages.some((m) => m.message.includes("Company not found"))).toBe(false);
   });
 
   test("refuses a company that is not an active private limited company", async ({ page }) => {

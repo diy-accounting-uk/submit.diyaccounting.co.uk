@@ -198,8 +198,8 @@ async function handleCompanySubmit(event) {
     window.booksImport.showFilingsFor(company.companyNumber);
     window.priorYearFill.fill(company.companyNumber, "micro", profile);
   } catch (error) {
-    console.error("Failed to look up the company:", error);
-    showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
+    const { showCompanyLookupFailure } = await import("../lib/company-lookup-failure.js");
+    showCompanyLookupFailure(showStatus, error, companyNumber);
   } finally {
     hideLoading();
   }

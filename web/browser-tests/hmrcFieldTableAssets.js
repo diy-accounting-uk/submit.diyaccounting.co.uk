@@ -133,6 +133,7 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-filing-failure.js", "lib/accounts-filing-failure.js", "application/javascript");
   await serveFile(page, "**/lib/filing-failure.js", "lib/filing-failure.js", "application/javascript");
+  await serveFile(page, "**/lib/company-lookup-failure.js", "lib/company-lookup-failure.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");
   await serveFile(page, "**/lib/company-drill-paths.js", "lib/company-drill-paths.js", "application/javascript");
   await serveFile(page, "**/lib/watch-list-button.js", "lib/watch-list-button.js", "application/javascript");

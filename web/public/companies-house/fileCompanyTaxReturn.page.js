@@ -2446,8 +2446,8 @@ async function handleCompanySubmit(event) {
     window.booksImport.showFilingsFor(company.companyNumber, agentClient?.clientId);
     await offerLastYear();
   } catch (error) {
-    console.error("Failed to look up the company:", error);
-    window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
+    const { showCompanyLookupFailure } = await import("../lib/company-lookup-failure.js");
+    showCompanyLookupFailure(window.showStatus, error, companyNumber);
   } finally {
     window.hideLoading();
   }
