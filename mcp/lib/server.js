@@ -31,6 +31,7 @@ import { prepareVatReturn } from "./handoff-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerVatReviewCard, VAT_REVIEW_CARD_TOOLS, VAT_REVIEW_CARD_TOOL_META } from "./vat-review-card.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
+import { BOOK_READ_TOOLS } from "./book-read-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import { ADDS, CHANGES, CHANGES_OUTSIDE, READS, READS_OUTSIDE } from "./tool-annotations.js";
@@ -1023,7 +1024,7 @@ export const TOOLS = {
  */
 export function createServer(session = createSession(), { toolNames, overrides = {}, instructions } = {}) {
   const server = new McpServer(SERVER_INFO, instructions ? { instructions } : undefined);
-  const known = { ...TOOLS, ...ITSA_TOOLS };
+  const known = { ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS };
   const names = toolNames ?? Object.keys(known);
   for (const name of names) {
     const tool = overrides[name] ?? known[name];

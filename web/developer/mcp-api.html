@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (43)</h2>
+        <h2>Tools (49)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -77,6 +77,45 @@
   &quot;required&quot;: [
     &quot;displayName&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-book">
+        <summary><code>book</code></summary>
+        <p>The profile of the open DIYA-GL book: the product, the accounting period, the business (name, trade, address, VAT registration, cash or accruals basis), the tax settings, the bank accounts, the journals with their line counts and dates, and the registers it carries (directors, employees, debtors, creditors, fixed assets, dividends, members, opening balances, stock). Use this when the person asks what period their records cover, whether they are VAT registered, or who their directors or employees are. It does not change the book.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-chart">
+        <summary><code>chart</code></summary>
+        <p>The chart of accounts of the open DIYA-GL book: each account's id, name, group, class and normal side, for a company the accounts line it feeds, the spreadsheet column it lands in, how many lines post to it with their total in pence, and the report rows it reaches. Use this when the person asks which account to use for something, where a cost shows in their accounts, or which accounts have no activity. It does not change the book.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-checks">
+        <summary><code>checks</code></summary>
+        <p>Every book check and warning over the open DIYA-GL book, each with its verdict (pass, warn or fail), what it means and the entryNumbers of the lines that fail it, with the pass, warn and fail counts. Use this when the person asks whether anything is wrong with their records, which entries fall outside the year, which sales have no invoice number, whether there are duplicates, or how near they are to the VAT threshold. It does not change the book or contact HMRC.</p>
+        <p>No parameters.</p>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {},
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -514,6 +553,91 @@
     &quot;service&quot;,
     &quot;knownFact&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-lines">
+        <summary><code>lines</code></summary>
+        <p>Reads the lines of the open DIYA-GL book (every sale, purchase, bank movement, payslip and journal entry, with its entryNumber, journal, account, date, amount, customer, supplier or payee, description, reference and VAT fields), filtered and optionally grouped with a count and a total in pence. Filters combine: journal, account, dates, text and reference. Use this when the person asks who their best customer is, which suppliers cost most, what they spent on something in a month, or for their largest sales or purchases. It does not change the book.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>journal</code></td><td>string | string[]</td><td>no</td><td>The journals to keep: sales, purchases, bank, payroll or journal</td></tr>
+            <tr><td><code>accountMainID</code></td><td>string | string[]</td><td>no</td><td>The account ids to keep, for example 4000 (the chart tool lists them)</td></tr>
+            <tr><td><code>from</code></td><td>string</td><td>no</td><td>The earliest date kept, YYYY-MM-DD inclusive</td></tr>
+            <tr><td><code>to</code></td><td>string</td><td>no</td><td>The latest date kept, YYYY-MM-DD inclusive</td></tr>
+            <tr><td><code>text</code></td><td>string</td><td>no</td><td>Text found in the customer, supplier or payee, or the description, ignoring case</td></tr>
+            <tr><td><code>documentReference</code></td><td>string</td><td>no</td><td>Text found in the reference, ignoring case</td></tr>
+            <tr><td><code>groupBy</code></td><td>&quot;detailComment&quot; | &quot;accountMainID&quot; | &quot;month&quot;</td><td>no</td><td>detailComment (customer or supplier), accountMainID or month (YYYY-MM)</td></tr>
+            <tr><td><code>top</code></td><td>integer</td><td>no</td><td>Keep at most this many groups, or without groupBy the largest lines</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;journal&quot;: {
+      &quot;description&quot;: &quot;The journals to keep: sales, purchases, bank, payroll or journal&quot;,
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      ]
+    },
+    &quot;accountMainID&quot;: {
+      &quot;description&quot;: &quot;The account ids to keep, for example 4000 (the chart tool lists them)&quot;,
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      ]
+    },
+    &quot;from&quot;: {
+      &quot;description&quot;: &quot;The earliest date kept, YYYY-MM-DD inclusive&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;to&quot;: {
+      &quot;description&quot;: &quot;The latest date kept, YYYY-MM-DD inclusive&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;text&quot;: {
+      &quot;description&quot;: &quot;Text found in the customer, supplier or payee, or the description, ignoring case&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;documentReference&quot;: {
+      &quot;description&quot;: &quot;Text found in the reference, ignoring case&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;groupBy&quot;: {
+      &quot;description&quot;: &quot;detailComment (customer or supplier), accountMainID or month (YYYY-MM)&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;detailComment&quot;,
+        &quot;accountMainID&quot;,
+        &quot;month&quot;
+      ]
+    },
+    &quot;top&quot;: {
+      &quot;description&quot;: &quot;Keep at most this many groups, or without groupBy the largest lines&quot;,
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: 1,
+      &quot;maximum&quot;: 9007199254740991
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -2142,6 +2266,39 @@
     &quot;statementsAccepted&quot;,
     &quot;smallCompany&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-report">
+        <summary><code>report</code></summary>
+        <p>Works out the figures of the open DIYA-GL book (one business's sales, purchases and bank lines for a year): the profit and loss account, the balance sheet, the tax and VAT figures and the compliance checks, each figure with the label the spreadsheet prints for it, and the book checks. Use this when the person asks what their profit, turnover, tax bill or VAT due is, or which lines make up a figure (entryNumbers). It does not change the book, file anything or contact HMRC.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>entryNumbers</code></td><td>boolean | string[]</td><td>no</td><td>true gives every figure the entryNumbers of the lines behind it; a list of figure keys (for example section/profit-loss-account/sales-turnover) gives them to those figures only</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;entryNumbers&quot;: {
+      &quot;description&quot;: &quot;true gives every figure the entryNumbers of the lines behind it; a list of figure keys (for example section/profit-loss-account/sales-turnover) gives them to those figures only&quot;,
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;boolean&quot;
+        },
+        {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      ]
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -3878,6 +4035,55 @@
     &quot;totalValueGoodsSuppliedExVAT&quot;,
     &quot;totalAcquisitionsExVAT&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-trial_balance">
+        <summary><code>trial_balance</code></summary>
+        <p>The trial balance of the open DIYA-GL book of a company: every account's balance in the debit or the credit column and the two totals, over the year, one month, one VAT quarter or a date range, with the year-end postings of the registers. Name an account to also get the lines and postings behind its balance. Use this when the person asks whether their trial balance balances, what an account's balance is, or what moved in a month. Company DIYA-GL books only. It does not change the book or contact HMRC.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>period</code></td><td>&quot;year&quot; | &quot;month&quot; | &quot;vatQuarter&quot; | &quot;custom&quot;</td><td>no</td><td>year (the default), month, vatQuarter, or custom with from and to</td></tr>
+            <tr><td><code>month</code></td><td>string</td><td>no</td><td>YYYY-MM of the month, or of the VAT quarter's last month; needed for month and vatQuarter</td></tr>
+            <tr><td><code>from</code></td><td>string</td><td>no</td><td>First day, YYYY-MM-DD inclusive, for a custom range</td></tr>
+            <tr><td><code>to</code></td><td>string</td><td>no</td><td>Last day, YYYY-MM-DD inclusive, for a custom range</td></tr>
+            <tr><td><code>account</code></td><td>string</td><td>no</td><td>An account id (for example 1300); adds that account's postings</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;period&quot;: {
+      &quot;description&quot;: &quot;year (the default), month, vatQuarter, or custom with from and to&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;year&quot;,
+        &quot;month&quot;,
+        &quot;vatQuarter&quot;,
+        &quot;custom&quot;
+      ]
+    },
+    &quot;month&quot;: {
+      &quot;description&quot;: &quot;YYYY-MM of the month, or of the VAT quarter's last month; needed for month and vatQuarter&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;from&quot;: {
+      &quot;description&quot;: &quot;First day, YYYY-MM-DD inclusive, for a custom range&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;to&quot;: {
+      &quot;description&quot;: &quot;Last day, YYYY-MM-DD inclusive, for a custom range&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;account&quot;: {
+      &quot;description&quot;: &quot;An account id (for example 1300); adds that account's postings&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>

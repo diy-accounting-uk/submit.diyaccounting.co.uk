@@ -61,6 +61,12 @@ export const HOSTED_TOOL_NAMES = [
   "invite_client",
   "client_authorisation_status",
   "run_for_clients",
+  "report",
+  "trial_balance",
+  "checks",
+  "lines",
+  "chart",
+  "book",
 ];
 
 // Prod offers the DIYA-GL book tools, the VAT, accounts and Company Tax Return derivations, the link that

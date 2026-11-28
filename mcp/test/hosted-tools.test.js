@@ -8,13 +8,14 @@ import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, REVIEWER_GROUP, hostedInstructions
 import { VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
 import { handleMcpRequest } from "../lib/http.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
+import { BOOK_READ_TOOLS } from "../lib/book-read-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
 const NOT_HOSTED = ["sign_in", "sign_out", "save_book", "write_finance_package"];
 
 describe("the hosted tool set", () => {
   it("names only registered tools, and leaves out exactly the tools that cannot run hosted", () => {
-    const all = Object.keys({ ...TOOLS, ...ITSA_TOOLS });
+    const all = Object.keys({ ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS });
     for (const name of HOSTED_TOOL_NAMES) expect(all).toContain(name);
     expect(all.filter((name) => !HOSTED_TOOL_NAMES.includes(name)).sort()).toEqual([...NOT_HOSTED].sort());
   });
@@ -32,7 +33,7 @@ describe("the hosted tool set", () => {
   });
 
   it("gives every registered tool a title and all three hints, with the filing tools destructive and open-world", () => {
-    const tables = { ...TOOLS, ...ITSA_TOOLS, ...HOSTED_OVERRIDES };
+    const tables = { ...TOOLS, ...ITSA_TOOLS, ...BOOK_READ_TOOLS, ...HOSTED_OVERRIDES };
     for (const [name, tool] of Object.entries(tables)) {
       expect(tool.title, name).toMatch(/\S/);
       expect(Object.keys(tool.annotations ?? {}).sort(), name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
@@ -228,7 +229,7 @@ describe("the hosted tool set", () => {
 
 describe("every tool's title and description", () => {
   it("names a saved file a DIYA-GL book and the place it is saved the DIY Accounting Submit account", () => {
-    for (const [name, tool] of [...Object.entries(TOOLS), ...Object.entries(HOSTED_OVERRIDES)]) {
+    for (const [name, tool] of [...Object.entries(TOOLS), ...Object.entries(BOOK_READ_TOOLS), ...Object.entries(HOSTED_OVERRIDES)]) {
       const text = `${tool.title} ${tool.description}`;
       expect(text, name).not.toMatch(/DIYA cloud/);
       expect(text, name).not.toMatch(/diya-gl book/);
