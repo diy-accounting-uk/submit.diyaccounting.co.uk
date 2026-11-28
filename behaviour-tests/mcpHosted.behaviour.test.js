@@ -34,7 +34,15 @@ import {
 } from "./helpers/behaviour-helpers.js";
 import { companiesHouseLookupFixture, isCompaniesHouseSimulatorLane } from "./steps/behaviour-companies-house-filing-steps.js";
 import { COMPANY_AUTHENTICATION_CODE } from "@app/http-simulator/fixtures/register.js";
-import { fillInHostedUINativeAuth, handleTotpChallenge, submitHostedUINativeAuth } from "./steps/behaviour-login-steps.js";
+import {
+  clickLogIn,
+  fillInHostedUINativeAuth,
+  handleTotpChallenge,
+  loginWithCognitoOrMockAuth,
+  submitHostedUINativeAuth,
+  verifyLoggedInStatus,
+} from "./steps/behaviour-login-steps.js";
+import { goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -295,7 +303,13 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
       expect(tools.map((tool) => tool.name).sort()).toEqual([...HOSTED_TOOL_NAMES].sort());
       for (const tool of tools) {
         expect(tool.title, tool.name).toMatch(/\S/);
-        expect(Object.keys(tool.annotations ?? {}).sort(), tool.name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
+        expect(Object.keys(tool.annotations ?? {}).sort(), tool.name).toEqual([
+          "destructiveHint",
+          "openWorldHint",
+          "readOnlyHint",
+          "title",
+        ]);
+        expect(tool.annotations.title, tool.name).toBe(tool.title);
       }
 
       const opened = await client.callTool({ name: "open_book", arguments: { bookId } });
@@ -315,23 +329,42 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
   }
 });
 
+// The site's own sign-in in a fresh browser context, answering the Cognito ID token the page keeps.
+// The pass admin route reads the caller's email claim, which the connector's access token does not carry.
+async function siteIdToken(browser) {
+  const context = await browser.newContext();
+  try {
+    const sitePage = await context.newPage();
+    addOnPageLogging(sitePage);
+    await goToHomePageExpectNotLoggedIn(sitePage, baseUrl, screenshotPath);
+    await clickLogIn(sitePage, screenshotPath);
+    await loginWithCognitoOrMockAuth(sitePage, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+    await verifyLoggedInStatus(sitePage, screenshotPath);
+    await sitePage.waitForFunction(() => Boolean(localStorage.getItem("cognitoIdToken")));
+    return await sitePage.evaluate(() => localStorage.getItem("cognitoIdToken"));
+  } finally {
+    await context.close();
+  }
+}
+
 test("a chat client files revised micro-entity accounts through the hosted connector with the codes typed on its link", async ({
   page,
+  browser,
 }) => {
   test.skip(testAuthProvider !== "cognito-native", "the sign-in needs the Cognito Hosted UI with a native test user");
   addOnPageLogging(page);
 
   const { mcpUrl, tokenUrl, clientId, pkce, state } = await discoverRegisterAndConsent(page);
   const accessToken = await signInAndRefresh(page, { tokenUrl, clientId, pkce, state });
-  const authorised = { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" };
 
   /* ******************************************************** */
   /*  GRANT THE BUNDLE THAT FILES ACCOUNTS, BY A TEST PASS     */
   /* ******************************************************** */
 
+  const idToken = await siteIdToken(browser);
   const issued = await fetch(siteUrl("api/v1/pass/admin"), {
     method: "POST",
-    headers: authorised,
+    headers: { "Authorization": `Bearer ${idToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       passTypeId: "resident-ltd",
       bundleId: "resident-ltd",
@@ -345,7 +378,11 @@ test("a chat client files revised micro-entity accounts through the hosted conne
   expect(issued.status, JSON.stringify(issuedBody)).toBe(200);
   const passCode = issuedBody?.data?.code || issuedBody?.code;
   expect(passCode, JSON.stringify(issuedBody)).toBeTruthy();
-  const redeemed = await fetch(siteUrl("api/v1/pass"), { method: "POST", headers: authorised, body: JSON.stringify({ code: passCode }) });
+  const redeemed = await fetch(siteUrl("api/v1/pass"), {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${idToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ code: passCode }),
+  });
   expect(redeemed.ok, `pass redeem answered HTTP ${redeemed.status}`).toBe(true);
 
   /* ***************************************************************** */
