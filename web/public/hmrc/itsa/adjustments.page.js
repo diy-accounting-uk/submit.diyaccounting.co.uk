@@ -67,9 +67,28 @@ async function checkOpenObligations(nino, businessId, hmrcGrantId) {
   return openObligations;
 }
 
+// What the page says while it asks HMRC for the summary or sends an adjustment, and what a failure leaves behind.
+function triggerWords() {
+  return {
+    sending: siteText("itsa.narrate-requesting-summary", "Asking HMRC for the year-end summary..."),
+    notSent: siteText("itsa.failure-not-sent-summary", "HMRC has not made the year-end summary."),
+    answers: siteText("itsa.failure-answers-choices", "Your choices are still in the form."),
+  };
+}
+
+function adjustmentWords() {
+  return {
+    sending: siteText("itsa.narrate-sending-adjustment", "Sending the adjustment to HMRC..."),
+    notSent: siteText("itsa.failure-not-sent-adjustment", "HMRC has not got the adjustment."),
+    answers: siteText("itsa.failure-answers-form", "Your figures are still in the form."),
+  };
+}
+
 async function triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await triggerBsas(triggerDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return window.fileWithHmrc(triggerWords(), () =>
+    triggerBsas(triggerDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario),
+  );
 }
 
 async function retrieveSummary(
@@ -103,7 +122,9 @@ async function retrieveSummary(
 
 async function submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
-  return await adjustBsasSelfEmployment(adjustDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  return window.fileWithHmrc(adjustmentWords(), () =>
+    adjustBsasSelfEmployment(adjustDetails, hmrcGrantId, govClientHeaders, runFraudPreventionHeaderValidation, testScenario),
+  );
 }
 
 function displaySummary(bsas) {
@@ -141,7 +162,6 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
 async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
-  showStatus(siteText("itsa.year-end-requesting", "Requesting the year-end summary..."), "info");
   const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
   triggeredNino = triggerDetails.nino;
   triggeredTaxYear = document.getElementById("taxYear").value.trim();
@@ -230,7 +250,6 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingBsasTriggerRequest");
     } else if (pendingAdjust) {
       showLoading();
-      showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
       await submitAdjustment(
         pendingAdjust.adjustDetails,
         pendingAdjust.testScenario,
@@ -290,7 +309,6 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
       try {
         showLoading();
         hideStatus();
-        showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
         await submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         document.getElementById("summaryContainer").style.display = "none";
         document.getElementById("adjustmentResults").style.display = "block";

@@ -282,7 +282,20 @@ function readAmendData(source) {
   };
 }
 
+// What the page says while it sends the amendment, and what a failure leaves behind.
+function amendWords() {
+  return {
+    sending: siteText("itsa.narrate-sending-amendment", "Sending the amended period summary to HMRC..."),
+    notSent: siteText("itsa.failure-not-sent-amendment", "HMRC has not got the amendment; the period summary it holds is unchanged."),
+    answers: siteText("itsa.failure-answers-form", "Your figures are still in the form."),
+  };
+}
+
 async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
+  return window.fileWithHmrc(amendWords(), () => sendAmendment(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId));
+}
+
+async function sendAmendment(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
 
   const requestHeaders = {
@@ -307,14 +320,16 @@ async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderVali
     pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
     pollSuccessMessage: siteText("itsa.period-amended", "Period summary amended."),
     pollErrorMessage: siteText("itsa.period-amend-failed", "Failed to amend the period summary."),
+    ...window.hmrcWritePollOptions(),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, siteText("itsa.period-amend-failed-fallback", "Failed to amend the period summary")));
-    error.status = response.status;
-    error.reason = result.reason;
-    throw error;
+    throw window.hmrcRequestFailure(
+      hmrcErrorMessage(result, siteText("itsa.period-amend-failed-fallback", "Failed to amend the period summary")),
+      response,
+      result,
+    );
   }
   return result;
 }
@@ -329,7 +344,6 @@ async function continuePeriodAmend() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
 
     await amendPeriod(
       pendingRequest.amendData,
@@ -439,7 +453,6 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus();
-      showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
 
       await amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 

@@ -7645,10 +7645,6 @@ cy = '''Un hawliad ar gyfer pob adeilad mewn porthladd rhydd neu barth buddsoddi
 hash = "967d5be78ec5"
 cy = '''Wrthi’n llwytho’r cyflwyniad blynyddol...'''
 
-[strings."itsa.annual-saving"]
-hash = "3d90b2d37866"
-cy = '''Wrthi’n cadw’r cyflwyniad blynyddol...'''
-
 [strings."itsa.annual-load-failed"]
 hash = "f0855da94a8d"
 cy = '''Methwyd â llwytho’r cyflwyniad blynyddol: {reason}'''
@@ -7717,10 +7713,6 @@ cy = '''Methwyd â chyflwyno’r diweddariad chwarterol.'''
 hash = "db311db8a302"
 cy = '''Methwyd â chyflwyno’r diweddariad chwarterol'''
 
-[strings."itsa.quarterly-filing"]
-hash = "67b373c3a1f2"
-cy = '''Wrthi’n cyflwyno’r diweddariad chwarterol...'''
-
 [strings."itsa.quarterly-file-failed-reason"]
 hash = "3825acedd922"
 cy = '''Methwyd â chyflwyno’r diweddariad chwarterol: {reason}'''
@@ -7752,10 +7744,6 @@ cy = '''Methwyd â diwygio’r crynodeb o’r cyfnod.'''
 [strings."itsa.period-amend-failed-fallback"]
 hash = "c1cfbdaf5d82"
 cy = '''Methwyd â diwygio’r crynodeb o’r cyfnod'''
-
-[strings."itsa.period-amending"]
-hash = "d56359b7ce52"
-cy = '''Wrthi’n diwygio’r crynodeb o’r cyfnod...'''
 
 [strings."itsa.period-amend-failed-reason"]
 hash = "781e425bb392"
@@ -8802,10 +8790,6 @@ cy = '''Mewngofnodwch i ofyn am y crynodeb diwedd blwyddyn ar gyfer busnes eiddo
 hash = "96b1f7921468"
 cy = '''Crynodeb diwedd blwyddyn'''
 
-[strings."itsa.year-end-requesting"]
-hash = "63dae0185951"
-cy = '''Wrthi’n gofyn am y crynodeb diwedd blwyddyn...'''
-
 [strings."itsa.year-end-retrieving"]
 hash = "0b688c29d880"
 cy = '''Wrthi’n adalw’r crynodeb diwedd blwyddyn...'''
@@ -8813,10 +8797,6 @@ cy = '''Wrthi’n adalw’r crynodeb diwedd blwyddyn...'''
 [strings."itsa.year-end-request-failed"]
 hash = "b216a39d927d"
 cy = '''Methwyd â gofyn am y crynodeb diwedd blwyddyn: {reason}'''
-
-[strings."itsa.adjustment-submitting"]
-hash = "ca430dff3f51"
-cy = '''Wrthi’n cyflwyno’r addasiad...'''
 
 [strings."itsa.adjustment-failed"]
 hash = "f339e7cfe3f9"
@@ -29391,3 +29371,61 @@ cy = '''Colled fasnachu eleni wedi’i chario’n ôl yn erbyn elw’r tair blyn
 [strings."itsa-losses.apply-first-note"]
 hash = "aa11002c70d2"
 cy = '''Pa hawliad y mae CThEF yn ei gymhwyso gyntaf pan osodir colled eleni yn erbyn incwm arall eleni ac incwm arall blwyddyn gynharach.'''
+
+# == The self-employment pages' stages, failure panel and SA103F field notes ==
+
+[strings."itsa.narrate-sending-quarterly"]
+hash = "c6437d899224"
+cy = '''Wrthi’n anfon y diweddariad chwarterol at CThEF...'''
+
+[strings."itsa.failure-not-sent-quarterly"]
+hash = "6bf8abb5a095"
+cy = '''Nid yw CThEF wedi cael y diweddariad chwarterol.'''
+
+[strings."itsa.narrate-sending-amendment"]
+hash = "1b87f47fa7e5"
+cy = '''Wrthi’n anfon y crynodeb o’r cyfnod wedi’i ddiwygio at CThEF...'''
+
+[strings."itsa.failure-not-sent-amendment"]
+hash = "cedfb6c6cac7"
+cy = '''Nid yw CThEF wedi cael y diwygiad; nid yw’r crynodeb o’r cyfnod sydd ganddo wedi newid.'''
+
+[strings."itsa.narrate-sending-annual"]
+hash = "59a59af4d1ef"
+cy = '''Wrthi’n anfon y cyflwyniad blynyddol at CThEF...'''
+
+[strings."itsa.failure-not-sent-annual"]
+hash = "ba7a11d74fad"
+cy = '''Nid yw CThEF wedi cael y cyflwyniad blynyddol.'''
+
+[strings."itsa.narrate-requesting-summary"]
+hash = "c12f4f354a4a"
+cy = '''Wrthi’n gofyn i CThEF am y crynodeb diwedd blwyddyn...'''
+
+[strings."itsa.failure-not-sent-summary"]
+hash = "3218adf8c30a"
+cy = '''Nid yw CThEF wedi gwneud y crynodeb diwedd blwyddyn.'''
+
+[strings."itsa.narrate-sending-adjustment"]
+hash = "00a81dde4ebf"
+cy = '''Wrthi’n anfon yr addasiad at CThEF...'''
+
+[strings."itsa.failure-not-sent-adjustment"]
+hash = "ce8007dae694"
+cy = '''Nid yw CThEF wedi cael yr addasiad.'''
+
+[strings."itsa.failure-answers-form"]
+hash = "cf0dbb37e799"
+cy = '''Mae eich ffigurau yn dal yn y ffurflen.'''
+
+[strings."itsa.failure-answers-choices"]
+hash = "ad140edea2f1"
+cy = '''Mae eich dewisiadau yn dal yn y ffurflen.'''
+
+[strings."itsa.field-source-sa103f"]
+hash = "a2aed6cdc801"
+cy = '''nodiadau SA103F'''
+
+[strings."itsa.field-source-se-package"]
+hash = "45cdcbe97fa4"
+cy = '''Llyfr gwaith pecyn Hunangyflogedig.'''

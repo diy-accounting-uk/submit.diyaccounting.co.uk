@@ -45,7 +45,7 @@ const REFERENCE_PATTERNS = [
   [/^SA106 box (\d+(?:\.\d)?)$/, ([, box]) => siteText("field.reference-sa106-box", "SA106 box {box}", { box })],
   [/^SA106 column ([A-F])$/, ([, column]) => siteText("field.reference-sa106-column", "SA106 column {column}", { column })],
   [/\b[Bb]oxes (\d+ (?:and|or) \d+)/, ([, boxes]) => siteText("field.reference-boxes", "Boxes {boxes}", { boxes })],
-  [/\b[Bb]ox (\d+ or \d+|\d+)/, ([, box]) => siteText("field.reference-box", "Box {box}", { box })],
+  [/\b[Bb]ox (\d+ or \d+|\d+\.\d+|\d+)/, ([, box]) => siteText("field.reference-box", "Box {box}", { box })],
 ];
 
 /** The reference that leads a field's label: its box, or the item, section or page the register names. */
@@ -78,7 +78,10 @@ export function sourceLinksOf(field) {
   return link ? [link] : [];
 }
 
-/** Where a field's term comes from: the guide at the box's anchor, or the field's termSource. */
+/**
+ * Where a field's term comes from: the guide at the box's anchor, or the field's termSource, named
+ * by its termSourceText when the field gives one.
+ */
 export function sourceLinkOf(field) {
   if (field.box !== undefined) {
     const anchor = boxRow(field.box)?.anchor;
@@ -86,6 +89,7 @@ export function sourceLinkOf(field) {
   }
   const href = field.termSource;
   if (!href) return null;
+  if (field.termSourceText) return { href, text: field.termSourceText };
   if (href.startsWith("https://www.gov.uk/guidance/the-company-tax-return-guide")) {
     return { href, text: siteText("ch.ct.guide-link", "Company Tax Return guide") };
   }
