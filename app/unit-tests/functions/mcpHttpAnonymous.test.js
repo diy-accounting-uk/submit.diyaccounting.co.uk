@@ -93,12 +93,12 @@ describe("the hosted MCP endpoint without a token", () => {
     expect(initialized.instructions).toMatch(/tick the declaration/);
   });
 
-  it("lists prod's eleven hosted tools by name, title and input schema", async () => {
+  it("lists prod's thirty hosted tools by name, title and input schema", async () => {
     const result = await ingestHandler(anonymousPost({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }));
     expect(result.statusCode).toBe(200);
     const { tools } = JSON.parse(result.body).result;
     expect(tools.map((tool) => tool.name)).toEqual(hostedToolNames("prod"));
-    expect(tools).toHaveLength(11);
+    expect(tools).toHaveLength(30);
     for (const tool of tools) {
       expect(tool.title).toBeTruthy();
       expect(tool.description).toBeTruthy();

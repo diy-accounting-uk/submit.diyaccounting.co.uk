@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "diya-submit",
-  "version": "0.1.7",
-  "description": "Work out a UK VAT return under Making Tax Digital (MTD) from the bookkeeping you keep in DIY Accounting Submit, check HMRC's nine boxes and the lines behind them, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored HMRC VAT receipts afterwards.",
+  "version": "0.1.8",
+  "description": "Keep your bookkeeping in DIY Accounting Submit from your assistant: read and change your DIYA-GL books, work out a UK VAT return under Making Tax Digital (MTD), company accounts and a Company Tax Return from your records, then open the link the assistant gives you and check and file each one yourself on the Submit site.",
   "author": {
     "name": "DIY Accounting Limited",
     "email": "support@diyaccounting.co.uk",
@@ -36,23 +36,32 @@
     "uk",
     "tax",
     "diya-gl",
-    "diy accounting"
+    "diy accounting",
+    "company accounts",
+    "corporation tax",
+    "ct600",
+    "companies house",
+    "records"
   ],
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "DIY Accounting Submit: MTD VAT",
-        "shortDescription": "VAT return to file with HMRC",
-        "longDescription": "Work out a UK VAT return under Making Tax Digital (MTD) for VAT from the bookkeeping you keep in DIY Accounting Submit.\n\nWhat it does:\n- Lists the books saved in your account and opens one. A book is one business's bookkeeping: the sales, purchases and bank lines that make up its accounts.\n- Derives the nine boxes of the VAT return for a quarter, with the journal lines behind them, so you can check each figure against your records.\n- Gives you a link to the VAT form on the Submit site with the figures filled in. You open it, connect to HMRC, check the figures, tick the declaration and file the return yourself in the browser.\n- Reads the receipts stored for the VAT returns you filed: the time HMRC processed the return and HMRC's form bundle number.\n\nWho it is for: a VAT-registered UK business that keeps its bookkeeping in DIY Accounting Submit, for example a limited company (Ltd) or a sole trader.\n\nLimits: no tool in this plugin files a return or pays HMRC. You need an existing DIY Accounting Submit account that holds your saved bookkeeping. The plugin gives no tax advice.",
+        "shortDescription": "Bookkeeping, VAT and accounts",
+        "longDescription": "Keep your bookkeeping in DIY Accounting Submit and work out what you file from your records, from your assistant.\n\nWhat it does:\n- Lists the DIYA-GL books saved in your account and opens one. A DIYA-GL book is one business's sales, purchases and bank lines for a year.\n- Reads your records: the profit and loss account, balance sheet, tax and VAT figures, the book checks, your largest customers and suppliers, and the chart of accounts.\n- Records or corrects sales, purchases and bank lines, saving each change as a new version of the DIYA-GL book, with an undo. Starts a new DIYA-GL book, next year's, or a company's next year from the Companies House register.\n- Derives the nine boxes of an MTD VAT return for a quarter, with the lines behind them, and a company's micro-entity or small company accounts and Company Tax Return.\n- Gives you a link to the VAT, accounts or Company Tax Return form on the Submit site with the figures filled in. You open it, check the figures and file it yourself in the browser.\n- Looks up a tax rule, rate or deadline with the gov.uk page that states it, and a company's filing deadlines on the Companies House register.\n- Reads the receipts stored for the VAT returns and accounts you filed.\n\nWho it is for: a UK business that keeps its records in DIY Accounting Submit, for example a limited company (Ltd) or a sole trader.\n\nLimits: no tool in this plugin files a return or accounts, or pays HMRC. You need an existing DIY Accounting Submit account. The plugin gives no tax advice.",
         "developerName": "DIY Accounting Limited",
         "category": "Finance",
         "capabilities": [
-          "Work out a Making Tax Digital (MTD) VAT return from your bookkeeping",
-          "List the books saved in your account",
-          "Open a book and read its checks",
-          "Derive the nine VAT boxes for a quarter",
-          "Give a link to file the return in the browser",
-          "Read your stored VAT receipts"
+          "Keep your bookkeeping in DIYA-GL books saved in your DIY Accounting Submit account",
+          "Read the profit and loss account, balance sheet and book checks of a DIYA-GL book",
+          "Find your largest customers, suppliers and costs in your records",
+          "Record or correct sales, purchases and bank lines, with an undo",
+          "Start a new DIYA-GL book, next year's, or a company's from the Companies House register",
+          "Work out a Making Tax Digital (MTD) VAT return from your records",
+          "Work out a company's micro-entity or small company accounts and Company Tax Return",
+          "Give a link to file the VAT return, accounts or Company Tax Return in the browser",
+          "Look up a tax rule, rate or deadline with its gov.uk source",
+          "Read your stored VAT and accounts receipts"
         ],
         "websiteURL": "https://submit.diyaccounting.co.uk/mcp.html?utm_source=chatgpt&utm_medium=directory&utm_campaign=plugin-listing",
         "supportURL": "https://submit.diyaccounting.co.uk/mcp.html#help",
@@ -60,8 +69,8 @@
         "termsOfServiceURL": "https://submit.diyaccounting.co.uk/terms.html",
         "defaultPrompt": [
           "Work out my MTD VAT return for the quarter ended 30 June 2025",
-          "Which lines are behind box 1 and box 4 of my VAT return?",
-          "Show the HMRC receipt for my last VAT return"
+          "Who were my five biggest customers last year?",
+          "Prepare my company's accounts to file at Companies House"
         ],
         "brandColor": "#1F4E79",
         "composerIcon": "./assets/logo.png",
@@ -69,7 +78,7 @@
       },
       "publication": {
         "countries": ["GB"],
-        "release_notes": "Version 0.1.7. The listing now names Making Tax Digital (MTD) for VAT and HMRC, and says who the plugin is for: a VAT-registered UK business, such as a limited company (Ltd) or a sole trader, that keeps its bookkeeping in DIY Accounting Submit. The starter prompts work out an MTD VAT return for a quarter, show the lines behind box 1 and box 4, and read the HMRC receipt of the last VAT return. The tools are unchanged."
+        "release_notes": "Version 0.1.8. The plugin now keeps your bookkeeping as well as working out your VAT: it reads the figures, lines and checks of your DIYA-GL books, records and corrects lines with an undo, starts new DIYA-GL books, works out company accounts and a Company Tax Return, gives links that open the VAT, accounts and Company Tax Return forms with the figures filled in, and looks up tax rules and rates with their gov.uk sources. The listing says DIYA-GL book and your records."
       },
       "review": {
         "demo_recording_url": "https://youtu.be/9_kkDNZmVMQ",
@@ -96,16 +105,16 @@
               "expected_behavior": "The assistant gives a link to the VAT form on the Submit site with the figures filled in, and says the person checks and files in the browser."
             },
             {
-              "description": "Read the HMRC receipt of the last VAT return",
-              "prompt": "Show the HMRC receipt for my last VAT return.",
-              "tools_triggered": "list_vat_receipts",
-              "expected_behavior": "The assistant says the account has no stored VAT receipts."
+              "description": "Get the link to file company accounts",
+              "prompt": "Prepare my company's accounts to file at Companies House.",
+              "tools_triggered": "prepare_micro_entity_accounts",
+              "expected_behavior": "The assistant gives a link to the micro-entity accounts form on the Submit site with the figures filled in, and says the person looks up the company, checks the figures and files in the browser, and that nothing has been filed."
             },
             {
-              "description": "Open the BrickWork Pro Ltd book",
-              "prompt": "Open the BrickWork Pro Ltd book.",
-              "tools_triggered": "list_books, open_book",
-              "expected_behavior": "The assistant opens BrickWork Pro Ltd and says the business, the period covered, the line count and the book checks."
+              "description": "Find the largest customers in the records",
+              "prompt": "Who were my five biggest customers last year?",
+              "tools_triggered": "list_books, open_book, lines",
+              "expected_behavior": "The assistant opens BrickWork Pro Ltd and names its largest customers by total sales in the DIYA-GL book, with each total."
             }
           ],
           "negative": [
@@ -118,8 +127,8 @@
               "prompt": "Pay my VAT bill."
             },
             {
-              "description": "The plugin offers VAT tools only. The assistant says it cannot file company accounts with this plugin, and it does not say that it filed them.",
-              "prompt": "File my company accounts."
+              "description": "No tool in the plugin files accounts. The assistant does not file them: it offers the link from prepare_micro_entity_accounts or prepare_small_company_accounts, says the person files in the browser, and says nothing has been filed.",
+              "prompt": "File my company accounts for me."
             }
           ]
         }

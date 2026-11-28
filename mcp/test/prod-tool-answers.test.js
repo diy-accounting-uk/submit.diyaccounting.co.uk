@@ -15,7 +15,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createSession, openBook, saveBook } from "../lib/book-tools.js";
 import { createServer } from "../lib/server.js";
 import { HOSTED_OVERRIDES, hostedToolNames } from "../lib/hosted-tools.js";
-import { READS, READS_OUTSIDE } from "../lib/tool-annotations.js";
+import { ADDS_OUTSIDE, CHANGES_OUTSIDE, READS, READS_OUTSIDE } from "../lib/tool-annotations.js";
 import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
@@ -23,6 +23,9 @@ const BOOK_ID = "6f1c1f0a-3b52-4c6e-9a41-1d0c5e7a2b01";
 const RECEIPT_NAME = "2026-09-22T10:55:44.288Z-990458700288.json";
 const ACCOUNTS_RECEIPT_NAME = "2026-10-02T09:00:00.000Z-000123.json";
 const COMPANY_NUMBER = "12345678";
+
+// The gov.uk source of each rule and rate a derivation used, which prod answers since it offers look_up_rule.
+const RULE_SOURCE_FIELDS = ["display", "id", "retrieved", "source", "title", "url"].map((field) => `ruleSources[].${field}`);
 
 // The fields each tool answers, as dotted paths; "[]" stands for every element of an array.
 const ANSWER_FIELDS = {
@@ -39,6 +42,7 @@ const ANSWER_FIELDS = {
     "product",
   ],
   derive_vat_return: [
+    ...RULE_SOURCE_FIELDS,
     ...["box1", "box2", "box3", "box4", "box5", "box6", "box7", "box8", "box9"].map((box) => `boxes.${box}`),
     ...[
       "netVatDue",
@@ -96,6 +100,7 @@ const ANSWER_FIELDS = {
     "lastAccountsType",
   ],
   derive_micro_entity_accounts: [
+    ...RULE_SOURCE_FIELDS,
     "averageNumberOfEmployees",
     "balanceSheet.currentYear.calledUpShareCapital",
     "balanceSheet.currentYear.capitalAndReserves",
@@ -142,6 +147,7 @@ const ANSWER_FIELDS = {
     "profitAndLoss.turnover",
   ],
   derive_small_company_accounts: [
+    ...RULE_SOURCE_FIELDS,
     "averageNumberOfEmployees",
     "balanceSheet.currentYear.amountsOwedByDirectors",
     "balanceSheet.currentYear.amountsOwedToDirectors",
@@ -253,6 +259,7 @@ const ANSWER_FIELDS = {
     "profitAndLossFormat2.currentYear.turnover",
   ],
   derive_company_tax_return: [
+    ...RULE_SOURCE_FIELDS,
     "figures.amortisation",
     "figures.annualInvestmentAllowance",
     "figures.depreciation",
@@ -306,7 +313,37 @@ const ANSWER_FIELDS = {
 };
 
 // The one tool that reads outside the person's own records: the Companies House public register.
-const ANNOTATIONS = { company_filing_deadlines: READS_OUTSIDE };
+// The DIYA-GL book, rule, help and form-link tools, whose answers their own tests in this folder check.
+const BOOK_TOOLS = [
+  "report",
+  "trial_balance",
+  "checks",
+  "lines",
+  "chart",
+  "book",
+  "look_up_rule",
+  "prepare_micro_entity_accounts",
+  "prepare_small_company_accounts",
+  "prepare_company_tax_return",
+  "edit_lines",
+  "new_book",
+  "roll_forward",
+  "undo_book_change",
+  "extract_book",
+  "save_workbook",
+  "new_book_from_register",
+  "find_help",
+  "book_format",
+];
+
+const ANNOTATIONS = {
+  company_filing_deadlines: READS_OUTSIDE,
+  edit_lines: CHANGES_OUTSIDE,
+  undo_book_change: CHANGES_OUTSIDE,
+  new_book: ADDS_OUTSIDE,
+  roll_forward: ADDS_OUTSIDE,
+  new_book_from_register: ADDS_OUTSIDE,
+};
 
 // The fields the link of prepare_vat_return carries in its fragment, which the VAT form reads.
 const LINK_FRAGMENT_FIELDS = [
@@ -516,9 +553,9 @@ describe("the tools prod's hosted connector serves", () => {
     return result.structuredContent;
   }
 
-  it("lists exactly its tools, each read-only and not destructive, and only the register lookup open to the outside world", async () => {
+  it("lists exactly its tools: the reads read-only, the book changes saved to the person's account, and the register reached outside", async () => {
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name).sort()).toEqual(Object.keys(ANSWER_FIELDS).sort());
+    expect(tools.map((tool) => tool.name).sort()).toEqual([...Object.keys(ANSWER_FIELDS), ...BOOK_TOOLS].sort());
     for (const tool of tools) {
       const { readOnlyHint, destructiveHint, openWorldHint } = tool.annotations;
       expect({ readOnlyHint, destructiveHint, openWorldHint }, tool.name).toEqual(ANNOTATIONS[tool.name] ?? READS);
@@ -624,6 +661,7 @@ describe("the privacy policy's part on the hosted MCP endpoint", () => {
     ];
     categories.push("form bundle number", "payment indicator", "charge reference");
     categories.push("filing deadlines", "Companies House", "company accounts", "Company Tax Return", "accounts filings");
+    categories.push("thirty tools", "trial balance", "registers", "directors and employees", "saved in your account", "Your records");
     for (const phrase of [...categories, "Purpose", "Recipient", "OpenAI", "Anthropic", "Google", "Retention", "24 hours"]) {
       expect(part, phrase).toContain(phrase);
     }

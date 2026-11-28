@@ -1022,7 +1022,7 @@ export const TOOLS = {
       "it: the page's title, link, the words quoted from it and the date it was read. Use this when the person asks " +
       "what a rate, allowance, threshold or deadline is, or where a figure in a derived return comes from. Give the " +
       "rule with its source and quote it; do not advise on the person's own case, and send them to HMRC or " +
-      "Companies House for that. It needs no DIYA-GL book and contacts no outside service.",
+      "Companies House for that. It needs no DIYA-GL book and does not contact an outside service.",
     inputSchema: {
       query: z.string().describe("A fact id, or the words of the rule or rate, such as annual investment allowance"),
     },
@@ -1075,7 +1075,7 @@ export const TOOLS = {
       "diya-gl knowledge base for a question, and answers each match's title, a two-line summary and its public address, " +
       "best match first. Use this when the person asks how to do something on DIY Accounting Submit, what a step of a " +
       "filing involves, or a bookkeeping or tax question the knowledge base explains, and give them the address to read. " +
-      "It needs no DIYA-GL book, reads nothing of the person's records, and gives no advice on their own case.",
+      "It needs no DIYA-GL book, does not read the person's records, and gives no advice on their own case.",
     inputSchema: {
       query: z.string().describe("The question or the words to search for, as the person put it"),
       source: z
@@ -1099,9 +1099,9 @@ export const TOOLS = {
       "Answers the format of a DIYA-GL book: its two files, book.toml (the business, the period, the chart of accounts, " +
       "the tax settings and the registers) and lines.jsonl (one transaction line a row), each field with its type and " +
       "meaning, and the published schemas. With part ct600 it answers the Company Tax Return (CT600) box map instead: each " +
-      "box's number, label, section and format, narrowed to one section when section is given. Use this before reading or " +
-      "changing lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It reads no DIYA-GL book and " +
-      "changes nothing.",
+      "box's number, label, section and format, narrowed to one section when section is given. Use this when you are about " +
+      "to read or change lines of a DIYA-GL book, or when the person asks what a CT600 box holds. It does not read a " +
+      "DIYA-GL book or change anything.",
     inputSchema: {
       part: z.enum(["book", "ct600"]).optional().describe("book (the default) for the DIYA-GL book format, ct600 for the CT600 box map"),
       section: z.string().optional().describe("With part ct600, the CT600 section to narrow the boxes to, such as Tax calculation"),

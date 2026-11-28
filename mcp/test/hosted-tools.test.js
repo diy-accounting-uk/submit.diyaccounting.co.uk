@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { createSession } from "../lib/book-tools.js";
 import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, REVIEWER_GROUP, hostedInstructions, hostedToolNames } from "../lib/hosted-tools.js";
-import { VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
+import { ACCOUNTS_FILING_SENTENCE, COMPANY_TAX_RETURN_FILING_SENTENCE, VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
 import { handleMcpRequest } from "../lib/http.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { BOOK_READ_TOOLS } from "../lib/book-read-tools.js";
@@ -120,15 +120,13 @@ describe("the hosted tool set", () => {
     expect(() => createServer(createSession(), { toolNames: ["no_such_tool"] })).toThrow(/Unknown tool/);
   });
 
-  it("offers the accounts and Company Tax Return links outside prod, and not in prod's tool set", () => {
-    const links = ["prepare_micro_entity_accounts", "prepare_small_company_accounts", "prepare_company_tax_return"];
-    for (const name of links) {
-      expect(HOSTED_TOOL_NAMES).toContain(name);
-      expect(hostedToolNames("ci")).toContain(name);
-      expect(hostedToolNames("prod")).not.toContain(name);
-      expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain(name);
+  it("offers the accounts and Company Tax Return links in prod, with the sentence the person is told for each", () => {
+    for (const name of ["prepare_micro_entity_accounts", "prepare_small_company_accounts", "prepare_company_tax_return"]) {
+      expect(hostedToolNames("prod")).toContain(name);
+      expect(hostedInstructions("prod")).toContain(name);
     }
-    for (const name of links) expect(hostedInstructions("prod")).not.toContain(name);
+    expect(hostedInstructions("prod")).toContain(ACCOUNTS_FILING_SENTENCE);
+    expect(hostedInstructions("prod")).toContain(COMPANY_TAX_RETURN_FILING_SENTENCE);
   });
 
   it("offers every hosted tool outside prod", () => {
@@ -161,40 +159,65 @@ describe("the hosted tool set", () => {
     expect(Object.keys(server._registeredTools).sort()).toEqual([...prodNames].sort());
   });
 
-  it("keeps prod's tool set to the eleven tools prod serves, with look_up_rule outside it", () => {
+  it("keeps prod's tool set to the thirty tools prod serves: the DIYA-GL book tools, the derivations and links, the rules, help, deadlines and receipts", () => {
     expect([...hostedToolNames("prod")].sort()).toEqual([
+      "book",
+      "book_format",
+      "chart",
+      "checks",
       "company_filing_deadlines",
       "derive_company_tax_return",
       "derive_micro_entity_accounts",
       "derive_small_company_accounts",
       "derive_vat_return",
+      "edit_lines",
+      "extract_book",
+      "find_help",
       "get_vat_receipt",
+      "lines",
       "list_accounts_receipts",
       "list_books",
       "list_vat_receipts",
+      "look_up_rule",
+      "new_book",
+      "new_book_from_register",
       "open_book",
+      "prepare_company_tax_return",
+      "prepare_micro_entity_accounts",
+      "prepare_small_company_accounts",
       "prepare_vat_return",
+      "report",
+      "roll_forward",
+      "save_workbook",
+      "trial_balance",
+      "undo_book_change",
     ]);
-    expect(HOSTED_TOOL_NAMES).toContain("look_up_rule");
   });
 
-  it("offers find_help and book_format outside prod and keeps prod's eleven tools as they are", () => {
-    expect(hostedToolNames("ci")).toEqual(expect.arrayContaining(["find_help", "book_format"]));
-    expect(hostedToolNames("prod")).toEqual([
-      "list_books",
-      "open_book",
-      "derive_vat_return",
-      "prepare_vat_return",
-      "get_vat_receipt",
-      "list_vat_receipts",
-      "company_filing_deadlines",
-      "derive_micro_entity_accounts",
-      "derive_small_company_accounts",
-      "derive_company_tax_return",
-      "list_accounts_receipts",
-    ]);
-    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("find_help");
-    expect(hostedToolNames("ci", [REVIEWER_GROUP])).not.toContain("book_format");
+  it("gives each DIYA-GL book, rule, help and form-link tool a sentence of its own in prod's instructions", () => {
+    for (const name of [
+      "report",
+      "trial_balance",
+      "checks",
+      "lines",
+      "chart",
+      "book",
+      "edit_lines",
+      "undo_book_change",
+      "new_book",
+      "roll_forward",
+      "new_book_from_register",
+      "extract_book",
+      "save_workbook",
+      "look_up_rule",
+      "find_help",
+      "book_format",
+      "prepare_micro_entity_accounts",
+      "prepare_small_company_accounts",
+      "prepare_company_tax_return",
+    ]) {
+      expect(hostedInstructions("prod"), name).toMatch(new RegExp(`\\b${name}\\b`));
+    }
   });
 
   it("gives a caller in the reviewer group prod's tool set in every environment", () => {
@@ -246,7 +269,7 @@ describe("the hosted tool set", () => {
     it("the initialize result for prod's tool set says what the tools do and that none files or pays", async () => {
       const { result } = await initialize(hostedInstructions("prod"));
 
-      expect(result.instructions).toMatch(/reads and works out figures/);
+      expect(result.instructions).toMatch(/keeps and reads the person's records and works out figures/);
       expect(result.instructions).toMatch(/filing deadlines on the Companies House register/);
       expect(result.instructions).toMatch(/No tool files a return or accounts, or pays HMRC or anyone else/);
     });

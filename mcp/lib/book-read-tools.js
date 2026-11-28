@@ -58,7 +58,7 @@ export const BOOK_READ_TOOLS = {
     title: "Trial balance of a DIYA-GL book",
     annotations: READS,
     description:
-      "The trial balance of the open DIYA-GL book of a company: every account's balance in the debit or the credit " +
+      "Answers the trial balance of the open DIYA-GL book of a company: every account's balance in the debit or the credit " +
       "column and the two totals, over the year, one month, one VAT quarter or a date range, with the year-end postings " +
       "of the registers. Name an account to also get the lines and postings behind its balance. Use this when the " +
       "person asks whether their trial balance balances, what an account's balance is, or what moved in a month. " +
@@ -79,7 +79,7 @@ export const BOOK_READ_TOOLS = {
     title: "Check a DIYA-GL book",
     annotations: READS,
     description:
-      "Every book check and warning over the open DIYA-GL book, each with its verdict (pass, warn or fail), what it " +
+      "Answers every book check and warning over the open DIYA-GL book, each with its verdict (pass, warn or fail), what it " +
       "means and the entryNumbers of the lines that fail it, with the pass, warn and fail counts. Use this when the " +
       "person asks whether anything is wrong with their records, which entries fall outside the year, which sales " +
       "have no invoice number, whether there are duplicates, or how near they are to the VAT threshold. It does not " +
@@ -112,7 +112,7 @@ export const BOOK_READ_TOOLS = {
     title: "Chart of accounts of a DIYA-GL book",
     annotations: READS,
     description:
-      "The chart of accounts of the open DIYA-GL book: each account's id, name, group, class and normal side, for a " +
+      "Answers the chart of accounts of the open DIYA-GL book: each account's id, name, group, class and normal side, for a " +
       "company the accounts line it feeds, the spreadsheet column it lands in, how many lines post to it with their " +
       "total in pence, and the report rows it reaches. Use this when the person asks which account to use for " +
       "something, where a cost shows in their accounts, or which accounts have no activity. It does not change the book.",
@@ -123,7 +123,7 @@ export const BOOK_READ_TOOLS = {
     title: "Profile of a DIYA-GL book",
     annotations: READS,
     description:
-      "The profile of the open DIYA-GL book: the product, the accounting period, the business (name, trade, address, " +
+      "Answers the profile of the open DIYA-GL book: the product, the accounting period, the business (name, trade, address, " +
       "VAT registration, cash or accruals basis), the tax settings, the bank accounts, the journals with their line " +
       "counts and dates, and the registers it carries (directors, employees, debtors, creditors, fixed assets, " +
       "dividends, members, opening balances, stock). Use this when the person asks what period their records cover, " +

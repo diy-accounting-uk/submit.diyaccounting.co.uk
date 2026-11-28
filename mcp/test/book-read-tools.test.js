@@ -83,11 +83,11 @@ describe("the DIYA-GL book read tools", () => {
     }
   });
 
-  it("are offered by the hosted connector outside prod and not on prod's tool set", () => {
+  it("are offered by the hosted connector in every environment, prod and the reviewer's set included", () => {
     for (const name of READ_TOOLS) {
       expect(HOSTED_TOOL_NAMES, name).toContain(name);
-      expect(hostedToolNames("prod"), name).not.toContain(name);
-      expect(hostedToolNames("ci", [REVIEWER_GROUP]), name).not.toContain(name);
+      expect(hostedToolNames("prod"), name).toContain(name);
+      expect(hostedToolNames("ci", [REVIEWER_GROUP]), name).toContain(name);
     }
   });
 

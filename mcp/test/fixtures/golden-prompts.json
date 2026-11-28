@@ -158,7 +158,7 @@
     },
     {
       "kind": "negative",
-      "prompt": "File my company's accounts at Companies House",
+      "prompt": "Pay my Corporation Tax bill to HMRC",
       "expected": "none"
     },
     {
@@ -188,7 +188,7 @@
     },
     {
       "kind": "negative",
-      "prompt": "Send HMRC my Corporation Tax return",
+      "prompt": "Appeal my VAT late payment penalty with HMRC",
       "expected": "none"
     },
     {
@@ -200,6 +200,196 @@
       "kind": "negative",
       "prompt": "Change my bank details with HMRC",
       "expected": "none"
+    },
+    {
+      "kind": "direct",
+      "prompt": "What profit did my business make this year according to my DIYA-GL book?",
+      "expected": "report"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "How much Corporation Tax will my company owe on this year's figures?",
+      "expected": "report"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Show me my company's trial balance for the year",
+      "expected": "trial_balance"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Does my trial balance balance, and what is the balance on account 1300?",
+      "expected": "trial_balance"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Run the book checks on my DIYA-GL book",
+      "expected": "checks"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Is anything wrong with my records before I file?",
+      "expected": "checks"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Who were my five biggest customers last year?",
+      "expected": "lines"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "How much did I spend on fuel in March?",
+      "expected": "lines"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Show me the chart of accounts in my DIYA-GL book",
+      "expected": "chart"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Which account should I use for software subscriptions?",
+      "expected": "chart"
+    },
+    {
+      "kind": "direct",
+      "prompt": "What period does my DIYA-GL book cover and is the business VAT registered?",
+      "expected": "book"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Who are the directors and employees recorded in my records?",
+      "expected": "book"
+    },
+    {
+      "kind": "direct",
+      "prompt": "What is the annual investment allowance for 2026-27?",
+      "expected": "look_up_rule"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "When are my company's accounts due after the year end?",
+      "expected": "look_up_rule"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Give me the link to file my micro-entity accounts",
+      "expected": "prepare_micro_entity_accounts"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "I want to send my micro company's accounts to Companies House",
+      "expected": "prepare_micro_entity_accounts"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Prepare my small company accounts to file at Companies House",
+      "expected": "prepare_small_company_accounts"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Get my full small company accounts ready to file",
+      "expected": "prepare_small_company_accounts"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Prepare my Company Tax Return to file with HMRC",
+      "expected": "prepare_company_tax_return"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "I need to send my CT600 for this year",
+      "expected": "prepare_company_tax_return"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Record a sale of £1,200 to Acme Ltd on 15 June 2025",
+      "expected": "edit_lines"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "I forgot to put in last week's invoice to Smith & Co for £450",
+      "expected": "edit_lines"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Start a new DIYA-GL book for my new sole trader business with a year end of 5 April 2027",
+      "expected": "new_book"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "I have just started a business and want to keep my records here",
+      "expected": "new_book"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Roll my DIYA-GL book forward to next year",
+      "expected": "roll_forward"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "My year has ended, set me up for the new year with the closing balances",
+      "expected": "roll_forward"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Undo the last change you made to my DIYA-GL book",
+      "expected": "undo_book_change"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "That sale you just added was wrong, take it back",
+      "expected": "undo_book_change"
+    },
+    {
+      "kind": "direct",
+      "prompt": "How do I upload my spreadsheet as a DIYA-GL book?",
+      "expected": "extract_book"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "I keep my records in a DIY Accounting spreadsheet and want to bring them in",
+      "expected": "extract_book"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Download my DIYA-GL book as a spreadsheet",
+      "expected": "save_workbook"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Can I have my records as a package zip?",
+      "expected": "save_workbook"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Start my company's next DIYA-GL book from the Companies House register for 12345678",
+      "expected": "new_book_from_register"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Set up next year's records for my limited company from what Companies House holds",
+      "expected": "new_book_from_register"
+    },
+    {
+      "kind": "direct",
+      "prompt": "Find the help page on filing a confirmation statement",
+      "expected": "find_help"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "How do I connect DIY Accounting Submit to HMRC?",
+      "expected": "find_help"
+    },
+    {
+      "kind": "direct",
+      "prompt": "What fields does a line in a DIYA-GL book have?",
+      "expected": "book_format"
+    },
+    {
+      "kind": "indirect",
+      "prompt": "Which CT600 box holds the trading profit?",
+      "expected": "book_format"
     }
   ]
 }

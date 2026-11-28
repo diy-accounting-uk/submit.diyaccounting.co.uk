@@ -151,9 +151,9 @@ describe("a derivation's rule sources", () => {
     expect(answer.ruleSources.map((source) => source.id)).toEqual(["ch-accounts-9-months"]);
   });
 
-  it("leaves prod's answers as they are, since prod does not offer look_up_rule", async () => {
-    expect(hostedToolNames("prod")).not.toContain("look_up_rule");
+  it("answers prod's derivations with their rule sources, since prod offers look_up_rule", async () => {
+    expect(hostedToolNames("prod")).toContain("look_up_rule");
     const answer = await callTool(hostedToolNames("prod"), "derive_company_tax_return");
-    expect(answer.ruleSources).toBeUndefined();
+    expect(answer.ruleSources.length).toBeGreaterThan(0);
   });
 });

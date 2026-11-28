@@ -62,11 +62,11 @@ describe("the hosted write tools", () => {
     vi.unstubAllGlobals();
   });
 
-  it("are offered by the hosted connector outside prod only", () => {
+  it("are offered by the hosted connector in every environment, prod included", () => {
     for (const name of HOSTED_WRITE_TOOL_NAMES) {
       expect(HOSTED_TOOL_NAMES, name).toContain(name);
-      expect(hostedToolNames("prod"), name).not.toContain(name);
-      expect(hostedToolNames("ci", [REVIEWER_GROUP]), name).not.toContain(name);
+      expect(hostedToolNames("prod"), name).toContain(name);
+      expect(hostedToolNames("ci", [REVIEWER_GROUP]), name).toContain(name);
       expect(HOSTED_OVERRIDES[name], name).toBe(HOSTED_WRITE_OVERRIDES[name]);
     }
     const server = createServer(createSession(), { toolNames: hostedToolNames("ci"), overrides: HOSTED_OVERRIDES });

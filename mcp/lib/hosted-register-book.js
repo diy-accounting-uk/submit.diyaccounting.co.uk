@@ -109,7 +109,8 @@ export const HOSTED_REGISTER_BOOK_OVERRIDES = {
       "company, its registered office, its current directors and secretaries, and the roll forward of its last filed " +
       "accounts when the register holds them as iXBRL, so the opening balance sheet equals the filed closing one. With " +
       "a codesEntryId it also writes in the statement of capital and the shareholders. Saves it in the person's DIY " +
-      "Accounting Submit account as a new book, which becomes the open one. It changes no other DIYA-GL book and files nothing.",
+      "Accounting Submit account as a new book, which becomes the open one. Use this when the person starts a company's " +
+      "records for its next year from what Companies House holds. It does not change another DIYA-GL book or file anything.",
     inputSchema: {
       companyNumber: z.string().describe("The company's registration number"),
       periodEnd: z.string().optional().describe("The year end chosen, YYYY-MM-DD, on or after the register's next period end"),
